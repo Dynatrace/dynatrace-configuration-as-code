@@ -53,18 +53,18 @@ type (
 		OriginObjectID string           `mapstructure:"originObjectId" yaml:"originObjectId,omitempty"`
 	}
 	Account struct {
-		Permissions []any `mapstructure:"permissions"`
-		Policies    []any `mapstructure:"policies"`
+		Permissions []string `mapstructure:"permissions"`
+		Policies    []any    `mapstructure:"policies"`
 	}
 	Environment struct {
-		Name        string `mapstructure:"name"`
-		Permissions []any  `mapstructure:"permissions"`
-		Policies    []any  `mapstructure:"policies"`
+		Name        string   `mapstructure:"name"`
+		Permissions []string `mapstructure:"permissions"`
+		Policies    []any    `mapstructure:"policies"`
 	}
 	ManagementZone struct {
-		Environment    string `mapstructure:"environment"`
-		ManagementZone string `mapstructure:"managementZone" yaml:"managementZone"`
-		Permissions    []any  `mapstructure:"permissions"`
+		Environment    string   `mapstructure:"environment"`
+		ManagementZone string   `mapstructure:"managementZone" yaml:"managementZone"`
+		Permissions    []string `mapstructure:"permissions"`
 	}
 	Users struct {
 		Users []User `mapstructure:"users"`

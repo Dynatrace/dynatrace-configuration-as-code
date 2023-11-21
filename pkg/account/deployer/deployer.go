@@ -257,14 +257,12 @@ func (d *AccountDeployer) updateGroupPermissions(ctx context.Context, group acco
 func (d *AccountDeployer) getAccountPermissions(acc *account.Account) []accountmanagement.PermissionsDto {
 	var permissions []accountmanagement.PermissionsDto
 	for _, p := range acc.Permissions {
-		if pStr, ok := p.(string); ok {
-			perm := accountmanagement.PermissionsDto{
-				PermissionName: pStr,
-				ScopeType:      "account",
-				Scope:          d.accountManagementClient.getAccountInfo().AccountUUID,
-			}
-			permissions = append(permissions, perm)
+		perm := accountmanagement.PermissionsDto{
+			PermissionName: p,
+			ScopeType:      "account",
+			Scope:          d.accountManagementClient.getAccountInfo().AccountUUID,
 		}
+		permissions = append(permissions, perm)
 	}
 	return permissions
 }
@@ -273,14 +271,12 @@ func (d *AccountDeployer) getEnvironmentPermissions(environments []account.Envir
 	var permissions []accountmanagement.PermissionsDto
 	for _, env := range environments {
 		for _, p := range env.Permissions {
-			if pStr, ok := p.(string); ok {
-				perm := accountmanagement.PermissionsDto{
-					PermissionName: pStr,
-					ScopeType:      "tenant",
-					Scope:          env.Name,
-				}
-				permissions = append(permissions, perm)
+			perm := accountmanagement.PermissionsDto{
+				PermissionName: p,
+				ScopeType:      "tenant",
+				Scope:          env.Name,
 			}
+			permissions = append(permissions, perm)
 		}
 	}
 	return permissions
@@ -295,14 +291,12 @@ func (d *AccountDeployer) getManagementZonePermissions(mzones []account.Manageme
 		}
 
 		for _, p := range mz.Permissions {
-			if pStr, ok := p.(string); ok {
-				perm := accountmanagement.PermissionsDto{
-					PermissionName: pStr,
-					ScopeType:      "management-zone",
-					Scope:          fmt.Sprintf("%s:%s", mz.Environment, mzId),
-				}
-				permissions = append(permissions, perm)
+			perm := accountmanagement.PermissionsDto{
+				PermissionName: p,
+				ScopeType:      "management-zone",
+				Scope:          fmt.Sprintf("%s:%s", mz.Environment, mzId),
 			}
+			permissions = append(permissions, perm)
 		}
 	}
 

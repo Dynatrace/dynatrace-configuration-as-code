@@ -61,18 +61,18 @@ type (
 		OriginObjectID string
 	}
 	Account struct {
-		Permissions []any
+		Permissions []string
 		Policies    []any
 	}
 	Environment struct {
 		Name        string
-		Permissions []any
+		Permissions []string
 		Policies    []any
 	}
 	ManagementZone struct {
 		Environment    string
 		ManagementZone string
-		Permissions    []any
+		Permissions    []string
 	}
 
 	User struct {
