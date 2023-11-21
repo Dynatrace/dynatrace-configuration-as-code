@@ -30,10 +30,10 @@ import (
 	"testing"
 )
 
-func testResources(t *testing.T) map[string]*account.Resources {
+func testResources(t *testing.T) *account.Resources {
 	res, err := loader.Load(afero.NewOsFs(), "testdata/accdata.yaml")
 	assert.NoError(t, err)
-	return map[string]*account.Resources{"project": res}
+	return res
 }
 
 func mockClient(t *testing.T) *Mockclient {

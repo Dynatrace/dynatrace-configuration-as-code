@@ -29,11 +29,10 @@ type (
 		Name        string
 		AccountUUID string
 	}
-	localId     = string // local (monaco related) identifier
-	envName     = string // dt environment name
-	remoteId    = string // dt entity identifier
-	projectName = string // monaco project name
-	idLookupFn  func(id localId) remoteId
+	localId    = string // local (monaco related) identifier
+	envName    = string // dt environment name
+	remoteId   = string // dt entity identifier
+	idLookupFn func(id localId) remoteId
 )
 
 type Options struct {
@@ -72,7 +71,7 @@ func NewAccountDeployer(client client) *AccountDeployer {
 	}
 }
 
-func (d *AccountDeployer) Deploy(resources map[projectName]*account.Resources) error {
+func (d *AccountDeployer) Deploy(res *account.Resources) error {
 	var err error
 	d.deployedPolicies, err = d.accountManagementClient.getGlobalPolicies(context.TODO())
 	if err != nil {
@@ -89,19 +88,18 @@ func (d *AccountDeployer) Deploy(resources map[projectName]*account.Resources) e
 		return err
 	}
 
-	for _, res := range resources {
-		if err = d.deployPolicies(res.Policies); err != nil {
-			return err
-		}
-
-		if err = d.deployGroups(res.Groups); err != nil {
-			return err
-		}
-
-		if err = d.deployUsers(res.Users); err != nil {
-			return err
-		}
+	if err = d.deployPolicies(res.Policies); err != nil {
+		return err
 	}
+
+	if err = d.deployGroups(res.Groups); err != nil {
+		return err
+	}
+
+	if err = d.deployUsers(res.Users); err != nil {
+		return err
+	}
+
 	return nil
 }
 

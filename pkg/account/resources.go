@@ -16,6 +16,15 @@
 
 package account
 
+func NewAccountManagementResources() *Resources {
+	resources := Resources{
+		Groups:   make(map[GroupId]Group),
+		Policies: make(map[PolicyId]Policy),
+		Users:    make(map[UserId]User),
+	}
+	return &resources
+}
+
 type (
 	PolicyId = string
 	GroupId  = string

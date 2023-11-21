@@ -115,10 +115,9 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	log.Debug("Deploying to accounts: %q", maps.Keys(accs))
 	log.Debug("Deploying projects: %q", maps.Keys(projs))
 
-	resources, errs := loadAccountManagementResources(fs, opts.workingDir, projs)
-	if len(errs) > 0 {
-		errutils.PrintErrors(errs)
-		return errors.New("failed to load all account management resources")
+	resources, err := loadAccountManagementResources(fs, opts.workingDir, projs)
+	if err != nil {
+		return fmt.Errorf("failed to load all account management resources: %w", err)
 	}
 
 	if opts.dryRun {
@@ -146,20 +145,36 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	return nil
 }
 
-func loadAccountManagementResources(fs afero.Fs, workingDir string, projs manifest.ProjectDefinitionByProjectID) (map[string]*account.Resources, []error) {
-	resources := make(map[string]*account.Resources, len(projs))
-	var errs []error
+func loadAccountManagementResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefinitionByProjectID) (*account.Resources, error) {
+	resources := account.NewAccountManagementResources()
+	for _, p := range projects {
+		res, err := accountLoader.Load(fs, path.Join(workingDir, p.Path))
+		if err != nil {
+			return nil, err
+		}
+		for _, pol := range res.Policies {
+			if _, exists := resources.Policies[pol.ID]; exists {
+				return nil, fmt.Errorf("policy with id %q already defined in another project", pol.ID)
+			}
+			resources.Policies[pol.ID] = pol
+		}
 
-	// load project content
-	for _, p := range projs {
-		if a, err := accountLoader.Load(fs, path.Join(workingDir, p.Path)); err != nil {
-			errs = append(errs, err)
-		} else {
-			resources[p.Name] = a
+		for _, gr := range res.Groups {
+			if _, exists := resources.Groups[gr.ID]; exists {
+				return nil, fmt.Errorf("group with id %q already defined in another project", gr.ID)
+			}
+			resources.Groups[gr.ID] = gr
+		}
+
+		for _, us := range res.Users {
+			if _, exists := resources.Users[us.Email]; exists {
+				return nil, fmt.Errorf("group with id %q already defined in another project", us.Email)
+			}
+			resources.Users[us.Email] = us
 		}
 	}
 
-	return resources, errs
+	return resources, nil
 }
 
 func createAccountClients(manifestAccounts map[string]manifest.Account) (map[deployer.AccountInfo]*accounts.Client, error) {
