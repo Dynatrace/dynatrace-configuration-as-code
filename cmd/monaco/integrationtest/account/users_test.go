@@ -21,6 +21,7 @@ package account
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -28,11 +29,18 @@ import (
 func TestUsers(t *testing.T) {
 	t.Setenv(featureflags.AccountManagement().EnvName(), "true")
 
-	RunAccountTestCase(t, "testdata/all-resources", "users", func(o options) {
-		cmd := runner.BuildCli(o.fs)
-		cmd.SetArgs([]string{"account", "deploy", "manifest.yaml", "-p", "single-file"})
+	cmdDeployMzones := runner.BuildCli(afero.NewOsFs())
+	cmdDeployMzones.SetArgs([]string{"deploy", "testdata/all-resources/manifest-mzones.yaml"})
 
-		err := cmd.Execute()
+	err := cmdDeployMzones.Execute()
+	assert.NoError(t, err)
+
+	RunAccountTestCase(t, "testdata/all-resources", "manifest-account.yaml", "users", func(o options) {
+
+		cmdDeployAccount := runner.BuildCli(o.fs)
+		cmdDeployAccount.SetArgs([]string{"account", "deploy", "manifest-account.yaml"})
+
+		err = cmdDeployAccount.Execute()
 		assert.NoError(t, err)
 
 		// expand

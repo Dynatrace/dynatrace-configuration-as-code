@@ -25,11 +25,11 @@ groups:
     - type: reference
       id: my-policy
 
-#  managementZone:
-#  - environment: vs13800
-#    managementZone: Mzone
-#    permissions:
-#    - tenant-viewer
+  managementZone:
+  - environment: wbm16058
+    managementZone: Management Zone 2000
+    permissions:
+    - tenant-viewer
 
 policies:
 - name: My Policy
