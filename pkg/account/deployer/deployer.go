@@ -332,24 +332,14 @@ func (d *AccountDeployer) getUserGroupRefs(user account.User) ([]remoteId, error
 	return d.processItems(user.Groups, d.groupIdLookup)
 }
 
-func (d *AccountDeployer) processItems(items []interface{}, remoteIdLookup idLookupFn) ([]remoteId, error) {
+func (d *AccountDeployer) processItems(items []account.Ref, remoteIdLookup idLookupFn) ([]remoteId, error) {
 	var ids []remoteId
 	var notFoundLocalIds []localId
 
 	for _, item := range items {
-		var id localId
-		switch v := item.(type) {
-		case account.Reference:
-			id = v.Id
-		case string:
-			id = v
-		default:
-			return nil, fmt.Errorf("unsupported item type: %T", item)
-		}
-
-		rid := remoteIdLookup(id)
+		rid := remoteIdLookup(item.ID())
 		if rid == "" {
-			notFoundLocalIds = append(notFoundLocalIds, id)
+			notFoundLocalIds = append(notFoundLocalIds, item.ID())
 			continue
 		}
 

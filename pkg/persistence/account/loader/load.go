@@ -218,14 +218,14 @@ func transform(resources *persistence.Resources) *account.Resources {
 		}
 	}
 
-	transformRefs := func(in []any) []any {
-		var res []any
+	transformRefs := func(in []any) []account.Ref {
+		var res []account.Ref
 		for _, el := range in {
 			switch v := el.(type) {
 			case persistence.Reference:
 				res = append(res, account.Reference(v))
 			case string:
-				res = append(res, v)
+				res = append(res, account.StrReference(v))
 			default:
 				panic("unable to convert persistence model")
 			}

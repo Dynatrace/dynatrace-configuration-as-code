@@ -62,12 +62,12 @@ type (
 	}
 	Account struct {
 		Permissions []string
-		Policies    []any
+		Policies    []Ref
 	}
 	Environment struct {
 		Name        string
 		Permissions []string
-		Policies    []any
+		Policies    []Ref
 	}
 	ManagementZone struct {
 		Environment    string
@@ -77,10 +77,24 @@ type (
 
 	User struct {
 		Email  string
-		Groups []any
+		Groups []Ref
 	}
 	Reference struct {
 		Type string
 		Id   string
 	}
+
+	StrReference string
 )
+
+func (r Reference) ID() string {
+	return r.Id
+}
+
+func (r StrReference) ID() string {
+	return string(r)
+}
+
+type Ref interface {
+	ID() string
+}
