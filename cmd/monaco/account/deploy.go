@@ -26,17 +26,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	accountLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 	"golang.org/x/oauth2/clientcredentials"
-	"path"
 	"path/filepath"
 )
 
@@ -115,7 +112,7 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	log.Debug("Deploying to accounts: %q", maps.Keys(accs))
 	log.Debug("Deploying projects: %q", maps.Keys(projs))
 
-	resources, err := loadAccountManagementResources(fs, opts.workingDir, projs)
+	resources, err := loadResources(fs, opts.workingDir, projs)
 	if err != nil {
 		return fmt.Errorf("failed to load all account management resources: %w", err)
 	}
@@ -143,38 +140,6 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	}
 
 	return nil
-}
-
-func loadAccountManagementResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefinitionByProjectID) (*account.Resources, error) {
-	resources := account.NewAccountManagementResources()
-	for _, p := range projects {
-		res, err := accountLoader.Load(fs, path.Join(workingDir, p.Path))
-		if err != nil {
-			return nil, err
-		}
-		for _, pol := range res.Policies {
-			if _, exists := resources.Policies[pol.ID]; exists {
-				return nil, fmt.Errorf("policy with id %q already defined in another project", pol.ID)
-			}
-			resources.Policies[pol.ID] = pol
-		}
-
-		for _, gr := range res.Groups {
-			if _, exists := resources.Groups[gr.ID]; exists {
-				return nil, fmt.Errorf("group with id %q already defined in another project", gr.ID)
-			}
-			resources.Groups[gr.ID] = gr
-		}
-
-		for _, us := range res.Users {
-			if _, exists := resources.Users[us.Email]; exists {
-				return nil, fmt.Errorf("group with id %q already defined in another project", us.Email)
-			}
-			resources.Users[us.Email] = us
-		}
-	}
-
-	return resources, nil
 }
 
 func createAccountClients(manifestAccounts map[string]manifest.Account) (map[deployer.AccountInfo]*accounts.Client, error) {
