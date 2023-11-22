@@ -27,7 +27,7 @@ import (
 
 func TestLoad(t *testing.T) {
 	t.Run("Load single file", func(t *testing.T) {
-		loaded, err := Load(afero.NewOsFs(), "test-resources/valid.yaml")
+		loaded, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
 		assert.Len(t, loaded.Groups, 1)
@@ -43,7 +43,7 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Load single file - with refs", func(t *testing.T) {
-		loaded, err := Load(afero.NewOsFs(), "test-resources/valid-with-refs.yaml")
+		loaded, err := Load(afero.NewOsFs(), "testdata/valid-with-refs.yaml")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Groups, 1)
 		assert.NotNil(t, loaded.Groups["monaco-group"].Account)
@@ -60,7 +60,7 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Load multiple files", func(t *testing.T) {
-		loaded, err := Load(afero.NewOsFs(), "test-resources/multi")
+		loaded, err := Load(afero.NewOsFs(), "testdata/multi")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
 		assert.Len(t, loaded.Groups, 1)
@@ -68,22 +68,22 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Duplicate group", func(t *testing.T) {
-		_, err := Load(afero.NewOsFs(), "test-resources/duplicate-group.yaml")
+		_, err := Load(afero.NewOsFs(), "testdata/duplicate-group.yaml")
 		assert.Error(t, err)
 	})
 
 	t.Run("Duplicate user", func(t *testing.T) {
-		_, err := Load(afero.NewOsFs(), "test-resources/duplicate-user.yaml")
+		_, err := Load(afero.NewOsFs(), "testdata/duplicate-user.yaml")
 		assert.Error(t, err)
 	})
 
 	t.Run("Duplicate policy", func(t *testing.T) {
-		_, err := Load(afero.NewOsFs(), "test-resources/duplicate-policy.yaml")
+		_, err := Load(afero.NewOsFs(), "testdata/duplicate-policy.yaml")
 		assert.Error(t, err)
 	})
 
 	t.Run("root folder not found", func(t *testing.T) {
-		result, err := Load(afero.NewOsFs(), "test-resources/non-existent-folder")
+		result, err := Load(afero.NewOsFs(), "testdata/non-existent-folder")
 		assert.Equal(t, &account.Resources{
 			Policies: make(map[string]account.Policy, 0),
 			Groups:   make(map[string]account.Group, 0),
@@ -103,31 +103,31 @@ func TestValidateT(t *testing.T) {
 		{
 
 			name:           "group reference not found",
-			path:           "test-resources/no-ref-group.yaml",
+			path:           "testdata/no-ref-group.yaml",
 			expected:       ErrRefMissing,
 			expectedErrMsg: `error validating account resources with id "non-existing-group-ref": no referenced target found`,
 		},
 		{
 			name:           "environment level policy reference not found",
-			path:           "test-resources/no-ref-policy-env.yaml",
+			path:           "testdata/no-ref-policy-env.yaml",
 			expected:       ErrRefMissing,
 			expectedErrMsg: `error validating account resources with id "non-existing-policy-ref": no referenced target found`,
 		},
 		{
 			name:           "account level policy reference not found",
-			path:           "test-resources/no-ref-policy-account.yaml",
+			path:           "testdata/no-ref-policy-account.yaml",
 			expected:       ErrRefMissing,
 			expectedErrMsg: `error validating account resources with id "non-existing-policy-ref": no referenced target found`,
 		},
 		{
 			name:           "group reference with missing id field",
-			path:           "test-resources/no-id-field-group-ref.yaml",
+			path:           "testdata/no-id-field-group-ref.yaml",
 			expected:       ErrIdFieldMissing,
 			expectedErrMsg: `error validating account resources: no ref id field found`,
 		},
 		{
 			name:     "valid",
-			path:     "test-resources/valid.yaml",
+			path:     "testdata/valid.yaml",
 			expected: nil,
 		},
 	}

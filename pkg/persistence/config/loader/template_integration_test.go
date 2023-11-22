@@ -29,7 +29,7 @@ import (
 	"testing"
 )
 
-const test_yaml = "test-resources/templating-integration-test-config.yaml"
+const test_yaml = "testdata/templating-integration-test-config.yaml"
 
 func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewOsFs())
