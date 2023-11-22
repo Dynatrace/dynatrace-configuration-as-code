@@ -42,7 +42,7 @@ func TestParametersAreLoadedAsExpected(t *testing.T) {
 		ParametersSerDe: config.DefaultParameterParsers,
 	}
 
-	cfgs, errs := LoadConfig(fs, &context, "test-resources/parameter-type-test-config.yaml")
+	cfgs, errs := LoadConfig(fs, &context, "testdata/parameter-type-test-config.yaml")
 	assert.Check(t, len(errs) == 0, "Expected test config to load without error")
 	assert.Check(t, len(cfgs) == 1, "Expected test config to contain a single definition")
 

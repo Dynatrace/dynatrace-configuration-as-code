@@ -42,10 +42,12 @@ func validate(res *types.Resources) error {
 				}
 			}
 		}
-		// check references in account policies
-		for _, policyRef := range group.Account.Policies {
-			if err := refCheck(res, policyRef, policyExists); err != nil {
-				return err
+		if group.Account != nil {
+			// check references in account policies
+			for _, policyRef := range group.Account.Policies {
+				if err := refCheck(res, policyRef, policyExists); err != nil {
+					return err
+				}
 			}
 		}
 	}

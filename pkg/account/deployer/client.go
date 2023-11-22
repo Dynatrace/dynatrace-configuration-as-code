@@ -67,6 +67,20 @@ func (d *accountManagementClient) getGlobalPolicies(ctx context.Context) (map[st
 	return result, nil
 }
 
+func (d *accountManagementClient) getAllGroups(ctx context.Context) (map[string]remoteId, error) {
+	groups, resp, err := d.client.GroupManagementAPI.GetGroups(ctx, d.accountInfo.AccountUUID).Execute()
+	defer closeResponseBody(resp)
+	if err = d.handleClientResponseError(resp, err, "unable get all groups for account "+d.accountInfo.AccountUUID); err != nil {
+		return nil, err
+	}
+	result := make(map[string]remoteId)
+	for _, glP := range groups.GetItems() {
+		result[glP.Name] = glP.GetUuid()
+	}
+	return result, nil
+
+}
+
 func (d *accountManagementClient) getManagementZones(ctx context.Context) ([]ManagementZone, error) {
 	envResources, resp, err := d.client.EnvironmentManagementAPI.GetEnvironmentResources(ctx, d.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
@@ -213,7 +227,7 @@ func (d *accountManagementClient) updatePermissions(ctx context.Context, groupId
 			return fmt.Errorf("unsupported permission %q. Must be one of: %v", p.PermissionName, d.supportedPermissions)
 		}
 	}
-	resp, err := d.client.PermissionManagementAPI.AddGroupPermissions(ctx, d.accountInfo.AccountUUID, groupId).PermissionsDto(permissions).Execute()
+	resp, err := d.client.PermissionManagementAPI.OverwriteGroupPermissions(ctx, d.accountInfo.AccountUUID, groupId).PermissionsDto(permissions).Execute()
 	defer closeResponseBody(resp)
 	if err = d.handleClientResponseError(resp, err, "unable to update permissions of group with UUID "+groupId); err != nil {
 		return err
@@ -266,7 +280,7 @@ func (d *accountManagementClient) updateGroupBindings(ctx context.Context, userI
 	if len(groupIds) == 0 {
 		return nil
 	}
-	resp, err := d.client.UserManagementAPI.AddUserToGroups(ctx, d.accountInfo.AccountUUID, userId).RequestBody(groupIds).Execute()
+	resp, err := d.client.UserManagementAPI.ReplaceUserGroups(ctx, d.accountInfo.AccountUUID, userId).RequestBody(groupIds).Execute()
 	defer closeResponseBody(resp)
 	if err = d.handleClientResponseError(resp, err, "unable to add user "+userId+" to groups "+fmt.Sprintf("%v", groupIds)); err != nil {
 		return err
@@ -290,5 +304,7 @@ func (d *accountManagementClient) handleClientResponseError(resp *http.Response,
 }
 
 func closeResponseBody(resp *http.Response) {
-	_ = resp.Body.Close()
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
 }

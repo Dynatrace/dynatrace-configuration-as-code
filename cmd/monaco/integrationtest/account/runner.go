@@ -37,22 +37,22 @@ type options struct {
 	suffix string
 }
 
-func RunAccountTestCase(t *testing.T, path string, name string, fn func(options)) {
+func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name string, fn func(options)) {
 	// create a new reader for the path and write all files to the in mem fs
 	fs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(afero.NewOsFs(), path), afero.NewMemMapFs())
 
 	suffix := integrationtest.GenerateTestSuffix(t, name)
 
 	// add suffix to all resource-names
-	appendSuffixForWorkspace(t, fs, suffix)
+	appendSuffixForWorkspace(t, fs, manifestFileName, suffix)
 
 	fn(options{fs, suffix})
 }
 
-func appendSuffixForWorkspace(t *testing.T, fs afero.Fs, suffix string) {
+func appendSuffixForWorkspace(t *testing.T, fs afero.Fs, manifestFileName string, suffix string) {
 	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
-		ManifestPath: "manifest.yaml",
+		ManifestPath: manifestFileName,
 	})
 
 	assert.NoError(t, errors.Join(errs...))

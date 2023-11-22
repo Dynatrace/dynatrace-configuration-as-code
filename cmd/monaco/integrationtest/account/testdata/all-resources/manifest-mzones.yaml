@@ -1,8 +1,7 @@
 manifestVersion: 1.1
 
 projects:
-- name: single-file
-- name: split-files
+- name: mzones
 
 environmentGroups:
 - name: default
@@ -22,15 +21,3 @@ environmentGroups:
         tokenEndpoint:
           type: environment
           value: OAUTH_TOKEN_ENDPOINT
-
-accounts:
-- name: monaco-test-account
-  accountUUID: 17a8095e-a974-40a2-9049-8a5d683cdd0b
-  oAuth:
-    clientId:
-      name: ACCOUNT_OAUTH_CLIENT_ID
-    clientSecret:
-      name: ACCOUNT_OAUTH_CLIENT_SECRET
-    tokenEndpoint:
-      type: environment
-      value: OAUTH_TOKEN_ENDPOINT

@@ -1,0 +1,10 @@
+configs:
+- id: 2b2bc4ac-2090-373e-9a43-c568ddd5d0b9
+  config:
+    template: 2b2bc4ac-2090-373e-9a43-c568ddd5d0b9.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:management-zones
+      schemaVersion: 1.0.6
+      scope: environment

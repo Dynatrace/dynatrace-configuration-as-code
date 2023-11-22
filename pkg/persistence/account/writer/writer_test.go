@@ -43,12 +43,12 @@ func TestWriteAccountResources(t *testing.T) {
 				Users: map[account.UserId]account.User{
 					"monaco@dynatrace.com": account.User{
 						Email: "monaco@dynatrace.com",
-						Groups: []any{
+						Groups: []account.Ref{
 							account.Reference{
 								Type: "reference",
 								Id:   "my-group",
 							},
-							"Log viewer",
+							account.StrReference("Log viewer"),
 						},
 					},
 				},
@@ -72,15 +72,15 @@ func TestWriteAccountResources(t *testing.T) {
 						Name:        "My Group",
 						Description: "This is my group",
 						Account: &account.Account{
-							Permissions: []any{"View my Group Stuff"},
-							Policies:    []any{"Request my Group Stuff"},
+							Permissions: []string{"View my Group Stuff"},
+							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
 						},
 						Environment: []account.Environment{
 							{
 								Name:        "myenv123",
-								Permissions: []any{"View environment"},
-								Policies: []any{
-									"View environment",
+								Permissions: []string{"View environment"},
+								Policies: []account.Ref{
+									account.StrReference("View environment"),
 									account.Reference{
 										Type: "reference",
 										Id:   "my-policy",
@@ -92,7 +92,7 @@ func TestWriteAccountResources(t *testing.T) {
 							{
 								Environment:    "myenv123",
 								ManagementZone: "My MZone",
-								Permissions:    []any{"Do Stuff"},
+								Permissions:    []string{"Do Stuff"},
 							},
 						},
 					},
@@ -153,12 +153,12 @@ func TestWriteAccountResources(t *testing.T) {
 				Users: map[account.UserId]account.User{
 					"monaco@dynatrace.com": account.User{
 						Email: "monaco@dynatrace.com",
-						Groups: []any{
+						Groups: []account.Ref{
 							account.Reference{
 								Type: "reference",
 								Id:   "my-group",
 							},
-							"Log viewer",
+							account.StrReference("Log viewer"),
 						},
 					},
 				},
@@ -168,15 +168,15 @@ func TestWriteAccountResources(t *testing.T) {
 						Name:        "My Group",
 						Description: "This is my group",
 						Account: &account.Account{
-							Permissions: []any{"View my Group Stuff"},
-							Policies:    []any{"Request my Group Stuff"},
+							Permissions: []string{"View my Group Stuff"},
+							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
 						},
 						Environment: []account.Environment{
 							{
 								Name:        "myenv123",
-								Permissions: []any{"View environment"},
-								Policies: []any{
-									"View environment",
+								Permissions: []string{"View environment"},
+								Policies: []account.Ref{
+									account.StrReference("View environment"),
 									account.Reference{
 										Type: "reference",
 										Id:   "my-policy",
@@ -188,7 +188,7 @@ func TestWriteAccountResources(t *testing.T) {
 							{
 								Environment:    "myenv123",
 								ManagementZone: "My MZone",
-								Permissions:    []any{"Do Stuff"},
+								Permissions:    []string{"Do Stuff"},
 							},
 						},
 					},
@@ -250,12 +250,12 @@ func TestWriteAccountResources(t *testing.T) {
 				Users: map[account.UserId]account.User{
 					"monaco@dynatrace.com": account.User{
 						Email: "monaco@dynatrace.com",
-						Groups: []any{
+						Groups: []account.Ref{
 							account.Reference{
 								Type: "reference",
 								Id:   "my-group",
 							},
-							"Log viewer",
+							account.StrReference("Log viewer"),
 						},
 					},
 				},
@@ -266,15 +266,15 @@ func TestWriteAccountResources(t *testing.T) {
 						Name:           "My Group",
 						Description:    "This is my group",
 						Account: &account.Account{
-							Permissions: []any{"View my Group Stuff"},
-							Policies:    []any{"Request my Group Stuff"},
+							Permissions: []string{"View my Group Stuff"},
+							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
 						},
 						Environment: []account.Environment{
 							{
 								Name:        "myenv123",
-								Permissions: []any{"View environment"},
-								Policies: []any{
-									"View environment",
+								Permissions: []string{"View environment"},
+								Policies: []account.Ref{
+									account.StrReference("View environment"),
 									account.Reference{
 										Type: "reference",
 										Id:   "my-policy",
@@ -286,7 +286,7 @@ func TestWriteAccountResources(t *testing.T) {
 							{
 								Environment:    "myenv123",
 								ManagementZone: "My MZone",
-								Permissions:    []any{"Do Stuff"},
+								Permissions:    []string{"Do Stuff"},
 							},
 						},
 					},

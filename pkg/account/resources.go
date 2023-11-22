@@ -16,10 +16,20 @@
 
 package account
 
+func NewAccountManagementResources() *Resources {
+	resources := Resources{
+		Groups:   make(map[GroupId]Group),
+		Policies: make(map[PolicyId]Policy),
+		Users:    make(map[UserId]User),
+	}
+	return &resources
+}
+
 type (
-	PolicyId = string
-	GroupId  = string
-	UserId   = string
+	PolicyId    = string
+	GroupId     = string
+	UserId      = string
+	PolicyLevel = any // either PolicyLevelAccount or PolicyLevelEnvironment is allowed
 
 	Resources struct {
 		Policies map[PolicyId]Policy
@@ -29,7 +39,7 @@ type (
 	Policy struct {
 		ID             string
 		Name           string
-		Level          any
+		Level          PolicyLevel
 		Description    string
 		Policy         string
 		OriginObjectID string
@@ -52,26 +62,40 @@ type (
 		OriginObjectID string
 	}
 	Account struct {
-		Permissions []any
-		Policies    []any
+		Permissions []string
+		Policies    []Ref
 	}
 	Environment struct {
 		Name        string
-		Permissions []any
-		Policies    []any
+		Permissions []string
+		Policies    []Ref
 	}
 	ManagementZone struct {
 		Environment    string
 		ManagementZone string
-		Permissions    []any
+		Permissions    []string
 	}
 
 	User struct {
 		Email  string
-		Groups []any
+		Groups []Ref
 	}
 	Reference struct {
 		Type string
 		Id   string
 	}
+
+	StrReference string
 )
+
+func (r Reference) ID() string {
+	return r.Id
+}
+
+func (r StrReference) ID() string {
+	return string(r)
+}
+
+type Ref interface {
+	ID() string
+}

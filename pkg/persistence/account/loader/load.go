@@ -207,6 +207,32 @@ func decode(in io.ReadCloser) (map[string]any, error) {
 }
 
 func transform(resources *persistence.Resources) *account.Resources {
+	transformLevel := func(levelType any) any {
+		switch v := levelType.(type) {
+		case persistence.PolicyLevelAccount:
+			return account.PolicyLevelAccount(v)
+		case persistence.PolicyLevelEnvironment:
+			return account.PolicyLevelEnvironment(v)
+		default:
+			panic("unable to convert persistence model")
+		}
+	}
+
+	transformRefs := func(in []any) []account.Ref {
+		var res []account.Ref
+		for _, el := range in {
+			switch v := el.(type) {
+			case persistence.Reference:
+				res = append(res, account.Reference(v))
+			case string:
+				res = append(res, account.StrReference(v))
+			default:
+				panic("unable to convert persistence model")
+			}
+		}
+		return res
+	}
+
 	inMemResources := account.Resources{
 		Policies: make(map[account.PolicyId]account.Policy),
 		Groups:   make(map[account.GroupId]account.Group),
@@ -216,7 +242,7 @@ func transform(resources *persistence.Resources) *account.Resources {
 		inMemResources.Policies[id] = account.Policy{
 			ID:          v.ID,
 			Name:        v.Name,
-			Level:       v.Level,
+			Level:       transformLevel(v.Level),
 			Description: v.Description,
 			Policy:      v.Policy,
 		}
@@ -226,7 +252,7 @@ func transform(resources *persistence.Resources) *account.Resources {
 		if v.Account != nil {
 			acc = &account.Account{
 				Permissions: v.Account.Permissions,
-				Policies:    v.Account.Policies,
+				Policies:    transformRefs(v.Account.Policies),
 			}
 		}
 		env := make([]account.Environment, len(v.Environment))
@@ -234,7 +260,7 @@ func transform(resources *persistence.Resources) *account.Resources {
 			env[i] = account.Environment{
 				Name:        e.Name,
 				Permissions: e.Permissions,
-				Policies:    e.Policies,
+				Policies:    transformRefs(e.Policies),
 			}
 		}
 		mz := make([]account.ManagementZone, len(v.ManagementZone))
@@ -257,7 +283,7 @@ func transform(resources *persistence.Resources) *account.Resources {
 	for id, v := range resources.Users {
 		inMemResources.Users[id] = account.User{
 			Email:  v.Email,
-			Groups: v.Groups,
+			Groups: transformRefs(v.Groups),
 		}
 	}
 	return &inMemResources

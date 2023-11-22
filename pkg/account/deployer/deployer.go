@@ -29,11 +29,10 @@ type (
 		Name        string
 		AccountUUID string
 	}
-	localId     = string // local (monaco related) identifier
-	envName     = string // dt environment name
-	remoteId    = string // dt entity identifier
-	projectName = string // monaco project name
-	idLookupFn  func(id localId) remoteId
+	localId    = string // local (monaco related) identifier
+	envName    = string // dt environment name
+	remoteId   = string // dt entity identifier
+	idLookupFn func(id localId) remoteId
 )
 
 type Options struct {
@@ -42,6 +41,7 @@ type Options struct {
 
 //go:generate mockgen -source=deployer.go -destination=client_mock.go -package=deployer client
 type client interface {
+	getAllGroups(ctx context.Context) (map[string]remoteId, error)
 	getGlobalPolicies(ctx context.Context) (map[string]remoteId, error)
 	getManagementZones(ctx context.Context) ([]ManagementZone, error)
 	upsertPolicy(ctx context.Context, policyLevel string, policyLevelId string, policyId string, policy Policy) (remoteId, error)
@@ -57,23 +57,21 @@ type client interface {
 type AccountDeployer struct {
 	accountManagementClient client
 
-	deployedPolicies       map[localId]remoteId
-	deployedGroups         map[localId]remoteId
-	deployedMgmtZones      []accountmanagement.ManagementZoneResourceDto
-	availablePermissionIds []remoteId
+	deployedPolicies  map[localId]remoteId
+	deployedGroups    map[localId]remoteId
+	deployedMgmtZones []accountmanagement.ManagementZoneResourceDto
 }
 
 func NewAccountDeployer(client client) *AccountDeployer {
 	return &AccountDeployer{
 		accountManagementClient: client,
 
-		deployedPolicies:       make(map[localId]remoteId),
-		deployedGroups:         make(map[localId]remoteId),
-		availablePermissionIds: make([]remoteId, 0),
+		deployedPolicies: make(map[localId]remoteId),
+		deployedGroups:   make(map[localId]remoteId),
 	}
 }
 
-func (d *AccountDeployer) Deploy(resources map[projectName]*account.Resources) error {
+func (d *AccountDeployer) Deploy(res *account.Resources) error {
 	var err error
 	d.deployedPolicies, err = d.accountManagementClient.getGlobalPolicies(context.TODO())
 	if err != nil {
@@ -85,19 +83,23 @@ func (d *AccountDeployer) Deploy(resources map[projectName]*account.Resources) e
 		return err
 	}
 
-	for _, res := range resources {
-		if err = d.deployPolicies(res.Policies); err != nil {
-			return err
-		}
-
-		if err = d.deployGroups(res.Groups); err != nil {
-			return err
-		}
-
-		if err = d.deployUsers(res.Users); err != nil {
-			return err
-		}
+	d.deployedGroups, err = d.accountManagementClient.getAllGroups(context.TODO())
+	if err != nil {
+		return err
 	}
+
+	if err = d.deployPolicies(res.Policies); err != nil {
+		return err
+	}
+
+	if err = d.deployGroups(res.Groups); err != nil {
+		return err
+	}
+
+	if err = d.deployUsers(res.Users); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -127,7 +129,7 @@ func (d *AccountDeployer) deployGroups(groups map[string]account.Group) error {
 			return fmt.Errorf("unable to deploy policy binding for account %q: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err)
 		}
 
-		if err := d.updateGroupPermissions(context.TODO(), group); err != nil {
+		if err = d.updateGroupPermissions(context.TODO(), group); err != nil {
 			return fmt.Errorf("unable to deploy permissions for account %q: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err)
 		}
 	}
@@ -183,14 +185,24 @@ func (d *AccountDeployer) upsertUser(ctx context.Context, user account.User) (re
 
 func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group account.Group) error {
 	remoteGroupId := d.groupIdLookup(group.ID)
-	remoteIds := d.getAccountPolicyRefs(group)
-	if err := d.accountManagementClient.updateAccountPolicyBindings(ctx, remoteGroupId, remoteIds); err != nil {
+	if remoteGroupId == "" {
+		return fmt.Errorf("unable to determine UUID for group %q", group.Name)
+	}
+	remoteIds, err := d.getAccountPolicyRefs(group)
+	if err != nil {
 		return err
 	}
 
-	envPolicyUuids := d.getEnvPolicyRefs(group)
-	for envName, uuids := range envPolicyUuids {
-		if err := d.accountManagementClient.updateEnvironmentPolicyBindings(ctx, envName, remoteGroupId, uuids); err != nil {
+	if err = d.accountManagementClient.updateAccountPolicyBindings(ctx, remoteGroupId, remoteIds); err != nil {
+		return err
+	}
+
+	envPolicyUuids, err := d.getEnvPolicyRefs(group)
+	if err != nil {
+		return err
+	}
+	for env, uuids := range envPolicyUuids {
+		if err = d.accountManagementClient.updateEnvironmentPolicyBindings(ctx, env, remoteGroupId, uuids); err != nil {
 			return err
 		}
 	}
@@ -198,7 +210,11 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 }
 
 func (d *AccountDeployer) updateUserGroupBindings(ctx context.Context, user account.User) error {
-	remoteGroupIds := d.getUserGroupRefs(user)
+	remoteGroupIds, err := d.getUserGroupRefs(user)
+	if err != nil {
+		return err
+	}
+
 	if err := d.accountManagementClient.updateGroupBindings(ctx, user.Email, remoteGroupIds); err != nil {
 		return err
 	}
@@ -229,7 +245,7 @@ func (d *AccountDeployer) updateGroupPermissions(ctx context.Context, group acco
 	if len(permissions) > 0 {
 		remoteGroupId := d.groupIdLookup(group.ID)
 		if remoteGroupId == "" {
-			return fmt.Errorf("unable to lookup id for group %q", group.ID)
+			return fmt.Errorf("no group UUID found to update group <--> permissions bindings %q", group.ID)
 		}
 		if err := d.accountManagementClient.updatePermissions(ctx, remoteGroupId, permissions); err != nil {
 			return err
@@ -241,14 +257,12 @@ func (d *AccountDeployer) updateGroupPermissions(ctx context.Context, group acco
 func (d *AccountDeployer) getAccountPermissions(acc *account.Account) []accountmanagement.PermissionsDto {
 	var permissions []accountmanagement.PermissionsDto
 	for _, p := range acc.Permissions {
-		if pStr, ok := p.(string); ok {
-			perm := accountmanagement.PermissionsDto{
-				PermissionName: pStr,
-				ScopeType:      "account",
-				Scope:          d.accountManagementClient.getAccountInfo().AccountUUID,
-			}
-			permissions = append(permissions, perm)
+		perm := accountmanagement.PermissionsDto{
+			PermissionName: p,
+			ScopeType:      "account",
+			Scope:          d.accountManagementClient.getAccountInfo().AccountUUID,
 		}
+		permissions = append(permissions, perm)
 	}
 	return permissions
 }
@@ -257,14 +271,12 @@ func (d *AccountDeployer) getEnvironmentPermissions(environments []account.Envir
 	var permissions []accountmanagement.PermissionsDto
 	for _, env := range environments {
 		for _, p := range env.Permissions {
-			if pStr, ok := p.(string); ok {
-				perm := accountmanagement.PermissionsDto{
-					PermissionName: pStr,
-					ScopeType:      "tenant",
-					Scope:          env.Name,
-				}
-				permissions = append(permissions, perm)
+			perm := accountmanagement.PermissionsDto{
+				PermissionName: p,
+				ScopeType:      "tenant",
+				Scope:          env.Name,
 			}
+			permissions = append(permissions, perm)
 		}
 	}
 	return permissions
@@ -273,58 +285,72 @@ func (d *AccountDeployer) getEnvironmentPermissions(environments []account.Envir
 func (d *AccountDeployer) getManagementZonePermissions(mzones []account.ManagementZone) ([]accountmanagement.PermissionsDto, error) {
 	var permissions []accountmanagement.PermissionsDto
 	for _, mz := range mzones {
+		mzId := d.managementZoneIdLookup(mz.Environment, mz.ManagementZone)
+		if mzId == "" {
+			return nil, fmt.Errorf("unable to lookup id for management zone %q of environment %q", mz.ManagementZone, mz.Environment)
+		}
+
 		for _, p := range mz.Permissions {
-			if pStr, ok := p.(string); ok {
-				mzId := d.managementZoneIdLookup(mz.Environment, mz.ManagementZone)
-				if mzId == "" {
-					return nil, fmt.Errorf("unable to lookup id for management zone %q of environment %q", mz.Environment, mz.ManagementZone)
-				}
-				perm := accountmanagement.PermissionsDto{
-					PermissionName: pStr,
-					ScopeType:      "management-zone",
-					Scope:          fmt.Sprintf("%s:%s", mz.Environment, mzId),
-				}
-				permissions = append(permissions, perm)
+			perm := accountmanagement.PermissionsDto{
+				PermissionName: p,
+				ScopeType:      "management-zone",
+				Scope:          fmt.Sprintf("%s:%s", mz.Environment, mzId),
+			}
+			permissions = append(permissions, perm)
+		}
+	}
+
+	return permissions, nil
+}
+func (d *AccountDeployer) getAccountPolicyRefs(group account.Group) ([]remoteId, error) {
+	var policyIds []remoteId
+	var err error
+	if group.Account != nil {
+		policyIds, err = d.processItems(group.Account.Policies, d.policyIdLookup)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return policyIds, nil
+}
+
+func (d *AccountDeployer) getEnvPolicyRefs(group account.Group) (map[envName][]remoteId, error) {
+	result := make(map[envName][]remoteId)
+	var err error
+	if group.Environment != nil {
+		for _, e := range group.Environment {
+			result[e.Name], err = d.processItems(e.Policies, d.policyIdLookup)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
-	return permissions, nil
+	return result, nil
 }
 
-func (d *AccountDeployer) getAccountPolicyRefs(group account.Group) []remoteId {
-	var policyIds []remoteId
-	if group.Account != nil {
-		policyIds = d.processItems(group.Account.Policies, d.policyIdLookup)
-	}
-	return policyIds
+func (d *AccountDeployer) getUserGroupRefs(user account.User) ([]remoteId, error) {
+	return d.processItems(user.Groups, d.groupIdLookup)
 }
 
-func (d *AccountDeployer) getEnvPolicyRefs(group account.Group) map[envName][]remoteId {
-	result := make(map[envName][]remoteId)
-	if group.Environment != nil {
-		for _, e := range group.Environment {
-			result[e.Name] = d.processItems(e.Policies, d.policyIdLookup)
-		}
-	}
-	return result
-}
+func (d *AccountDeployer) processItems(items []account.Ref, remoteIdLookup idLookupFn) ([]remoteId, error) {
+	var ids []remoteId
+	var notFoundLocalIds []localId
 
-func (d *AccountDeployer) getUserGroupRefs(user account.User) []remoteId {
-	groupIds := d.processItems(user.Groups, d.groupIdLookup)
-	return groupIds
-}
-
-func (d *AccountDeployer) processItems(items []interface{}, remoteIdLookup idLookupFn) []localId {
-	ids := make([]localId, 0)
 	for _, item := range items {
-		if ref, ok := item.(account.Reference); ok {
-			ids = append(ids, remoteIdLookup(ref.Id))
+		rid := remoteIdLookup(item.ID())
+		if rid == "" {
+			notFoundLocalIds = append(notFoundLocalIds, item.ID())
+			continue
 		}
-		if name, ok := item.(string); ok {
-			ids = append(ids, remoteIdLookup(name))
-		}
+
+		ids = append(ids, rid)
 	}
-	return ids
+
+	if len(notFoundLocalIds) > 0 {
+		return nil, fmt.Errorf("could not find remote Ids for the following items: %v", notFoundLocalIds)
+	}
+
+	return ids, nil
 }
 
 func (d *AccountDeployer) policyIdLookup(id localId) remoteId {

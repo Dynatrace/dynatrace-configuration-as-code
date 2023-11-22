@@ -28,7 +28,7 @@ import (
 )
 
 func TestLoadAndReWriteAccountResources(t *testing.T) {
-	testResources := "loader/test-resources/multi"
+	testResources := "loader/testdata/multi"
 	fs := afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs())
 
 	// LOAD RESOURCES FROM DISK

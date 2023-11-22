@@ -105,19 +105,50 @@ func toPersistencePolicies(policies map[string]account.Policy) persistence.Polic
 	}
 }
 
+func transformRefs(in []account.Ref) []any {
+	var res []any
+	for _, el := range in {
+		switch v := el.(type) {
+		case account.Reference:
+			res = append(res, persistence.Reference{Type: "reference", Id: v.Id})
+		case account.StrReference:
+			res = append(res, v)
+		default:
+			panic("unable to convert persistence model")
+		}
+	}
+	return res
+}
+
 func toPersistenceGroups(groups map[string]account.Group) persistence.Groups {
+
+	transformRefs := func(in []account.Ref) []any {
+		var res []any
+		for _, el := range in {
+			switch v := el.(type) {
+			case account.Reference:
+				res = append(res, persistence.Reference(v))
+			case account.StrReference:
+				res = append(res, v)
+			default:
+				panic("unable to convert persistence model")
+			}
+		}
+		return res
+	}
+
 	out := make([]persistence.Group, 0, len(groups))
 	for _, v := range groups {
 		a := persistence.Account{
 			Permissions: v.Account.Permissions,
-			Policies:    v.Account.Policies,
+			Policies:    transformRefs(v.Account.Policies),
 		}
 		envs := make([]persistence.Environment, len(v.Environment))
 		for i, e := range v.Environment {
 			envs[i] = persistence.Environment{
 				Name:        e.Name,
 				Permissions: e.Permissions,
-				Policies:    e.Policies,
+				Policies:    transformRefs(e.Policies),
 			}
 		}
 		mzs := make([]persistence.ManagementZone, len(v.ManagementZone))
@@ -149,7 +180,7 @@ func toPersistenceUsers(users map[string]account.User) persistence.Users {
 	for _, v := range users {
 		out = append(out, persistence.User{
 			Email:  v.Email,
-			Groups: v.Groups,
+			Groups: transformRefs(v.Groups),
 		})
 	}
 	return persistence.Users{

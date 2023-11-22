@@ -1,6 +1,0 @@
-users:
-- email: monaco@dynatrace.com
-  groups:
-  - type: reference
-    id: my-group
-  - Log viewer
