@@ -17,7 +17,10 @@
 package types
 
 type (
-	Resources struct {
+	PolicyLevel = any // either PolicyLevelAccount or PolicyLevelEnvironment is allowed
+	PolicyRef   = any // either string or Reference is allowed
+	GroupRef    = any // either string or Reference is allowed
+	Resources   struct {
 		Policies map[string]Policy
 		Groups   map[string]Group
 		Users    map[string]User
@@ -28,7 +31,7 @@ type (
 	Policy struct {
 		ID             string      `mapstructure:"id"`
 		Name           string      `mapstructure:"name"`
-		Level          interface{} `mapstructure:"level"` // either PolicyLevelAccount or PolicyLevelEnvironment
+		Level          PolicyLevel `mapstructure:"level"`
 		Description    string      `mapstructure:"description"`
 		Policy         string      `mapstructure:"policy"`
 		OriginObjectID string      `mapstructure:"originObjectId" yaml:"originObjectId,omitempty"`
@@ -53,13 +56,13 @@ type (
 		OriginObjectID string           `mapstructure:"originObjectId" yaml:"originObjectId,omitempty"`
 	}
 	Account struct {
-		Permissions []string `mapstructure:"permissions"`
-		Policies    []any    `mapstructure:"policies"`
+		Permissions []string    `mapstructure:"permissions"`
+		Policies    []PolicyRef `mapstructure:"policies"`
 	}
 	Environment struct {
-		Name        string   `mapstructure:"name"`
-		Permissions []string `mapstructure:"permissions"`
-		Policies    []any    `mapstructure:"policies"`
+		Name        string      `mapstructure:"name"`
+		Permissions []string    `mapstructure:"permissions"`
+		Policies    []PolicyRef `mapstructure:"policies"`
 	}
 	ManagementZone struct {
 		Environment    string   `mapstructure:"environment"`
@@ -70,8 +73,8 @@ type (
 		Users []User `mapstructure:"users"`
 	}
 	User struct {
-		Email  string `mapstructure:"email"`
-		Groups []any  `mapstructure:"groups"`
+		Email  string     `mapstructure:"email"`
+		Groups []GroupRef `mapstructure:"groups"`
 	}
 	Reference struct {
 		Type string `mapstructure:"type"`

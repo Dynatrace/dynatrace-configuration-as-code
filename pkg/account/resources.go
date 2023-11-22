@@ -26,9 +26,10 @@ func NewAccountManagementResources() *Resources {
 }
 
 type (
-	PolicyId = string
-	GroupId  = string
-	UserId   = string
+	PolicyId    = string
+	GroupId     = string
+	UserId      = string
+	PolicyLevel = any // either PolicyLevelAccount or PolicyLevelEnvironment is allowed
 
 	Resources struct {
 		Policies map[PolicyId]Policy
@@ -38,7 +39,7 @@ type (
 	Policy struct {
 		ID             string
 		Name           string
-		Level          any
+		Level          PolicyLevel
 		Description    string
 		Policy         string
 		OriginObjectID string
