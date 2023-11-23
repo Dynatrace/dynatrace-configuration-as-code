@@ -1,0 +1,9 @@
+delete:
+  - type: user
+    email: monaco+$SUFFIX$@dynatrace.com
+  - type: group
+    name: My Group$SUFFIX$
+  - type: policy
+    name: My Policy$SUFFIX$
+    level:
+      type: account
