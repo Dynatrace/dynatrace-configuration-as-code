@@ -122,7 +122,7 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 		return nil
 	}
 
-	accountClients, err := createAccountClients(accs)
+	accountClients, err := CreateAccountClients(accs)
 	if err != nil {
 		return fmt.Errorf("failed to create account clients: %w", err)
 	}
@@ -142,7 +142,7 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	return nil
 }
 
-func createAccountClients(manifestAccounts map[string]manifest.Account) (map[deployer.AccountInfo]*accounts.Client, error) {
+func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[deployer.AccountInfo]*accounts.Client, error) {
 	accClients := make(map[deployer.AccountInfo]*accounts.Client, len(manifestAccounts))
 	for _, acc := range manifestAccounts {
 		oauthCreds := clientcredentials.Config{
