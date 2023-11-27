@@ -33,7 +33,7 @@ import (
 	"testing"
 )
 
-func TestUsers(t *testing.T) {
+func TestDeployAndDelete_AllResources(t *testing.T) {
 	t.Setenv(featureflags.AccountManagement().EnvName(), "true")
 
 	// Create a management zone, so that we can reliably refer to it
@@ -43,7 +43,7 @@ func TestUsers(t *testing.T) {
 	err := cliDeployMZones.Execute()
 	assert.NoError(t, err)
 
-	RunAccountTestCase(t, "testdata/all-resources", "manifest-account.yaml", "users", func(o options) {
+	RunAccountTestCase(t, "testdata/all-resources", "manifest-account.yaml", "users", func(clients map[deployer.AccountInfo]*accounts.Client, o options) {
 
 		accountName := "monaco-test-account"
 		accountUUID := "17a8095e-a974-40a2-9049-8a5d683cdd0b"
@@ -53,7 +53,7 @@ func TestUsers(t *testing.T) {
 		envVkb := "vkb66581"
 
 		check := AccountResourceChecker{
-			Client:     o.accountClients[deployer.AccountInfo{Name: accountName, AccountUUID: accountUUID}],
+			Client:     clients[deployer.AccountInfo{Name: accountName, AccountUUID: accountUUID}],
 			TestSuffix: o.suffix,
 		}
 

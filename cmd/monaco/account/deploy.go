@@ -19,21 +19,17 @@ package account
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
-	"golang.org/x/oauth2/clientcredentials"
 	"path/filepath"
 )
 
@@ -122,7 +118,7 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 		return nil
 	}
 
-	accountClients, err := CreateAccountClients(accs)
+	accountClients, err := dynatrace.CreateAccountClients(accs)
 	if err != nil {
 		return fmt.Errorf("failed to create account clients: %w", err)
 	}
@@ -140,35 +136,4 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	}
 
 	return nil
-}
-
-func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[deployer.AccountInfo]*accounts.Client, error) {
-	accClients := make(map[deployer.AccountInfo]*accounts.Client, len(manifestAccounts))
-	for _, acc := range manifestAccounts {
-		oauthCreds := clientcredentials.Config{
-			ClientID:     acc.OAuth.ClientID.Value.Value(),
-			ClientSecret: acc.OAuth.ClientSecret.Value.Value(),
-			TokenURL:     acc.OAuth.GetTokenEndpointValue(),
-		}
-
-		var apiUrl string
-		if acc.ApiUrl == nil || acc.ApiUrl.Value == "" {
-			apiUrl = "https://api.dynatrace.com"
-		} else {
-			apiUrl = acc.ApiUrl.Value
-		}
-		accClient, err := clients.Factory().
-			WithOAuthCredentials(oauthCreds).
-			WithUserAgent(client.DefaultMonacoUserAgent).
-			AccountClient(apiUrl)
-
-		if err != nil {
-			return accClients, err
-		}
-		accClients[deployer.AccountInfo{
-			Name:        acc.Name,
-			AccountUUID: acc.AccountUUID.String(),
-		}] = accClient
-	}
-	return accClients, nil
 }

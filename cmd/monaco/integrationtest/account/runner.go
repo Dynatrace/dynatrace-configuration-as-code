@@ -21,7 +21,7 @@ package account
 import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/account/internal"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
@@ -37,12 +37,11 @@ import (
 )
 
 type options struct {
-	fs             afero.Fs
-	suffix         string
-	accountClients map[deployer.AccountInfo]*accounts.Client
+	fs     afero.Fs
+	suffix string
 }
 
-func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name string, fn func(options)) {
+func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name string, fn func(map[deployer.AccountInfo]*accounts.Client, options)) {
 	// create a new reader for the path and write all files to the in mem fs
 	fs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(afero.NewOsFs(), path), afero.NewMemMapFs())
 
@@ -57,10 +56,10 @@ func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name
 	// add suffix to all resource-names
 	appendSuffixForWorkspace(t, fs, m, suffix)
 
-	accClients, err := account.CreateAccountClients(m.Accounts)
+	accClients, err := dynatrace.CreateAccountClients(m.Accounts)
 	assert.NoError(t, err)
 
-	fn(options{fs: fs, suffix: suffix, accountClients: accClients})
+	fn(accClients, options{fs: fs, suffix: suffix})
 }
 
 func appendSuffixForWorkspace(t *testing.T, fs afero.Fs, manifest manifest.Manifest, suffix string) {
