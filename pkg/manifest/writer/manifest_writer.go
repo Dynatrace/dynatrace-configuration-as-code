@@ -178,7 +178,7 @@ func getAuth(env manifest.EnvironmentDefinition) persistence.Auth {
 func toWriteableURL(url manifest.URLDefinition) persistence.Url {
 	if url.Type == manifest.EnvironmentURLType {
 		return persistence.Url{
-			Type:  persistence.UrlTypeEnvironment,
+			Type:  persistence.TypeEnvironment,
 			Value: url.Name,
 		}
 	}

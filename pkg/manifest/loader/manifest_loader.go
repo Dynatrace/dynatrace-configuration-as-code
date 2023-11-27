@@ -451,7 +451,7 @@ func parseURLDefinition(context *Context, u persistence.Url) (manifest.URLDefini
 		return manifest.URLDefinition{}, errors.New("no `Url` configured or value is blank")
 	}
 
-	if u.Type == "" || u.Type == persistence.UrlTypeValue {
+	if u.Type == "" || u.Type == persistence.TypeValue {
 		val := strings.TrimSuffix(u.Value, "/")
 
 		return manifest.URLDefinition{
@@ -460,7 +460,7 @@ func parseURLDefinition(context *Context, u persistence.Url) (manifest.URLDefini
 		}, nil
 	}
 
-	if u.Type == persistence.UrlTypeEnvironment {
+	if u.Type == persistence.TypeEnvironment {
 
 		if context.Opts.DoNotResolveEnvVars {
 			log.Debug("Skipped resolving environment variable %s based on loader options", u.Value)

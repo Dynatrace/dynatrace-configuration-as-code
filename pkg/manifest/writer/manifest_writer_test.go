@@ -279,7 +279,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 										Name: "client-secret-key",
 									},
 									TokenEndpoint: &persistence.Url{
-										Type:  persistence.UrlTypeEnvironment,
+										Type:  persistence.TypeEnvironment,
 										Value: "ENV_TOKEN_ENDPOINT",
 									},
 								},
@@ -388,7 +388,7 @@ func Test_toWriteableUrl(t *testing.T) {
 				Value: "Some previously resolved value",
 			},
 			persistence.Url{
-				Type:  persistence.UrlTypeEnvironment,
+				Type:  persistence.TypeEnvironment,
 				Value: "{{ .Env.VARIABLE }}",
 			},
 		},
@@ -541,7 +541,7 @@ func Test_toWriteableAccounts(t *testing.T) {
 					Name:        "test",
 					AccountUUID: "95a97c92-7137-4f7a-94ff-f29b54b94a72",
 					ApiUrl: &persistence.Url{
-						Type:  persistence.UrlTypeEnvironment,
+						Type:  persistence.TypeEnvironment,
 						Value: "MY_ENV_URL",
 					},
 					OAuth: persistence.OAuth{
@@ -554,7 +554,7 @@ func Test_toWriteableAccounts(t *testing.T) {
 							Name: "MY_CLIENT_SECRET",
 						},
 						TokenEndpoint: &persistence.Url{
-							Type:  persistence.UrlTypeEnvironment,
+							Type:  persistence.TypeEnvironment,
 							Value: "TOKEN_ENDPOINT",
 						},
 					},

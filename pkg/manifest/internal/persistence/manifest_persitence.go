@@ -25,9 +25,12 @@ type Project struct {
 	Path string `yaml:"path,omitempty"`
 }
 
-type SecretType string
+type Type string
 
-const TypeEnvironment SecretType = "environment"
+const (
+	TypeEnvironment Type = "environment"
+	TypeValue       Type = "value"
+)
 
 // AuthSecret represents a user-defined client id or client secret. It has a [Type] which is [TypeEnvironment] (default).
 // Secrets must never be provided as plain text, but always loaded from somewhere else. Currently, loading is only allowed from environment variables.
@@ -36,8 +39,8 @@ const TypeEnvironment SecretType = "environment"
 //
 // This struct is meant to be reused for fields that require the same behavior.
 type AuthSecret struct {
-	Type SecretType `yaml:"type"`
-	Name string     `yaml:"name"`
+	Type Type   `yaml:"type"`
+	Name string `yaml:"name"`
 }
 
 type OAuth struct {
@@ -59,16 +62,9 @@ type Environment struct {
 	Auth Auth `yaml:"auth,omitempty"`
 }
 
-type UrlType string
-
-const (
-	UrlTypeEnvironment UrlType = "environment"
-	UrlTypeValue       UrlType = "value"
-)
-
 type Url struct {
-	Type  UrlType `yaml:"type,omitempty"`
-	Value string  `yaml:"value"`
+	Type  Type   `yaml:"type,omitempty"`
+	Value string `yaml:"value"`
 }
 
 type Group struct {
