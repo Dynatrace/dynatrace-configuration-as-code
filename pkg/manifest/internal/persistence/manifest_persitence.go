@@ -16,6 +16,11 @@
 
 package persistence
 
+import (
+	"fmt"
+	"github.com/mitchellh/mapstructure"
+)
+
 const SimpleProjectType = "simple"
 const GroupProjectType = "grouping"
 
@@ -79,9 +84,33 @@ type Manifest struct {
 	Accounts          []Account `yaml:"accounts,omitempty"`
 }
 
+type AccountUUID struct {
+	Type  Type   `yaml:"type,omitempty" mapstructure:"type"`
+	Value string `yaml:"value" mapstructure:"value"`
+}
+
+// UnmarshalYAML Custom unmarshaler for AccountUUID able to parse simple shorthands (accountUUID: 1234) and full values.
+func (c *AccountUUID) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var data interface{}
+	if err := unmarshal(&data); err != nil {
+		return err
+	}
+
+	switch data.(type) {
+	case string:
+		c.Type = TypeValue
+		c.Value = data.(string)
+	default:
+		if err := mapstructure.Decode(data, c); err != nil {
+			return fmt.Errorf("failed to parse accountUUID: %w", err)
+		}
+	}
+	return nil
+}
+
 type Account struct {
-	Name        string `yaml:"name"`
-	AccountUUID string `yaml:"accountUUID"`
-	ApiUrl      *Url   `yaml:"apiUrl,omitempty"`
-	OAuth       OAuth  `yaml:"oAuth"`
+	Name        string      `yaml:"name"`
+	AccountUUID AccountUUID `yaml:"accountUUID"`
+	ApiUrl      *Url        `yaml:"apiUrl,omitempty"`
+	OAuth       OAuth       `yaml:"oAuth"`
 }

@@ -29,9 +29,14 @@ import (
 
 func TestValidAccounts(t *testing.T) {
 	t.Setenv("SECRET", "secret")
+
+	// full account 1
 	acc := persistence.Account{
-		Name:        "name",
-		AccountUUID: uuid.New().String(),
+		Name: "name",
+		AccountUUID: persistence.AccountUUID{
+			Type:  persistence.TypeValue,
+			Value: uuid.New().String(),
+		},
 		ApiUrl: &persistence.Url{
 			Value: "https://example.com",
 		},
@@ -48,10 +53,12 @@ func TestValidAccounts(t *testing.T) {
 		},
 	}
 
-	// account 2 has no api name
+	// account 2 has no api url
 	acc2 := persistence.Account{
-		Name:        "name2",
-		AccountUUID: uuid.New().String(),
+		Name: "name2",
+		AccountUUID: persistence.AccountUUID{
+			Value: uuid.New().String(),
+		},
 		OAuth: persistence.OAuth{
 			ClientID: persistence.AuthSecret{
 				Name: "SECRET",
@@ -63,36 +70,125 @@ func TestValidAccounts(t *testing.T) {
 		},
 	}
 
-	v, err := parseAccounts(&Context{}, []persistence.Account{acc, acc2})
-	assert.NoError(t, err)
-
-	assert.Equal(t, v, map[string]manifest.Account{
-		"name": {
-			Name:        "name",
-			AccountUUID: uuid.MustParse(acc.AccountUUID),
-			ApiUrl: &manifest.URLDefinition{
-				Type:  manifest.ValueURLType,
-				Value: "https://example.com",
+	//account 3 has UUID defined as env var
+	envUUID := uuid.New().String()
+	t.Setenv("ACC_3_UUID_ENV_VAR", envUUID)
+	acc3 := persistence.Account{
+		Name: "name3",
+		AccountUUID: persistence.AccountUUID{
+			Type:  persistence.TypeEnvironment,
+			Value: "ACC_3_UUID_ENV_VAR",
+		},
+		OAuth: persistence.OAuth{
+			ClientID: persistence.AuthSecret{
+				Name: "SECRET",
 			},
-			OAuth: manifest.OAuth{
-				ClientID:     manifest.AuthSecret{Name: "SECRET", Value: "secret"},
-				ClientSecret: manifest.AuthSecret{Name: "SECRET", Value: "secret"},
-				TokenEndpoint: &manifest.URLDefinition{
+			ClientSecret: persistence.AuthSecret{
+				Name: "SECRET",
+			},
+			TokenEndpoint: nil,
+		},
+	}
+
+	t.Run("full account", func(t *testing.T) {
+		v, err := parseAccounts(&Context{}, []persistence.Account{acc})
+		assert.NoError(t, err)
+		assert.Equal(t, v, map[string]manifest.Account{
+			"name": {
+				Name:        "name",
+				AccountUUID: uuid.MustParse(acc.AccountUUID.Value),
+				ApiUrl: &manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Value: "https://example.com",
 				},
+				OAuth: manifest.OAuth{
+					ClientID:     manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					ClientSecret: manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					TokenEndpoint: &manifest.URLDefinition{
+						Type:  manifest.ValueURLType,
+						Value: "https://example.com",
+					},
+				},
 			},
-		},
-		"name2": {
-			Name:        "name2",
-			AccountUUID: uuid.MustParse(acc2.AccountUUID),
-			ApiUrl:      nil,
-			OAuth: manifest.OAuth{
-				ClientID:      manifest.AuthSecret{Name: "SECRET", Value: "secret"},
-				ClientSecret:  manifest.AuthSecret{Name: "SECRET", Value: "secret"},
-				TokenEndpoint: nil,
+		})
+	})
+
+	t.Run("simple account", func(t *testing.T) {
+		v, err := parseAccounts(&Context{}, []persistence.Account{acc2})
+		assert.NoError(t, err)
+		assert.Equal(t, v, map[string]manifest.Account{
+			"name2": {
+				Name:        "name2",
+				AccountUUID: uuid.MustParse(acc2.AccountUUID.Value),
+				ApiUrl:      nil,
+				OAuth: manifest.OAuth{
+					ClientID:      manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					ClientSecret:  manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					TokenEndpoint: nil,
+				},
 			},
-		},
+		})
+	})
+
+	t.Run("env var uuid account", func(t *testing.T) {
+		v, err := parseAccounts(&Context{}, []persistence.Account{acc3})
+		assert.NoError(t, err)
+		assert.Equal(t, v, map[string]manifest.Account{
+			"name3": {
+				Name:        "name3",
+				AccountUUID: uuid.MustParse(envUUID),
+				ApiUrl:      nil,
+				OAuth: manifest.OAuth{
+					ClientID:      manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					ClientSecret:  manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					TokenEndpoint: nil,
+				},
+			},
+		})
+	})
+
+	t.Run("several accounts", func(t *testing.T) {
+		v, err := parseAccounts(&Context{}, []persistence.Account{acc, acc2, acc3})
+		assert.NoError(t, err)
+
+		assert.Equal(t, v, map[string]manifest.Account{
+			"name": {
+				Name:        "name",
+				AccountUUID: uuid.MustParse(acc.AccountUUID.Value),
+				ApiUrl: &manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
+					Value: "https://example.com",
+				},
+				OAuth: manifest.OAuth{
+					ClientID:     manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					ClientSecret: manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					TokenEndpoint: &manifest.URLDefinition{
+						Type:  manifest.ValueURLType,
+						Value: "https://example.com",
+					},
+				},
+			},
+			"name2": {
+				Name:        "name2",
+				AccountUUID: uuid.MustParse(acc2.AccountUUID.Value),
+				ApiUrl:      nil,
+				OAuth: manifest.OAuth{
+					ClientID:      manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					ClientSecret:  manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					TokenEndpoint: nil,
+				},
+			},
+			"name3": {
+				Name:        "name3",
+				AccountUUID: uuid.MustParse(envUUID),
+				ApiUrl:      nil,
+				OAuth: manifest.OAuth{
+					ClientID:      manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					ClientSecret:  manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+					TokenEndpoint: nil,
+				},
+			},
+		})
 	})
 
 }
@@ -102,8 +198,10 @@ func TestInvalidAccounts(t *testing.T) {
 
 	// default account to permute
 	validAccount := persistence.Account{
-		Name:        "name",
-		AccountUUID: uuid.New().String(),
+		Name: "name",
+		AccountUUID: persistence.AccountUUID{
+			Value: uuid.New().String(),
+		},
 		ApiUrl: &persistence.Url{
 			Value: "https://example.com",
 		},
@@ -135,7 +233,7 @@ func TestInvalidAccounts(t *testing.T) {
 
 	t.Run("accountUUID is missing", func(t *testing.T) {
 		a := validAccount
-		a.AccountUUID = ""
+		a.AccountUUID.Value = ""
 
 		_, err := parseAccounts(&Context{}, []persistence.Account{a})
 		assert.ErrorIs(t, err, errAccUidMissing)
@@ -143,13 +241,21 @@ func TestInvalidAccounts(t *testing.T) {
 
 	t.Run("accountUUID is invalid", func(t *testing.T) {
 		a := deepCopy(t, validAccount)
-		a.AccountUUID = "this-is-not-a-valid-uuid"
+		a.AccountUUID.Value = "this-is-not-a-valid-uuid"
 
 		_, err := parseAccounts(&Context{}, []persistence.Account{a})
 		uuidErr := invalidUUIDError{}
 		if assert.ErrorAs(t, err, &uuidErr) {
 			assert.Equal(t, uuidErr.uuid, "this-is-not-a-valid-uuid")
 		}
+	})
+
+	t.Run("accountUUID is invalid type", func(t *testing.T) {
+		a := validAccount
+		a.AccountUUID.Type = "this-is-not-a-type"
+
+		_, err := parseAccounts(&Context{}, []persistence.Account{a})
+		assert.Error(t, err)
 	})
 
 	t.Run("oAuth is set", func(t *testing.T) {

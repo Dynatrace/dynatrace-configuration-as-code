@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/google/uuid"
+	"os"
 )
 
 var (
@@ -44,13 +45,9 @@ func (e invalidUUIDError) Unwrap() error {
 
 func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, error) {
 
-	if a.AccountUUID == "" {
-		return manifest.Account{}, errAccUidMissing
-	}
-
-	accountId, err := uuid.Parse(a.AccountUUID)
+	accountUUID, err := parseAccountUUID(a.AccountUUID)
 	if err != nil {
-		return manifest.Account{}, invalidUUIDError{a.AccountUUID, err}
+		return manifest.Account{}, err
 	}
 
 	oAuthDef, err := parseOAuth(c, a.OAuth)
@@ -69,12 +66,49 @@ func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, er
 
 	acc := manifest.Account{
 		Name:        a.Name,
-		AccountUUID: accountId,
+		AccountUUID: accountUUID,
 		ApiUrl:      urlDef,
 		OAuth:       oAuthDef,
 	}
 
 	return acc, nil
+}
+
+func parseAccountUUID(u persistence.AccountUUID) (uuid.UUID, error) {
+	uuidValue, err := loadAccountUUID(u)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+
+	accountUUID, err := uuid.Parse(uuidValue)
+	if err != nil {
+		return uuid.UUID{}, invalidUUIDError{uuidValue, err}
+	}
+
+	return accountUUID, nil
+}
+
+func loadAccountUUID(u persistence.AccountUUID) (string, error) {
+	if u.Value == "" {
+		return "", errAccUidMissing
+	}
+
+	if u.Type == "" || u.Type == persistence.TypeValue { // shorthand or explicit type: value
+		return u.Value, nil
+	}
+
+	if u.Type == persistence.TypeEnvironment {
+		val, found := os.LookupEnv(u.Value)
+		if !found {
+			return "", fmt.Errorf("environment variable %q could not be found", u.Value)
+		}
+		if val == "" {
+			return "", fmt.Errorf("environment variable %q is defined but has no value", u.Value)
+		}
+		return val, nil
+	}
+
+	return "", fmt.Errorf("unexpected type: %q (expected one of %q, %q)", u.Type, persistence.TypeValue, persistence.TypeEnvironment)
 }
 
 // parseAccounts converts the persistence definition to the in-memory definition
