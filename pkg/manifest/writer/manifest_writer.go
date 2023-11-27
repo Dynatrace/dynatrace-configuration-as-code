@@ -254,7 +254,7 @@ func toWriteableAccounts(accounts map[string]manifest.Account) []persistence.Acc
 
 		out = append(out, persistence.Account{
 			Name:        account.Name,
-			AccountUUID: account.AccountUUID.String(),
+			AccountUUID: persistence.AccountUUID{Value: account.AccountUUID.String()},
 			ApiUrl:      apiURL,
 			OAuth:       oauth,
 		})

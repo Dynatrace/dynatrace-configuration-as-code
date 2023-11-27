@@ -495,8 +495,10 @@ func Test_toWriteableAccounts(t *testing.T) {
 			},
 			[]persistence.Account{
 				{
-					Name:        "test",
-					AccountUUID: "95a97c92-7137-4f7a-94ff-f29b54b94a72",
+					Name: "test",
+					AccountUUID: persistence.AccountUUID{
+						Value: "95a97c92-7137-4f7a-94ff-f29b54b94a72",
+					},
 					OAuth: persistence.OAuth{
 						ClientID: persistence.AuthSecret{
 							Type: persistence.TypeEnvironment,
@@ -538,8 +540,10 @@ func Test_toWriteableAccounts(t *testing.T) {
 			},
 			[]persistence.Account{
 				{
-					Name:        "test",
-					AccountUUID: "95a97c92-7137-4f7a-94ff-f29b54b94a72",
+					Name: "test",
+					AccountUUID: persistence.AccountUUID{
+						Value: "95a97c92-7137-4f7a-94ff-f29b54b94a72",
+					},
 					ApiUrl: &persistence.Url{
 						Type:  persistence.TypeEnvironment,
 						Value: "MY_ENV_URL",
@@ -716,7 +720,8 @@ environmentGroups:
         name: TOKEN_VAR
 accounts:
 - name: account_1
-  accountUUID: 95a97c92-7137-4f7a-94ff-f29b54b94a72
+  accountUUID:
+    value: 95a97c92-7137-4f7a-94ff-f29b54b94a72
   oAuth:
     clientId:
       type: environment

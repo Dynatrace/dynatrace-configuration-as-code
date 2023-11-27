@@ -52,7 +52,8 @@ accounts:
     clientSecret:
       name: ENV_CLIENT_SECRET
 - name: other-account
-  accountUUID: c3f50f90-a1e2-4e7b-aadb-f3dea28e2294
+  accountUUID:
+    value: c3f50f90-a1e2-4e7b-aadb-f3dea28e2294
   apiUrl:
     type: environment
     value: ENV_API_URL
@@ -64,3 +65,21 @@ accounts:
     tokenEndpoint:
       type: environment
       value: ENV_TOKEN_URL
+- name: account-full-uuid-type
+  accountUUID:
+    type: value
+    value: c3f50f90-a1e2-4e7b-aadb-f3dea28e2294
+  oAuth:
+    clientId:
+      name: ENV_CLIENT_ID
+    clientSecret:
+      name: ENV_CLIENT_SECRET
+- name: account-environment-uuid-type
+  accountUUID:
+    type: environment
+    value: ENV_UUID
+  oAuth:
+    clientId:
+      name: ENV_CLIENT_ID
+    clientSecret:
+      name: ENV_CLIENT_SECRET

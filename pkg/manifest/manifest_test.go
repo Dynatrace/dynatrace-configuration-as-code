@@ -66,6 +66,7 @@ func TestManifestLoading(t *testing.T) {
 	t.Setenv("ENV_CLIENT_SECRET", "dt02.secret")
 	t.Setenv("ENV_TOKEN_URL", "https://another-token.url")
 	t.Setenv("ENV_API_URL", "https://api.url")
+	t.Setenv("ENV_UUID", "8f9935ee-2068-455d-85ce-47447f19d5d5")
 
 	mani, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
@@ -203,6 +204,38 @@ func TestManifestLoading(t *testing.T) {
 						Name:  "ENV_TOKEN_URL",
 						Value: "https://another-token.url",
 					},
+				},
+			},
+			"account-full-uuid-type": {
+				Name:        "account-full-uuid-type",
+				AccountUUID: uuid.MustParse("c3f50f90-a1e2-4e7b-aadb-f3dea28e2294"),
+				ApiUrl:      nil,
+				OAuth: manifest.OAuth{
+					ClientID: manifest.AuthSecret{
+						Name:  "ENV_CLIENT_ID",
+						Value: "dt02.id",
+					},
+					ClientSecret: manifest.AuthSecret{
+						Name:  "ENV_CLIENT_SECRET",
+						Value: "dt02.secret",
+					},
+					TokenEndpoint: nil,
+				},
+			},
+			"account-environment-uuid-type": {
+				Name:        "account-environment-uuid-type",
+				AccountUUID: uuid.MustParse("8f9935ee-2068-455d-85ce-47447f19d5d5"),
+				ApiUrl:      nil,
+				OAuth: manifest.OAuth{
+					ClientID: manifest.AuthSecret{
+						Name:  "ENV_CLIENT_ID",
+						Value: "dt02.id",
+					},
+					ClientSecret: manifest.AuthSecret{
+						Name:  "ENV_CLIENT_SECRET",
+						Value: "dt02.secret",
+					},
+					TokenEndpoint: nil,
 				},
 			},
 		},
