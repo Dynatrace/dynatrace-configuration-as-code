@@ -46,7 +46,7 @@ func Test_extractUrlType(t *testing.T) {
 			name: "extracts_value_url",
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
-				URL:  persistence.Url{Value: "TEST URL", Type: persistence.UrlTypeValue},
+				URL:  persistence.Url{Value: "TEST URL", Type: persistence.TypeValue},
 				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: manifest.URLDefinition{
@@ -72,7 +72,7 @@ func Test_extractUrlType(t *testing.T) {
 			name: "trims trailing slash from value url",
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
-				URL:  persistence.Url{Value: "https://www.test.url/", Type: persistence.UrlTypeValue},
+				URL:  persistence.Url{Value: "https://www.test.url/", Type: persistence.TypeValue},
 				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: manifest.URLDefinition{
@@ -85,7 +85,7 @@ func Test_extractUrlType(t *testing.T) {
 			name: "extracts_environment_url",
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
-				URL:  persistence.Url{Value: "TEST_TOKEN", Type: persistence.UrlTypeEnvironment},
+				URL:  persistence.Url{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
 				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			givenEnvVarValue: "resolved url value",
@@ -100,7 +100,7 @@ func Test_extractUrlType(t *testing.T) {
 			name: "trims trailing slash from environment url",
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
-				URL:  persistence.Url{Value: "TEST_TOKEN", Type: persistence.UrlTypeEnvironment},
+				URL:  persistence.Url{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
 				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			givenEnvVarValue: "https://www.test.url/",
@@ -539,7 +539,7 @@ environmentGroups:
 								{
 									Name: "env",
 									URL: persistence.Url{
-										Type:  persistence.UrlTypeEnvironment,
+										Type:  persistence.TypeEnvironment,
 										Value: "ENV_URL",
 									},
 									Auth: persistence.Auth{
@@ -1643,7 +1643,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
 	e := persistence.Environment{
 		Name: "TEST ENV",
-		URL:  persistence.Url{Value: "TEST_TOKEN", Type: persistence.UrlTypeEnvironment},
+		URL:  persistence.Url{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
 		Auth: persistence.Auth{
 			Token: persistence.AuthSecret{Type: "environment", Name: "VAR"},
 			OAuth: &persistence.OAuth{
