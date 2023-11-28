@@ -191,11 +191,11 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 	}
 	remoteIds, err := d.getAccountPolicyRefs(group)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch policies for group %q: %w", group.Name, err)
 	}
 
 	if err = d.accountManagementClient.updateAccountPolicyBindings(ctx, remoteGroupId, remoteIds); err != nil {
-		return err
+		return fmt.Errorf("failed to update group-account-policy bindings for group %q: %w", group.Name, err)
 	}
 
 	envPolicyUuids, err := d.getEnvPolicyRefs(group)
@@ -209,7 +209,7 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 
 	for env, uuids := range envPolicyUuids {
 		if err = d.accountManagementClient.updateEnvironmentPolicyBindings(ctx, env, remoteGroupId, uuids); err != nil {
-			return err
+			return fmt.Errorf("failed to update group-environment-policy bindings for group %q and environment %q: %w", group.Name, env, err)
 		}
 	}
 	return nil
@@ -254,7 +254,7 @@ func (d *AccountDeployer) updateGroupPermissions(ctx context.Context, group acco
 			return fmt.Errorf("no group UUID found to update group <--> permissions bindings %q", group.ID)
 		}
 		if err := d.accountManagementClient.updatePermissions(ctx, remoteGroupId, permissions); err != nil {
-			return err
+			return fmt.Errorf("unable to update group %q: %w", group.ID, err)
 		}
 	}
 	return nil
