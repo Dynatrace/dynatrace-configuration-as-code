@@ -19,10 +19,13 @@ package loader
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
+	"io"
 )
 
 // Load loads account management resources from YAML configuration files
@@ -44,6 +47,26 @@ func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
 	return transform(persisted), nil
 }
 
+// IsAccountConfigFile tests whether a given file contains the top-level properties used to configure account management resources.
+// Those properties are "users", "groups", and "policies".
+// If any errors occur we assume the file not to be an account management resource file.
+func IsAccountConfigFile(fs afero.Fs, file string) bool {
+	// We can ignore the error here. In case that the file is not a yaml file and the decoder fails, the struct will still
+	// contain nil values. Thus, the AM check returns false, which is the sound response. Example: empty file.
+	d, _ := decode(fs, file)
+
+	return hasAnyAccountKeyDefined(d)
+}
+
+// hasAnyAccountKeyDefined checks whether the map has any AM key defined
+func hasAnyAccountKeyDefined(m map[string]any) bool {
+	if len(m) == 0 {
+		return false
+	}
+
+	return m[persistence.KeyUsers] != nil || m[persistence.KeyGroups] != nil || m[persistence.KeyPolicies] != nil
+}
+
 func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 	resources := &persistence.Resources{
 		Policies: make(map[string]persistence.Policy),
@@ -57,16 +80,34 @@ func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 	}
 
 	for _, yamlFilePath := range yamlFilePaths {
-		yamlFile, err := fs.Open(yamlFilePath)
+		log.WithFields(field.F("file", yamlFilePaths)).Debug("Loading file %q", yamlFilePaths)
+		f, err := fs.Open(yamlFilePath)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+
+		bytes, err := io.ReadAll(f)
 		if err != nil {
 			return nil, err
 		}
 
-		decoder := yaml.NewDecoder(yamlFile)
-		decoder.SetStrict(true)
+		var content map[string]any
+		if err := yaml.Unmarshal(bytes, &content); err != nil {
+			return nil, err
+		}
+
+		if _, f := content["configs"]; f {
+			if hasAnyAccountKeyDefined(content) {
+				return nil, fmt.Errorf("failed to parse file %q: %w", yamlFilePath, ErrMixingConfigs)
+			}
+
+			log.WithFields(field.F("file", yamlFilePath)).Warn("File %q appears to be an config file, skipping loading", yamlFilePath)
+			continue
+		}
 
 		var res persistence.File
-		err = decoder.Decode(&res)
+		err = yaml.UnmarshalStrict(bytes, &res)
 		if err != nil {
 			return nil, err
 		}
