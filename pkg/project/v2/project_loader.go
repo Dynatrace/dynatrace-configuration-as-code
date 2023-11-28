@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	amLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
 	"github.com/spf13/afero"
 )
@@ -195,6 +196,10 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 
 	for _, file := range configFiles {
 		log.WithFields(field.F("file", file)).Debug("Loading configuration file %s", file)
+		if amLoader.IsAccountConfigFile(fs, file) {
+			log.WithFields(field.F("file", file)).Warn("File %q appears to be an account-config file, skipping loading", file)
+			continue
+		}
 		loadedConfigs, configErrs := loader.LoadConfig(fs, ctx, file)
 
 		errs = append(errs, configErrs...)
