@@ -175,15 +175,15 @@ func getAuth(env manifest.EnvironmentDefinition) persistence.Auth {
 	}
 }
 
-func toWriteableURL(url manifest.URLDefinition) persistence.Url {
+func toWriteableURL(url manifest.URLDefinition) persistence.TypedValue {
 	if url.Type == manifest.EnvironmentURLType {
-		return persistence.Url{
+		return persistence.TypedValue{
 			Type:  persistence.TypeEnvironment,
 			Value: url.Name,
 		}
 	}
 
-	return persistence.Url{
+	return persistence.TypedValue{
 		Value: url.Value,
 	}
 }
@@ -208,7 +208,7 @@ func getOAuthCredentials(a *manifest.OAuth) *persistence.OAuth {
 		return nil
 	}
 
-	var te *persistence.Url
+	var te *persistence.TypedValue
 	if a.TokenEndpoint != nil {
 		url := toWriteableURL(*a.TokenEndpoint)
 		te = &url
@@ -231,7 +231,7 @@ func toWriteableAccounts(accounts map[string]manifest.Account) []persistence.Acc
 	var out []persistence.Account
 	for _, account := range accounts {
 
-		var apiURL *persistence.Url
+		var apiURL *persistence.TypedValue
 		if account.ApiUrl != nil {
 			url := toWriteableURL(*account.ApiUrl)
 			apiURL = &url
@@ -254,7 +254,7 @@ func toWriteableAccounts(accounts map[string]manifest.Account) []persistence.Acc
 
 		out = append(out, persistence.Account{
 			Name:        account.Name,
-			AccountUUID: persistence.AccountUUID{Value: account.AccountUUID.String()},
+			AccountUUID: persistence.TypedValue{Value: account.AccountUUID.String()},
 			ApiUrl:      apiURL,
 			OAuth:       oauth,
 		})

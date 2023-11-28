@@ -33,11 +33,11 @@ func TestValidAccounts(t *testing.T) {
 	// full account 1
 	acc := persistence.Account{
 		Name: "name",
-		AccountUUID: persistence.AccountUUID{
+		AccountUUID: persistence.TypedValue{
 			Type:  persistence.TypeValue,
 			Value: uuid.New().String(),
 		},
-		ApiUrl: &persistence.Url{
+		ApiUrl: &persistence.TypedValue{
 			Value: "https://example.com",
 		},
 		OAuth: persistence.OAuth{
@@ -47,7 +47,7 @@ func TestValidAccounts(t *testing.T) {
 			ClientSecret: persistence.AuthSecret{
 				Name: "SECRET",
 			},
-			TokenEndpoint: &persistence.Url{
+			TokenEndpoint: &persistence.TypedValue{
 				Value: "https://example.com",
 			},
 		},
@@ -56,7 +56,7 @@ func TestValidAccounts(t *testing.T) {
 	// account 2 has no api url
 	acc2 := persistence.Account{
 		Name: "name2",
-		AccountUUID: persistence.AccountUUID{
+		AccountUUID: persistence.TypedValue{
 			Value: uuid.New().String(),
 		},
 		OAuth: persistence.OAuth{
@@ -75,7 +75,7 @@ func TestValidAccounts(t *testing.T) {
 	t.Setenv("ACC_3_UUID_ENV_VAR", envUUID)
 	acc3 := persistence.Account{
 		Name: "name3",
-		AccountUUID: persistence.AccountUUID{
+		AccountUUID: persistence.TypedValue{
 			Type:  persistence.TypeEnvironment,
 			Value: "ACC_3_UUID_ENV_VAR",
 		},
@@ -199,10 +199,10 @@ func TestInvalidAccounts(t *testing.T) {
 	// default account to permute
 	validAccount := persistence.Account{
 		Name: "name",
-		AccountUUID: persistence.AccountUUID{
+		AccountUUID: persistence.TypedValue{
 			Value: uuid.New().String(),
 		},
-		ApiUrl: &persistence.Url{
+		ApiUrl: &persistence.TypedValue{
 			Value: "https://example.com",
 		},
 		OAuth: persistence.OAuth{
@@ -212,7 +212,7 @@ func TestInvalidAccounts(t *testing.T) {
 			ClientSecret: persistence.AuthSecret{
 				Name: "SECRET",
 			},
-			TokenEndpoint: &persistence.Url{
+			TokenEndpoint: &persistence.TypedValue{
 				Value: "https://example.com",
 			},
 		},

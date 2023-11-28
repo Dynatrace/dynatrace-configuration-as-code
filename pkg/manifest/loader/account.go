@@ -74,7 +74,7 @@ func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, er
 	return acc, nil
 }
 
-func parseAccountUUID(u persistence.AccountUUID) (uuid.UUID, error) {
+func parseAccountUUID(u persistence.TypedValue) (uuid.UUID, error) {
 	uuidValue, err := loadAccountUUID(u)
 	if err != nil {
 		return uuid.UUID{}, err
@@ -88,7 +88,7 @@ func parseAccountUUID(u persistence.AccountUUID) (uuid.UUID, error) {
 	return accountUUID, nil
 }
 
-func loadAccountUUID(u persistence.AccountUUID) (string, error) {
+func loadAccountUUID(u persistence.TypedValue) (string, error) {
 	if u.Value == "" {
 		return "", errAccUidMissing
 	}

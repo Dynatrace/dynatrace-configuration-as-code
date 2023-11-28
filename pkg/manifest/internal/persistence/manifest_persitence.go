@@ -37,61 +37,18 @@ const (
 	TypeValue       Type = "value"
 )
 
-// AuthSecret represents a user-defined client id or client secret. It has a [Type] which is [TypeEnvironment] (default).
-// Secrets must never be provided as plain text, but always loaded from somewhere else. Currently, loading is only allowed from environment variables.
-//
-// [Name] contains the environment-variable to resolve the authSecret.
-//
-// This struct is meant to be reused for fields that require the same behavior.
-type AuthSecret struct {
-	Type Type   `yaml:"type"`
-	Name string `yaml:"name"`
-}
-
-type OAuth struct {
-	ClientID      AuthSecret `yaml:"clientId"`
-	ClientSecret  AuthSecret `yaml:"clientSecret"`
-	TokenEndpoint *Url       `yaml:"tokenEndpoint,omitempty"`
-}
-
-type Auth struct {
-	Token AuthSecret `yaml:"token"`
-	OAuth *OAuth     `yaml:"oAuth,omitempty"`
-}
-
-type Environment struct {
-	Name string `yaml:"name"`
-	URL  Url    `yaml:"url"`
-
-	// Auth contains all authentication related information
-	Auth Auth `yaml:"auth,omitempty"`
-}
-
-type Url struct {
-	Type  Type   `yaml:"type,omitempty"`
-	Value string `yaml:"value"`
-}
-
-type Group struct {
-	Name         string        `yaml:"name"`
-	Environments []Environment `yaml:"environments"`
-}
-
-type Manifest struct {
-	ManifestVersion   string    `yaml:"manifestVersion"`
-	Projects          []Project `yaml:"projects"`
-	EnvironmentGroups []Group   `yaml:"environmentGroups"`
-	Accounts          []Account `yaml:"accounts,omitempty"`
-}
-
-type AccountUUID struct {
+// TypedValue represents a value with a Type - currently these are variables that can be either:
+// - TypeEnvironment...loaded from an environment variable
+// - TypeValue...read directly
+// Additionally TypedValues can be defined directly as a string, as a shorthand for type: TypeValue
+type TypedValue struct {
 	Type  Type   `yaml:"type,omitempty" mapstructure:"type"`
 	Value string `yaml:"value" mapstructure:"value"`
 }
 
-// UnmarshalYAML Custom unmarshaler for AccountUUID able to parse simple shorthands (accountUUID: 1234) and full values.
-func (c *AccountUUID) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var data interface{}
+// UnmarshalYAML Custom unmarshaler for TypedValue able to parse simple shorthands (accountUUID: 1234) and full values.
+func (c *TypedValue) UnmarshalYAML(unmarshal func(any) error) error {
+	var data any
 	if err := unmarshal(&data); err != nil {
 		return err
 	}
@@ -108,9 +65,51 @@ func (c *AccountUUID) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+// AuthSecret represents a user-defined client id or client secret. It has a [Type] which is [TypeEnvironment] (default).
+// Secrets must never be provided as plain text, but always loaded from somewhere else. Currently, loading is only allowed from environment variables.
+//
+// [Name] contains the environment-variable to resolve the authSecret.
+//
+// This struct is meant to be reused for fields that require the same behavior.
+type AuthSecret struct {
+	Type Type   `yaml:"type"`
+	Name string `yaml:"name"`
+}
+
+type OAuth struct {
+	ClientID      AuthSecret  `yaml:"clientId"`
+	ClientSecret  AuthSecret  `yaml:"clientSecret"`
+	TokenEndpoint *TypedValue `yaml:"tokenEndpoint,omitempty"`
+}
+
+type Auth struct {
+	Token AuthSecret `yaml:"token"`
+	OAuth *OAuth     `yaml:"oAuth,omitempty"`
+}
+
+type Environment struct {
+	Name string     `yaml:"name"`
+	URL  TypedValue `yaml:"url"`
+
+	// Auth contains all authentication related information
+	Auth Auth `yaml:"auth,omitempty"`
+}
+
+type Group struct {
+	Name         string        `yaml:"name"`
+	Environments []Environment `yaml:"environments"`
+}
+
+type Manifest struct {
+	ManifestVersion   string    `yaml:"manifestVersion"`
+	Projects          []Project `yaml:"projects"`
+	EnvironmentGroups []Group   `yaml:"environmentGroups"`
+	Accounts          []Account `yaml:"accounts,omitempty"`
+}
+
 type Account struct {
 	Name        string      `yaml:"name"`
-	AccountUUID AccountUUID `yaml:"accountUUID"`
-	ApiUrl      *Url        `yaml:"apiUrl,omitempty"`
+	AccountUUID TypedValue  `yaml:"accountUUID"`
+	ApiUrl      *TypedValue `yaml:"apiUrl,omitempty"`
 	OAuth       OAuth       `yaml:"oAuth"`
 }
