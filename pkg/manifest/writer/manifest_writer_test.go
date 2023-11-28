@@ -253,7 +253,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					Environments: []persistence.Environment{
 						{
 							Name: "env1",
-							URL:  persistence.Url{Value: "www.an.Url"},
+							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
 								Token: persistence.AuthSecret{
 									Name: "TokenTest",
@@ -263,7 +263,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						{
 							Name: "env2",
-							URL:  persistence.Url{Value: "www.an.Url"},
+							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
 								Token: persistence.AuthSecret{
 									Name: "env2_TOKEN",
@@ -278,7 +278,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 										Type: persistence.TypeEnvironment,
 										Name: "client-secret-key",
 									},
-									TokenEndpoint: &persistence.Url{
+									TokenEndpoint: &persistence.TypedValue{
 										Type:  persistence.TypeEnvironment,
 										Value: "ENV_TOKEN_ENDPOINT",
 									},
@@ -287,7 +287,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						{
 							Name: "env2a",
-							URL:  persistence.Url{Value: "www.an.Url"},
+							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
 								Token: persistence.AuthSecret{
 									Name: "env2_TOKEN",
@@ -307,7 +307,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						{
 							Name: "env2b",
-							URL:  persistence.Url{Value: "www.an.Url"},
+							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
 								Token: persistence.AuthSecret{
 									Name: "env2_TOKEN",
@@ -322,7 +322,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 										Type: persistence.TypeEnvironment,
 										Name: "client-secret-key",
 									},
-									TokenEndpoint: &persistence.Url{
+									TokenEndpoint: &persistence.TypedValue{
 										Value: "http://custom.sso.token.endpoint",
 									},
 								},
@@ -335,7 +335,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					Environments: []persistence.Environment{
 						{
 							Name: "env3",
-							URL:  persistence.Url{Value: "www.an.Url"},
+							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
 								Token: persistence.AuthSecret{
 									Name: "env3_TOKEN",
@@ -378,7 +378,7 @@ func Test_toWriteableUrl(t *testing.T) {
 	tests := []struct {
 		name  string
 		input manifest.URLDefinition
-		want  persistence.Url
+		want  persistence.TypedValue
 	}{
 		{
 			"correctly transforms env var Url",
@@ -387,7 +387,7 @@ func Test_toWriteableUrl(t *testing.T) {
 				Name:  "{{ .Env.VARIABLE }}",
 				Value: "Some previously resolved value",
 			},
-			persistence.Url{
+			persistence.TypedValue{
 				Type:  persistence.TypeEnvironment,
 				Value: "{{ .Env.VARIABLE }}",
 			},
@@ -398,7 +398,7 @@ func Test_toWriteableUrl(t *testing.T) {
 				Type:  manifest.ValueURLType,
 				Value: "www.an.Url",
 			},
-			persistence.Url{
+			persistence.TypedValue{
 				Value: "www.an.Url",
 			},
 		},
@@ -407,7 +407,7 @@ func Test_toWriteableUrl(t *testing.T) {
 			manifest.URLDefinition{
 				Value: "www.an.Url",
 			},
-			persistence.Url{
+			persistence.TypedValue{
 				Value: "www.an.Url",
 			},
 		},
@@ -496,7 +496,7 @@ func Test_toWriteableAccounts(t *testing.T) {
 			[]persistence.Account{
 				{
 					Name: "test",
-					AccountUUID: persistence.AccountUUID{
+					AccountUUID: persistence.TypedValue{
 						Value: "95a97c92-7137-4f7a-94ff-f29b54b94a72",
 					},
 					OAuth: persistence.OAuth{
@@ -541,10 +541,10 @@ func Test_toWriteableAccounts(t *testing.T) {
 			[]persistence.Account{
 				{
 					Name: "test",
-					AccountUUID: persistence.AccountUUID{
+					AccountUUID: persistence.TypedValue{
 						Value: "95a97c92-7137-4f7a-94ff-f29b54b94a72",
 					},
-					ApiUrl: &persistence.Url{
+					ApiUrl: &persistence.TypedValue{
 						Type:  persistence.TypeEnvironment,
 						Value: "MY_ENV_URL",
 					},
@@ -557,7 +557,7 @@ func Test_toWriteableAccounts(t *testing.T) {
 							Type: persistence.TypeEnvironment,
 							Name: "MY_CLIENT_SECRET",
 						},
-						TokenEndpoint: &persistence.Url{
+						TokenEndpoint: &persistence.TypedValue{
 							Type:  persistence.TypeEnvironment,
 							Value: "TOKEN_ENDPOINT",
 						},

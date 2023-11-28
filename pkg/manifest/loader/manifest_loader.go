@@ -444,7 +444,7 @@ func parseSingleEnvironment(context *Context, config persistence.Environment, gr
 	}, nil
 }
 
-func parseURLDefinition(context *Context, u persistence.Url) (manifest.URLDefinition, error) {
+func parseURLDefinition(context *Context, u persistence.TypedValue) (manifest.URLDefinition, error) {
 
 	// Depending on the type, the url.value either contains the env var name or the direct value of the url
 	if u.Value == "" {
