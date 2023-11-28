@@ -17,6 +17,7 @@
 package v2
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -568,4 +569,14 @@ func getFullProjectLoaderContext(apis []string, projects []string, environments 
 		},
 		ParametersSerde: config.DefaultParameterParsers,
 	}
+}
+
+func TestLoadProject(t *testing.T) {
+	t.Run("loading project with configs and account resources works", func(t *testing.T) {
+		context := getSimpleProjectLoaderContext([]string{"testdata/configs-account-resources-mixed"})
+
+		configs, gotErrs := LoadProjects(afero.NewOsFs(), context)
+		assert.NilError(t, errors.Join(gotErrs...))
+		assert.Equal(t, len(configs), 1)
+	})
 }
