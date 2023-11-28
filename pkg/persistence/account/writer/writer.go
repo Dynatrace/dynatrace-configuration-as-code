@@ -183,7 +183,7 @@ func createFolderIfNoneExists(fs afero.Fs, path string) error {
 	if exists {
 		return nil
 	}
-	if err := fs.MkdirAll(path, 0644); err != nil {
+	if err := fs.MkdirAll(path, 0755); err != nil {
 		return fmt.Errorf("failed to folder to persist account resources: %w", err)
 	}
 	return nil

@@ -452,8 +452,8 @@ func TestWriteAccountResources(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := writer.Context{
 				Fs:            afero.NewMemMapFs(),
-				OutputFolder:  "test/",
-				ProjectFolder: "project/",
+				OutputFolder:  "test",
+				ProjectFolder: "project",
 			}
 			err := writer.Write(c, tt.givenResources)
 			assert.NoError(t, err)
