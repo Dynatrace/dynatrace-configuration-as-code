@@ -74,16 +74,15 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PermissionBinding(t, accountUUID, "tenant", envVkb, "tenant-viewer", myGroup)
 		check.PermissionBinding(t, accountUUID, "management-zone", "wbm16058:1939021364513288421", "tenant-viewer", myGroup)
 
-		// (3) DELETE RESOURCES
+		// (2) DELETE RESOURCES
 		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "accounts/delete.yaml", "--account", "monaco-test-account"})
 		err = cli.Execute()
 		assert.NoError(t, err)
 
-		// (4) CHECK IF RESOURCES ARE INDEED DELETED
+		// (3) CHECK IF RESOURCES ARE INDEED DELETED
 		check.UserNotAvailable(t, accountUUID, myEmail)
 		check.AccountPolicyNotAvailable(t, accountUUID, myPolicy)
 		check.GroupNotAvailable(t, accountUUID, myGroup)
-
 	})
 }
 
