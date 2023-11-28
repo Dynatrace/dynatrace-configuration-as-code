@@ -1,0 +1,3 @@
+configs:
+- id: something
+  omit: the-rest

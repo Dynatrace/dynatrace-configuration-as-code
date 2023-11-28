@@ -97,6 +97,22 @@ func TestLoad(t *testing.T) {
 
 	})
 
+	t.Run("Load multiple files but ignore config files", func(t *testing.T) {
+		loaded, err := Load(afero.NewOsFs(), "testdata/multi-with-configs")
+		assert.NoError(t, err)
+		assert.Len(t, loaded.Users, 1)
+		assert.Len(t, loaded.Groups, 1)
+		assert.Len(t, loaded.Policies, 1)
+	})
+
+	t.Run("Loading a file with only configs does not lead to errors", func(t *testing.T) {
+		loaded, err := Load(afero.NewOsFs(), "testdata/no-accounts-but-configs.yaml")
+		assert.NoError(t, err)
+		assert.Empty(t, loaded.Users)
+		assert.Empty(t, loaded.Groups)
+		assert.Empty(t, loaded.Policies)
+	})
+
 	t.Run("Duplicate group produces error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/duplicate-group.yaml")
 		assert.Error(t, err)
@@ -176,6 +192,11 @@ func TestValidateReferences(t *testing.T) {
 			expectedErrMsg: `error validating account resources: no ref id field found`,
 		},
 		{
+			name:     "mixing configs and account resources",
+			path:     "testdata/configs-accounts-mixed.yaml",
+			expected: ErrMixingConfigs,
+		},
+		{
 			name:     "valid",
 			path:     "testdata/valid.yaml",
 			expected: nil,
@@ -193,4 +214,61 @@ func TestValidateReferences(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsAccountConfigFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  string
+		expected bool
+	}{
+		{
+			`neither "users", "groups", nor "policies is given"`,
+			"configs: []",
+			false,
+		},
+		{
+			`"users" is given`,
+			"users: []",
+			true,
+		},
+		{
+			`"groups" is given`,
+			"groups: []",
+			true,
+		},
+		{
+			`"policies" is given`,
+			"policies: []",
+			true,
+		},
+		{
+			`some other invalid config is given - not relevant for AM resource check`,
+			"today: [isANiceDay]",
+			false,
+		},
+		{
+			`empty file`,
+			"",
+			false,
+		},
+		{
+			"some completely wrong file content should still not fail",
+			"<!DOCTYPE html>",
+			false,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			fs := afero.NewBasePathFs(afero.NewOsFs(), t.TempDir())
+			err := afero.WriteFile(fs, "file.yaml", []byte(tt.content), 0644)
+			assert.NoError(t, err)
+
+			res := IsAccountConfigFile(fs, "file.yaml")
+			assert.Equal(t, tt.expected, res)
+		})
+	}
+
 }

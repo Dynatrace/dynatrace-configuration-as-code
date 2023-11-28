@@ -114,3 +114,9 @@ func (r Reference) MarshalYAML() (interface{}, error) {
 	// if not a reference, just marshal the value string
 	return r.Value, nil
 }
+
+const (
+	KeyUsers    string = "users"
+	KeyGroups   string = "groups"
+	KeyPolicies string = "policies"
+)
