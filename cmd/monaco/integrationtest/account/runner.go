@@ -20,9 +20,13 @@ package account
 
 import (
 	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/account/internal"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
@@ -37,27 +41,30 @@ type options struct {
 	suffix string
 }
 
-func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name string, fn func(options)) {
+func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name string, fn func(map[deployer.AccountInfo]*accounts.Client, options)) {
 	// create a new reader for the path and write all files to the in mem fs
 	fs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(afero.NewOsFs(), path), afero.NewMemMapFs())
 
 	suffix := integrationtest.GenerateTestSuffix(t, name)
 
-	// add suffix to all resource-names
-	appendSuffixForWorkspace(t, fs, manifestFileName, suffix)
-
-	fn(options{fs, suffix})
-}
-
-func appendSuffixForWorkspace(t *testing.T, fs afero.Fs, manifestFileName string, suffix string) {
 	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: manifestFileName,
 	})
-
 	assert.NoError(t, errors.Join(errs...))
 
-	for _, p := range m.Projects {
+	// add suffix to all resource-names
+	appendSuffixForWorkspace(t, fs, m, suffix)
+
+	accClients, err := dynatrace.CreateAccountClients(m.Accounts)
+	assert.NoError(t, err)
+
+	fn(accClients, options{fs: fs, suffix: suffix})
+}
+
+func appendSuffixForWorkspace(t *testing.T, fs afero.Fs, manifest manifest.Manifest, suffix string) {
+
+	for _, p := range manifest.Projects {
 		ff, err := files.FindYamlFiles(fs, p.Path)
 		assert.NoError(t, err)
 

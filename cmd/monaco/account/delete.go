@@ -103,19 +103,15 @@ func loadManifest(fs afero.Fs, manifestName string) (manifest.Manifest, error) {
 	}
 	// Sanitize manifest file path to manifest yaml file
 	manifestName = filepath.Clean(manifestName)
-	absManifestFilePath, err := filepath.Abs(manifestName)
-	if err != nil {
-		return manifest.Manifest{}, err
-	}
 
 	// Try to load the manifest file
 	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
-		ManifestPath: absManifestFilePath,
+		ManifestPath: manifestName,
 	})
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)
-		return manifest.Manifest{}, fmt.Errorf("error while loading manifest (%s)", absManifestFilePath)
+		return manifest.Manifest{}, fmt.Errorf("error while loading manifest (%s)", manifestName)
 	}
 	return m, nil
 }

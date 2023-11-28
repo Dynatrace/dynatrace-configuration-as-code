@@ -64,19 +64,15 @@ func LoadResourcesToDelete(fs afero.Fs, deleteFile string) (Resources, error) {
 }
 
 func readDeleteFile(context *loaderContext) (FileDefinition, error) {
-	targetFile, err := filepath.Abs(context.deleteFile)
-	if err != nil {
-		return FileDefinition{}, fmt.Errorf("could not parse absoulte path to file `%s`: %w", context.deleteFile, err)
-	}
 
-	data, err := afero.ReadFile(context.fs, targetFile)
+	data, err := afero.ReadFile(context.fs, context.deleteFile)
 
 	if err != nil {
 		return FileDefinition{}, err
 	}
 
 	if len(data) == 0 {
-		return FileDefinition{}, fmt.Errorf("file `%s` is empty", targetFile)
+		return FileDefinition{}, fmt.Errorf("file `%s` is empty", context.deleteFile)
 	}
 
 	var result FileDefinition

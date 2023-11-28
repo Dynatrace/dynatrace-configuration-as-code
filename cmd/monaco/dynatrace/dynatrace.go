@@ -19,16 +19,20 @@ package dynatrace
 import (
 	"context"
 	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
@@ -92,5 +96,35 @@ func CreateClientSet(url string, auth manifest.Auth) (*client.ClientSet, error) 
 	}, client.ClientOptions{
 		SupportArchive: support.SupportArchive,
 	})
+}
 
+func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[deployer.AccountInfo]*accounts.Client, error) {
+	accClients := make(map[deployer.AccountInfo]*accounts.Client, len(manifestAccounts))
+	for _, acc := range manifestAccounts {
+		oauthCreds := clientcredentials.Config{
+			ClientID:     acc.OAuth.ClientID.Value.Value(),
+			ClientSecret: acc.OAuth.ClientSecret.Value.Value(),
+			TokenURL:     acc.OAuth.GetTokenEndpointValue(),
+		}
+
+		var apiUrl string
+		if acc.ApiUrl == nil || acc.ApiUrl.Value == "" {
+			apiUrl = "https://api.dynatrace.com"
+		} else {
+			apiUrl = acc.ApiUrl.Value
+		}
+		accClient, err := clients.Factory().
+			WithOAuthCredentials(oauthCreds).
+			WithUserAgent(client.DefaultMonacoUserAgent).
+			AccountClient(apiUrl)
+
+		if err != nil {
+			return accClients, err
+		}
+		accClients[deployer.AccountInfo{
+			Name:        acc.Name,
+			AccountUUID: acc.AccountUUID.String(),
+		}] = accClient
+	}
+	return accClients, nil
 }
