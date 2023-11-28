@@ -23,95 +23,55 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/account/internal"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
 	"strings"
 	"testing"
 )
 
 type options struct {
-	fs     afero.Fs
-	suffix string
+	fs        afero.Fs
+	randomStr string
+	randomize func(string) string
 }
 
 func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name string, fn func(map[deployer.AccountInfo]*accounts.Client, options)) {
-	// create a new reader for the path and write all files to the in mem fs
 	fs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(afero.NewOsFs(), path), afero.NewMemMapFs())
+	randomStr := randomizeYAMLResources(t, fs, name)
+	accClients := createAccountClientsFromManifest(t, fs, manifestFileName)
+	fn(accClients, options{fs: fs, randomStr: randomStr, randomize: randomizeFn(randomStr)})
+}
 
-	suffix := integrationtest.GenerateTestSuffix(t, name)
-
-	m, errs := manifestloader.Load(&manifestloader.Context{
-		Fs:           fs,
-		ManifestPath: manifestFileName,
-	})
+// createAccountClientsFromManifest creates a map of accountInfo --> accoutn client for a given manifest
+func createAccountClientsFromManifest(t *testing.T, fs afero.Fs, manifestFileName string) map[deployer.AccountInfo]*accounts.Client {
+	m, errs := manifestloader.Load(&manifestloader.Context{Fs: fs, ManifestPath: manifestFileName})
 	assert.NoError(t, errors.Join(errs...))
-
-	// add suffix to all resource-names
-	appendSuffixForWorkspace(t, fs, m, suffix)
-
 	accClients, err := dynatrace.CreateAccountClients(m.Accounts)
 	assert.NoError(t, err)
-
-	fn(accClients, options{fs: fs, suffix: suffix})
+	return accClients
 }
 
-func appendSuffixForWorkspace(t *testing.T, fs afero.Fs, manifest manifest.Manifest, suffix string) {
-
-	for _, p := range manifest.Projects {
-		ff, err := files.FindYamlFiles(fs, p.Path)
+// randomizeYAMLResources loops over each *.yaml file, replaces %RAND% with a random string and returns the random string
+// that was used
+func randomizeYAMLResources(t *testing.T, fs afero.Fs, name string) string {
+	randStr := integrationtest.GenerateTestSuffix(t, name)
+	ff, err := files.FindYamlFiles(fs, ".")
+	assert.NoError(t, err)
+	for _, file := range ff {
+		fileContent, err := afero.ReadFile(fs, file)
 		assert.NoError(t, err)
-
-		for _, file := range ff {
-			content := unmarshal(t, fs, file)
-
-			var full internal.FullFile
-			err := mapstructure.Decode(content, &full)
-			assert.NoError(t, err)
-
-			for i := range full.Policies {
-				full.Policies[i].Name = full.Policies[i].Name + suffix
-			}
-
-			for i := range full.Groups {
-				full.Groups[i].Name = full.Groups[i].Name + suffix
-			}
-
-			for i := range full.Users {
-				email := full.Users[i].Email
-				s := strings.Split(email, "@")
-				full.Users[i].Email = s[0] + "+" + suffix + "@" + s[1]
-			}
-
-			err = mapstructure.Decode(full, &content)
-			assert.NoError(t, err)
-
-			marshal(t, fs, file, content)
-		}
+		fileContentRandomized := randomizeFn(randStr)(string(fileContent))
+		err = afero.WriteFile(fs, file, []byte(fileContentRandomized), 0644)
+		assert.NoError(t, err)
 	}
+	return randStr
 }
 
-func unmarshal(t *testing.T, fs afero.Fs, path string) map[string]any {
-	b, err := afero.ReadFile(fs, path)
-	assert.NoError(t, err)
-
-	var obj map[string]any
-	err = yaml.Unmarshal(b, &obj)
-	assert.NoError(t, err)
-
-	return obj
-}
-
-func marshal(t *testing.T, fs afero.Fs, path string, obj any) {
-	b, err := yaml.Marshal(obj)
-	assert.NoError(t, err)
-
-	err = afero.WriteFile(fs, path, b, 0644)
-	assert.NoError(t, err)
+func randomizeFn(suffix string) func(in string) string {
+	return func(in string) string {
+		return strings.ReplaceAll(in, "%RAND%", suffix)
+	}
 }

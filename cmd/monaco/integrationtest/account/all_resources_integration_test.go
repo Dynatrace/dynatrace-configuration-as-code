@@ -29,7 +29,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"slices"
-	"strings"
 	"testing"
 )
 
@@ -43,18 +42,18 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 	err := cliDeployMZones.Execute()
 	assert.NoError(t, err)
 
-	RunAccountTestCase(t, "testdata/all-resources", "manifest-account.yaml", "users", func(clients map[deployer.AccountInfo]*accounts.Client, o options) {
+	RunAccountTestCase(t, "testdata/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[deployer.AccountInfo]*accounts.Client, o options) {
 
 		accountName := "monaco-test-account"
 		accountUUID := "17a8095e-a974-40a2-9049-8a5d683cdd0b"
-		myEmail := "monaco+$SUFFIX$@dynatrace.com"
-		myGroup := "My Group$SUFFIX$"
-		myPolicy := "My Policy$SUFFIX$"
+		myEmail := "monaco+%RAND%@dynatrace.com"
+		myGroup := "My Group%RAND%"
+		myPolicy := "My Policy%RAND%"
 		envVkb := "vkb66581"
 
 		check := AccountResourceChecker{
-			Client:     clients[deployer.AccountInfo{Name: accountName, AccountUUID: accountUUID}],
-			TestSuffix: o.suffix,
+			Client:      clients[deployer.AccountInfo{Name: accountName, AccountUUID: accountUUID}],
+			RandomizeFn: o.randomize,
 		}
 
 		cli := runner.BuildCli(o.fs)
@@ -75,18 +74,12 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PermissionBinding(t, accountUUID, "tenant", envVkb, "tenant-viewer", myGroup)
 		check.PermissionBinding(t, accountUUID, "management-zone", "wbm16058:1939021364513288421", "tenant-viewer", myGroup)
 
-		// (2) DELETE RESOURCES
-		deleteFileContent, err := afero.ReadFile(o.fs, "accounts/delete.yaml")
-		assert.NoError(t, err)
-		deleteYaml := strings.ReplaceAll(string(deleteFileContent), "$SUFFIX$", o.suffix)
-		err = afero.WriteFile(o.fs, "delete.yaml", []byte(deleteYaml), 0644)
-		assert.NoError(t, err)
-
-		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "delete.yaml", "--account", "monaco-test-account"})
+		// (3) DELETE RESOURCES
+		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "accounts/delete.yaml", "--account", "monaco-test-account"})
 		err = cli.Execute()
 		assert.NoError(t, err)
 
-		// (3) CHECK IF RESOURCES ARE INDEED DELETED
+		// (4) CHECK IF RESOURCES ARE INDEED DELETED
 		check.UserNotAvailable(t, accountUUID, myEmail)
 		check.AccountPolicyNotAvailable(t, accountUUID, myPolicy)
 		check.GroupNotAvailable(t, accountUUID, myGroup)
@@ -120,12 +113,12 @@ func getGroupIdByName(cl *accounts.Client, accountUUID, name string) (string, bo
 }
 
 type AccountResourceChecker struct {
-	Client     *accounts.Client
-	TestSuffix string
+	Client      *accounts.Client
+	RandomizeFn func(string) string
 }
 
 func (a AccountResourceChecker) UserAvailable(t *testing.T, accountUUID, email string) {
-	expectedEmail := a.suffix(email)
+	expectedEmail := a.randomize(email)
 	deployedUser, _, err := a.Client.UserManagementAPI.GetUserGroups(context.TODO(), accountUUID, expectedEmail).Execute()
 	assert.NotNil(t, deployedUser)
 	assert.NoError(t, err)
@@ -133,13 +126,13 @@ func (a AccountResourceChecker) UserAvailable(t *testing.T, accountUUID, email s
 }
 
 func (a AccountResourceChecker) UserNotAvailable(t *testing.T, accountUUID, email string) {
-	expectedEmail := a.suffix(email)
+	expectedEmail := a.randomize(email)
 	_, res, _ := a.Client.UserManagementAPI.GetUserGroups(context.TODO(), accountUUID, expectedEmail).Execute()
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
 
 func (a AccountResourceChecker) GroupAvailable(t *testing.T, accountUUID, groupName string) {
-	expectedGroupName := a.suffix(groupName)
+	expectedGroupName := a.randomize(groupName)
 	all, _, err := a.Client.GroupManagementAPI.GetGroups(context.TODO(), accountUUID).Execute()
 	assert.NotNil(t, all)
 	assert.NoError(t, err)
@@ -147,7 +140,7 @@ func (a AccountResourceChecker) GroupAvailable(t *testing.T, accountUUID, groupN
 }
 
 func (a AccountResourceChecker) AccountPolicyAvailable(t *testing.T, accountUUID, policyName string) {
-	expectedPolicyName := a.suffix(policyName)
+	expectedPolicyName := a.randomize(policyName)
 	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), "account", accountUUID).Name(expectedPolicyName).Execute()
 	assert.NotNil(t, policies)
 	assert.NoError(t, err)
@@ -156,7 +149,7 @@ func (a AccountResourceChecker) AccountPolicyAvailable(t *testing.T, accountUUID
 }
 
 func (a AccountResourceChecker) AccountPolicyNotAvailable(t *testing.T, accountUUID, policyName string) {
-	expectedPolicyName := a.suffix(policyName)
+	expectedPolicyName := a.randomize(policyName)
 	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), "account", accountUUID).Execute()
 	assert.NotNil(t, policies)
 	assert.NoError(t, err)
@@ -164,7 +157,7 @@ func (a AccountResourceChecker) AccountPolicyNotAvailable(t *testing.T, accountU
 }
 
 func (a AccountResourceChecker) GroupNotAvailable(t *testing.T, accountUUID, groupName string) {
-	expectedGroupName := a.suffix(groupName)
+	expectedGroupName := a.randomize(groupName)
 	groups, _, err := a.Client.GroupManagementAPI.GetGroups(context.TODO(), accountUUID).Execute()
 	assert.NotNil(t, groups)
 	assert.NoError(t, err)
@@ -172,7 +165,7 @@ func (a AccountResourceChecker) GroupNotAvailable(t *testing.T, accountUUID, gro
 }
 
 func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUUID, groupName, policyName, environmentName string) {
-	expectedPolicyName := a.suffix(policyName)
+	expectedPolicyName := a.randomize(policyName)
 	var pid string
 	pid, found := getPolicyIdByName(a.Client, expectedPolicyName, "environment", environmentName)
 	if !found {
@@ -183,7 +176,7 @@ func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUU
 	}
 	assert.True(t, found)
 
-	expectedGroupName := a.suffix(groupName)
+	expectedGroupName := a.randomize(groupName)
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
 	assert.True(t, found)
 
@@ -195,7 +188,7 @@ func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUU
 }
 
 func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, groupName, policyName string) {
-	expectedPolicyName := a.suffix(policyName)
+	expectedPolicyName := a.randomize(policyName)
 	var pid string
 	pid, found := getPolicyIdByName(a.Client, expectedPolicyName, "account", accountUUID)
 	if !found {
@@ -203,7 +196,7 @@ func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, 
 	}
 	assert.True(t, found)
 
-	expectedGroupName := a.suffix(groupName)
+	expectedGroupName := a.randomize(groupName)
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
 	assert.True(t, found)
 
@@ -215,7 +208,7 @@ func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, 
 }
 
 func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, scopeType, scope, permissionName, groupName string) {
-	expectedGroupName := a.suffix(groupName)
+	expectedGroupName := a.randomize(groupName)
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
 	assert.True(t, found)
 
@@ -229,8 +222,8 @@ func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, sco
 	})
 }
 
-func (a AccountResourceChecker) suffix(in string) string {
-	return strings.ReplaceAll(in, "$SUFFIX$", a.TestSuffix)
+func (a AccountResourceChecker) randomize(in string) string {
+	return a.RandomizeFn(in)
 }
 
 func assertElementNotInSlice[K any](t *testing.T, sl []K, check func(el K) bool) {

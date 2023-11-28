@@ -1,9 +1,9 @@
 delete:
   - type: user
-    email: monaco+$SUFFIX$@dynatrace.com
+    email: monaco+%RAND%@dynatrace.com
   - type: group
-    name: My Group$SUFFIX$
+    name: My Group%RAND%
   - type: policy
-    name: My Policy$SUFFIX$
+    name: My Policy%RAND%
     level:
       type: account
