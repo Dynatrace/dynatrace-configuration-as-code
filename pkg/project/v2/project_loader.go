@@ -29,6 +29,7 @@ import (
 	amLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
 	"github.com/spf13/afero"
+	"slices"
 )
 
 type ProjectLoaderContext struct {
@@ -245,21 +246,11 @@ func toDependenciesMap(projectId string, configs []config.Config) DependenciesPe
 				continue
 			}
 
-			if !containsProject(result[c.Environment], ref.Project) {
+			if !slices.Contains(result[c.Environment], ref.Project) {
 				result[c.Environment] = append(result[c.Environment], ref.Project)
 			}
 		}
 	}
 
 	return result
-}
-
-func containsProject(projects []string, project string) bool {
-	for _, p := range projects {
-		if p == project {
-			return true
-		}
-	}
-
-	return false
 }
