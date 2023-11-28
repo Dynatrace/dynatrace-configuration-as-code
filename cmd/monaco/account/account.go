@@ -37,6 +37,7 @@ Examples:
 
 	command.AddCommand(deployCommand(fs))
 	command.AddCommand(deleteCommand(fs))
+	command.AddCommand(downloadCommand(fs))
 
 	return command
 }
