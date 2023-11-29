@@ -79,7 +79,7 @@ func Test_parseConfigs(t *testing.T) {
 			filePathArgument:  "test-file.yaml",
 			filePathOnDisk:    "test-file.yaml",
 			fileContentOnDisk: "config:\n  - profile: \"profile.json\"\n\nprofile:\n  - name: \"Star Trek Service\"",
-			wantErrorsContain: []string{"is not valid v2 configuration"},
+			wantErrorsContain: []string{"config is not a valid v2 configuration"},
 		},
 		{
 			name:              "reports error with v1 warning on broken v2 toplevel",

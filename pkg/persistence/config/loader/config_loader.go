@@ -18,15 +18,16 @@ package loader
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
-	"path/filepath"
-	"strings"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
+	"path/filepath"
 )
 
 type LoaderContext struct {
@@ -53,7 +54,32 @@ type singleConfigEntryLoadContext struct {
 // LoadConfig loads a single configuration file
 // The configuration file might contain multiple config entries
 func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.Config, []error) {
-	definedConfigEntries, err := parseFile(fs, filePath)
+	data, err := afero.ReadFile(fs, filePath)
+	if err != nil {
+		return nil, []error{newLoadError(filePath, err)}
+	}
+
+	var content map[string]any
+	if err := yaml.Unmarshal(data, &content); err != nil {
+		return nil, []error{newLoadError(filePath, err)}
+	}
+
+	if content["config"] != nil {
+		return nil, []error{
+			newLoadError(filePath, fmt.Errorf("config is not a valid v2 configuration - you may be loading v1 configs, please 'convert' to v2: %w", err)),
+		}
+	}
+
+	if loader.HasAnyAccountKeyDefined(content) {
+		if content["configs"] != nil {
+			return nil, []error{newLoadError(filePath, ErrMixingConfigs)}
+		}
+
+		log.WithFields(field.F("file", filePath)).Warn("File %q appears to be an account resource file, skipping loading", filePath)
+		return []config.Config{}, nil
+	}
+
+	definedConfigEntries, err := parseFile(data)
 	if err != nil {
 		return nil, []error{newLoadError(filePath, err)}
 	}
@@ -86,25 +112,17 @@ func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.
 	return configs, nil
 }
 
-func parseFile(fs afero.Fs, filePath string) ([]persistence.TopLevelConfigDefinition, error) {
-	data, err := afero.ReadFile(fs, filePath)
-	if err != nil {
-		return nil, err
-	}
+func parseFile(data []byte) ([]persistence.TopLevelConfigDefinition, error) {
 
 	definition := persistence.TopLevelDefinition{}
-	err = yaml.UnmarshalStrict(data, &definition)
+	err := yaml.UnmarshalStrict(data, &definition)
 
 	if err != nil {
-		if strings.Contains(err.Error(), fmt.Sprintf("field config not found in type %s", persistence.GetTopLevelDefinitionYamlTypeName())) {
-			return nil, fmt.Errorf("config '%s' is not valid v2 configuration - you may be loading v1 configs, please 'convert' to v2:\n%w", filePath, err)
-		}
-
 		return nil, err
 	}
 
 	if len(definition.Configs) == 0 {
-		return nil, fmt.Errorf("no configurations found in file '%s'", filePath)
+		return nil, fmt.Errorf("no configurations found in file")
 	}
 
 	return definition.Configs, nil

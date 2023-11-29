@@ -579,4 +579,12 @@ func TestLoadProject(t *testing.T) {
 		assert.NilError(t, errors.Join(gotErrs...))
 		assert.Equal(t, len(configs), 1)
 	})
+
+	t.Run("mixed files fail", func(t *testing.T) {
+		context := getSimpleProjectLoaderContext([]string{"testdata/configs-account-resources-mixed-same-file"})
+
+		configs, gotErrs := LoadProjects(afero.NewOsFs(), context)
+		assert.ErrorContains(t, errors.Join(gotErrs...), "mixing both configurations and account resources is not allowed")
+		assert.Equal(t, len(configs), 0)
+	})
 }
