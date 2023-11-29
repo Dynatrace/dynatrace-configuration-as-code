@@ -38,7 +38,7 @@ func testResources(t *testing.T) *account.Resources {
 
 func mockClient(t *testing.T) *Mockclient {
 	mockedClient := NewMockclient(gomock.NewController(t))
-	mockedClient.EXPECT().getAccountInfo().AnyTimes().Return(AccountInfo{Name: "my-account", AccountUUID: "1334-1223-1112-1111"})
+	mockedClient.EXPECT().getAccountInfo().AnyTimes().Return(account.AccountInfo{Name: "my-account", AccountUUID: "1334-1223-1112-1111"})
 	return mockedClient
 }
 

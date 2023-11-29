@@ -25,7 +25,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
 	"github.com/spf13/afero"
@@ -45,7 +44,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 	err := cliDeployMZones.Execute()
 	assert.NoError(t, err)
 
-	RunAccountTestCase(t, "testdata/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[deployer.AccountInfo]*accounts.Client, o options) {
+	RunAccountTestCase(t, "testdata/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[account.AccountInfo]*accounts.Client, o options) {
 
 		accountName := o.accountName
 		accountUUID := o.accountUUID
@@ -56,7 +55,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		envVkb := "vkb66581"
 
 		check := AccountResourceChecker{
-			Client:      clients[deployer.AccountInfo{Name: accountName, AccountUUID: accountUUID}],
+			Client:      clients[account.AccountInfo{Name: accountName, AccountUUID: accountUUID}],
 			RandomizeFn: o.randomize,
 		}
 
