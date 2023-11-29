@@ -333,7 +333,7 @@ func (d *AccountDeployer) getUserGroupRefs(user account.User) ([]remoteId, error
 }
 
 func (d *AccountDeployer) processItems(items []account.Ref, remoteIdLookup idLookupFn) ([]remoteId, error) {
-	var ids []remoteId
+	ids := []remoteId{}
 	var notFoundLocalIds []localId
 
 	for _, item := range items {

@@ -419,13 +419,28 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 	})
 
 	t.Run("Update Group Permissions - no permissions given", func(t *testing.T) {
-		server := testutils.NewHTTPTestServer(t, nil)
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"count": 0,"items": []}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/groups/10bcc894-9b24-4b39-b26d-61622d4e163e/permissions", request.URL.String())
+					b, _ := io.ReadAll(request.Body)
+					assert.JSONEq(t, `[]`, string(b))
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
 		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updatePermissions(context.TODO(), "10bcc894-9b24-4b39-b26d-61622d4e163e", []accountmanagement.PermissionsDto{})
 		assert.NoError(t, err)
-		assert.Equal(t, 0, server.Calls())
+		assert.Equal(t, 1, server.Calls())
 	})
 
 }
@@ -492,13 +507,29 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 	})
 
 	t.Run("Update Account Policy Bindings - empty policy uuids given", func(t *testing.T) {
-		server := testutils.NewHTTPTestServer(t, nil)
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/account/abcde/bindings/groups/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
+					body, _ := io.ReadAll(request.Body)
+					require.JSONEq(t, `{"policyUuids":[]}`, string(body))
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
 		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateAccountPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
 		assert.NoError(t, err)
-		assert.Equal(t, 0, server.Calls())
+		assert.Equal(t, 1, server.Calls())
 	})
 
 	t.Run("Update Environment Policy Bindings - OK", func(t *testing.T) {
@@ -561,13 +592,28 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 	})
 
 	t.Run("Update Environment Policy Bindings - empty policy uuids given", func(t *testing.T) {
-		server := testutils.NewHTTPTestServer(t, nil)
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/environment/env1234/bindings/groups/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
+					body, _ := io.ReadAll(request.Body)
+					require.JSONEq(t, `{"policyUuids":[]}`, string(body))
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
 		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateEnvironmentPolicyBindings(context.TODO(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
 		assert.NoError(t, err)
-		assert.Equal(t, 0, server.Calls())
+		assert.Equal(t, 1, server.Calls())
 	})
 
 	t.Run("Update Environment Policy Bindings - empty environment name given", func(t *testing.T) {
@@ -644,13 +690,29 @@ func TestClient_UpdateGroupBindings(t *testing.T) {
 	})
 
 	t.Run("Update Group Bindings - empty policy uuids given", func(t *testing.T) {
-		server := testutils.NewHTTPTestServer(t, nil)
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/users/8b78ac8d-74fd-456f-bb19-13e078674745/groups", request.URL.String())
+					body, _ := io.ReadAll(request.Body)
+					require.JSONEq(t, `[]`, string(body))
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
 		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateGroupBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
 		assert.NoError(t, err)
-		assert.Equal(t, 0, server.Calls())
+		assert.Equal(t, 1, server.Calls())
 	})
 
 }
