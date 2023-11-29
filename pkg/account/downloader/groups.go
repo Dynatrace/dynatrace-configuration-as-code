@@ -26,17 +26,37 @@ import (
 )
 
 func (a *Account) Groups() ([]account.Group, error) {
-	dtos, err := a.getGroups(context.TODO())
+	ctx := context.TODO()
+	dtos, err := a.getGroups(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var retVal []account.Group
 	for _, dto := range dtos {
+		pp, err := a.getPermissionFor(ctx, *dto.Uuid)
+		if err != nil {
+			return nil, err
+		}
+
+		a := &account.Account{
+			Permissions: extractAccountPermissions(pp.Permissions),
+		}
+
+		var e []account.Environment
+		for scope, permissions := range sortPermissionsByTenant(pp.Permissions) {
+			e = append(e, account.Environment{
+				Name:        scope,
+				Permissions: permissions,
+			})
+		}
 		retVal = append(retVal, account.Group{
 			ID:             uuid.New().String(),
 			Name:           dto.Name,
 			Description:    *dto.Description,
+			Account:        a,
+			Environment:    e,
+			ManagementZone: nil,
 			OriginObjectID: *dto.Uuid,
 		})
 	}
@@ -58,4 +78,36 @@ func (a *Account) getGroups(ctx context.Context) ([]accountmanagement.GetGroupDt
 	log.Debug("%d group downloaded", len(r.Items))
 
 	return r.Items, nil
+}
+
+func (a *Account) getPermissionFor(ctx context.Context, groupUuid string) (*accountmanagement.PermissionsGroupDto, error) {
+	log.Debug("Downloading permissions for group %q", groupUuid) //TODO: or should be account.Group.ID ?
+	r, resp, err := a.httpClient.PermissionManagementAPI.GetGroupPermissions(ctx, a.accountInfo.AccountUUID, groupUuid).Execute()
+	defer closeResponseBody(resp)
+
+	if err = handleClientResponseError(resp, err, "unable to get groups"); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+func extractAccountPermissions(p []accountmanagement.PermissionsDto) []string {
+	var retVal []string
+	for i := range p {
+		if p[i].ScopeType == "account" {
+			retVal = append(retVal, p[i].PermissionName)
+		}
+	}
+	return retVal
+}
+
+func sortPermissionsByTenant(permissionDTOs []accountmanagement.PermissionsDto) map[string][]string {
+	retVal := map[string][]string{}
+	for _, p := range permissionDTOs {
+		if p.ScopeType == "tenant" {
+			retVal[p.Scope] = append(retVal[p.Scope], p.GetPermissionName())
+		}
+	}
+	return retVal
 }
