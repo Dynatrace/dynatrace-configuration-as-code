@@ -17,7 +17,6 @@
 package account
 
 import (
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/spf13/afero"
@@ -49,7 +48,7 @@ func downloadCommand(fs afero.Fs) *cobra.Command {
 		ValidArgsFunction: completion.SingleArgumentManifestFileCompletion,
 		PreRun:            cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return download(fs, opts)
+			return downloadAll(fs, opts)
 		},
 	}
 
@@ -71,9 +70,4 @@ func downloadCommand(fs afero.Fs) *cobra.Command {
 	}
 
 	return cmd
-}
-
-func download(fs afero.Fs, opts downloadOpts) error {
-	fmt.Println(`COMMAND NOT YET IMPLEMENTED ¯\_(ツ)_/¯ `)
-	return nil
 }
