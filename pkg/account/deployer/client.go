@@ -218,8 +218,8 @@ func (d *accountManagementClient) updatePermissions(ctx context.Context, groupId
 		return fmt.Errorf("group id must not be empty")
 	}
 
-	if len(permissions) == 0 {
-		return nil
+	if permissions == nil {
+		permissions = []accountmanagement.PermissionsDto{}
 	}
 
 	for _, p := range permissions {
@@ -240,8 +240,8 @@ func (d *accountManagementClient) updateAccountPolicyBindings(ctx context.Contex
 	if groupId == "" {
 		return fmt.Errorf("group id must not be empty")
 	}
-	if len(policyIds) == 0 {
-		return nil
+	if policyIds == nil {
+		policyIds = []string{}
 	}
 	data := accountmanagement.PolicyUuidsDto{PolicyUuids: policyIds}
 
@@ -261,8 +261,8 @@ func (d *accountManagementClient) updateEnvironmentPolicyBindings(ctx context.Co
 	if groupId == "" {
 		return fmt.Errorf("group id must not be empty")
 	}
-	if len(policyIds) == 0 {
-		return nil
+	if policyIds == nil {
+		policyIds = []string{}
 	}
 	data := accountmanagement.PolicyUuidsDto{PolicyUuids: policyIds}
 	resp, err := d.client.PolicyManagementAPI.UpdatePolicyBindingsToGroup(ctx, "environment", envName, groupId).PolicyUuidsDto(data).Execute()
@@ -273,12 +273,36 @@ func (d *accountManagementClient) updateEnvironmentPolicyBindings(ctx context.Co
 	return nil
 }
 
+func (d *accountManagementClient) deleteAllEnvironmentPolicyBindings(ctx context.Context, groupId string) error {
+	environments, resp, err := d.client.EnvironmentManagementAPI.GetEnvironments(ctx, d.accountInfo.AccountUUID).Execute()
+	defer closeResponseBody(resp)
+	if err = d.handleClientResponseError(resp, err, "unable to get all environments for account with id"+d.accountInfo.AccountUUID); err != nil {
+		return err
+	}
+
+	for _, e := range environments.Data {
+		policies, resp, err := d.client.PolicyManagementAPI.GetPolicyUuidsBindings(ctx, "environment", e.Id, groupId).Execute()
+		closeResponseBody(resp)
+		if err = d.handleClientResponseError(resp, err, "unable to list all environments policy bindings for account with UUID "+d.accountInfo.AccountUUID+" and group with UUID "+groupId); err != nil {
+			return err
+		}
+		for _, pol := range policies.PolicyUuids {
+			resp, err = d.client.PolicyManagementAPI.DeleteLevelPolicyBindingsForPolicyAndGroup(ctx, "environment", e.Id, pol, groupId).ForceMultiple(true).Execute()
+			closeResponseBody(resp)
+			if err = d.handleClientResponseError(resp, err, "unable to delete all environments policy bindings for account with UUID "+d.accountInfo.AccountUUID+" and group with UUID "+groupId); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (d *accountManagementClient) updateGroupBindings(ctx context.Context, userId string, groupIds []string) error {
 	if userId == "" {
 		return fmt.Errorf("user id must not be empty")
 	}
-	if len(groupIds) == 0 {
-		return nil
+	if groupIds == nil {
+		groupIds = []string{}
 	}
 	resp, err := d.client.UserManagementAPI.ReplaceUserGroups(ctx, d.accountInfo.AccountUUID, userId).RequestBody(groupIds).Execute()
 	defer closeResponseBody(resp)

@@ -419,13 +419,28 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 	})
 
 	t.Run("Update Group Permissions - no permissions given", func(t *testing.T) {
-		server := testutils.NewHTTPTestServer(t, nil)
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"count": 0,"items": []}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/groups/10bcc894-9b24-4b39-b26d-61622d4e163e/permissions", request.URL.String())
+					b, _ := io.ReadAll(request.Body)
+					assert.JSONEq(t, `[]`, string(b))
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
 		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updatePermissions(context.TODO(), "10bcc894-9b24-4b39-b26d-61622d4e163e", []accountmanagement.PermissionsDto{})
 		assert.NoError(t, err)
-		assert.Equal(t, 0, server.Calls())
+		assert.Equal(t, 1, server.Calls())
 	})
 
 }
@@ -492,13 +507,29 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 	})
 
 	t.Run("Update Account Policy Bindings - empty policy uuids given", func(t *testing.T) {
-		server := testutils.NewHTTPTestServer(t, nil)
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/account/abcde/bindings/groups/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
+					body, _ := io.ReadAll(request.Body)
+					require.JSONEq(t, `{"policyUuids":[]}`, string(body))
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
 		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateAccountPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
 		assert.NoError(t, err)
-		assert.Equal(t, 0, server.Calls())
+		assert.Equal(t, 1, server.Calls())
 	})
 
 	t.Run("Update Environment Policy Bindings - OK", func(t *testing.T) {
@@ -561,13 +592,28 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 	})
 
 	t.Run("Update Environment Policy Bindings - empty policy uuids given", func(t *testing.T) {
-		server := testutils.NewHTTPTestServer(t, nil)
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/environment/env1234/bindings/groups/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
+					body, _ := io.ReadAll(request.Body)
+					require.JSONEq(t, `{"policyUuids":[]}`, string(body))
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
 		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateEnvironmentPolicyBindings(context.TODO(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
 		assert.NoError(t, err)
-		assert.Equal(t, 0, server.Calls())
+		assert.Equal(t, 1, server.Calls())
 	})
 
 	t.Run("Update Environment Policy Bindings - empty environment name given", func(t *testing.T) {
@@ -644,13 +690,29 @@ func TestClient_UpdateGroupBindings(t *testing.T) {
 	})
 
 	t.Run("Update Group Bindings - empty policy uuids given", func(t *testing.T) {
-		server := testutils.NewHTTPTestServer(t, nil)
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/users/8b78ac8d-74fd-456f-bb19-13e078674745/groups", request.URL.String())
+					body, _ := io.ReadAll(request.Body)
+					require.JSONEq(t, `[]`, string(body))
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
 		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateGroupBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
 		assert.NoError(t, err)
-		assert.Equal(t, 0, server.Calls())
+		assert.Equal(t, 1, server.Calls())
 	})
 
 }
@@ -889,5 +951,170 @@ func TestClient_GetGlobalPolicies(t *testing.T) {
 	assert.Len(t, policiesMap, 2)
 	assert.Equal(t, policiesMap["Policy 1"], "8d68fb35-0fa9-499e-b924-55f1629dc71e")
 	assert.Equal(t, policiesMap["Policy 2"], "a6f0bf51-dc92-4712-8fe7-73dfff2c3898")
+
+}
+
+func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
+
+	t.Run("Delete all Policy Bindings - delete call fails", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":true}]}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/env/v2/accounts/abcde/environments", request.URL.String())
+				},
+			},
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"policyUuids":["4136e779-3447-4d6f-8457-745dc23c00da","425179d0-791a-4aeb-8c87-c61207bfffd9"]}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/environment/vsy13800/bindings/groups/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
+				},
+			},
+			{
+				DELETE: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusInternalServerError,
+						ResponseBody: `{ "error" : "something went wrong}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/environment/vsy13800/bindings/4136e779-3447-4d6f-8457-745dc23c00da/8b78ac8d-74fd-456f-bb19-13e078674745?forceMultiple=true", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		err := instance.deleteAllEnvironmentPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745")
+		assert.Error(t, err)
+		assert.Equal(t, 3, server.Calls())
+	})
+
+	t.Run("Delete all Policy Bindings - getting bindings call fails", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":true}]}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/env/v2/accounts/abcde/environments", request.URL.String())
+				},
+			},
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusInternalServerError,
+						ResponseBody: `{"error" : " something went wrong"}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/environment/vsy13800/bindings/groups/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		err := instance.deleteAllEnvironmentPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745")
+		assert.Error(t, err)
+		assert.Equal(t, 2, server.Calls())
+	})
+
+	t.Run("Delete all Policy Bindings - getting environments fails", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusInternalServerError,
+						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":true}]}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/env/v2/accounts/abcde/environments", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		err := instance.deleteAllEnvironmentPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745")
+		assert.Error(t, err)
+		assert.Equal(t, 1, server.Calls())
+	})
+	t.Run("Delete all Policy Bindings - OK", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":true}]}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/env/v2/accounts/abcde/environments", request.URL.String())
+				},
+			},
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"policyUuids":["4136e779-3447-4d6f-8457-745dc23c00da","425179d0-791a-4aeb-8c87-c61207bfffd9"]}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/environment/vsy13800/bindings/groups/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
+				},
+			},
+			{
+				DELETE: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"policyUuids":["4136e779-3447-4d6f-8457-745dc23c00da","425179d0-791a-4aeb-8c87-c61207bfffd9"]}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/environment/vsy13800/bindings/4136e779-3447-4d6f-8457-745dc23c00da/8b78ac8d-74fd-456f-bb19-13e078674745?forceMultiple=true", request.URL.String())
+				},
+			},
+			{
+				DELETE: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"policyUuids":["4136e779-3447-4d6f-8457-745dc23c00da","425179d0-791a-4aeb-8c87-c61207bfffd9"]}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/environment/vsy13800/bindings/425179d0-791a-4aeb-8c87-c61207bfffd9/8b78ac8d-74fd-456f-bb19-13e078674745?forceMultiple=true", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		err := instance.deleteAllEnvironmentPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745")
+		assert.NoError(t, err)
+		assert.Equal(t, 4, server.Calls())
+	})
 
 }

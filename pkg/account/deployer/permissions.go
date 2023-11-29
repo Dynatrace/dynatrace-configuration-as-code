@@ -24,15 +24,7 @@ import (
 	"net/http"
 )
 
-var DefaultPermissionProvider = availablePermissions(&http.Client{}, "https://api.dynatrace.com/spec-json")
-
-func availablePermissions(client *http.Client, url string) func() ([]string, error) {
-	return func() ([]string, error) {
-		return fetchAvailablePermissionIDs(context.TODO(), client, url)
-	}
-}
-
-func fetchAvailablePermissionIDs(ctx context.Context, client *http.Client, url string) ([]string, error) {
+func FetchAvailablePermissionIDs(ctx context.Context, client *http.Client, url string) ([]string, error) {
 	schema, err := fetchSchema(ctx, client, url)
 	if err != nil {
 		return nil, err
