@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -59,7 +60,7 @@ func TestClient_UpsertUser_UserAlreadyExists(t *testing.T) {
 
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertUser(context.TODO(), "abcd@ef.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "abcd@ef.com", id)
@@ -80,7 +81,7 @@ func TestClient_UpsertUser_Get_Existing_Users_Fails(t *testing.T) {
 
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertUser(context.TODO(), "abcd@ef.com")
 	assert.Error(t, err)
 	assert.Zero(t, id)
@@ -116,7 +117,7 @@ func TestClient_UpsertUser_CreateNewUser(t *testing.T) {
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
 
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertUser(context.TODO(), "abcd@ef.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "abcd@ef.com", id)
@@ -147,7 +148,7 @@ func TestClient_UpsertUser_CreatingNewFails(t *testing.T) {
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
 
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertUser(context.TODO(), "abcd@ef.com")
 	assert.Error(t, err)
 	assert.Zero(t, id)
@@ -194,7 +195,7 @@ func TestClient_UpsertGroup_Update_Existing(t *testing.T) {
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
 
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertGroup(context.TODO(), "", Group{Name: "my-group"})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, server.Calls())
@@ -234,7 +235,7 @@ func TestClient_UpsertGroup_Update_Existing_Fails(t *testing.T) {
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
 
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertGroup(context.TODO(), "", Group{Name: "my-group"})
 	assert.Error(t, err)
 	assert.Equal(t, 2, server.Calls())
@@ -255,7 +256,7 @@ func TestClient_UpsertGroup_Getting_Existing_Groups_Fail(t *testing.T) {
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
 
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertGroup(context.TODO(), "", Group{Name: "my-group"})
 	assert.Error(t, err)
 	assert.Equal(t, 1, server.Calls())
@@ -292,7 +293,7 @@ func TestClient_UpsertGroup_Create_New(t *testing.T) {
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
 
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertGroup(context.TODO(), "", Group{Name: "my-group"})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, server.Calls())
@@ -321,7 +322,7 @@ func TestClient_UpsertGroup_Create_New_Fails(t *testing.T) {
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
 
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertGroup(context.TODO(), "", Group{Name: "my-group"})
 	assert.Error(t, err)
 	assert.Equal(t, 2, server.Calls())
@@ -349,7 +350,7 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updatePermissions(context.TODO(), "10bcc894-9b24-4b39-b26d-61622d4e163e", []accountmanagement.PermissionsDto{{
 			PermissionName: "tenant-viewer",
 			Scope:          "account",
@@ -374,7 +375,7 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updatePermissions(context.TODO(), "10bcc894-9b24-4b39-b26d-61622d4e163e", []accountmanagement.PermissionsDto{{
 			PermissionName: "tenant-viewer",
 			Scope:          "account",
@@ -390,7 +391,7 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, nil)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updatePermissions(context.TODO(), "10bcc894-9b24-4b39-b26d-61622d4e163e", []accountmanagement.PermissionsDto{{
 			PermissionName: "unsupported-permission",
 			Scope:          "account",
@@ -406,7 +407,7 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, nil)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updatePermissions(context.TODO(), "", []accountmanagement.PermissionsDto{{
 			PermissionName: "perm1",
 			Scope:          "account",
@@ -437,7 +438,7 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updatePermissions(context.TODO(), "10bcc894-9b24-4b39-b26d-61622d4e163e", []accountmanagement.PermissionsDto{})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, server.Calls())
@@ -467,7 +468,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateAccountPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, server.Calls())
@@ -488,7 +489,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateAccountPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
 		assert.Error(t, err)
 		assert.Equal(t, "unable to update policy binding between group with UUID 8b78ac8d-74fd-456f-bb19-13e078674745 and policies with UUIDs [155a39a5-159f-475e-b2ff-681dad70896e] (HTTP 500): {\"error\" : \"some-error\"}", err.Error())
@@ -499,7 +500,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, nil)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateAccountPolicyBindings(context.TODO(), "", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
 		assert.Error(t, err)
 		assert.Equal(t, "group id must not be empty", err.Error())
@@ -526,7 +527,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateAccountPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, server.Calls())
@@ -552,7 +553,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateEnvironmentPolicyBindings(context.TODO(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, server.Calls())
@@ -573,7 +574,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateEnvironmentPolicyBindings(context.TODO(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
 		assert.Error(t, err)
 		assert.Equal(t, "unable to update policy binding between group with UUID 8b78ac8d-74fd-456f-bb19-13e078674745 and policies with UUIDs [155a39a5-159f-475e-b2ff-681dad70896e] (HTTP 500): {\"error\" : \"some-error\"}", err.Error())
@@ -584,7 +585,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, nil)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateEnvironmentPolicyBindings(context.TODO(), "env1234", "", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
 		assert.Error(t, err)
 		assert.Equal(t, "group id must not be empty", err.Error())
@@ -610,7 +611,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateEnvironmentPolicyBindings(context.TODO(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, server.Calls())
@@ -620,7 +621,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, nil)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateEnvironmentPolicyBindings(context.TODO(), "", "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
 		assert.Error(t, err)
 		assert.Equal(t, "environment name must not be empty", err.Error())
@@ -650,7 +651,7 @@ func TestClient_UpdateGroupBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateGroupBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, server.Calls())
@@ -671,7 +672,7 @@ func TestClient_UpdateGroupBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateGroupBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
 		assert.Error(t, err)
 		assert.Equal(t, "unable to add user 8b78ac8d-74fd-456f-bb19-13e078674745 to groups [155a39a5-159f-475e-b2ff-681dad70896e] (HTTP 500): {\"error\" : \"some-error\"}", err.Error())
@@ -682,7 +683,7 @@ func TestClient_UpdateGroupBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, nil)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateGroupBindings(context.TODO(), "", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
 		assert.Error(t, err)
 		assert.Equal(t, "user id must not be empty", err.Error())
@@ -709,7 +710,7 @@ func TestClient_UpdateGroupBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.updateGroupBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, server.Calls())
@@ -761,7 +762,7 @@ func TestClient_UpsertPolicy_UpdateExisting(t *testing.T) {
 
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertPolicy(context.TODO(), "account", "abcde", "", Policy{
 		Name:           "Monaco Test Policy",
 		Description:    "Just a monaco test policy",
@@ -801,7 +802,7 @@ func TestClient_UpsertPolicy_UpdateExisting_UpdateFails(t *testing.T) {
 
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertPolicy(context.TODO(), "account", "abcde", "", Policy{
 		Name:           "Monaco Test Policy",
 		Description:    "Just a monaco test policy",
@@ -847,7 +848,7 @@ func TestClient_UpsertPolicy_CreateNew(t *testing.T) {
 
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertPolicy(context.TODO(), "account", "abcde", "", Policy{
 		Name:           "Monaco Test Policy",
 		Description:    "Just a monaco test policy",
@@ -879,7 +880,7 @@ func TestClient_UpsertPolicy_CreateNew_CreateFails(t *testing.T) {
 
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertPolicy(context.TODO(), "account", "abcde", "", Policy{
 		Name:           "Monaco Test Policy",
 		Description:    "Just a monaco test policy",
@@ -904,7 +905,7 @@ func TestClient_UpsertPolicy_GetPoliciesFails(t *testing.T) {
 
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	id, err := instance.upsertPolicy(context.TODO(), "account", "abcde", "", Policy{
 		Name:           "Monaco Test Policy",
 		Description:    "Just a monaco test policy",
@@ -945,7 +946,7 @@ func TestClient_GetGlobalPolicies(t *testing.T) {
 
 	server := testutils.NewHTTPTestServer(t, responses)
 	defer server.Close()
-	instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 	policiesMap, err := instance.getGlobalPolicies(context.TODO())
 	assert.NoError(t, err)
 	assert.Len(t, policiesMap, 2)
@@ -996,7 +997,7 @@ func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.deleteAllEnvironmentPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745")
 		assert.Error(t, err)
 		assert.Equal(t, 3, server.Calls())
@@ -1031,7 +1032,7 @@ func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.deleteAllEnvironmentPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745")
 		assert.Error(t, err)
 		assert.Equal(t, 2, server.Calls())
@@ -1055,7 +1056,7 @@ func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.deleteAllEnvironmentPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745")
 		assert.Error(t, err)
 		assert.Equal(t, 1, server.Calls())
@@ -1111,7 +1112,7 @@ func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		instance := NewClient(AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
 		err := instance.deleteAllEnvironmentPolicyBindings(context.TODO(), "8b78ac8d-74fd-456f-bb19-13e078674745")
 		assert.NoError(t, err)
 		assert.Equal(t, 4, server.Calls())

@@ -25,10 +25,6 @@ import (
 )
 
 type (
-	AccountInfo struct {
-		Name        string
-		AccountUUID string
-	}
 	localId    = string // local (monaco related) identifier
 	envName    = string // dt environment name
 	remoteId   = string // dt entity identifier
@@ -52,7 +48,7 @@ type client interface {
 	deleteAllEnvironmentPolicyBindings(ctx context.Context, groupId string) error
 	updateGroupBindings(ctx context.Context, userId string, groupIds []string) error
 	updatePermissions(ctx context.Context, groupId string, permissions []accountmanagement.PermissionsDto) error
-	getAccountInfo() AccountInfo
+	getAccountInfo() account.AccountInfo
 }
 
 type AccountDeployer struct {

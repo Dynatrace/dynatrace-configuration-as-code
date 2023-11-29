@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"io"
 	"net/http"
 	"slices"
@@ -35,13 +36,13 @@ type (
 	ManagementZone = accountmanagement.ManagementZoneResourceDto
 
 	accountManagementClient struct {
-		accountInfo          AccountInfo
+		accountInfo          account.AccountInfo
 		supportedPermissions []remoteId
 		client               *accounts.Client
 	}
 )
 
-func NewClient(info AccountInfo, client *accounts.Client, supportedPermissions []remoteId) *accountManagementClient {
+func NewClient(info account.AccountInfo, client *accounts.Client, supportedPermissions []remoteId) *accountManagementClient {
 	return &accountManagementClient{
 		accountInfo:          info,
 		client:               client,
@@ -49,7 +50,7 @@ func NewClient(info AccountInfo, client *accounts.Client, supportedPermissions [
 	}
 }
 
-func (d *accountManagementClient) getAccountInfo() AccountInfo {
+func (d *accountManagementClient) getAccountInfo() account.AccountInfo {
 	return d.accountInfo
 }
 

@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
@@ -98,8 +98,8 @@ func CreateClientSet(url string, auth manifest.Auth) (*client.ClientSet, error) 
 	})
 }
 
-func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[deployer.AccountInfo]*accounts.Client, error) {
-	accClients := make(map[deployer.AccountInfo]*accounts.Client, len(manifestAccounts))
+func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[account.AccountInfo]*accounts.Client, error) {
+	accClients := make(map[account.AccountInfo]*accounts.Client, len(manifestAccounts))
 	for _, acc := range manifestAccounts {
 		oauthCreds := clientcredentials.Config{
 			ClientID:     acc.OAuth.ClientID.Value.Value(),
@@ -121,7 +121,7 @@ func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[dep
 		if err != nil {
 			return accClients, err
 		}
-		accClients[deployer.AccountInfo{
+		accClients[account.AccountInfo{
 			Name:        acc.Name,
 			AccountUUID: acc.AccountUUID.String(),
 		}] = accClient
