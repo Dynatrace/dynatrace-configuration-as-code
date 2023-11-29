@@ -17,6 +17,7 @@
 package account
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
@@ -30,6 +31,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
+	"net/http"
 	"path/filepath"
 )
 
@@ -123,7 +125,7 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 		return fmt.Errorf("failed to create account clients: %w", err)
 	}
 
-	supportedPermissions, err := deployer.DefaultPermissionProvider()
+	supportedPermissions, err := deployer.FetchAvailablePermissionIDs(context.Background(), &http.Client{}, "https://api.dynatrace.com/spec-json")
 	if err != nil {
 		return fmt.Errorf("failed to fetch supportedPermissions: %w", err)
 	}
