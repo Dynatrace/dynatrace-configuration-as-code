@@ -25,7 +25,8 @@ import (
 )
 
 func (a *Account) Policies() ([]account.Policy, error) {
-	dtos, err := a.getPolicies(context.TODO())
+	ctx := context.TODO()
+	dtos, err := a.getPolicies(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -34,11 +35,16 @@ func (a *Account) Policies() ([]account.Policy, error) {
 	for _, dto := range dtos {
 		l := getPolicyLevel(dto)
 		if l != nil {
+			p, err := a.getPolicyDefinition(ctx, dto)
+			if err != nil {
+				return nil, err
+			}
 			retVal = append(retVal, account.Policy{
 				ID:             uuid.New().String(),
 				Name:           dto.Name,
 				Level:          getPolicyLevel(dto),
 				Description:    dto.Description,
+				Policy:         p.StatementQuery,
 				OriginObjectID: dto.Uuid,
 			})
 		}
@@ -72,4 +78,16 @@ func (a *Account) getPolicies(ctx context.Context) ([]accountmanagement.PolicyOv
 	log.Debug("%d policy downloaded", len(r.PolicyOverviewList))
 
 	return r.PolicyOverviewList, nil
+}
+
+func (a *Account) getPolicyDefinition(ctx context.Context, dto accountmanagement.PolicyOverview) (*accountmanagement.LevelPolicyDto, error) {
+	log.Debug("Downloading definition for policy %q", dto.Name) //TODO: or should be account.Policy.ID ?
+	r, resp, err := a.httpClient.PolicyManagementAPI.GetLevelPolicy(ctx, dto.LevelType, dto.LevelId, dto.Uuid).Execute()
+	defer closeResponseBody(resp)
+
+	if err = handleClientResponseError(resp, err, "unable to get groups"); err != nil {
+		return nil, err
+	}
+
+	return r, nil
 }
