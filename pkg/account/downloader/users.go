@@ -62,7 +62,7 @@ func (a *Account) getUsers(ctx context.Context) ([]accountmanagement.UsersDto, e
 	if r != nil && int(r.Count) != len(r.Items) {
 		return nil, errors.New("the received data are incomplete")
 	}
-	log.Debug("%d user record reviewed", len(r.Items))
+	log.Debug("%d user downloaded", len(r.Items))
 
 	return r.Items, nil
 }
