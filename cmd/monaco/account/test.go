@@ -64,23 +64,10 @@ func downloadAll(fs afero.Fs, opts downloadOpts) error {
 
 func download(fs afero.Fs, opts downloadOpts, accInfo account.AccountInfo, accClient *accounts.Client) error {
 	downloader := downloader.New(&accInfo, accClient)
-	uu, err := downloader.Users()
+
+	resources, err := downloader.DownloadConfiguration()
 	if err != nil {
 		return err
-	}
-
-	_, err = downloader.Groups()
-	if err != nil {
-		return err
-	}
-
-	users := make(map[account.UserId]account.User)
-	for i := range uu {
-		users[uu[i].Email] = uu[i]
-	}
-
-	resources := account.Resources{
-		Users: users,
 	}
 
 	c := presistance.Context{
@@ -88,7 +75,7 @@ func download(fs afero.Fs, opts downloadOpts, accInfo account.AccountInfo, accCl
 		OutputFolder:  opts.outputFolder,
 		ProjectFolder: accInfo.String(),
 	}
-	err = presistance.Write(c, resources)
+	err = presistance.Write(c, *resources)
 	if err != nil {
 		return err
 	}
