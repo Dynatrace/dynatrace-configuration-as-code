@@ -1,5 +1,5 @@
 users:
-- email: monaco@dynatrace.com
+- email: monaco+%RAND%@dynatrace.com
   groups:
   - type: reference
     id: my-group
@@ -7,7 +7,7 @@ users:
 
 
 groups:
-- name: My Group
+- name: My Group%RAND%
   id: my-group
   description: This is my group
   account:
@@ -32,7 +32,7 @@ groups:
     - tenant-viewer
 
 policies:
-- name: My Policy
+- name: My Policy%RAND%
   id: my-policy
   level:
     type: account
