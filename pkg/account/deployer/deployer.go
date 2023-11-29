@@ -49,6 +49,7 @@ type client interface {
 	upsertUser(ctx context.Context, userId string) (remoteId, error)
 	updateAccountPolicyBindings(ctx context.Context, groupId string, policyIds []string) error
 	updateEnvironmentPolicyBindings(ctx context.Context, envName string, groupId string, policyIds []string) error
+	deleteAllEnvironmentPolicyBindings(ctx context.Context, groupId string) error
 	updateGroupBindings(ctx context.Context, userId string, groupIds []string) error
 	updatePermissions(ctx context.Context, groupId string, permissions []accountmanagement.PermissionsDto) error
 	getAccountInfo() AccountInfo
@@ -201,6 +202,11 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 	if err != nil {
 		return err
 	}
+
+	if len(envPolicyUuids) == 0 {
+		return d.accountManagementClient.deleteAllEnvironmentPolicyBindings(ctx, remoteGroupId)
+	}
+
 	for env, uuids := range envPolicyUuids {
 		if err = d.accountManagementClient.updateEnvironmentPolicyBindings(ctx, env, remoteGroupId, uuids); err != nil {
 			return err
