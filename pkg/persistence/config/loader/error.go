@@ -17,10 +17,13 @@
 package loader
 
 import (
+	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
+
+var ErrMixingConfigs = errors.New("mixing both configurations and account resources is not allowed")
 
 func newLoadError(path string, err error) configErrors.ConfigLoaderError {
 	return configErrors.ConfigLoaderError{

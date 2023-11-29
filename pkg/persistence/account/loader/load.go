@@ -47,19 +47,9 @@ func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
 	return transform(persisted), nil
 }
 
-// IsAccountConfigFile tests whether a given file contains the top-level properties used to configure account management resources.
-// Those properties are "users", "groups", and "policies".
-// If any errors occur we assume the file not to be an account management resource file.
-func IsAccountConfigFile(fs afero.Fs, file string) bool {
-	// We can ignore the error here. In case that the file is not a yaml file and the decoder fails, the struct will still
-	// contain nil values. Thus, the AM check returns false, which is the sound response. Example: empty file.
-	d, _ := decode(fs, file)
-
-	return hasAnyAccountKeyDefined(d)
-}
-
-// hasAnyAccountKeyDefined checks whether the map has any AM key defined
-func hasAnyAccountKeyDefined(m map[string]any) bool {
+// HasAnyAccountKeyDefined checks whether the map has any AM key defined.
+// The current keys are `users`, `groups`, and `policies`.
+func HasAnyAccountKeyDefined(m map[string]any) bool {
 	if len(m) == 0 {
 		return false
 	}
@@ -98,7 +88,7 @@ func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 		}
 
 		if _, f := content["configs"]; f {
-			if hasAnyAccountKeyDefined(content) {
+			if HasAnyAccountKeyDefined(content) {
 				return nil, fmt.Errorf("failed to parse file %q: %w", yamlFilePath, ErrMixingConfigs)
 			}
 
