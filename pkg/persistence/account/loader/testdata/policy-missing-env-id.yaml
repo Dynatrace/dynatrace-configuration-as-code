@@ -1,0 +1,11 @@
+policies:
+  - name: My Policy
+    id: my-policy
+    level:
+      type: environment
+      # value should be defined here
+    description: abcde
+    policy: |-
+      ALLOW a:b:c;
+
+

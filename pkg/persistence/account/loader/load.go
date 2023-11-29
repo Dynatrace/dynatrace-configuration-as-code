@@ -21,10 +21,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
-	"io"
 )
 
 // Load loads account management resources from YAML configuration files
@@ -39,7 +37,7 @@ func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
 		return nil, fmt.Errorf("failed to load account managment resources from %s: %w", rootPath, err)
 	}
 
-	if err := validate(persisted); err != nil {
+	if err := validateReferences(persisted); err != nil {
 		return nil, fmt.Errorf("account managment resources from %s are invalid: %w", rootPath, err)
 	}
 
@@ -63,169 +61,72 @@ func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 		if err != nil {
 			return nil, err
 		}
-		content, err := decode(yamlFile)
+
+		decoder := yaml.NewDecoder(yamlFile)
+		decoder.SetStrict(true)
+
+		var res persistence.File
+		err = decoder.Decode(&res)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := loadPolicies(content, resources); err != nil {
-			return nil, fmt.Errorf("failed to load policies for file %q: %w", yamlFilePath, err)
+		for _, p := range res.Policies {
+			if err := validatePolicy(p); err != nil {
+				return nil, fmt.Errorf("error in file %q: %w", yamlFilePath, err)
+			}
+			if _, exists := resources.Policies[p.ID]; exists {
+				return nil, fmt.Errorf("found duplicate policy with id %q", p.ID)
+			}
+			resources.Policies[p.ID] = p
 		}
 
-		if err := loadGroups(content, resources); err != nil {
-			return nil, fmt.Errorf("failed to load groups for file %q: %w", yamlFilePath, err)
+		for _, g := range res.Groups {
+			if err := validateGroup(g); err != nil {
+				return nil, fmt.Errorf("error in file %q: %w", yamlFilePath, err)
+			}
+			if _, exists := resources.Groups[g.ID]; exists {
+				return nil, fmt.Errorf("found duplicate group with id %q", g.ID)
+			}
+			resources.Groups[g.ID] = g
 		}
 
-		if err := loadUsers(content, resources); err != nil {
-			return nil, fmt.Errorf("failed to load users for file %q: %w", yamlFilePath, err)
+		for _, u := range res.Users {
+			if err := validateUser(u); err != nil {
+				return nil, fmt.Errorf("error in file %q: %w", yamlFilePath, err)
+			}
+			if _, exists := resources.Users[u.Email]; exists {
+				return nil, fmt.Errorf("found duplicate user with email %q", u.Email)
+			}
+			resources.Users[u.Email] = u
 		}
 	}
 	return resources, nil
 }
 
-func loadPolicies(content map[string]any, resources *persistence.Resources) error {
-	var policies persistence.Policies
-	err := mapstructure.Decode(content, &policies)
-	if err != nil {
-		return err
-	}
-	for _, pol := range policies.Policies {
-		if _, exists := resources.Policies[pol.ID]; exists {
-			return fmt.Errorf("found duplicate policy with id %q", pol.ID)
-		}
-		type PolicyLevel struct {
-			Type        string `mapstructure:"type"`
-			Environment string `mapstructure:"environment"`
-		}
-		var level PolicyLevel
-		if err := mapstructure.Decode(pol.Level, &level); err != nil {
-			return err
-		}
-
-		if level.Type == "account" {
-			pol.Level = persistence.PolicyLevelAccount{Type: "account"}
-		}
-		if level.Type == "environment" {
-			pol.Level = persistence.PolicyLevelEnvironment{
-				Type:        "environment",
-				Environment: level.Environment,
-			}
-		}
-		resources.Policies[pol.ID] = pol
-	}
-	return nil
-}
-
-func loadGroups(content map[string]any, resources *persistence.Resources) error {
-	var groups persistence.Groups
-	err := mapstructure.Decode(content, &groups)
-	if err != nil {
-		return err
-	}
-	for _, gr := range groups.Groups {
-		if _, exists := resources.Groups[gr.ID]; exists {
-			return fmt.Errorf("found duplicate group with id %q", gr.ID)
-		}
-
-		if gr.Account != nil {
-			typedPolicies, err := parsePolicies(gr.Account.Policies)
-			if err != nil {
-				return err
-			}
-			gr.Account.Policies = typedPolicies
-		}
-
-		if gr.Environment != nil {
-			var typedEnvs []persistence.Environment
-			for _, env := range gr.Environment {
-				typedPolicies, err := parsePolicies(env.Policies)
-				if err != nil {
-					return err
-				}
-				env.Policies = typedPolicies
-				typedEnvs = append(typedEnvs, env)
-			}
-			gr.Environment = typedEnvs
-		}
-		resources.Groups[gr.ID] = gr
-	}
-
-	return nil
-}
-
-func parsePolicies(untypedPolicies []any) (typedPolicies []any, err error) {
-	for _, pol := range untypedPolicies {
-		if polStr, ok := pol.(string); ok {
-			typedPolicies = append(typedPolicies, polStr)
-			continue
-		}
-		var reference persistence.Reference
-		if err = mapstructure.Decode(pol, &reference); err != nil {
-			return nil, err
-		}
-		typedPolicies = append(typedPolicies, reference)
-	}
-	return typedPolicies, nil
-}
-
-func loadUsers(content map[string]any, resources *persistence.Resources) error {
-	var users persistence.Users
-	err := mapstructure.Decode(content, &users)
-	if err != nil {
-		return err
-	}
-	for _, us := range users.Users {
-		if _, exists := resources.Users[us.Email]; exists {
-			return fmt.Errorf("found duplicate user with id %q", us.Email)
-		}
-
-		typedGroups := make([]any, 0)
-		for _, gr := range us.Groups {
-			if grStr, ok := gr.(string); ok {
-				typedGroups = append(typedGroups, grStr)
-				continue
-			}
-			var reference persistence.Reference
-			if err = mapstructure.Decode(gr, &reference); err != nil {
-				return err
-			}
-			typedGroups = append(typedGroups, reference)
-		}
-		us.Groups = typedGroups
-		resources.Users[us.Email] = us
-	}
-	return nil
-}
-
-func decode(in io.ReadCloser) (map[string]any, error) {
-	defer func(r io.ReadCloser) { _ = r.Close() }(in)
-	var content map[string]interface{}
-	if err := yaml.NewDecoder(in).Decode(&content); err != nil {
-		return content, err
-	}
-	return content, nil
-}
-
 func transform(resources *persistence.Resources) *account.Resources {
-	transformLevel := func(levelType any) any {
-		switch v := levelType.(type) {
+	transformLevel := func(level persistence.PolicyLevel) any {
+		switch level.Type {
 		case persistence.PolicyLevelAccount:
-			return account.PolicyLevelAccount(v)
+			return account.PolicyLevelAccount{Type: level.Type}
 		case persistence.PolicyLevelEnvironment:
-			return account.PolicyLevelEnvironment(v)
+			return account.PolicyLevelEnvironment{Type: level.Type, Environment: level.Environment}
 		default:
 			panic("unable to convert persistence model")
 		}
 	}
 
-	transformRefs := func(in []any) []account.Ref {
+	transformRefs := func(in []persistence.Reference) []account.Ref {
 		var res []account.Ref
 		for _, el := range in {
-			switch v := el.(type) {
-			case persistence.Reference:
-				res = append(res, account.Reference(v))
-			case string:
-				res = append(res, account.StrReference(v))
+			switch el.Type {
+			case persistence.ReferenceType:
+				res = append(res, account.Reference{
+					Type: el.Type,
+					Id:   el.Id,
+				})
+			case "":
+				res = append(res, account.StrReference(el.Value))
 			default:
 				panic("unable to convert persistence model")
 			}

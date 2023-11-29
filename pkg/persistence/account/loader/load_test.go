@@ -67,18 +67,38 @@ func TestLoad(t *testing.T) {
 		assert.Len(t, loaded.Policies, 1)
 	})
 
-	t.Run("Duplicate group", func(t *testing.T) {
+	t.Run("Duplicate group produces error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/duplicate-group.yaml")
 		assert.Error(t, err)
 	})
 
-	t.Run("Duplicate user", func(t *testing.T) {
+	t.Run("Duplicate user produces error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/duplicate-user.yaml")
 		assert.Error(t, err)
 	})
 
-	t.Run("Duplicate policy", func(t *testing.T) {
+	t.Run("Duplicate policy produces error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/duplicate-policy.yaml")
+		assert.Error(t, err)
+	})
+
+	t.Run("Missing environment ID for env-level policy produces error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/policy-missing-env-id.yaml")
+		assert.Error(t, err)
+	})
+
+	t.Run("Partial policy definition produces error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/partial-policy.yaml")
+		assert.Error(t, err)
+	})
+
+	t.Run("Partial user definition produces error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/partial-user.yaml")
+		assert.Error(t, err)
+	})
+
+	t.Run("Partial group definition produces error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/partial-group.yaml")
 		assert.Error(t, err)
 	})
 
@@ -93,7 +113,7 @@ func TestLoad(t *testing.T) {
 	})
 }
 
-func TestValidateT(t *testing.T) {
+func TestValidateReferences(t *testing.T) {
 	testCases := []struct {
 		name           string
 		path           string
