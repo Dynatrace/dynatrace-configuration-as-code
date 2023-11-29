@@ -16,68 +16,101 @@
 
 package types
 
+import (
+	"fmt"
+	"github.com/mitchellh/mapstructure"
+)
+
+const (
+	ReferenceType          = "reference"
+	PolicyLevelAccount     = "account"
+	PolicyLevelEnvironment = "environment"
+)
+
 type (
-	PolicyLevel = any // either PolicyLevelAccount or PolicyLevelEnvironment is allowed
-	PolicyRef   = any // either string or Reference is allowed
-	GroupRef    = any // either string or Reference is allowed
-	Resources   struct {
+	Resources struct {
 		Policies map[string]Policy
 		Groups   map[string]Group
 		Users    map[string]User
 	}
-	Policies struct {
-		Policies []Policy `mapstructure:"policies"`
+	File struct {
+		Policies []Policy `yaml:"policies,omitempty"`
+		Groups   []Group  `yaml:"groups,omitempty"`
+		Users    []User   `yaml:"users,omitempty"`
 	}
 	Policy struct {
-		ID             string      `mapstructure:"id"`
-		Name           string      `mapstructure:"name"`
-		Level          PolicyLevel `mapstructure:"level"`
-		Description    string      `mapstructure:"description"`
-		Policy         string      `mapstructure:"policy"`
-		OriginObjectID string      `mapstructure:"originObjectId" yaml:"originObjectId,omitempty"`
+		ID             string      `yaml:"id"`
+		Name           string      `yaml:"name"`
+		Level          PolicyLevel `yaml:"level"`
+		Description    string      `yaml:"description"`
+		Policy         string      `yaml:"policy"`
+		OriginObjectID string      `yaml:"originObjectId,omitempty"`
 	}
-	PolicyLevelAccount struct {
-		Type string `mapstructure:"type"`
-	}
-	PolicyLevelEnvironment struct {
-		Type        string `mapstructure:"type"`
-		Environment string `mapstructure:"environment"`
-	}
-	Groups struct {
-		Groups []Group `mapstructure:"groups"`
+	PolicyLevel struct {
+		Type        string `yaml:"type"`
+		Environment string `yaml:"environment,omitempty"`
 	}
 	Group struct {
-		ID             string           `mapstructure:"id"`
-		Name           string           `mapstructure:"name"`
-		Description    string           `mapstructure:"description"`
-		Account        *Account         `mapstructure:"account"`
-		Environment    []Environment    `mapstructure:"environment"`
-		ManagementZone []ManagementZone `mapstructure:"managementZone" yaml:"managementZone"`
-		OriginObjectID string           `mapstructure:"originObjectId" yaml:"originObjectId,omitempty"`
+		ID             string           `yaml:"id"`
+		Name           string           `yaml:"name"`
+		Description    string           `yaml:"description"`
+		Account        *Account         `yaml:"account"`
+		Environment    []Environment    `yaml:"environment"`
+		ManagementZone []ManagementZone `yaml:"managementZone"`
+		OriginObjectID string           `yaml:"originObjectId,omitempty"`
 	}
 	Account struct {
-		Permissions []string    `mapstructure:"permissions"`
-		Policies    []PolicyRef `mapstructure:"policies"`
+		Permissions []string    `yaml:"permissions"`
+		Policies    []Reference `yaml:"policies"`
 	}
 	Environment struct {
-		Name        string      `mapstructure:"name"`
-		Permissions []string    `mapstructure:"permissions"`
-		Policies    []PolicyRef `mapstructure:"policies"`
+		Name        string      `yaml:"name"`
+		Permissions []string    `yaml:"permissions"`
+		Policies    []Reference `yaml:"policies"`
 	}
 	ManagementZone struct {
-		Environment    string   `mapstructure:"environment"`
-		ManagementZone string   `mapstructure:"managementZone" yaml:"managementZone"`
-		Permissions    []string `mapstructure:"permissions"`
-	}
-	Users struct {
-		Users []User `mapstructure:"users"`
+		Environment    string   `yaml:"environment"`
+		ManagementZone string   `yaml:"managementZone"`
+		Permissions    []string `yaml:"permissions"`
 	}
 	User struct {
-		Email  string     `mapstructure:"email"`
-		Groups []GroupRef `mapstructure:"groups"`
+		Email  string      `yaml:"email"`
+		Groups []Reference `yaml:"groups"`
 	}
+
 	Reference struct {
-		Type string `mapstructure:"type"`
-		Id   string `mapstructure:"id"`
+		Type  string `yaml:"type" mapstructure:"type"`
+		Id    string `yaml:"id" mapstructure:"id"`
+		Value string `yaml:"-"` // omitted from
 	}
 )
+
+// UnmarshalYAML is a custom yaml.Unmarshaler for Reference able to parse simple string values and actual references.
+// As it unmarshalls data into the Reference r, it has a pointer receiver.
+func (r *Reference) UnmarshalYAML(unmarshal func(any) error) error {
+	var data any
+	if err := unmarshal(&data); err != nil {
+		return err
+	}
+
+	switch data.(type) {
+	case string:
+		r.Value = data.(string)
+	default:
+		if err := mapstructure.Decode(data, &r); err != nil {
+			return fmt.Errorf("failed to parse reference: %w", err)
+		}
+	}
+	return nil
+}
+
+// MarshalYAML is a custom yaml.Marshaler for Reference, able to write simple string values and actual references.
+// As it is called when marshalling Reference values, it has a value receiver.
+func (r Reference) MarshalYAML() (interface{}, error) {
+	if r.Type == ReferenceType {
+		return r, nil
+	}
+
+	// if not a reference, just marshal the value string
+	return r.Value, nil
+}

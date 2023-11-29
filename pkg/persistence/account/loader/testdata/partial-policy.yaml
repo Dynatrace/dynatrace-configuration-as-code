@@ -1,0 +1,7 @@
+policies:
+  - name: My Policy
+    id: my-policy
+    level:
+      type: account
+    # missing required 'policy'
+

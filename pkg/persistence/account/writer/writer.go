@@ -60,7 +60,7 @@ func Write(writerContext Context, resources account.Resources) error {
 	var errOccurred bool
 	if len(resources.Policies) > 0 {
 		policies := toPersistencePolicies(resources.Policies)
-		if err := persistToFile(policies, writerContext.Fs, filepath.Join(projectFolder, "policies.yaml")); err != nil {
+		if err := persistToFile(persistence.File{Policies: policies}, writerContext.Fs, filepath.Join(projectFolder, "policies.yaml")); err != nil {
 			errOccurred = true
 			log.Error("Failed to persist policies: %w", err)
 		}
@@ -68,7 +68,7 @@ func Write(writerContext Context, resources account.Resources) error {
 
 	if len(resources.Groups) > 0 {
 		groups := toPersistenceGroups(resources.Groups)
-		if err := persistToFile(groups, writerContext.Fs, filepath.Join(projectFolder, "groups.yaml")); err != nil {
+		if err := persistToFile(persistence.File{Groups: groups}, writerContext.Fs, filepath.Join(projectFolder, "groups.yaml")); err != nil {
 			errOccurred = true
 			log.Error("Failed to persist groups: %w", err)
 		}
@@ -76,7 +76,7 @@ func Write(writerContext Context, resources account.Resources) error {
 
 	if len(resources.Users) > 0 {
 		users := toPersistenceUsers(resources.Users)
-		if err := persistToFile(users, writerContext.Fs, filepath.Join(projectFolder, "users.yaml")); err != nil {
+		if err := persistToFile(persistence.File{Users: users}, writerContext.Fs, filepath.Join(projectFolder, "users.yaml")); err != nil {
 			errOccurred = true
 			log.Error("Failed to persist users: %w", err)
 		}
@@ -88,31 +88,38 @@ func Write(writerContext Context, resources account.Resources) error {
 	return nil
 }
 
-func toPersistencePolicies(policies map[string]account.Policy) persistence.Policies {
+func toPersistencePolicies(policies map[string]account.Policy) []persistence.Policy {
 	out := make([]persistence.Policy, 0, len(policies))
 	for _, v := range policies {
+		var level persistence.PolicyLevel
+		switch tV := v.Level.(type) {
+		case account.PolicyLevelAccount:
+			level.Type = tV.Type
+		case account.PolicyLevelEnvironment:
+			level.Type = tV.Type
+			level.Environment = tV.Environment
+		}
+
 		out = append(out, persistence.Policy{
 			ID:             v.ID,
 			Name:           v.Name,
-			Level:          v.Level,
+			Level:          level,
 			Description:    v.Description,
 			Policy:         v.Policy,
 			OriginObjectID: v.OriginObjectID,
 		})
 	}
-	return persistence.Policies{
-		Policies: out,
-	}
+	return out
 }
 
-func transformRefs(in []account.Ref) []any {
-	var res []any
+func transformRefs(in []account.Ref) []persistence.Reference {
+	var res []persistence.Reference
 	for _, el := range in {
 		switch v := el.(type) {
 		case account.Reference:
-			res = append(res, persistence.Reference{Type: "reference", Id: v.Id})
+			res = append(res, persistence.Reference{Type: persistence.ReferenceType, Id: v.Id})
 		case account.StrReference:
-			res = append(res, v)
+			res = append(res, persistence.Reference{Value: string(v)})
 		default:
 			panic("unable to convert persistence model")
 		}
@@ -120,22 +127,7 @@ func transformRefs(in []account.Ref) []any {
 	return res
 }
 
-func toPersistenceGroups(groups map[string]account.Group) persistence.Groups {
-
-	transformRefs := func(in []account.Ref) []any {
-		var res []any
-		for _, el := range in {
-			switch v := el.(type) {
-			case account.Reference:
-				res = append(res, persistence.Reference(v))
-			case account.StrReference:
-				res = append(res, v)
-			default:
-				panic("unable to convert persistence model")
-			}
-		}
-		return res
-	}
+func toPersistenceGroups(groups map[string]account.Group) []persistence.Group {
 
 	out := make([]persistence.Group, 0, len(groups))
 	for _, v := range groups {
@@ -170,12 +162,10 @@ func toPersistenceGroups(groups map[string]account.Group) persistence.Groups {
 			OriginObjectID: v.OriginObjectID,
 		})
 	}
-	return persistence.Groups{
-		Groups: out,
-	}
+	return out
 }
 
-func toPersistenceUsers(users map[string]account.User) persistence.Users {
+func toPersistenceUsers(users map[string]account.User) []persistence.User {
 	out := make([]persistence.User, 0, len(users))
 	for _, v := range users {
 		out = append(out, persistence.User{
@@ -183,9 +173,7 @@ func toPersistenceUsers(users map[string]account.User) persistence.Users {
 			Groups: transformRefs(v.Groups),
 		})
 	}
-	return persistence.Users{
-		Users: out,
-	}
+	return out
 }
 
 func createFolderIfNoneExists(fs afero.Fs, path string) error {
@@ -202,7 +190,7 @@ func createFolderIfNoneExists(fs afero.Fs, path string) error {
 	return nil
 }
 
-func persistToFile(data any, fs afero.Fs, filepath string) error {
+func persistToFile(data persistence.File, fs afero.Fs, filepath string) error {
 	b, err := yaml.Marshal(data)
 	if err != nil {
 		return err
