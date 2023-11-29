@@ -42,7 +42,7 @@ type (
 		ID             string      `yaml:"id"`
 		Name           string      `yaml:"name"`
 		Level          PolicyLevel `yaml:"level"`
-		Description    string      `yaml:"description"`
+		Description    string      `yaml:"description,omitempty"`
 		Policy         string      `yaml:"policy"`
 		OriginObjectID string      `yaml:"originObjectId,omitempty"`
 	}
@@ -53,20 +53,20 @@ type (
 	Group struct {
 		ID             string           `yaml:"id"`
 		Name           string           `yaml:"name"`
-		Description    string           `yaml:"description"`
-		Account        *Account         `yaml:"account"`
-		Environment    []Environment    `yaml:"environment"`
-		ManagementZone []ManagementZone `yaml:"managementZone"`
+		Description    string           `yaml:"description,omitempty"`
+		Account        *Account         `yaml:"account,omitempty"`
+		Environment    []Environment    `yaml:"environment,omitempty"`
+		ManagementZone []ManagementZone `yaml:"managementZone,omitempty"`
 		OriginObjectID string           `yaml:"originObjectId,omitempty"`
 	}
 	Account struct {
-		Permissions []string    `yaml:"permissions"`
-		Policies    []Reference `yaml:"policies"`
+		Permissions []string    `yaml:"permissions,omitempty"`
+		Policies    []Reference `yaml:"policies,omitempty"`
 	}
 	Environment struct {
 		Name        string      `yaml:"name"`
-		Permissions []string    `yaml:"permissions"`
-		Policies    []Reference `yaml:"policies"`
+		Permissions []string    `yaml:"permissions,omitempty"`
+		Policies    []Reference `yaml:"policies,omitempty"`
 	}
 	ManagementZone struct {
 		Environment    string   `yaml:"environment"`
@@ -75,13 +75,13 @@ type (
 	}
 	User struct {
 		Email  string      `yaml:"email"`
-		Groups []Reference `yaml:"groups"`
+		Groups []Reference `yaml:"groups,omitempty"`
 	}
 
 	Reference struct {
 		Type  string `yaml:"type" mapstructure:"type"`
 		Id    string `yaml:"id" mapstructure:"id"`
-		Value string `yaml:"-"` // omitted from
+		Value string `yaml:"-" mapstructure:"-"` // omitted from being written/read
 	}
 )
 

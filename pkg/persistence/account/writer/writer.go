@@ -131,9 +131,12 @@ func toPersistenceGroups(groups map[string]account.Group) []persistence.Group {
 
 	out := make([]persistence.Group, 0, len(groups))
 	for _, v := range groups {
-		a := persistence.Account{
-			Permissions: v.Account.Permissions,
-			Policies:    transformRefs(v.Account.Policies),
+		var a *persistence.Account
+		if v.Account != nil {
+			a = &persistence.Account{
+				Permissions: v.Account.Permissions,
+				Policies:    transformRefs(v.Account.Policies),
+			}
 		}
 		envs := make([]persistence.Environment, len(v.Environment))
 		for i, e := range v.Environment {
@@ -156,7 +159,7 @@ func toPersistenceGroups(groups map[string]account.Group) []persistence.Group {
 			ID:             v.ID,
 			Name:           v.Name,
 			Description:    v.Description,
-			Account:        &a,
+			Account:        a,
 			Environment:    envs,
 			ManagementZone: mzs,
 			OriginObjectID: v.OriginObjectID,

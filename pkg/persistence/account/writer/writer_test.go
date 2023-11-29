@@ -64,6 +64,19 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
+			"groups are not written if user has none",
+			account.Resources{
+				Users: map[account.UserId]account.User{
+					"monaco@dynatrace.com": {Email: "monaco@dynatrace.com"},
+				},
+			},
+			want{
+				users: `users:
+- email: monaco@dynatrace.com
+`,
+			},
+		},
+		{
 			"only groups",
 			account.Resources{
 				Groups: map[account.GroupId]account.Group{
@@ -121,6 +134,95 @@ func TestWriteAccountResources(t *testing.T) {
     managementZone: My MZone
     permissions:
     - Do Stuff
+`,
+			},
+		},
+		{
+			"empty optional values are not included when writing groups",
+			account.Resources{
+				Groups: map[account.GroupId]account.Group{
+					"my-group": {
+						ID:   "my-group",
+						Name: "My Group",
+						Account: &account.Account{
+							Permissions: []string{"View my Group Stuff"},
+							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
+						},
+					},
+				},
+			},
+			want{
+				groups: `groups:
+- id: my-group
+  name: My Group
+  account:
+    permissions:
+    - View my Group Stuff
+    policies:
+    - Request my Group Stuff
+`,
+			},
+		},
+		{
+			"group without any bindings is written correctly",
+			account.Resources{
+				Groups: map[account.GroupId]account.Group{
+					"my-group": {
+						ID:   "my-group",
+						Name: "My Group",
+					},
+				},
+			},
+			want{
+				groups: `groups:
+- id: my-group
+  name: My Group
+`,
+			},
+		},
+		{
+			"group without any permissions is written correctly",
+			account.Resources{
+				Groups: map[account.GroupId]account.Group{
+					"my-group": {
+						ID:   "my-group",
+						Name: "My Group",
+						Account: &account.Account{
+							Policies: []account.Ref{account.StrReference("Request my Group Stuff")},
+						},
+					},
+				},
+			},
+			want{
+				groups: `groups:
+- id: my-group
+  name: My Group
+  account:
+    policies:
+    - Request my Group Stuff
+`,
+			},
+		},
+		{
+			"group without any policies is written correctly",
+			account.Resources{
+				Groups: map[account.GroupId]account.Group{
+					"my-group": {
+						ID:   "my-group",
+						Name: "My Group",
+						Account: &account.Account{
+							Permissions: []string{"View my Group Stuff"},
+						},
+					},
+				},
+			},
+			want{
+				groups: `groups:
+- id: my-group
+  name: My Group
+  account:
+    permissions:
+    - View my Group Stuff
 `,
 			},
 		},
