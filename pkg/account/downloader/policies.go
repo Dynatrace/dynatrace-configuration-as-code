@@ -18,44 +18,58 @@ package downloader
 
 import (
 	"context"
-	"errors"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/google/uuid"
 )
 
-func (a *Account) Groups() ([]account.Group, error) {
-	dtos, err := a.getGroups(context.TODO())
+func (a *Account) Policies() ([]account.Policy, error) {
+	dtos, err := a.getPolicies(context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
-	var retVal []account.Group
+	var retVal []account.Policy
 	for _, dto := range dtos {
-		retVal = append(retVal, account.Group{
-			ID:             uuid.New().String(),
-			Name:           dto.Name,
-			Description:    *dto.Description,
-			OriginObjectID: *dto.Uuid,
-		})
+		l := getPolicyLevel(dto)
+		if l != nil {
+			retVal = append(retVal, account.Policy{
+				ID:             uuid.New().String(),
+				Name:           dto.Name,
+				Level:          getPolicyLevel(dto),
+				Description:    dto.Description,
+				OriginObjectID: dto.Uuid,
+			})
+		}
 	}
 	return retVal, nil
 }
 
-func (a *Account) getGroups(ctx context.Context) ([]accountmanagement.GetGroupDto, error) {
-	log.Debug("Downloading groups for account %q", a.accountInfo)
-	r, resp, err := a.httpClient.GroupManagementAPI.GetGroups(ctx, a.accountInfo.AccountUUID).Execute()
+func getPolicyLevel(dto accountmanagement.PolicyOverview) account.PolicyLevel {
+	var retVal account.PolicyLevel
+	switch dto.LevelType {
+	case "account":
+		retVal = account.PolicyLevelAccount{Type: "account"}
+	case "environment":
+		retVal = account.PolicyLevelEnvironment{
+			Type:        "environment",
+			Environment: dto.LevelId,
+		}
+	}
+	return retVal
+}
+
+func (a *Account) getPolicies(ctx context.Context) ([]accountmanagement.PolicyOverview, error) {
+	log.Debug("Downloading policies for account %q", a.accountInfo)
+	r, resp, err := a.httpClient.PolicyManagementAPI.GetPolicyOverviewList(ctx, "account", a.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
 
 	if err = handleClientResponseError(resp, err, "unable to get groups"); err != nil {
 		return nil, err
 	}
-	if r != nil && int(r.Count) != len(r.Items) {
-		return nil, errors.New("the received data are inconsistent")
-	}
 
-	log.Debug("%d group downloaded", len(r.Items))
+	log.Debug("%d policy downloaded", len(r.PolicyOverviewList))
 
-	return r.Items, nil
+	return r.PolicyOverviewList, nil
 }

@@ -40,7 +40,16 @@ func (a *Account) DownloadConfiguration() (*account.Resources, error) {
 	}
 	groups := make(map[account.GroupId]account.Group)
 	for i := range gg {
-		groups[gg[i].Name] = gg[i]
+		groups[gg[i].ID] = gg[i]
+	}
+
+	pp, err := a.Policies()
+	if err != nil {
+		return nil, err
+	}
+	policies := make(map[account.PolicyId]account.Policy, len(pp))
+	for i := range pp {
+		policies[pp[i].ID] = pp[i]
 	}
 
 	uu, err := a.Users(gg)
@@ -53,8 +62,9 @@ func (a *Account) DownloadConfiguration() (*account.Resources, error) {
 	}
 
 	r := account.Resources{
-		Users:  users,
-		Groups: groups,
+		Users:    users,
+		Groups:   groups,
+		Policies: policies,
 	}
 
 	return &r, nil
