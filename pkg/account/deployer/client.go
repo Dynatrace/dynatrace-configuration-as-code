@@ -219,7 +219,7 @@ func (d *accountManagementClient) updatePermissions(ctx context.Context, groupId
 	}
 
 	if permissions == nil {
-		return nil
+		permissions = []accountmanagement.PermissionsDto{}
 	}
 
 	for _, p := range permissions {
@@ -241,7 +241,7 @@ func (d *accountManagementClient) updateAccountPolicyBindings(ctx context.Contex
 		return fmt.Errorf("group id must not be empty")
 	}
 	if policyIds == nil {
-		return nil
+		policyIds = []string{}
 	}
 	data := accountmanagement.PolicyUuidsDto{PolicyUuids: policyIds}
 
@@ -262,7 +262,7 @@ func (d *accountManagementClient) updateEnvironmentPolicyBindings(ctx context.Co
 		return fmt.Errorf("group id must not be empty")
 	}
 	if policyIds == nil {
-		return nil
+		policyIds = []string{}
 	}
 	data := accountmanagement.PolicyUuidsDto{PolicyUuids: policyIds}
 	resp, err := d.client.PolicyManagementAPI.UpdatePolicyBindingsToGroup(ctx, "environment", envName, groupId).PolicyUuidsDto(data).Execute()
@@ -302,7 +302,7 @@ func (d *accountManagementClient) updateGroupBindings(ctx context.Context, userI
 		return fmt.Errorf("user id must not be empty")
 	}
 	if groupIds == nil {
-		return nil
+		groupIds = []string{}
 	}
 	resp, err := d.client.UserManagementAPI.ReplaceUserGroups(ctx, d.accountInfo.AccountUUID, userId).RequestBody(groupIds).Execute()
 	defer closeResponseBody(resp)
