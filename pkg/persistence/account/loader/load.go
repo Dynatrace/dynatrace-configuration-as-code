@@ -25,7 +25,6 @@ import (
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
-	"io"
 )
 
 // Load loads account management resources from YAML configuration files
@@ -71,13 +70,8 @@ func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 
 	for _, yamlFilePath := range yamlFilePaths {
 		log.WithFields(field.F("file", yamlFilePaths)).Debug("Loading file %q", yamlFilePaths)
-		f, err := fs.Open(yamlFilePath)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
 
-		bytes, err := io.ReadAll(f)
+		bytes, err := afero.ReadFile(fs, yamlFilePath)
 		if err != nil {
 			return nil, err
 		}
