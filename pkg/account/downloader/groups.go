@@ -53,7 +53,7 @@ func (a *Account) Groups() ([]account.Group, error) {
 		retVal = append(retVal, account.Group{
 			ID:             uuid.New().String(),
 			Name:           dto.Name,
-			Description:    *dto.Description,
+			Description:    dto.GetDescription(),
 			Account:        a,
 			Environment:    e,
 			ManagementZone: nil,
