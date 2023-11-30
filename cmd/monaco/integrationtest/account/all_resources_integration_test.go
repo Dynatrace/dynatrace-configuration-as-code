@@ -75,7 +75,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PermissionBinding(t, accountUUID, "management-zone", "wbm16058:1939021364513288421", "tenant-viewer", myGroup)
 
 		// (2) DELETE RESOURCES
-		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "accounts/delete.yaml", "--account", "monaco-test-account"})
+		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "delete.yaml", "--account", "monaco-test-account"})
 		err = cli.Execute()
 		assert.NoError(t, err)
 
