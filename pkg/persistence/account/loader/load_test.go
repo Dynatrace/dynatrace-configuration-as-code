@@ -30,8 +30,14 @@ func TestLoad(t *testing.T) {
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
+		_, exists := loaded.Users["monaco@dynatrace.com"]
+		assert.True(t, exists, "expected user to exist: monaco@dynatrace.com")
 		assert.Len(t, loaded.Groups, 1)
+		_, exists = loaded.Groups["my-group"]
+		assert.True(t, exists, "expected group to exist: my-group")
 		assert.Len(t, loaded.Policies, 1)
+		_, exists = loaded.Policies["my-policy"]
+		assert.True(t, exists, "expected policy to exist: my-policy")
 		assert.Len(t, maps.Values(loaded.Groups)[0].Account.Policies, 1)
 		assert.Len(t, maps.Values(loaded.Groups)[0].Account.Permissions, 1)
 		assert.Len(t, maps.Values(loaded.Groups)[0].Environment, 1)
@@ -65,6 +71,30 @@ func TestLoad(t *testing.T) {
 		assert.Len(t, loaded.Users, 1)
 		assert.Len(t, loaded.Groups, 1)
 		assert.Len(t, loaded.Policies, 1)
+	})
+
+	t.Run("Loads origin objectIDs", func(t *testing.T) {
+		loaded, err := Load(afero.NewOsFs(), "testdata/valid-origin-object-id.yaml")
+		assert.NoError(t, err)
+		assert.Len(t, loaded.Users, 1)
+		_, exists := loaded.Users["monaco@dynatrace.com"]
+		assert.True(t, exists, "expected user to exist: monaco@dynatrace.com")
+		assert.Len(t, loaded.Groups, 1)
+		g, exists := loaded.Groups["my-group"]
+		assert.True(t, exists, "expected group to exist: my-group")
+		assert.Equal(t, "32952350-5e78-476d-ab1a-786dd9d4fe33", g.OriginObjectID, "expected group to be loaded with originObjectID")
+		assert.Len(t, loaded.Policies, 1)
+		p, exists := loaded.Policies["my-policy"]
+		assert.Equal(t, "2338ebda-4aad-4911-96a2-6f60d7c3d2cb", p.OriginObjectID, "expected policy to be loaded with originObjectID")
+		assert.True(t, exists, "expected policy to exist: my-policy")
+		assert.Len(t, maps.Values(loaded.Groups)[0].Account.Policies, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].Account.Permissions, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].Environment, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].Environment[0].Policies, 2)
+		assert.Len(t, maps.Values(loaded.Groups)[0].Environment[0].Permissions, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].ManagementZone, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].ManagementZone[0].Permissions, 1)
+
 	})
 
 	t.Run("Duplicate group produces error", func(t *testing.T) {
