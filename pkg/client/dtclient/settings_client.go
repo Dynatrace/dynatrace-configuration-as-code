@@ -219,7 +219,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		Filter: func(object DownloadSettingsObject) bool { return object.ExternalId == legacyExternalID },
 	})
 	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("unable to find Settings 2.0 object of schema %q with externalId %q: %w", obj.SchemaId, legacyExternalID, err)
+		return DynatraceEntity{}, err
 	}
 
 	if len(settingsWithExternalID) > 0 {
@@ -229,6 +229,32 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	externalID, err := d.generateExternalID(obj.Coordinate)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
+	}
+
+	// If the server contains two configs, one with the origin-object-id and a second config with the externalID,
+	// it is not possible to update the setting using the externalId and origin-object-id on the same POST request,
+	// as two settings objects can be the target of the change. In this case, we remove the origin-object-id
+	// and only update the object using the externalId.
+	settings, err := d.listSettings(ctx, obj.SchemaId, ListSettingsOptions{
+		Filter: func(object DownloadSettingsObject) bool {
+			return object.ObjectId == obj.OriginObjectId || object.ExternalId == externalID
+		},
+	})
+	if err != nil {
+		return DynatraceEntity{}, err
+	}
+	if len(settings) == 2 {
+		var exIdSetting, ooIdSetting string
+		if settings[0].ExternalId == externalID {
+			exIdSetting = settings[0].ObjectId
+			ooIdSetting = settings[1].ObjectId
+		} else {
+			exIdSetting = settings[1].ObjectId
+			ooIdSetting = settings[0].ObjectId
+		}
+
+		log.WithCtxFields(ctx).Warn("Found two configs, one with the defined originObjectId (%q), and one with the expected monaco externalId (%q). Updating the one with the expected externalId.", ooIdSetting, exIdSetting)
+		obj.OriginObjectId = ""
 	}
 
 	// special handling of this Settings object.
@@ -483,12 +509,12 @@ func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opt
 
 	u, err := buildUrl(d.environmentURL, d.settingsObjectAPIPath, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list settings: %w", err)
+		return nil, fmt.Errorf("failed to create request for schema %q: %w", schemaId, err)
 	}
 
 	_, err = rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, schemaId, addToResult)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list settings of schema %q: %w", schemaId, err)
 	}
 
 	d.settingsCache.Set(schemaId, result)

@@ -457,6 +457,10 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 }
 
 func TestUpsertSettings(t *testing.T) {
+	coord := coordinate.Coordinate{Project: "my-project", ConfigId: "user-provided-id", Type: "builtin:alerting.profile"}
+	exId, err := idutils.GenerateExternalID(coord)
+	assert.NoError(t, err)
+
 	tests := []struct {
 		name                        string
 		expectSettingsRequestValue  string
@@ -496,6 +500,23 @@ func TestUpsertSettings(t *testing.T) {
 			postSettingsResponseContent: `[{"objectId": "entity-id"}]`,
 			listSettingsResponseCode:    http.StatusOK,
 			listSettingsResponseContent: `{"items":[{"externalId":"","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}]}`,
+		},
+		{
+			name:                       "Updating an object, where there is a conflict on the remote system works",
+			serverVersion:              version.Version{Major: 1, Minor: 262, Patch: 0},
+			expectSettingsRequestValue: "{}",
+			expectOriginObjectID:       "", // no origin object id is important for this test
+			expectError:                false,
+			expectEntity: DynatraceEntity{
+				Id:   "entity-id",
+				Name: "entity-id",
+			},
+			postSettingsResponseContent: `[{"objectId": "entity-id"}]`,
+			listSettingsResponseCode:    http.StatusOK,
+			listSettingsResponseContent: fmt.Sprintf(`{"items":[`+
+				`{"externalId":"","objectId":"anObjectID","scope":"tenant"},`+ // setting with originObjectId to be updated
+				`{"externalId":"%s","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}`+ // setting with externalId to be updated
+				`]}`, exId),
 		},
 		{
 			name: "Valid call with valid response - Object with external ID already exists",
@@ -634,7 +655,7 @@ func TestUpsertSettings(t *testing.T) {
 
 			resp, err := c.UpsertSettings(context.TODO(), SettingsObject{
 				OriginObjectId: "anObjectID",
-				Coordinate:     coordinate.Coordinate{Project: "my-project", ConfigId: "user-provided-id", Type: "builtin:alerting.profile"},
+				Coordinate:     coord,
 				SchemaId:       "builtin:alerting.profile",
 				Scope:          "tenant",
 				Content:        []byte(test.expectSettingsRequestValue),
