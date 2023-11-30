@@ -1,0 +1,44 @@
+users:
+  - email: monaco@dynatrace.com
+    groups:
+      - type: reference
+        id: my-group
+      - Log viewer
+
+
+groups:
+  - name: My Group
+    id: my-group
+    originObjectId: 32952350-5e78-476d-ab1a-786dd9d4fe33
+    description: This is my group
+    account:
+      permissions:
+        - View my Group Stuff
+      policies:
+        - Request My Group Stuff
+
+    environment:
+      - name: myenv123
+        permissions:
+          - View environment
+        policies:
+          - View environment
+          - type: reference
+            id: my-policy
+
+    managementZone:
+      - environment: env12345
+        managementZone: Mzone
+        permissions:
+          - View environment
+
+policies:
+  - name: My Policy
+    id: my-policy
+    originObjectId: 2338ebda-4aad-4911-96a2-6f60d7c3d2cb
+    level:
+      type: account
+    description: abcde
+    policy: |-
+      ALLOW a:b:c;
+

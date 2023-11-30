@@ -141,11 +141,12 @@ func transform(resources *persistence.Resources) *account.Resources {
 	}
 	for id, v := range resources.Policies {
 		inMemResources.Policies[id] = account.Policy{
-			ID:          v.ID,
-			Name:        v.Name,
-			Level:       transformLevel(v.Level),
-			Description: v.Description,
-			Policy:      v.Policy,
+			ID:             v.ID,
+			Name:           v.Name,
+			Level:          transformLevel(v.Level),
+			Description:    v.Description,
+			Policy:         v.Policy,
+			OriginObjectID: v.OriginObjectID,
 		}
 	}
 	for id, v := range resources.Groups {
@@ -179,6 +180,7 @@ func transform(resources *persistence.Resources) *account.Resources {
 			Account:        acc,
 			Environment:    env,
 			ManagementZone: mz,
+			OriginObjectID: v.OriginObjectID,
 		}
 	}
 	for id, v := range resources.Users {
