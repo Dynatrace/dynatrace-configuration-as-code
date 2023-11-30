@@ -17,23 +17,34 @@
 package downloader
 
 import (
+	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal"
 )
 
 type Account struct {
 	httpClient  *accounts.Client
 	accountInfo *account.AccountInfo
+	httpClient2 *internal.Client
 }
 
 func New(accountInfo *account.AccountInfo, client *accounts.Client) *Account {
 	return &Account{
 		httpClient:  client,
 		accountInfo: accountInfo,
+		httpClient2: (*internal.Client)(client),
 	}
 }
 
 func (a *Account) DownloadConfiguration() (*account.Resources, error) {
+	ctx := context.TODO()
+
+	policies, err := a.policies(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	gg, err := a.Groups()
 	if err != nil {
 		return nil, err
@@ -41,15 +52,6 @@ func (a *Account) DownloadConfiguration() (*account.Resources, error) {
 	groups := make(map[account.GroupId]account.Group)
 	for i := range gg {
 		groups[gg[i].ID] = gg[i]
-	}
-
-	pp, err := a.Policies()
-	if err != nil {
-		return nil, err
-	}
-	policies := make(map[account.PolicyId]account.Policy, len(pp))
-	for i := range pp {
-		policies[pp[i].ID] = pp[i]
 	}
 
 	uu, err := a.Users(gg)
@@ -64,7 +66,7 @@ func (a *Account) DownloadConfiguration() (*account.Resources, error) {
 	r := account.Resources{
 		Users:    users,
 		Groups:   groups,
-		Policies: policies,
+		Policies: policies.asAccountPolicies(),
 	}
 
 	return &r, nil

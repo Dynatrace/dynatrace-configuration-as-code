@@ -18,41 +18,95 @@ package downloader
 
 import (
 	"context"
+	"fmt"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/google/uuid"
 )
 
-func (a *Account) Policies() ([]account.Policy, error) {
-	ctx := context.TODO()
-	dtos, err := a.getPolicies(ctx)
-	if err != nil {
-		return nil, err
-	}
+type (
+	Policies []policy
 
-	var retVal []account.Policy
-	for _, dto := range dtos {
-		l := getPolicyLevel(dto)
-		if l != nil {
-			p, err := a.getPolicyDefinition(ctx, dto)
+	policy struct {
+		policy        *account.Policy
+		dto           *accountmanagement.PolicyOverview
+		dtoDefinition *accountmanagement.LevelPolicyDto
+	}
+)
+
+func (a *Account) Policies() (Policies, error) {
+	return a.policies(context.TODO())
+}
+
+func (a *Account) policies(ctx context.Context) (Policies, error) {
+	log.Info("Downloading policies for account %q", a.accountInfo)
+	dto, err := a.httpClient2.GetPoliciesFroAccount(ctx, a.accountInfo.AccountUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get policies for account %q: %w", a.accountInfo, err)
+	}
+	log.Debug("%d policy downloaded (global + custom)", len(dto))
+
+	retVal := make(Policies, 0, len(dto))
+
+	for i := range dto {
+		var dtoDef *accountmanagement.LevelPolicyDto
+		var p *account.Policy
+		if isCustom(dto[i]) {
+			log.Debug("Downloading definition for policy %q (uuid: %q)", dto[i].Name, dto[i].Uuid) //TODO: or should be account.Policy.ID ?
+			dtoDef, err = a.httpClient2.GetPolicyDefinition(ctx, dto[i])
 			if err != nil {
 				return nil, err
 			}
-			retVal = append(retVal, account.Policy{
-				ID:             uuid.New().String(),
-				Name:           dto.Name,
-				Level:          getPolicyLevel(dto),
-				Description:    dto.Description,
-				Policy:         p.StatementQuery,
-				OriginObjectID: dto.Uuid,
-			})
+
+			p = toAccountPolicy(&dto[i], dtoDef)
 		}
+
+		retVal = append(retVal, policy{
+			policy:        p,
+			dto:           &dto[i],
+			dtoDefinition: dtoDef,
+		})
 	}
+
+	log.Debug("Number of policies: %d", len(retVal.asAccountPolicies()))
 	return retVal, nil
 }
 
-func getPolicyLevel(dto accountmanagement.PolicyOverview) account.PolicyLevel {
+func toAccountPolicy(dto *accountmanagement.PolicyOverview, dtoDef *accountmanagement.LevelPolicyDto) *account.Policy {
+	return &account.Policy{
+		ID:             uuid.New().String(),
+		Name:           dto.Name,
+		Level:          getPolicyLevel(dto),
+		Description:    dto.Description,
+		Policy:         dtoDef.StatementQuery,
+		OriginObjectID: dto.Uuid,
+	}
+}
+
+func (p Policies) asAccountPolicies() map[account.PolicyId]account.Policy {
+	retVal := make(map[account.PolicyId]account.Policy)
+	for i := range p {
+		if p[i].isCustom() {
+			retVal[p[i].policy.ID] = *p[i].policy
+		}
+	}
+	return retVal
+}
+
+func (p *policy) isCustom() bool {
+	return isCustom(*p.dto)
+}
+
+func isCustom(dto accountmanagement.PolicyOverview) bool {
+	return dto.LevelType == "account" || dto.LevelType == "environment"
+}
+
+func (p *policy) Ref() *account.Ref {
+	return nil
+}
+
+func getPolicyLevel(dto *accountmanagement.PolicyOverview) account.PolicyLevel {
 	var retVal account.PolicyLevel
 	switch dto.LevelType {
 	case "account":
@@ -64,30 +118,4 @@ func getPolicyLevel(dto accountmanagement.PolicyOverview) account.PolicyLevel {
 		}
 	}
 	return retVal
-}
-
-func (a *Account) getPolicies(ctx context.Context) ([]accountmanagement.PolicyOverview, error) {
-	log.Debug("Downloading policies for account %q", a.accountInfo)
-	r, resp, err := a.httpClient.PolicyManagementAPI.GetPolicyOverviewList(ctx, "account", a.accountInfo.AccountUUID).Execute()
-	defer closeResponseBody(resp)
-
-	if err = handleClientResponseError(resp, err, "unable to get groups"); err != nil {
-		return nil, err
-	}
-
-	log.Debug("%d policy downloaded", len(r.PolicyOverviewList))
-
-	return r.PolicyOverviewList, nil
-}
-
-func (a *Account) getPolicyDefinition(ctx context.Context, dto accountmanagement.PolicyOverview) (*accountmanagement.LevelPolicyDto, error) {
-	log.Debug("Downloading definition for policy %q", dto.Name) //TODO: or should be account.Policy.ID ?
-	r, resp, err := a.httpClient.PolicyManagementAPI.GetLevelPolicy(ctx, dto.LevelType, dto.LevelId, dto.Uuid).Execute()
-	defer closeResponseBody(resp)
-
-	if err = handleClientResponseError(resp, err, "unable to get groups"); err != nil {
-		return nil, err
-	}
-
-	return r, nil
 }
