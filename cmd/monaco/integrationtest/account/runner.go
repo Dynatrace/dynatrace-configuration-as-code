@@ -28,24 +28,32 @@ import (
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"strings"
 	"testing"
 )
 
 type options struct {
-	fs        afero.Fs
-	randomStr string
-	randomize func(string) string
+	fs          afero.Fs
+	accountUUID string
+	accountName string
+	randomStr   string
+	randomize   func(string) string
 }
 
 func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name string, fn func(map[deployer.AccountInfo]*accounts.Client, options)) {
 	fs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(afero.NewOsFs(), path), afero.NewMemMapFs())
 	randomStr := randomizeYAMLResources(t, fs, name)
 	accClients := createAccountClientsFromManifest(t, fs, manifestFileName)
-	fn(accClients, options{fs: fs, randomStr: randomStr, randomize: randomizeFn(randomStr)})
+
+	accountUUID, found := os.LookupEnv("ACCOUNT_UUID")
+	if !found {
+		t.Error("ACCOUNT_UUID environment variable must be set")
+	}
+	fn(accClients, options{accountName: "monaco-test-account", accountUUID: accountUUID, fs: fs, randomStr: randomStr, randomize: randomizeFn(randomStr)})
 }
 
-// createAccountClientsFromManifest creates a map of accountInfo --> accoutn client for a given manifest
+// createAccountClientsFromManifest creates a map of accountInfo --> account client for a given manifest
 func createAccountClientsFromManifest(t *testing.T, fs afero.Fs, manifestFileName string) map[deployer.AccountInfo]*accounts.Client {
 	m, errs := manifestloader.Load(&manifestloader.Context{Fs: fs, ManifestPath: manifestFileName})
 	assert.NoError(t, errors.Join(errs...))

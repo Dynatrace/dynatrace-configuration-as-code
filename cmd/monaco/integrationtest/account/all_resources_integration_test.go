@@ -44,8 +44,8 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 	RunAccountTestCase(t, "testdata/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[deployer.AccountInfo]*accounts.Client, o options) {
 
-		accountName := "monaco-test-account"
-		accountUUID := "17a8095e-a974-40a2-9049-8a5d683cdd0b"
+		accountName := o.accountName
+		accountUUID := o.accountUUID
 		myEmail := "monaco+%RAND%@dynatrace.com"
 		myGroup := "My Group%RAND%"
 		myPolicy := "My Policy%RAND%"
@@ -75,7 +75,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PermissionBinding(t, accountUUID, "management-zone", "wbm16058:1939021364513288421", "tenant-viewer", myGroup)
 
 		// (2) DELETE RESOURCES
-		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "accounts/delete.yaml", "--account", "monaco-test-account"})
+		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "delete.yaml", "--account", accountName})
 		err = cli.Execute()
 		assert.NoError(t, err)
 
