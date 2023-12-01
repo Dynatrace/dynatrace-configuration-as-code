@@ -105,6 +105,14 @@ func TestLoad(t *testing.T) {
 		assert.Len(t, loaded.Policies, 1)
 	})
 
+	t.Run("Load multiple files and ignores any delete file", func(t *testing.T) {
+		loaded, err := Load(afero.NewOsFs(), "testdata/multi-with-delete-file")
+		assert.NoError(t, err)
+		assert.Len(t, loaded.Users, 1)
+		assert.Len(t, loaded.Groups, 1)
+		assert.Len(t, loaded.Policies, 1)
+	})
+
 	t.Run("Loading a file with only configs does not lead to errors", func(t *testing.T) {
 		loaded, err := Load(afero.NewOsFs(), "testdata/no-accounts-but-configs.yaml")
 		assert.NoError(t, err)
@@ -195,6 +203,11 @@ func TestValidateReferences(t *testing.T) {
 			name:     "mixing configs and account resources",
 			path:     "testdata/configs-accounts-mixed.yaml",
 			expected: ErrMixingConfigs,
+		},
+		{
+			name:     "mixing delete-file and account resources",
+			path:     "testdata/deletefile-accounts-mixed.yaml",
+			expected: ErrMixingDelete,
 		},
 		{
 			name:     "valid",

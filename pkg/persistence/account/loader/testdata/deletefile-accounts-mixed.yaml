@@ -1,0 +1,10 @@
+users:
+- email: monaco@dynatrace.com
+  groups:
+  - type: reference
+    id: my-group
+  - Log viewer
+
+delete:
+  - type: user
+    email: other@dynatrace.com

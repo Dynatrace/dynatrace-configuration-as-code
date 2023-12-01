@@ -90,8 +90,17 @@ func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 			continue
 		}
 
+		if _, f := content["delete"]; f {
+			if HasAnyAccountKeyDefined(content) {
+				return nil, fmt.Errorf("failed to parse file %q: %w", yamlFilePath, ErrMixingDelete)
+			}
+
+			log.WithFields(field.F("file", yamlFilePath)).Debug("File %q appears to be an delete file, skipping loading", yamlFilePath)
+			continue
+		}
+
 		var res persistence.File
-		err = yaml.UnmarshalStrict(bytes, &res)
+		err = yaml.Unmarshal(bytes, &res)
 		if err != nil {
 			return nil, err
 		}
