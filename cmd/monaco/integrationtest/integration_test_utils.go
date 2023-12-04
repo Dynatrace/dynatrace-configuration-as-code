@@ -70,6 +70,7 @@ func LoadManifest(t *testing.T, fs afero.Fs, manifestFile string, specificEnviro
 		Fs:           fs,
 		ManifestPath: manifestFile,
 		Environments: specificEnvs,
+		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 	})
 	testutils.FailTestOnAnyError(t, errs, "failed to load manifest")
 

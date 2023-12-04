@@ -68,7 +68,9 @@ type projectLoaderContext struct {
 
 // Options are optional configuration for Load
 type Options struct {
-	DoNotResolveEnvVars bool
+	DoNotResolveEnvVars      bool
+	RequireEnvironmentGroups bool
+	RequireAccounts          bool
 }
 
 type ManifestLoaderError struct {
@@ -140,6 +142,13 @@ func Load(context *Context) (manifest.Manifest, []error) {
 		return manifest.Manifest{}, []error{newManifestLoaderError(context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", err))}
 	}
 
+	if context.Opts.RequireEnvironmentGroups && len(manifestYAML.EnvironmentGroups) == 0 {
+		return manifest.Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "'environmentGroups' are required, but not defined")}
+	}
+	if context.Opts.RequireAccounts && len(manifestYAML.Accounts) == 0 {
+		return manifest.Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "'accounts' are required, but not defined")}
+	}
+
 	manifestPath := filepath.Clean(context.ManifestPath)
 
 	workingDir := filepath.Dir(manifestPath)
@@ -167,11 +176,14 @@ func Load(context *Context) (manifest.Manifest, []error) {
 	}
 
 	// environments
-	environmentDefinitions, manifestErrors := parseEnvironments(context, manifestYAML.EnvironmentGroups)
-	if manifestErrors != nil {
-		errs = append(errs, manifestErrors...)
-	} else if len(environmentDefinitions) == 0 {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, "no environments defined in manifest"))
+	var environmentDefinitions map[string]manifest.EnvironmentDefinition
+	if len(manifestYAML.EnvironmentGroups) > 0 {
+		var manifestErrors []error
+		if environmentDefinitions, manifestErrors = parseEnvironments(context, manifestYAML.EnvironmentGroups); manifestErrors != nil {
+			errs = append(errs, manifestErrors...)
+		} else if len(environmentDefinitions) == 0 {
+			errs = append(errs, newManifestLoaderError(context.ManifestPath, "no environments defined in manifest"))
+		}
 	}
 
 	// accounts

@@ -79,6 +79,7 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	mani, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: opts.manifestName,
+		Opts:         manifestloader.Options{RequireAccounts: true},
 	})
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)

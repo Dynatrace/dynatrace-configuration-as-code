@@ -57,7 +57,8 @@ func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string
 		Environments: environmentNames,
 		Groups:       environmentGroups,
 		Opts: manifestloader.Options{
-			DoNotResolveEnvVars: true,
+			DoNotResolveEnvVars:      true,
+			RequireEnvironmentGroups: true,
 		},
 	})
 	if len(errs) > 0 {

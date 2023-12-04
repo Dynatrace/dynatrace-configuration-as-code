@@ -47,6 +47,7 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 		Fs:           fs,
 		ManifestPath: deploymentManifestPath,
 		Environments: environmentNames,
+		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 	})
 
 	if manifestLoadError != nil {

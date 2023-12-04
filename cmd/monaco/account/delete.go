@@ -108,6 +108,7 @@ func loadManifest(fs afero.Fs, manifestName string) (manifest.Manifest, error) {
 	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: manifestName,
+		Opts:         manifestloader.Options{RequireAccounts: true},
 	})
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)

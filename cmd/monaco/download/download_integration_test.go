@@ -925,6 +925,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: filepath.Join(testBasePath, "manifest.yaml"),
+		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 	})
 	if len(errs) != 0 {
 		for _, err := range errs {
@@ -1238,6 +1239,7 @@ func loadDownloadedProjects(fs afero.Fs, apis api.APIs) ([]projectLoader.Project
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: "out/manifest.yaml",
+		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 	})
 	if errs != nil {
 		return nil, errs
