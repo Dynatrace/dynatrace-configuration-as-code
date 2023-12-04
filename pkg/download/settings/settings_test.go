@@ -217,6 +217,51 @@ func TestDownloadAll(t *testing.T) {
 				},
 			}},
 		},
+		{
+			name: "DownloadSettings - don't discard unmodifable settings that have single modifiable properties",
+			mockValues: mockValues{
+				ListSchemasCalls: 1,
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
+				},
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{
+						{
+							ExternalId:    "ex1",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid1",
+							Scope:         "tenant",
+							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable:      false,
+								ModifiablePaths: []any{"enabled"},
+							},
+						},
+					}, nil
+				},
+				ListSettingsCalls: 1,
+			},
+			want: v2.ConfigsPerType{"id1": {
+				{
+					Template: template.NewInMemoryTemplate(uuid, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					},
+					Skip:           false,
+					OriginObjectId: "oid1",
+				},
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

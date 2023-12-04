@@ -153,7 +153,7 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 	result := make([]config.Config, 0, len(objects))
 	for _, o := range objects {
 
-		if shouldFilterUnmodifiableSettings() && o.ModificationInfo != nil && !o.ModificationInfo.Modifiable {
+		if shouldFilterUnmodifiableSettings() && o.ModificationInfo != nil && !o.ModificationInfo.Modifiable && len(o.ModificationInfo.ModifiablePaths) == 0 {
 			log.WithFields(field.F("type", o.SchemaId), field.F("object", o)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
 			continue
 		}
