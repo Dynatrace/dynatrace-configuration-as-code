@@ -91,6 +91,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		Fs:           fs,
 		ManifestPath: cmdOptions.manifestFile,
 		Environments: []string{cmdOptions.specificEnvironmentName},
+		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 	})
 	if len(errs) > 0 {
 		err := printAndFormatErrors(errs, "failed to load manifest '%v'", cmdOptions.manifestFile)

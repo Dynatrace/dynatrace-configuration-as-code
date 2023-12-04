@@ -55,7 +55,7 @@ func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name
 
 // createAccountClientsFromManifest creates a map of accountInfo --> account client for a given manifest
 func createAccountClientsFromManifest(t *testing.T, fs afero.Fs, manifestFileName string) map[deployer.AccountInfo]*accounts.Client {
-	m, errs := manifestloader.Load(&manifestloader.Context{Fs: fs, ManifestPath: manifestFileName})
+	m, errs := manifestloader.Load(&manifestloader.Context{Fs: fs, ManifestPath: manifestFileName, Opts: manifestloader.Options{RequireAccounts: true}})
 	assert.NoError(t, errors.Join(errs...))
 	accClients, err := dynatrace.CreateAccountClients(m.Accounts)
 	assert.NoError(t, err)

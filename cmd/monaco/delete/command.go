@@ -67,6 +67,7 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 				ManifestPath: absManifestFilePath,
 				Environments: environments,
 				Groups:       groups,
+				Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 			})
 			if len(errs) > 0 {
 				errutils.PrintErrors(errs)

@@ -264,9 +264,9 @@ func Test_parseProjectDefinition_FailsOnInvalidProjectDefinitions(t *testing.T) 
 		manifestPath: ".",
 	}
 
-	context.fs.Mkdir("./some/folder", 0777)
-	context.fs.Mkdir("./some/group", 0777)
-	context.fs.Mkdir("./some/group/project", 0777)
+	_ = context.fs.Mkdir("./some/folder", 0777)
+	_ = context.fs.Mkdir("./some/group", 0777)
+	_ = context.fs.Mkdir("./some/group/project", 0777)
 
 	tests := []struct {
 		name    string
@@ -1221,12 +1221,22 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			errsContain: []string{"projects"},
 		},
 		{
-			name: "No environmentGroups",
+			name: "environmentGroups are optional",
 			manifestContent: `
 manifestVersion: 1.0
-projects: [{name: a}]
+projects: [{name: projectA}]
 `,
-			errsContain: []string{"no environments defined in manifest"},
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
+					"projectA": {
+						Name: "projectA",
+						Path: "projectA",
+					},
+				},
+				Environments: nil,
+				Accounts:     map[string]manifest.Account{},
+			},
+			errsContain: []string{},
 		},
 		{
 			name: "Empty projects",
@@ -1717,4 +1727,60 @@ func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
 		_, gotErr := parseAuth(&Context{Opts: Options{DoNotResolveEnvVars: true}}, e.Auth)
 		assert.NoError(t, gotErr)
 	})
+}
+
+func TestEnvironmentsAndAccountsAreOptionalUnlessDefined(t *testing.T) {
+	tests := []struct {
+		name                 string
+		givenManifestContent string
+		givenOptions         Options
+		wantErr              bool
+	}{
+		{
+			"optional by default",
+			`
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+`,
+			Options{},
+			false,
+		},
+		{
+			"missing accounts produce error if required",
+			`
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+`,
+			Options{RequireAccounts: true},
+			true,
+		},
+		{
+			"missing environmentGroups produce error if required",
+			`
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+`,
+			Options{RequireEnvironmentGroups: true},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(tt.givenManifestContent), 0400))
+
+			_, errs := Load(&Context{
+				Fs:           fs,
+				ManifestPath: "manifest.yaml",
+				Opts:         tt.givenOptions,
+			})
+
+			if tt.wantErr {
+				assert.NotEmpty(t, errs)
+			} else {
+				assert.Empty(t, errs)
+			}
+
+		})
+	}
 }

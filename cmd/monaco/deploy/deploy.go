@@ -95,6 +95,7 @@ func loadManifest(fs afero.Fs, manifestPath string, groups []string, environment
 		ManifestPath: manifestPath,
 		Groups:       groups,
 		Environments: environments,
+		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 	})
 
 	if len(errs) > 0 {

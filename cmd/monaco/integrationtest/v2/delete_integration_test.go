@@ -260,6 +260,7 @@ environmentGroups:
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: "test-resources/delete-test-configs/deploy-manifest.yaml", //full manifest with oAuth
+		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 	})
 	assert.Empty(t, errs)
 

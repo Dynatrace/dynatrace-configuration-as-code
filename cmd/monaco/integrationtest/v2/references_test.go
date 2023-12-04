@@ -141,6 +141,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 					mani, errs := manifestloader.Load(&manifestloader.Context{
 						Fs:           fs,
 						ManifestPath: "download/manifest.yaml",
+						Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 					})
 					assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
 

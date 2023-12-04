@@ -42,7 +42,8 @@ func createDeleteFile(fs afero.Fs, manifestPath string, projectNames, specificEn
 		Fs:           fs,
 		ManifestPath: manifestPath,
 		Opts: manifestloader.Options{
-			DoNotResolveEnvVars: true,
+			DoNotResolveEnvVars:      true,
+			RequireEnvironmentGroups: true,
 		},
 	})
 	if len(errs) > 0 {
