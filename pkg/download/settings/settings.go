@@ -128,10 +128,10 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 				} else {
 					errMsg = err.Error()
 				}
-				log.WithFields(field.F("type", s), field.Error(err)).Error("Failed to fetch all settings for schema %s: %v", s, errMsg)
+				log.WithFields(field.F("type", s), field.Error(err)).Error("Failed to fetch all settings for schema %q: %v", s, errMsg)
 				return
 			}
-			log.WithFields(field.F("type", s), field.F("configsDownloaded", len(objects))).Info("Downloaded %d settings for schema %s", len(objects), s)
+			log.WithFields(field.F("type", s), field.F("configsDownloaded", len(objects))).Debug("Downloaded %d settings for schema %q before filtering unmodifiable settings.", len(objects), s)
 			if len(objects) == 0 {
 				return
 			}
@@ -141,7 +141,11 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			results[s] = cfgs
 			downloadMutex.Unlock()
 
-			log.WithFields(field.F("type", s), field.F("configsDownloaded", len(objects))).Debug("Finished downloading all (%d) settings for schema %s", len(objects), s)
+			if len(objects) == len(cfgs) {
+				log.WithFields(field.F("type", s), field.F("configsDownloaded", len(objects))).Info("Finished downloading %d settings for schema %q.", len(cfgs), s)
+			} else {
+				log.WithFields(field.F("type", s), field.F("configsDownloaded", len(objects))).Info("Finished downloading %d settings for schema %q. Skipped persisting %d unmodifiable setting(s).", len(cfgs), s, len(objects)-len(cfgs))
+			}
 		}(schema)
 	}
 	wg.Wait()
