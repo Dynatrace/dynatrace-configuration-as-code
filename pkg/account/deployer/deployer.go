@@ -228,7 +228,7 @@ func (d *AccountDeployer) updateUserGroupBindings(ctx context.Context, user acco
 }
 
 func (d *AccountDeployer) updateGroupPermissions(ctx context.Context, group account.Group) error {
-	var permissions []accountmanagement.PermissionsDto
+	permissions := make([]accountmanagement.PermissionsDto, 0)
 
 	if group.Account != nil {
 		perms := d.getAccountPermissions(group.Account)
@@ -248,14 +248,12 @@ func (d *AccountDeployer) updateGroupPermissions(ctx context.Context, group acco
 		permissions = append(permissions, perms...)
 	}
 
-	if len(permissions) > 0 {
-		remoteGroupId := d.groupIdLookup(group.ID)
-		if remoteGroupId == "" {
-			return fmt.Errorf("no group UUID found to update group <--> permissions bindings %q", group.ID)
-		}
-		if err := d.accountManagementClient.updatePermissions(ctx, remoteGroupId, permissions); err != nil {
-			return fmt.Errorf("unable to update group %q: %w", group.ID, err)
-		}
+	remoteGroupId := d.groupIdLookup(group.ID)
+	if remoteGroupId == "" {
+		return fmt.Errorf("no group UUID found to update group <--> permissions bindings %q", group.ID)
+	}
+	if err := d.accountManagementClient.updatePermissions(ctx, remoteGroupId, permissions); err != nil {
+		return fmt.Errorf("unable to update group %q: %w", group.ID, err)
 	}
 	return nil
 }
