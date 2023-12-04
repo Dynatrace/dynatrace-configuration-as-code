@@ -458,7 +458,7 @@ func TestWriteAccountResources(t *testing.T) {
 			err := writer.Write(c, tt.givenResources)
 			assert.NoError(t, err)
 
-			expectedFolder, _ := filepath.Abs(c.OutputFolder)
+			expectedFolder := c.OutputFolder
 
 			users := filepath.Join(expectedFolder, c.ProjectFolder, "users.yaml")
 			if tt.wantPersisted.users == "" {
