@@ -91,7 +91,6 @@ func WithFiltering(b bool) Option {
 func (d *Downloader) Download(projectName string, _ ...config.ClassicApiType) (project.ConfigsPerType, error) {
 	log.Info("Downloading configuration APIs from %d endpoints", len(d.apisToDownload))
 	configs := d.downloadAPIs(d.apisToDownload, projectName)
-	log.Info("downloaded %d configurations from classic Config API endpoints", len(configs))
 	return configs, nil
 }
 
@@ -109,6 +108,7 @@ func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) p
 		go func() {
 			defer wg.Done()
 			configsToDownload, err := d.findConfigsToDownload(currentApi)
+			remoteCount := len(configsToDownload)
 			if err != nil {
 				log.WithFields(field.Type(currentApi.ID), field.Error(err)).Error("\tFailed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.ID, err)
 				return
@@ -129,6 +129,12 @@ func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) p
 				mutex.Lock()
 				results[currentApi.ID] = cfgs
 				mutex.Unlock()
+			}
+
+			if remoteCount == len(cfgs) {
+				log.WithFields(field.Type(currentApi.ID)).Info("Downloaded %d configurations for API %q", len(cfgs), currentApi.ID)
+			} else {
+				log.WithFields(field.Type(currentApi.ID)).Info("Downloaded %d configurations for API %q. Skipped persisting %d unmodifiable config(s).", len(cfgs), currentApi.ID, remoteCount-len(cfgs))
 			}
 
 		}()
