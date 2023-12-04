@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package downloader
+package http
 
 import (
 	"fmt"
@@ -27,9 +27,9 @@ func closeResponseBody(resp *http.Response) {
 	_ = resp.Body.Close()
 }
 
-func handleClientResponseError(resp *http.Response, clientErr error, errMessage string) error {
+func handleClientResponseError(resp *http.Response, clientErr error) error {
 	if clientErr != nil && resp == nil {
-		return fmt.Errorf(errMessage+": %w", clientErr)
+		return clientErr
 	}
 
 	if !rest.IsSuccess(resp) && resp.StatusCode != http.StatusNotFound {
@@ -37,7 +37,7 @@ func handleClientResponseError(resp *http.Response, clientErr error, errMessage 
 		if err != nil {
 			return fmt.Errorf("unable to read response body %w", err)
 		}
-		return fmt.Errorf(errMessage+" (HTTP %d): %s", resp.StatusCode, string(body))
+		return fmt.Errorf("(HTTP %d): %s", resp.StatusCode, string(body))
 	}
 	return nil
 }

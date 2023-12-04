@@ -18,21 +18,61 @@ package downloader
 
 import (
 	"context"
-	"errors"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 )
 
-func (a *Account) Users(knownGroups []account.Group) ([]account.User, error) {
-	dtos, err := a.getUsers(context.TODO())
+type (
+	Users []user
+
+	user struct {
+		user      *account.User
+		dto       *accountmanagement.UsersDto
+		dtoGroups []accountmanagement.AccountGroupDto
+	}
+)
+
+func (a *Account) Users(groups Groups) (Users, error) {
+	return a.users(context.TODO(), groups)
+}
+
+func (a *Account) users(ctx context.Context, groups Groups) (Users, error) {
+	dtos, err := a.httpClient2.GetUsers(ctx, a.accountInfo.AccountUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	retVal := make(Users, 0, len(dtos))
+	for i := range dtos {
+		dtoGroups, err := a.httpClient2.GetGroupsForUser(ctx, dtos[i].Email, a.accountInfo.AccountUUID)
+		if err != nil {
+			return nil, err
+		}
+
+		g := &account.User{
+			Email:  dtos[i].Email,
+			Groups: groups.refFromDTOs(dtoGroups),
+		}
+
+		retVal = append(retVal, user{
+			user:      g,
+			dto:       &dtos[i],
+			dtoGroups: dtoGroups,
+		})
+	}
+	return retVal, nil
+}
+
+// Deprecated
+func (a *Account) Users2(knownGroups []account.Group) ([]account.User, error) {
+	dtos, err := a.httpClient2.GetUsers(context.TODO(), a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, err
 	}
 
 	var users []account.User
 	for _, dto := range dtos {
-		gg, err := a.getGroupsForUser(context.TODO(), dto.Email)
+		gg, err := a.httpClient2.GetGroupsForUser(context.TODO(), dto.Email, a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, err
 		}
@@ -51,31 +91,12 @@ func (a *Account) Users(knownGroups []account.Group) ([]account.User, error) {
 	return users, nil
 }
 
-func (a *Account) getUsers(ctx context.Context) ([]accountmanagement.UsersDto, error) {
-	log.Debug("Downloading users for account %q", a.accountInfo)
-	r, resp, err := a.httpClient.UserManagementAPI.GetUsers(ctx, a.accountInfo.AccountUUID).Execute()
-	defer closeResponseBody(resp)
-
-	if err = handleClientResponseError(resp, err, "unable to get users"); err != nil {
-		return nil, err
+func (u Users) asAccountUsers() map[account.UserId]account.User {
+	retVal := make(map[account.UserId]account.User, len(u))
+	for i := range u {
+		retVal[u[i].user.Email] = *u[i].user
 	}
-	if r != nil && int(r.Count) != len(r.Items) {
-		return nil, errors.New("the received data are incomplete")
-	}
-	log.Debug("%d user downloaded", len(r.Items))
-
-	return r.Items, nil
-}
-
-func (a *Account) getGroupsForUser(ctx context.Context, userEmail string) ([]accountmanagement.AccountGroupDto, error) {
-	log.Debug("Downloading list of groups for user %q", userEmail)
-	r, resp, err := a.httpClient.UserManagementAPI.GetUserGroups(ctx, a.accountInfo.AccountUUID, userEmail).Execute()
-	defer closeResponseBody(resp)
-
-	if err = handleClientResponseError(resp, err, "unable to get groups for the users"); err != nil {
-		return nil, err
-	}
-	return r.Groups, nil
+	return retVal
 }
 
 func createReferenceOnGroup(dto accountmanagement.AccountGroupDto, groups []account.Group) account.Ref {

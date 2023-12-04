@@ -14,34 +14,20 @@
  * limitations under the License.
  */
 
-package internal
+package http
 
 import (
 	"context"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 )
 
-type Client accounts.Client
-
-func (c *Client) GetPoliciesFroAccount(ctx context.Context, account string) ([]accountmanagement.PolicyOverview, error) {
-	r, resp, err := c.PolicyManagementAPI.GetPolicyOverviewList(ctx, "account", account).Execute()
+func (c *Client) GetTenants(ctx context.Context, account string) ([]accountmanagement.EnvironmentDto, error) {
+	r, resp, err := c.EnvironmentManagementAPI.GetEnvironments(ctx, account).Execute()
 	defer closeResponseBody(resp)
 
 	if err = handleClientResponseError(resp, err); err != nil {
 		return nil, err
 	}
 
-	return r.PolicyOverviewList, nil
-}
-
-func (c *Client) GetPolicyDefinition(ctx context.Context, dto accountmanagement.PolicyOverview) (*accountmanagement.LevelPolicyDto, error) {
-	r, resp, err := c.PolicyManagementAPI.GetLevelPolicy(ctx, dto.LevelType, dto.LevelId, dto.Uuid).Execute()
-	defer closeResponseBody(resp)
-
-	if err = handleClientResponseError(resp, err); err != nil {
-		return nil, err
-	}
-
-	return r, nil
+	return r.Data, nil
 }

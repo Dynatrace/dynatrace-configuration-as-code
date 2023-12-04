@@ -20,52 +20,49 @@ import (
 	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal/http"
 )
 
 type Account struct {
 	httpClient  *accounts.Client
 	accountInfo *account.AccountInfo
-	httpClient2 *internal.Client
+	httpClient2 *http.Client
 }
 
 func New(accountInfo *account.AccountInfo, client *accounts.Client) *Account {
 	return &Account{
 		httpClient:  client,
 		accountInfo: accountInfo,
-		httpClient2: (*internal.Client)(client),
+		httpClient2: (*http.Client)(client),
 	}
 }
 
 func (a *Account) DownloadConfiguration() (*account.Resources, error) {
 	ctx := context.TODO()
 
+	tenants, err := a.environments(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	policies, err := a.policies(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	gg, err := a.Groups()
+	groups, err := a.groups(ctx, policies, tenants)
 	if err != nil {
 		return nil, err
-	}
-	groups := make(map[account.GroupId]account.Group)
-	for i := range gg {
-		groups[gg[i].ID] = gg[i]
 	}
 
-	uu, err := a.Users(gg)
+	users, err := a.users(ctx, groups)
 	if err != nil {
 		return nil, err
-	}
-	users := make(map[account.UserId]account.User)
-	for i := range uu {
-		users[uu[i].Email] = uu[i]
 	}
 
 	r := account.Resources{
-		Users:    users,
-		Groups:   groups,
+		Users:    users.asAccountUsers(),
+		Groups:   groups.asAccountGroups(),
 		Policies: policies.asAccountPolicies(),
 	}
 

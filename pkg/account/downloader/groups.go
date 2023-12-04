@@ -18,95 +18,150 @@ package downloader
 
 import (
 	"context"
-	"errors"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/google/uuid"
 )
 
-func (a *Account) Groups() ([]account.Group, error) {
-	ctx := context.TODO()
-	dtos, err := a.getGroups(ctx)
+type (
+	Groups []group
+
+	levelID = string
+	group   struct {
+		group         *account.Group
+		dto           *accountmanagement.GetGroupDto
+		permissionDTO *accountmanagement.PermissionsGroupDto
+		bindings      map[levelID]*accountmanagement.LevelPolicyBindingDto
+	}
+)
+
+func (a *Account) Groups(policies Policies, tenants Environments) (Groups, error) {
+	return a.groups(context.TODO(), policies, tenants)
+}
+
+func (a *Account) groups(ctx context.Context, policies Policies, tenants Environments) (Groups, error) {
+	groupDTOs, err := a.httpClient2.GetGroups(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, err
 	}
 
-	var retVal []account.Group
-	for _, dto := range dtos {
-		pp, err := a.getPermissionFor(ctx, *dto.Uuid)
+	var retVal Groups
+	for i := range groupDTOs {
+		g := group{
+			dto:      &groupDTOs[i],
+			bindings: make(map[levelID]*accountmanagement.LevelPolicyBindingDto, len(tenants)),
+		}
+
+		perDTO, err := a.httpClient2.GetPermissionFor(ctx, a.accountInfo.AccountUUID, *groupDTOs[i].Uuid)
 		if err != nil {
 			return nil, err
 		}
+		g.permissionDTO = perDTO
 
-		a := &account.Account{
-			Permissions: extractAccountPermissions(pp.Permissions),
+		binding, err := a.httpClient2.GetBindingsFor(ctx, "account", a.accountInfo.AccountUUID)
+		if err != nil {
+			return nil, err
+		}
+		g.bindings["account"] = binding
+
+		acc := account.Account{
+			Permissions: getPermissionFor("account", perDTO),
+			Policies:    policies.RefOn(getPoliciesFor(binding, *g.dto.Uuid)...),
 		}
 
-		var e []account.Environment
-		for scope, permissions := range sortPermissionsByTenant(pp.Permissions) {
-			e = append(e, account.Environment{
-				Name:        scope,
-				Permissions: permissions,
+		var envs []account.Environment
+		for _, t := range tenants {
+			binding, err := a.httpClient2.GetBindingsFor(ctx, "environment", t.ID())
+			if err != nil {
+				return nil, err
+			}
+			g.bindings[t.ID()] = binding
+
+			envs = append(envs, account.Environment{
+				Name:        t.ID(),
+				Permissions: getPermissionFor(t.ID(), perDTO),
+				Policies:    policies.RefOn(getPoliciesFor(binding, *g.dto.Uuid)...),
 			})
 		}
-		retVal = append(retVal, account.Group{
+
+		g.group = &account.Group{
 			ID:             uuid.New().String(),
-			Name:           dto.Name,
-			Description:    dto.GetDescription(),
-			Account:        a,
-			Environment:    e,
+			Name:           g.dto.Name,
+			Description:    g.dto.GetDescription(),
+			Account:        effectiveAccount(acc),
+			Environment:    effectiveEnvironments(envs),
 			ManagementZone: nil,
-			OriginObjectID: *dto.Uuid,
-		})
+			OriginObjectID: *g.dto.Uuid,
+		}
+
+		retVal = append(retVal, g)
 	}
 	return retVal, nil
 }
 
-func (a *Account) getGroups(ctx context.Context) ([]accountmanagement.GetGroupDto, error) {
-	log.Debug("Downloading groups for account %q", a.accountInfo)
-	r, resp, err := a.httpClient.GroupManagementAPI.GetGroups(ctx, a.accountInfo.AccountUUID).Execute()
-	defer closeResponseBody(resp)
-
-	if err = handleClientResponseError(resp, err, "unable to get groups"); err != nil {
-		return nil, err
+func (g Groups) asAccountGroups() map[account.GroupId]account.Group {
+	retVal := make(map[account.GroupId]account.Group)
+	for i := range g {
+		retVal[g[i].group.ID] = *g[i].group
 	}
-	if r != nil && int(r.Count) != len(r.Items) {
-		return nil, errors.New("the received data are inconsistent")
-	}
-
-	log.Debug("%d group downloaded", len(r.Items))
-
-	return r.Items, nil
+	return retVal
 }
 
-func (a *Account) getPermissionFor(ctx context.Context, groupUuid string) (*accountmanagement.PermissionsGroupDto, error) {
-	log.Debug("Downloading permissions for group %q", groupUuid) //TODO: or should be account.Group.ID ?
-	r, resp, err := a.httpClient.PermissionManagementAPI.GetGroupPermissions(ctx, a.accountInfo.AccountUUID, groupUuid).Execute()
-	defer closeResponseBody(resp)
-
-	if err = handleClientResponseError(resp, err, "unable to get groups"); err != nil {
-		return nil, err
+func (g Groups) refOn(groupUUID string) account.Ref {
+	for i := range g {
+		if *g[i].dto.Uuid == groupUUID {
+			return account.Reference{
+				Type: "reference",
+				Id:   g[i].group.ID,
+			}
+		}
 	}
-
-	return r, nil
+	return nil
 }
 
-func extractAccountPermissions(p []accountmanagement.PermissionsDto) []string {
+func (g Groups) refFromDTOs(dtos []accountmanagement.AccountGroupDto) []account.Ref {
+	var retVal []account.Ref
+	for _, dto := range dtos {
+		retVal = append(retVal, g.refOn(dto.Uuid))
+	}
+	return retVal
+}
+
+func getPermissionFor(scope string, perDTOs *accountmanagement.PermissionsGroupDto) []string {
 	var retVal []string
-	for i := range p {
-		if p[i].ScopeType == "account" {
-			retVal = append(retVal, p[i].PermissionName)
+	for _, p := range perDTOs.Permissions {
+		if p.ScopeType == scope || p.Scope == scope {
+			retVal = append(retVal, p.PermissionName)
 		}
 	}
 	return retVal
 }
 
-func sortPermissionsByTenant(permissionDTOs []accountmanagement.PermissionsDto) map[string][]string {
-	retVal := map[string][]string{}
-	for _, p := range permissionDTOs {
-		if p.ScopeType == "tenant" {
-			retVal[p.Scope] = append(retVal[p.Scope], p.GetPermissionName())
+func getPoliciesFor(binding *accountmanagement.LevelPolicyBindingDto, groupUUID string) []string {
+	var retVal []string
+	for _, b := range binding.PolicyBindings {
+		for _, g := range b.Groups {
+			if g == groupUUID {
+				retVal = append(retVal, b.PolicyUuid)
+				break
+			}
+		}
+	}
+	return retVal
+}
+
+func effectiveAccount(a account.Account) *account.Account {
+	if len(a.Policies) == 0 && len(a.Permissions) == 0 {
+		return nil
+	}
+	return &a
+}
+
+func effectiveEnvironments(es []account.Environment) []account.Environment {
+	var retVal []account.Environment
+	for _, e := range es {
+		if len(e.Policies) > 0 || len(e.Permissions) > 0 {
+			retVal = append(retVal, e)
 		}
 	}
 	return retVal
