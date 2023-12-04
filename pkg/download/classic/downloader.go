@@ -110,21 +110,21 @@ func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) p
 			configsToDownload, err := d.findConfigsToDownload(currentApi)
 			remoteCount := len(configsToDownload)
 			if err != nil {
-				log.WithFields(field.Type(currentApi.ID), field.Error(err)).Error("\tFailed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.ID, err)
+				log.WithFields(field.Type(currentApi.ID), field.Error(err)).Error("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.ID, err)
 				return
 			}
 			// filter all configs we do not want to download. All remaining will be downloaded
 			configsToDownload = d.filterConfigsToSkip(currentApi, configsToDownload)
 
 			if len(configsToDownload) == 0 {
-				log.WithFields(field.Type(currentApi.ID)).Debug("\tNo configs of type '%v' to download", currentApi.ID)
+				log.WithFields(field.Type(currentApi.ID)).Debug("No configs of type '%v' to download", currentApi.ID)
 				return
 			}
 
-			log.WithFields(field.Type(currentApi.ID), field.F("configsToDownload", len(configsToDownload))).Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), currentApi.ID)
+			log.WithFields(field.Type(currentApi.ID), field.F("configsToDownload", len(configsToDownload))).Debug("Found %d configs of type '%v' to download", len(configsToDownload), currentApi.ID)
 			cfgs := d.downloadConfigsOfAPI(currentApi, configsToDownload, projectName)
 
-			log.WithFields(field.Type(currentApi.ID), field.F("configsDownloaded", len(cfgs))).Debug("\tFinished downloading all configs of type '%v'", currentApi.ID)
+			log.WithFields(field.Type(currentApi.ID), field.F("configsDownloaded", len(cfgs))).Debug("Finished downloading all configs of type '%v'", currentApi.ID)
 			if len(cfgs) > 0 {
 				mutex.Lock()
 				results[currentApi.ID] = cfgs
