@@ -35,36 +35,36 @@ type (
 	}
 )
 
-func (a *Account) Policies() (Policies, error) {
+func (a *Account) Policies(tenants Environments) (Policies, error) {
 	return a.policies(context.TODO())
 }
 
 func (a *Account) policies(ctx context.Context) (Policies, error) {
 	log.Info("Downloading policies for account %q", a.accountInfo)
-	dto, err := a.httpClient2.GetPoliciesFroAccount(ctx, a.accountInfo.AccountUUID)
+	dtos, err := a.httpClient2.GetPoliciesFroAccount(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get policies for account %q: %w", a.accountInfo, err)
 	}
-	log.Debug("%d policy downloaded (global + custom)", len(dto))
+	log.Debug("%d policy downloaded (global + custom)", len(dtos))
 
-	retVal := make(Policies, 0, len(dto))
+	retVal := make(Policies, 0, len(dtos))
 
-	for i := range dto {
+	for i := range dtos {
 		var dtoDef *accountmanagement.LevelPolicyDto
 		var p *account.Policy
-		if isCustom(dto[i]) {
-			log.Debug("Downloading definition for policy %q (uuid: %q)", dto[i].Name, dto[i].Uuid) //TODO: or should be account.Policy.ID ?
-			dtoDef, err = a.httpClient2.GetPolicyDefinition(ctx, dto[i])
+		if isCustom(dtos[i]) {
+			log.Debug("Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid) //TODO: or should be account.Policy.ID ?
+			dtoDef, err = a.httpClient2.GetPolicyDefinition(ctx, dtos[i])
 			if err != nil {
 				return nil, err
 			}
 
-			p = toAccountPolicy(&dto[i], dtoDef)
+			p = toAccountPolicy(&dtos[i], dtoDef)
 		}
 
 		retVal = append(retVal, policy{
 			policy:        p,
-			dto:           &dto[i],
+			dto:           &dtos[i],
 			dtoDefinition: dtoDef,
 		})
 	}
@@ -77,11 +77,25 @@ func toAccountPolicy(dto *accountmanagement.PolicyOverview, dtoDef *accountmanag
 	return &account.Policy{
 		ID:             uuid.New().String(),
 		Name:           dto.Name,
-		Level:          getPolicyLevel(dto),
+		Level:          toAccountPolicyLevel(dto),
 		Description:    dto.Description,
 		Policy:         dtoDef.StatementQuery,
 		OriginObjectID: dto.Uuid,
 	}
+}
+
+func toAccountPolicyLevel(dto *accountmanagement.PolicyOverview) account.PolicyLevel {
+	var retVal account.PolicyLevel
+	switch dto.LevelType {
+	case "account":
+		retVal = account.PolicyLevelAccount{Type: "account"}
+	case "environment":
+		retVal = account.PolicyLevelEnvironment{
+			Type:        "environment",
+			Environment: dto.LevelId,
+		}
+	}
+	return retVal
 }
 
 func (p Policies) asAccountPolicies() map[account.PolicyId]account.Policy {
@@ -89,6 +103,19 @@ func (p Policies) asAccountPolicies() map[account.PolicyId]account.Policy {
 	for i := range p {
 		if p[i].isCustom() {
 			retVal[p[i].policy.ID] = *p[i].policy
+		}
+	}
+	return retVal
+}
+
+func (p Policies) RefOn(policyUUID ...string) []account.Ref {
+	var retVal []account.Ref
+	for _, pol := range p {
+		for _, uuid := range policyUUID {
+			if pol.dto.Uuid == uuid {
+				retVal = append(retVal, pol.RefOn())
+				break
+			}
 		}
 	}
 	return retVal
@@ -102,20 +129,12 @@ func isCustom(dto accountmanagement.PolicyOverview) bool {
 	return dto.LevelType == "account" || dto.LevelType == "environment"
 }
 
-func (p *policy) Ref() *account.Ref {
-	return nil
-}
-
-func getPolicyLevel(dto *accountmanagement.PolicyOverview) account.PolicyLevel {
-	var retVal account.PolicyLevel
-	switch dto.LevelType {
-	case "account":
-		retVal = account.PolicyLevelAccount{Type: "account"}
-	case "environment":
-		retVal = account.PolicyLevelEnvironment{
-			Type:        "environment",
-			Environment: dto.LevelId,
+func (p *policy) RefOn() account.Ref {
+	if p.isCustom() {
+		return account.Reference{
+			Type: "reference",
+			Id:   p.policy.ID,
 		}
 	}
-	return retVal
+	return account.StrReference(p.dto.Name)
 }
