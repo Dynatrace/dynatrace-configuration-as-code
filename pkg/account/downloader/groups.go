@@ -21,6 +21,7 @@ import (
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/google/uuid"
+	"strings"
 )
 
 type (
@@ -70,18 +71,28 @@ func (a *Account) groups(ctx context.Context, policies Policies, tenants Environ
 		}
 
 		var envs []account.Environment
+		var mzs []account.ManagementZone
 		for _, t := range tenants {
-			binding, err := a.httpClient2.GetBindingsFor(ctx, "environment", t.ID())
+			binding, err := a.httpClient2.GetBindingsFor(ctx, "environment", t.id)
 			if err != nil {
 				return nil, err
 			}
-			g.bindings[t.ID()] = binding
+			g.bindings[t.id] = binding
 
 			envs = append(envs, account.Environment{
-				Name:        t.ID(),
-				Permissions: getPermissionFor(t.ID(), perDTO),
+				Name:        t.id,
+				Permissions: getPermissionFor(t.id, perDTO),
 				Policies:    policies.RefOn(getPoliciesFor(binding, *g.dto.Uuid)...),
 			})
+
+			for k, v := range getManagementZonesFor(t.id, perDTO) {
+				mzs = append(mzs, account.ManagementZone{
+					Environment:    t.id,
+					ManagementZone: tenants.getMzoneName(k),
+					Permissions:    v,
+				})
+			}
+
 		}
 
 		g.group = &account.Group{
@@ -90,7 +101,7 @@ func (a *Account) groups(ctx context.Context, policies Policies, tenants Environ
 			Description:    g.dto.GetDescription(),
 			Account:        effectiveAccount(acc),
 			Environment:    effectiveEnvironments(envs),
-			ManagementZone: nil,
+			ManagementZone: mzs,
 			OriginObjectID: *g.dto.Uuid,
 		}
 
@@ -132,6 +143,18 @@ func getPermissionFor(scope string, perDTOs *accountmanagement.PermissionsGroupD
 	for _, p := range perDTOs.Permissions {
 		if p.ScopeType == scope || p.Scope == scope {
 			retVal = append(retVal, p.PermissionName)
+		}
+	}
+	return retVal
+}
+
+func getManagementZonesFor(scope string, perDTOs *accountmanagement.PermissionsGroupDto) map[string][]string {
+	retVal := make(map[string][]string)
+	for _, p := range perDTOs.Permissions {
+		if p.ScopeType == "management-zone" {
+			if after, found := strings.CutPrefix(p.Scope, scope+":"); found {
+				retVal[after] = append(retVal[after], p.PermissionName)
+			}
 		}
 	}
 	return retVal
