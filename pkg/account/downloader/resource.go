@@ -24,16 +24,14 @@ import (
 )
 
 type Account struct {
-	httpClient  *accounts.Client
+	httpClient  *http.Client
 	accountInfo *account.AccountInfo
-	httpClient2 *http.Client
 }
 
 func New(accountInfo *account.AccountInfo, client *accounts.Client) *Account {
 	return &Account{
-		httpClient:  client,
+		httpClient:  (*http.Client)(client),
 		accountInfo: accountInfo,
-		httpClient2: (*http.Client)(client),
 	}
 }
 

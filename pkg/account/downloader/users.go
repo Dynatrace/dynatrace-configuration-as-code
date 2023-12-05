@@ -37,14 +37,14 @@ func (a *Account) Users(groups Groups) (Users, error) {
 }
 
 func (a *Account) users(ctx context.Context, groups Groups) (Users, error) {
-	dtos, err := a.httpClient2.GetUsers(ctx, a.accountInfo.AccountUUID)
+	dtos, err := a.httpClient.GetUsers(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, err
 	}
 
 	retVal := make(Users, 0, len(dtos))
 	for i := range dtos {
-		dtoGroups, err := a.httpClient2.GetGroupsForUser(ctx, dtos[i].Email, a.accountInfo.AccountUUID)
+		dtoGroups, err := a.httpClient.GetGroupsForUser(ctx, dtos[i].Email, a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, err
 		}
@@ -65,14 +65,14 @@ func (a *Account) users(ctx context.Context, groups Groups) (Users, error) {
 
 // Deprecated
 func (a *Account) Users2(knownGroups []account.Group) ([]account.User, error) {
-	dtos, err := a.httpClient2.GetUsers(context.TODO(), a.accountInfo.AccountUUID)
+	dtos, err := a.httpClient.GetUsers(context.TODO(), a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, err
 	}
 
 	var users []account.User
 	for _, dto := range dtos {
-		gg, err := a.httpClient2.GetGroupsForUser(context.TODO(), dto.Email, a.accountInfo.AccountUUID)
+		gg, err := a.httpClient.GetGroupsForUser(context.TODO(), dto.Email, a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, err
 		}

@@ -41,7 +41,7 @@ func (a *Account) Policies(tenants Environments) (Policies, error) {
 
 func (a *Account) policies(ctx context.Context) (Policies, error) {
 	log.Info("Downloading policies for account %q", a.accountInfo)
-	dtos, err := a.httpClient2.GetPoliciesFroAccount(ctx, a.accountInfo.AccountUUID)
+	dtos, err := a.httpClient.GetPoliciesFroAccount(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get policies for account %q: %w", a.accountInfo, err)
 	}
@@ -54,7 +54,7 @@ func (a *Account) policies(ctx context.Context) (Policies, error) {
 		var p *account.Policy
 		if isCustom(dtos[i]) {
 			log.Debug("Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid) //TODO: or should be account.Policy.ID ?
-			dtoDef, err = a.httpClient2.GetPolicyDefinition(ctx, dtos[i])
+			dtoDef, err = a.httpClient.GetPolicyDefinition(ctx, dtos[i])
 			if err != nil {
 				return nil, err
 			}
