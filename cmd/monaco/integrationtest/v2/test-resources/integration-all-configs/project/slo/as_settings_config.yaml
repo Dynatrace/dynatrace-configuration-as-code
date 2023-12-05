@@ -95,7 +95,9 @@ configs:
         schema: builtin:monitoring.slo
         scope: environment
     config:
-      name: "My Settings 2.0 SLO #4"
+      name:
+        type: reference
+        property: metricName
       parameters:
         metricName:
           type: compound
@@ -125,8 +127,13 @@ configs:
         schema: builtin:monitoring.slo
         scope: environment
     config:
-      name: "My Settings 2.0 SLO #5"
+      name:
+        type: compound
+        format: "My {{.some_param}} 2.0 SLO #5"
+        references:
+        - some_param
       parameters:
+        some_param: "Settings"
         metricName:
           type: compound
           format: "{{.baseMetric}}{{.testSuffix}}"

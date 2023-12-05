@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	template2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
+	"github.com/google/go-cmp/cmp"
 	templ "text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -81,6 +82,11 @@ func (p *CompoundParameter) ResolveValue(context parameter.ResolveContext) (inte
 	str := out.String()
 	return template2.EscapeSpecialCharactersInValue(str, template2.FullStringEscapeFunction)
 
+}
+
+// Equal is required to compare two CompoundParameter without opening all fields.
+func (p *CompoundParameter) Equal(o *CompoundParameter) bool {
+	return p.rawFormatString == o.rawFormatString && cmp.Equal(p.referencedParameters, p.referencedParameters)
 }
 
 // parseCompoundParameter parses a given context into an instance of CompoundParameter.
