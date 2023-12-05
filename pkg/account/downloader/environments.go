@@ -16,44 +16,36 @@
 
 package downloader
 
-import (
-	"context"
-	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
-)
-
 type (
 	Environments []environment
 
 	environment struct {
-		dto *accountmanagement.EnvironmentDto
+		id              string
+		name            string
+		managementZones []managementZone
+	}
+
+	managementZone struct {
+		name     string
+		originID string
 	}
 )
-
-func (a *Account) Environments() (Environments, error) {
-	return a.environments(context.TODO())
-}
-
-func (a *Account) environments(ctx context.Context) (Environments, error) {
-	dto, err := a.httpClient2.GetTenants(ctx, a.accountInfo.AccountUUID)
-	if err != nil {
-		return nil, err
-	}
-
-	retVal := make(Environments, 0, len(dto))
-	for i := range dto {
-		retVal = append(retVal, environment{dto: &dto[i]})
-	}
-	return retVal, nil
-}
-
-func (e environment) ID() string {
-	return e.dto.Id
-}
 
 func (e Environments) asList() []string {
 	var retVal []string
 	for i := range e {
-		retVal = append(retVal, e[i].dto.Id)
+		retVal = append(retVal, e[i].id)
 	}
 	return retVal
+}
+
+func (e Environments) getMzoneName(originID string) string {
+	for _, env := range e {
+		for _, mz := range env.managementZones {
+			if mz.originID == originID {
+				return mz.name
+			}
+		}
+	}
+	return ""
 }
