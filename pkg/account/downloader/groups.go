@@ -41,7 +41,7 @@ func (a *Account) Groups(policies Policies, tenants Environments) (Groups, error
 }
 
 func (a *Account) groups(ctx context.Context, policies Policies, tenants Environments) (Groups, error) {
-	groupDTOs, err := a.httpClient2.GetGroups(ctx, a.accountInfo.AccountUUID)
+	groupDTOs, err := a.httpClient.GetGroups(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -53,13 +53,13 @@ func (a *Account) groups(ctx context.Context, policies Policies, tenants Environ
 			bindings: make(map[levelID]*accountmanagement.LevelPolicyBindingDto, len(tenants)),
 		}
 
-		perDTO, err := a.httpClient2.GetPermissionFor(ctx, a.accountInfo.AccountUUID, *groupDTOs[i].Uuid)
+		perDTO, err := a.httpClient.GetPermissionFor(ctx, a.accountInfo.AccountUUID, *groupDTOs[i].Uuid)
 		if err != nil {
 			return nil, err
 		}
 		g.permissionDTO = perDTO
 
-		binding, err := a.httpClient2.GetBindingsFor(ctx, "account", a.accountInfo.AccountUUID)
+		binding, err := a.httpClient.GetBindingsFor(ctx, "account", a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, err
 		}
@@ -73,7 +73,7 @@ func (a *Account) groups(ctx context.Context, policies Policies, tenants Environ
 		var envs []account.Environment
 		var mzs []account.ManagementZone
 		for _, t := range tenants {
-			binding, err := a.httpClient2.GetBindingsFor(ctx, "environment", t.id)
+			binding, err := a.httpClient.GetBindingsFor(ctx, "environment", t.id)
 			if err != nil {
 				return nil, err
 			}

@@ -26,7 +26,7 @@ func (a *Account) Environments() (Environments, error) {
 }
 
 func (a *Account) environments(ctx context.Context) (Environments, error) {
-	dto, err := a.httpClient2.GetTenants(ctx, a.accountInfo.AccountUUID)
+	dto, err := a.httpClient.GetTenants(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, err
 	}
