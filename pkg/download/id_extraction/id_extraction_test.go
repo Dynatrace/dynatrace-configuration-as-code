@@ -412,3 +412,40 @@ func TestExtractedTemplatesRenderCorrectly(t *testing.T) {
 		}
 	}
 }
+
+func TestFindAllIds(t *testing.T) {
+
+	tc := []struct {
+		in          string
+		expectedIds []string
+	}{
+		{"", nil},
+		{
+			"HOST-0123456789ABCDEF",
+			[]string{"HOST-0123456789ABCDEF"},
+		},
+		{
+			"f1614cf1-4f6e-4187-b303-af4beb42268c",
+			[]string{"f1614cf1-4f6e-4187-b303-af4beb42268c"},
+		},
+		{
+			`{"HOST": "HOST-0123456789ABCDEF", "id": "f1614cf1-4f6e-4187-b303-af4beb42268c"}`,
+			[]string{"f1614cf1-4f6e-4187-b303-af4beb42268c", "HOST-0123456789ABCDEF"},
+		},
+		{
+			"HELLO-Imnotanentityidbutstilliwasdetectedassuch",
+			nil,
+		},
+	}
+
+	for _, tt := range tc {
+		tt := tt
+		t.Run(tt.in, func(t *testing.T) {
+			t.Parallel()
+
+			f := findAllIds(tt.in)
+			assert.ElementsMatch(t, tt.expectedIds, f)
+		})
+	}
+
+}
