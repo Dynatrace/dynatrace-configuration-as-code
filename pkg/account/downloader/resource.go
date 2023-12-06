@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal/http"
 )
@@ -36,6 +37,7 @@ func New(accountInfo *account.AccountInfo, client *accounts.Client) *Account {
 }
 
 func (a *Account) DownloadConfiguration() (*account.Resources, error) {
+	log.Info("Downloading configuration for account %q", a.accountInfo.Name)
 	ctx := context.TODO()
 
 	tenants, err := a.environments(ctx)

@@ -35,12 +35,12 @@ type (
 	}
 )
 
-func (a *Account) Policies(tenants Environments) (Policies, error) {
+func (a *Account) Policies(tenants Environments) (Policies, error) { //TODO: move to account.go
 	return a.policies(context.TODO())
 }
 
-func (a *Account) policies(ctx context.Context) (Policies, error) {
-	log.Info("Downloading policies for account %q", a.accountInfo)
+func (a *Account) policies(ctx context.Context) (Policies, error) { //TODO: move to account.go
+	log.Info("Downloading policies...")
 	dtos, err := a.httpClient.GetPoliciesFroAccount(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get policies for account %q: %w", a.accountInfo, err)
@@ -69,7 +69,7 @@ func (a *Account) policies(ctx context.Context) (Policies, error) {
 		})
 	}
 
-	log.Debug("Number of policies: %d", len(retVal.asAccountPolicies()))
+	log.Info("%d custom policies available.", len(retVal.asAccountPolicies()))
 	return retVal, nil
 }
 

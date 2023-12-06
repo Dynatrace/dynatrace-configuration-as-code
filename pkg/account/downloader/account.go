@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
 
 func (a *Account) Environments() (Environments, error) {
@@ -26,6 +27,7 @@ func (a *Account) Environments() (Environments, error) {
 }
 
 func (a *Account) environments(ctx context.Context) (Environments, error) {
+	log.Info("Downloading environments...")
 	dto, err := a.httpClient.GetTenants(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, err
@@ -38,6 +40,7 @@ func (a *Account) environments(ctx context.Context) (Environments, error) {
 		retVal = append(retVal, e)
 	}
 
+	log.Info("Known environment: %q", retVal.asList())
 	return retVal, nil
 }
 

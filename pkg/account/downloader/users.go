@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 )
 
@@ -37,6 +38,7 @@ func (a *Account) Users(groups Groups) (Users, error) {
 }
 
 func (a *Account) users(ctx context.Context, groups Groups) (Users, error) {
+	log.Info("Downloading users...")
 	dtos, err := a.httpClient.GetUsers(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, err
@@ -44,6 +46,7 @@ func (a *Account) users(ctx context.Context, groups Groups) (Users, error) {
 
 	retVal := make(Users, 0, len(dtos))
 	for i := range dtos {
+		log.Info("Downloading details for user %q", dtos[i].Email)
 		dtoGroups, err := a.httpClient.GetGroupsForUser(ctx, dtos[i].Email, a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, err
@@ -60,35 +63,9 @@ func (a *Account) users(ctx context.Context, groups Groups) (Users, error) {
 			dtoGroups: dtoGroups,
 		})
 	}
+
+	log.Info("%d users downloads.", len(retVal))
 	return retVal, nil
-}
-
-// Deprecated
-func (a *Account) Users2(knownGroups []account.Group) ([]account.User, error) {
-	dtos, err := a.httpClient.GetUsers(context.TODO(), a.accountInfo.AccountUUID)
-	if err != nil {
-		return nil, err
-	}
-
-	var users []account.User
-	for _, dto := range dtos {
-		gg, err := a.httpClient.GetGroupsForUser(context.TODO(), dto.Email, a.accountInfo.AccountUUID)
-		if err != nil {
-			return nil, err
-		}
-
-		groups := make([]account.Ref, 0, len(gg))
-		for _, g := range gg {
-			groups = append(groups, createReferenceOnGroup(g, knownGroups))
-		}
-
-		users = append(users, account.User{
-			Email:  dto.Email,
-			Groups: groups,
-		})
-	}
-
-	return users, nil
 }
 
 func (u Users) asAccountUsers() map[account.UserId]account.User {
