@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"golang.org/x/exp/maps"
-	"strings"
 )
 
 // dependencyResolutionContext holds the important information for dependency resolution.
@@ -115,10 +114,9 @@ func findAndReplaceIDs(apiName string, configToBeUpdated config.Config, c depend
 		log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.ID(), key, conf.Coordinate)
 
 		parameterName := CreateParameterName(conf.Coordinate.Type, conf.Coordinate.ConfigId)
-		coord := conf.Coordinate
 
-		content = strings.ReplaceAll(content, key, "{{."+parameterName+"}}")
-		ref := reference.NewWithCoordinate(coord, "id")
+		content = replaceAll(content, key, "{{."+parameterName+"}}")
+		ref := reference.NewWithCoordinate(conf.Coordinate, "id")
 		parameters[parameterName] = ref
 
 	}

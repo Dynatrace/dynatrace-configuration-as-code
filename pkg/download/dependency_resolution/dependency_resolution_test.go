@@ -385,13 +385,13 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c1-id", "template of config 1 references config 2: c2-id"),
+						Template:   template.NewInMemoryTemplate("c1-id", `"template of config 1 references config 2: c2-id"`),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{},
 					},
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c2-id", "template of config 2 references config 1: c1-id"),
+						Template:   template.NewInMemoryTemplate("c2-id", `"template of config 2 references config 1: c1-id"`),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
 						Parameters: config.Parameters{},
 					},
@@ -401,7 +401,7 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c1-id", makeTemplateString("template of config 1 references config 2: %s", "api", "c2-id")),
+						Template:   template.NewInMemoryTemplate("c1-id", makeTemplateString(`"template of config 1 references config 2: %s"`, "api", "c2-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{
 							resolver.CreateParameterName("api", "c2-id"): refParam.New("project", "api", "c2-id", "id"),
@@ -409,7 +409,7 @@ func TestDependencyResolution(t *testing.T) {
 					},
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c2-id", makeTemplateString("template of config 2 references config 1: %s", "api", "c1-id")),
+						Template:   template.NewInMemoryTemplate("c2-id", makeTemplateString(`"template of config 2 references config 1: %s"`, "api", "c1-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
 						Parameters: config.Parameters{
 							resolver.CreateParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
@@ -424,19 +424,19 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c1-id", "template of config 1 references config 2: c2-id"),
+						Template:   template.NewInMemoryTemplate("c1-id", `"template of config 1 references config 2: c2-id"`),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{},
 					},
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c2-id", "template of config 2 references config 3: c3-id"),
+						Template:   template.NewInMemoryTemplate("c2-id", `"template of config 2 references config 3: c3-id"`),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
 						Parameters: config.Parameters{},
 					},
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c3-id", "template of config 3 references nothing"),
+						Template:   template.NewInMemoryTemplate("c3-id", `"template of config 3 references nothing"`),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
 					},
@@ -446,7 +446,7 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c1-id", makeTemplateString("template of config 1 references config 2: %s", "api", "c2-id")),
+						Template:   template.NewInMemoryTemplate("c1-id", makeTemplateString(`"template of config 1 references config 2: %s"`, "api", "c2-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{
 							resolver.CreateParameterName("api", "c2-id"): refParam.New("project", "api", "c2-id", "id"),
@@ -454,7 +454,7 @@ func TestDependencyResolution(t *testing.T) {
 					},
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c2-id", makeTemplateString("template of config 2 references config 3: %s", "api", "c3-id")),
+						Template:   template.NewInMemoryTemplate("c2-id", makeTemplateString(`"template of config 2 references config 3: %s"`, "api", "c3-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
 						Parameters: config.Parameters{
 							resolver.CreateParameterName("api", "c3-id"): refParam.New("project", "api", "c3-id", "id"),
@@ -462,7 +462,7 @@ func TestDependencyResolution(t *testing.T) {
 					},
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c3-id", "template of config 3 references nothing"),
+						Template:   template.NewInMemoryTemplate("c3-id", `"template of config 3 references nothing"`),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
 					},
@@ -475,7 +475,7 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c1-id", "template of config 1 references config 2: c2-id"),
+						Template:   template.NewInMemoryTemplate("c1-id", `"template of config 1 references config 2: c2-id"`),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{},
 					},
@@ -483,7 +483,7 @@ func TestDependencyResolution(t *testing.T) {
 				"api-2": []config.Config{
 					{
 						Type:       config.ClassicApiType{Api: "api-2"},
-						Template:   template.NewInMemoryTemplate("c2-id", "template of config 2 references config 3: c3-id"),
+						Template:   template.NewInMemoryTemplate("c2-id", `"template of config 2 references config 3: c3-id"`),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", ConfigId: "c2-id"},
 						Parameters: config.Parameters{},
 					},
@@ -491,7 +491,7 @@ func TestDependencyResolution(t *testing.T) {
 				"api-3": []config.Config{
 					{
 						Type:       config.ClassicApiType{Api: "api-3"},
-						Template:   template.NewInMemoryTemplate("c3-id", "template of config 3 references nothing"),
+						Template:   template.NewInMemoryTemplate("c3-id", `"template of config 3 references nothing"`),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-3", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
 					},
@@ -501,7 +501,7 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Type:       config.ClassicApiType{Api: "api"},
-						Template:   template.NewInMemoryTemplate("c1-id", makeTemplateString("template of config 1 references config 2: %s", "api-2", "c2-id")),
+						Template:   template.NewInMemoryTemplate("c1-id", makeTemplateString(`"template of config 1 references config 2: %s"`, "api-2", "c2-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{
 							resolver.CreateParameterName("api-2", "c2-id"): refParam.New("project", "api-2", "c2-id", "id"),
@@ -511,7 +511,7 @@ func TestDependencyResolution(t *testing.T) {
 				"api-2": []config.Config{
 					{
 						Type:       config.ClassicApiType{Api: "api-2"},
-						Template:   template.NewInMemoryTemplate("c2-id", makeTemplateString("template of config 2 references config 3: %s", "api-3", "c3-id")),
+						Template:   template.NewInMemoryTemplate("c2-id", makeTemplateString(`"template of config 2 references config 3: %s"`, "api-3", "c3-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", ConfigId: "c2-id"},
 						Parameters: config.Parameters{
 							resolver.CreateParameterName("api-3", "c3-id"): refParam.New("project", "api-3", "c3-id", "id"),
@@ -521,7 +521,7 @@ func TestDependencyResolution(t *testing.T) {
 				"api-3": []config.Config{
 					{
 						Type:       config.ClassicApiType{Api: "api-3"},
-						Template:   template.NewInMemoryTemplate("c3-id", "template of config 3 references nothing"),
+						Template:   template.NewInMemoryTemplate("c3-id", `"template of config 3 references nothing"`),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-3", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
 					},
@@ -682,13 +682,14 @@ func TestDependencyResolution(t *testing.T) {
 		t.Run(test.name+"_BasicResolver", func(t *testing.T) {
 			result, err := ResolveDependencies(test.setup)
 			assert.NilError(t, err)
-			assert.DeepEqual(t, result, test.expected, cmp.AllowUnexported(template.InMemoryTemplate{}))
+			assert.DeepEqual(t, test.expected, result, cmp.AllowUnexported(template.InMemoryTemplate{}))
 		})
+
 		t.Run(test.name+"_FastResolver", func(t *testing.T) {
 			t.Setenv(featureflags.FastDependencyResolver().EnvName(), "true")
 			result, err := ResolveDependencies(test.setup)
 			assert.NilError(t, err)
-			assert.DeepEqual(t, result, test.expected, cmp.AllowUnexported(template.InMemoryTemplate{}))
+			assert.DeepEqual(t, test.expected, result, cmp.AllowUnexported(template.InMemoryTemplate{}))
 		})
 	}
 }
