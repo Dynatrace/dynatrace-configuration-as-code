@@ -21,6 +21,7 @@ package config
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -194,4 +195,127 @@ func TestIsReferencingShouldReturnFalseForParameterWithoutReferences(t *testing.
 	result := parameterReference(param, referencingConfig, referencedParameter)
 
 	assert.True(t, !result, "should not reference parameter")
+}
+
+func TestIsReferencingOneOfSeveral(t *testing.T) {
+	referencingConfig := coordinate.Coordinate{
+		Project:  "project-1",
+		Type:     "dashboard",
+		ConfigId: "dashboard-1",
+	}
+
+	referencingProperty := "managementZoneName"
+
+	param := parameter.NamedParameter{
+		Name: "name",
+		Parameter: &parameter.DummyParameter{
+			References: []parameter.ParameterReference{
+				{Config: referencingConfig, Property: "not our param"},
+				{Config: referencingConfig, Property: "also not our param"},
+				{Config: referencingConfig, Property: referencingProperty},
+				{Config: referencingConfig, Property: "really not our param"},
+			},
+		},
+	}
+
+	referencedParameter := parameter.NamedParameter{
+		Name:      referencingProperty,
+		Parameter: &parameter.DummyParameter{},
+	}
+
+	result := parameterReference(param, referencingConfig, referencedParameter)
+
+	assert.True(t, result, "should reference parameter")
+}
+
+func TestIsReferencingOneOfSeveralMaps(t *testing.T) {
+	referencingConfig := coordinate.Coordinate{
+		Project:  "project-1",
+		Type:     "dashboard",
+		ConfigId: "dashboard-1",
+	}
+
+	referencingProperty := "map.is.found"
+
+	param := parameter.NamedParameter{
+		Name: "name",
+		Parameter: &parameter.DummyParameter{
+			References: []parameter.ParameterReference{
+				{Config: referencingConfig, Property: "map.not.found"},
+				{Config: referencingConfig, Property: "map.not.found.either"},
+				{Config: referencingConfig, Property: referencingProperty},
+			},
+		},
+	}
+
+	referencedParameter := parameter.NamedParameter{
+		Name: "map",
+		Parameter: &value.ValueParameter{
+			Value: map[any]any{
+				"is": map[any]any{
+					"found": true,
+				},
+			},
+		},
+	}
+
+	result := parameterReference(param, referencingConfig, referencedParameter)
+
+	assert.True(t, result, "should reference parameter")
+}
+
+func TestSearchValueParameterForKey(t *testing.T) {
+	testCases := []struct {
+		name       string
+		key        string
+		paramName  string
+		paramValue interface{}
+		expected   bool
+	}{
+		{
+			"simple key does exist",
+			"key",
+			"key",
+			"value",
+			true,
+		},
+		{
+			"simple key does not exist",
+			"key",
+			"other",
+			"value",
+			false,
+		},
+		{
+			"nested key does exist",
+			"key.keyy",
+			"key",
+			map[any]any{"keyy": "value"},
+			true,
+		},
+		{
+			"more nested key does exist",
+			"key.keyy.keyyy",
+			"key",
+			map[interface{}]interface{}{"keyy": map[interface{}]interface{}{"keyyy": "value"}},
+			true,
+		},
+		{
+			"more nested key does exist",
+			"key.keyy.keyyy",
+			"key",
+			map[interface{}]interface{}{"keyy": map[interface{}]interface{}{"other": "value"}},
+			false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			param := &value.ValueParameter{
+				Value: tc.paramValue,
+			}
+			result := searchValueParameterForKey(tc.key, tc.paramName, param)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }
