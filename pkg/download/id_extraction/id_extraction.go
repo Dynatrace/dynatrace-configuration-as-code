@@ -18,6 +18,7 @@ package id_extraction
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	ref "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
@@ -64,21 +65,22 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) (project.ConfigsP
 				content = strings.ReplaceAll(content, id, paramID)
 			}
 
-			scopeParam := c.Parameters[config.ScopeParameter]
-			if scopeParam != nil && scopeParam.GetType() == value.ValueParameterType {
-				scopeParamResolved, err := scopeParam.ResolveValue(parameter.ResolveContext{})
-				if err != nil {
-					return nil, fmt.Errorf("failed to resolve scope paramter from %s: %w", c.Coordinate, err)
-				}
-				if scopeParamResolved != "environment" {
-					scopeParamRsolvedStr := scopeParamResolved.(string)
-					key := createParameterKey(scopeParamRsolvedStr)
-					idMap[key] = scopeParamRsolvedStr
-					c.Parameters[config.ScopeParameter] = &ref.ReferenceParameter{
-						parameter.ParameterReference{Config: c.Coordinate, Property: baseParamID + "." + key},
+			if featureflags.ExtractScopeAsParameter().Enabled() {
+				scopeParam := c.Parameters[config.ScopeParameter]
+				if scopeParam != nil && scopeParam.GetType() == value.ValueParameterType {
+					scopeParamResolved, err := scopeParam.ResolveValue(parameter.ResolveContext{})
+					if err != nil {
+						return nil, fmt.Errorf("failed to resolve scope paramter from %s: %w", c.Coordinate, err)
+					}
+					if scopeParamResolved != "environment" {
+						scopeParamRsolvedStr := scopeParamResolved.(string)
+						key := createParameterKey(scopeParamRsolvedStr)
+						idMap[key] = scopeParamRsolvedStr
+						c.Parameters[config.ScopeParameter] = &ref.ReferenceParameter{
+							ParameterReference: parameter.ParameterReference{Config: c.Coordinate, Property: baseParamID + "." + key},
+						}
 					}
 				}
-
 			}
 
 			if len(idMap) > 0 { // found IDs, update template with new content and store to parameters
