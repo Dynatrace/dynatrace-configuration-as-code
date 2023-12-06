@@ -17,9 +17,6 @@
 package http
 
 import (
-	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"io"
 	"net/http"
 )
 
@@ -28,16 +25,19 @@ func closeResponseBody(resp *http.Response) {
 }
 
 func handleClientResponseError(resp *http.Response, clientErr error) error {
-	if clientErr != nil && resp == nil {
-		return clientErr
-	}
+	return clientErr
 
-	if !rest.IsSuccess(resp) && resp.StatusCode != http.StatusNotFound {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("unable to read response body %w", err)
-		}
-		return fmt.Errorf("(HTTP %d): %s", resp.StatusCode, string(body))
-	}
-	return nil
+	//TODO: change that 404 not found return nil. Needs code adaptation
+	//if clientErr != nil && resp == nil {
+	//	return clientErr
+	//}
+	//
+	//if !rest.IsSuccess(resp) && resp.StatusCode != http.StatusNotFound {
+	//	body, err := io.ReadAll(resp.Body)
+	//	if err != nil {
+	//		return fmt.Errorf("unable to read response body %w", err)
+	//	}
+	//	return fmt.Errorf("(HTTP %d): %s", resp.StatusCode, string(body))
+	//}
+	//return nil
 }
