@@ -27,7 +27,7 @@ import (
 type downloadOpts struct {
 	auth
 	manifestName   string
-	accountName    string
+	accountName    []string
 	projectName    string
 	accountUUID    string
 	outputFolder   string
@@ -53,7 +53,7 @@ func downloadCommand(fs afero.Fs) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&opts.manifestName, "manifest", "m", "manifest.yaml", "Name (and the path) to the manifest file. Defaults to 'manifest.yaml'")
-	cmd.Flags().StringVarP(&opts.accountName, "account", "a", "", "Account name defined in the manifest to download from")
+	cmd.Flags().StringSliceVarP(&opts.accountName, "account", "a", []string{}, "Account name defined in the manifest to download from")
 	cmd.Flags().StringVarP(&opts.projectName, "project", "p", "", "Project name defined in the manifest")
 	cmd.Flags().StringVarP(&opts.accountUUID, "uuid", "u", "", "Account uuid to use. Required when not using the '--manifest' flag")
 	cmd.Flags().StringVar(&opts.clientID, "oauth-client-id", "", "OAuth client ID environment variable. Required when using the '--uuid' flag")
