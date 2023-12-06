@@ -25,8 +25,8 @@ import (
 )
 
 // meIDRegexPattern matching a Dynatrace Monitored Entity ID which consists of a type containing characters and
-// underscores, a dash separator '-' and a 16 char alphanumeric ID
-var meIDRegexPattern = regexp.MustCompile(`[a-zA-Z_]+-[A-Za-z0-9]{16}`)
+// underscores, a dash separator '-' and 16 hex numbers
+var meIDRegexPattern = regexp.MustCompile(`[a-zA-Z_]+-[A-Fa-f0-9]{16}`)
 
 var uuidRegexPattern = regexp.MustCompile(`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 
@@ -42,8 +42,7 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) (project.ConfigsP
 				return nil, fmt.Errorf("failed to extract IDs from %s: %w", c.Coordinate, err)
 			}
 
-			ids := meIDRegexPattern.FindAllString(content, -1)
-			ids = append(ids, uuidRegexPattern.FindAllString(content, -1)...)
+			ids := findAllIds(content)
 
 			idMap := map[string]string{}
 
@@ -71,6 +70,12 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) (project.ConfigsP
 		}
 	}
 	return configsPerType, nil
+}
+
+func findAllIds(content string) []string {
+	ids := meIDRegexPattern.FindAllString(content, -1)
+	ids = append(ids, uuidRegexPattern.FindAllString(content, -1)...)
+	return ids
 }
 
 func createParameterKey(id string) string {
