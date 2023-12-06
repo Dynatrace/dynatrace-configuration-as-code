@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"regexp"
+	"strings"
 )
 
 func resolveScope(configToBeUpdated *config.Config, ids map[string]config.Config) {
@@ -60,4 +61,19 @@ var templatePattern = regexp.MustCompile(`[^a-zA-Z0-9_]+`)
 // SanitizeTemplateVar removes all except alphanumerical chars and underscores (_)
 func sanitizeTemplateVar(templateVarName string) string {
 	return templatePattern.ReplaceAllString(templateVarName, "")
+}
+
+func replaceAll(content string, key string, s string) string {
+	// The prefix and suffix we search for are alphanumerical, as well as the "-", and "_".
+	// From investigating, this character set seems to be the most basic regex that still avoids false positive substring matches.
+	str := fmt.Sprintf("([^a-zA-Z0-9_-])(%s)([^a-zA-Z0-9_-])", key)
+
+	// replace only strings that are not part of another larger string. See testcases for exact in/out values.
+	re, err := regexp.Compile(str)
+	if err != nil {
+		log.Debug("Failed to compile string %q to regex. Falling back to use simple string replace.", str)
+		return strings.ReplaceAll(content, key, s)
+	}
+
+	return re.ReplaceAllString(content, fmt.Sprintf("$1%s$3", s))
 }

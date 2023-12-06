@@ -61,10 +61,9 @@ func basicFindAndReplaceIDs(apiName string, configToBeUpdated config.Config, con
 			log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.ID(), key, conf.Coordinate)
 
 			parameterName := CreateParameterName(conf.Coordinate.Type, conf.Coordinate.ConfigId)
-			coord := conf.Coordinate
 
-			content = strings.ReplaceAll(content, key, "{{."+parameterName+"}}")
-			ref := reference.NewWithCoordinate(coord, "id")
+			content = replaceAll(content, key, "{{."+parameterName+"}}")
+			ref := reference.NewWithCoordinate(conf.Coordinate, "id")
 			parameters[parameterName] = ref
 		}
 	}
