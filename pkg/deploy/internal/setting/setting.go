@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
@@ -31,15 +32,15 @@ import (
 	"time"
 )
 
-func Deploy(ctx context.Context, settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (config.ResolvedEntity, error) {
+func Deploy(ctx context.Context, settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	t, ok := c.Type.(config.SettingsType)
 	if !ok {
-		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID()))
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID()))
 	}
 
 	scope, err := extractScope(properties)
 	if err != nil {
-		return config.ResolvedEntity{}, err
+		return entities.ResolvedEntity{}, err
 	}
 
 	settingsObj := dtclient.SettingsObject{
@@ -52,26 +53,26 @@ func Deploy(ctx context.Context, settingsClient dtclient.SettingsClient, propert
 	}
 	upsertOptions := makeUpsertOptions(c)
 
-	entity, err := settingsClient.UpsertSettings(ctx, settingsObj, upsertOptions)
+	dtEntity, err := settingsClient.UpsertSettings(ctx, settingsObj, upsertOptions)
 	if err != nil {
-		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
 	}
 
-	name := fmt.Sprintf("[UNKNOWN NAME]%s", entity.Id)
+	name := fmt.Sprintf("[UNKNOWN NAME]%s", dtEntity.Id)
 	if configName, err := extract.ConfigName(c, properties); err == nil {
 		name = configName
 	} else {
-		log.WithCtxFields(ctx).Warn("failed to extract name for Settings 2.0 object %q - ID will be used", entity.Id)
+		log.WithCtxFields(ctx).Warn("failed to extract name for Settings 2.0 object %q - ID will be used", dtEntity.Id)
 	}
 
-	properties[config.IdParameter], err = getEntityID(c, entity)
+	properties[config.IdParameter], err = getEntityID(c, dtEntity)
 	if err != nil {
-		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
 	}
 
 	properties[config.NameParameter] = name
 
-	return config.ResolvedEntity{
+	return entities.ResolvedEntity{
 		EntityName: name,
 		Coordinate: c.Coordinate,
 		Properties: properties,

@@ -17,6 +17,7 @@
 package reference
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"

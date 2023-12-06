@@ -22,13 +22,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/entitymap"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -84,7 +84,7 @@ func TestDeploy(t *testing.T) {
 			Skip:        false,
 		}
 
-		resolvedEntity, errors := deploy.TestDeploy(context.TODO(), &conf, clientSet, testApiMap, entitymap.New())
+		resolvedEntity, errors := deploy.TestDeploy(context.TODO(), &conf, clientSet, testApiMap, entities.New())
 
 		assert.Emptyf(t, errors, "errors: %v", errors)
 		assert.Equal(t, name, resolvedEntity.EntityName)
@@ -130,7 +130,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 
-	_, errors := deploy.TestDeploy(context.TODO(), conf, deploy.ClientSet{Settings: c}, nil, entitymap.New())
+	_, errors := deploy.TestDeploy(context.TODO(), conf, deploy.ClientSet{Settings: c}, nil, entities.New())
 	assert.NotEmpty(t, errors)
 }
 
@@ -143,7 +143,7 @@ func TestDeploySetting(t *testing.T) {
 	tests := []struct {
 		name    string
 		given   given
-		want    config.ResolvedEntity
+		want    entities.ResolvedEntity
 		wantErr bool
 	}{
 		{
@@ -174,7 +174,7 @@ func TestDeploySetting(t *testing.T) {
 				},
 				returnedEntityID: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 			},
-			want: config.ResolvedEntity{
+			want: entities.ResolvedEntity{
 				EntityName: "My Setting",
 				Coordinate: coordinate.Coordinate{
 					Project:  "project",
@@ -217,7 +217,7 @@ func TestDeploySetting(t *testing.T) {
 				},
 				returnedEntityID: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
 			},
-			want: config.ResolvedEntity{
+			want: entities.ResolvedEntity{
 				EntityName: "My Setting",
 				Coordinate: coordinate.Coordinate{
 					Project:  "project",
@@ -260,7 +260,7 @@ func TestDeploySetting(t *testing.T) {
 				},
 				returnedEntityID: "INVALID OBJECT ID",
 			},
-			want:    config.ResolvedEntity{},
+			want:    entities.ResolvedEntity{},
 			wantErr: true,
 		},
 	}
@@ -273,7 +273,7 @@ func TestDeploySetting(t *testing.T) {
 				Name: tt.given.returnedEntityID,
 			}, nil)
 
-			got, errors := deploy.TestDeploy(context.TODO(), &tt.given.config, deploy.ClientSet{Settings: c}, nil, entitymap.New())
+			got, errors := deploy.TestDeploy(context.TODO(), &tt.given.config, deploy.ClientSet{Settings: c}, nil, entities.New())
 			if !tt.wantErr {
 				assert.Equal(t, got, tt.want)
 				assert.Emptyf(t, errors, "errors: %v)", errors)
@@ -325,7 +325,7 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap(parameters),
 	}
-	res, errors := deploy.TestDeploy(context.TODO(), conf, deploy.ClientSet{Settings: c}, nil, entitymap.New())
+	res, errors := deploy.TestDeploy(context.TODO(), conf, deploy.ClientSet{Settings: c}, nil, entities.New())
 	assert.Equal(t, res.EntityName, cfgName, "expected resolved name to match configuration name")
 	assert.Emptyf(t, errors, "errors: %v", errors)
 }
@@ -365,7 +365,7 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap(parametersWithoutName),
 	}
-	res, errors := deploy.TestDeploy(context.TODO(), conf, deploy.ClientSet{Settings: c}, nil, entitymap.New())
+	res, errors := deploy.TestDeploy(context.TODO(), conf, deploy.ClientSet{Settings: c}, nil, entities.New())
 	assert.Contains(t, res.EntityName, objectId, "expected resolved name to contain objectID if name is not configured")
 	assert.Empty(t, errors, " errors: %v)", errors)
 }

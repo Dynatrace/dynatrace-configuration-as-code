@@ -21,6 +21,7 @@ package config
 import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/google/uuid"
@@ -28,9 +29,9 @@ import (
 	"testing"
 )
 
-type entityLookup map[coordinate.Coordinate]ResolvedEntity
+type entityLookup map[coordinate.Coordinate]entities.ResolvedEntity
 
-func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (ResolvedEntity, bool) {
+func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (entities.ResolvedEntity, bool) {
 	ent, f := e[config]
 	return ent, f
 }
@@ -84,9 +85,7 @@ func TestResolveParameterValues(t *testing.T) {
 		Skip:        false,
 	}
 
-	entities := entityLookup{}
-
-	values, errs := conf.ResolveParameterValues(entities)
+	values, errs := conf.ResolveParameterValues(entityLookup{})
 
 	assert.Empty(t, errs, "there should be no errors (errors: %s)", errs)
 	assert.Equal(t, name, values[NameParameter])
@@ -126,9 +125,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 		Skip:        false,
 	}
 
-	entities := entityLookup{}
-
-	_, errs := conf.ResolveParameterValues(entities)
+	_, errs := conf.ResolveParameterValues(entityLookup{})
 
 	assert.NotEmpty(t, errs, "there should be errors (no errors: %d)", len(errs))
 }
@@ -166,7 +163,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		Skip:        false,
 	}
 
-	entities := entityLookup{
+	lookup := entityLookup{
 		referenceCoordinate: {
 			EntityName: "zone1",
 			Coordinate: referenceCoordinate,
@@ -175,7 +172,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		},
 	}
 
-	_, errs := conf.ResolveParameterValues(entities)
+	_, errs := conf.ResolveParameterValues(lookup)
 
 	assert.NotEmpty(t, errs, "there should be errors (no errors: %d)", len(errs))
 }
@@ -202,9 +199,7 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 		Skip:        false,
 	}
 
-	entities := entityLookup{}
-
-	_, errs := conf.ResolveParameterValues(entities)
+	_, errs := conf.ResolveParameterValues(entityLookup{})
 
 	assert.NotEmpty(t, errs, "there should be errors (no : %d)", len(errs))
 }
@@ -236,7 +231,7 @@ func TestValidateParameterReferences(t *testing.T) {
 		},
 	}
 
-	entities := entityLookup{
+	lookup := entityLookup{
 		referencedConfigCoordinates: {
 			EntityName: "zone1",
 			Coordinate: referencedConfigCoordinates,
@@ -247,7 +242,7 @@ func TestValidateParameterReferences(t *testing.T) {
 		},
 	}
 
-	errs := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
+	errs := validateParameterReferences(configCoordinates, "", "", lookup, "managementZoneName", param)
 
 	assert.Empty(t, errs, "should not return errors (no errors: %d)", len(errs))
 }
@@ -271,9 +266,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSelf(t *testing.T) 
 		},
 	}
 
-	entities := entityLookup{}
-
-	errs := validateParameterReferences(configCoordinates, "", "", entities, paramName, param)
+	errs := validateParameterReferences(configCoordinates, "", "", entityLookup{}, paramName, param)
 
 	assert.NotEmpty(t, errs, "should not errors (no errors: %d)", len(errs))
 }
@@ -301,7 +294,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSkippedConfig(t *te
 		},
 	}
 
-	entities := entityLookup{
+	lookup := entityLookup{
 		referencedConfigCoordinates: {
 			EntityName: "zone1",
 			Coordinate: referencedConfigCoordinates,
@@ -310,7 +303,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSkippedConfig(t *te
 		},
 	}
 
-	errs := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
+	errs := validateParameterReferences(configCoordinates, "", "", lookup, "managementZoneName", param)
 
 	assert.NotEmpty(t, errs, "should return errors (no errors: %d)", len(errs))
 }
@@ -338,9 +331,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingUnknownConfig(t *te
 		},
 	}
 
-	entities := entityLookup{}
-
-	errs := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
+	errs := validateParameterReferences(configCoordinates, "", "", entityLookup{}, "managementZoneName", param)
 
 	assert.NotEmpty(t, errs, "should return errors (no errors: %d)", len(errs))
 }

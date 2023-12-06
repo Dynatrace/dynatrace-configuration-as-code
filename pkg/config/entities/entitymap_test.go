@@ -16,10 +16,9 @@
  * limitations under the License.
  */
 
-package entitymap
+package entities
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -34,14 +33,14 @@ func TestEntityMap_PutResolved(t *testing.T) {
 			ConfigId: "configID",
 		}
 
-		r1 := config.ResolvedEntity{
+		r1 := ResolvedEntity{
 			EntityName: "entityName",
 			Coordinate: c1,
 		}
 
 		entityMap := New()
 		entityMap.Put(r1)
-		assert.Equal(t, entityMap.Get(), map[coordinate.Coordinate]config.ResolvedEntity{
+		assert.Equal(t, entityMap.Get(), map[coordinate.Coordinate]ResolvedEntity{
 			c1: r1,
 		})
 	})
@@ -53,7 +52,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 			ConfigId: "configID",
 		}
 
-		r1 := config.ResolvedEntity{
+		r1 := ResolvedEntity{
 			EntityName: "entityName",
 			Coordinate: c1,
 			Skip:       true,
@@ -61,7 +60,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 
 		entityMap := New()
 		entityMap.Put(r1)
-		assert.Equal(t, entityMap.Get(), map[coordinate.Coordinate]config.ResolvedEntity{
+		assert.Equal(t, entityMap.Get(), map[coordinate.Coordinate]ResolvedEntity{
 			c1: r1,
 		})
 	})
@@ -73,11 +72,11 @@ func TestEntityMap_PutResolved(t *testing.T) {
 			ConfigId: "configID",
 		}
 
-		r1 := config.ResolvedEntity{Coordinate: c1}
+		r1 := ResolvedEntity{Coordinate: c1}
 
 		entityMap := New()
 		entityMap.Put(r1)
-		assert.Equal(t, entityMap.Get(), map[coordinate.Coordinate]config.ResolvedEntity{
+		assert.Equal(t, entityMap.Get(), map[coordinate.Coordinate]ResolvedEntity{
 			c1: r1,
 		})
 	})

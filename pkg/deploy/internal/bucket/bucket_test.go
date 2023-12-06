@@ -24,10 +24,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/entitymap"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -55,7 +55,7 @@ func TestDeploy(t *testing.T) {
 		name             string
 		givenConfig      config.Config
 		assertAndRespond assertAndRespond
-		want             config.ResolvedEntity
+		want             entities.ResolvedEntity
 		wantErr          bool
 	}{
 		{
@@ -75,7 +75,7 @@ func TestDeploy(t *testing.T) {
 					Data:       data,
 				}, nil
 			},
-			config.ResolvedEntity{
+			entities.ResolvedEntity{
 				EntityName: "proj_my-bucket",
 				Coordinate: testCoord,
 				Properties: parameter.Properties{
@@ -101,7 +101,7 @@ func TestDeploy(t *testing.T) {
 					Data:       data,
 				}, nil
 			},
-			config.ResolvedEntity{
+			entities.ResolvedEntity{
 				EntityName: "PreExistingBucket",
 				Coordinate: testCoord,
 				Properties: parameter.Properties{
@@ -122,7 +122,7 @@ func TestDeploy(t *testing.T) {
 			func(t *testing.T, bucketName string, data []byte) (buckets.Response, error) {
 				return buckets.Response{}, errors.New("fail")
 			},
-			config.ResolvedEntity{},
+			entities.ResolvedEntity{},
 			true,
 		},
 		{
@@ -140,7 +140,7 @@ func TestDeploy(t *testing.T) {
 					Data:       []byte("Your request is bad and you should feel bad"),
 				}, nil
 			},
-			config.ResolvedEntity{},
+			entities.ResolvedEntity{},
 			true,
 		},
 	}
@@ -152,7 +152,7 @@ func TestDeploy(t *testing.T) {
 				tt.assertAndRespond,
 			}
 
-			props, errs := tt.givenConfig.ResolveParameterValues(entitymap.New())
+			props, errs := tt.givenConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
 			templ, err := tt.givenConfig.Render(props)
 			assert.NoError(t, err)
