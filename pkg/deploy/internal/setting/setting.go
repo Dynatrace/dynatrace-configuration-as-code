@@ -112,7 +112,11 @@ func extractScope(properties parameter.Properties) (string, error) {
 		return "", fmt.Errorf("resolved scope is empty")
 	}
 
-	return fmt.Sprint(scope), nil
+	if v, ok := scope.(string); ok {
+		return v, nil
+	} else {
+		return "", fmt.Errorf("scope needs to be string, unexpected type %T", scope)
+	}
 }
 
 func getEntityID(c *config.Config, e dtclient.DynatraceEntity) (string, error) {
