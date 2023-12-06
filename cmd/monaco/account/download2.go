@@ -53,7 +53,7 @@ func downloadAll(fs afero.Fs, opts downloadOpts) error {
 		if len(opts.accountName) > 0 {
 			for _, a := range opts.accountName {
 				if n, ok := m.Accounts[a]; !ok {
-					return fmt.Errorf("unknown enviroment %q", n)
+					return fmt.Errorf("unknown enviroment %q", n.Name)
 				}
 			}
 			for _, a := range opts.accountName {
