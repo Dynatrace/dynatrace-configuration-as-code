@@ -7,3 +7,8 @@ delete:
     name: My Policy%RAND%
     level:
       type: account
+  - type: policy
+    name: My Policy 2%RAND%
+    level:
+      type: environment
+      environment: vkb66581

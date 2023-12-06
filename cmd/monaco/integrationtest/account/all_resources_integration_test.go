@@ -24,7 +24,10 @@ import (
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -49,6 +52,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		myEmail := "monaco+%RAND%@dynatrace.com"
 		myGroup := "My Group%RAND%"
 		myPolicy := "My Policy%RAND%"
+		myPolicy2 := "My Policy 2%RAND%"
 		envVkb := "vkb66581"
 
 		check := AccountResourceChecker{
@@ -58,30 +62,90 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 		cli := runner.BuildCli(o.fs)
 
-		// (0) DEPLOY RESOURCES
+		// DEPLOY RESOURCES
 		cli.SetArgs([]string{"account", "deploy", "manifest-account.yaml"})
 		err = cli.Execute()
 		assert.NoError(t, err)
 
-		// (1) CHECK IF RESOURCES ARE INDEED DEPLOYED
+		// CHECK IF RESOURCES ARE INDEED DEPLOYED
 		check.UserAvailable(t, accountUUID, myEmail)
-		check.AccountPolicyAvailable(t, accountUUID, myPolicy)
+		check.PolicyAvailable(t, "account", accountUUID, myPolicy)
+		check.PolicyAvailable(t, "environment", envVkb, myPolicy2)
 		check.GroupAvailable(t, accountUUID, myGroup)
-		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, myPolicy, envVkb)
+
+		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 2)
+		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, myPolicy2, envVkb)
 		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, "Environment role - Replay session data without masking", envVkb)
+
+		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 2)
 		check.AccountPolicyBinding(t, accountUUID, myGroup, "Environment role - Access environment")
+		check.AccountPolicyBinding(t, accountUUID, myGroup, myPolicy)
+
+		check.PermissionBindingsCount(t, accountUUID, myGroup, 6)
 		check.PermissionBinding(t, accountUUID, "account", accountUUID, "account-viewer", myGroup)
 		check.PermissionBinding(t, accountUUID, "tenant", envVkb, "tenant-viewer", myGroup)
+		check.PermissionBinding(t, accountUUID, "tenant", envVkb, "tenant-logviewer", myGroup)
 		check.PermissionBinding(t, accountUUID, "management-zone", "wbm16058:1939021364513288421", "tenant-viewer", myGroup)
 
-		// (2) DELETE RESOURCES
+		// REMOVE SOME BINDINGS
+		resources, err := loader.Load(o.fs, "accounts")
+		assert.NoError(t, err)
+		resources.Groups["my-group"].Environment[0].Policies = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Policies, func(ref account.Ref) bool {
+			return ref.ID() == "Environment role - Replay session data without masking"
+		})
+		resources.Groups["my-group"].Environment[0].Permissions = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Permissions, func(s string) bool { return s == "tenant-logviewer" })
+
+		resources.Groups["my-group"].Account.Policies = slices.DeleteFunc(resources.Groups["my-group"].Account.Policies, func(ref account.Ref) bool {
+			return ref.ID() == "Environment role - Access environment"
+		})
+		resources.Groups["my-group"].Account.Permissions = slices.DeleteFunc(resources.Groups["my-group"].Account.Permissions, func(s string) bool {
+			return s == "account-company-info"
+		})
+		resources.Groups["my-group"].ManagementZone[0].Permissions = slices.DeleteFunc(resources.Groups["my-group"].ManagementZone[0].Permissions, func(s string) bool {
+			return s == "tenant-logviewer"
+		})
+
+		// WRITE RESOURCES
+		err = writer.Write(writer.Context{Fs: o.fs, OutputFolder: ".", ProjectFolder: "accounts"}, *resources)
+		assert.NoError(t, err)
+
+		// DEPLOY
+		err = cli.Execute()
+		assert.NoError(t, err)
+
+		// CHECK BINDINGS ARE REMOVED
+		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 1)
+		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 1)
+		check.PermissionBindingsCount(t, accountUUID, myGroup, 3)
+
+		// DELETE ALL BINDINGS
+		resources.Groups["my-group"].Environment[0].Policies = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Policies, func(ref account.Ref) bool { return true })
+		resources.Groups["my-group"].Environment[0].Permissions = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Permissions, func(s string) bool { return true })
+		resources.Groups["my-group"].Account.Policies = slices.DeleteFunc(resources.Groups["my-group"].Account.Policies, func(ref account.Ref) bool { return true })
+		resources.Groups["my-group"].Account.Permissions = slices.DeleteFunc(resources.Groups["my-group"].Account.Permissions, func(s string) bool { return true })
+		resources.Groups["my-group"].ManagementZone[0].Permissions = slices.DeleteFunc(resources.Groups["my-group"].ManagementZone[0].Permissions, func(s string) bool { return true })
+
+		// WRITE RESOURCES
+		err = writer.Write(writer.Context{Fs: o.fs, OutputFolder: ".", ProjectFolder: "accounts"}, *resources)
+		assert.NoError(t, err)
+
+		// DEPLOY
+		err = cli.Execute()
+		assert.NoError(t, err)
+
+		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 0)
+		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 0)
+		check.PermissionBindingsCount(t, accountUUID, myGroup, 0)
+
+		// DELETE RESOURCES
 		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "delete.yaml", "--account", accountName})
 		err = cli.Execute()
 		assert.NoError(t, err)
 
-		// (3) CHECK IF RESOURCES ARE INDEED DELETED
+		// CHECK IF RESOURCES ARE DELETED
 		check.UserNotAvailable(t, accountUUID, myEmail)
-		check.AccountPolicyNotAvailable(t, accountUUID, myPolicy)
+		check.PolicyNotAvailable(t, "account", accountUUID, myPolicy)
+		check.PolicyNotAvailable(t, "environment", envVkb, myPolicy2)
 		check.GroupNotAvailable(t, accountUUID, myGroup)
 	})
 }
@@ -138,18 +202,18 @@ func (a AccountResourceChecker) GroupAvailable(t *testing.T, accountUUID, groupN
 	assertElementInSlice(t, all.GetItems(), func(el accountmanagement.GetGroupDto) bool { return el.Name == expectedGroupName })
 }
 
-func (a AccountResourceChecker) AccountPolicyAvailable(t *testing.T, accountUUID, policyName string) {
+func (a AccountResourceChecker) PolicyAvailable(t *testing.T, levelType, levelId, policyName string) {
 	expectedPolicyName := a.randomize(policyName)
-	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), "account", accountUUID).Name(expectedPolicyName).Execute()
+	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelType, levelId).Name(expectedPolicyName).Execute()
 	assert.NotNil(t, policies)
 	assert.NoError(t, err)
 	_, found := getElementInSlice(policies.Policies, func(el accountmanagement.PolicyDto) bool { return el.Name == expectedPolicyName })
 	assert.True(t, found)
 }
 
-func (a AccountResourceChecker) AccountPolicyNotAvailable(t *testing.T, accountUUID, policyName string) {
+func (a AccountResourceChecker) PolicyNotAvailable(t *testing.T, levelType, levelId, policyName string) {
 	expectedPolicyName := a.randomize(policyName)
-	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), "account", accountUUID).Execute()
+	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelType, levelId).Execute()
 	assert.NotNil(t, policies)
 	assert.NoError(t, err)
 	assertElementNotInSlice(t, policies.Policies, func(el accountmanagement.PolicyDto) bool { return el.Name == expectedPolicyName })
@@ -186,6 +250,21 @@ func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUU
 	})
 }
 
+func (a AccountResourceChecker) PolicyBindingsCount(t *testing.T, accountUUID string, levelType string, levelId string, groupName string, number int) {
+	expectedGroupName := a.randomize(groupName)
+	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
+	assert.True(t, found)
+
+	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), levelType, levelId).Execute()
+	assert.NoError(t, err)
+
+	result := slices.DeleteFunc(envPolBindings.PolicyBindings, func(binding accountmanagement.Binding) bool {
+		return !slices.Contains(binding.Groups, gid)
+	})
+
+	assert.Equal(t, number, len(result))
+}
+
 func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, groupName, policyName string) {
 	expectedPolicyName := a.randomize(policyName)
 	var pid string
@@ -219,6 +298,16 @@ func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, sco
 		scopeEqual := el.Scope == scope
 		return permissionFound && scopeTypeEqual && scopeEqual
 	})
+}
+
+func (a AccountResourceChecker) PermissionBindingsCount(t *testing.T, accountUUID, groupName string, count int) {
+	expectedGroupName := a.randomize(groupName)
+	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
+	assert.True(t, found)
+
+	permissions, _, err := a.Client.PermissionManagementAPI.GetGroupPermissions(context.TODO(), accountUUID, gid).Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, count, len(permissions.Permissions))
 }
 
 func (a AccountResourceChecker) randomize(in string) string {

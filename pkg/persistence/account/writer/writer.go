@@ -45,14 +45,10 @@ type Context struct {
 // to files before the method returns with an error.
 func Write(writerContext Context, resources account.Resources) error {
 
-	outputFolder, err := filepath.Abs(writerContext.OutputFolder)
-	if err != nil {
+	if err := createFolderIfNoneExists(writerContext.Fs, writerContext.OutputFolder); err != nil {
 		return err
 	}
-	if err := createFolderIfNoneExists(writerContext.Fs, outputFolder); err != nil {
-		return err
-	}
-	projectFolder := filepath.Join(outputFolder, writerContext.ProjectFolder)
+	projectFolder := filepath.Join(writerContext.OutputFolder, writerContext.ProjectFolder)
 	if err := createFolderIfNoneExists(writerContext.Fs, projectFolder); err != nil {
 		return err
 	}

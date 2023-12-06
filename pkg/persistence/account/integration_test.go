@@ -49,8 +49,7 @@ func TestLoadAndReWriteAccountResources(t *testing.T) {
 	assert.NoError(t, err)
 
 	// ASSERT FILES WRITTEN AS EXPECTED
-	expectedOutputFolder, err := filepath.Abs(filepath.Join(c.OutputFolder, c.ProjectFolder))
-	assert.NoError(t, err)
+	expectedOutputFolder := filepath.Join(c.OutputFolder, c.ProjectFolder)
 	assertFileExists(t, c.Fs, filepath.Join(expectedOutputFolder, "users.yaml"))
 	assertFileExists(t, c.Fs, filepath.Join(expectedOutputFolder, "groups.yaml"))
 	assertFileExists(t, c.Fs, filepath.Join(expectedOutputFolder, "policies.yaml"))
