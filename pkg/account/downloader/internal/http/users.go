@@ -22,7 +22,7 @@ import (
 )
 
 func (c *Client) GetUsers(ctx context.Context, accountUUID string) ([]accountmanagement.UsersDto, error) {
-	r, resp, err := c.UserManagementAPI.GetUsers(ctx, accountUUID).ServiceUsers(true).Execute() //TODO: who are service users? do we need them?
+	r, resp, err := c.UserManagementAPI.GetUsers(ctx, accountUUID).ServiceUsers(false).Execute() //service users are not yet implemented in DT
 	defer closeResponseBody(resp)
 
 	if err = handleClientResponseError(resp, err); err != nil {
