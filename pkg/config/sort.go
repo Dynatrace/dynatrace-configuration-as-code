@@ -98,7 +98,7 @@ func parametersToSortData(conf coordinate.Coordinate, parameters []parameter.Nam
 
 func parameterReference(sourceParam parameter.NamedParameter, config coordinate.Coordinate, targetParam parameter.NamedParameter) bool {
 	for _, ref := range sourceParam.Parameter.GetReferences() {
-		if ref.Config == config && ref.Property == targetParam.Name {
+		if ref.Config == config && strings.HasPrefix(ref.Property, targetParam.Name) { //TODO: resolve properly
 			return true
 		}
 	}
