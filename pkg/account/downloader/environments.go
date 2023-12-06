@@ -31,6 +31,10 @@ type (
 	}
 )
 
+func (e environment) String() string {
+	return e.id
+}
+
 func (e Environments) asList() []string {
 	var retVal []string
 	for i := range e {

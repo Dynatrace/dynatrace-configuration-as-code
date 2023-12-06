@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/google/uuid"
 	"strings"
@@ -41,6 +42,7 @@ func (a *Account) Groups(policies Policies, tenants Environments) (Groups, error
 }
 
 func (a *Account) groups(ctx context.Context, policies Policies, tenants Environments) (Groups, error) {
+	log.Info("Downloading groups...")
 	groupDTOs, err := a.httpClient.GetGroups(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, err
@@ -48,22 +50,25 @@ func (a *Account) groups(ctx context.Context, policies Policies, tenants Environ
 
 	var retVal Groups
 	for i := range groupDTOs {
+		log.Debug("Downloading definition for group %q (uuid: %q)", groupDTOs[i].Name, *groupDTOs[i].Uuid)
 		g := group{
 			dto:      &groupDTOs[i],
 			bindings: make(map[levelID]*accountmanagement.LevelPolicyBindingDto, len(tenants)),
 		}
 
-		perDTO, err := a.httpClient.GetPermissionFor(ctx, a.accountInfo.AccountUUID, *groupDTOs[i].Uuid)
-		if err != nil {
-			return nil, err
-		}
-		g.permissionDTO = perDTO
-
+		log.Debug("Downloading group's policies...")
 		binding, err := a.httpClient.GetBindingsFor(ctx, "account", a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, err
 		}
 		g.bindings["account"] = binding
+
+		log.Debug("Downloading group's permissions...")
+		perDTO, err := a.httpClient.GetPermissionFor(ctx, a.accountInfo.AccountUUID, *groupDTOs[i].Uuid)
+		if err != nil {
+			return nil, err
+		}
+		g.permissionDTO = perDTO
 
 		acc := account.Account{
 			Permissions: getPermissionFor("account", perDTO),
@@ -73,6 +78,7 @@ func (a *Account) groups(ctx context.Context, policies Policies, tenants Environ
 		var envs []account.Environment
 		var mzs []account.ManagementZone
 		for _, t := range tenants {
+			log.Debug("Downloading policies for %q...", t)
 			binding, err := a.httpClient.GetBindingsFor(ctx, "environment", t.id)
 			if err != nil {
 				return nil, err
