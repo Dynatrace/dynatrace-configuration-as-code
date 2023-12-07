@@ -23,10 +23,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -153,6 +156,136 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			downloaders := downloaders{settings.NewDownloader(c), classicDownloader(c, tt.givenOpts)}
 
 			_, err := downloadConfigs(downloaders, tt.givenOpts)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+type automationAssertDownloader struct {
+	t        *testing.T
+	wantCall bool
+}
+
+var _ download.Downloader[config.AutomationType] = (*automationAssertDownloader)(nil)
+
+func (a *automationAssertDownloader) Download(_ string, _ ...config.AutomationType) (projectv2.ConfigsPerType, error) {
+	if !a.wantCall {
+		a.t.Fatalf("automation downloader was not meant to be called but was")
+	}
+	return nil, nil
+}
+
+type bucketAssertDownloader struct {
+	t        *testing.T
+	wantCall bool
+}
+
+var _ download.Downloader[config.BucketType] = (*bucketAssertDownloader)(nil)
+
+func (a *bucketAssertDownloader) Download(_ string, _ ...config.BucketType) (projectv2.ConfigsPerType, error) {
+	if !a.wantCall {
+		a.t.Fatalf("automation downloader was not meant to be called but was")
+	}
+	return nil, nil
+}
+
+type settingAssertDownloader struct {
+	t        *testing.T
+	wantCall bool
+}
+
+var _ download.Downloader[config.SettingsType] = (*settingAssertDownloader)(nil)
+
+func (a *settingAssertDownloader) Download(_ string, _ ...config.SettingsType) (projectv2.ConfigsPerType, error) {
+	if !a.wantCall {
+		a.t.Fatalf("settings downloader was not meant to be called but was")
+	}
+	return nil, nil
+}
+
+type configAssertDownloader struct {
+	t        *testing.T
+	wantCall bool
+}
+
+var _ download.Downloader[config.ClassicApiType] = (*configAssertDownloader)(nil)
+
+func (a *configAssertDownloader) Download(_ string, _ ...config.ClassicApiType) (projectv2.ConfigsPerType, error) {
+	if !a.wantCall {
+		a.t.Fatalf("config API downloader was not meant to be called but was")
+	}
+	return nil, nil
+}
+func TestDownload_Options(t *testing.T) {
+	type wantDownload struct {
+		config, settings, bucket, automation bool
+	}
+	tests := []struct {
+		name  string
+		given downloadConfigsOptions
+		want  wantDownload
+	}{
+		{
+			"download all if options are not limiting",
+			downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}}, // OAuth required to be defined for platform types
+				},
+			},
+			wantDownload{
+				config:     true,
+				settings:   true,
+				bucket:     true,
+				automation: true,
+			},
+		},
+		{
+			"only settings requested",
+			downloadConfigsOptions{onlySettings: true},
+			wantDownload{settings: true},
+		},
+		{
+			"specific settings requested",
+			downloadConfigsOptions{specificSchemas: []string{"some:schema"}},
+			wantDownload{settings: true},
+		},
+		{
+			"only apis requested",
+			downloadConfigsOptions{onlyAPIs: true},
+			wantDownload{config: true},
+		},
+		{
+			"specific config apis requested",
+			downloadConfigsOptions{specificAPIs: []string{"alerting-profile"}},
+			wantDownload{config: true},
+		},
+		{
+			"only automations requested",
+			downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}}, // OAuth required to be defined for platform types
+				},
+				onlyAutomation: true,
+			},
+			wantDownload{automation: true},
+		},
+		{
+			"specific APIs and schemas",
+			downloadConfigsOptions{specificAPIs: []string{"alerting-profile"}, specificSchemas: []string{"some:schema"}},
+			wantDownload{config: true, settings: true},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			downloaders := downloaders{
+				&configAssertDownloader{t, tt.want.config},
+				&settingAssertDownloader{t, tt.want.settings},
+				&automationAssertDownloader{t, tt.want.automation},
+				&bucketAssertDownloader{t, tt.want.bucket},
+			}
+
+			_, err := downloadConfigs(downloaders, tt.given)
 			assert.NoError(t, err)
 		})
 	}

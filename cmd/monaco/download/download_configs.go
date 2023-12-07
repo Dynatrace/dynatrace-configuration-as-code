@@ -232,7 +232,7 @@ func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfig
 func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
 	configs := make(project.ConfigsPerType)
 
-	{
+	if shouldDownloadConfigs(opts) {
 		classicCfgs, err := downloaders.Classic().Download(opts.projectName)
 		if err != nil {
 			return nil, err
@@ -265,7 +265,7 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 		}
 	}
 
-	if opts.auth.OAuth != nil {
+	if shouldDownloadBuckets(opts) && opts.auth.OAuth != nil {
 		log.Info("Downloading Grail buckets")
 
 		bucketCfgs, err := downloaders.Bucket().Download(opts.projectName)
@@ -292,12 +292,25 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 	}
 }
 
+// shouldDownloadConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
+func shouldDownloadConfigs(opts downloadConfigsOptions) bool {
+	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0)
+}
+
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
 func shouldDownloadSettings(opts downloadConfigsOptions) bool {
 	return !opts.onlyAutomation && !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0)
 }
 
+// shouldDownloadAutomationResources returns true unless download is limited to settings or config API types
 func shouldDownloadAutomationResources(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificAPIs) == 0 &&
-		!opts.onlyAPIs && len(opts.specificSchemas) == 0
+	return !opts.onlySettings && len(opts.specificSchemas) == 0 &&
+		!opts.onlyAPIs && len(opts.specificAPIs) == 0
+}
+
+// shouldDownloadBuckets returns true if download is not limited to another specific type
+func shouldDownloadBuckets(opts downloadConfigsOptions) bool {
+	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
+		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
+		!opts.onlyAutomation
 }
