@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
@@ -45,7 +46,7 @@ func (c DummyClient) Upsert(_ context.Context, id string, data []byte) (response
 	}, nil
 }
 
-func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (config.ResolvedEntity, error) {
+func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	var bucketName string
 
 	if c.OriginObjectId != "" {
@@ -58,15 +59,15 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
 	resp, err := client.Upsert(ctx, bucketName, []byte(renderedConfig))
 	if err != nil {
-		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName)).WithError(err)
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName)).WithError(err)
 	}
 	if !resp.IsSuccess() {
-		return config.ResolvedEntity{}, clientErrors.NewRespErr(fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName), clientErrors.Response{Body: resp.Data, StatusCode: resp.StatusCode})
+		return entities.ResolvedEntity{}, clientErrors.NewRespErr(fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName), clientErrors.Response{Body: resp.Data, StatusCode: resp.StatusCode})
 	}
 
 	properties[config.IdParameter] = bucketName
 
-	return config.ResolvedEntity{
+	return entities.ResolvedEntity{
 		EntityName: bucketName,
 		Coordinate: c.Coordinate,
 		Properties: properties,

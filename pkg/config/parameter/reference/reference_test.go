@@ -17,6 +17,7 @@
 package reference
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -213,6 +214,132 @@ func TestResolveValue(t *testing.T) {
 
 	assert.NilError(t, err)
 	assert.Equal(t, propertyValue, result)
+}
+
+func TestResolveComplexValueMap(t *testing.T) {
+	project := "projectB"
+	configType := "alerting-profile"
+	config := "alerting"
+	referenceCoordinate := coordinate.Coordinate{Project: project, Type: configType, ConfigId: config}
+
+	fixture := New(project, configType, config, "keys.key")
+
+	entityMap := entities.New()
+	entityMap.Put(entities.ResolvedEntity{
+		EntityName: config,
+		Coordinate: referenceCoordinate,
+		Properties: map[string]any{
+			"keys": map[any]any{"key": "value"},
+		},
+	})
+
+	result, err := fixture.ResolveValue(parameter.ResolveContext{
+		ConfigCoordinate: coordinate.Coordinate{
+			Project:  "projectA",
+			Type:     "dashboard",
+			ConfigId: "super-important",
+		},
+		PropertyResolver: entityMap,
+	})
+
+	assert.NilError(t, err)
+	assert.Equal(t, "value", result)
+}
+
+func TestResolveComplexValueMapInSameConfig(t *testing.T) {
+	project := "projectB"
+	configType := "alerting-profile"
+	config := "alerting"
+
+	fixture := New(project, configType, config, "keys.key")
+
+	entityMap := entities.New()
+
+	result, err := fixture.ResolveValue(parameter.ResolveContext{
+		ConfigCoordinate: coordinate.Coordinate{
+			Project:  project,
+			Type:     configType,
+			ConfigId: config,
+		},
+		PropertyResolver: entityMap,
+		ResolvedParameterValues: map[string]any{
+			"keys": map[any]any{"key": "value"},
+		},
+	})
+
+	assert.NilError(t, err)
+	assert.Equal(t, "value", result)
+}
+
+func TestResolveComplexValueNestedMap(t *testing.T) {
+	project := "projectB"
+	configType := "alerting-profile"
+	config := "alerting"
+	referenceCoordinate := coordinate.Coordinate{Project: project, Type: configType, ConfigId: config}
+
+	fixture := New(project, configType, config, "keys.key.another.one.more")
+
+	entityMap := entities.New()
+	entityMap.Put(entities.ResolvedEntity{
+		EntityName: config,
+		Coordinate: referenceCoordinate,
+		Properties: map[string]any{
+			"keys": map[any]any{
+				"key": map[any]any{
+					"another": map[any]any{
+						"one": map[any]any{
+							"more": "value",
+						},
+					},
+				},
+			},
+		},
+	})
+
+	result, err := fixture.ResolveValue(parameter.ResolveContext{
+		ConfigCoordinate: coordinate.Coordinate{
+			Project:  "projectA",
+			Type:     "dashboard",
+			ConfigId: "super-important",
+		},
+		PropertyResolver: entityMap,
+	})
+
+	assert.NilError(t, err)
+	assert.Equal(t, "value", result)
+}
+
+func TestResolveComplexValueNestedMapInSameConfig(t *testing.T) {
+	project := "projectB"
+	configType := "alerting-profile"
+	config := "alerting"
+
+	fixture := New(project, configType, config, "keys.key.another.one.more")
+
+	entityMap := entities.New()
+
+	result, err := fixture.ResolveValue(parameter.ResolveContext{
+		ConfigCoordinate: coordinate.Coordinate{
+			Project:  project,
+			Type:     configType,
+			ConfigId: config,
+		},
+		PropertyResolver: entityMap,
+		ResolvedParameterValues: map[string]any{
+			"keys": map[any]any{
+				"key": map[any]any{
+					"another": map[any]any{
+						"one": map[any]any{
+							"more": "value",
+						},
+					},
+				},
+			},
+		},
+	})
+
+	assert.NilError(t, err)
+	assert.Equal(t, "value", result)
 }
 
 func TestResolveValueOnPropertyInSameConfig(t *testing.T) {

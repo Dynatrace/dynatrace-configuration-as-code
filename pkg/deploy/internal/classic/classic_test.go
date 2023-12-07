@@ -24,8 +24,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/entitymap"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -58,8 +58,8 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		Parameters:  testutils.ToParameterMap(parameters),
 		Skip:        false,
 	}
-	entityMap := entitymap.New()
-	entityMap.Put(config.ResolvedEntity{EntityName: name, Coordinate: coordinate.Coordinate{Type: "dashboard"}})
+	entityMap := entities.New()
+	entityMap.Put(entities.ResolvedEntity{EntityName: name, Coordinate: coordinate.Coordinate{Type: "dashboard"}})
 	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
 
 	assert.NotEmpty(t, errors)

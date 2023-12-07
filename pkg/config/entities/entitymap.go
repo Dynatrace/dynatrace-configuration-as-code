@@ -14,38 +14,37 @@
  * limitations under the License.
  */
 
-package entitymap
+package entities
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"sync"
 )
 
 type EntityMap struct {
 	lock             sync.RWMutex
-	resolvedEntities map[coordinate.Coordinate]config.ResolvedEntity
+	resolvedEntities map[coordinate.Coordinate]ResolvedEntity
 }
 
 func New() *EntityMap {
 	return &EntityMap{
-		resolvedEntities: make(map[coordinate.Coordinate]config.ResolvedEntity),
+		resolvedEntities: make(map[coordinate.Coordinate]ResolvedEntity),
 	}
 }
 
-func (r *EntityMap) Put(resolvedEntity config.ResolvedEntity) {
+func (r *EntityMap) Put(resolvedEntity ResolvedEntity) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	// memorize resolved entity
 	r.resolvedEntities[resolvedEntity.Coordinate] = resolvedEntity
 }
 
-func (r *EntityMap) Get() map[coordinate.Coordinate]config.ResolvedEntity {
+func (r *EntityMap) Get() map[coordinate.Coordinate]ResolvedEntity {
 
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
-	entityCopy := make(map[coordinate.Coordinate]config.ResolvedEntity, len(r.resolvedEntities))
+	entityCopy := make(map[coordinate.Coordinate]ResolvedEntity, len(r.resolvedEntities))
 	for k, v := range r.resolvedEntities {
 		entityCopy[k] = v
 	}
@@ -58,15 +57,19 @@ func (r *EntityMap) GetResolvedProperty(coordinate coordinate.Coordinate, proper
 	defer r.lock.RUnlock()
 
 	if e, f := r.resolvedEntities[coordinate]; f {
-		if p, f := e.Properties[propertyName]; f {
-			return p, true
+
+		m := make(map[any]any)
+		for k, v := range e.Properties {
+			m[k] = v
 		}
+
+		return ResolvePropValue(propertyName, m)
 	}
 
 	return nil, false
 }
 
-func (r *EntityMap) GetResolvedEntity(config coordinate.Coordinate) (config.ResolvedEntity, bool) {
+func (r *EntityMap) GetResolvedEntity(config coordinate.Coordinate) (ResolvedEntity, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 

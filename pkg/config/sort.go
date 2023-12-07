@@ -19,10 +19,11 @@ package config
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	s "sort"
 	"strings"
 )
@@ -98,12 +99,32 @@ func parametersToSortData(conf coordinate.Coordinate, parameters []parameter.Nam
 
 func parameterReference(sourceParam parameter.NamedParameter, config coordinate.Coordinate, targetParam parameter.NamedParameter) bool {
 	for _, ref := range sourceParam.Parameter.GetReferences() {
-		if ref.Config == config && ref.Property == targetParam.Name {
-			return true
+		if ref.Config != config {
+			continue
+		}
+
+		var match bool
+		if vp, ok := targetParam.Parameter.(*value.ValueParameter); ok {
+			match = searchValueParameterForKey(ref.Property, targetParam.Name, vp)
+		} else {
+			match = ref.Property == targetParam.Name
+		}
+
+		if match {
+			return true // return if any ref matches, else continue loop and check others
 		}
 	}
-
 	return false
+}
+
+func searchValueParameterForKey(key string, paramName string, param *value.ValueParameter) bool {
+	if vpm, ok := param.Value.(map[any]any); ok {
+		if first, rest, found := strings.Cut(key, "."); found && first == paramName {
+			_, isRef := entities.ResolvePropValue(rest, vpm)
+			return isRef
+		}
+	}
+	return key == paramName
 }
 
 func logDependency(prefix string, depending string, dependedOn string) {

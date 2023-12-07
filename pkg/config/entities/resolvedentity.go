@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package config
+package entities
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	str "strings"
 )
 
 // ResolvedEntity represents the Dynatrace configuration entity of a config.Config
@@ -37,4 +38,33 @@ type ResolvedEntity struct {
 	// Skip flag indicating that this entity was skipped
 	// if an entity is skipped, there will be no properties
 	Skip bool
+}
+
+// ResolvePropValue retrieves the value associated with the specified key in a nested map.
+
+// The ResolvePropValue function is designed to work with nested maps where keys are
+// structured using dots to represent nested levels. It recursively traverses the
+// nested maps to find the value associated with the specified key.
+//
+// If the key is found, the function returns the associated value and true. If the
+// key is not found, it returns nil and false.
+func ResolvePropValue(key string, props map[any]any) (any, bool) {
+	first, rest, _ := str.Cut(key, ".")
+	if p, f := props[first]; f {
+		if rest == "" {
+			return p, true
+		}
+		if valMap, ok := p.(map[any]any); ok {
+			// If the value is a map, recursively call ResolvePropValue
+			if str.Contains(rest, ".") {
+				return ResolvePropValue(rest, valMap)
+			}
+			// Otherwise, check if the rest of the key exists in the nested map
+			if val, found := valMap[rest]; found {
+				return val, true
+			}
+		}
+	}
+	// Key not found
+	return nil, false
 }
