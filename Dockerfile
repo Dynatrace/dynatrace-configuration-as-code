@@ -13,7 +13,7 @@ COPY go.sum .
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH CGO_ENABLED=0  go build -a -tags netgo -ldflags "-X github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags '-static'" ./cmd/monaco
 
 
-FROM alpine:3.18
+FROM alpine:3.19
 RUN apk add --update --no-cache ca-certificates
 RUN addgroup monaco ; \
     adduser --shell /bin/false --ingroup monaco --disabled-password --home /monaco monaco
