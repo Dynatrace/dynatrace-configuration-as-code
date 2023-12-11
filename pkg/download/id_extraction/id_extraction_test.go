@@ -19,7 +19,10 @@
 package id_extraction
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	ref "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -282,6 +285,74 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			},
 		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotErr := ExtractIDsIntoYAML(tt.given)
+			assert.NoError(t, gotErr)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestScopeParameterIsTreatedAsParameter(t *testing.T) {
+	t.Setenv(featureflags.ExtractScopeAsParameter().EnvName(), "1")
+
+	tests := []struct {
+		name  string
+		given project.ConfigsPerType
+		want  project.ConfigsPerType
+	}{
+		{
+			"scope parameter treated as separate param",
+			project.ConfigsPerType{
+				"test-type": []config.Config{
+					{
+						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
+						Parameters: config.Parameters{
+							"scope": value.New("HOST-123456789"),
+						},
+					},
+				},
+			},
+			project.ConfigsPerType{
+				"test-type": []config.Config{
+					{
+						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
+						Parameters: config.Parameters{
+							"scope": &ref.ReferenceParameter{ParameterReference: parameter.ParameterReference{Property: baseParamID + ".id_HOST_123456789"}},
+							"extractedIDs": value.New(map[string]string{
+								"id_HOST_123456789": "HOST-123456789",
+							}),
+						},
+					},
+				},
+			},
+		},
+		{
+			"scope parameter with environment value is not treated as separate param",
+			project.ConfigsPerType{
+				"test-type": []config.Config{
+					{
+						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
+						Parameters: config.Parameters{
+							"scope": value.New("environment"),
+						},
+					},
+				},
+			},
+			project.ConfigsPerType{
+				"test-type": []config.Config{
+					{
+						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
+						Parameters: config.Parameters{
+							"scope": value.New("environment"),
+						},
+					},
+				},
+			},
+		},
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotErr := ExtractIDsIntoYAML(tt.given)

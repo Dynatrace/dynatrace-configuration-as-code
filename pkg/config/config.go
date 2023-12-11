@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	compoundParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
@@ -228,7 +229,7 @@ func (c *Config) References() []coordinate.Coordinate {
 type EntityLookup interface {
 	parameter.PropertyResolver
 
-	GetResolvedEntity(config coordinate.Coordinate) (ResolvedEntity, bool)
+	GetResolvedEntity(config coordinate.Coordinate) (entities.ResolvedEntity, bool)
 }
 
 // ResolveParameterValues will resolve the values of all config.Parameters of a config.Config and return them as a parameter.Properties map.

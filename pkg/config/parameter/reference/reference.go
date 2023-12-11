@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 )
@@ -88,7 +89,11 @@ func (p *ReferenceParameter) ResolveValue(context parameter.ResolveContext) (int
 	// in case we are referencing a parameter in the same config, we do not have to check
 	// the resolved entities
 	if context.ConfigCoordinate.Match(p.Config) {
-		if val, found := context.ResolvedParameterValues[p.Property]; found {
+		m := make(map[interface{}]any)
+		for k, v := range context.ResolvedParameterValues {
+			m[k] = v
+		}
+		if val, found := entities.ResolvePropValue(p.Property, m); found {
 			return val, nil
 		}
 		return nil, newUnresolvedReferenceError(context, p.ParameterReference, "property has not been resolved yet or does not exist")

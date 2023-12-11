@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
@@ -44,7 +45,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-type entityLookup map[coordinate.Coordinate]config.ResolvedEntity
+type entityLookup map[coordinate.Coordinate]entities.ResolvedEntity
 
 func (e entityLookup) GetResolvedProperty(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
 	if ent, f := e.GetResolvedEntity(coordinate); f {
@@ -56,7 +57,7 @@ func (e entityLookup) GetResolvedProperty(coordinate coordinate.Coordinate, prop
 	return nil, false
 }
 
-func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (config.ResolvedEntity, bool) {
+func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (entities.ResolvedEntity, bool) {
 	ent, f := e[config]
 	return ent, f
 }
@@ -100,7 +101,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 		clients := CreateDynatraceClients(t, env)
 
-		entities := entityLookup{}
+		lookup := entityLookup{}
 
 		for _, theConfig := range configs {
 			coord := theConfig.Coordinate
@@ -109,7 +110,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: theConfig.Environment, Group: theConfig.Group})
 
 			if theConfig.Skip {
-				entities[coord] = config.ResolvedEntity{
+				lookup[coord] = entities.ResolvedEntity{
 					EntityName: coord.ConfigId,
 					Coordinate: coord,
 					Properties: parameter.Properties{},
@@ -118,7 +119,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 				continue
 			}
 
-			properties, errs := theConfig.ResolveParameterValues(entities)
+			properties, errs := theConfig.ResolveParameterValues(lookup)
 			testutils.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
 
 			properties[config.IdParameter] = "NO REAL ID NEEDED FOR CHECKING AVAILABILITY"
@@ -126,7 +127,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			configName, err := extractConfigName(properties)
 			assert.NoError(t, err)
 
-			entities[coord] = config.ResolvedEntity{
+			lookup[coord] = entities.ResolvedEntity{
 				EntityName: configName,
 				Coordinate: coord,
 				Properties: properties,

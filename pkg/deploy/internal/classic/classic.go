@@ -24,47 +24,48 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
 )
 
-func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (config.ResolvedEntity, error) {
+func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (entities.ResolvedEntity, error) {
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
-		return config.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())
+		return entities.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())
 	}
 
 	apiToDeploy, found := apis[t.Api]
 	if !found {
-		return config.ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
+		return entities.ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
 	}
 
 	configName, err := extract.ConfigName(conf, properties)
 	if err != nil {
-		return config.ResolvedEntity{}, err
+		return entities.ResolvedEntity{}, err
 	}
 
 	if apiToDeploy.DeprecatedBy != "" {
 		log.WithCtxFields(ctx).Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiToDeploy.ID, apiToDeploy.DeprecatedBy)
 	}
 
-	var entity dtclient.DynatraceEntity
+	var dtEntity dtclient.DynatraceEntity
 	if apiToDeploy.NonUniqueName {
-		entity, err = upsertNonUniqueNameConfig(ctx, configClient, apiToDeploy, conf, configName, renderedConfig)
+		dtEntity, err = upsertNonUniqueNameConfig(ctx, configClient, apiToDeploy, conf, configName, renderedConfig)
 	} else {
-		entity, err = configClient.UpsertConfigByName(ctx, apiToDeploy, configName, []byte(renderedConfig))
+		dtEntity, err = configClient.UpsertConfigByName(ctx, apiToDeploy, configName, []byte(renderedConfig))
 	}
 
 	if err != nil {
-		return config.ResolvedEntity{}, errors.NewConfigDeployErr(conf, err.Error()).WithError(err)
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(conf, err.Error()).WithError(err)
 	}
 
-	properties[config.IdParameter] = entity.Id
-	properties[config.NameParameter] = entity.Name
+	properties[config.IdParameter] = dtEntity.Id
+	properties[config.NameParameter] = dtEntity.Name
 
-	return config.ResolvedEntity{
-		EntityName: entity.Name,
+	return entities.ResolvedEntity{
+		EntityName: dtEntity.Name,
 		Coordinate: conf.Coordinate,
 		Properties: properties,
 		Skip:       false,

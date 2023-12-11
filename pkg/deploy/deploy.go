@@ -24,11 +24,11 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	errors2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/entitymap"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -172,7 +172,7 @@ type componentDeployer struct {
 	lock             sync.Mutex
 	graph            graph.ConfigGraph
 	clients          ClientSet
-	resolvedEntities entitymap.EntityMap
+	resolvedEntities entities.EntityMap
 	apis             api.APIs
 }
 
@@ -273,46 +273,46 @@ func deployComponent(ctx context.Context, component graph.SortedComponent, clien
 		lock:             sync.Mutex{},
 		graph:            g,
 		clients:          clientSet,
-		resolvedEntities: *entitymap.New(),
+		resolvedEntities: *entities.New(),
 		apis:             apis,
 	}
 	return deployer.deploy(ctx)
 }
 
-func deploy(ctx context.Context, c *config.Config, clientSet ClientSet, apis api.APIs, entityMap *entitymap.EntityMap) (config.ResolvedEntity, error) {
+func deploy(ctx context.Context, c *config.Config, clientSet ClientSet, apis api.APIs, entityMap *entities.EntityMap) (entities.ResolvedEntity, error) {
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
-		return config.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
+		return entities.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
 	}
 
 	properties, errs := c.ResolveParameterValues(entityMap)
 	if len(errs) > 0 {
 		err := mutlierror.New(errs...)
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to resolve parameter values: %v", err)
-		return config.ResolvedEntity{}, err
+		return entities.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to render JSON template: %v", err)
-		return config.ResolvedEntity{}, err
+		return entities.ResolvedEntity{}, err
 	}
 
 	log.WithCtxFields(ctx).WithFields(field.StatusDeploying()).Info("Deploying config")
-	var entity config.ResolvedEntity
+	var resolvedEntity entities.ResolvedEntity
 	var deployErr error
 	switch c.Type.(type) {
 	case config.SettingsType:
-		entity, deployErr = setting.Deploy(ctx, clientSet.Settings, properties, renderedConfig, c)
+		resolvedEntity, deployErr = setting.Deploy(ctx, clientSet.Settings, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
-		entity, deployErr = classic.Deploy(ctx, clientSet.Classic, apis, properties, renderedConfig, c)
+		resolvedEntity, deployErr = classic.Deploy(ctx, clientSet.Classic, apis, properties, renderedConfig, c)
 
 	case config.AutomationType:
-		entity, deployErr = automation.Deploy(ctx, clientSet.Automation, properties, renderedConfig, c)
+		resolvedEntity, deployErr = automation.Deploy(ctx, clientSet.Automation, properties, renderedConfig, c)
 
 	case config.BucketType:
-		entity, deployErr = bucket.Deploy(ctx, clientSet.Bucket, properties, renderedConfig, c)
+		resolvedEntity, deployErr = bucket.Deploy(ctx, clientSet.Bucket, properties, renderedConfig, c)
 
 	default:
 		deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
@@ -322,13 +322,13 @@ func deploy(ctx context.Context, c *config.Config, clientSet ClientSet, apis api
 		var responseErr clientErrors.RespError
 		if errors.As(deployErr, &responseErr) {
 			logResponseError(ctx, responseErr)
-			return config.ResolvedEntity{}, responseErr
+			return entities.ResolvedEntity{}, responseErr
 		}
 
 		log.WithCtxFields(ctx).WithFields(field.Error(deployErr)).Error("Deployment failed - Monaco Error: %v", deployErr)
-		return config.ResolvedEntity{}, deployErr
+		return entities.ResolvedEntity{}, deployErr
 	}
-	return entity, nil
+	return resolvedEntity, nil
 }
 
 // logResponseError prints user-friendly messages based on the response errors status

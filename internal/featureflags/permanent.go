@@ -80,3 +80,11 @@ func SkipVersionCheck() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+// ExtractScopeAsParameter returns the feature flag to controlling whether the scope field of setting 2.0 objects shall be extracted as monaco parameter
+func ExtractScopeAsParameter() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_EXTRACT_SCOPE_AS_PARAMETER",
+		defaultEnabled: false,
+	}
+}

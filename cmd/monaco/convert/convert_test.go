@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
 	"github.com/spf13/afero"
@@ -85,8 +86,8 @@ type emptyEntityLookup struct{}
 func (e emptyEntityLookup) GetResolvedProperty(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
 	return "", false
 }
-func (e emptyEntityLookup) GetResolvedEntity(_ coordinate.Coordinate) (config.ResolvedEntity, bool) {
-	return config.ResolvedEntity{}, false
+func (e emptyEntityLookup) GetResolvedEntity(_ coordinate.Coordinate) (entities.ResolvedEntity, bool) {
+	return entities.ResolvedEntity{}, false
 }
 
 func TestConvert_RemovesEscapeCharsAsV2AutoEscapes(t *testing.T) {

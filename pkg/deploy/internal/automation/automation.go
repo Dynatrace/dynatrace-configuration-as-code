@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
@@ -47,10 +48,10 @@ func (c *DummyClient) Upsert(_ context.Context, _ automationAPI.ResourceType, id
 	}, nil
 }
 
-func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (config.ResolvedEntity, error) {
+func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	t, ok := c.Type.(config.AutomationType)
 	if !ok {
-		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.AutomationType{}.ID(), c.Type.ID()))
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.AutomationType{}.ID(), c.Type.ID()))
 	}
 
 	var id string
@@ -63,20 +64,20 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(t.Resource)
 	if err != nil {
-		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
 	}
 
 	resp, err := client.Upsert(ctx, resourceType, id, []byte(renderedConfig))
 	if err != nil {
-		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
 	}
 	if err, isErr := resp.AsAPIError(); isErr {
-		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
 	}
 
 	obj, err := automationutils.DecodeResponse(resp)
 	if err != nil {
-		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to decode automation object response of type %s with id %s", t.Resource, id)).WithError(err)
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to decode automation object response of type %s with id %s", t.Resource, id)).WithError(err)
 	}
 
 	name := fmt.Sprintf("[UNKNOWN NAME]%s", obj.ID)
@@ -87,7 +88,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	}
 
 	properties[config.IdParameter] = obj.ID
-	resolved := config.ResolvedEntity{
+	resolved := entities.ResolvedEntity{
 		EntityName: name,
 		Coordinate: c.Coordinate,
 		Properties: properties,
