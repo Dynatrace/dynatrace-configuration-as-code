@@ -32,11 +32,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"os"
+	"time"
 )
 
 func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 	if opts.outputFolder == "" {
-		opts.outputFolder = "project/accounts" //TODO: make output folder unique (Where to prevent overwriting - write/load module or here?)
+		opts.outputFolder = "project/accounts"
+	}
+	if exists, err := afero.DirExists(fs, opts.outputFolder); err != nil {
+		return err
+	} else if exists {
+		opts.outputFolder = fmt.Sprintf("%s_%s", opts.outputFolder, time.Now().UTC().Format("20060102150405"))
+
 	}
 
 	var accs map[string]manifest.Account
@@ -70,7 +77,6 @@ func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 	if len(failedDownloads) > 0 {
 		var es []string
 		for _, t := range failedDownloads {
-			log.Debug("Failed to download account %q (UUID: %q)", t.Name, t.AccountUUID)
 			es = append(es, t.String())
 		}
 		return fmt.Errorf("failed to download enviromets %q", es)
@@ -84,11 +90,11 @@ func createAccount(opts *downloadOpts) (map[string]manifest.Account, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parese accountUUID: %w", err)
 	}
-	clientID, err := readEnvVariable(opts.clientID)
+	clientID, err := readAuthSecretFromEnv(opts.clientID)
 	if err != nil {
 		return nil, err
 	}
-	clientSecret, err := readEnvVariable(opts.clientSecret)
+	clientSecret, err := readAuthSecretFromEnv(opts.clientSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -120,8 +126,7 @@ func loadAccountsFromManifest(fs afero.Fs, opts *downloadOpts) (map[string]manif
 			if n, ok := m.Accounts[a]; !ok {
 				return nil, fmt.Errorf("unknown enviroment %q", n.Name)
 			}
-		}
-		for _, a := range opts.accountName {
+
 			retVal = make(map[string]manifest.Account)
 			retVal[a] = m.Accounts[a]
 		}
@@ -149,11 +154,10 @@ func download(fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accC
 		return err
 	}
 
-	fmt.Println(resources)
 	return nil
 }
 
-func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
+func readAuthSecretFromEnv(envVar string) (manifest.AuthSecret, error) {
 	var content string
 	if envVar == "" {
 		return manifest.AuthSecret{}, fmt.Errorf("unknown environment variable name")

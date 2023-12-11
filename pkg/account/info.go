@@ -16,14 +16,16 @@
 
 package account
 
+import "fmt"
+
 type AccountInfo struct {
 	Name        string
 	AccountUUID string
 }
 
 func (a AccountInfo) String() string {
-	if len(a.Name) > 0 {
-		return a.Name
+	if a.Name != "" {
+		return fmt.Sprintf("%s (UUID: %s", a.Name, a.AccountUUID)
 	}
 	return a.AccountUUID
 }

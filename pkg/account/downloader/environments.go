@@ -16,6 +16,12 @@
 
 package downloader
 
+import (
+	"context"
+	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+)
+
 type (
 	Environments []environment
 
@@ -52,4 +58,42 @@ func (e Environments) getMzoneName(originID string) string {
 		}
 	}
 	return ""
+}
+
+func (a *Account) environments(ctx context.Context) (Environments, error) {
+	log.Info("Downloading environments...")
+	dto, err := a.httpClient.GetEnvironments(ctx, a.accountInfo.AccountUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	retVal := make(Environments, 0, len(dto.TenantResources))
+	for i := range dto.TenantResources {
+		e := fromTenantResourceDto(dto.TenantResources[i])
+		e.managementZones = fromManagementZoneResourceDto(dto.ManagementZoneResources, dto.TenantResources[i].Id)
+		retVal = append(retVal, e)
+	}
+
+	log.Info("Known environment: %q", retVal.asList())
+	return retVal, nil
+}
+
+func fromTenantResourceDto(dto accountmanagement.TenantResourceDto) environment {
+	return environment{
+		id:   dto.Id,
+		name: dto.Name,
+	}
+}
+
+func fromManagementZoneResourceDto(dtos []accountmanagement.ManagementZoneResourceDto, tenantID string) []managementZone {
+	var retVal []managementZone
+	for _, dto := range dtos {
+		if dto.Parent == tenantID {
+			retVal = append(retVal, managementZone{
+				name:     dto.Name,
+				originID: dto.Id,
+			})
+		}
+	}
+	return retVal
 }

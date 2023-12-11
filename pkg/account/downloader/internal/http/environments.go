@@ -21,11 +21,11 @@ import (
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 )
 
-func (c *Client) GetTenants(ctx context.Context, account string) (*accountmanagement.EnvironmentResourceDto, error) {
+func (c *Client) GetEnvironments(ctx context.Context, account string) (*accountmanagement.EnvironmentResourceDto, error) {
 	r, resp, err := c.EnvironmentManagementAPI.GetEnvironmentResources(ctx, account).Execute()
 	defer closeResponseBody(resp)
 
-	if err = handleClientResponseError(resp, err); err != nil {
+	if err != nil {
 		return nil, err
 	}
 

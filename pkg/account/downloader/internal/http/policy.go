@@ -28,7 +28,7 @@ func (c *Client) GetPoliciesFroAccount(ctx context.Context, account string) ([]a
 	r, resp, err := c.PolicyManagementAPI.GetPolicyOverviewList(ctx, "account", account).Execute()
 	defer closeResponseBody(resp)
 
-	if err = handleClientResponseError(resp, err); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -39,7 +39,7 @@ func (c *Client) GetPolicyDefinition(ctx context.Context, dto accountmanagement.
 	r, resp, err := c.PolicyManagementAPI.GetLevelPolicy(ctx, dto.LevelType, dto.LevelId, dto.Uuid).Execute()
 	defer closeResponseBody(resp)
 
-	if err = handleClientResponseError(resp, err); err != nil {
+	if err != nil {
 		return nil, err
 	}
 

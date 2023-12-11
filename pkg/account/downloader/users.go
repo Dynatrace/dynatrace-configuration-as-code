@@ -33,10 +33,6 @@ type (
 	}
 )
 
-func (a *Account) Users(groups Groups) (Users, error) {
-	return a.users(context.TODO(), groups)
-}
-
 func (a *Account) users(ctx context.Context, groups Groups) (Users, error) {
 	log.Info("Downloading users...")
 	dtos, err := a.httpClient.GetUsers(ctx, a.accountInfo.AccountUUID)
@@ -74,17 +70,4 @@ func (u Users) asAccountUsers() map[account.UserId]account.User {
 		retVal[u[i].user.Email] = *u[i].user
 	}
 	return retVal
-}
-
-func createReferenceOnGroup(dto accountmanagement.AccountGroupDto, groups []account.Group) account.Ref {
-	for _, kg := range groups {
-		if kg.OriginObjectID == dto.Uuid {
-			return account.Reference{
-				Type: "reference",
-				Id:   kg.ID,
-			}
-		}
-	}
-
-	return account.StrReference(dto.GroupName)
 }
