@@ -26,7 +26,7 @@ func (c *Client) GetGroups(ctx context.Context, accUUID string) ([]accountmanage
 	r, resp, err := c.GroupManagementAPI.GetGroups(ctx, accUUID).Execute()
 	defer closeResponseBody(resp)
 
-	if err = handleClientResponseError(resp, err); err != nil {
+	if err != nil {
 		return nil, err
 	}
 	if r != nil && int(r.Count) != len(r.Items) {
@@ -40,7 +40,7 @@ func (c *Client) GetPermissionFor(ctx context.Context, accUUID string, groupUUID
 	r, resp, err := c.PermissionManagementAPI.GetGroupPermissions(ctx, accUUID, groupUUID).Execute()
 	defer closeResponseBody(resp)
 
-	if err = handleClientResponseError(resp, err); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -51,7 +51,7 @@ func (c *Client) GetBindingsFor(ctx context.Context, levelType string, levelId s
 	r, resp, err := c.PolicyManagementAPI.GetAllLevelPoliciesBindings(ctx, levelType, levelId).Execute()
 	defer closeResponseBody(resp)
 
-	if err = handleClientResponseError(resp, err); err != nil {
+	if err != nil {
 		return nil, err
 	}
 

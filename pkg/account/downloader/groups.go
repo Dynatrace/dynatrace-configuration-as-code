@@ -37,10 +37,6 @@ type (
 	}
 )
 
-func (a *Account) Groups(policies Policies, tenants Environments) (Groups, error) {
-	return a.groups(context.TODO(), policies, tenants)
-}
-
 func (a *Account) groups(ctx context.Context, policies Policies, tenants Environments) (Groups, error) {
 	log.Info("Downloading groups...")
 	groupDTOs, err := a.httpClient.GetGroups(ctx, a.accountInfo.AccountUUID)

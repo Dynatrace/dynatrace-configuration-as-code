@@ -35,10 +35,6 @@ type (
 	}
 )
 
-func (a *Account) Policies(tenants Environments) (Policies, error) { //TODO: move to account.go
-	return a.policies(context.TODO())
-}
-
 func (a *Account) policies(ctx context.Context) (Policies, error) { //TODO: move to account.go
 	log.Info("Downloading policies...")
 	dtos, err := a.httpClient.GetPoliciesFroAccount(ctx, a.accountInfo.AccountUUID)

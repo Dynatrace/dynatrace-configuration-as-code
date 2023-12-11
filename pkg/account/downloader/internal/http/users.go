@@ -25,7 +25,7 @@ func (c *Client) GetUsers(ctx context.Context, accountUUID string) ([]accountman
 	r, resp, err := c.UserManagementAPI.GetUsers(ctx, accountUUID).ServiceUsers(false).Execute() //service users are not yet implemented in DT
 	defer closeResponseBody(resp)
 
-	if err = handleClientResponseError(resp, err); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -36,7 +36,7 @@ func (c *Client) GetGroupsForUser(ctx context.Context, userEmail string, account
 	r, resp, err := c.UserManagementAPI.GetUserGroups(ctx, accountUUID, userEmail).Execute()
 	defer closeResponseBody(resp)
 
-	if err = handleClientResponseError(resp, err); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
