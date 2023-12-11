@@ -48,7 +48,7 @@ func downloadCommand(fs afero.Fs) *cobra.Command {
 		ValidArgsFunction: completion.SingleArgumentManifestFileCompletion,
 		PreRun:            cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return downloadAll(fs, opts)
+			return downloadAll(fs, &opts)
 		},
 	}
 

@@ -34,56 +34,22 @@ import (
 	"os"
 )
 
-func downloadAll(fs afero.Fs, opts downloadOpts) error {
+func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 	if opts.outputFolder == "" {
 		opts.outputFolder = "project/accounts" //TODO: make output folder unique (Where to prevent overwriting - write/load module or here?)
 	}
 
 	var accs map[string]manifest.Account
+	var err error
 	if opts.accountUUID == "" {
-		m, errs := manifestloader.Load(&manifestloader.Context{
-			Fs:           fs,
-			ManifestPath: opts.manifestName,
-		})
-		if len(errs) > 0 {
-			errutils.PrintErrors(errs)
-			return errors.New("error while loading manifest")
-		}
-
-		if len(opts.accountName) > 0 {
-			for _, a := range opts.accountName {
-				if n, ok := m.Accounts[a]; !ok {
-					return fmt.Errorf("unknown enviroment %q", n.Name)
-				}
-			}
-			for _, a := range opts.accountName {
-				accs = make(map[string]manifest.Account)
-				accs[a] = m.Accounts[a]
-			}
-		} else {
-			accs = m.Accounts
+		accs, err = loadAccountsFromManifest(fs, opts)
+		if err != nil {
+			return err
 		}
 	} else {
-		uuid, err := uuid.Parse(opts.accountUUID)
-		if err != nil {
-			return fmt.Errorf("failed to parese accountUUID: %w", err)
-		}
-		clientID, err := readEnvVariable(opts.clientID)
+		accs, err = createAccount(opts)
 		if err != nil {
 			return err
-		}
-		clientSecret, err := readEnvVariable(opts.clientSecret)
-		if err != nil {
-			return err
-		}
-		accs = make(map[string]manifest.Account, 1)
-		accs["account"] = manifest.Account{
-			Name:        "account",
-			AccountUUID: uuid,
-			OAuth: manifest.OAuth{
-				ClientID:     clientID,
-				ClientSecret: clientSecret,
-			},
 		}
 	}
 
@@ -113,7 +79,59 @@ func downloadAll(fs afero.Fs, opts downloadOpts) error {
 	return nil
 }
 
-func download(fs afero.Fs, opts downloadOpts, accInfo account.AccountInfo, accClient *accounts.Client) error {
+func createAccount(opts *downloadOpts) (map[string]manifest.Account, error) {
+	uuid, err := uuid.Parse(opts.accountUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parese accountUUID: %w", err)
+	}
+	clientID, err := readEnvVariable(opts.clientID)
+	if err != nil {
+		return nil, err
+	}
+	clientSecret, err := readEnvVariable(opts.clientSecret)
+	if err != nil {
+		return nil, err
+	}
+	retVal := make(map[string]manifest.Account, 1)
+	retVal["account"] = manifest.Account{
+		Name:        "account",
+		AccountUUID: uuid,
+		OAuth: manifest.OAuth{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+		},
+	}
+	return retVal, nil
+}
+
+func loadAccountsFromManifest(fs afero.Fs, opts *downloadOpts) (map[string]manifest.Account, error) {
+	m, errs := manifestloader.Load(&manifestloader.Context{
+		Fs:           fs,
+		ManifestPath: opts.manifestName,
+	})
+	if len(errs) > 0 {
+		errutils.PrintErrors(errs)
+		return nil, errors.New("error while loading manifest")
+	}
+
+	if len(opts.accountName) > 0 {
+		var retVal map[string]manifest.Account
+		for _, a := range opts.accountName {
+			if n, ok := m.Accounts[a]; !ok {
+				return nil, fmt.Errorf("unknown enviroment %q", n.Name)
+			}
+		}
+		for _, a := range opts.accountName {
+			retVal = make(map[string]manifest.Account)
+			retVal[a] = m.Accounts[a]
+		}
+		return retVal, nil
+	}
+
+	return m.Accounts, nil
+}
+
+func download(fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accClient *accounts.Client) error {
 	downloader := downloader.New(&accInfo, accClient)
 
 	resources, err := downloader.DownloadConfiguration()
