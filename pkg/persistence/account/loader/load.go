@@ -69,7 +69,7 @@ func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 	}
 
 	for _, yamlFilePath := range yamlFilePaths {
-		log.WithFields(field.F("file", yamlFilePaths)).Debug("Loading file %q", yamlFilePaths)
+		log.WithFields(field.F("file", yamlFilePaths)).Debug("Loading file %q", yamlFilePath)
 
 		bytes, err := afero.ReadFile(fs, yamlFilePath)
 		if err != nil {
