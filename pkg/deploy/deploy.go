@@ -87,7 +87,7 @@ func Deploy(projects []project.Project, environmentClients EnvironmentClients, o
 	g := graph.New(projects, environmentClients.Names())
 	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
 
-	if validationErrs := validate.Validate(projects, []validate.Validator{&classic.Validator{}}); validationErrs != nil {
+	if validationErrs := validate.Validate(projects, []validate.Validator{&classic.Validator{}, &setting.Validator{}}); validationErrs != nil {
 		if !opts.ContinueOnErr && !opts.DryRun {
 			return validationErrs
 		}
