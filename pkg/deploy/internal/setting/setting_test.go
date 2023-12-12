@@ -23,9 +23,11 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"testing"
 )
 
@@ -79,4 +81,74 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 
 	_, errors := Deploy(context.TODO(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
+}
+
+func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+		Id:   "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
+		Name: "mzname"}, nil)
+
+	parameters := []parameter.NamedParameter{}
+
+	conf := &config.Config{
+		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:management-zones", ConfigId: "abcde"},
+		Type:       config.SettingsType{SchemaId: "builtin:management-zones", SchemaVersion: "1.2.3"},
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: testutils.ToParameterMap(parameters),
+	}
+	props := map[string]interface{}{"scope": "environment"}
+	resolvedEntity, err := Deploy(context.TODO(), c, props, "", conf)
+	assert.Equal(t, entities.ResolvedEntity{
+		EntityName: "[UNKNOWN NAME]vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
+		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:management-zones", ConfigId: "abcde"},
+		Properties: map[string]any{"scope": "environment", "id": "-4292415658385853785", "name": "[UNKNOWN NAME]vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ"},
+		Skip:       false,
+	}, resolvedEntity)
+	assert.NoError(t, err)
+}
+
+func TestDeploySetting_ManagementZone_NameGetsExtracted_ifPresent(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+		Id:   "abcdefghijk",
+		Name: "mzname"}, nil)
+
+	parameters := []parameter.NamedParameter{}
+
+	conf := &config.Config{
+		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:some-setting", ConfigId: "abcde"},
+		Type:       config.SettingsType{SchemaId: "builtin:management-zones", SchemaVersion: "1.2.3"},
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: testutils.ToParameterMap(parameters),
+	}
+	props := map[string]interface{}{"scope": "environment", "name": "the-name"}
+	resolvedEntity, err := Deploy(context.TODO(), c, props, "", conf)
+	assert.Equal(t, entities.ResolvedEntity{
+		EntityName: "the-name",
+		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:some-setting", ConfigId: "abcde"},
+		Properties: map[string]any{"scope": "environment", "id": "abcdefghijk", "name": "the-name"},
+		Skip:       false,
+	}, resolvedEntity)
+	assert.NoError(t, err)
+}
+
+func TestDeploySetting_ManagementZone_FailToDecodeMZoneID(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+		Id:   "INVALID MANAGEMENT ZONE ID",
+		Name: "mzanme"}, nil)
+
+	parameters := []parameter.NamedParameter{}
+
+	conf := &config.Config{
+		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:management-zones", ConfigId: "abcde"},
+		Type:       config.SettingsType{SchemaId: "builtin:management-zones", SchemaVersion: "1.2.3"},
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: testutils.ToParameterMap(parameters),
+	}
+	props := map[string]interface{}{"scope": "environment"}
+	resolvedEntity, err := Deploy(context.TODO(), c, props, "", conf)
+	assert.Zero(t, resolvedEntity)
+	assert.Error(t, err)
 }
