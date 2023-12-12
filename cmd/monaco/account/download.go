@@ -33,11 +33,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"os"
+	"path/filepath"
 )
 
 func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 	if opts.outputFolder == "" {
-		opts.outputFolder = "project/accounts"
+		opts.outputFolder = "download_account"
 	}
 	if exists, err := afero.DirExists(fs, opts.outputFolder); err != nil {
 		return err
@@ -79,7 +80,7 @@ func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 		for _, t := range failedDownloads {
 			es = append(es, t.String())
 		}
-		return fmt.Errorf("failed to download enviromets %q", es)
+		return fmt.Errorf("failed to download accounts %q", es)
 	}
 
 	return nil
@@ -88,7 +89,7 @@ func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 func createAccount(opts *downloadOpts) (map[string]manifest.Account, error) {
 	uuid, err := uuid.Parse(opts.accountUUID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parese accountUUID: %w", err)
+		return nil, fmt.Errorf("failed to parse accountUUID: %w", err)
 	}
 	clientID, err := readAuthSecretFromEnv(opts.clientID)
 	if err != nil {
@@ -100,7 +101,7 @@ func createAccount(opts *downloadOpts) (map[string]manifest.Account, error) {
 	}
 	retVal := make(map[string]manifest.Account, 1)
 	retVal["account"] = manifest.Account{
-		Name:        "account",
+		Name:        fmt.Sprintf("account_%s", uuid),
 		AccountUUID: uuid,
 		OAuth: manifest.OAuth{
 			ClientID:     clientID,
@@ -147,7 +148,7 @@ func download(fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accC
 	c := presistance.Context{
 		Fs:            fs,
 		OutputFolder:  opts.outputFolder,
-		ProjectFolder: accInfo.String(),
+		ProjectFolder: filepath.Join(opts.projectName, accInfo.Name),
 	}
 	err = presistance.Write(c, *resources)
 	if err != nil {
