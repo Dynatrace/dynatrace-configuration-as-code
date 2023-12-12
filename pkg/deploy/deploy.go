@@ -193,13 +193,13 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 
 func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clients ClientSet, resolvedEntities *entities.EntityMap) error {
 	resolvedEntity, err := deployConfig(ctx, n.Config, clients, resolvedEntities)
-	// lock changes we will make to shared variables. Writing them is trivial compared to any http request
-	lock.Lock()
-	defer lock.Unlock()
 
 	if err != nil {
 		failed := !errors.Is(err, skipError)
+
+		lock.Lock()
 		removeChildren(ctx, n, n, configGraph, failed)
+		lock.Unlock()
 
 		if failed {
 			return err
