@@ -160,5 +160,7 @@ func handleClientResponseError(resp *http.Response, clientErr error, errMessage 
 }
 
 func closeResponseBody(resp *http.Response) {
-	_ = resp.Body.Close()
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
 }
