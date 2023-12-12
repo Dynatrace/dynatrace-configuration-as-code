@@ -25,7 +25,7 @@ type AccountInfo struct {
 
 func (a AccountInfo) String() string {
 	if a.Name != "" {
-		return fmt.Sprintf("%s (UUID: %s", a.Name, a.AccountUUID)
+		return fmt.Sprintf("%s (UUID: %s)", a.Name, a.AccountUUID)
 	}
 	return a.AccountUUID
 }
