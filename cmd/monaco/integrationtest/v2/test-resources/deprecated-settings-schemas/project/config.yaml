@@ -1,0 +1,15 @@
+configs:
+  - id: span-attr
+    type:
+      settings:
+        schema: builtin:span-attribute
+        scope: environment
+    config:
+      template: span-attr.json
+  - id: span-event
+    type:
+      settings:
+        schema: builtin:span-event-attribute
+        scope: environment
+    config:
+      template: span-event.json
