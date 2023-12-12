@@ -17,57 +17,152 @@
 package account
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"errors"
+	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	presistance "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
+	"github.com/google/uuid"
 	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
-	"log"
+	"os"
 )
 
-type downloadOpts struct {
-	auth
-	manifestName   string
-	accountName    []string
-	projectName    string
-	accountUUID    string
-	outputFolder   string
-	forceOverwrite bool
+func downloadAll(fs afero.Fs, opts *downloadOpts) error {
+	if opts.outputFolder == "" {
+		opts.outputFolder = "project/accounts"
+	}
+	if exists, err := afero.DirExists(fs, opts.outputFolder); err != nil {
+		return err
+	} else if exists {
+		opts.outputFolder = fmt.Sprintf("%s_%s", opts.outputFolder, timeutils.TimeAnchor().Format(log.LogFileTimestampPrefixFormat))
+
+	}
+
+	var accs map[string]manifest.Account
+	var err error
+	if opts.accountUUID == "" {
+		accs, err = loadAccountsFromManifest(fs, opts)
+		if err != nil {
+			return err
+		}
+	} else {
+		accs, err = createAccount(opts)
+		if err != nil {
+			return err
+		}
+	}
+
+	accountClients, err := dynatrace.CreateAccountClients(accs)
+	if err != nil {
+		return fmt.Errorf("failed to create account clients: %w", err)
+	}
+
+	var failedDownloads []account.AccountInfo
+	for acc, accClient := range accountClients {
+		err := download(fs, opts, acc, accClient)
+		if err != nil {
+			log.Error("Configuration download for account %q failed! Cause: %s", acc, err)
+			failedDownloads = append(failedDownloads, acc)
+		}
+	}
+
+	if len(failedDownloads) > 0 {
+		var es []string
+		for _, t := range failedDownloads {
+			es = append(es, t.String())
+		}
+		return fmt.Errorf("failed to download enviromets %q", es)
+	}
+
+	return nil
 }
 
-type auth struct {
-	clientID, clientSecret string
-}
-
-func downloadCommand(fs afero.Fs) *cobra.Command {
-	opts := downloadOpts{}
-
-	cmd := &cobra.Command{
-		Use:               "download [flags]",
-		Short:             "Download account management resources",
-		Example:           "monaco account download --manifest manifest.yaml --account <account-name-defined-in-manifest> --project <project-defined-in-manifest>",
-		ValidArgsFunction: completion.SingleArgumentManifestFileCompletion,
-		PreRun:            cmdutils.SilenceUsageCommand(),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return downloadAll(fs, &opts)
+func createAccount(opts *downloadOpts) (map[string]manifest.Account, error) {
+	uuid, err := uuid.Parse(opts.accountUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parese accountUUID: %w", err)
+	}
+	clientID, err := readAuthSecretFromEnv(opts.clientID)
+	if err != nil {
+		return nil, err
+	}
+	clientSecret, err := readAuthSecretFromEnv(opts.clientSecret)
+	if err != nil {
+		return nil, err
+	}
+	retVal := make(map[string]manifest.Account, 1)
+	retVal["account"] = manifest.Account{
+		Name:        "account",
+		AccountUUID: uuid,
+		OAuth: manifest.OAuth{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
 		},
 	}
+	return retVal, nil
+}
 
-	cmd.Flags().StringVarP(&opts.manifestName, "manifest", "m", "manifest.yaml", "Name (and the path) to the manifest file. Defaults to 'manifest.yaml'")
-	cmd.Flags().StringSliceVarP(&opts.accountName, "account", "a", []string{}, "List of account names defined in the manifest to download from")
-	cmd.Flags().StringVarP(&opts.projectName, "project", "p", "", "Project name defined in the manifest")
-	cmd.Flags().StringVarP(&opts.accountUUID, "uuid", "u", "", "Account uuid to use. Required when not using the '--manifest' flag")
-	cmd.Flags().StringVar(&opts.clientID, "oauth-client-id", "", "OAuth client ID environment variable. Required when using the '--uuid' flag")
-	cmd.Flags().StringVar(&opts.clientSecret, "oauth-client-secret", "", "OAuth client secret environment variable. Required when using the '--uuid' flag")
-	cmd.Flags().StringVarP(&opts.outputFolder, "output-folder", "o", "", "Folder to write downloaded resources to")
-	cmd.Flags().BoolVarP(&opts.forceOverwrite, "force", "f", false, "Force overwrite any existing manifest.yaml, rather than creating an additional manifest_{timestamp}.yaml. Manifest download: Never append the source environment name to the project folder name")
-
-	cmd.MarkFlagsMutuallyExclusive("manifest", "uuid")
-	cmd.MarkFlagsRequiredTogether("uuid", "oauth-client-id", "oauth-client-secret")
-
-	err := cmd.MarkFlagDirname("output-folder")
-	if err != nil {
-		log.Fatalf("failed to setup CLI %v", err)
+func loadAccountsFromManifest(fs afero.Fs, opts *downloadOpts) (map[string]manifest.Account, error) {
+	m, errs := manifestloader.Load(&manifestloader.Context{
+		Fs:           fs,
+		ManifestPath: opts.manifestName,
+	})
+	if len(errs) > 0 {
+		errutils.PrintErrors(errs)
+		return nil, errors.New("error while loading manifest")
 	}
 
-	return cmd
+	if len(opts.accountList) > 0 {
+		var retVal map[string]manifest.Account
+		for _, a := range opts.accountList {
+			if n, ok := m.Accounts[a]; !ok {
+				return nil, fmt.Errorf("unknown enviroment %q", n.Name)
+			}
+
+			retVal = make(map[string]manifest.Account)
+			retVal[a] = m.Accounts[a]
+		}
+		return retVal, nil
+	}
+
+	return m.Accounts, nil
+}
+
+func download(fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accClient *accounts.Client) error {
+	downloader := downloader.New(&accInfo, accClient)
+
+	resources, err := downloader.DownloadConfiguration()
+	if err != nil {
+		return err
+	}
+
+	c := presistance.Context{
+		Fs:            fs,
+		OutputFolder:  opts.outputFolder,
+		ProjectFolder: accInfo.String(),
+	}
+	err = presistance.Write(c, *resources)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func readAuthSecretFromEnv(envVar string) (manifest.AuthSecret, error) {
+	var content string
+	if envVar == "" {
+		return manifest.AuthSecret{}, fmt.Errorf("unknown environment variable name")
+	} else if content = os.Getenv(envVar); content == "" {
+		return manifest.AuthSecret{}, fmt.Errorf("the content of the environment variable %q is not set", envVar)
+	}
+	return manifest.AuthSecret{Name: envVar, Value: secret.MaskedString(content)}, nil
 }

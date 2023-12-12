@@ -37,7 +37,7 @@ type (
 	}
 )
 
-func (a *Account) groups(ctx context.Context, policies Policies, tenants Environments) (Groups, error) {
+func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Environments) (Groups, error) {
 	log.Info("Downloading groups...")
 	groupDTOs, err := a.httpClient.GetGroups(ctx, a.accountInfo.AccountUUID)
 	if err != nil {

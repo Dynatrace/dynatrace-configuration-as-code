@@ -41,14 +41,6 @@ func (e environment) String() string {
 	return e.id
 }
 
-func (e Environments) asList() []string {
-	var retVal []string
-	for i := range e {
-		retVal = append(retVal, e[i].id)
-	}
-	return retVal
-}
-
 func (e Environments) getMzoneName(originID string) string {
 	for _, env := range e {
 		for _, mz := range env.managementZones {
@@ -60,7 +52,7 @@ func (e Environments) getMzoneName(originID string) string {
 	return ""
 }
 
-func (a *Account) environments(ctx context.Context) (Environments, error) {
+func (a *Downloader) environments(ctx context.Context) (Environments, error) {
 	log.Info("Downloading environments...")
 	dto, err := a.httpClient.GetEnvironments(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
@@ -74,7 +66,7 @@ func (a *Account) environments(ctx context.Context) (Environments, error) {
 		retVal = append(retVal, e)
 	}
 
-	log.Info("Known environment: %q", retVal.asList())
+	log.Info("Known environment: %q", retVal)
 	return retVal, nil
 }
 

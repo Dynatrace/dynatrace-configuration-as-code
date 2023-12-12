@@ -24,19 +24,19 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal/http"
 )
 
-type Account struct {
+type Downloader struct {
 	httpClient  *http.Client
 	accountInfo *account.AccountInfo
 }
 
-func New(accountInfo *account.AccountInfo, client *accounts.Client) *Account {
-	return &Account{
+func New(accountInfo *account.AccountInfo, client *accounts.Client) *Downloader {
+	return &Downloader{
 		httpClient:  (*http.Client)(client),
 		accountInfo: accountInfo,
 	}
 }
 
-func (a *Account) DownloadConfiguration() (*account.Resources, error) {
+func (a *Downloader) DownloadConfiguration() (*account.Resources, error) {
 	log.Info("Downloading configuration for account %q", a.accountInfo.Name)
 	ctx := context.TODO()
 

@@ -33,7 +33,7 @@ type (
 	}
 )
 
-func (a *Account) users(ctx context.Context, groups Groups) (Users, error) {
+func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 	log.Info("Downloading users...")
 	dtos, err := a.httpClient.GetUsers(ctx, a.accountInfo.AccountUUID)
 	if err != nil {

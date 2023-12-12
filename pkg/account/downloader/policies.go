@@ -35,7 +35,7 @@ type (
 	}
 )
 
-func (a *Account) policies(ctx context.Context) (Policies, error) { //TODO: move to account.go
+func (a *Downloader) policies(ctx context.Context) (Policies, error) {
 	log.Info("Downloading policies...")
 	dtos, err := a.httpClient.GetPoliciesFroAccount(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
@@ -49,7 +49,7 @@ func (a *Account) policies(ctx context.Context) (Policies, error) { //TODO: move
 		var dtoDef *accountmanagement.LevelPolicyDto
 		var p *account.Policy
 		if isCustom(dtos[i]) {
-			log.Debug("Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid) //TODO: or should be account.Policy.ID ?
+			log.Debug("Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid)
 			dtoDef, err = a.httpClient.GetPolicyDefinition(ctx, dtos[i])
 			if err != nil {
 				return nil, err
