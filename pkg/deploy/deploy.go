@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
-	errors2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
@@ -33,7 +33,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
-	graph2 "gonum.org/v1/gonum/graph"
+	gonum "gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"sync"
 )
@@ -76,81 +76,66 @@ func (e EnvironmentClients) Names() []string {
 	return n
 }
 
-func DeployConfigGraph(projects []project.Project, environmentClients EnvironmentClients, opts DeployConfigsOptions) error {
+var (
+	lock sync.Mutex
 
-	apis := api.NewAPIs()
+	skipError = errors.New("skip error")
+)
+
+func Deploy(projects []project.Project, environmentClients EnvironmentClients, opts DeployConfigsOptions) error {
 	g := graph.New(projects, environmentClients.Names())
+	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
 
-	errs := make(errors2.EnvironmentDeploymentErrors)
-
-	validationErrs := classic.ValidateUniqueConfigNames(projects)
-	if validationErrs != nil {
+	if validationErrs := classic.ValidateUniqueConfigNames(projects); validationErrs != nil {
 		if !opts.ContinueOnErr && !opts.DryRun {
 			return validationErrs
 		}
-
-		errors.As(validationErrs, &errs) // use validation errors as base errors if possible
+		errors.As(validationErrs, &deploymentErrors)
 	}
 
 	for env, clients := range environmentClients {
-		err := deployComponentsToEnvironment(g, env, clients, apis, opts)
-		if err != nil {
-			log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Error("Deployment failed for environment %q: %v", env.Name, err)
-			errs = errs.Append(env.Name, err)
+		ctx := createContextWithEnvironment(env)
+		log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", env.Name)
 
+		sortedConfigs, err := g.GetIndependentlySortedConfigs(env.Name)
+		if err != nil {
+			return fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)
+		}
+
+		if err = deployComponents(ctx, sortedConfigs, clients); err != nil {
+			log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Error("Deployment failed for environment %q: %v", env.Name, err)
+			deploymentErrors = deploymentErrors.Append(env.Name, err)
 			if !opts.ContinueOnErr && !opts.DryRun {
-				return errs
+				return deploymentErrors
 			}
 		} else {
 			log.WithFields(field.Environment(env.Name, env.Group)).Info("Deployment successful for environment %q", env.Name)
 		}
 	}
 
-	if len(errs) != 0 {
-		return errs
+	if len(deploymentErrors) != 0 {
+		return deploymentErrors
 	}
 
 	return nil
 }
 
-func deployComponentsToEnvironment(g graph.ConfigGraphPerEnvironment, env EnvironmentInfo, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) error {
-
-	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
-
-	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", env.Name)
-
-	sortedConfigs, err := g.GetIndependentlySortedConfigs(env.Name)
-	if err != nil {
-		return fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)
-	}
-
-	return deployComponentsParallel(ctx, sortedConfigs, clientSet, apis, opts)
-}
-
-var skipError = errors.New("skip error")
-
-func deployComponentsParallel(ctx context.Context, components []graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) error {
-
-	errCount := 0
-
+func deployComponents(ctx context.Context, components []graph.SortedComponent, clients ClientSet) error {
 	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets in parallel...", len(components))
-
+	errCount := 0
 	errChan := make(chan error, len(components))
 
+	resolvedEntities := entities.New()
 	// Iterate over components and launch a goroutine for each component deployment.
 	for i := range components {
-		c := context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(i))
 		go func(ctx context.Context, component graph.SortedComponent) {
-			componentDeployErr := deployComponent(ctx, component, clientSet, apis, opts)
-			errChan <- componentDeployErr
-		}(c, components[i])
+			errChan <- deployGraph(ctx, component.Graph, clients, resolvedEntities)
+		}(context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(i)), components[i])
 	}
 
-	// Collect errors from goroutines and append to the 'errs' slice.
 	for range components {
 		err := <-errChan
-
-		var deploymentErrs errors2.DeploymentErrors
+		var deploymentErrs deployErrors.DeploymentErrors
 		if errors.As(err, &deploymentErrs) {
 			errCount += deploymentErrs.ErrorCount
 		} else if err != nil {
@@ -158,35 +143,29 @@ func deployComponentsParallel(ctx context.Context, components []graph.SortedComp
 		}
 	}
 
-	// Close the error channel.
 	close(errChan)
 
 	if errCount > 0 {
-		return errors2.DeploymentErrors{ErrorCount: errCount}
+		return deployErrors.DeploymentErrors{ErrorCount: errCount}
 	}
 
 	return nil
 }
 
-type componentDeployer struct {
-	lock             sync.Mutex
-	graph            graph.ConfigGraph
-	clients          ClientSet
-	resolvedEntities entities.EntityMap
-	apis             api.APIs
-}
+func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients ClientSet, resolvedEntities *entities.EntityMap) error {
+	g := simple.NewDirectedGraph()
+	gonum.Copy(g, configGraph)
 
-func (c *componentDeployer) deploy(ctx context.Context) error {
 	errCount := 0
 
 	errChan := make(chan error)
-	for c.graph.Nodes().Len() != 0 {
-		roots := graph.Roots(c.graph)
+	for configGraph.Nodes().Len() != 0 {
+		roots := graph.Roots(configGraph)
 
 		for _, root := range roots {
 			node := root.(graph.ConfigNode)
 			go func(ctx context.Context, node graph.ConfigNode) {
-				errChan <- c.deployNode(ctx, node)
+				errChan <- deployNode(ctx, node, configGraph, clients, resolvedEntities)
 			}(context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate), node)
 		}
 
@@ -199,29 +178,28 @@ func (c *componentDeployer) deploy(ctx context.Context) error {
 
 		// since all subroutines are done, we need not to lock here
 		for _, root := range roots {
-			c.graph.RemoveNode(root.ID())
+			configGraph.RemoveNode(root.ID())
 		}
 	}
 
 	close(errChan)
 
 	if errCount > 0 {
-		return errors2.DeploymentErrors{ErrorCount: errCount}
+		return deployErrors.DeploymentErrors{ErrorCount: errCount}
 	}
 
 	return nil
 }
 
-func (c *componentDeployer) deployNode(ctx context.Context, n graph.ConfigNode) error {
-	entity, err := deploy(ctx, n.Config, c.clients, c.apis, &c.resolvedEntities)
-
+func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clients ClientSet, resolvedEntities *entities.EntityMap) error {
+	resolvedEntity, err := deployConfig(ctx, n.Config, clients, resolvedEntities)
 	// lock changes we will make to shared variables. Writing them is trivial compared to any http request
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	lock.Lock()
+	defer lock.Unlock()
 
 	if err != nil {
 		failed := !errors.Is(err, skipError)
-		c.removeChildren(ctx, n, n, failed)
+		removeChildren(ctx, n, n, configGraph, failed)
 
 		if failed {
 			return err
@@ -229,14 +207,14 @@ func (c *componentDeployer) deployNode(ctx context.Context, n graph.ConfigNode) 
 		return nil
 	}
 
-	c.resolvedEntities.Put(entity)
+	resolvedEntities.Put(resolvedEntity)
 	log.WithCtxFields(ctx).WithFields(field.StatusDeployed()).Info("Deployment successful")
 	return nil
 }
 
-func (c *componentDeployer) removeChildren(ctx context.Context, parent, root graph.ConfigNode, failed bool) {
+func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGraph graph.ConfigGraph, failed bool) {
 
-	children := c.graph.From(parent.ID())
+	children := configGraph.From(parent.ID())
 	for children.Next() {
 		child := children.Node().(graph.ConfigNode)
 
@@ -260,32 +238,19 @@ func (c *componentDeployer) removeChildren(ctx context.Context, parent, root gra
 			l.Warn("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
 		}
 
-		c.removeChildren(ctx, child, root, failed)
+		removeChildren(ctx, child, root, configGraph, failed)
 
-		c.graph.RemoveNode(child.ID())
+		configGraph.RemoveNode(child.ID())
 	}
 }
-func deployComponent(ctx context.Context, component graph.SortedComponent, clientSet ClientSet, apis api.APIs, _ DeployConfigsOptions) error {
-	g := simple.NewDirectedGraph()
-	graph2.Copy(g, component.Graph)
 
-	deployer := componentDeployer{
-		lock:             sync.Mutex{},
-		graph:            g,
-		clients:          clientSet,
-		resolvedEntities: *entities.New(),
-		apis:             apis,
-	}
-	return deployer.deploy(ctx)
-}
-
-func deploy(ctx context.Context, c *config.Config, clientSet ClientSet, apis api.APIs, entityMap *entities.EntityMap) (entities.ResolvedEntity, error) {
+func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
 		return entities.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
 	}
 
-	properties, errs := c.ResolveParameterValues(entityMap)
+	properties, errs := c.ResolveParameterValues(resolvedEntities)
 	if len(errs) > 0 {
 		err := mutlierror.New(errs...)
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to resolve parameter values: %v", err)
@@ -303,16 +268,16 @@ func deploy(ctx context.Context, c *config.Config, clientSet ClientSet, apis api
 	var deployErr error
 	switch c.Type.(type) {
 	case config.SettingsType:
-		resolvedEntity, deployErr = setting.Deploy(ctx, clientSet.Settings, properties, renderedConfig, c)
+		resolvedEntity, deployErr = setting.Deploy(ctx, clients.Settings, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
-		resolvedEntity, deployErr = classic.Deploy(ctx, clientSet.Classic, apis, properties, renderedConfig, c)
+		resolvedEntity, deployErr = classic.Deploy(ctx, clients.Classic, api.NewAPIs(), properties, renderedConfig, c)
 
 	case config.AutomationType:
-		resolvedEntity, deployErr = automation.Deploy(ctx, clientSet.Automation, properties, renderedConfig, c)
+		resolvedEntity, deployErr = automation.Deploy(ctx, clients.Automation, properties, renderedConfig, c)
 
 	case config.BucketType:
-		resolvedEntity, deployErr = bucket.Deploy(ctx, clientSet.Bucket, properties, renderedConfig, c)
+		resolvedEntity, deployErr = bucket.Deploy(ctx, clients.Bucket, properties, renderedConfig, c)
 
 	default:
 		deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
@@ -344,4 +309,8 @@ func logResponseError(ctx context.Context, responseErr clientErrors.RespError) {
 	}
 
 	log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
+}
+
+func createContextWithEnvironment(env EnvironmentInfo) context.Context {
+	return context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 }
