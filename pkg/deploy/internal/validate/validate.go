@@ -19,6 +19,8 @@ package validate
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
@@ -26,7 +28,15 @@ type Validator interface {
 	Validate(c config.Config) error
 }
 
-func Validate(projects []project.Project, validators []Validator) error {
+func Validate(projects []project.Project) error {
+	defaultValidators := []Validator{
+		&classic.Validator{},
+		&setting.Validator{},
+	}
+	return validate(projects, defaultValidators)
+}
+
+func validate(projects []project.Project, validators []Validator) error {
 	errs := make(errors.EnvironmentDeploymentErrors)
 
 	for _, p := range projects {
