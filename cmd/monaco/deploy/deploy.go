@@ -72,10 +72,8 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	if err != nil {
 		return fmt.Errorf("failed to create API clients: %w", err)
 	}
-	err = deploy.DeployConfigGraph(filteredProjects, clientSets, deploy.DeployConfigsOptions{
-		ContinueOnErr: continueOnErr,
-		DryRun:        dryRun,
-	})
+
+	err = deploy.Deploy(filteredProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun})
 	if err != nil {
 		return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
 	}
