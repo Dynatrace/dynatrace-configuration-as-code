@@ -29,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	manifestwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/writer"
 	presistance "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
@@ -73,6 +74,10 @@ func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 			log.Error("Configuration download for account %q failed! Cause: %s", acc, err)
 			failedDownloads = append(failedDownloads, acc)
 		}
+	}
+
+	if err := writeManifest(fs, opts, accs); err != nil {
+		log.Error("failed to persist manifest: %v", err)
 	}
 
 	if len(failedDownloads) > 0 {
@@ -166,4 +171,19 @@ func readAuthSecretFromEnv(envVar string) (manifest.AuthSecret, error) {
 		return manifest.AuthSecret{}, fmt.Errorf("the content of the environment variable %q is not set", envVar)
 	}
 	return manifest.AuthSecret{Name: envVar, Value: secret.MaskedString(content)}, nil
+}
+
+func writeManifest(fs afero.Fs, opts *downloadOpts, accs map[string]manifest.Account) error {
+	ctx := &manifestwriter.Context{
+		Fs:           fs,
+		ManifestPath: filepath.Join(opts.outputFolder, "manifest.yaml"),
+	}
+	man := manifest.Manifest{
+		Projects: manifest.ProjectDefinitionByProjectID{
+			opts.projectName: manifest.ProjectDefinition{Name: opts.projectName},
+		},
+		Accounts: accs,
+	}
+
+	return manifestwriter.Write(ctx, man)
 }
