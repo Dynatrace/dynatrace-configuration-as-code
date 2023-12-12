@@ -26,12 +26,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestValidateUniqueConfigNames(t *testing.T) {
+func TestValidate(t *testing.T) {
 	tests := []struct {
 		name            string
 		given           []project.Project
@@ -379,11 +380,64 @@ func TestValidateUniqueConfigNames(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "settings scope as string value OK",
+			given: []project.Project{
+				{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env1": project.ConfigsPerType{
+							"builtin:setting": {
+								config.Config{
+									Type:        config.SettingsType{SchemaId: "builtin:setting"},
+									Environment: "env1",
+									Coordinate: coordinate.Coordinate{
+										ConfigId: "config1",
+									},
+									Parameters: config.Parameters{
+										config.ScopeParameter: &value.ValueParameter{
+											Value: "HOST-12345",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "settings scope as complex value results in error",
+			given: []project.Project{
+				{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env1": project.ConfigsPerType{
+							"builtin:setting": {
+								config.Config{
+									Type:        config.SettingsType{SchemaId: "builtin:setting"},
+									Environment: "env1",
+									Coordinate: coordinate.Coordinate{
+										ConfigId: "config1",
+									},
+									Parameters: config.Parameters{
+										config.ScopeParameter: &value.ValueParameter{
+											Value: []string{"some", "slice"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErrsContain: map[string][]string{
+				"env1": {"scope needs to be a string"},
+			},
+		},
 	}
 	for _, tc := range tests {
 
 		t.Run(tc.name, func(t *testing.T) {
-			err := Validate(tc.given, []Validator{&classic.Validator{}})
+			err := Validate(tc.given, []Validator{&classic.Validator{}, &setting.Validator{}})
 			if len(tc.wantErrsContain) == 0 {
 				assert.NoError(t, err)
 			} else {
