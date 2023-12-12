@@ -31,6 +31,7 @@ type Validator struct{}
 var deprecatedSchemas = map[string]string{
 	"builtin:span-attribute":       "this setting was replaced by 'builtin:attribute-allow-list' and 'builtin:attribute-masking'",
 	"builtin:span-event-attribute": "this setting was replaced by 'builtin:attribute-allow-list' and 'builtin:attribute-masking'",
+	"builtin:resource-attribute":   "this setting was replaced by 'builtin:attribute-allow-list' and 'builtin:attribute-masking'",
 }
 
 // Validate checks for each settings type whether it is using a deprecated schema and if a value type scope is a non-empty string.
