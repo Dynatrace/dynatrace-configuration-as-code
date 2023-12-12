@@ -30,6 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
@@ -86,7 +87,7 @@ func Deploy(projects []project.Project, environmentClients EnvironmentClients, o
 	g := graph.New(projects, environmentClients.Names())
 	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
 
-	if validationErrs := classic.ValidateUniqueConfigNames(projects); validationErrs != nil {
+	if validationErrs := validate.Validate(projects, []validate.Validator{&classic.Validator{}}); validationErrs != nil {
 		if !opts.ContinueOnErr && !opts.DryRun {
 			return validationErrs
 		}

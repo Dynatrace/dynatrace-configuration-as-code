@@ -20,64 +20,56 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/google/go-cmp/cmp"
 )
 
-// ValidateUniqueConfigNames checks that for each classic config API type, only one config exists with any given name.
+type (
+	environmentName = string
+	classicEndpoint = string
+)
+
+type Validator struct {
+	uniqueNames map[environmentName]map[classicEndpoint][]config.Config
+}
+
+var apis = api.NewAPIs()
+
+// Validate checks that for each classic config API type, only one config exists with any given name.
 // As classic configs are identified by name, ValidateUniqueConfigNames returns errors if a name is used more than once for the same type.
-func ValidateUniqueConfigNames(projects []project.Project) error {
-	errs := make(errors.EnvironmentDeploymentErrors)
-	type (
-		environmentName = string
-		classicEndpoint = string
-	)
-	uniqueList := make(map[environmentName]map[classicEndpoint][]config.Config)
-	e := api.NewAPIs()
-
-	checkUniquenessOfName := func(c config.Config) {
-		a, ok := c.Type.(config.ClassicApiType)
-		if !ok || e[a.Api].NonUniqueName {
-			return
-		}
-
-		if uniqueList[c.Environment] == nil {
-			uniqueList[c.Environment] = make(map[classicEndpoint][]config.Config)
-		}
-
-		for _, c2 := range uniqueList[c.Environment][a.Api] {
-			n1, err := config.GetNameForConfig(c)
-			if err != nil {
-				errs = errs.Append(c.Environment, err)
-				return
-			}
-			n2, err := config.GetNameForConfig(c2)
-			if err != nil {
-				errs = errs.Append(c.Environment, err)
-				return
-			}
-
-			if cmp.Equal(n1, n2) {
-				var nameDetails string
-				if s, ok := n1.(string); ok {
-					nameDetails = fmt.Sprintf(": %s", s)
-				}
-
-				errs = errs.Append(c.Environment, fmt.Errorf("duplicated config name found: configurations %s and %s define the same 'name' %q", c.Coordinate, c2.Coordinate, nameDetails))
-				return
-			}
-		}
-
-		uniqueList[c.Environment][a.Api] = append(uniqueList[c.Environment][a.Api], c)
+func (v *Validator) Validate(c config.Config) error {
+	if v.uniqueNames == nil {
+		v.uniqueNames = make(map[environmentName]map[classicEndpoint][]config.Config)
 	}
 
-	for _, p := range projects {
-		p.ForEveryConfigDo(checkUniquenessOfName)
+	a, ok := c.Type.(config.ClassicApiType)
+	if !ok || apis[a.Api].NonUniqueName {
+		return nil
 	}
 
-	if len(errs) > 0 {
-		return errs
+	if v.uniqueNames[c.Environment] == nil {
+		v.uniqueNames[c.Environment] = make(map[classicEndpoint][]config.Config)
 	}
+
+	for _, c2 := range v.uniqueNames[c.Environment][a.Api] {
+		n1, err := config.GetNameForConfig(c)
+		if err != nil {
+			return err
+		}
+		n2, err := config.GetNameForConfig(c2)
+		if err != nil {
+			return err
+		}
+
+		if cmp.Equal(n1, n2) {
+			var nameDetails string
+			if s, ok := n1.(string); ok {
+				nameDetails = fmt.Sprintf(": %s", s)
+			}
+
+			return fmt.Errorf("duplicated config name found: configurations %s and %s define the same 'name' %q", c.Coordinate, c2.Coordinate, nameDetails)
+		}
+	}
+
+	v.uniqueNames[c.Environment][a.Api] = append(v.uniqueNames[c.Environment][a.Api], c)
 	return nil
 }
