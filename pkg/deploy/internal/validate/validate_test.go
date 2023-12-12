@@ -25,8 +25,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -437,7 +435,7 @@ func TestValidate(t *testing.T) {
 	for _, tc := range tests {
 
 		t.Run(tc.name, func(t *testing.T) {
-			err := Validate(tc.given, []Validator{&classic.Validator{}, &setting.Validator{}})
+			err := Validate(tc.given)
 			if len(tc.wantErrsContain) == 0 {
 				assert.NoError(t, err)
 			} else {
