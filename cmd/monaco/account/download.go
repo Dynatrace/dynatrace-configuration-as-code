@@ -39,13 +39,7 @@ import (
 
 func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 	if opts.outputFolder == "" {
-		opts.outputFolder = "download_account"
-	}
-	if exists, err := afero.DirExists(fs, opts.outputFolder); err != nil {
-		return err
-	} else if exists {
-		opts.outputFolder = fmt.Sprintf("%s_%s", opts.outputFolder, timeutils.TimeAnchor().Format(log.LogFileTimestampPrefixFormat))
-
+		opts.outputFolder = fmt.Sprintf("download_account_%s", timeutils.TimeAnchor().Format(log.LogFileTimestampPrefixFormat))
 	}
 
 	var accs map[string]manifest.Account
