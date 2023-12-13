@@ -22,8 +22,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	"github.com/go-logr/logr"
 	"io"
 	"net/http"
 	"slices"
@@ -99,7 +99,8 @@ func (d *accountManagementClient) getManagementZones(ctx context.Context) ([]Man
 
 func (d *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel string, policyLevelId string, policyId string, policy Policy) (remoteId, error) {
 	if policyId != "" {
-		log.Debug("Trying to update policy with origin object ID (UUID) %q", policyId)
+
+		logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update policy with origin object ID (UUID) " + policyId)
 		_, resp, err := d.client.PolicyManagementAPI.UpdateLevelPolicy(ctx, policyLevel, policyLevelId, policyId).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
 		defer closeResponseBody(resp)
 		if err = d.handleClientResponseError(resp, err, "unable to update policy with UUID: "+policyId); err != nil {
@@ -108,7 +109,7 @@ func (d *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 		return policyId, nil
 	}
 
-	log.Debug("Trying to get policy with name %q", policy.Name)
+	logr.FromContextOrDiscard(ctx).V(1).Info("Trying to get policy with name " + policy.Name)
 	result, resp, err := d.client.PolicyManagementAPI.GetLevelPolicies(ctx, policyLevel, policyLevelId).Name(policy.Name).Execute()
 	defer closeResponseBody(resp)
 	if err = d.handleClientResponseError(resp, err, "unable to get policy with name: "+policy.Name); err != nil {
@@ -118,7 +119,7 @@ func (d *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 	existingPolicies := result.GetPolicies()
 
 	if len(existingPolicies) == 0 {
-		log.Debug("No policy with name %q found. Creating a new one", policy.Name)
+		logr.FromContextOrDiscard(ctx).V(1).Info("No policy with name " + policy.Name + " found. Creating a new one")
 		var createdPolicy *accountmanagement.LevelPolicyDto
 		createdPolicy, resp, err = d.client.PolicyManagementAPI.CreateLevelPolicy(ctx, policyLevel, policyLevelId).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
 		defer closeResponseBody(resp)
@@ -129,10 +130,10 @@ func (d *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 	}
 
 	if len(existingPolicies) > 1 { // shouldn't happen
-		log.Warn("Found multiple policies with name %q. Updating policy with UUID %q", policy.Name, existingPolicies[0].GetUuid())
+		logr.FromContextOrDiscard(ctx).V(-1).Info("Found multiple policies with name " + policy.Name + ". Updating policy with UUID " + existingPolicies[0].GetUuid())
 	}
 
-	log.Debug("Trying to update existing policy with name %q and UUID %q", policy.Name, existingPolicies[0].GetUuid())
+	logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update existing policy with name " + policy.Name + " and UUID " + existingPolicies[0].GetUuid())
 	_, resp, err = d.client.PolicyManagementAPI.UpdateLevelPolicy(ctx, policyLevel, policyLevelId, existingPolicies[0].GetUuid()).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
 	defer closeResponseBody(resp)
 	if err = d.handleClientResponseError(resp, err, "unable to update policy with name: "+policy.Name); err != nil {
@@ -143,7 +144,7 @@ func (d *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 
 func (d *accountManagementClient) upsertGroup(ctx context.Context, groupId string, group Group) (remoteId, error) {
 	if groupId != "" {
-		log.Debug("Trying to update group with origin object ID (UUID) %q", groupId)
+		logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update group with origin object ID (UUID) " + groupId)
 		resp, err := d.client.GroupManagementAPI.EditGroup(ctx, d.accountInfo.AccountUUID, groupId).PutGroupDto(group).Execute()
 		defer closeResponseBody(resp)
 
@@ -181,7 +182,7 @@ func (d *accountManagementClient) upsertGroup(ctx context.Context, groupId strin
 	}
 
 	if len(existingGroups) > 1 { // shouldn't happen
-		log.Warn("Updating multiple policies with name %s. Updating group with UUID %q", group.Name, existingGroups[0].GetUuid(), group.Name)
+		logr.FromContextOrDiscard(ctx).V(-1).Info("Updating multiple policies with name " + group.Name + ". Updating group with UUID " + existingGroups[0].GetUuid())
 	}
 
 	groupToUpdate := existingGroups[0]
@@ -225,7 +226,7 @@ func (d *accountManagementClient) updatePermissions(ctx context.Context, groupId
 
 	for _, p := range permissions {
 		if !slices.Contains(d.supportedPermissions, p.PermissionName) {
-			return fmt.Errorf("unsupported permission %q. Must be one of: %v", p.PermissionName, d.supportedPermissions)
+			return fmt.Errorf("unsupported permission %s. Must be one of: %v", p.PermissionName, d.supportedPermissions)
 		}
 	}
 	resp, err := d.client.PermissionManagementAPI.OverwriteGroupPermissions(ctx, d.accountInfo.AccountUUID, groupId).PermissionsDto(permissions).Execute()

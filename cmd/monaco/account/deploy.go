@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
@@ -132,7 +133,12 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	}
 
 	for accInfo, accClient := range accountClients {
+		logger := log.WithFields(field.F("account", accInfo.Name))
 		accountDeployer := deployer.NewAccountDeployer(deployer.NewClient(accInfo, accClient, supportedPermissions))
+		logger.Info("Deploying configuration for account: %s", accInfo.Name)
+		logger.Info("Number of users to deploy: %d", len(resources.Users))
+		logger.Info("Number of groups to deploy: %d", len(resources.Groups))
+		logger.Info("Number of policies to deploy: %d", len(resources.Policies))
 		if err = accountDeployer.Deploy(resources); err != nil {
 			return err
 		}
