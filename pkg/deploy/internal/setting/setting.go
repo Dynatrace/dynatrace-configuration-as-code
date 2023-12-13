@@ -108,14 +108,18 @@ func extractScope(properties parameter.Properties) (string, error) {
 		return "", fmt.Errorf("property '%s' not found, this is most likely a bug", config.ScopeParameter)
 	}
 
-	if scope == "" {
-		return "", fmt.Errorf("resolved scope is empty")
-	}
-
-	if v, ok := scope.(string); ok {
+	switch v := scope.(type) {
+	case string:
+		if v == "" {
+			return "", fmt.Errorf("resolved scope is empty")
+		}
 		return v, nil
-	} else {
-		return "", fmt.Errorf("scope needs to be string, unexpected type %T", scope)
+	case []any:
+		return "", fmt.Errorf("scope needs to be string, was a list")
+	case map[any]any:
+		return "", fmt.Errorf("scope needs to be string, was a map")
+	default:
+		return "", fmt.Errorf("scope needs to be string, was unexpected type %T", scope)
 	}
 }
 

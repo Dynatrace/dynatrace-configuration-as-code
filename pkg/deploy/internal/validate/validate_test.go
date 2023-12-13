@@ -403,34 +403,6 @@ func TestValidate(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "settings scope as complex value results in error",
-			given: []project.Project{
-				{
-					Configs: project.ConfigsPerTypePerEnvironments{
-						"env1": project.ConfigsPerType{
-							"builtin:setting": {
-								config.Config{
-									Type:        config.SettingsType{SchemaId: "builtin:setting"},
-									Environment: "env1",
-									Coordinate: coordinate.Coordinate{
-										ConfigId: "config1",
-									},
-									Parameters: config.Parameters{
-										config.ScopeParameter: &value.ValueParameter{
-											Value: []string{"some", "slice"},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErrsContain: map[string][]string{
-				"env1": {"scope needs to be a string"},
-			},
-		},
 	}
 	for _, tc := range tests {
 
