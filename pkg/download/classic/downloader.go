@@ -109,32 +109,37 @@ func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) p
 			defer wg.Done()
 			configsToDownload, err := d.findConfigsToDownload(currentApi)
 			remoteCount := len(configsToDownload)
+
+			lg := log.WithFields(field.Type(currentApi.ID))
 			if err != nil {
-				log.WithFields(field.Type(currentApi.ID), field.Error(err)).Error("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.ID, err)
+				lg.WithFields(field.Error(err)).Error("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.ID, err)
 				return
 			}
 			// filter all configs we do not want to download. All remaining will be downloaded
 			configsToDownload = d.filterConfigsToSkip(currentApi, configsToDownload)
 
 			if len(configsToDownload) == 0 {
-				log.WithFields(field.Type(currentApi.ID)).Debug("No configs of type '%v' to download", currentApi.ID)
+				lg.Debug("No configs of type '%v' to download", currentApi.ID)
 				return
 			}
 
-			log.WithFields(field.Type(currentApi.ID), field.F("configsToDownload", len(configsToDownload))).Debug("Found %d configs of type '%v' to download", len(configsToDownload), currentApi.ID)
+			lg.Debug("Found %d configs of type %q to download", len(configsToDownload), currentApi.ID)
 			cfgs := d.downloadConfigsOfAPI(currentApi, configsToDownload, projectName)
 
-			log.WithFields(field.Type(currentApi.ID), field.F("configsDownloaded", len(cfgs))).Debug("Finished downloading all configs of type '%v'", currentApi.ID)
 			if len(cfgs) > 0 {
 				mutex.Lock()
 				results[currentApi.ID] = cfgs
 				mutex.Unlock()
 			}
 
-			if remoteCount == len(cfgs) {
-				log.WithFields(field.Type(currentApi.ID)).Info("Downloaded %d configurations for API %q", len(cfgs), currentApi.ID)
-			} else {
-				log.WithFields(field.Type(currentApi.ID)).Info("Downloaded %d configurations for API %q. Skipped persisting %d unmodifiable config(s).", len(cfgs), currentApi.ID, remoteCount-len(cfgs))
+			lg = lg.WithFields(field.F("configsDownloaded", len(cfgs)))
+			switch remoteCount {
+			case 0:
+				lg.Debug("Did not find any configurations to download for API %q", currentApi.ID)
+			case len(cfgs):
+				lg.Info("Downloaded %d configurations for API %q", len(cfgs), currentApi.ID)
+			default:
+				lg.Info("Downloaded %d configurations for API %q. Skipped persisting %d unmodifiable config(s).", len(cfgs), currentApi.ID, remoteCount-len(cfgs))
 			}
 
 		}()

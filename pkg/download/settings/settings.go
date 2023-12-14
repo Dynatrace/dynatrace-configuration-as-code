@@ -118,7 +118,10 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 	for _, schema := range schemas {
 		go func(s string) {
 			defer wg.Done()
-			log.WithFields(field.F("type", s)).Debug("Downloading all settings for schema %s", s)
+
+			lg := log.WithFields(field.F("type", s))
+
+			lg.Debug("Downloading all settings for schema %s", s)
 			objects, err := d.client.ListSettings(context.TODO(), s, dtclient.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string
@@ -128,11 +131,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 				} else {
 					errMsg = err.Error()
 				}
-				log.WithFields(field.F("type", s), field.Error(err)).Error("Failed to fetch all settings for schema %q: %v", s, errMsg)
-				return
-			}
-			log.WithFields(field.F("type", s), field.F("configsDownloaded", len(objects))).Debug("Downloaded %d settings for schema %q before filtering unmodifiable settings.", len(objects), s)
-			if len(objects) == 0 {
+				lg.WithFields(field.Error(err)).Error("Failed to fetch all settings for schema %q: %v", s, errMsg)
 				return
 			}
 
@@ -141,10 +140,14 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			results[s] = cfgs
 			downloadMutex.Unlock()
 
-			if len(objects) == len(cfgs) {
-				log.WithFields(field.F("type", s), field.F("configsDownloaded", len(objects))).Info("Finished downloading %d settings for schema %q.", len(cfgs), s)
-			} else {
-				log.WithFields(field.F("type", s), field.F("configsDownloaded", len(objects))).Info("Finished downloading %d settings for schema %q. Skipped persisting %d unmodifiable setting(s).", len(cfgs), s, len(objects)-len(cfgs))
+			lg = lg.WithFields(field.F("configsDownloaded", len(cfgs)))
+			switch len(objects) {
+			case 0:
+				lg.Debug("Did not find any settings to download for schema %q", s)
+			case len(cfgs):
+				lg.Info("Downloaded %d settings for schema %q.", len(cfgs), s)
+			default:
+				lg.Info("Downloaded %d settings for schema %q. Skipped persisting %d unmodifiable setting(s).", len(cfgs), s, len(objects)-len(cfgs))
 			}
 		}(schema)
 	}
