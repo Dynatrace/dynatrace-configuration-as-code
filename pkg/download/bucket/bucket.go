@@ -75,16 +75,17 @@ func (d *Downloader) Download(projectName string, _ ...config.BucketType) (v2.Co
 
 func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []config.Config {
 	result := make([]config.Config, 0, len(objects))
+
+	lg := log.WithFields(field.Type("bucket"))
+
 	for _, o := range objects {
 
 		c, err := convertObject(o, projectName)
 		if err != nil {
 			if errors.As(err, &skipErr{}) {
-				log.WithFields(field.Type("bucket")).
-					Debug("Skipping bucket: %s", err.Error())
+				lg.Debug("Skipping bucket: %s", err.Error())
 			} else {
-				log.WithFields(field.Type("bucket"), field.Error(err)).
-					Error("Failed to decode API response objects for bucket resource: %v", err)
+				lg.WithFields(field.Error(err)).Error("Failed to decode API response objects for bucket resource: %v", err)
 			}
 
 			continue
@@ -92,7 +93,16 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 		result = append(result, c)
 	}
 
-	log.Info("Downloaded %d Grail buckets", len(result))
+	lg = lg.WithFields(field.F("configsDownloaded", len(result)))
+	switch len(objects) {
+	case 0:
+		// Info on purpose. Most types have a lot of objects, so skipping printing 'not found' in the default case makes sense. Here it's kept on purpose as bucket is only one type.
+		lg.Info("Did not find any buckets to download")
+	case len(result):
+		lg.Info("Downloaded %d buckets.", len(result))
+	default:
+		lg.Info("Downloaded %d buckets. Skipped persisting %d unmodifiable bucket(s).", len(result), len(objects)-len(result))
+	}
 
 	return result
 }

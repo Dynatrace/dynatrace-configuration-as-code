@@ -64,31 +64,36 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 
 	configsPerType := make(v2.ConfigsPerType)
 	for _, at := range automationTypes {
+		lg := log.WithFields(field.Type(at.Resource))
+
 		resource, ok := automationTypesToResources[at]
 		if !ok {
-			log.WithFields(field.Type(string(at.Resource))).Warn("No resource mapping for automation type %s found", at.Resource)
+			lg.Warn("No resource mapping for automation type %s found", at.Resource)
 			continue
 		}
 		response, err := d.client.List(context.TODO(), resource)
 		if err != nil {
-			log.WithFields(field.Type(string(at.Resource)), field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
+			lg.WithFields(field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 		if err, isAPIErr := response.AsAPIError(); isAPIErr {
-			log.WithFields(field.Type(string(at.Resource)), field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
+			lg.WithFields(field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
 		objects, err := automationutils.DecodeListResponse(response)
 		if err != nil {
-			log.WithFields(field.Type(string(at.Resource)), field.Error(err)).Error("Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
+			lg.WithFields(field.Error(err)).Error("Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
-		log.WithFields(field.Type(string(at.Resource)), field.F("configsDownloaded", len(objects))).Info("Downloaded %d objects for automation resource %s", len(objects), string(at.Resource))
 		if len(objects) == 0 {
+			// Info on purpose. Most types have a lot of objects, so skipping printing 'not found' in the default case makes sense. Here it's kept on purpose, we have only 3 types.
+			lg.WithFields(field.F("configsDownloaded", len(objects))).Info("Did not find any %s to download", string(at.Resource))
+
 			continue
 		}
+		lg.WithFields(field.F("configsDownloaded", len(objects))).Info("Downloaded %d objects for %s", len(objects), string(at.Resource))
 
 		var configs []config.Config
 		for _, obj := range objects {
@@ -96,7 +101,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 			configId := obj.ID
 
 			if escaped, err := escapeJinjaTemplates(obj.Data); err != nil {
-				log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), field.Error(err)).Warn("Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
+				lg.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), field.Error(err)).Warn("Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
 			} else {
 				obj.Data = escaped
 			}
