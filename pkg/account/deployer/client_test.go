@@ -400,7 +400,7 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 		})
 		assert.Equal(t, 0, server.Calls())
 		assert.Error(t, err)
-		assert.Equal(t, "unsupported permission \"unsupported-permission\". Must be one of: [tenant-viewer]", err.Error())
+		assert.Equal(t, "unsupported permission unsupported-permission. Must be one of: [tenant-viewer]", err.Error())
 	})
 
 	t.Run("Update Group Permissions - no group Id given", func(t *testing.T) {

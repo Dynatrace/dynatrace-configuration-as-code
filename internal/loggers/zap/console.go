@@ -80,6 +80,11 @@ func (e fixedFieldsConsoleEncoder) EncodeEntry(entry zapcore.Entry, _ []zapcore.
 		line.AppendString(fmt.Sprintf("[%s=%v]", "gid", f))
 	}
 
+	if f, ok := e.Fields()["account"]; ok {
+		additionalTab = true
+		line.AppendString(fmt.Sprintf("[%s=%v]", "account", f))
+	}
+
 	if additionalTab {
 		line.AppendString("\t")
 	}
