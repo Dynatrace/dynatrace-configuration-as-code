@@ -18,6 +18,7 @@ package downloader
 
 import (
 	"context"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
@@ -42,22 +43,22 @@ func (a *Downloader) DownloadConfiguration() (*account.Resources, error) {
 
 	tenants, err := a.environments(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch environments: %w", err)
 	}
 
 	policies, err := a.policies(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch policies: %w", err)
 	}
 
 	groups, err := a.groups(ctx, policies, tenants)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch groups: %w", err)
 	}
 
 	users, err := a.users(ctx, groups)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch users: %w", err)
 	}
 
 	r := account.Resources{

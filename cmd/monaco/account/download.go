@@ -141,7 +141,7 @@ func download(fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accC
 
 	resources, err := downloader.DownloadConfiguration()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to download resources: %w", err)
 	}
 
 	c := presistance.Context{
@@ -151,7 +151,7 @@ func download(fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accC
 	}
 	err = presistance.Write(c, *resources)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to persist resources: %w", err)
 	}
 
 	return nil
