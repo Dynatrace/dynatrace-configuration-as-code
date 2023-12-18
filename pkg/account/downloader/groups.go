@@ -46,6 +46,11 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 
 	var retVal Groups
 	for i := range groupDTOs {
+		if groupDTOs[i].Uuid == nil {
+			log.Error("Group %q does not have a uuid set, skipping", groupDTOs[i].Name)
+			continue
+		}
+
 		log.Debug("Downloading definition for group %q (uuid: %q)", groupDTOs[i].Name, *groupDTOs[i].Uuid)
 		g := group{
 			dto:      &groupDTOs[i],
