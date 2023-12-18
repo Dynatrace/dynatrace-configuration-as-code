@@ -17,6 +17,7 @@
 package account
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
@@ -65,7 +66,7 @@ func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 	for acc, accClient := range accountClients {
 		err := download(fs, opts, acc, accClient)
 		if err != nil {
-			log.Error("Configuration download for account %q failed! Cause: %s", acc, err)
+			log.Error("Failed to download account resources for account %q: %s", acc, err)
 			failedDownloads = append(failedDownloads, acc)
 		}
 	}
@@ -139,7 +140,8 @@ func loadAccountsFromManifest(fs afero.Fs, opts *downloadOpts) (map[string]manif
 func download(fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accClient *accounts.Client) error {
 	downloader := downloader.New(&accInfo, accClient)
 
-	resources, err := downloader.DownloadConfiguration()
+	ctx := context.WithValue(context.TODO(), log.CtxKeyAccount{}, accInfo.Name)
+	resources, err := downloader.DownloadConfiguration(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to download resources: %w", err)
 	}
