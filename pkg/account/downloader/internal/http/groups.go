@@ -18,7 +18,7 @@ package http
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 )
 
@@ -30,7 +30,7 @@ func (c *Client) GetGroups(ctx context.Context, accUUID string) ([]accountmanage
 		return nil, err
 	}
 	if r != nil && int(r.Count) != len(r.Items) {
-		return nil, errors.New("the received data are inconsistent")
+		return nil, fmt.Errorf("the received data is inconsistent: count(%d) != items(%d)", int(r.Count), len(r.Items))
 	}
 
 	return r.Items, nil
