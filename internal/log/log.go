@@ -51,6 +51,9 @@ type CtxValEnv struct {
 // CtxGraphComponentId context key used for correlating logs that belong to deployment of a sub graph
 type CtxGraphComponentId struct{}
 
+// CtxKeyAccount context key used for contextual account information
+type CtxKeyAccount struct{}
+
 // CtxValGraphComponentId context value used for correlating logs that belong to deployment of a sub graph
 type CtxValGraphComponentId int
 
@@ -99,6 +102,10 @@ func WithCtxFields(ctx context.Context) loggers.Logger {
 	}
 	if e, ok := ctx.Value(CtxKeyEnv{}).(CtxValEnv); ok {
 		f = append(f, field.Environment(e.Name, e.Group))
+	}
+
+	if a, ok := ctx.Value(CtxKeyAccount{}).(any); ok {
+		f = append(f, field.F("account", a))
 	}
 
 	if c, ok := ctx.Value(CtxGraphComponentId{}).(CtxValGraphComponentId); ok {

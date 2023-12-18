@@ -36,12 +36,12 @@ type (
 )
 
 func (a *Downloader) policies(ctx context.Context) (Policies, error) {
-	log.Info("Downloading policies...")
+	log.WithCtxFields(ctx).Info("Downloading policies")
 	dtos, err := a.httpClient.GetPoliciesFroAccount(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get policies for account %q: %w", a.accountInfo, err)
 	}
-	log.Debug("%d policy downloaded (global + custom)", len(dtos))
+	log.WithCtxFields(ctx).Debug("Downloaded %d policies (global + custom)", len(dtos))
 
 	retVal := make(Policies, 0, len(dtos))
 
@@ -49,7 +49,7 @@ func (a *Downloader) policies(ctx context.Context) (Policies, error) {
 		var dtoDef *accountmanagement.LevelPolicyDto
 		var p *account.Policy
 		if isCustom(dtos[i]) {
-			log.Debug("Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid)
+			log.WithCtxFields(ctx).Debug("Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid)
 			dtoDef, err = a.httpClient.GetPolicyDefinition(ctx, dtos[i])
 			if err != nil {
 				return nil, err
@@ -65,7 +65,7 @@ func (a *Downloader) policies(ctx context.Context) (Policies, error) {
 		})
 	}
 
-	log.Info("%d custom policies available.", len(retVal.asAccountPolicies()))
+	log.WithCtxFields(ctx).Info("Downloaded %d policies", len(retVal.asAccountPolicies()))
 	return retVal, nil
 }
 

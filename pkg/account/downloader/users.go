@@ -34,7 +34,7 @@ type (
 )
 
 func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
-	log.Info("Downloading users...")
+	log.WithCtxFields(ctx).Info("Downloading users")
 	dtos, err := a.httpClient.GetUsers(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 
 	retVal := make(Users, 0, len(dtos))
 	for i := range dtos {
-		log.Info("Downloading details for user %q", dtos[i].Email)
+		log.WithCtxFields(ctx).Debug("Downloading details for user %q", dtos[i].Email)
 		dtoGroups, err := a.httpClient.GetGroupsForUser(ctx, dtos[i].Email, a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, err
@@ -60,7 +60,7 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 		})
 	}
 
-	log.Info("%d users downloads.", len(retVal))
+	log.WithCtxFields(ctx).Info("Downloaded %d users", len(retVal))
 	return retVal, nil
 }
 
