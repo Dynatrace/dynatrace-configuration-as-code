@@ -64,7 +64,7 @@ func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 
 	var failedDownloads []account.AccountInfo
 	for acc, accClient := range accountClients {
-		err := download(fs, opts, acc, accClient)
+		err := downloadAndPersist(fs, opts, acc, accClient)
 		if err != nil {
 			log.Error("Failed to download account resources for account %q: %s", acc, err)
 			failedDownloads = append(failedDownloads, acc)
@@ -137,11 +137,11 @@ func loadAccountsFromManifest(fs afero.Fs, opts *downloadOpts) (map[string]manif
 	return m.Accounts, nil
 }
 
-func download(fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accClient *accounts.Client) error {
+func downloadAndPersist(fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accClient *accounts.Client) error {
 	downloader := downloader.New(&accInfo, accClient)
 
 	ctx := context.WithValue(context.TODO(), log.CtxKeyAccount{}, accInfo.Name)
-	resources, err := downloader.DownloadConfiguration(ctx)
+	resources, err := downloader.DownloadResources(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to download resources: %w", err)
 	}

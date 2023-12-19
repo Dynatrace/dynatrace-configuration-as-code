@@ -37,7 +37,7 @@ func New(accountInfo *account.AccountInfo, client *accounts.Client) *Downloader 
 	}
 }
 
-func (a *Downloader) DownloadConfiguration(ctx context.Context) (*account.Resources, error) {
+func (a *Downloader) DownloadResources(ctx context.Context) (*account.Resources, error) {
 	log.WithCtxFields(ctx).Info("Starting download")
 
 	tenants, err := a.environments(ctx)
