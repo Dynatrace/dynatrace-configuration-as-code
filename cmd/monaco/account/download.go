@@ -34,6 +34,7 @@ import (
 	presistance "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
+	"golang.org/x/exp/maps"
 	"os"
 	"path/filepath"
 )
@@ -71,6 +72,11 @@ func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 		}
 	}
 
+	// all environments failed to download
+	if len(failedDownloads) == len(accountClients) {
+		return fmt.Errorf("failed to download any resources from accounts %q - not creating download folder", maps.Keys(accs))
+	}
+
 	if err := writeManifest(fs, opts, accs); err != nil {
 		log.Error("failed to persist manifest: %v", err)
 	}
@@ -80,7 +86,7 @@ func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 		for _, t := range failedDownloads {
 			es = append(es, t.String())
 		}
-		return fmt.Errorf("failed to download accounts %q", es)
+		return fmt.Errorf("failed to download resources from %q", es)
 	}
 
 	return nil
