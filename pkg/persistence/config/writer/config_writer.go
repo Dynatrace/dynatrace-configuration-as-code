@@ -18,6 +18,7 @@ package writer
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configError "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
@@ -131,7 +132,7 @@ func toTopLevelDefinitions(context *WriterContext, configs []config.Config) (map
 	var configTemplates []configTemplate
 
 	for coord, confs := range configsPerCoordinate {
-		sanitizedType := sanitize(coord.Type)
+		sanitizedType := strings.Sanitize(coord.Type)
 		configContext := &serializerContext{
 			WriterContext: context,
 			configFolder:  filepath.Join(context.ProjectFolder, sanitizedType),
@@ -188,7 +189,7 @@ func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinat
 		return newConfigWriterError(context, err)
 	}
 
-	sanitizedApi := sanitize(apiCoord.api)
+	sanitizedApi := strings.Sanitize(apiCoord.api)
 	targetConfigFile := filepath.Join(context.OutputFolder, context.ProjectFolder, sanitizedApi, "config.yaml")
 
 	err = context.Fs.MkdirAll(filepath.Dir(targetConfigFile), 0777)
@@ -614,7 +615,7 @@ func extractTemplate(context *detailedSerializerContext, cfg config.Config) (str
 			}
 			name = n
 		} else {
-			name = sanitize(t.ID()) + ".json"
+			name = strings.Sanitize(t.ID()) + ".json"
 			path = filepath.Join(context.configFolder, name)
 		}
 	default:
