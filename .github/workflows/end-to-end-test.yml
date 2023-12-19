@@ -102,7 +102,7 @@ jobs:
       uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4.0.0
       if: always()
       with:
-        name: Test Results
+        name: Test Results - Integration
         path: test-result-*.xml
 
 
@@ -143,7 +143,7 @@ jobs:
       uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4.0.0
       if: always()
       with:
-        name: Test Results
+        name: Test Results - Integration Legacy
         path: test-result-*.xml
 
 
@@ -184,7 +184,7 @@ jobs:
       uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4.0.0
       if: always()
       with:
-        name: Test Results
+        name: Test Results - Integration Download
         path: test-result-*.xml
 
 
@@ -210,6 +210,13 @@ jobs:
 
     - name: 🧪 Unit test
       run: make test testopts="--junitfile test-result-windows-latest-unit.xml"
+
+    - name: ⬆️ Upload Test Results
+      uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4.0.0
+      if: always()
+      with:
+        name: Test Results - Unit Windows
+        path: test-result-*.xml
 
   nightly-run:
     name: 🌜 Nightly test & 🧹 Cleanup
@@ -258,7 +265,7 @@ jobs:
       uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4.0.0
       if: always()
       with:
-        name: Test Results
+        name: Test Results - Integration Nightly
         path: test-result-*.xml
 
 
