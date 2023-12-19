@@ -21,8 +21,8 @@ import (
 	"fmt"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/google/uuid"
 )
 
 type (
@@ -71,7 +71,7 @@ func (a *Downloader) policies(ctx context.Context) (Policies, error) {
 
 func toAccountPolicy(dto *accountmanagement.PolicyOverview, dtoDef *accountmanagement.LevelPolicyDto) *account.Policy {
 	return &account.Policy{
-		ID:             uuid.New().String(),
+		ID:             stringutils.Sanitize(dto.Name),
 		Name:           dto.Name,
 		Level:          toAccountPolicyLevel(dto),
 		Description:    dto.Description,

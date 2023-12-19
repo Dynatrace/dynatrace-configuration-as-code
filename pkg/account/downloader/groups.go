@@ -20,8 +20,8 @@ import (
 	"context"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/google/uuid"
 	"strings"
 )
 
@@ -104,7 +104,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		}
 
 		g.group = &account.Group{
-			ID:             uuid.New().String(),
+			ID:             stringutils.Sanitize(g.dto.Name),
 			Name:           g.dto.Name,
 			Description:    g.dto.GetDescription(),
 			Account:        effectiveAccount(acc),

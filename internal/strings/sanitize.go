@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package writer
+package strings
 
 import (
 	"regexp"
@@ -25,8 +25,8 @@ var namePattern = regexp.MustCompile(`[^a-zA-Z0-9-_.]+`)
 
 const MaxFilenameLengthWithoutFileExtension = 254
 
-// sanitize removes special characters, limits to max 254 characters in name, no special characters except '-', '_', and '.'
-func sanitize(name string) string {
+// Sanitize removes special characters, limits to max 254 characters in name, no special characters except '-', '_', and '.'
+func Sanitize(name string) string {
 	processedString := namePattern.ReplaceAllString(name, "")
 
 	runes := []rune(processedString)
