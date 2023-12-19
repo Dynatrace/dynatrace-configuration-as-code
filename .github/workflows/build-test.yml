@@ -49,7 +49,7 @@ jobs:
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4.0.0
         if: always()
         with:
-          name: Test Results
+          name: Test Results - Unit
           path: test-result-*.xml
 
       - name: 🚀 Binary starts
