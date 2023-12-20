@@ -95,7 +95,7 @@ func generateSchemaFiles(fs afero.Fs, outputfolder string) error {
 		return fmt.Errorf("failed to generate Error type schemas: %w", err)
 	}
 	for _, v := range errorStructs {
-		err = json.CreateJSONSchemaFile(v, fs, errorsPath)
+		err = json.CreateJSONSchemaFile(v, fs, errorsPath, "")
 		if err != nil {
 			return fmt.Errorf("failed to generate schema for error type %T: %w", v, err)
 		}
