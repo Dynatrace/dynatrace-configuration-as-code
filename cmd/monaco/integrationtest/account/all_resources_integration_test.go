@@ -62,7 +62,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		cli := runner.BuildCli(o.fs)
 
 		// DEPLOY RESOURCES
-		cli.SetArgs([]string{"account", "deploy", "manifest-account.yaml"})
+		cli.SetArgs([]string{"account", "deploy", "-m", "manifest-account.yaml"})
 		err = cli.Execute()
 		assert.NoError(t, err)
 
