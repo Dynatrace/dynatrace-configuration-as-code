@@ -51,23 +51,20 @@ func deployCommand(fs afero.Fs) *cobra.Command {
 		Use:               "deploy <manifest.yaml> [flags]",
 		Short:             "Deploy account management resources",
 		Example:           "monaco account deploy manifest.yaml [--account <account-name-in-manifest>] [--project <project-defined-in-manifest>]",
-		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completion.SingleArgumentManifestFileCompletion,
 		PreRun:            cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			manifestName := args[0]
-
-			if !files.IsYamlFileExtension(manifestName) {
-				return fmt.Errorf("expected a .yaml file, but got %s", manifestName)
+			if !files.IsYamlFileExtension(opts.manifestName) {
+				return fmt.Errorf("expected a .yaml file, but got %s", opts.manifestName)
 			}
 
-			opts.manifestName = manifestName
-			opts.workingDir = filepath.Dir(manifestName)
+			opts.workingDir = filepath.Dir(opts.manifestName)
 
 			return deploy(fs, opts)
 		},
 	}
 
+	command.Flags().StringVarP(&opts.manifestName, "manifest", "m", "manifest.yaml", "Name (and the path) to the manifest file. Defaults to 'manifest.yaml'")
 	command.Flags().StringVarP(&opts.accountName, "account", "a", "", "Account name defined in the manifest to deploy to.")
 	command.Flags().StringVarP(&opts.project, "project", "p", "", "Project name defined in the manifest")
 	command.Flags().BoolVarP(&opts.dryRun, "dry-run", "d", false, "Validate the structure of your manifest, projects and configurations. Dry-run will resolve all configuration parameters but cannot verify if the content will be accepted by the Dynatrace APIs.")
