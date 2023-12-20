@@ -24,8 +24,7 @@ import (
 	"path/filepath"
 )
 
-// TODO pass filename
-func CreateJSONSchemaFile(value interface{}, fs afero.Fs, folderPath string) error {
+func CreateJSONSchemaFile(value interface{}, fs afero.Fs, folderPath, filename string) error {
 	log.Debug("Generating JSON schema for %T...", value)
 
 	r := new(jsonschema.Reflector)
@@ -43,7 +42,10 @@ func CreateJSONSchemaFile(value interface{}, fs afero.Fs, folderPath string) err
 	}
 	b = MarshalIndent(b)
 
-	path := filepath.Join(folderPath, fmt.Sprintf("%T.schema.json", value))
+	if filename == "" {
+		filename = fmt.Sprintf("%T", value)
+	}
+	path := filepath.Join(folderPath, fmt.Sprintf("%s.schema.json", filename))
 	err = afero.WriteFile(fs, filepath.Clean(path), b, 0664)
 	if err != nil {
 		return fmt.Errorf("failed to create schema file %q: %w", path, err)

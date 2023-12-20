@@ -27,7 +27,7 @@ func GenerateJSONSchema(fs afero.Fs, schemasPath string) error {
 	if err != nil {
 		return err
 	}
-	err = json.CreateJSONSchemaFile(types.File{}, fs, schemasPath)
+	err = json.CreateJSONSchemaFile(types.File{}, fs, schemasPath, "monaco-account-resource")
 	if err != nil {
 		return err
 	}

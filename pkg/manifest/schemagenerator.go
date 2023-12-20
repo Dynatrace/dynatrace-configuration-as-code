@@ -27,7 +27,7 @@ func GenerateJSONSchema(fs afero.Fs, schemasPath string) error {
 	if err != nil {
 		return err
 	}
-	err = json.CreateJSONSchemaFile(persistence.Manifest{}, fs, schemasPath)
+	err = json.CreateJSONSchemaFile(persistence.Manifest{}, fs, schemasPath, "monaco-manifest")
 	if err != nil {
 		return err
 	}
