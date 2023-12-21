@@ -151,7 +151,7 @@ type ReferenceSlice []Reference
 
 // JSONSchema defines a custom schema definition for ReferenceSlice as it contains either Reference objects or strings
 // when being parsed, but our schema generator can not resolve such a nested "one-of" relation correctly for slices
-func (r ReferenceSlice) JSONSchema() *jsonschema.Schema {
+func (_ ReferenceSlice) JSONSchema() *jsonschema.Schema {
 	props := orderedmap.New()
 	props.Set("type", map[string]any{"type": "string", "enum": []string{"reference"}, "description": "Type 'reference'"})
 	props.Set("id", map[string]any{"type": "string", "description": "Id of the account configuration to reference"})

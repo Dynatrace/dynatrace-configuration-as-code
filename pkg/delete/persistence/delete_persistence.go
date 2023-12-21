@@ -16,6 +16,11 @@
 
 package persistence
 
+import (
+	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
+	"github.com/invopop/jsonschema"
+)
+
 // FileDefinition represents a loaded YAML delete file consisting of a list of delete entries called 'delete'
 // In this struct DeleteEntries may either be a legacy shorthand string or full DeleteEntry value.
 // Use FullFileDefinition if you're always working with DeleteEntry values instead
@@ -27,15 +32,45 @@ type FileDefinition struct {
 // FullFileDefinition represents a delete file consisting of a list of delete entries called 'delete'
 // In this struct DeleteEntries are DeleteEntry values.
 type FullFileDefinition struct {
-	// DeleteEntries loaded from a file are either legacy shorthand strings or full DeleteEntry values
-	DeleteEntries []DeleteEntry `yaml:"delete"`
+	// DeleteEntries defining which configurations should be deleted
+	DeleteEntries DeleteEntries `yaml:"delete" json:"delete"`
 }
 
 // DeleteEntry is a full representation of a delete entry loaded from a YAML delete file
 // ConfigId and ConfigName should be mutually exclusive (validated if using LoadEntriesToDelete)
 type DeleteEntry struct {
-	Project    string `yaml:"project,omitempty" mapstructure:"project"`
-	Type       string `yaml:"type" mapstructure:"type"`
-	ConfigId   string `yaml:"id,omitempty" mapstructure:"id"`
-	ConfigName string `yaml:"name,omitempty" mapstructure:"name"`
+	// Project the config was in - required for configs with generated IDs (e.g. Settings 2.0, Automations, Grail Buckets)
+	Project string `yaml:"project,omitempty" json:"project,omitempty" mapstructure:"project"`
+	// Type of the config to be deleted
+	Type string `yaml:"type" json:"type" mapstructure:"type" jsonschema:"required"`
+	// ConfigId is the monaco ID of the config to be deleted - required for configs with generated IDs (e.g. Settings 2.0, Automations, Grail Buckets)
+	ConfigId string `yaml:"id,omitempty" json:"id,omitempty" mapstructure:"id"`
+	// ConfigName is the name of the config to be deleted - required for configs deleted by name (classic Config API types)
+	ConfigName string `yaml:"name,omitempty" json:"name,omitempty" mapstructure:"name"`
+}
+
+type DeleteEntries []DeleteEntry
+
+// JSONSchema defines a custom schema definition for ReferenceSlice as it contains either Reference objects or strings
+// when being parsed, but our schema generator can not resolve such a nested "one-of" relation correctly for slices
+func (_ DeleteEntries) JSONSchema() *jsonschema.Schema {
+	base := jsonutils.ReflectJSONSchema(DeleteEntry{})
+
+	return &jsonschema.Schema{
+		Type: "array",
+		Items: &jsonschema.Schema{
+			OneOf: []*jsonschema.Schema{
+				{
+					Type: "string",
+				},
+				{
+					Type: "object",
+				},
+			},
+			Properties:           base.Properties,
+			AdditionalProperties: base.AdditionalProperties,
+			Required:             base.Required,
+			Comments:             base.Comments,
+		},
+	}
 }

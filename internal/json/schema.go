@@ -22,17 +22,10 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
-func GenerateJSONSchema(value interface{}) ([]byte, error) {
+func GenerateJSONSchemaString(value interface{}) ([]byte, error) {
 	log.Debug("Generating JSON schema for %T...", value)
 
-	r := new(jsonschema.Reflector)
-	r.RequiredFromJSONSchemaTags = true // not all our optional fields have a json 'omitempty' tag, so we tag required explicitly
-	r.DoNotReference = true
-	err := r.AddGoComments("github.com/dynatrace/dynatrace-configuration-as-code/v2", ".")
-	if err != nil {
-		log.Warn("Failed to parse Go comments, schema descriptions may be incomplete")
-	}
-	s := r.Reflect(value)
+	s := ReflectJSONSchema(value)
 
 	b, err := s.MarshalJSON()
 	if err != nil {
@@ -42,17 +35,13 @@ func GenerateJSONSchema(value interface{}) ([]byte, error) {
 	return MarshalIndent(b), nil
 }
 
-//func CreateJSONSchemaFile(value interface{}, fs afero.Fs, folderPath, filename string) error {
-//
-//	if filename == "" {
-//		filename = fmt.Sprintf("%T", value)
-//	}
-//	path := filepath.Join(folderPath, fmt.Sprintf("%s.schema.json", filename))
-//	err = afero.WriteFile(fs, filepath.Clean(path), b, 0664)
-//	if err != nil {
-//		return fmt.Errorf("failed to create schema file %q: %w", path, err)
-//	}
-//
-//	log.Info("Generated JSON schema %q", path)
-//	return nil
-//}
+func ReflectJSONSchema(value interface{}) *jsonschema.Schema {
+	r := new(jsonschema.Reflector)
+	r.RequiredFromJSONSchemaTags = true // not all our optional fields have a json 'omitempty' tag, so we tag required explicitly
+	r.DoNotReference = true
+	err := r.AddGoComments("github.com/dynatrace/dynatrace-configuration-as-code/v2", ".")
+	if err != nil {
+		log.Warn("Failed to parse Go comments, schema descriptions may be incomplete")
+	}
+	return r.Reflect(value)
+}
