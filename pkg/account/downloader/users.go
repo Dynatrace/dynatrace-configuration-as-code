@@ -18,6 +18,7 @@ package downloader
 
 import (
 	"context"
+	"fmt"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
@@ -29,7 +30,7 @@ type (
 	user struct {
 		user      *account.User
 		dto       *accountmanagement.UsersDto
-		dtoGroups []accountmanagement.AccountGroupDto
+		dtoGroups *accountmanagement.GroupUserDto
 	}
 )
 
@@ -37,7 +38,7 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 	log.WithCtxFields(ctx).Info("Downloading users")
 	dtos, err := a.httpClient.GetUsers(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get a list of users for account %q from DT: %w", a.accountInfo, err)
 	}
 
 	retVal := make(Users, 0, len(dtos))
@@ -45,12 +46,15 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 		log.WithCtxFields(ctx).Debug("Downloading details for user %q", dtos[i].Email)
 		dtoGroups, err := a.httpClient.GetGroupsForUser(ctx, dtos[i].Email, a.accountInfo.AccountUUID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get a list of bind groups for user %q: %w", dtos[i].Email, err)
+		}
+		if dtoGroups == nil {
+			return nil, fmt.Errorf("failed to get a list of bind groups for the user %q", dtos[i].Email)
 		}
 
 		g := &account.User{
 			Email:  dtos[i].Email,
-			Groups: groups.refFromDTOs(dtoGroups),
+			Groups: groups.refFromDTOs(dtoGroups.Groups),
 		}
 
 		retVal = append(retVal, user{
@@ -60,7 +64,7 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 		})
 	}
 
-	log.WithCtxFields(ctx).Info("Downloaded %d users", len(retVal))
+	log.WithCtxFields(ctx).Info("Fetched %d users", len(retVal))
 	return retVal, nil
 }
 

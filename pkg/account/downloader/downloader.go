@@ -26,7 +26,7 @@ import (
 )
 
 type Downloader struct {
-	httpClient  *http.Client
+	httpClient  httpClient
 	accountInfo *account.AccountInfo
 }
 
