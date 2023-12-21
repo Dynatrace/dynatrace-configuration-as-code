@@ -28,7 +28,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 	cmd = &cobra.Command{
 		Use:     "schemas",
-		Short:   "Generate JSON schemas for Manifest and Config YAMLS, as well as Error types",
+		Short:   "Generate JSON schemas for YAML files like manifests, as well as Error types",
 		Example: "monaco generate schemas -o output-folder",
 		Args:    cobra.NoArgs,
 		PreRun:  cmdutils.SilenceUsageCommand(),
@@ -38,7 +38,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 		},
 	}
 
-	cmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "schemas", "The folder the generated delete file should be written to. If not set, files will be created in the current directory.")
+	cmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "schemas", "The folder the generated schema files should be written to. If not set, files will be created in a 'schemas' folder.")
 
 	return cmd
 }
