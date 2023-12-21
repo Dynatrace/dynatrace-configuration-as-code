@@ -131,6 +131,3 @@ sign-verify-image:
 	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1
 	COSIGN_PASSWORD=$(COSIGN_PASSWORD) cosign sign --key env://cosign_key $(FULL_IMAGE_NAME) -y
 	cosign verify --key env://cosign_pub $(FULL_IMAGE_NAME)
-
-json-schemas:
-	go run -tags json_schema ./internal/schemagenerator
