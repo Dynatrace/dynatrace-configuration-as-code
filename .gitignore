@@ -17,6 +17,9 @@ bin/
 # Download files
 download_*
 
+# Generated JSON schema files
+schemas/
+
 # Mock files
 **/*_mock.go
 cmd/monaco/test-resources/download/
