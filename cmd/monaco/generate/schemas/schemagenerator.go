@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/mutlierror"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
+	accountDelete "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
@@ -100,6 +101,12 @@ func generateSchemaFiles(fs afero.Fs, outputfolder string) error {
 	if s, err := delete.GenerateJSONSchema(); err != nil {
 		return err
 	} else if err := writeSchemaFile(fs, filepath.Join(outputfolder, "monaco-delete-file.schema.json"), s); err != nil {
+		return err
+	}
+
+	if s, err := accountDelete.GenerateJSONSchema(); err != nil {
+		return err
+	} else if err := writeSchemaFile(fs, filepath.Join(outputfolder, "monaco-account-delete-file.schema.json"), s); err != nil {
 		return err
 	}
 
