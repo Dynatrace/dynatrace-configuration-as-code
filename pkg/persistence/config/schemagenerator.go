@@ -17,20 +17,15 @@
 package config
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
-	"github.com/spf13/afero"
 )
 
-func GenerateJSONSchema(fs afero.Fs, schemasPath string) error {
-	err := fs.MkdirAll(schemasPath, 0777)
+func GenerateJSONSchema() ([]byte, error) {
+	schema, err := json.GenerateJSONSchema(persistence.TopLevelDefinition{})
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to generate JSON schema for config YAML: %w", err)
 	}
-	err = json.CreateJSONSchemaFile(persistence.TopLevelDefinition{}, fs, schemasPath, "monaco-config")
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return schema, nil
 }

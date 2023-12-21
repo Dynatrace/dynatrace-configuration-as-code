@@ -17,20 +17,15 @@
 package account
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
-	"github.com/spf13/afero"
 )
 
-func GenerateJSONSchema(fs afero.Fs, schemasPath string) error {
-	err := fs.MkdirAll(schemasPath, 0777)
+func GenerateJSONSchema() ([]byte, error) {
+	schema, err := json.GenerateJSONSchema(types.File{})
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to generate JSON schema for account resources YAML: %w", err)
 	}
-	err = json.CreateJSONSchemaFile(types.File{}, fs, schemasPath, "monaco-account-resource")
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return schema, nil
 }

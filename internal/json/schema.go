@@ -20,15 +20,13 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/invopop/jsonschema"
-	"github.com/spf13/afero"
-	"path/filepath"
 )
 
-func CreateJSONSchemaFile(value interface{}, fs afero.Fs, folderPath, filename string) error {
+func GenerateJSONSchema(value interface{}) ([]byte, error) {
 	log.Debug("Generating JSON schema for %T...", value)
 
 	r := new(jsonschema.Reflector)
-	r.RequiredFromJSONSchemaTags = true // not all our optional fields have a json 'ommitempty' tag, so we tag required explicitly
+	r.RequiredFromJSONSchemaTags = true // not all our optional fields have a json 'omitempty' tag, so we tag required explicitly
 	r.DoNotReference = true
 	err := r.AddGoComments("github.com/dynatrace/dynatrace-configuration-as-code/v2", ".")
 	if err != nil {
@@ -38,19 +36,23 @@ func CreateJSONSchemaFile(value interface{}, fs afero.Fs, folderPath, filename s
 
 	b, err := s.MarshalJSON()
 	if err != nil {
-		return fmt.Errorf("failed to marshal JSON schema: %w", err)
-	}
-	b = MarshalIndent(b)
-
-	if filename == "" {
-		filename = fmt.Sprintf("%T", value)
-	}
-	path := filepath.Join(folderPath, fmt.Sprintf("%s.schema.json", filename))
-	err = afero.WriteFile(fs, filepath.Clean(path), b, 0664)
-	if err != nil {
-		return fmt.Errorf("failed to create schema file %q: %w", path, err)
+		return nil, fmt.Errorf("failed to marshal JSON schema: %w", err)
 	}
 
-	log.Info("Generated JSON schema %q", path)
-	return nil
+	return MarshalIndent(b), nil
 }
+
+//func CreateJSONSchemaFile(value interface{}, fs afero.Fs, folderPath, filename string) error {
+//
+//	if filename == "" {
+//		filename = fmt.Sprintf("%T", value)
+//	}
+//	path := filepath.Join(folderPath, fmt.Sprintf("%s.schema.json", filename))
+//	err = afero.WriteFile(fs, filepath.Clean(path), b, 0664)
+//	if err != nil {
+//		return fmt.Errorf("failed to create schema file %q: %w", path, err)
+//	}
+//
+//	log.Info("Generated JSON schema %q", path)
+//	return nil
+//}
