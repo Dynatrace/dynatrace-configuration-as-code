@@ -19,6 +19,7 @@ package schemas
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/mutlierror"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
@@ -74,31 +75,55 @@ var errorStructs = []interface{}{
 }
 
 func generateSchemaFiles(fs afero.Fs, outputfolder string) error {
-	err := manifest.GenerateJSONSchema(fs, outputfolder)
-	if err != nil {
-		return fmt.Errorf("failed to generate schema for Manifest YAML: %w", err)
+	if err := fs.MkdirAll(outputfolder, 0777); err != nil {
+		return fmt.Errorf("failed to create output folder %q: %w", outputfolder, err)
 	}
 
-	err = config.GenerateJSONSchema(fs, outputfolder)
-	if err != nil {
-		return fmt.Errorf("failed to generate schema for Config YAML: %w", err)
+	if s, err := manifest.GenerateJSONSchema(); err != nil {
+		return err
+	} else if err := writeSchemaFile(fs, filepath.Join(outputfolder, "monaco-manifest.schema.json"), s); err != nil {
+		return err
 	}
 
-	err = account.GenerateJSONSchema(fs, outputfolder)
-	if err != nil {
-		return fmt.Errorf("failed to generate schema for Account YAML: %w", err)
+	if s, err := config.GenerateJSONSchema(); err != nil {
+		return err
+	} else if err := writeSchemaFile(fs, filepath.Join(outputfolder, "monaco-config.schema.json"), s); err != nil {
+		return err
 	}
 
-	errorsPath := filepath.Join(outputfolder, "errors")
-	err = fs.MkdirAll(errorsPath, 0777)
-	if err != nil {
+	if s, err := account.GenerateJSONSchema(); err != nil {
+		return err
+	} else if err := writeSchemaFile(fs, filepath.Join(outputfolder, "monaco-account-resource.schema.json"), s); err != nil {
+		return err
+	}
+
+	return generateErrorSchemaFiles(fs, outputfolder)
+}
+
+func generateErrorSchemaFiles(fs afero.Fs, outputfolder string) error {
+	errorsFolder := filepath.Join(outputfolder, "errors")
+	if err := fs.MkdirAll(errorsFolder, 0777); err != nil {
 		return fmt.Errorf("failed to generate Error type schemas: %w", err)
 	}
 	for _, v := range errorStructs {
-		err = json.CreateJSONSchemaFile(v, fs, errorsPath, "")
-		if err != nil {
+		if s, err := json.GenerateJSONSchema(v); err != nil {
 			return fmt.Errorf("failed to generate schema for error type %T: %w", v, err)
+		} else {
+			filename := fmt.Sprintf("monaco-error.%T.schema.json", v)
+			if err := writeSchemaFile(fs, filepath.Join(errorsFolder, filename), s); err != nil {
+				return err
+			}
 		}
 	}
+
+	return nil
+}
+
+func writeSchemaFile(fs afero.Fs, path string, schema []byte) error {
+	if err := afero.WriteFile(fs, filepath.Clean(path), schema, 0664); err != nil {
+		return fmt.Errorf("failed to create schema file %q: %w", path, err)
+	}
+
+	log.Info("Generated JSON schema %q", path)
 	return nil
 }

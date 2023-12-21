@@ -17,20 +17,15 @@
 package manifest
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
-	"github.com/spf13/afero"
 )
 
-func GenerateJSONSchema(fs afero.Fs, schemasPath string) error {
-	err := fs.MkdirAll(schemasPath, 0777)
+func GenerateJSONSchema() ([]byte, error) {
+	schema, err := json.GenerateJSONSchema(persistence.Manifest{})
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to generate JSON schema for manifest: %w", err)
 	}
-	err = json.CreateJSONSchemaFile(persistence.Manifest{}, fs, schemasPath, "monaco-manifest")
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return schema, nil
 }
