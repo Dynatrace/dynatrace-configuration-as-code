@@ -1,19 +1,3 @@
-/*
- * @license
- * Copyright 2023 Dynatrace LLC
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package deployer
 
 import (
@@ -29,6 +13,22 @@ import (
 	"strings"
 	"sync"
 )
+
+/*
+ * @license
+ * Copyright 2023 Dynatrace LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 type (
 	localId    = string // local (monaco related) identifier
@@ -179,65 +179,126 @@ func deployResources[T any](resources map[localId]T, deployFunc func(map[string]
 }
 
 func (d *AccountDeployer) deployPolicies(policies map[string]account.Policy) error {
+	var wg sync.WaitGroup
 	var errs []error
+	var mu sync.Mutex
+
 	for _, policy := range policies {
-		d.logger.Info("Deploying policy %s", policy.Name)
-		pUuid, err := d.upsertPolicy(d.logCtx(), policy)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("unable to deploy policy for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-		}
-		d.deployedPolicies[policy.ID] = pUuid
+		wg.Add(1)
+		go func(p account.Policy) {
+			defer wg.Done()
+
+			d.logger.Info("Deploying policy %s", p.Name)
+			pUuid, err := d.upsertPolicy(d.logCtx(), p)
+			if err != nil {
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("unable to deploy policy for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
+				mu.Unlock()
+			}
+			mu.Lock()
+			d.deployedPolicies[p.ID] = pUuid
+			mu.Unlock()
+		}(policy)
 	}
+
+	wg.Wait()
 	return errors.Join(errs...)
 }
 
 func (d *AccountDeployer) deployGroups(groups map[string]account.Group) error {
+	var wg sync.WaitGroup
 	var errs []error
-	for _, group := range groups {
-		d.logger.Info("Deploying group %s", group.Name)
-		gUuid, err := d.upsertGroup(d.logCtx(), group)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("unable to deploy group for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-		}
-		d.deployedGroups[group.ID] = gUuid
+	var mu sync.Mutex
 
-	}
-	return errors.Join(errs...)
-}
-func (d *AccountDeployer) deployGroupBindings(groups map[account.GroupId]account.Group) error {
-	var errs []error
 	for _, group := range groups {
-		d.logger.Info("Updating policy bindings and permissions for group %s", group.Name)
-		if err := d.updateGroupPolicyBindings(d.logCtx(), group); err != nil {
-			errs = append(errs, fmt.Errorf("unable to deploy policy binding for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-		}
+		wg.Add(1)
+		go func(g account.Group) {
+			defer wg.Done()
 
-		if err := d.updateGroupPermissions(d.logCtx(), group); err != nil {
-			errs = append(errs, fmt.Errorf("unable to deploy permissions for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-		}
+			d.logger.Info("Deploying group %s", g.Name)
+			gUuid, err := d.upsertGroup(d.logCtx(), g)
+			if err != nil {
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("unable to deploy group for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
+				mu.Unlock()
+			}
+			mu.Lock()
+			d.deployedGroups[g.ID] = gUuid
+			mu.Unlock()
+		}(group)
 	}
+
+	wg.Wait()
 	return errors.Join(errs...)
 }
 
 func (d *AccountDeployer) deployUsers(users map[string]account.User) error {
+	var wg sync.WaitGroup
 	var errs []error
+	var mu sync.Mutex
+
 	for _, user := range users {
-		d.logger.Info("Deploying user %s", user.Email)
-		if _, err := d.upsertUser(d.logCtx(), user); err != nil {
-			errs = append(errs, fmt.Errorf("unable to deploy user for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-		}
+		wg.Add(1)
+		go func(u account.User) {
+			defer wg.Done()
+			d.logger.Info("Deploying user %s", u.Email)
+			if _, err := d.upsertUser(d.logCtx(), u); err != nil {
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("unable to deploy user for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
+				mu.Unlock()
+			}
+		}(user)
 	}
+
+	wg.Wait()
+	return errors.Join(errs...)
+}
+
+func (d *AccountDeployer) deployGroupBindings(groups map[account.GroupId]account.Group) error {
+	var wg sync.WaitGroup
+	var errs []error
+	var mu sync.Mutex
+
+	for _, group := range groups {
+		wg.Add(1)
+		d.logger.Info("Updating policy bindings and permissions for group %s", group.Name)
+		go func(g account.Group) {
+			defer wg.Done()
+			if err := d.updateGroupPolicyBindings(d.logCtx(), g); err != nil {
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("unable to deploy policy binding for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
+				mu.Unlock()
+			}
+
+			if err := d.updateGroupPermissions(d.logCtx(), g); err != nil {
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("unable to deploy permissions for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
+				mu.Unlock()
+			}
+		}(group)
+	}
+	wg.Wait()
 	return errors.Join(errs...)
 }
 
 func (d *AccountDeployer) deployUserBindings(users map[account.UserId]account.User) error {
+	var wg sync.WaitGroup
 	var errs []error
+	var mu sync.Mutex
 	for _, user := range users {
-		d.logger.Info("Updating group bindings for user %s", user.Email)
-		if err := d.updateUserGroupBindings(d.logCtx(), user); err != nil {
-			errs = append(errs, fmt.Errorf("unable to deploy user binding for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-		}
+		wg.Add(1)
+		go func(u account.User) {
+			defer wg.Done()
+			d.logger.Info("Updating group bindings for user %s", u.Email)
+			if err := d.updateUserGroupBindings(d.logCtx(), u); err != nil {
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("unable to deploy user binding for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
+				mu.Unlock()
+			}
+		}(user)
+
 	}
+	wg.Wait()
 	return errors.Join(errs...)
 }
 
