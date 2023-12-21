@@ -23,7 +23,7 @@ import (
 )
 
 func GenerateJSONSchema() ([]byte, error) {
-	schema, err := json.GenerateJSONSchema(persistence.TopLevelDefinition{})
+	schema, err := json.GenerateJSONSchemaString(persistence.TopLevelDefinition{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate JSON schema for config YAML: %w", err)
 	}

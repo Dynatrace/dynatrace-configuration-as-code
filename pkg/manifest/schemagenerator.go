@@ -23,7 +23,7 @@ import (
 )
 
 func GenerateJSONSchema() ([]byte, error) {
-	schema, err := json.GenerateJSONSchema(persistence.Manifest{})
+	schema, err := json.GenerateJSONSchemaString(persistence.Manifest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate JSON schema for manifest: %w", err)
 	}

@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package account
+package delete
 
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 )
 
 func GenerateJSONSchema() ([]byte, error) {
-	schema, err := json.GenerateJSONSchemaString(types.File{})
+	schema, err := json.GenerateJSONSchemaString(persistence.FullFileDefinition{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate JSON schema for account resources YAML: %w", err)
+		return nil, fmt.Errorf("failed to generate JSON schema for delete file: %w", err)
 	}
 	return schema, nil
 }

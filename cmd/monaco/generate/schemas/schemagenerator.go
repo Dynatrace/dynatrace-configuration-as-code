@@ -97,6 +97,12 @@ func generateSchemaFiles(fs afero.Fs, outputfolder string) error {
 		return err
 	}
 
+	if s, err := delete.GenerateJSONSchema(); err != nil {
+		return err
+	} else if err := writeSchemaFile(fs, filepath.Join(outputfolder, "monaco-delete-file.schema.json"), s); err != nil {
+		return err
+	}
+
 	return generateErrorSchemaFiles(fs, outputfolder)
 }
 
@@ -106,7 +112,7 @@ func generateErrorSchemaFiles(fs afero.Fs, outputfolder string) error {
 		return fmt.Errorf("failed to generate Error type schemas: %w", err)
 	}
 	for _, v := range errorStructs {
-		if s, err := json.GenerateJSONSchema(v); err != nil {
+		if s, err := json.GenerateJSONSchemaString(v); err != nil {
 			return fmt.Errorf("failed to generate schema for error type %T: %w", v, err)
 		} else {
 			filename := fmt.Sprintf("monaco-error.%T.schema.json", v)
