@@ -18,7 +18,7 @@ package types
 
 import (
 	"fmt"
-	"github.com/iancoleman/orderedmap"
+	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/invopop/jsonschema"
 	"github.com/mitchellh/mapstructure"
 )
@@ -152,9 +152,7 @@ type ReferenceSlice []Reference
 // JSONSchema defines a custom schema definition for ReferenceSlice as it contains either Reference objects or strings
 // when being parsed, but our schema generator can not resolve such a nested "one-of" relation correctly for slices
 func (_ ReferenceSlice) JSONSchema() *jsonschema.Schema {
-	props := orderedmap.New()
-	props.Set("type", map[string]any{"type": "string", "enum": []string{"reference"}, "description": "Type 'reference'"})
-	props.Set("id", map[string]any{"type": "string", "description": "Id of the account configuration to reference"})
+	base := jsonutils.ReflectJSONSchema(Reference{})
 
 	return &jsonschema.Schema{
 		Type: "array",
@@ -167,9 +165,10 @@ func (_ ReferenceSlice) JSONSchema() *jsonschema.Schema {
 					Type: "object",
 				},
 			},
-			Properties:           props,
-			AdditionalProperties: jsonschema.FalseSchema,
-			Required:             []string{"type", "id"},
+			Properties:           base.Properties,
+			AdditionalProperties: base.AdditionalProperties,
+			Required:             base.Required,
+			Comments:             base.Comments,
 		},
 	}
 }
