@@ -21,48 +21,35 @@ import (
 )
 
 type GroupOverride struct {
-	// Group name this override applies for
-	Group string `yaml:"group" json:"group" jsonschema:"required"`
-	// Override can contain any fields the base config definition does and overwrites their values for this envrionment
-	Override ConfigDefinition `yaml:"override" json:"override" jsonschema:"required"`
+	Group    string           `yaml:"group" json:"group" jsonschema:"required,description=Name of the group this override applies for."`
+	Override ConfigDefinition `yaml:"override" json:"override" jsonschema:"required,description=May contain any fields the base config definition does and overwrites their values for any environment in this group."`
 }
 
 type EnvironmentOverride struct {
-	// Environment name this override applies for
-	Environment string `yaml:"environment" json:"environment" jsonschema:"required"`
-	// Override can contain any fields the base config definition does and overwrites their values for this envrionment
-	Override ConfigDefinition `yaml:"override" json:"override" jsonschema:"required"`
+	Environment string           `yaml:"environment" json:"environment" jsonschema:"required,description=Name of the environment this override applies for."`
+	Override    ConfigDefinition `yaml:"override" json:"override" jsonschema:"required,description=May contain any fields the base config definition does and overwrites their values for this environment."`
 }
 
 type ConfigDefinition struct {
-	// Name of this configuration - required for Classic Config API types
-	Name ConfigParameter `yaml:"name,omitempty" json:"name,omitempty"`
-	// Parameters for this configuration
-	Parameters map[string]ConfigParameter `yaml:"parameters,omitempty" json:"parameters,omitempty"`
-	// Template defines the filepath to the JSON template used for this configuration
-	Template string `yaml:"template,omitempty" json:"template,omitempty" jsonschema:"required"`
-	// Skip defines whether this config should be skipped when deploying
-	Skip ConfigParameter `yaml:"skip,omitempty" json:"skip,omitempty"`
-	// OriginObjectId defines the ID of the Dynatrace object this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object
-	OriginObjectId string `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty"`
+	Name           ConfigParameter            `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"description=The name of this configuration - required for Classic Config API types."`
+	Parameters     map[string]ConfigParameter `yaml:"parameters,omitempty" json:"parameters,omitempty" jsonschema:"description=Parameters for this configuration."`
+	Template       string                     `yaml:"template,omitempty" json:"template,omitempty" jsonschema:"required,description=The filepath to the JSON template used for this configuration"`
+	Skip           ConfigParameter            `yaml:"skip,omitempty" json:"skip,omitempty" jsonschema:"description=Defines whether this config should be skipped when deploying."`
+	OriginObjectId string                     `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=description=The identifier of the Dynatrace object this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
 }
 
 type TopLevelConfigDefinition struct {
-	// Id is the monaco identifier for this config - is used in references and for some generated IDs in Dynatrace environments
-	Id string `yaml:"id" json:"id" jsonschema:"required"`
-	// Config defines the actual configuration to be applied
-	Config ConfigDefinition `yaml:"config" json:"config" jsonschema:"required"`
-	// Type of this Config
-	Type TypeDefinition `yaml:"type" json:"type" jsonschema:"required,oneof_type=string;object"`
+	Id     string           `yaml:"id" json:"id" jsonschema:"required,description=The monaco identifier for this config - is used in references and for some generated IDs in Dynatrace environments."`
+	Config ConfigDefinition `yaml:"config" json:"config" jsonschema:"required,description=The actual configuration to be applied"`
+	Type   TypeDefinition   `yaml:"type" json:"type" jsonschema:"required,oneof_type=string;object,description=The type of this configuration, e.g. a config API or a Settings 2.0 schema."`
 	// GroupOverrides overwrite specific parts of the Config when deploying it to any environment in a given group
-	GroupOverrides []GroupOverride `yaml:"groupOverrides,omitempty" json:"groupOverrides,omitempty"`
+	GroupOverrides []GroupOverride `yaml:"groupOverrides,omitempty" json:"groupOverrides,omitempty" jsonschema:"description=GroupOverrides overwrite specific parts of the Config when deploying it to any environment in a given group."`
 	// EnvironmentOverrides overwrite specific parts of the Config when deploying it to a given environment
-	EnvironmentOverrides []EnvironmentOverride `yaml:"environmentOverrides,omitempty" json:"environmentOverrides,omitempty"`
+	EnvironmentOverrides []EnvironmentOverride `yaml:"environmentOverrides,omitempty" json:"environmentOverrides,omitempty" jsonschema:"description=EnvironmentOverrides overwrite specific parts of the Config when deploying it to a given environment."`
 }
 
 type TopLevelDefinition struct {
-	// Configs that will be applied to a Dynatrace environment
-	Configs []TopLevelConfigDefinition `yaml:"configs" json:"configs" jsonschema:"required,minLength=1"`
+	Configs []TopLevelConfigDefinition `yaml:"configs" json:"configs" jsonschema:"required,minLength=1,description=The configurations that will be applied to a Dynatrace environment."`
 }
 
 type ConfigParameter interface{}

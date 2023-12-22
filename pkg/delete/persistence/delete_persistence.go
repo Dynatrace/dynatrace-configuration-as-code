@@ -40,13 +40,13 @@ type FullFileDefinition struct {
 // ConfigId and ConfigName should be mutually exclusive (validated if using LoadEntriesToDelete)
 type DeleteEntry struct {
 	// Project the config was in - required for configs with generated IDs (e.g. Settings 2.0, Automations, Grail Buckets)
-	Project string `yaml:"project,omitempty" json:"project,omitempty" mapstructure:"project"`
+	Project string `yaml:"project,omitempty" json:"project,omitempty" mapstructure:"project" jsonschema:"description=The project the config was in - required for configs with generated IDs (e.g. Settings 2.0, Automations, Grail Buckets)."`
 	// Type of the config to be deleted
-	Type string `yaml:"type" json:"type" mapstructure:"type" jsonschema:"required"`
+	Type string `yaml:"type" json:"type" mapstructure:"type" jsonschema:"required,description=The type of config to be deleted."`
 	// ConfigId is the monaco ID of the config to be deleted - required for configs with generated IDs (e.g. Settings 2.0, Automations, Grail Buckets)
-	ConfigId string `yaml:"id,omitempty" json:"id,omitempty" mapstructure:"id"`
+	ConfigId string `yaml:"id,omitempty" json:"id,omitempty" mapstructure:"id" jsonschema:"description=The monaco ID of the config to be deleted - required for configs with generated IDs (e.g. Settings 2.0, Automations, Grail Buckets)."`
 	// ConfigName is the name of the config to be deleted - required for configs deleted by name (classic Config API types)
-	ConfigName string `yaml:"name,omitempty" json:"name,omitempty" mapstructure:"name"`
+	ConfigName string `yaml:"name,omitempty" json:"name,omitempty" mapstructure:"name" jsonschema:"description=The name of the config to be deleted - required for configs deleted by name (classic Config API types)."`
 }
 
 type DeleteEntries []DeleteEntry

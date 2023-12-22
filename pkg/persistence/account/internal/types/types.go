@@ -36,83 +36,56 @@ type (
 		Users    map[string]User
 	}
 	File struct {
-		// Policies to configure for this account
-		Policies []Policy `yaml:"policies,omitempty" json:"policies,omitempty"`
-		// Groups to configure for this account
-		Groups []Group `yaml:"groups,omitempty" json:"groups,omitempty"`
-		// Users to configure for this account
-		Users []User `yaml:"users,omitempty" json:"users,omitempty"`
+		Policies []Policy `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies to configure for this account."`
+		Groups   []Group  `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups to configure for this account."`
+		Users    []User   `yaml:"users,omitempty" json:"users,omitempty" jsonschema:"description=Users to configure for this account."`
 	}
 	Policy struct {
-		// ID of this policy configuration, used by monaco
-		ID string `yaml:"id" json:"id" jsonschema:"required"`
-		// Name of this policy
-		Name string `yaml:"name" json:"name" jsonschema:"required"`
-		// Level this policy applies to
-		Level PolicyLevel `yaml:"level" json:"level" jsonschema:"required"`
-		// Description for this policy
-		Description string `yaml:"description,omitempty" json:"description,omitempty"`
-		// Policy string
-		Policy string `yaml:"policy" json:"policy" jsonschema:"required"`
-		// OriginObjectID defines the identifier of the policy this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object
-		OriginObjectID string `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty"`
+		ID             string      `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this policy configuration - this can be freely defined, used by monaco."`
+		Name           string      `yaml:"name" json:"name" jsonschema:"required,description=The name of this policy."`
+		Level          PolicyLevel `yaml:"level" json:"level" jsonschema:"required,description=The level this policy applies to."`
+		Description    string      `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"A description of this policy."`
+		Policy         string      `yaml:"policy" json:"policy" jsonschema:"required,description=The policy definition."`
+		OriginObjectID string      `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the policy this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
 	}
 	PolicyLevel struct {
-		// Type defines what level this policy applies to - either the whole 'account' or a specific 'environment'. For environment level, the Environment field needs to contain the environment ID
-		Type string `yaml:"type" json:"type" jsonschema:"required,enum=account,enum=environment"`
-		// Environment ID this policy applies to. Required if type is 'environment'
-		Environment string `yaml:"environment,omitempty" json:"environment,omitempty"`
+		Type        string `yaml:"type" json:"type" jsonschema:"required,enum=account,enum=environment,description=This defines which level this policy applies to - either the whole 'account' or a specific 'environment'. For environment level, the 'environment' field needs to contain the environment ID."`
+		Environment string `yaml:"environment,omitempty" json:"environment,omitempty" jsonschema:"The ID of the environment this policy applies to. Required if type is 'environment'."`
 	}
 	Group struct {
-		// ID of this group configuration, used by monaco
-		ID string `yaml:"id" json:"id" jsonschema:"required"`
-		// Name of this group
-		Name string `yaml:"name" json:"name" jsonschema:"required"`
-		// Description for this group
-		Description string `yaml:"description,omitempty" json:"description,omitempty"`
+		ID          string `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this group configuration - this can be freely defined, used by monaco."`
+		Name        string `yaml:"name" json:"name" jsonschema:"required,description=The name of this group."`
+		Description string `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"A description of this policy."`
 		// Account level permissions and policies that apply to users in this group
-		Account *Account `yaml:"account,omitempty" json:"account,omitempty"`
+		Account *Account `yaml:"account,omitempty" json:"account,omitempty" jsonschema:"description=Account level permissions and policies that apply to users in this group."`
 		// Environment level permissions and policies that apply to users in this group
-		Environment []Environment `yaml:"environment,omitempty" json:"environment,omitempty"`
+		Environment []Environment `yaml:"environment,omitempty" json:"environment,omitempty" jsonschema:"description=Environment level permissions and policies that apply to users in this group."`
 		// ManagementZone level permissions that apply to users in this group
-		ManagementZone []ManagementZone `yaml:"managementZone,omitempty" json:"managementZone,omitempty"`
-		// OriginObjectID defines the identifier of the group this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object
-		OriginObjectID string `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty"`
+		ManagementZone []ManagementZone `yaml:"managementZone,omitempty" json:"managementZone,omitempty" jsonschema:"description=ManagementZone level permissions that apply to users in this group."`
+		OriginObjectID string           `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the group this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
 	}
 	Account struct {
-		// Permissions for the whole account
-		Permissions []string `yaml:"permissions,omitempty" json:"permissions,omitempty"`
-		// Policies for the whole account
-		Policies ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty"`
+		Permissions []string       `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for the whole account."`
+		Policies    ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for the whole account."`
 	}
 	Environment struct {
-		// Name identifier of the environment
-		Name string `yaml:"name" json:"name" jsonschema:"required"`
-		// Permissions for this environment
-		Permissions []string `yaml:"permissions,omitempty" json:"permissions,omitempty"`
-		// Policies for this environment
-		Policies ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty"`
+		Name        string         `yaml:"name" json:"name" jsonschema:"required,description=Name/identifier of the environment."`
+		Permissions []string       `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for this environment."`
+		Policies    ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for this environment."`
 	}
 	ManagementZone struct {
-		// Environment identifier of the environment
-		Environment string `yaml:"environment" json:"environment" jsonschema:"required"`
-		// ManagementZone identifier
-		ManagementZone string `yaml:"managementZone" json:"managementZone" jsonschema:"required"`
-		// Permissions for this ManagementZone in the Environment
-		Permissions []string `yaml:"permissions" json:"permissions" jsonschema:"required"`
+		Environment    string   `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment the management zone is in."`
+		ManagementZone string   `yaml:"managementZone" json:"managementZone" jsonschema:"required,description=Identifier of the management zone."`
+		Permissions    []string `yaml:"permissions" json:"permissions" jsonschema:"required,description=Permissions for this management zone."`
 	}
 	User struct {
-		// Email address of this user
-		Email string `yaml:"email" json:"email" jsonschema:"required"`
-		// Groups this user is part of - either defined by name or as a Reference object
-		Groups ReferenceSlice `yaml:"groups,omitempty" json:"groups,omitempty"`
+		Email  string         `yaml:"email" json:"email" jsonschema:"required,description=Email address of this user."`
+		Groups ReferenceSlice `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups this user is part of - either defined by name directly or as a reference to a group configuration."`
 	}
 
 	Reference struct {
-		// Type 'reference'
-		Type string `yaml:"type" json:"type" mapstructure:"type" jsonschema:"enum=reference"`
-		// Id of the account configuration to reference
-		Id    string `yaml:"id" json:"id" mapstructure:"id"`
+		Type  string `yaml:"type" json:"type" mapstructure:"type" jsonschema:"enum=reference"`
+		Id    string `yaml:"id" json:"id" mapstructure:"id" jsonschema:"description=The 'id' of the account configuration being referenced."`
 		Value string `yaml:"-" json:"-" mapstructure:"-"` // omitted from being written/read
 	}
 )
