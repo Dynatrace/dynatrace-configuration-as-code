@@ -32,6 +32,7 @@ import (
 
 func TestDownloader_DownloadConfiguration(t *testing.T) {
 	uuidVar := "27dde8b6-2ed3-48f1-90b5-e4c0eae8b9bd"
+	toID := stringutils.Sanitize
 	tests := []struct {
 		name      string
 		given     mockData
@@ -48,27 +49,23 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "global policies",
+			name: "account policies",
 			given: mockData{
 				policies: []accountmanagement.PolicyOverview{
 					{
 						Uuid:        "2ff9314d-3c97-4607-bd49-460a53de1390",
 						Name:        "test policy - tenant",
 						Description: "some description",
-						LevelId:     "",
 						LevelType:   "account",
 					}},
 				policieDef: &accountmanagement.LevelPolicyDto{
-					Uuid:           "07beda6d-6a02-4827-9c1c-49037c96f176",
-					Name:           "test policy",
-					Description:    "user friendly description",
 					StatementQuery: "THIS IS statement",
 				},
 			},
 			expected: account.Resources{
 				Policies: map[account.PolicyId]account.Policy{
-					stringutils.Sanitize("test policy - tenant"): {
-						ID:             stringutils.Sanitize("test policy - tenant"),
+					toID("test policy - tenant"): {
+						ID:             toID("test policy - tenant"),
 						Name:           "test policy - tenant",
 						Level:          account.PolicyLevelAccount{Type: "account"},
 						Description:    "some description",
@@ -100,8 +97,8 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 			},
 			expected: account.Resources{
 				Policies: map[account.PolicyId]account.Policy{
-					stringutils.Sanitize("test policy - tenant"): {
-						ID:   stringutils.Sanitize("test policy - tenant"),
+					toID("test policy - tenant"): {
+						ID:   toID("test policy - tenant"),
 						Name: "test policy - tenant",
 						Level: account.PolicyLevelEnvironment{
 							Type:        "environment",
@@ -161,6 +158,38 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 			},
 		},
 		{
+			name: "user with one group",
+			given: mockData{
+				groups: []accountmanagement.GetGroupDto{{
+					Uuid: &uuidVar,
+					Name: "test group",
+				}},
+				users: []accountmanagement.UsersDto{{Email: "usert@some.org"}},
+				userGroups: &accountmanagement.GroupUserDto{
+					Email:  "usert@some.org",
+					Groups: []accountmanagement.AccountGroupDto{{Uuid: uuidVar}},
+				},
+			},
+			expected: account.Resources{
+				Policies: map[string]account.Policy{},
+				Groups: map[account.GroupId]account.Group{
+					toID("test group"): {
+						ID:             toID("test group"),
+						Name:           "test group",
+						OriginObjectID: uuidVar,
+					},
+				},
+				Users: map[account.UserId]account.User{
+					"usert@some.org": {Email: "usert@some.org",
+						Groups: []account.Ref{account.Reference{
+							Type: "reference",
+							Id:   toID("test group"),
+						}},
+					},
+				},
+			},
+		},
+		{
 			name: "no requested user details (GetGroupsForUser returns nil) ",
 			given: mockData{
 				users:      []accountmanagement.UsersDto{{Email: "usert@some.org"}},
@@ -171,40 +200,75 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 		{
 			name: "empty group",
 			given: mockData{
-				ai: &account.AccountInfo{
-					Name:        "test",
-					AccountUUID: "0b7259a3-61e6-401d-a2ea-c474a219d24b",
-				},
 				groups: []accountmanagement.GetGroupDto{{
-					Uuid:                     &uuidVar,
-					Name:                     "test group",
-					Description:              nil,
-					FederatedAttributeValues: nil,
-					Owner:                    "",
-					CreatedAt:                "",
-					UpdatedAt:                "",
+					Uuid: &uuidVar,
+					Name: "test group",
 				}},
-				policyGroupBindings: []policyGroupBindings{
-					{
-						levelType: "account",
-						levelId:   "0b7259a3-61e6-401d-a2ea-c474a219d24b",
-						bindings: &accountmanagement.LevelPolicyBindingDto{
-							PolicyBindings: []accountmanagement.Binding{{
-								PolicyUuid: uuidVar,
-								Groups:     []string{uuidVar},
-							}},
-						},
-						err: nil,
-					},
-				},
 			},
 			expected: account.Resources{
 				Policies: map[account.PolicyId]account.Policy{},
 				Groups: map[account.GroupId]account.Group{
-					stringutils.Sanitize("test group"): {
-						ID:             stringutils.Sanitize("test group"),
+					toID("test group"): {
+						ID:             toID("test group"),
 						Name:           "test group",
 						OriginObjectID: uuidVar,
+					},
+				},
+				Users: map[account.UserId]account.User{},
+			},
+		},
+		{
+			name: "group with one account level policy",
+			given: mockData{
+				ai: &account.AccountInfo{AccountUUID: "e34fa4d6-b53a-43e0-9be0-cccca1a4da44"},
+				policies: []accountmanagement.PolicyOverview{
+					{
+						Uuid:      "2ff9314d-3c97-4607-bd49-460a53de1390",
+						Name:      "test policy - tenant",
+						LevelType: "account",
+					}},
+				policieDef: &accountmanagement.LevelPolicyDto{
+					StatementQuery: "THIS IS statement",
+				},
+				groups: []accountmanagement.GetGroupDto{{
+					Uuid: &uuidVar,
+					Name: "test group",
+				}},
+				policyGroupBindings: []policyGroupBindings{{
+					levelType: "account",
+					levelId:   "e34fa4d6-b53a-43e0-9be0-cccca1a4da44",
+					bindings: &accountmanagement.LevelPolicyBindingDto{
+						LevelType: "",
+						LevelId:   "",
+						PolicyBindings: []accountmanagement.Binding{{
+							PolicyUuid: "2ff9314d-3c97-4607-bd49-460a53de1390",
+							Groups:     []string{uuidVar},
+						}},
+					},
+					err: nil,
+				}},
+			},
+			expected: account.Resources{
+				Policies: map[account.PolicyId]account.Policy{
+					toID("test policy - tenant"): {
+						ID:             toID("test policy - tenant"),
+						Name:           "test policy - tenant",
+						Level:          account.PolicyLevelAccount{Type: "account"},
+						Policy:         "THIS IS statement",
+						OriginObjectID: "2ff9314d-3c97-4607-bd49-460a53de1390",
+					},
+				},
+				Groups: map[account.GroupId]account.Group{
+					toID("test group"): {
+						ID:             toID("test group"),
+						Name:           "test group",
+						OriginObjectID: uuidVar,
+						Account: &account.Account{
+							Policies: []account.Ref{account.Reference{
+								Type: "reference",
+								Id:   toID("test policy - tenant"),
+							}},
+						},
 					},
 				},
 				Users: map[account.UserId]account.User{},
