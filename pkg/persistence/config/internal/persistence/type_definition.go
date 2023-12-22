@@ -33,17 +33,14 @@ type TypeDefinition struct {
 }
 
 type SettingsDefinition struct {
-	// Schema defines the Settings 2.0 schema of this config
-	Schema string `yaml:"schema,omitempty" json:"schema,omitempty" jsonschema:"required"`
-	// SchemaVersion optionally informs the Settings API that a specific schema version was used for this config
-	SchemaVersion string `yaml:"schemaVersion,omitempty" json:"schemaVersion,omitempty"`
-	// Scope defines the scope in which this Setting applies
-	Scope ConfigParameter `yaml:"scope,omitempty" json:"scope,omitempty"  jsonschema:"required"`
+	Schema        string `yaml:"schema,omitempty" json:"schema,omitempty" jsonschema:"required,description=The Settings 2.0 schema of this config."`
+	SchemaVersion string `yaml:"schemaVersion,omitempty" json:"schemaVersion,omitempty" jsonschema:"description=This optionally informs the Settings API that a specific schema version was used for this config."`
+	//
+	Scope ConfigParameter `yaml:"scope,omitempty" json:"scope,omitempty"  jsonschema:"required,description=This defines the scope in which this Setting applies."`
 }
 
 type AutomationDefinition struct {
-	// Resource defines which automation resource this config is for
-	Resource config.AutomationResource `yaml:"resource" json:"resource" jsonschema:"required,enum=workflow,enum=business-calendar,enum=scheduling-rule"`
+	Resource config.AutomationResource `yaml:"resource" json:"resource" jsonschema:"required,enum=workflow,enum=business-calendar,enum=scheduling-rule,description=This defines which automation resource this config is for."`
 }
 
 // UnmarshalYAML Custom unmarshaler that knows how to handle TypeDefinition.
