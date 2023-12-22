@@ -181,10 +181,7 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 				},
 				Users: map[account.UserId]account.User{
 					"usert@some.org": {Email: "usert@some.org",
-						Groups: []account.Ref{account.Reference{
-							Type: "reference",
-							Id:   toID("test group"),
-						}},
+						Groups: []account.Ref{account.Reference{Id: toID("test group")}},
 					},
 				},
 			},
@@ -264,10 +261,7 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 						Name:           "test group",
 						OriginObjectID: uuidVar,
 						Account: &account.Account{
-							Policies: []account.Ref{account.Reference{
-								Type: "reference",
-								Id:   toID("test policy - tenant"),
-							}},
+							Policies: []account.Ref{account.Reference{Id: toID("test policy - tenant")}},
 						},
 					},
 				},

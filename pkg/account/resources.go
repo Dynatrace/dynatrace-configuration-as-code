@@ -81,8 +81,7 @@ type (
 		Groups []Ref
 	}
 	Reference struct {
-		Type string
-		Id   string
+		Id string
 	}
 
 	StrReference string

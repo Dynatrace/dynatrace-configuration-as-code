@@ -129,10 +129,7 @@ func isCustom(dto accountmanagement.PolicyOverview) bool {
 
 func (p *policy) RefOn() account.Ref {
 	if p.isCustom() {
-		return account.Reference{
-			Type: "reference",
-			Id:   p.policy.ID,
-		}
+		return account.Reference{Id: p.policy.ID}
 	}
 	return account.StrReference(p.dto.Name)
 }

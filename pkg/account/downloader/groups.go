@@ -127,10 +127,7 @@ func (g Groups) asAccountGroups() map[account.GroupId]account.Group {
 func (g Groups) refOn(groupUUID string) account.Ref {
 	for i := range g {
 		if *g[i].dto.Uuid == groupUUID {
-			return account.Reference{
-				Type: "reference",
-				Id:   g[i].group.ID,
-			}
+			return account.Reference{Id: g[i].group.ID}
 		}
 	}
 	return nil

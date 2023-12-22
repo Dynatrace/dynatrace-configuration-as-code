@@ -155,10 +155,7 @@ func transform(resources *persistence.Resources) *account.Resources {
 		for _, el := range in {
 			switch el.Type {
 			case persistence.ReferenceType:
-				res = append(res, account.Reference{
-					Type: el.Type,
-					Id:   el.Id,
-				})
+				res = append(res, account.Reference{Id: el.Id})
 			case "":
 				res = append(res, account.StrReference(el.Value))
 			default:
