@@ -70,245 +70,206 @@ type client interface {
 }
 
 type AccountDeployer struct {
-	accountManagementClient client
-
-	deployedPolicies  map[localId]remoteId
-	deployedGroups    map[localId]remoteId
-	deployedMgmtZones []accountmanagement.ManagementZoneResourceDto
-
-	logger loggers.Logger
+	accClient client
+	idMap     idMap
+	logger    loggers.Logger
 }
 
 func NewAccountDeployer(client client) *AccountDeployer {
-
 	return &AccountDeployer{
-		accountManagementClient: client,
-
-		deployedPolicies: make(map[localId]remoteId),
-		deployedGroups:   make(map[localId]remoteId),
-
-		logger: log.WithFields(field.F("account", client.getAccountInfo().Name)),
+		accClient: client,
+		idMap:     newIdMap(),
+		logger:    log.WithFields(field.F("account", client.getAccountInfo().Name)),
 	}
-
 }
 
 func (d *AccountDeployer) Deploy(res *account.Resources) error {
-	var ers []error
-	var waitForExistingResources sync.WaitGroup
-	waitForExistingResources.Add(3)
-	errCh := make(chan error, 3)
 
-	go fetchResources(d.fetchGlobalPolicies, &waitForExistingResources, errCh)
-	go fetchResources(d.fetchManagementZones, &waitForExistingResources, errCh)
-	go fetchResources(d.fetchGroups, &waitForExistingResources, errCh)
-
-	d.waitForResources(&waitForExistingResources, errCh, &ers)
-	if len(ers) > 0 {
-		return errors.Join(ers...)
+	err := d.fetchExistingResources()
+	if err != nil {
+		return err
 	}
 
-	var waitForResources sync.WaitGroup
-	errCh = make(chan error, 3)
-	waitForResources.Add(3)
-
-	go deployResources(res.Policies, d.deployPolicies, &waitForResources, errCh)
-	go deployResources(res.Groups, d.deployGroups, &waitForResources, errCh)
-	go deployResources(res.Users, d.deployUsers, &waitForResources, errCh)
-
-	d.waitForResources(&waitForResources, errCh, &ers)
-	if len(ers) > 0 {
-		return errors.Join(ers...)
+	err = d.deployResources(res)
+	if err != nil {
+		return err
 	}
 
-	var waitForBindings sync.WaitGroup
-	errCh = make(chan error, 2)
-	waitForBindings.Add(2)
-
-	go deployResources(res.Groups, d.deployGroupBindings, &waitForBindings, errCh)
-	go deployResources(res.Users, d.deployUserBindings, &waitForBindings, errCh)
-
-	d.waitForResources(&waitForBindings, errCh, &ers)
-	if len(ers) > 0 {
-		return errors.Join(ers...)
+	err = d.updateBindings(res)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (d *AccountDeployer) waitForResources(waitGroup *sync.WaitGroup, errCh chan error, ers *[]error) {
+func (d *AccountDeployer) fetchExistingResources() error {
+	var wg sync.WaitGroup
+	wg.Add(3)
+	errCh := make(chan error)
+	go fetchResources(d.fetchGlobalPolicies, &wg, errCh)
+	go fetchResources(d.fetchManagementZones, &wg, errCh)
+	go fetchResources(d.fetchGroups, &wg, errCh)
+
+	return d.waitForResources(&wg, errCh)
+
+}
+
+func (d *AccountDeployer) deployResources(res *account.Resources) error {
+	var wg sync.WaitGroup
+	wg.Add(len(res.Policies) + len(res.Groups) + len(res.Users))
+	errCh := make(chan error)
+
+	d.deployPolicies(res.Policies, &wg, errCh)
+	d.deployGroups(res.Groups, &wg, errCh)
+	d.deployUsers(res.Users, &wg, errCh)
+
+	return d.waitForResources(&wg, errCh)
+
+}
+
+func (d *AccountDeployer) updateBindings(res *account.Resources) error {
+	var wg sync.WaitGroup
+	wg.Add(len(res.Groups) + len(res.Users))
+	errCh := make(chan error)
+
+	d.deployGroupBindings(res.Groups, &wg, errCh)
+	d.deployUserBindings(res.Users, &wg, errCh)
+
+	return d.waitForResources(&wg, errCh)
+
+}
+
+func (d *AccountDeployer) waitForResources(waitGroup *sync.WaitGroup, errCh chan error) error {
+	var ers []error
+	waitForErrs := &sync.WaitGroup{}
+	waitForErrs.Add(1)
+	go func() {
+		defer waitForErrs.Done()
+		for err := range errCh {
+			if err != nil {
+				ers = append(ers, err)
+			}
+		}
+	}()
 	waitGroup.Wait()
 	close(errCh)
-
-	for err := range errCh {
-		if err != nil {
-			*ers = append(*ers, err)
-		}
-	}
+	waitForErrs.Wait()
+	return errors.Join(ers...)
 }
 
 func (d *AccountDeployer) fetchGlobalPolicies() error {
-	var err error
 	d.logger.Debug("Getting existing global policies")
-	d.deployedPolicies, err = d.accountManagementClient.getGlobalPolicies(d.logCtx())
-	return err
+	deployedPolicies, err := d.accClient.getGlobalPolicies(d.logCtx())
+	if err != nil {
+		return err
+	}
+	d.idMap.addPolicies(deployedPolicies)
+	return nil
 }
 
 func (d *AccountDeployer) fetchManagementZones() error {
-	var err error
 	d.logger.Debug("Getting existing management zones")
-	d.deployedMgmtZones, err = d.accountManagementClient.getManagementZones(d.logCtx())
-	return err
+	deployedMgmtZones, err := d.accClient.getManagementZones(d.logCtx())
+	if err != nil {
+		return err
+	}
+	d.idMap.addMZones(deployedMgmtZones)
+	return nil
 }
 
 func (d *AccountDeployer) fetchGroups() error {
-	var err error
 	d.logger.Debug("Getting existing groups")
-	d.deployedGroups, err = d.accountManagementClient.getAllGroups(d.logCtx())
+	deployedGroups, err := d.accClient.getAllGroups(d.logCtx())
+	if err != nil {
+		return err
+	}
+	d.idMap.addGroups(deployedGroups)
 	return err
 
 }
 
-func fetchResources(fetchFunc func() error, wg *sync.WaitGroup, errCh chan error) {
+func fetchResources(fetchFunc func() error, wg *sync.WaitGroup, errCh chan<- error) {
 	defer wg.Done()
 	errCh <- fetchFunc()
 }
 
-func deployResources[T any](resources map[localId]T, deployFunc func(map[string]T) error, wg *sync.WaitGroup, errCh chan error) {
-	defer wg.Done()
-	errCh <- deployFunc(resources)
-}
-
-func (d *AccountDeployer) deployPolicies(policies map[string]account.Policy) error {
-	var wg sync.WaitGroup
-	var errs []error
-	var mu sync.Mutex
-
+func (d *AccountDeployer) deployPolicies(policies map[string]account.Policy, wg *sync.WaitGroup, errCh chan<- error) { // nolint:dupl
 	for _, policy := range policies {
-		wg.Add(1)
 		go func(p account.Policy) {
 			defer wg.Done()
 
 			d.logger.Info("Deploying policy %s", p.Name)
 			pUuid, err := d.upsertPolicy(d.logCtx(), p)
 			if err != nil {
-				mu.Lock()
-				errs = append(errs, fmt.Errorf("unable to deploy policy for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-				mu.Unlock()
+				errCh <- fmt.Errorf("unable to deploy policy for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
-			mu.Lock()
-			d.deployedPolicies[p.ID] = pUuid
-			mu.Unlock()
+			d.idMap.addPolicy(p.ID, pUuid)
 		}(policy)
 	}
-
-	wg.Wait()
-	return errors.Join(errs...)
 }
 
-func (d *AccountDeployer) deployGroups(groups map[string]account.Group) error {
-	var wg sync.WaitGroup
-	var errs []error
-	var mu sync.Mutex
-
+func (d *AccountDeployer) deployGroups(groups map[string]account.Group, wg *sync.WaitGroup, errCh chan<- error) { // nolint:dupl
 	for _, group := range groups {
-		wg.Add(1)
 		go func(g account.Group) {
 			defer wg.Done()
-
 			d.logger.Info("Deploying group %s", g.Name)
 			gUuid, err := d.upsertGroup(d.logCtx(), g)
 			if err != nil {
-				mu.Lock()
-				errs = append(errs, fmt.Errorf("unable to deploy group for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-				mu.Unlock()
+				errCh <- fmt.Errorf("unable to deploy group for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
-			mu.Lock()
-			d.deployedGroups[g.ID] = gUuid
-			mu.Unlock()
+			d.idMap.addGroup(g.ID, gUuid)
 		}(group)
 	}
-
-	wg.Wait()
-	return errors.Join(errs...)
 }
 
-func (d *AccountDeployer) deployUsers(users map[string]account.User) error {
-	var wg sync.WaitGroup
-	var errs []error
-	var mu sync.Mutex
-
+func (d *AccountDeployer) deployUsers(users map[string]account.User, wg *sync.WaitGroup, errCh chan<- error) {
 	for _, user := range users {
-		wg.Add(1)
 		go func(u account.User) {
 			defer wg.Done()
+
 			d.logger.Info("Deploying user %s", u.Email)
 			if _, err := d.upsertUser(d.logCtx(), u); err != nil {
-				mu.Lock()
-				errs = append(errs, fmt.Errorf("unable to deploy user for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-				mu.Unlock()
+				errCh <- fmt.Errorf("unable to deploy user for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
 		}(user)
 	}
-
-	wg.Wait()
-	return errors.Join(errs...)
 }
 
-func (d *AccountDeployer) deployGroupBindings(groups map[account.GroupId]account.Group) error {
-	var wg sync.WaitGroup
-	var errs []error
-	var mu sync.Mutex
-
+func (d *AccountDeployer) deployGroupBindings(groups map[account.GroupId]account.Group, wg *sync.WaitGroup, errCh chan<- error) {
 	for _, group := range groups {
-		wg.Add(1)
 		d.logger.Info("Updating policy bindings and permissions for group %s", group.Name)
 		go func(g account.Group) {
-			defer wg.Done()
 			if err := d.updateGroupPolicyBindings(d.logCtx(), g); err != nil {
-				mu.Lock()
-				errs = append(errs, fmt.Errorf("unable to deploy policy binding for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-				mu.Unlock()
+				errCh <- fmt.Errorf("unable to deploy policy binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
 
 			if err := d.updateGroupPermissions(d.logCtx(), g); err != nil {
-				mu.Lock()
-				errs = append(errs, fmt.Errorf("unable to deploy permissions for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-				mu.Unlock()
+				errCh <- fmt.Errorf("unable to deploy permissions for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
+			wg.Done()
 		}(group)
 	}
-	wg.Wait()
-	return errors.Join(errs...)
 }
 
-func (d *AccountDeployer) deployUserBindings(users map[account.UserId]account.User) error {
-	var wg sync.WaitGroup
-	var errs []error
-	var mu sync.Mutex
+func (d *AccountDeployer) deployUserBindings(users map[account.UserId]account.User, wg *sync.WaitGroup, errCh chan<- error) {
 	for _, user := range users {
-		wg.Add(1)
 		go func(u account.User) {
-			defer wg.Done()
 			d.logger.Info("Updating group bindings for user %s", u.Email)
 			if err := d.updateUserGroupBindings(d.logCtx(), u); err != nil {
-				mu.Lock()
-				errs = append(errs, fmt.Errorf("unable to deploy user binding for account %s: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err))
-				mu.Unlock()
+				errCh <- fmt.Errorf("unable to deploy user binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
+			wg.Done()
 		}(user)
-
 	}
-	wg.Wait()
-	return errors.Join(errs...)
 }
-
 func (d *AccountDeployer) upsertPolicy(ctx context.Context, policy account.Policy) (remoteId, error) {
 	var policyLevel string
 	var policyLevelID string
 
 	if _, ok := policy.Level.(account.PolicyLevelAccount); ok {
 		policyLevel = "account"
-		policyLevelID = d.accountManagementClient.getAccountInfo().AccountUUID
+		policyLevelID = d.accClient.getAccountInfo().AccountUUID
 	}
 	if p, ok := policy.Level.(account.PolicyLevelEnvironment); ok {
 		policyLevel = "environment"
@@ -320,7 +281,7 @@ func (d *AccountDeployer) upsertPolicy(ctx context.Context, policy account.Polic
 		StatementQuery: policy.Policy,
 	}
 
-	return d.accountManagementClient.upsertPolicy(ctx, policyLevel, policyLevelID, policy.OriginObjectID, data)
+	return d.accClient.upsertPolicy(ctx, policyLevel, policyLevelID, policy.OriginObjectID, data)
 }
 
 func (d *AccountDeployer) upsertGroup(ctx context.Context, group account.Group) (remoteId, error) {
@@ -328,15 +289,16 @@ func (d *AccountDeployer) upsertGroup(ctx context.Context, group account.Group) 
 		Name:        group.Name,
 		Description: &group.Description,
 	}
-	return d.accountManagementClient.upsertGroup(ctx, group.OriginObjectID, data)
+	return d.accClient.upsertGroup(ctx, group.OriginObjectID, data)
 }
 
 func (d *AccountDeployer) upsertUser(ctx context.Context, user account.User) (remoteId, error) {
-	return d.accountManagementClient.upsertUser(ctx, user.Email)
+	return d.accClient.upsertUser(ctx, user.Email)
 }
 
 func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group account.Group) error {
-	remoteGroupId := d.groupIdLookup(group.ID)
+
+	remoteGroupId := d.idMap.getGroupUUID(group.ID)
 	if remoteGroupId == "" {
 		return fmt.Errorf("unable to determine UUID for group %s", group.Name)
 	}
@@ -346,7 +308,7 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 	}
 
 	d.logger.Debug("Updating account level policy bindings for group with ID %s --> %v", remoteGroupId, accPolicyUuids)
-	if err = d.accountManagementClient.updateAccountPolicyBindings(ctx, remoteGroupId, accPolicyUuids); err != nil {
+	if err = d.accClient.updateAccountPolicyBindings(ctx, remoteGroupId, accPolicyUuids); err != nil {
 		return fmt.Errorf("failed to update group-account-policy bindings for group %s: %w", group.Name, err)
 	}
 
@@ -357,12 +319,12 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 
 	if len(envPolicyUuids) == 0 {
 		d.logger.Debug("Deleting all policy bindings of group with ID %s", remoteGroupId)
-		return d.accountManagementClient.deleteAllEnvironmentPolicyBindings(ctx, remoteGroupId)
+		return d.accClient.deleteAllEnvironmentPolicyBindings(ctx, remoteGroupId)
 	}
 
 	for env, uuids := range envPolicyUuids {
 		d.logger.WithFields().Debug("Updating environment level policy bindings for group with ID %s and environment with name %s --> %v", remoteGroupId, env, uuids)
-		if err = d.accountManagementClient.updateEnvironmentPolicyBindings(ctx, env, remoteGroupId, uuids); err != nil {
+		if err = d.accClient.updateEnvironmentPolicyBindings(ctx, env, remoteGroupId, uuids); err != nil {
 			return fmt.Errorf("failed to update group-environment-policy bindings for group %s and environment %s: %w", group.Name, env, err)
 		}
 	}
@@ -375,7 +337,7 @@ func (d *AccountDeployer) updateUserGroupBindings(ctx context.Context, user acco
 		return err
 	}
 
-	if err := d.accountManagementClient.updateGroupBindings(ctx, user.Email, remoteGroupIds); err != nil {
+	if err := d.accClient.updateGroupBindings(ctx, user.Email, remoteGroupIds); err != nil {
 		return err
 	}
 	return nil
@@ -402,13 +364,13 @@ func (d *AccountDeployer) updateGroupPermissions(ctx context.Context, group acco
 		allPermissions = append(allPermissions, perms...)
 	}
 
-	remoteGroupId := d.groupIdLookup(group.ID)
+	remoteGroupId := d.idMap.getGroupUUID(group.ID)
 	if remoteGroupId == "" {
 		return fmt.Errorf("no group UUID found to update group <--> permissions bindings %s", group.ID)
 	}
 
 	d.logger.Debug("Updating permissions for group with ID %s --> %v", remoteGroupId, allPermissions)
-	if err := d.accountManagementClient.updatePermissions(ctx, remoteGroupId, allPermissions); err != nil {
+	if err := d.accClient.updatePermissions(ctx, remoteGroupId, allPermissions); err != nil {
 		return fmt.Errorf("unable to update group %s: %w", group.ID, err)
 	}
 	return nil
@@ -420,7 +382,7 @@ func (d *AccountDeployer) getAccountPermissions(acc *account.Account) []accountm
 		perm := accountmanagement.PermissionsDto{
 			PermissionName: p,
 			ScopeType:      "account",
-			Scope:          d.accountManagementClient.getAccountInfo().AccountUUID,
+			Scope:          d.accClient.getAccountInfo().AccountUUID,
 		}
 		perms = append(perms, perm)
 	}
@@ -514,20 +476,15 @@ func (d *AccountDeployer) processItems(items []account.Ref, remoteIdLookup idLoo
 }
 
 func (d *AccountDeployer) policyIdLookup(id localId) remoteId {
-	return d.deployedPolicies[id]
+	return d.idMap.getPolicyUUID(id)
 }
 
 func (d *AccountDeployer) groupIdLookup(id localId) remoteId {
-	return d.deployedGroups[id]
+	return d.idMap.getGroupUUID(id)
 }
 
 func (d *AccountDeployer) managementZoneIdLookup(envName, mzName string) remoteId {
-	for _, z := range d.deployedMgmtZones {
-		if z.Parent == envName && z.Name == mzName {
-			return z.Id
-		}
-	}
-	return ""
+	return d.idMap.getMZoneUUID(envName, mzName)
 }
 
 func (d *AccountDeployer) logCtx() context.Context {

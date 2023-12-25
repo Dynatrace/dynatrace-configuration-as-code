@@ -154,7 +154,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{"env12345", "Mzone", "-3664092122630505211"}}, nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("8f14c703-aa31-4d33-b888-edd553aea02c", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("e59db51f-2ce1-4489-82ba-f1f00a93a85e", nil)
-		mockedClient.EXPECT().upsertGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return("3158497c-7fc7-44bc-ab15-c3ab8fea8560", nil)
+		mockedClient.EXPECT().upsertGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return("31»58497c-7fc7-44bc-ab15-c3ab8fea8560", nil)
 		mockedClient.EXPECT().updateAccountPolicyBindings(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		mockedClient.EXPECT().updateEnvironmentPolicyBindings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		mockedClient.EXPECT().updatePermissions(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
