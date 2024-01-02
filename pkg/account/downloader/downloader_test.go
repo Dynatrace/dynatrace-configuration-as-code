@@ -32,6 +32,7 @@ import (
 
 func TestDownloader_DownloadConfiguration(t *testing.T) {
 	uuidVar := "27dde8b6-2ed3-48f1-90b5-e4c0eae8b9bd"
+	uuidVar2 := "3c345885-ff01-428b-ba49-b3381819f6dd"
 	toID := stringutils.Sanitize
 	tests := []struct {
 		name      string
@@ -49,7 +50,7 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "account policies",
+			name: "account policy",
 			given: mockData{
 				policies: []accountmanagement.PolicyOverview{
 					{
@@ -78,7 +79,7 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "environment policies",
+			name: "environment policy",
 			given: mockData{
 				policies: []accountmanagement.PolicyOverview{
 					{
@@ -215,44 +216,72 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "group with one account level policy",
+			name: "groups with policies (account and environment)",
 			given: mockData{
-				ai: &account.AccountInfo{AccountUUID: "e34fa4d6-b53a-43e0-9be0-cccca1a4da44"},
+				ai:   &account.AccountInfo{AccountUUID: "e34fa4d6-b53a-43e0-9be0-cccca1a4da44"},
+				envs: []accountmanagement.TenantResourceDto{{Id: "abc12345"}},
 				policies: []accountmanagement.PolicyOverview{
 					{
 						Uuid:      "2ff9314d-3c97-4607-bd49-460a53de1390",
-						Name:      "test policy - tenant",
+						Name:      "account policy",
 						LevelType: "account",
-					}},
-				policieDef: &accountmanagement.LevelPolicyDto{
-					StatementQuery: "THIS IS statement",
-				},
-				groups: []accountmanagement.GetGroupDto{{
-					Uuid: &uuidVar,
-					Name: "test group",
-				}},
-				policyGroupBindings: []policyGroupBindings{{
-					levelType: "account",
-					levelId:   "e34fa4d6-b53a-43e0-9be0-cccca1a4da44",
-					bindings: &accountmanagement.LevelPolicyBindingDto{
-						LevelType: "",
-						LevelId:   "",
-						PolicyBindings: []accountmanagement.Binding{{
-							PolicyUuid: "2ff9314d-3c97-4607-bd49-460a53de1390",
-							Groups:     []string{uuidVar},
-						}},
 					},
-					err: nil,
-				}},
+					{
+						Uuid:      "bc7df7b7-9387-45ff-974f-56573c072e4c",
+						Name:      "environment policy",
+						LevelId:   "abc12345",
+						LevelType: "environment",
+					},
+				},
+				policieDef: &accountmanagement.LevelPolicyDto{},
+				groups: []accountmanagement.GetGroupDto{
+					{
+						Uuid: &uuidVar,
+						Name: "test group",
+					},
+					{
+						Uuid: &uuidVar2,
+						Name: "second test group",
+					},
+				},
+				policyGroupBindings: []policyGroupBindings{
+					{
+						levelType: "account",
+						levelId:   "e34fa4d6-b53a-43e0-9be0-cccca1a4da44",
+						bindings: &accountmanagement.LevelPolicyBindingDto{
+							PolicyBindings: []accountmanagement.Binding{{
+								PolicyUuid: "2ff9314d-3c97-4607-bd49-460a53de1390",
+								Groups:     []string{uuidVar, uuidVar2},
+							}},
+						},
+						err: nil,
+					},
+					{
+						levelType: "environment",
+						levelId:   "abc12345",
+						bindings: &accountmanagement.LevelPolicyBindingDto{
+							PolicyBindings: []accountmanagement.Binding{{
+								PolicyUuid: "bc7df7b7-9387-45ff-974f-56573c072e4c",
+								Groups:     []string{uuidVar},
+							}},
+						},
+						err: nil,
+					},
+				},
 			},
 			expected: account.Resources{
 				Policies: map[account.PolicyId]account.Policy{
-					toID("test policy - tenant"): {
-						ID:             toID("test policy - tenant"),
-						Name:           "test policy - tenant",
+					toID("account policy"): {
+						ID:             toID("account policy"),
+						Name:           "account policy",
 						Level:          account.PolicyLevelAccount{Type: "account"},
-						Policy:         "THIS IS statement",
 						OriginObjectID: "2ff9314d-3c97-4607-bd49-460a53de1390",
+					},
+					toID("environment policy"): account.Policy{
+						ID:             toID("environment policy"),
+						Name:           "environment policy",
+						Level:          account.PolicyLevelEnvironment{Type: "environment", Environment: "abc12345"},
+						OriginObjectID: "bc7df7b7-9387-45ff-974f-56573c072e4c",
 					},
 				},
 				Groups: map[account.GroupId]account.Group{
@@ -261,7 +290,21 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 						Name:           "test group",
 						OriginObjectID: uuidVar,
 						Account: &account.Account{
-							Policies: []account.Ref{account.Reference{Id: toID("test policy - tenant")}},
+							Policies: []account.Ref{account.Reference{Id: toID("account policy")}},
+						},
+						Environment: []account.Environment{
+							{
+								Name:     "abc12345",
+								Policies: []account.Ref{account.Reference{Id: toID("environment policy")}},
+							},
+						},
+					},
+					toID("second test group"): {
+						ID:             toID("second test group"),
+						Name:           "second test group",
+						OriginObjectID: uuidVar2,
+						Account: &account.Account{
+							Policies: []account.Ref{account.Reference{Id: toID("account policy")}},
 						},
 					},
 				},
@@ -383,12 +426,12 @@ func newMockDownloader(d mockData, t *testing.T) *downloader.Downloader {
 
 	client.EXPECT().GetEnvironmentsAndMZones(ctx, d.ai.AccountUUID).Return(d.envs, d.mzones, d.environmentsAndMZonesError).MinTimes(0).MaxTimes(1)
 	client.EXPECT().GetPolicies(ctx, d.ai.AccountUUID).Return(d.policies, d.policiesError).MinTimes(0).MaxTimes(1)
-	client.EXPECT().GetPolicyDefinition(ctx, policy(d.policies)).Return(d.policieDef, d.policyDefinitionError).AnyTimes()
+	client.EXPECT().GetPolicyDefinition(ctx, gomock.AnyOf(toSliceOfAny(d.policies)...)).Return(d.policieDef, d.policyDefinitionError).AnyTimes()
 	if len(d.policyGroupBindings) == 0 {
 		client.EXPECT().GetPolicyGroupBindings(ctx, gomock.Any(), gomock.Any()).Return(&accountmanagement.LevelPolicyBindingDto{}, nil).AnyTimes()
 	} else {
 		for _, b := range d.policyGroupBindings {
-			client.EXPECT().GetPolicyGroupBindings(ctx, b.levelType, b.levelId).Return(b.bindings, b.err).Times(1)
+			client.EXPECT().GetPolicyGroupBindings(ctx, b.levelType, b.levelId).Return(b.bindings, b.err).MinTimes(1)
 		}
 	}
 	client.EXPECT().GetPermissionFor(ctx, gomock.Any(), gomock.Any()).Return(&d.permissions, d.permissionError).AnyTimes()
@@ -406,9 +449,10 @@ func userEmail(u []accountmanagement.UsersDto) string {
 	return u[0].Email
 }
 
-func policy(ps []accountmanagement.PolicyOverview) accountmanagement.PolicyOverview {
-	if len(ps) == 0 {
-		return accountmanagement.PolicyOverview{}
+func toSliceOfAny[T any](s []T) []any {
+	result := make([]any, len(s))
+	for i, v := range s {
+		result[i] = v
 	}
-	return ps[0]
+	return result
 }
