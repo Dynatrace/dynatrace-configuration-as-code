@@ -2,7 +2,6 @@ package deployer
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -84,7 +83,6 @@ func NewAccountDeployer(client client) *AccountDeployer {
 }
 
 func (d *AccountDeployer) Deploy(res *account.Resources) error {
-
 	err := d.fetchExistingResources()
 	if err != nil {
 		return err
@@ -104,58 +102,52 @@ func (d *AccountDeployer) Deploy(res *account.Resources) error {
 }
 
 func (d *AccountDeployer) fetchExistingResources() error {
-	var wg sync.WaitGroup
-	wg.Add(3)
-	errCh := make(chan error)
-	go fetchResources(d.fetchGlobalPolicies, &wg, errCh)
-	go fetchResources(d.fetchManagementZones, &wg, errCh)
-	go fetchResources(d.fetchGroups, &wg, errCh)
+	dispatcher := NewDispatcher(10)
+	dispatcher.Run()
+	defer dispatcher.Stop()
 
-	return d.waitForResources(&wg, errCh)
+	fetchResourcesJob := func(wg *sync.WaitGroup, errCh chan error) {
+		fetchResources(d.fetchGlobalPolicies, wg, errCh)
+
+	}
+	fetchMZonesJob := func(wg *sync.WaitGroup, errCh chan error) {
+		fetchResources(d.fetchManagementZones, wg, errCh)
+	}
+
+	fetchGroupsJob := func(wg *sync.WaitGroup, errCh chan error) {
+		fetchResources(d.fetchGroups, wg, errCh)
+	}
+
+	dispatcher.AddJob(fetchResourcesJob)
+	dispatcher.AddJob(fetchMZonesJob)
+	dispatcher.AddJob(fetchGroupsJob)
+
+	return dispatcher.Wait()
 
 }
 
 func (d *AccountDeployer) deployResources(res *account.Resources) error {
-	var wg sync.WaitGroup
-	wg.Add(len(res.Policies) + len(res.Groups) + len(res.Users))
-	errCh := make(chan error)
+	dispatcher := NewDispatcher(10)
+	dispatcher.Run()
+	defer dispatcher.Stop()
 
-	d.deployPolicies(res.Policies, &wg, errCh)
-	d.deployGroups(res.Groups, &wg, errCh)
-	d.deployUsers(res.Users, &wg, errCh)
+	d.deployPolicies(res.Policies, dispatcher)
+	d.deployGroups(res.Groups, dispatcher)
+	d.deployUsers(res.Users, dispatcher)
 
-	return d.waitForResources(&wg, errCh)
+	return dispatcher.Wait()
 
 }
 
 func (d *AccountDeployer) updateBindings(res *account.Resources) error {
-	var wg sync.WaitGroup
-	wg.Add(len(res.Groups) + len(res.Users))
-	errCh := make(chan error)
+	dispatcher := NewDispatcher(10)
+	dispatcher.Run()
+	defer dispatcher.Stop()
 
-	d.deployGroupBindings(res.Groups, &wg, errCh)
-	d.deployUserBindings(res.Users, &wg, errCh)
+	d.deployGroupBindings(res.Groups, dispatcher)
+	d.deployUserBindings(res.Users, dispatcher)
+	return dispatcher.Wait()
 
-	return d.waitForResources(&wg, errCh)
-
-}
-
-func (d *AccountDeployer) waitForResources(waitGroup *sync.WaitGroup, errCh chan error) error {
-	var ers []error
-	waitForErrs := &sync.WaitGroup{}
-	waitForErrs.Add(1)
-	go func() {
-		defer waitForErrs.Done()
-		for err := range errCh {
-			if err != nil {
-				ers = append(ers, err)
-			}
-		}
-	}()
-	waitGroup.Wait()
-	close(errCh)
-	waitForErrs.Wait()
-	return errors.Join(ers...)
 }
 
 func (d *AccountDeployer) fetchGlobalPolicies() error {
@@ -194,73 +186,90 @@ func fetchResources(fetchFunc func() error, wg *sync.WaitGroup, errCh chan<- err
 	errCh <- fetchFunc()
 }
 
-func (d *AccountDeployer) deployPolicies(policies map[string]account.Policy, wg *sync.WaitGroup, errCh chan<- error) { // nolint:dupl
+func (d *AccountDeployer) deployPolicies(policies map[string]account.Policy, dispatcher *Dispatcher) { // nolint:dupl
 	for _, policy := range policies {
-		go func(p account.Policy) {
+		policy := policy
+		deployPolicyJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-
-			d.logger.Info("Deploying policy %s", p.Name)
-			pUuid, err := d.upsertPolicy(d.logCtx(), p)
+			d.logger.Info("Deploying policy %s", policy.Name)
+			pUuid, err := d.upsertPolicy(d.logCtx(), policy)
 			if err != nil {
 				errCh <- fmt.Errorf("unable to deploy policy for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
-			d.idMap.addPolicy(p.ID, pUuid)
-		}(policy)
+			d.idMap.addPolicy(policy.ID, pUuid)
+		}
+		dispatcher.AddJob(deployPolicyJob)
 	}
 }
 
-func (d *AccountDeployer) deployGroups(groups map[string]account.Group, wg *sync.WaitGroup, errCh chan<- error) { // nolint:dupl
+func (d *AccountDeployer) deployGroups(groups map[string]account.Group, dispatcher *Dispatcher) { // nolint:dupl
 	for _, group := range groups {
-		go func(g account.Group) {
+		group := group
+		deployGroupJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.Info("Deploying group %s", g.Name)
-			gUuid, err := d.upsertGroup(d.logCtx(), g)
+			d.logger.Info("Deploying group %s", group.Name)
+			gUuid, err := d.upsertGroup(d.logCtx(), group)
 			if err != nil {
 				errCh <- fmt.Errorf("unable to deploy group for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
-			d.idMap.addGroup(g.ID, gUuid)
-		}(group)
+			d.idMap.addGroup(group.ID, gUuid)
+
+		}
+		dispatcher.AddJob(deployGroupJob)
+
 	}
 }
 
-func (d *AccountDeployer) deployUsers(users map[string]account.User, wg *sync.WaitGroup, errCh chan<- error) {
+func (d *AccountDeployer) deployUsers(users map[string]account.User, dispatcher *Dispatcher) {
 	for _, user := range users {
-		go func(u account.User) {
+		user := user
+		deployUserJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-
-			d.logger.Info("Deploying user %s", u.Email)
-			if _, err := d.upsertUser(d.logCtx(), u); err != nil {
+			d.logger.Info("Deploying user %s", user.Email)
+			if _, err := d.upsertUser(d.logCtx(), user); err != nil {
 				errCh <- fmt.Errorf("unable to deploy user for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
-		}(user)
+		}
+		dispatcher.AddJob(deployUserJob)
+
 	}
 }
 
-func (d *AccountDeployer) deployGroupBindings(groups map[account.GroupId]account.Group, wg *sync.WaitGroup, errCh chan<- error) {
+func (d *AccountDeployer) deployGroupBindings(groups map[account.GroupId]account.Group, dispatcher *Dispatcher) {
 	for _, group := range groups {
+		group := group
 		d.logger.Info("Updating policy bindings and permissions for group %s", group.Name)
-		go func(g account.Group) {
-			if err := d.updateGroupPolicyBindings(d.logCtx(), g); err != nil {
+
+		updateBindingsJob := func(wg *sync.WaitGroup, errCh chan error) {
+			defer wg.Done()
+			if err := d.updateGroupPolicyBindings(d.logCtx(), group); err != nil {
 				errCh <- fmt.Errorf("unable to deploy policy binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
 
-			if err := d.updateGroupPermissions(d.logCtx(), g); err != nil {
+			if err := d.updateGroupPermissions(d.logCtx(), group); err != nil {
 				errCh <- fmt.Errorf("unable to deploy permissions for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
-			wg.Done()
-		}(group)
+		}
+
+		dispatcher.AddJob(updateBindingsJob)
+
 	}
 }
 
-func (d *AccountDeployer) deployUserBindings(users map[account.UserId]account.User, wg *sync.WaitGroup, errCh chan<- error) {
+func (d *AccountDeployer) deployUserBindings(users map[account.UserId]account.User, dispatcher *Dispatcher) {
 	for _, user := range users {
-		go func(u account.User) {
-			d.logger.Info("Updating group bindings for user %s", u.Email)
-			if err := d.updateUserGroupBindings(d.logCtx(), u); err != nil {
-				errCh <- fmt.Errorf("unable to deploy user binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+		user := user
+		deployUserBindingsJob :=
+			func(wg *sync.WaitGroup, errCh chan error) {
+				defer wg.Done()
+				d.logger.Info("Updating group bindings for user %s", user.Email)
+				if err := d.updateUserGroupBindings(d.logCtx(), user); err != nil {
+					errCh <- fmt.Errorf("unable to deploy user binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+				}
 			}
-			wg.Done()
-		}(user)
+
+		dispatcher.AddJob(deployUserBindingsJob)
+
 	}
 }
 func (d *AccountDeployer) upsertPolicy(ctx context.Context, policy account.Policy) (remoteId, error) {
