@@ -18,6 +18,7 @@ package downloader
 
 import (
 	"context"
+	"fmt"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
@@ -41,16 +42,11 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 	log.WithCtxFields(ctx).Info("Downloading groups")
 	groupDTOs, err := a.httpClient.GetGroups(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get a list of groups for account %q from DT: %w", a.accountInfo, err)
 	}
 
 	var groups Groups
 	for i := range groupDTOs {
-		if groupDTOs[i].Uuid == nil {
-			log.WithCtxFields(ctx).Error("Group %q does not have a UUID set; skipping.", groupDTOs[i].Name)
-			continue
-		}
-
 		log.WithCtxFields(ctx).Debug("Downloading definition for group %q (uuid: %q)", groupDTOs[i].Name, *groupDTOs[i].Uuid)
 		g := group{
 			dto:      &groupDTOs[i],
@@ -58,7 +54,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		}
 
 		log.WithCtxFields(ctx).Debug("Downloading policies for group %q", groupDTOs[i].Name)
-		binding, err := a.httpClient.GetBindingsFor(ctx, "account", a.accountInfo.AccountUUID)
+		binding, err := a.httpClient.GetPolicyGroupBindings(ctx, "account", a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +67,6 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		}
 		g.permissionDTO = perDTO
 		log.WithCtxFields(ctx).Debug("Downloading definition for group %q", groupDTOs[i].Name)
-
 		acc := account.Account{
 			Permissions: getPermissionFor("account", perDTO),
 			Policies:    policies.RefOn(getPoliciesFor(binding, *g.dto.Uuid)...),
@@ -81,7 +76,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		var mzs []account.ManagementZone
 		for _, t := range tenants {
 			log.WithCtxFields(ctx).Debug("Fetching bindings for environment %q", t.id)
-			binding, err := a.httpClient.GetBindingsFor(ctx, "environment", t.id) // why do we fetch the bindings for each tenant in each group-iteration?
+			binding, err := a.httpClient.GetPolicyGroupBindings(ctx, "environment", t.id) // why do we fetch the bindings for each tenant in each group-iteration?
 			if err != nil {
 				return nil, err
 			}
@@ -132,10 +127,7 @@ func (g Groups) asAccountGroups() map[account.GroupId]account.Group {
 func (g Groups) refOn(groupUUID string) account.Ref {
 	for i := range g {
 		if *g[i].dto.Uuid == groupUUID {
-			return account.Reference{
-				Type: "reference",
-				Id:   g[i].group.ID,
-			}
+			return account.Reference{Id: g[i].group.ID}
 		}
 	}
 	return nil

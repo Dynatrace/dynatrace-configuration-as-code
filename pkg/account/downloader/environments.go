@@ -18,6 +18,7 @@ package downloader
 
 import (
 	"context"
+	"fmt"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
@@ -41,6 +42,10 @@ func (e environment) String() string {
 	return e.id
 }
 
+func (mz managementZone) String() string {
+	return mz.name
+}
+
 func (e Environments) getMzoneName(originID string) string {
 	for _, env := range e {
 		for _, mz := range env.managementZones {
@@ -55,15 +60,15 @@ func (e Environments) getMzoneName(originID string) string {
 func (a *Downloader) environments(ctx context.Context) (Environments, error) {
 	log.WithCtxFields(ctx).Info("Fetching environments")
 
-	dto, err := a.httpClient.GetEnvironments(ctx, a.accountInfo.AccountUUID)
+	envDTOs, mzoneDTOs, err := a.httpClient.GetEnvironmentsAndMZones(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get a list of environments and management zones for account %q from DT: %w", a.accountInfo, err)
 	}
 
-	retVal := make(Environments, 0, len(dto.TenantResources))
-	for i := range dto.TenantResources {
-		e := fromTenantResourceDto(dto.TenantResources[i])
-		e.managementZones = fromManagementZoneResourceDto(dto.ManagementZoneResources, dto.TenantResources[i].Id)
+	retVal := make(Environments, 0, len(envDTOs))
+	for i := range envDTOs {
+		e := fromTenantResourceDto(envDTOs[i])
+		e.managementZones = fromManagementZoneResourceDto(mzoneDTOs, envDTOs[i].Id)
 		retVal = append(retVal, e)
 	}
 

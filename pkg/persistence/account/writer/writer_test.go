@@ -44,10 +44,7 @@ func TestWriteAccountResources(t *testing.T) {
 					"monaco@dynatrace.com": account.User{
 						Email: "monaco@dynatrace.com",
 						Groups: []account.Ref{
-							account.Reference{
-								Type: "reference",
-								Id:   "my-group",
-							},
+							account.Reference{Id: "my-group"},
 							account.StrReference("Log viewer"),
 						},
 					},
@@ -94,10 +91,7 @@ func TestWriteAccountResources(t *testing.T) {
 								Permissions: []string{"View environment"},
 								Policies: []account.Ref{
 									account.StrReference("View environment"),
-									account.Reference{
-										Type: "reference",
-										Id:   "my-policy",
-									},
+									account.Reference{Id: "my-policy"},
 								},
 							},
 						},
@@ -256,10 +250,7 @@ func TestWriteAccountResources(t *testing.T) {
 					"monaco@dynatrace.com": account.User{
 						Email: "monaco@dynatrace.com",
 						Groups: []account.Ref{
-							account.Reference{
-								Type: "reference",
-								Id:   "my-group",
-							},
+							account.Reference{Id: "my-group"},
 							account.StrReference("Log viewer"),
 						},
 					},
@@ -279,10 +270,7 @@ func TestWriteAccountResources(t *testing.T) {
 								Permissions: []string{"View environment"},
 								Policies: []account.Ref{
 									account.StrReference("View environment"),
-									account.Reference{
-										Type: "reference",
-										Id:   "my-policy",
-									},
+									account.Reference{Id: "my-policy"},
 								},
 							},
 						},
@@ -353,10 +341,7 @@ func TestWriteAccountResources(t *testing.T) {
 					"monaco@dynatrace.com": account.User{
 						Email: "monaco@dynatrace.com",
 						Groups: []account.Ref{
-							account.Reference{
-								Type: "reference",
-								Id:   "my-group",
-							},
+							account.Reference{Id: "my-group"},
 							account.StrReference("Log viewer"),
 						},
 					},
@@ -377,10 +362,7 @@ func TestWriteAccountResources(t *testing.T) {
 								Permissions: []string{"View environment"},
 								Policies: []account.Ref{
 									account.StrReference("View environment"),
-									account.Reference{
-										Type: "reference",
-										Id:   "my-policy",
-									},
+									account.Reference{Id: "my-policy"},
 								},
 							},
 						},

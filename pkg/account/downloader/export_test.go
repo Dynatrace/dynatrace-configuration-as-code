@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package http
+package downloader
 
 import (
-	"context"
-	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 )
 
-func (c *Client) GetEnvironments(ctx context.Context, account string) (*accountmanagement.EnvironmentResourceDto, error) {
-	r, resp, err := c.EnvironmentManagementAPI.GetEnvironmentResources(ctx, account).Execute()
-	defer closeResponseBody(resp)
-
-	if err != nil {
-		return nil, err
+func New4Test(accountInfo *account.AccountInfo, client httpClient) *Downloader {
+	return &Downloader{
+		httpClient:  client,
+		accountInfo: accountInfo,
 	}
-
-	return r, nil
 }

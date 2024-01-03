@@ -37,14 +37,13 @@ type (
 
 func (a *Downloader) policies(ctx context.Context) (Policies, error) {
 	log.WithCtxFields(ctx).Info("Downloading policies")
-	dtos, err := a.httpClient.GetPoliciesFroAccount(ctx, a.accountInfo.AccountUUID)
+	dtos, err := a.httpClient.GetPolicies(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get policies for account %q: %w", a.accountInfo, err)
+		return nil, fmt.Errorf("failed to get a list of policies for account %q from DT: %w", a.accountInfo, err)
 	}
 	log.WithCtxFields(ctx).Debug("Downloaded %d policies (global + custom)", len(dtos))
 
 	retVal := make(Policies, 0, len(dtos))
-
 	for i := range dtos {
 		var dtoDef *accountmanagement.LevelPolicyDto
 		var p *account.Policy
@@ -52,7 +51,10 @@ func (a *Downloader) policies(ctx context.Context) (Policies, error) {
 			log.WithCtxFields(ctx).Debug("Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid)
 			dtoDef, err = a.httpClient.GetPolicyDefinition(ctx, dtos[i])
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to get the definition for the policy %q (uuid: %q) from DT: %w", dtos[i].Name, dtos[i].Uuid, err)
+			}
+			if dtoDef == nil {
+				return nil, fmt.Errorf("failed to get the definition for the policy %q (uuid: %q) from DT", dtos[i].Name, dtos[i].Uuid)
 			}
 
 			p = toAccountPolicy(&dtos[i], dtoDef)
@@ -127,10 +129,7 @@ func isCustom(dto accountmanagement.PolicyOverview) bool {
 
 func (p *policy) RefOn() account.Ref {
 	if p.isCustom() {
-		return account.Reference{
-			Type: "reference",
-			Id:   p.policy.ID,
-		}
+		return account.Reference{Id: p.policy.ID}
 	}
 	return account.StrReference(p.dto.Name)
 }
