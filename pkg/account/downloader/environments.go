@@ -60,15 +60,15 @@ func (e Environments) getMzoneName(originID string) string {
 func (a *Downloader) environments(ctx context.Context) (Environments, error) {
 	log.WithCtxFields(ctx).Info("Fetching environments")
 
-	zonesDTOs, mzoneDTOs, err := a.httpClient.GetEnvironmentsAndMZones(ctx, a.accountInfo.AccountUUID)
+	envDTOs, mzoneDTOs, err := a.httpClient.GetEnvironmentsAndMZones(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a list of environments and management zones for account %q from DT: %w", a.accountInfo, err)
 	}
 
-	retVal := make(Environments, 0, len(zonesDTOs))
-	for i := range zonesDTOs {
-		e := fromTenantResourceDto(zonesDTOs[i])
-		e.managementZones = fromManagementZoneResourceDto(mzoneDTOs, zonesDTOs[i].Id)
+	retVal := make(Environments, 0, len(envDTOs))
+	for i := range envDTOs {
+		e := fromTenantResourceDto(envDTOs[i])
+		e.managementZones = fromManagementZoneResourceDto(mzoneDTOs, envDTOs[i].Id)
 		retVal = append(retVal, e)
 	}
 

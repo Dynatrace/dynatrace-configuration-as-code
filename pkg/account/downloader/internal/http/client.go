@@ -80,7 +80,7 @@ func (c *Client) GetGroups(ctx context.Context, accUUID string) ([]accountmanage
 		return nil, err
 	}
 	if r == nil {
-		return nil, errors.New("the received data are empty")
+		return nil, errors.New("no group response data received")
 	}
 	return r.Items, nil
 }
@@ -113,10 +113,7 @@ func (c *Client) GetEnvironmentsAndMZones(ctx context.Context, account string) (
 }
 
 func is404(resp *http.Response) bool {
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		return true
-	}
-	return false
+	return resp != nil && resp.StatusCode == http.StatusNotFound
 }
 
 // similar as handleClientResponseError
