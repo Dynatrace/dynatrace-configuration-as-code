@@ -312,6 +312,117 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 			},
 		},
 		{
+			name: "groups with permissions",
+			given: mockData{
+				ai: &account.AccountInfo{AccountUUID: "e34fa4d6-b53a-43e0-9be0-cccca1a4da44"},
+				envs: []accountmanagement.TenantResourceDto{{
+					Name: "tenant1",
+					Id:   "abc12345",
+				}},
+				mzones: []accountmanagement.ManagementZoneResourceDto{{
+					Parent: "abc12345",
+					Name:   "managementZone",
+					Id:     "2698219524301731104",
+				}},
+				groups: []accountmanagement.GetGroupDto{
+					{
+						Uuid: &uuidVar,
+						Name: "test group",
+					},
+					{
+						Uuid: &uuidVar2,
+						Name: "second test group",
+					},
+				},
+				permissionsBindings: []permissionGroupBindings{
+					{
+						groupUUID: uuidVar,
+						bindings: &accountmanagement.PermissionsGroupDto{
+							Permissions: []accountmanagement.PermissionsDto{
+								{
+									PermissionName: "account-viewer",
+									Scope:          "e34fa4d6-b53a-43e0-9be0-cccca1a4da44",
+									ScopeType:      "account",
+								},
+								{
+									PermissionName: "account-editor",
+									Scope:          "e34fa4d6-b53a-43e0-9be0-cccca1a4da44",
+									ScopeType:      "account",
+								},
+								{
+									PermissionName: "tenant-logviewer",
+									Scope:          "abc12345",
+									ScopeType:      "tenant",
+								},
+								{
+									PermissionName: "tenant-viewer",
+									Scope:          "abc12345",
+									ScopeType:      "tenant",
+								},
+							},
+						},
+						err: nil,
+					},
+					{
+						groupUUID: uuidVar2,
+						bindings: &accountmanagement.PermissionsGroupDto{
+							Permissions: []accountmanagement.PermissionsDto{
+								{
+									PermissionName: "account-viewer",
+									Scope:          "e34fa4d6-b53a-43e0-9be0-cccca1a4da44",
+									ScopeType:      "account",
+								},
+								{
+									PermissionName: "tenant-view-security-problems",
+									Scope:          "abc12345:2698219524301731104",
+									ScopeType:      "management-zone",
+								},
+								{
+									PermissionName: "tenant-viewer",
+									Scope:          "abc12345:2698219524301731104",
+									ScopeType:      "management-zone",
+								},
+							},
+						},
+						err: nil,
+					},
+				},
+			},
+			expected: account.Resources{
+				Policies: map[account.PolicyId]account.Policy{},
+				Groups: map[account.GroupId]account.Group{
+					toID("test group"): {
+						ID:             toID("test group"),
+						Name:           "test group",
+						OriginObjectID: uuidVar,
+						Account: &account.Account{
+							Permissions: []string{"account-viewer", "account-editor"},
+						},
+						Environment: []account.Environment{
+							{
+								Name:        "abc12345",
+								Permissions: []string{"tenant-logviewer", "tenant-viewer"},
+							},
+						},
+					},
+					toID("second test group"): {
+						ID:             toID("second test group"),
+						Name:           "second test group",
+						OriginObjectID: uuidVar2,
+						Account: &account.Account{
+							Permissions: []string{"account-viewer"},
+						},
+						ManagementZone: []account.ManagementZone{{
+							Environment:    "abc12345",
+							ManagementZone: "managementZone",
+							Permissions:    []string{"tenant-view-security-problems", "tenant-viewer"},
+						}},
+					},
+				},
+				Users: map[account.UserId]account.User{},
+			},
+		},
+		{
 			name: "no group details (GetGroupsForUser returns nil)",
 			given: mockData{
 				users: []accountmanagement.UsersDto{{Email: "test.user@some.org"}},
@@ -390,6 +501,11 @@ type (
 		bindings           *accountmanagement.LevelPolicyBindingDto
 		err                error
 	}
+	permissionGroupBindings struct {
+		groupUUID string
+		bindings  *accountmanagement.PermissionsGroupDto
+		err       error
+	}
 
 	mockData struct {
 		ai                  *account.AccountInfo
@@ -398,7 +514,7 @@ type (
 		policies            []accountmanagement.PolicyOverview
 		policieDef          *accountmanagement.LevelPolicyDto
 		policyGroupBindings []policyGroupBindings
-		permissions         accountmanagement.PermissionsGroupDto
+		permissionsBindings []permissionGroupBindings
 		groups              []accountmanagement.GetGroupDto
 		users               []accountmanagement.UsersDto
 		userGroups          *accountmanagement.GroupUserDto
@@ -408,8 +524,7 @@ type (
 		policyDefinitionError,
 		groupsError,
 		usersError,
-		groupsForUserError,
-		permissionError error
+		groupsForUserError error
 	}
 )
 
@@ -434,7 +549,13 @@ func newMockDownloader(d mockData, t *testing.T) *downloader.Downloader {
 			client.EXPECT().GetPolicyGroupBindings(ctx, b.levelType, b.levelId).Return(b.bindings, b.err).MinTimes(1)
 		}
 	}
-	client.EXPECT().GetPermissionFor(ctx, gomock.Any(), gomock.Any()).Return(&d.permissions, d.permissionError).AnyTimes()
+	if len(d.permissionsBindings) == 0 {
+		client.EXPECT().GetPermissionFor(ctx, d.ai.AccountUUID, gomock.Any()).Return(&accountmanagement.PermissionsGroupDto{}, nil).AnyTimes()
+	} else {
+		for _, b := range d.permissionsBindings {
+			client.EXPECT().GetPermissionFor(ctx, d.ai.AccountUUID, b.groupUUID).Return(b.bindings, b.err).AnyTimes()
+		}
+	}
 	client.EXPECT().GetGroups(ctx, d.ai.AccountUUID).Return(d.groups, d.groupsError).MinTimes(0).MaxTimes(1)
 	client.EXPECT().GetUsers(ctx, d.ai.AccountUUID).Return(d.users, d.usersError).MinTimes(0).MaxTimes(1)
 	client.EXPECT().GetGroupsForUser(ctx, userEmail(d.users), d.ai.AccountUUID).Return(d.userGroups, d.groupsForUserError).AnyTimes()
