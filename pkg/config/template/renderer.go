@@ -17,6 +17,7 @@ package template
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	templ "text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
 )
 
@@ -28,6 +29,10 @@ func Render(template Template, properties map[string]interface{}) (string, error
 		return "", fmt.Errorf("failure trying to render template %s: %w", template.ID(), err)
 	}
 
+	// special handling to fix the case that a payload was fetched that after the download and processing
+	// results in three subsequent {. This can happen e.g. if the payload allows to have content embraced between
+	// curly braces like {"somekey" : "some {VALUE}"}
+	content = strings.ReplaceAll(content, "{{{", "{{\"{\"}}{{")
 	parsedTemplate, err := ParseTemplate(template.ID(), content)
 
 	if err != nil {

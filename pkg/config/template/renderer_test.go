@@ -108,6 +108,42 @@ func TestRender(t *testing.T) {
 			false,
 		},
 		{
+			"renders simple template containing three subsequent {",
+			&InMemoryTemplate{
+				content: "{{{ .val }}}",
+			},
+			map[string]interface{}{"val": "the-key"},
+			`{the-key}`,
+			false,
+		},
+		{
+			"renders template containing three subsequent { ",
+			&InMemoryTemplate{
+				content: "{{{.val}} | bearer}",
+			},
+			map[string]interface{}{"val": "the-key"},
+			`{the-key | bearer}`,
+			false,
+		},
+		{
+			"renders simple template containing multiple three subsequent {",
+			&InMemoryTemplate{
+				content: "{{{ .val1 }}} {{{ .val2 }}}",
+			},
+			map[string]interface{}{"val1": "the-key1", "val2": "the-key2"},
+			`{the-key1} {the-key2}`,
+			false,
+		},
+		{
+			"renders simple template containing {",
+			&InMemoryTemplate{
+				content: "\\{\\{\\{ I just like curlies",
+			},
+			map[string]interface{}{"val1": "the-key1", "val2": "the-key2"},
+			`\{\{\{ I just like curlies`,
+			false,
+		},
+		{
 			"renders template #1",
 			&InMemoryTemplate{
 				content: templateString,
