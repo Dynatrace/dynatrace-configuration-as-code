@@ -78,6 +78,6 @@ func AccountManagement() FeatureFlag {
 func GenerateJSONSchemas() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_JSON_SCHEMAS",
-		defaultEnabled: false,
+		defaultEnabled: true,
 	}
 }
