@@ -18,62 +18,15 @@ package schemas
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/mutlierror"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
 	accountDelete "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
-	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/converter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
-	deploy "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	manifestLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	manifestWriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/writer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	sortErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/spf13/afero"
 	"path/filepath"
 )
-
-var errorStructs = []interface{}{
-	json.JsonValidationError{},
-	configErrors.InvalidJsonError{},
-	configErrors.ConfigLoaderError{},
-	configErrors.DefinitionParserError{},
-	configErrors.DetailedDefinitionParserError{},
-	configErrors.ParameterDefinitionParserError{},
-	configErrors.ConfigWriterError{},
-	configErrors.DetailedConfigWriterError{},
-	parameter.ParameterParserError{},
-	parameter.ParameterWriterError{},
-	parameter.ParameterResolveValueError{},
-	reference.UnresolvedReferenceError{},
-	converter.ConvertConfigError{},
-	converter.ReferenceParseError{},
-	converter.TemplateConversionError{},
-	delete.DeleteEntryParserError{},
-	deploy.EnvironmentDeploymentErrors{},
-	deploy.DeploymentErrors{},
-	deploy.ConfigDeployErr{},
-	manifestLoader.ManifestLoaderError{},
-	manifestLoader.EnvironmentLoaderError{},
-	manifestLoader.ProjectLoaderError{},
-	manifestWriter.ManifestWriterError{},
-	project.DuplicateConfigIdentifierError{},
-	sortErrors.CircualDependencyProjectSortError{},
-	sortErrors.CircularDependencyConfigSortError{},
-	graph.CyclicDependencyError{},
-	topologysort.TopologySortError{},
-	mutlierror.MultiError{},
-	rest.RespError{},
-}
 
 func generateSchemaFiles(fs afero.Fs, outputfolder string) error {
 	if err := fs.MkdirAll(outputfolder, 0777); err != nil {
@@ -108,25 +61,6 @@ func generateSchemaFiles(fs afero.Fs, outputfolder string) error {
 		return err
 	} else if err := writeSchemaFile(fs, filepath.Join(outputfolder, "monaco-account-delete-file.schema.json"), s); err != nil {
 		return err
-	}
-
-	return generateErrorSchemaFiles(fs, outputfolder)
-}
-
-func generateErrorSchemaFiles(fs afero.Fs, outputfolder string) error {
-	errorsFolder := filepath.Join(outputfolder, "errors")
-	if err := fs.MkdirAll(errorsFolder, 0777); err != nil {
-		return fmt.Errorf("failed to generate Error type schemas: %w", err)
-	}
-	for _, v := range errorStructs {
-		if s, err := json.GenerateJSONSchemaString(v); err != nil {
-			return fmt.Errorf("failed to generate schema for error type %T: %w", v, err)
-		} else {
-			filename := fmt.Sprintf("monaco-error.%T.schema.json", v)
-			if err := writeSchemaFile(fs, filepath.Join(errorsFolder, filename), s); err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil
