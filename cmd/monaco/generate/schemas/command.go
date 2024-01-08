@@ -28,7 +28,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 	cmd = &cobra.Command{
 		Use:     "schemas",
-		Short:   "Generate JSON schemas for YAML files like manifests, configuration files or delete files.",
+		Short:   "Generate JSON schemas for YAML files like manifest, configuration, or delete files.",
 		Example: "monaco generate schemas -o output-folder",
 		Args:    cobra.NoArgs,
 		PreRun:  cmdutils.SilenceUsageCommand(),
