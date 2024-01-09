@@ -13,8 +13,8 @@ groups:
         - type: reference
           id: monaco-policy
         - default
-    environment:
-      - name: vsy13800
+    environments:
+      - environment: vsy13800
         policies:
           - type: reference
             id: monaco-policy

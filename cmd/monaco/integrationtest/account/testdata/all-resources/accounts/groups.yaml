@@ -11,8 +11,8 @@ groups:
         - type: reference
           id: my-policy
 
-    environment:
-      - name: vkb66581
+    environments:
+      - environment: vkb66581
         permissions:
           - tenant-viewer
           - tenant-logviewer
@@ -21,7 +21,7 @@ groups:
           - type: reference
             id: my-policy-2
 
-    managementZone:
+    managementZones:
       - environment: wbm16058
         managementZone: Management Zone 2000
         permissions:

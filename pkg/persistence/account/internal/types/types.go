@@ -59,9 +59,9 @@ type (
 		// Account level permissions and policies that apply to users in this group
 		Account *Account `yaml:"account,omitempty" json:"account,omitempty" jsonschema:"description=Account level permissions and policies that apply to users in this group."`
 		// Environment level permissions and policies that apply to users in this group
-		Environment []Environment `yaml:"environment,omitempty" json:"environment,omitempty" jsonschema:"description=Environment level permissions and policies that apply to users in this group."`
+		Environment []Environment `yaml:"environments,omitempty" json:"environments,omitempty" jsonschema:"description=Environment level permissions and policies that apply to users in this group."`
 		// ManagementZone level permissions that apply to users in this group
-		ManagementZone []ManagementZone `yaml:"managementZone,omitempty" json:"managementZone,omitempty" jsonschema:"description=ManagementZone level permissions that apply to users in this group."`
+		ManagementZone []ManagementZone `yaml:"managementZones,omitempty" json:"managementZones,omitempty" jsonschema:"description=ManagementZone level permissions that apply to users in this group."`
 		OriginObjectID string           `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the group this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
 	}
 	Account struct {
@@ -69,7 +69,7 @@ type (
 		Policies    ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for the whole account."`
 	}
 	Environment struct {
-		Name        string         `yaml:"name" json:"name" jsonschema:"required,description=Name/identifier of the environment."`
+		Name        string         `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment."`
 		Permissions []string       `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for this environment."`
 		Policies    ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for this environment."`
 	}

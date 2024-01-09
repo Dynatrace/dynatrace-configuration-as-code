@@ -115,15 +115,15 @@ func TestWriteAccountResources(t *testing.T) {
     - View my Group Stuff
     policies:
     - Request my Group Stuff
-  environment:
-  - name: myenv123
+  environments:
+  - environment: myenv123
     permissions:
     - View environment
     policies:
     - View environment
     - type: reference
       id: my-policy
-  managementZone:
+  managementZones:
   - environment: myenv123
     managementZone: My MZone
     permissions:
@@ -310,15 +310,15 @@ func TestWriteAccountResources(t *testing.T) {
     - View my Group Stuff
     policies:
     - Request my Group Stuff
-  environment:
-  - name: myenv123
+  environments:
+  - environment: myenv123
     permissions:
     - View environment
     policies:
     - View environment
     - type: reference
       id: my-policy
-  managementZone:
+  managementZones:
   - environment: myenv123
     managementZone: My MZone
     permissions:
@@ -403,15 +403,15 @@ func TestWriteAccountResources(t *testing.T) {
     - View my Group Stuff
     policies:
     - Request my Group Stuff
-  environment:
-  - name: myenv123
+  environments:
+  - environment: myenv123
     permissions:
     - View environment
     policies:
     - View environment
     - type: reference
       id: my-policy
-  managementZone:
+  managementZones:
   - environment: myenv123
     managementZone: My MZone
     permissions:
