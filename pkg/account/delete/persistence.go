@@ -18,8 +18,8 @@ package delete
 
 import (
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
-	"github.com/iancoleman/orderedmap"
 	"github.com/invopop/jsonschema"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 type (
@@ -60,49 +60,46 @@ func (_ Entries) JSONSchema() *jsonschema.Schema {
 	base := jsonutils.ReflectJSONSchema(DeleteEntry{})
 
 	props := base.Properties
-	props.Set("email", map[string]any{"type": "string", "description": "email of the user to delete - required for type user"})
-	props.Set("name", map[string]any{"type": "string", "description": "name of the group or policy to delete"})
-	props.Set("level", map[string]any{"type": "object", "description": "level of policy to delete",
-		"properties": map[string]any{
-			"type":        map[string]any{"type": "string", "description": "level type of the policy to delete", "enum": []string{"account", "environment"}},
-			"environment": map[string]any{"type": "string", "description": "environment to delete the policy for"},
-		},
-		"required": []string{"type"},
-		"oneOf": []map[string]any{
+	props.Set("email", &jsonschema.Schema{Type: "string", Description: "email of the user to delete - required for type user"})
+	props.Set("name", &jsonschema.Schema{Type: "string", Description: "name of the group or policy to delete"})
+
+	props.Set("level", &jsonschema.Schema{
+		Type:        "object",
+		Description: "level of policy to delete",
+		Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
+			orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Type: "string", Description: "level type of the policy to delete", Enum: []any{"account", "environment"}}},
+			orderedmap.Pair[string, *jsonschema.Schema]{Key: "environment", Value: &jsonschema.Schema{Type: "string", Description: "environment to delete the policy for"}})),
+		Required: []string{"type"},
+		OneOf: []*jsonschema.Schema{
 			{
-				"properties": map[string]any{
-					"type": map[string]any{"const": "environment"},
-				},
-				"required": []string{"environment"},
+				Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
+					orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "environment"}})),
+				Required: []string{"environment"},
 			},
 			{
-				"properties": map[string]any{
-					"type": map[string]any{"const": "account"},
-				},
+				Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
+					orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "account"}})),
 			},
 		},
 	})
 
 	conditionalRequiredFields := make([]*jsonschema.Schema, 0)
-	opts := orderedmap.New()
-	opts.Set("type", map[string]any{"const": "user"})
 	conditionalRequiredFields = append(conditionalRequiredFields, &jsonschema.Schema{
-		Properties: opts,
-		Required:   []string{"email"},
+		Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
+			orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "user"}})),
+		Required: []string{"email"},
 	})
 
-	opts = orderedmap.New()
-	opts.Set("type", map[string]any{"const": "group"})
 	conditionalRequiredFields = append(conditionalRequiredFields, &jsonschema.Schema{
-		Properties: opts,
-		Required:   []string{"name"},
+		Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
+			orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "group"}})),
+		Required: []string{"name"},
 	})
 
-	opts = orderedmap.New()
-	opts.Set("type", map[string]any{"const": "policy"})
 	conditionalRequiredFields = append(conditionalRequiredFields, &jsonschema.Schema{
-		Properties: opts,
-		Required:   []string{"name", "level"},
+		Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
+			orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "policy"}})),
+		Required: []string{"name", "level"},
 	})
 
 	return &jsonschema.Schema{
