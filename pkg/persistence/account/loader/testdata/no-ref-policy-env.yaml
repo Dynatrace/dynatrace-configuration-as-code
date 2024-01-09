@@ -9,8 +9,8 @@ groups:
     id: my-group
     description: This is my group
     account:
-    environment:
-      - name: myenv
+    environments:
+      - environment: myenv
         permissions:
           - View environment
         policies:

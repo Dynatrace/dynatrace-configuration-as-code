@@ -14,14 +14,14 @@ groups:
           id: monaco-policy
       permissions:
         - account-viewer
-    environment:
-      - name: vsy13800
+    environments:
+      - environment: vsy13800
         policies:
           - type: reference
             id: monaco-policy-2
         permissions:
           - tenant-viewer
-    managementZone:
+    managementZones:
       - environment: env12345
         managementZone: Mzone
         permissions:

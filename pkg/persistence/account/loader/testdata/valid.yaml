@@ -16,8 +16,8 @@ groups:
       policies:
         - Request My Group Stuff
 
-    environment:
-      - name: myenv123
+    environments:
+      - environment: myenv123
         permissions:
           - View environment
         policies:
@@ -25,7 +25,7 @@ groups:
           - type: reference
             id: my-policy
 
-    managementZone:
+    managementZones:
       - environment: env12345
         managementZone: Mzone
         permissions:
