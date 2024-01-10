@@ -77,3 +77,23 @@ func TestDispatcherConcurrency(t *testing.T) {
 	err := dispatcher.Wait()
 	assert.NoError(t, err, "No errors should be returned")
 }
+
+func TestDynamicDispatcher(t *testing.T) {
+	mockJobFunc := func(group *sync.WaitGroup, errCh chan error) {
+		time.Sleep(100 * time.Millisecond)
+		group.Done()
+	}
+
+	job := mockJobFunc
+	dispatcher := NewDispatcher(-1)
+
+	dispatcher.Run()
+
+	numJobs := 5
+	for i := 0; i < numJobs; i++ {
+		dispatcher.AddJob(job)
+	}
+
+	err := dispatcher.Wait()
+	assert.NoError(t, err, "No errors should be returned")
+}
