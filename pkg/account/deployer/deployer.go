@@ -69,15 +69,15 @@ type client interface {
 }
 
 type AccountDeployer struct {
-	accClient  client
-	idMap      idMap
-	logger     loggers.Logger
-	maxWorkers int
+	accClient            client
+	idMap                idMap
+	logger               loggers.Logger
+	maxConcurrentDeploys int
 }
 
-func WithMaxWorkers(size int) func(*AccountDeployer) {
+func WithMaxConcurrentDeploys(maxConcurrentDeploys int) func(*AccountDeployer) {
 	return func(d *AccountDeployer) {
-		d.maxWorkers = size
+		d.maxConcurrentDeploys = maxConcurrentDeploys
 	}
 }
 
@@ -113,7 +113,7 @@ func (d *AccountDeployer) Deploy(res *account.Resources) error {
 }
 
 func (d *AccountDeployer) fetchExistingResources() error {
-	dispatcher := NewDispatcher(d.maxWorkers)
+	dispatcher := NewDispatcher(d.maxConcurrentDeploys)
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
@@ -138,7 +138,7 @@ func (d *AccountDeployer) fetchExistingResources() error {
 }
 
 func (d *AccountDeployer) deployResources(res *account.Resources) error {
-	dispatcher := NewDispatcher(d.maxWorkers)
+	dispatcher := NewDispatcher(d.maxConcurrentDeploys)
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
@@ -151,7 +151,7 @@ func (d *AccountDeployer) deployResources(res *account.Resources) error {
 }
 
 func (d *AccountDeployer) updateBindings(res *account.Resources) error {
-	dispatcher := NewDispatcher(d.maxWorkers)
+	dispatcher := NewDispatcher(d.maxConcurrentDeploys)
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
