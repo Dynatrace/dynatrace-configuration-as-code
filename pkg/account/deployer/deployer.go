@@ -75,12 +75,22 @@ type AccountDeployer struct {
 	maxWorkers int
 }
 
-func NewAccountDeployer(client client) *AccountDeployer {
-	return &AccountDeployer{
+func WithMaxWorkers(size int) func(*AccountDeployer) {
+	return func(d *AccountDeployer) {
+		d.maxWorkers = size
+	}
+}
+
+func NewAccountDeployer(client client, opts ...func(*AccountDeployer)) *AccountDeployer {
+	ac := &AccountDeployer{
 		accClient: client,
 		idMap:     newIdMap(),
 		logger:    log.WithFields(field.F("account", client.getAccountInfo().Name)),
 	}
+	for _, o := range opts {
+		o(ac)
+	}
+	return ac
 }
 
 func (d *AccountDeployer) Deploy(res *account.Resources) error {

@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -129,9 +130,11 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 		return fmt.Errorf("failed to fetch supportedPermissions: %w", err)
 	}
 
+	maxWorkers := environment.GetEnvValueInt(environment.ConcurrentRequestsEnvKey)
+
 	for accInfo, accClient := range accountClients {
 		logger := log.WithFields(field.F("account", accInfo.Name))
-		accountDeployer := deployer.NewAccountDeployer(deployer.NewClient(accInfo, accClient, supportedPermissions))
+		accountDeployer := deployer.NewAccountDeployer(deployer.NewClient(accInfo, accClient, supportedPermissions), deployer.WithMaxWorkers(maxWorkers))
 		logger.Info("Deploying configuration for account: %s", accInfo.Name)
 		logger.Info("Number of users to deploy: %d", len(resources.Users))
 		logger.Info("Number of groups to deploy: %d", len(resources.Groups))
