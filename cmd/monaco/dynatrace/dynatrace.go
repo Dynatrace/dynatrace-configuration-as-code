@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -99,6 +100,7 @@ func CreateClientSet(url string, auth manifest.Auth) (*client.ClientSet, error) 
 }
 
 func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[account.AccountInfo]*accounts.Client, error) {
+	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	accClients := make(map[account.AccountInfo]*accounts.Client, len(manifestAccounts))
 	for _, acc := range manifestAccounts {
 		oauthCreds := clientcredentials.Config{
@@ -114,6 +116,7 @@ func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[acc
 			apiUrl = acc.ApiUrl.Value
 		}
 		accClient, err := clients.Factory().
+			WithConcurrentRequestLimit(concurrentRequestLimit).
 			WithOAuthCredentials(oauthCreds).
 			WithUserAgent(client.DefaultMonacoUserAgent).
 			AccountClient(apiUrl)

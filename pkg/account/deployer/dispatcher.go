@@ -32,9 +32,12 @@ type Dispatcher struct {
 	workers    []worker
 }
 
+// NewDispatcher creates a dispatcher that will use the specified amount of workers
+// to dispatch its work loads. If maxWorkers is equal or less than 0, the dispatcher will dynamically
+// create workers. Otherwise, there will be the specified fixed amount of workers available in the pool.
 func NewDispatcher(maxWorkers int) *Dispatcher {
 	return &Dispatcher{
-		workerPool: make(chan chan Runnable, maxWorkers),
+		workerPool: make(chan chan Runnable),
 		maxWorkers: maxWorkers,
 		waitGroup:  &sync.WaitGroup{},
 		errCh:      make(chan error),
@@ -43,17 +46,22 @@ func NewDispatcher(maxWorkers int) *Dispatcher {
 }
 
 func (d *Dispatcher) Run() {
-	for i := 0; i < d.maxWorkers; i++ {
-		w := worker{
-			workerPool: d.workerPool,
-			jobs:       make(chan Runnable),
-			waitGroup:  d.waitGroup,
-			errCh:      d.errCh,
-			quit:       make(chan bool)}
-		d.workers = append(d.workers, w)
-		w.start()
+	if d.maxWorkers <= 0 {
+		go d.dynamicDispatch()
+	} else {
+		for i := 0; i < d.maxWorkers; i++ {
+			w := worker{
+				workerPool: d.workerPool,
+				jobs:       make(chan Runnable),
+				waitGroup:  d.waitGroup,
+				errCh:      d.errCh,
+				quit:       make(chan bool),
+			}
+			d.workers = append(d.workers, w)
+			w.start()
+		}
+		go d.dispatch()
 	}
-	go d.dispatch()
 }
 
 func (d *Dispatcher) Stop() {
@@ -98,16 +106,43 @@ func (d *Dispatcher) dispatch() {
 	}
 }
 
+func (d *Dispatcher) dynamicDispatch() {
+	for {
+		job := <-d.jobQueue
+		w := worker{
+			workerPool: d.workerPool,
+			jobs:       make(chan Runnable),
+			waitGroup:  d.waitGroup,
+			errCh:      d.errCh,
+			quit:       make(chan bool),
+			dynamic:    true,
+		}
+		w.start()
+		go func(job Runnable) {
+			jobChannel := <-d.workerPool
+			jobChannel <- job
+		}(job)
+	}
+}
+
 type worker struct {
 	workerPool chan chan Runnable
 	jobs       chan Runnable
 	waitGroup  *sync.WaitGroup
 	errCh      chan error
 	quit       chan bool
+	dynamic    bool
 }
 
 func (w worker) start() {
 	go func() {
+		defer func() {
+			if w.dynamic {
+				close(w.jobs)
+				w.quit <- true
+			}
+		}()
+
 		for {
 			w.workerPool <- w.jobs
 
