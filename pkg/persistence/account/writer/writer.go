@@ -19,6 +19,7 @@ package writer
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
 	"github.com/spf13/afero"
@@ -81,6 +82,9 @@ func Write(writerContext Context, resources account.Resources) error {
 	if errOccurred {
 		return fmt.Errorf("failed to persist some account resources to folder %q", projectFolder)
 	}
+
+	log.WithFields(field.F("outputFolder", writerContext.OutputFolder)).Info("Downloaded account management resources written to '%s'", writerContext.OutputFolder)
+
 	return nil
 }
 

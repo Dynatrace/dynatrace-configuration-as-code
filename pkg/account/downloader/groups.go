@@ -111,7 +111,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		groups = append(groups, g)
 	}
 
-	log.Info("Downloaded %d groups", len(groups))
+	log.WithCtxFields(ctx).Info("Downloaded %d groups", len(groups))
 
 	return groups, nil
 }
