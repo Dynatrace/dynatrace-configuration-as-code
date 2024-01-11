@@ -32,6 +32,9 @@ type Dispatcher struct {
 	workers    []worker
 }
 
+// NewDispatcher creates a dispatcher that will use the specified amount of workers
+// to dispatch its work loads. If maxWorkers is equal to -1, the dispatcher will dynamically
+// create workers. Otherwise, there will be the specified fixed amount of workers available in the pool.
 func NewDispatcher(maxWorkers int) *Dispatcher {
 	return &Dispatcher{
 		workerPool: make(chan chan Runnable),
