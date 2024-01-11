@@ -102,7 +102,7 @@ func (d *AccountDeployer) Deploy(res *account.Resources) error {
 }
 
 func (d *AccountDeployer) fetchExistingResources() error {
-	dispatcher := NewDispatcher(10)
+	dispatcher := NewDispatcher(-1)
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
@@ -127,7 +127,7 @@ func (d *AccountDeployer) fetchExistingResources() error {
 }
 
 func (d *AccountDeployer) deployResources(res *account.Resources) error {
-	dispatcher := NewDispatcher(10)
+	dispatcher := NewDispatcher(-1)
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
@@ -140,7 +140,7 @@ func (d *AccountDeployer) deployResources(res *account.Resources) error {
 }
 
 func (d *AccountDeployer) updateBindings(res *account.Resources) error {
-	dispatcher := NewDispatcher(10)
+	dispatcher := NewDispatcher(-1)
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
