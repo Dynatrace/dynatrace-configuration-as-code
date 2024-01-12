@@ -23,8 +23,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
 	"github.com/spf13/afero"
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
+	"strings"
 )
 
 // Context for this account resource writer, defining the filesystem and paths to create resources at
@@ -109,11 +111,19 @@ func toPersistencePolicies(policies map[string]account.Policy) []persistence.Pol
 			OriginObjectID: v.OriginObjectID,
 		})
 	}
+	// sort policies by ID so that they are stable within a persisted file
+	slices.SortFunc(out, func(a, b persistence.Policy) bool {
+		return caseInsensitiveLexicographicSmaller(a.ID, b.ID)
+	})
 	return out
 }
 
 func transformRefs(in []account.Ref) []persistence.Reference {
 	var res []persistence.Reference
+	// sort refs by ID() so that they are stable for both full refs and strings within a persisted file
+	slices.SortFunc(in, func(a, b account.Ref) bool {
+		return caseInsensitiveLexicographicSmaller(a.ID(), b.ID())
+	})
 	for _, el := range in {
 		switch v := el.(type) {
 		case account.Reference:
@@ -145,7 +155,13 @@ func toPersistenceGroups(groups map[string]account.Group) []persistence.Group {
 				Permissions: e.Permissions,
 				Policies:    transformRefs(e.Policies),
 			}
+			// sort permissions so that they are stable within a persisted file
+			slices.SortFunc(envs[i].Permissions, caseInsensitiveLexicographicSmaller)
 		}
+		// sort envs by name so that they are stable within a persisted file
+		slices.SortFunc(envs, func(a, b persistence.Environment) bool {
+			return caseInsensitiveLexicographicSmaller(a.Name, b.Name)
+		})
 		mzs := make([]persistence.ManagementZone, len(v.ManagementZone))
 		for i, e := range v.ManagementZone {
 			mzs[i] = persistence.ManagementZone{
@@ -153,7 +169,13 @@ func toPersistenceGroups(groups map[string]account.Group) []persistence.Group {
 				ManagementZone: e.ManagementZone,
 				Permissions:    e.Permissions,
 			}
+			// sort permissions so that they are stable within a persisted file
+			slices.SortFunc(mzs[i].Permissions, caseInsensitiveLexicographicSmaller)
 		}
+		// sort mzs by env and name so that they are stable within a persisted file
+		slices.SortFunc(mzs, func(a, b persistence.ManagementZone) bool {
+			return strings.ToLower(a.Environment) <= strings.ToLower(b.Environment) && caseInsensitiveLexicographicSmaller(a.ManagementZone, b.ManagementZone)
+		})
 
 		out = append(out, persistence.Group{
 			ID:             v.ID,
@@ -165,7 +187,15 @@ func toPersistenceGroups(groups map[string]account.Group) []persistence.Group {
 			OriginObjectID: v.OriginObjectID,
 		})
 	}
+	// sort groups by ID so that they are stable within a persisted file
+	slices.SortFunc(out, func(a, b persistence.Group) bool {
+		return caseInsensitiveLexicographicSmaller(a.ID, b.ID)
+	})
 	return out
+}
+
+func caseInsensitiveLexicographicSmaller(a, b string) bool {
+	return strings.ToLower(a) < strings.ToLower(b)
 }
 
 func toPersistenceUsers(users map[string]account.User) []persistence.User {
@@ -176,6 +206,10 @@ func toPersistenceUsers(users map[string]account.User) []persistence.User {
 			Groups: transformRefs(v.Groups),
 		})
 	}
+	// sort users by email so that they are stable within a persisted file
+	slices.SortFunc(out, func(a, b persistence.User) bool {
+		return caseInsensitiveLexicographicSmaller(a.Email, b.Email)
+	})
 	return out
 }
 
