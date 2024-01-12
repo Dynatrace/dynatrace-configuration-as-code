@@ -20,12 +20,14 @@ import (
 	"context"
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
@@ -115,7 +117,13 @@ func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[acc
 		} else {
 			apiUrl = acc.ApiUrl.Value
 		}
-		accClient, err := clients.Factory().
+
+		factory := clients.Factory()
+		if support.SupportArchive {
+			factory = factory.WithHTTPListener(&lib.HTTPListener{Callback: trafficlogs.NewFileBased().LogToFiles})
+		}
+
+		accClient, err := factory.
 			WithConcurrentRequestLimit(concurrentRequestLimit).
 			WithOAuthCredentials(oauthCreds).
 			WithUserAgent(client.DefaultMonacoUserAgent).
