@@ -54,9 +54,9 @@ func TestWriteAccountResources(t *testing.T) {
 				users: `users:
 - email: monaco@dynatrace.com
   groups:
+  - Log viewer
   - type: reference
     id: my-group
-  - Log viewer
 `,
 			},
 		},
@@ -120,9 +120,9 @@ func TestWriteAccountResources(t *testing.T) {
     permissions:
     - View environment
     policies:
-    - View environment
     - type: reference
       id: my-policy
+    - View environment
   managementZones:
   - environment: myenv123
     managementZone: My MZone
@@ -297,9 +297,9 @@ func TestWriteAccountResources(t *testing.T) {
 				users: `users:
 - email: monaco@dynatrace.com
   groups:
+  - Log viewer
   - type: reference
     id: my-group
-  - Log viewer
 `,
 				groups: `groups:
 - id: my-group
@@ -315,9 +315,9 @@ func TestWriteAccountResources(t *testing.T) {
     permissions:
     - View environment
     policies:
-    - View environment
     - type: reference
       id: my-policy
+    - View environment
   managementZones:
   - environment: myenv123
     managementZone: My MZone
@@ -390,9 +390,9 @@ func TestWriteAccountResources(t *testing.T) {
 				users: `users:
 - email: monaco@dynatrace.com
   groups:
+  - Log viewer
   - type: reference
     id: my-group
-  - Log viewer
 `,
 				groups: `groups:
 - id: my-group
@@ -408,9 +408,9 @@ func TestWriteAccountResources(t *testing.T) {
     permissions:
     - View environment
     policies:
-    - View environment
     - type: reference
       id: my-policy
+    - View environment
   managementZones:
   - environment: myenv123
     managementZone: My MZone
@@ -426,6 +426,176 @@ func TestWriteAccountResources(t *testing.T) {
   description: This is my policy. There's many like it, but this one is mine.
   policy: ALLOW a:b:c;
   originObjectId: ObjectID-456
+`,
+			},
+		},
+		{
+			"file contents are sorted",
+			account.Resources{
+				Users: map[account.UserId]account.User{
+					"first@dynatrace.com": account.User{
+						Email: "first@dynatrace.com",
+						Groups: []account.Ref{
+							account.Reference{Id: "my-group"},
+							account.StrReference("Log viewer"),
+						},
+					},
+					"second@dynatrace.com": account.User{
+						Email: "second@dynatrace.com",
+						Groups: []account.Ref{
+							account.Reference{Id: "my-group"},
+							account.StrReference("Log viewer"),
+						},
+					},
+				},
+				Groups: map[account.GroupId]account.Group{
+					"second-group": {
+						ID:          "second-group",
+						Name:        "My other Group",
+						Description: "This is my group",
+						Account: &account.Account{
+							Permissions: []string{},
+							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
+						},
+						Environment:    []account.Environment{},
+						ManagementZone: []account.ManagementZone{},
+					},
+					"first-group": {
+						ID:          "first-group",
+						Name:        "My Group",
+						Description: "This is my group",
+						Account: &account.Account{
+							Permissions: []string{"View my Group Stuff"},
+							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
+						},
+						Environment: []account.Environment{
+							{
+								Name:        "myenv456",
+								Permissions: []string{"View environment"},
+								Policies: []account.Ref{
+									account.StrReference("View environment"),
+									account.Reference{Id: "second-policy"},
+								},
+							},
+							{
+								Name:        "myenv123",
+								Permissions: []string{"View environment"},
+								Policies: []account.Ref{
+									account.StrReference("View environment"),
+									account.Reference{Id: "first-policy"},
+								},
+							},
+						},
+						ManagementZone: []account.ManagementZone{
+							{
+								Environment:    "myenv123",
+								ManagementZone: "Second MZone",
+								Permissions:    []string{"Do Stuff"},
+							},
+							{
+								Environment:    "myenv123",
+								ManagementZone: "First MZone",
+								Permissions:    []string{"C", "B", "A"},
+							},
+							{
+								Environment:    "myenv456",
+								ManagementZone: "First MZone",
+								Permissions:    []string{"C", "B", "A"},
+							},
+						},
+					},
+				},
+				Policies: map[account.PolicyId]account.Policy{
+					"second-policy": {
+						ID:          "second-policy",
+						Name:        "My other Policy",
+						Level:       account.PolicyLevelAccount{Type: "account"},
+						Description: "This is my policy. There's many like it, but this one is mine.",
+						Policy:      "ALLOW a:b:c;",
+					},
+					"first-policy": {
+						ID:          "first-policy",
+						Name:        "My Policy",
+						Level:       account.PolicyLevelAccount{Type: "account"},
+						Description: "This is my policy. There's many like it, but this one is mine.",
+						Policy:      "ALLOW a:b:c;",
+					},
+				},
+			},
+			want{
+				users: `users:
+- email: first@dynatrace.com
+  groups:
+  - Log viewer
+  - type: reference
+    id: my-group
+- email: second@dynatrace.com
+  groups:
+  - Log viewer
+  - type: reference
+    id: my-group
+`,
+				groups: `groups:
+- id: first-group
+  name: My Group
+  description: This is my group
+  account:
+    permissions:
+    - View my Group Stuff
+    policies:
+    - Request my Group Stuff
+  environments:
+  - environment: myenv123
+    permissions:
+    - View environment
+    policies:
+    - type: reference
+      id: first-policy
+    - View environment
+  - environment: myenv456
+    permissions:
+    - View environment
+    policies:
+    - type: reference
+      id: second-policy
+    - View environment
+  managementZones:
+  - environment: myenv123
+    managementZone: First MZone
+    permissions:
+    - A
+    - B
+    - C
+  - environment: myenv123
+    managementZone: Second MZone
+    permissions:
+    - Do Stuff
+  - environment: myenv456
+    managementZone: First MZone
+    permissions:
+    - A
+    - B
+    - C
+- id: second-group
+  name: My other Group
+  description: This is my group
+  account:
+    policies:
+    - Request my Group Stuff
+`,
+				policies: `policies:
+- id: first-policy
+  name: My Policy
+  level:
+    type: account
+  description: This is my policy. There's many like it, but this one is mine.
+  policy: ALLOW a:b:c;
+- id: second-policy
+  name: My other Policy
+  level:
+    type: account
+  description: This is my policy. There's many like it, but this one is mine.
+  policy: ALLOW a:b:c;
 `,
 			},
 		},
