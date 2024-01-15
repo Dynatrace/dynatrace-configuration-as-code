@@ -1,0 +1,29 @@
+groups:
+  - name: My Group%RAND%
+    id: my-group
+    description: This is my group
+    account:
+      permissions:
+        - account-viewer
+        - account-company-info
+      policies:
+        - Environment role - Access environment
+        - type: reference
+          id: my-policy
+
+    environments:
+      - environment: vkb66581
+        permissions:
+          - tenant-viewer
+          - tenant-logviewer
+        policies:
+          - Environment role - Replay session data without masking
+          - type: reference
+            id: my-policy-2
+
+    managementZones:
+      - environment: wbm16058
+        managementZone: Management Zone 2000
+        permissions:
+          - tenant-viewer
+          - tenant-logviewer
