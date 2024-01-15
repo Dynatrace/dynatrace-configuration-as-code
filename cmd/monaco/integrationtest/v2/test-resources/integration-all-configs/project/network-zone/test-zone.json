@@ -1,0 +1,9 @@
+{
+  "alternativeZones": [],
+  "description": "This is a test zone",
+  "fallbackMode": "ANY_ACTIVE_GATE",
+  "numOfConfiguredActiveGates": 0,
+  "numOfConfiguredOneAgents": 0,
+  "numOfOneAgentsFromOtherZones": 0,
+  "numOfOneAgentsUsing": 0
+}
