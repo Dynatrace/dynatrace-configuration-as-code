@@ -47,6 +47,12 @@ func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.
 			}
 		}
 
+		// The network-zone API doesn't have a POST endpoint, hence, we need to treat it as an update operation
+		// per default
+		if theApi.ID == "network-zone" {
+			existingObjectID = objectName
+		}
+
 		// The calculated-metrics-log API doesn't have a POST endpoint, to create a new log metric we need to use PUT which
 		// requires a metric key for which we can just take the objectName
 		if theApi.ID == "calculated-metrics-log" && existingObjectID == "" {
