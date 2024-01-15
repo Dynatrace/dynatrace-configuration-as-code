@@ -29,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"slices"
 	"testing"
@@ -42,7 +43,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 	cliDeployMZones.SetArgs([]string{"deploy", "testdata/all-resources/manifest-mzones.yaml"})
 
 	err := cliDeployMZones.Execute()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	RunAccountTestCase(t, "testdata/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[account.AccountInfo]*accounts.Client, o options) {
 

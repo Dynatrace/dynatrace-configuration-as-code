@@ -27,7 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"strings"
 	"testing"
@@ -56,9 +56,9 @@ func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name
 // createAccountClientsFromManifest creates a map of accountInfo --> account client for a given manifest
 func createAccountClientsFromManifest(t *testing.T, fs afero.Fs, manifestFileName string) map[account.AccountInfo]*accounts.Client {
 	m, errs := manifestloader.Load(&manifestloader.Context{Fs: fs, ManifestPath: manifestFileName, Opts: manifestloader.Options{RequireAccounts: true}})
-	assert.NoError(t, errors.Join(errs...))
+	require.NoError(t, errors.Join(errs...))
 	accClients, err := dynatrace.CreateAccountClients(m.Accounts)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return accClients
 }
 
@@ -67,13 +67,13 @@ func createAccountClientsFromManifest(t *testing.T, fs afero.Fs, manifestFileNam
 func randomizeYAMLResources(t *testing.T, fs afero.Fs, name string) string {
 	randStr := integrationtest.GenerateTestSuffix(t, name)
 	ff, err := files.FindYamlFiles(fs, ".")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	for _, file := range ff {
 		fileContent, err := afero.ReadFile(fs, file)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		fileContentRandomized := randomizeFn(randStr)(string(fileContent))
 		err = afero.WriteFile(fs, file, []byte(fileContentRandomized), 0644)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 	return randStr
 }
