@@ -246,6 +246,11 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 }
 
 func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
+	// DELETE THIS once deploying network zones is supported
+	if c.Coordinate.Type == "network-zone" {
+		c.Skip = true
+	}
+
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
 		return entities.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)

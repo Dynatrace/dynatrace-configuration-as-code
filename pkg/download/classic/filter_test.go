@@ -145,4 +145,10 @@ func TestShouldConfigBeSkipped(t *testing.T) {
 			Id: "test.something",
 		}))
 	})
+
+	t.Run("default network zone - should be skipped", func(t *testing.T) {
+		assert.True(t, apiContentFilters["network-zone"].ShouldBeSkippedPreDownload(dtclient.Value{
+			Id: "default",
+		}))
+	})
 }

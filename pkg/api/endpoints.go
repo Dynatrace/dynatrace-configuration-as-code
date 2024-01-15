@@ -26,6 +26,11 @@ var configEndpoints = []API{
 		NonUniqueName:                true,
 	},
 	{
+		ID:                           "network-zone",
+		URLPath:                      "/api/v2/networkZones",
+		PropertyNameOfGetAllResponse: "networkZones",
+	},
+	{
 		ID:                           "management-zone",
 		URLPath:                      "/api/config/v1/managementZones",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
