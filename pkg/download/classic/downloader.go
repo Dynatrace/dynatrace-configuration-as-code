@@ -164,6 +164,10 @@ func (d *Downloader) downloadConfigsOfAPI(api api.API, values []dtclient.Value, 
 		go func() {
 			defer wg.Done()
 			downloadedJson, err := d.downloadAndUnmarshalConfig(api, value)
+			if api.TweakResponseFunc != nil {
+				api.TweakResponseFunc(downloadedJson)
+			}
+
 			if err != nil {
 				log.WithFields(field.Type(api.ID), field.F("value", value), field.Error(err)).Error("Error fetching config '%v' in api '%v': %v", value.Id, api.ID, err)
 				return

@@ -1,0 +1,5 @@
+{
+    "alternativeZones": [],
+    "description": "This is a second test zone",
+    "fallbackMode": "ANY_ACTIVE_GATE"
+}

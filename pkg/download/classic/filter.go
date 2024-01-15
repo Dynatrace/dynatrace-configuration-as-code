@@ -74,4 +74,9 @@ var apiContentFilters = map[string]ContentFilter{
 			return strings.HasPrefix(value.Id, "dynatrace.") || strings.HasPrefix(value.Id, "ruxit.")
 		},
 	},
+	"network-zone": {
+		ShouldBeSkippedPreDownload: func(value dtclient.Value) bool {
+			return value.Id == "default"
+		},
+	},
 }

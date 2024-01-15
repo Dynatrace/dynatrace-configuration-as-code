@@ -1,0 +1,16 @@
+configs:
+- id: test-zone
+  config:
+    name: test-zone
+    template: test-zone.json
+    skip: false
+  type:
+    api: network-zone
+- id: test-zone-2
+  config:
+    name: test-zone-2
+    template: test-zone-2.json
+    skip: false
+  type:
+    api: network-zone
+
