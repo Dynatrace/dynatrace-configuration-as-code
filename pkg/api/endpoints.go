@@ -29,6 +29,12 @@ var configEndpoints = []API{
 		ID:                           "network-zone",
 		URLPath:                      "/api/v2/networkZones",
 		PropertyNameOfGetAllResponse: "networkZones",
+		TweakResponseFunc: func(m map[string]any) {
+			delete(m, "numOfOneAgentsUsing")
+			delete(m, "numOfConfiguredOneAgents")
+			delete(m, "numOfOneAgentsFromOtherZones")
+			delete(m, "numOfConfiguredActiveGates")
+		},
 	},
 	{
 		ID:                           "management-zone",

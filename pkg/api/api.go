@@ -36,6 +36,9 @@ type API struct {
 	//
 	// Those configs include all configs handling credentials, as well as the extension-API.
 	SkipDownload bool
+	// TweakResponseFunc can be optionally registered to add custom code that changes the
+	// payload of the downloaded api content (e.g. to exclude unwanted/unnecessary fields)
+	TweakResponseFunc func(map[string]any)
 }
 
 // CreateURL creates final URL for given environmentUrl/domain
