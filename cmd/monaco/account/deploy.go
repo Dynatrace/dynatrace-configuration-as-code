@@ -49,9 +49,9 @@ func deployCommand(fs afero.Fs) *cobra.Command {
 	opts := deployOpts{}
 
 	command := &cobra.Command{
-		Use:               "deploy <manifest.yaml> [flags]",
+		Use:               "deploy [flags]",
 		Short:             "Deploy account management resources",
-		Example:           "monaco account deploy manifest.yaml [--account <account-name-in-manifest>] [--project <project-defined-in-manifest>]",
+		Example:           "monaco account deploy --manifest <path_to_manifest> --account <account-name> --project <project-name>",
 		ValidArgsFunction: completion.SingleArgumentManifestFileCompletion,
 		PreRun:            cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
