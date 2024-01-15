@@ -1,7 +1,7 @@
 manifestVersion: 1.1
 
 projects:
-- name: mzones
+- name: project
 
 environmentGroups:
 - name: default

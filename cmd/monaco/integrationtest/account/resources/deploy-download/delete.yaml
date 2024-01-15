@@ -1,0 +1,14 @@
+delete:
+  - type: user
+    email: monaco+%RAND%@dynatrace.com
+  - type: group
+    name: My Group%RAND%
+  - type: policy
+    name: My Policy%RAND%
+    level:
+      type: account
+  - type: policy
+    name: My Policy 2%RAND%
+    level:
+      type: environment
+      environment: vkb66581

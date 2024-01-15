@@ -1,0 +1,16 @@
+policies:
+  - name: My Policy%RAND%
+    id: my-policy
+    level:
+      type: account
+    description: abcde
+    policy: |-
+      DENY automation:workflows:read;
+  - name: My Policy 2%RAND%
+    id: my-policy-2
+    level:
+      type: environment
+      environment: vkb66581
+    description: abcde
+    policy: |-
+      ALLOW automation:workflows:read;

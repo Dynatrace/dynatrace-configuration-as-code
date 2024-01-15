@@ -27,7 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -37,15 +36,9 @@ import (
 
 func TestDeployAndDelete_AllResources(t *testing.T) {
 	t.Setenv(featureflags.AccountManagement().EnvName(), "true")
+	createMZone(t)
 
-	// Create a management zone, so that we can reliably refer to it
-	cliDeployMZones := runner.BuildCli(afero.NewOsFs())
-	cliDeployMZones.SetArgs([]string{"deploy", "testdata/all-resources/manifest-mzones.yaml"})
-
-	err := cliDeployMZones.Execute()
-	require.NoError(t, err)
-
-	RunAccountTestCase(t, "testdata/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[account.AccountInfo]*accounts.Client, o options) {
+	RunAccountTestCase(t, "resources/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[account.AccountInfo]*accounts.Client, o options) {
 
 		accountName := o.accountName
 		accountUUID := o.accountUUID
