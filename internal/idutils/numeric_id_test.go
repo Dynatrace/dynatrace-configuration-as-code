@@ -33,6 +33,11 @@ func TestGetNumericIDForObjectID(t *testing.T) {
 		wantErr       bool
 	}{
 		{
+			name:          "with overflowing UUID int",
+			givenObjectID: "YTJhNmJmOGYtOThiYS00ZTgxLWJhZDYtM2ZiZGM2OTc5MTVi",
+			wantNumericID: 5230804423511894417,
+		},
+		{
 			name:          "with new UUID #1",
 			givenObjectID: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
 			wantNumericID: -4292415658385853785,
