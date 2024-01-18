@@ -509,7 +509,7 @@ configs:
 			filePathArgument:  "test-file.yaml",
 			filePathOnDisk:    "test-file.yaml",
 			fileContentOnDisk: "configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n",
-			wantErrorsContain: []string{"type configuration is missing"},
+			wantErrorsContain: []string{"missing type definition"},
 		},
 		{
 			name:             "fails to load with a compound as scope",
@@ -926,6 +926,215 @@ configs:
 `,
 			wantErrorsContain: []string{"unknown API: bucket"},
 		},
+		{
+			name:             "API without scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    api:
+      name: 'some-api'
+`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "some-api",
+						ConfigId: "profile-id",
+					},
+					Type: config.ClassicApiType{
+						Api: "some-api",
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						"name": &value.ValueParameter{Value: "Star Trek > Star Wars"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
+			name:             "loads complex api config with a full shorthand reference as scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    api:
+      name: some-api
+      scope: ["proj2", "something", "configId", "id"]`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "some-api",
+						ConfigId: "profile-id",
+					},
+					Type: config.ClassicApiType{
+						Api: "some-api",
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: ref.New("proj2", "something", "configId", "id"),
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
+				},
+			},
+		},
+		{
+			name:             "loads complex api config with the reference parameter",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    api:
+      name: some-api
+      scope:
+        type: reference
+        configId: configId
+        property: id
+        configType: something`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "some-api",
+						ConfigId: "profile-id",
+					},
+					Type: config.ClassicApiType{
+						Api: "some-api",
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: ref.New("project", "something", "configId", "id"),
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
+				},
+			},
+		},
+		{
+			name:             "loads complex api config environment parameter",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    api:
+      name: some-api
+      scope:
+        type: environment
+        name: TEST`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "some-api",
+						ConfigId: "profile-id",
+					},
+					Type: config.ClassicApiType{
+						Api: "some-api",
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: &environment.EnvironmentVariableParameter{Name: "TEST"},
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
+				},
+			},
+		},
+		{
+			name:             "loads complex api config with a value scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    api:
+      name: some-api
+      scope:
+        type: value
+        value: var`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "some-api",
+						ConfigId: "profile-id",
+					},
+					Type: config.ClassicApiType{
+						Api: "some-api",
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: &value.ValueParameter{Value: "var"},
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
+				},
+			},
+		},
+		{
+			name:             "loads complex api config with an invalid value scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    api:
+      name: some-api
+      scope:
+        type: value
+        wrong-field: var`,
+			wantErrorsContain: []string{"missing property"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -949,14 +1158,17 @@ configs:
 			}
 			assert.Empty(t, gotErrors, "expected no errors but got: %v", gotErrors)
 
-			assert.True(t, cmp.Equal(tt.wantConfigs, gotConfigs, cmp.Comparer(func(a, b template.Template) bool {
+			// compare template contents
+			assert.Empty(t, cmp.Diff(tt.wantConfigs, gotConfigs, cmp.Comparer(func(a, b template.Template) bool {
 				cA, _ := a.Content()
 				cA = strings.ReplaceAll(cA, " ", "")
 				cA = strings.ReplaceAll(cA, "\n", "")
+
 				cB, _ := b.Content()
 				cB = strings.ReplaceAll(cB, " ", "")
 				cB = strings.ReplaceAll(cB, "\n", "")
-				return cA == cB
+
+				return assert.Empty(t, cmp.Diff(cA, cB))
 			})))
 		})
 	}

@@ -39,9 +39,14 @@ func parseConfigEntry(
 	definition persistence.TopLevelConfigDefinition,
 ) ([]config.Config, []error) {
 
+	typ, err := definition.Type.GetApiType()
+	if err != nil {
+		return nil, []error{fmt.Errorf("failed to parse config entry %q: %w", configId, err)}
+	}
+
 	singleConfigContext := &singleConfigEntryLoadContext{
 		configFileLoaderContext: context,
-		Type:                    definition.Type.GetApiType(),
+		Type:                    typ,
 	}
 
 	if e := definition.Type.IsSound(context.KnownApis); e != nil {
@@ -215,10 +220,30 @@ func getConfigFromDefinition(
 		}
 
 		if !slices.Contains(allowedScopeParameterTypes, scopeParam.GetType()) {
-			return config.Config{}, []error{fmt.Errorf("failed to parse scope: Cannot use parameter-type '%s' within the scope. Allowed types: %v", scopeParam.GetType(), allowedScopeParameterTypes)}
+			return config.Config{}, []error{fmt.Errorf("failed to parse scope: cannot use parameter-type %q within the scope. Allowed types: %v", scopeParam.GetType(), allowedScopeParameterTypes)}
 		}
 
 		parameters[config.ScopeParameter] = scopeParam
+	}
+
+	if configType.IsClassic() {
+		a, err := persistence.UnmarshalApiType(configType.Api)
+		if err != nil {
+			return config.Config{}, []error{fmt.Errorf("failed to parse config: %w", err)}
+		}
+
+		if a.Scope != nil {
+			scopeParam, err := parseParameter(context, environment, configId, config.ScopeParameter, a.Scope)
+			if err != nil {
+				return config.Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
+			}
+
+			if !slices.Contains(allowedScopeParameterTypes, scopeParam.GetType()) {
+				return config.Config{}, []error{fmt.Errorf("failed to parse api: cannot use parameter-type %q within the scope. Allowed types: %v", scopeParam.GetType(), allowedScopeParameterTypes)}
+			}
+
+			parameters[config.ScopeParameter] = scopeParam
+		}
 	}
 
 	return config.Config{
@@ -246,8 +271,13 @@ func getType(typeDef persistence.TypeDefinition) (config.Type, error) {
 		}, nil
 
 	case typeDef.IsClassic():
+		a, err := persistence.UnmarshalApiType(typeDef.Api)
+		if err != nil {
+			return nil, err
+		}
+
 		return config.ClassicApiType{
-			Api: typeDef.Api,
+			Api: a.Name,
 		}, nil
 
 	case typeDef.IsAutomation():

@@ -26,17 +26,41 @@ import (
 const BucketType = "bucket"
 
 type TypeDefinition struct {
-	Api        string               `yaml:"api,omitempty" json:"api,omitempty"`
+	Api        ApiDefinition        `yaml:"api,omitempty" json:"api,omitempty" jsonschema:"oneof_type=string;object"`
 	Bucket     string               `yaml:"bucket,omitempty" json:"bucket,omitempty"`
 	Settings   SettingsDefinition   `yaml:"settings,omitempty" json:"settings,omitempty"`
 	Automation AutomationDefinition `yaml:"automation,omitempty" json:"automation,omitempty"`
 }
 
+type ApiDefinition any
+
+func UnmarshalApiType(a ApiDefinition) (ComplexApiDefinition, error) {
+	switch v := a.(type) {
+	case string:
+		return ComplexApiDefinition{
+			Name: v,
+		}, nil
+	case map[any]any:
+		var c ComplexApiDefinition
+		if err := mapstructure.Decode(v, &c); err != nil {
+			return ComplexApiDefinition{}, fmt.Errorf("failed to UnmarshalApiType api definition: %w", err)
+		}
+
+		return c, nil
+	default:
+		return ComplexApiDefinition{}, errors.New("unknown type in api definition")
+	}
+}
+
+type ComplexApiDefinition struct {
+	Name  string          `yaml:"name" json:"name" jsonschema:"required,description=The name of the API the config is for." mapstructure:"name"`
+	Scope ConfigParameter `yaml:"scope,omitempty" json:"scope" jsonschema:"description=This defines the config where this config needs to be applied."  mapstructure:"scope"`
+}
+
 type SettingsDefinition struct {
-	Schema        string `yaml:"schema,omitempty" json:"schema,omitempty" jsonschema:"required,description=The Settings 2.0 schema of this config."`
-	SchemaVersion string `yaml:"schemaVersion,omitempty" json:"schemaVersion,omitempty" jsonschema:"description=This optionally informs the Settings API that a specific schema version was used for this config."`
-	//
-	Scope ConfigParameter `yaml:"scope,omitempty" json:"scope,omitempty"  jsonschema:"required,description=This defines the scope in which this Setting applies."`
+	Schema        string          `yaml:"schema,omitempty" json:"schema,omitempty" jsonschema:"required,description=The Settings 2.0 schema of this config."`
+	SchemaVersion string          `yaml:"schemaVersion,omitempty" json:"schemaVersion,omitempty" jsonschema:"description=This optionally informs the Settings API that a specific schema version was used for this config."`
+	Scope         ConfigParameter `yaml:"scope,omitempty" json:"scope,omitempty"  jsonschema:"required,description=This defines the scope in which this Setting applies."`
 }
 
 type AutomationDefinition struct {
@@ -138,17 +162,22 @@ func (t *SettingsDefinition) isSettingsSound() error {
 }
 
 func (c *TypeDefinition) IsClassic() bool {
-	return c.Api != ""
+	a, err := UnmarshalApiType(c.Api)
+	if err != nil {
+		return false
+	}
+
+	return a.Name != ""
 }
 func (c *TypeDefinition) isClassicSound(knownApis map[string]struct{}) error {
-	if !c.IsClassic() {
-		return errors.New("missing 'type.api' property")
+	a, err := UnmarshalApiType(c.Api)
+	if err != nil {
+		return err
 	}
 
-	if _, found := knownApis[c.Api]; !found {
-		return errors.New("unknown API: " + c.Api)
+	if _, found := knownApis[a.Name]; !found {
+		return errors.New("unknown API: " + a.Name)
 	}
-
 	return nil
 }
 
@@ -174,17 +203,22 @@ func (c *TypeDefinition) IsBucket() bool {
 	return c.Bucket != ""
 }
 
-func (c *TypeDefinition) GetApiType() string {
+func (c *TypeDefinition) GetApiType() (string, error) {
 	switch {
 	case c.IsSettings():
-		return c.Settings.Schema
+		return c.Settings.Schema, nil
 	case c.IsClassic():
-		return c.Api
+		a, err := UnmarshalApiType(c.Api)
+		if err != nil {
+			return "", err
+		}
+		return a.Name, nil
+
 	case c.IsAutomation():
-		return string(c.Automation.Resource)
+		return string(c.Automation.Resource), nil
 	case c.IsBucket():
-		return BucketType
+		return BucketType, nil
 	default:
-		return ""
+		return "", errors.New("missing type definition")
 	}
 }

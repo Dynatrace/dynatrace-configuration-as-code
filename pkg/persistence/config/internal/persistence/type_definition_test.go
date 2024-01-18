@@ -143,6 +143,50 @@ func Test_typeDefinition_isSound(t *testing.T) {
 				result: false,
 			},
 		},
+		{
+			name: "Api with scope",
+			fields: fields{
+				configType: TypeDefinition{
+					Api: map[any]any{
+						"name":  "my-config",
+						"scope": "my-scope",
+					},
+				},
+				knownApis: map[string]struct{}{"my-config": {}},
+			},
+			want: expect{
+				result: true,
+			},
+		},
+		{
+			name: "Api without scope",
+			fields: fields{
+				configType: TypeDefinition{
+					Api: map[any]any{
+						"name": "my-config",
+					},
+				},
+				knownApis: map[string]struct{}{"my-config": {}},
+			},
+			want: expect{
+				result: true,
+			},
+		},
+		{
+			name: "Unknown API",
+			fields: fields{
+				configType: TypeDefinition{
+					Api: map[any]any{
+						"name": "my-config",
+					},
+				},
+				knownApis: map[string]struct{}{},
+			},
+			want: expect{
+				err:    "unknown API",
+				result: false,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -150,7 +194,9 @@ func Test_typeDefinition_isSound(t *testing.T) {
 			knownApis := tt.fields.knownApis
 
 			actualErr := configType.IsSound(knownApis)
-			assert.Equal(t, actualErr == nil, tt.want.result, tt.name)
+			if !assert.Equal(t, actualErr == nil, tt.want.result, tt.name) {
+				t.Errorf("Unexpected error: %s", actualErr)
+			}
 			if tt.want.err != "" {
 				assert.ErrorContains(t, actualErr, tt.want.err, tt.name)
 			}
