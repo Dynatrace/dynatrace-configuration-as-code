@@ -4,6 +4,12 @@ configs:
     name: test-zone
     template: test-zone.json
     skip: false
+    parameters:
+      networkZoneFeatEnabled:
+        configType: builtin:networkzones
+        configId: network-zones-enabled
+        property: name
+        type: reference
   type:
     api: network-zone
 - id: test-zone-2
@@ -11,6 +17,12 @@ configs:
     name: test-zone-2
     template: test-zone-2.json
     skip: false
+    parameters:
+      networkZoneFeatEnabled:
+        configType: builtin:networkzones
+        configId: network-zones-enabled
+        property: name
+        type: reference
   type:
     api: network-zone
 
