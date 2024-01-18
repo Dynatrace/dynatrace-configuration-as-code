@@ -135,7 +135,7 @@ profile:
 	assert.NoError(t, err)
 	assert.Equal(t, `{ "name":  "{{ .name }}" }`, string(payloadContent))
 
-	cfgs, errs := loader.LoadConfig(testFs, &loader.LoaderContext{
+	cfgs, errs := loader.LoadConfigFile(testFs, &loader.LoaderContext{
 		ProjectId:       "project",
 		Path:            "project",
 		Environments:    []manifest.EnvironmentDefinition{{Name: "env"}},

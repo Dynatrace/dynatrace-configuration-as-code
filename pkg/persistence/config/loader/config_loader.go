@@ -51,25 +51,27 @@ type singleConfigEntryLoadContext struct {
 	Type string
 }
 
-// LoadConfig loads a single configuration file
-// The configuration file might contain multiple config entries
-func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.Config, []error) {
+// LoadConfigFile loads a single configuration file and returns all configs defined in that file.
+// The returned configs contain all variants for project/environment overwrites passed in the [LoaderContext]
+func LoadConfigFile(fs afero.Fs, context *LoaderContext, filePath string) ([]config.Config, []error) {
 	data, err := afero.ReadFile(fs, filePath)
 	if err != nil {
 		return nil, []error{newLoadError(filePath, err)}
 	}
 
+	// validate that the config does not contain the key 'config'. This key is used in monaco v1 and could indicate
+	// that the user tries to deploy monaco v1 configuration using monaco v2.
 	var content map[string]any
 	if err := yaml.Unmarshal(data, &content); err != nil {
 		return nil, []error{newLoadError(filePath, err)}
 	}
-
 	if content["config"] != nil {
 		return nil, []error{
 			newLoadError(filePath, fmt.Errorf("config is not a valid v2 configuration - you may be loading v1 configs, please 'convert' to v2: %w", err)),
 		}
 	}
 
+	// Validate that the config has only accounts OR configs specified. We do not allow defining both in one file.
 	if loader.HasAnyAccountKeyDefined(content) {
 		if content["configs"] != nil {
 			return nil, []error{newLoadError(filePath, ErrMixingConfigs)}
@@ -79,7 +81,8 @@ func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.
 		return []config.Config{}, nil
 	}
 
-	definedConfigEntries, err := parseFile(data)
+	// Actually load the configs
+	definedConfigEntries, err := loadConfigDefinitions(data)
 	if err != nil {
 		return nil, []error{newLoadError(filePath, err)}
 	}
@@ -112,7 +115,7 @@ func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.
 	return configs, nil
 }
 
-func parseFile(data []byte) ([]persistence.TopLevelConfigDefinition, error) {
+func loadConfigDefinitions(data []byte) ([]persistence.TopLevelConfigDefinition, error) {
 
 	definition := persistence.TopLevelDefinition{}
 	err := yaml.UnmarshalStrict(data, &definition)
