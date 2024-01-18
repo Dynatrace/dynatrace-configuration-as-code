@@ -60,17 +60,41 @@ func getNumericID(u uuid.UUID) int {
 }
 
 // getLegacyNumericID implements the Dynatrace logic for transforming a "legacy" (variant RFC, version 4 (random)) UUID to a numeric ID
-// by taking specific bytes of the UUID and decoding them as a signed variable-length integer
+// by taking specific bytes of the UUID and decoding them as a signed variable-length integer. The implementation of the bit shifting algorithm
+// for variable length integer decoding allows overflows to happen and are handled gracefully on purpose, as this is expected to happen for such IDs on the server side.
 func getLegacyNumericID(u uuid.UUID) (int, error) {
-
 	var b []byte
 	b = u[0:6]                 // fill byte 0-5 with the UUID's most significant bytes (big-endian)
 	b = append(b, u[12:16]...) // fill byte 6-9 with the last 4 bytes of the UUID/ending "integer" of the UUID's least significant LSB
+	return int(zigzagDecode(varInt(b))), nil
+}
 
-	numericId, n := binary.Varint(b) // decode bytes as signed VarInt
-	if n <= 0 {
-		return 0, fmt.Errorf("failed to decode variable-length integer. %d/%d bytes read correctly", -n, len(b))
+func varInt(buf []byte) int64 {
+	var pos int
+	var nextByte = int(buf[pos])
+	pos++
+	if nextByte >= 0 && nextByte < 128 {
+		return int64(nextByte)
+	}
+	var result = int64(nextByte & 0x7F)
+	isContinuationBitSet := true
+	shift := 0
+
+	for isContinuationBitSet && pos < len(buf) {
+		nextByte = int(buf[pos])
+		pos++
+		isContinuationBitSet = (nextByte & 0x80) != 0
+		nextByte &= 0x7F
+		shift += 7
+		result |= (int64(nextByte)) << shift
 	}
 
-	return int(numericId), nil
+	return result
+}
+func zigzagDecode(value int64) int64 {
+	uValueShifted := uint64(value) >> 1
+	if value&1 == 0 {
+		return int64(uValueShifted)
+	}
+	return int64(uValueShifted) ^ -1
 }
