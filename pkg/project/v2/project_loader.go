@@ -199,7 +199,7 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 
 	for _, file := range configFiles {
 		log.WithFields(field.F("file", file)).Debug("Loading configuration file %s", file)
-		loadedConfigs, configErrs := loader.LoadConfig(fs, ctx, file)
+		loadedConfigs, configErrs := loader.LoadConfigFile(fs, ctx, file)
 
 		errs = append(errs, configErrs...)
 		configs = append(configs, loadedConfigs...)
