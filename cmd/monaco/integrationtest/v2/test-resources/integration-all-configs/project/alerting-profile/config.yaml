@@ -6,3 +6,11 @@ configs:
     skip: false
   type:
     api: alerting-profile
+
+- id: another-profile
+  config:
+    name: 'Star Trek II: The Wrath of Code Dept'
+    template: profile.json
+  type:
+    api:
+      name: alerting-profile
