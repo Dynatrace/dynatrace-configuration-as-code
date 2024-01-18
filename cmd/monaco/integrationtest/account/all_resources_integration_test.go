@@ -60,8 +60,19 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 			RandomizeFn: o.randomize,
 		}
 
-		cli := runner.BuildCli(o.fs)
+		// get current management zone id for later assertions
+		mzones, _, err := check.Client.EnvironmentManagementAPI.GetEnvironmentResources(context.TODO(), accountUUID).Execute()
+		require.NoError(t, err)
+		var mzoneID string
+		for _, mz := range mzones.ManagementZoneResources {
+			if mz.Name == "Management Zone 2000" {
+				mzoneID = mz.Id
+				break
+			}
+		}
+		require.NotZero(t, mzoneID, "Could not get exact management zone id for assertions")
 
+		cli := runner.BuildCli(o.fs)
 		// DEPLOY RESOURCES
 		cli.SetArgs([]string{"account", "deploy", "-m", "manifest-account.yaml"})
 		err = cli.Execute()
@@ -85,7 +96,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PermissionBinding(t, accountUUID, "account", accountUUID, "account-viewer", myGroup)
 		check.PermissionBinding(t, accountUUID, "tenant", envVkb, "tenant-viewer", myGroup)
 		check.PermissionBinding(t, accountUUID, "tenant", envVkb, "tenant-logviewer", myGroup)
-		check.PermissionBinding(t, accountUUID, "management-zone", "wbm16058:1939021364513288421", "tenant-viewer", myGroup)
+		check.PermissionBinding(t, accountUUID, "management-zone", "wbm16058:"+mzoneID, "tenant-viewer", myGroup)
 
 		// REMOVE SOME BINDINGS
 		resources, err := loader.Load(o.fs, "accounts")
