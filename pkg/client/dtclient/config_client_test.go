@@ -38,6 +38,8 @@ var testMobileAppApi = api.API{ID: "application-mobile", URLPath: "/api/config/v
 var testServiceDetectionApi = api.API{ID: "service-detection-full-web-request", URLPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST"}
 var testSyntheticApi = api.API{ID: "synthetic-monitor", URLPath: "/api/environment/v1/synthetic/monitor"}
 
+var testNetworkZoneApi = api.API{ID: "network-zone"}
+
 func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 
 	entry := make(map[string]interface{})
@@ -285,6 +287,62 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := isApplicationNotReadyYet(tt.args.resp, tt.args.theApi); got != tt.want {
 				t.Errorf("isApplicationNotReadyYet() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isNetworkZoneFeatureNotEnabledYet(t *testing.T) {
+	type args struct {
+		resp   rest.Response
+		theApi api.API
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			"HTTP 400: Network zone feature disabled",
+			args{
+				rest.Response{
+					StatusCode: 400,
+					Body:       []byte("Not allowed because network zones are disabled"),
+					Headers:    nil,
+				},
+				testNetworkZoneApi,
+			},
+			true,
+		},
+		{
+			"HTTP 400: Another Error",
+			args{
+				rest.Response{
+					StatusCode: 400,
+					Body:       []byte("Something bad"),
+					Headers:    nil,
+				},
+				testNetworkZoneApi,
+			},
+			false,
+		},
+		{
+			"No error",
+			args{
+				rest.Response{
+					StatusCode: 201,
+					Body:       nil,
+					Headers:    nil,
+				},
+				testNetworkZoneApi,
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isNetworkZoneFeatureNotEnabledYet(tt.args.resp, tt.args.theApi); got != tt.want {
+				t.Errorf("isNetworkZoneFeatureNotEnabledYet() = %v, want %v", got, tt.want)
 			}
 		})
 	}
