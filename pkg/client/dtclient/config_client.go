@@ -286,7 +286,9 @@ func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, re
 		// It can take some time for configurations to propagate to all cluster nodes - indicated by an incorrect constraint violation error
 		isGeneralDependencyNotReadyYet(resp) ||
 		// Synthetic and related APIs sometimes run into issues of finding objects quickly after creation
-		isGeneralSyntheticAPIError(resp, theApi) {
+		isGeneralSyntheticAPIError(resp, theApi) ||
+		// Network zone deployments can fail due to fact that the feature not effectively enabled yet
+		isNetworkZoneFeatureNotEnabledYet(resp, theApi) {
 
 		setting = d.retrySettings.Normal
 	}
@@ -333,6 +335,9 @@ func isApplicationNotReadyYet(resp rest.Response, theApi api.API) bool {
 		isApplicationAPIError(resp, theApi) ||
 		isApplicationDetectionRuleException(resp, theApi) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
+}
+func isNetworkZoneFeatureNotEnabledYet(resp rest.Response, theApi api.API) bool {
+	return strings.HasPrefix(theApi.ID, "network-zone") && (resp.Is4xxError()) && strings.Contains(string(resp.Body), "network zones are disabled")
 }
 
 func isCalculatedMetricsError(resp rest.Response, theApi api.API) bool {
