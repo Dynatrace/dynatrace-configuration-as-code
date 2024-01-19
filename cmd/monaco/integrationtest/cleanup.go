@@ -56,6 +56,7 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, spec
 		"deletefile",
 		absManifestPath,
 		"--file", deleteFile,
+		"--exclude-types", "builtin:networkzones",
 	}, envArgs...)
 	cmd.SetArgs(args)
 	err = cmd.Execute()

@@ -96,6 +96,39 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
 }
 
+func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
+
+	t.Setenv("TOKEN", "some-value")
+
+	fs := testutils.CreateTestFileSystem()
+
+	outputFolder := "output-folder"
+
+	cmd := deletefile.Command(fs)
+
+	cmd.SetArgs([]string{
+		"./test-resources/manifest.yaml",
+		"-o",
+		outputFolder,
+		"--types",
+		"builtin:management-zones,notification",
+		"--exclude-types",
+		"notification",
+	})
+	err := cmd.Execute()
+	assert.NoError(t, err)
+
+	expectedFile := filepath.Join(outputFolder, "delete.yaml")
+	assertFileExists(t, fs, expectedFile)
+
+	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+	assert.Len(t, errs, 0)
+
+	assertDeleteEntries(t, entries, "builtin:management-zones", "management-zone-setting")
+	assert.NotContains(t, entries, "notification")
+
+}
+
 func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
