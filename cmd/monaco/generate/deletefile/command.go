@@ -20,16 +20,24 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"path/filepath"
 )
 
 func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 	var fileName, outputFolder string
 	var projects, environments []string
+	var includeTypes, excludeTypes []string
 
 	cmd = &cobra.Command{
 		Use:               "deletefile <manifest.yaml>",
@@ -47,7 +55,48 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 				return err
 			}
 
-			return createDeleteFile(fs, manifestName, projects, environments, fileName, outputFolder)
+			m, errs := manifestloader.Load(&manifestloader.Context{
+				Fs:           fs,
+				ManifestPath: manifestName,
+				Opts: manifestloader.Options{
+					DoNotResolveEnvVars:      true,
+					RequireEnvironmentGroups: true,
+				},
+			})
+			if len(errs) > 0 {
+				errutils.PrintErrors(errs)
+				return fmt.Errorf("failed to load manifest %q", manifestName)
+			}
+
+			apis := api.NewAPIs()
+			loadedProjects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+				KnownApis:       apis.GetApiNameLookup(),
+				WorkingDir:      filepath.Dir(manifestName),
+				Manifest:        m,
+				ParametersSerde: config.DefaultParameterParsers,
+			})
+
+			if len(errs) > 0 {
+				errutils.PrintErrors(errs)
+				return fmt.Errorf("failed to load projects")
+			}
+
+			filteredProjects, err := filterProjects(loadedProjects, projects)
+
+			if err != nil {
+				log.WithFields(field.Error(err)).Error("Failed to filter requested projects: %v", err)
+				return err
+			}
+
+			options := createDeleteFileOptions{
+				environmentNames: environments,
+				fileName:         fileName,
+				includeTypes:     includeTypes,
+				excludeTypes:     excludeTypes,
+				outputFolder:     outputFolder,
+			}
+
+			return createDeleteFile(fs, filteredProjects, apis, options)
 		},
 	}
 
@@ -55,6 +104,8 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&fileName, "file", "", "delete.yaml", "The name of the generated delete file. If a file of this name already exists, a timestamp will be appended.")
 
 	cmd.Flags().StringSliceVarP(&projects, "project", "p", nil, "Projects to generate delete file entries for. If not defined, all projects in the manifest will be used.")
+	cmd.Flags().StringSliceVar(&excludeTypes, "exclude-types", nil, "Comma-separated list of config types to be excluded from the generation process.")
+	cmd.Flags().StringSliceVar(&includeTypes, "types", nil, "Comma-separated list of config types to be included in the generation process.")
 
 	cmd.Flags().StringSliceVarP(&environments, "environment", "e", []string{},
 		"Specify one (or multiple) environment(s) to generate delete entries for. If not defined, entries for all environments will be generated. It is generally safe and recommended to generate a full delete file for all environments, but you may sometimes want to create a file limited to a specific environment's overrides.")

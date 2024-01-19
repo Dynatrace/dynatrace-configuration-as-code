@@ -18,7 +18,6 @@ package deletefile
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
@@ -27,7 +26,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
-	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"golang.org/x/exp/maps"
@@ -36,53 +34,27 @@ import (
 	"strings"
 )
 
-func createDeleteFile(fs afero.Fs, manifestPath string, projectNames, specificEnvironments []string, filename, outputFolder string) error {
+type createDeleteFileOptions struct {
+	environmentNames []string
+	fileName         string
+	includeTypes     []string
+	excludeTypes     []string
+	outputFolder     string
+}
 
-	m, errs := manifestloader.Load(&manifestloader.Context{
-		Fs:           fs,
-		ManifestPath: manifestPath,
-		Opts: manifestloader.Options{
-			DoNotResolveEnvVars:      true,
-			RequireEnvironmentGroups: true,
-		},
-	})
-	if len(errs) > 0 {
-		errutils.PrintErrors(errs)
-		return fmt.Errorf("failed to load manifest %q", manifestPath)
-	}
-
-	apis := api.NewAPIs()
-	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-		KnownApis:       apis.GetApiNameLookup(),
-		WorkingDir:      filepath.Dir(manifestPath),
-		Manifest:        m,
-		ParametersSerde: config.DefaultParameterParsers,
-	})
-
-	if len(errs) > 0 {
-		errutils.PrintErrors(errs)
-		return fmt.Errorf("failed to load projects")
-	}
-
-	projects, err := filterProjects(projects, projectNames)
-
-	if err != nil {
-		log.WithFields(field.Error(err)).Error("Failed to filter requested projects: %v", err)
-		return err
-	}
-
-	content, err := generateDeleteFileContent(projects, specificEnvironments, apis)
+func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, options createDeleteFileOptions) error {
+	content, err := generateDeleteFileContent(apis, projects, options)
 	if err != nil {
 		log.WithFields(field.Error(err)).Error("Failed to generate delete file content: %v", err)
 		return err
 	}
 
-	folderPath, err := filepath.Abs(outputFolder)
+	folderPath, err := filepath.Abs(options.outputFolder)
 	if err != nil {
-		return fmt.Errorf("failed to access output path: %q: %w", outputFolder, err)
+		return fmt.Errorf("failed to access output path: %q: %w", options.outputFolder, err)
 	}
 
-	if outputFolder != "" {
+	if options.outputFolder != "" {
 		if exits, _ := afero.Exists(fs, folderPath); !exits {
 			err = fs.Mkdir(folderPath, 0777)
 			if err != nil {
@@ -91,24 +63,24 @@ func createDeleteFile(fs afero.Fs, manifestPath string, projectNames, specificEn
 		}
 	}
 
-	file := filepath.Join(folderPath, filename)
+	file := filepath.Join(folderPath, options.fileName)
 
 	exists, err := afero.Exists(fs, file)
 	if err != nil {
-		return fmt.Errorf("failed to check if file %q exists: %w", filename, err)
+		return fmt.Errorf("failed to check if file %q exists: %w", options.fileName, err)
 	}
 
 	if exists {
 		time := timeutils.TimeAnchor().Format("20060102-150405")
 		var newFileName string
-		if lastDot := strings.LastIndex(filename, "."); lastDot > -1 {
-			newFileName = fmt.Sprintf("%s_%s%s", filename[:lastDot], time, filename[lastDot:])
+		if lastDot := strings.LastIndex(options.fileName, "."); lastDot > -1 {
+			newFileName = fmt.Sprintf("%s_%s%s", options.fileName[:lastDot], time, options.fileName[lastDot:])
 		} else {
-			newFileName = fmt.Sprintf("%s_%s", filename, time)
+			newFileName = fmt.Sprintf("%s_%s", options.fileName, time)
 		}
 
 		newFile := filepath.Join(folderPath, newFileName)
-		log.WithFields(field.F("file", newFile), field.F("existingFile", filename)).Debug("Output file %q already exists, creating %q instead", filename, newFile)
+		log.WithFields(field.F("file", newFile), field.F("existingFile", options.fileName)).Debug("Output file %q already exists, creating %q instead", options.fileName, newFile)
 		file = newFile
 	}
 
@@ -142,15 +114,15 @@ func filterProjects(projects []project.Project, projectsToUse []string) ([]proje
 	return filteredProjects, nil
 }
 
-func generateDeleteFileContent(projects []project.Project, specificEnvironments []string, apis api.APIs) ([]byte, error) {
+func generateDeleteFileContent(apis api.APIs, projects []project.Project, options createDeleteFileOptions) ([]byte, error) {
 
 	log.Info("Generating delete file...")
 
 	var entries []persistence.DeleteEntry
-	if len(specificEnvironments) == 0 {
-		entries = generateDeleteEntries(projects, apis)
+	if len(options.environmentNames) == 0 {
+		entries = generateDeleteEntries(apis, projects, options)
 	} else {
-		entries = generateDeleteEntriesForEnvironments(projects, specificEnvironments, apis)
+		entries = generateDeleteEntriesForEnvironments(apis, projects, options)
 	}
 
 	f := persistence.FullFileDefinition{DeleteEntries: entries}
@@ -162,13 +134,18 @@ func generateDeleteFileContent(projects []project.Project, specificEnvironments 
 	return b, nil
 }
 
-func generateDeleteEntries(projects []project.Project, apis api.APIs) []persistence.DeleteEntry {
+func generateDeleteEntries(apis api.APIs, projects []project.Project, options createDeleteFileOptions) []persistence.DeleteEntry {
 	entries := make(map[persistence.DeleteEntry]struct{}) // set to ensure cfgs without environment overwrites are only added once
+
+	inclTypesLookup := toStrLookupMap(options.includeTypes)
+	exclTypesLookup := toStrLookupMap(options.excludeTypes)
 
 	for _, p := range projects {
 		log.Info("Adding delete entries for project %q...", p.Id)
-
 		p.ForEveryConfigDo(func(c config.Config) {
+			if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
+				return
+			}
 			entry, err := createDeleteEntry(c, apis)
 			if err != nil {
 				log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
@@ -181,13 +158,19 @@ func generateDeleteEntries(projects []project.Project, apis api.APIs) []persiste
 	return maps.Keys(entries)
 }
 
-func generateDeleteEntriesForEnvironments(projects []project.Project, specificEnvironments []string, apis api.APIs) []persistence.DeleteEntry {
+func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Project, options createDeleteFileOptions) []persistence.DeleteEntry {
 	entries := make(map[persistence.DeleteEntry]struct{}) // set to ensure cfgs without environment overwrites are only added once
 
+	inclTypesLookup := toStrLookupMap(options.includeTypes)
+	exclTypesLookup := toStrLookupMap(options.excludeTypes)
+
 	for _, p := range projects {
-		for _, env := range specificEnvironments {
+		for _, env := range options.environmentNames {
 			log.Info("Adding delete entries for project %q and environment %q...", p.Id, env)
 			p.ForEveryConfigInEnvironmentDo(env, func(c config.Config) {
+				if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
+					return
+				}
 				entry, err := createDeleteEntry(c, apis)
 				if err != nil {
 					log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
@@ -199,6 +182,26 @@ func generateDeleteEntriesForEnvironments(projects []project.Project, specificEn
 	}
 
 	return maps.Keys(entries)
+}
+
+func toStrLookupMap(sl []string) map[string]struct{} {
+	res := map[string]struct{}{}
+	for _, t := range sl {
+		res[t] = struct{}{}
+	}
+	return res
+}
+
+func skipping(ttype string, included, excluded map[string]struct{}) bool {
+	if _, ok := excluded[ttype]; ok {
+		return true
+	}
+	if len(included) > 0 {
+		if _, ok := included[ttype]; !ok {
+			return true
+		}
+	}
+	return false
 }
 
 func createDeleteEntry(c config.Config, apis api.APIs) (persistence.DeleteEntry, error) {
