@@ -273,41 +273,29 @@ func toTopLevelConfigDefinition(context *serializerContext, configs []config.Con
 }
 
 func extractConfigType(context *serializerContext, cfg config.Config) (persistence.TypeDefinition, error) {
+	ttype := persistence.TypeDefinition{
+		Type: cfg.Type,
+	}
 
-	switch t := cfg.Type.(type) {
+	switch cfg.Type.(type) {
 	case config.SettingsType:
 		serializedScope, err := getScope(context, cfg)
 		if err != nil {
 			return persistence.TypeDefinition{}, err
 		}
 
-		return persistence.TypeDefinition{
-			Settings: persistence.SettingsDefinition{
-				Schema:        t.SchemaId,
-				SchemaVersion: t.SchemaVersion,
-				Scope:         serializedScope,
-			},
-		}, nil
+		ttype.Scope = serializedScope
 
 	case config.ClassicApiType:
-		return persistence.TypeDefinition{
-			Api: cfg.Coordinate.Type,
-		}, nil
+		// TODO: Check if API is a subpath API and handle it accordingly.
+		// for now just check if we can exract a scope, and if we can, use it
 
-	case config.AutomationType:
-		return persistence.TypeDefinition{
-			Automation: persistence.AutomationDefinition{
-				Resource: t.Resource,
-			},
-		}, nil
-	case config.BucketType:
-		return persistence.TypeDefinition{
-			Bucket: persistence.BucketType,
-		}, nil
-
-	default:
-		return persistence.TypeDefinition{}, fmtDetailedConfigWriterError(context, "unknown config-type (ID: %q)", cfg.Type.ID())
+		serializedScope, err := getScope(context, cfg)
+		if err == nil {
+			ttype.Scope = serializedScope
+		}
 	}
+	return ttype, nil
 }
 
 func getScope(context *serializerContext, cfg config.Config) (persistence.ConfigParameter, error) {
