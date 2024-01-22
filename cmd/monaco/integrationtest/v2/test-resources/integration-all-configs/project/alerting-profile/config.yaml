@@ -13,4 +13,4 @@ configs:
     template: profile.json
   type:
     api:
-      name: alerting-profile
+      name: alerting-profile #monaco-test:no-replace

@@ -36,7 +36,7 @@ func ReplaceName(line string, idChange func(string) string) string {
 		return line
 	}
 
-	if strings.Contains(line, "name:") {
+	if strings.Contains(line, "name:") && !strings.Contains(line, "#monaco-test:no-replace") {
 
 		trimmed := strings.TrimSpace(line)
 		split := strings.SplitN(trimmed, ":", 2)
