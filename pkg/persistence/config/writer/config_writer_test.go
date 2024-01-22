@@ -762,7 +762,9 @@ func TestWriteConfigs(t *testing.T) {
 								},
 							},
 							Type: persistence.TypeDefinition{
-								Api: "alerting-profile",
+								Type: config.ClassicApiType{
+									Api: "alerting-profile",
+								},
 							},
 						},
 					},
@@ -805,10 +807,10 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:       "true",
 							},
 							Type: persistence.TypeDefinition{
-								Settings: persistence.SettingsDefinition{
-									Schema: "builtin:alerting-profile",
-									Scope:  "tenant",
+								Type: config.SettingsType{
+									SchemaId: "builtin:alerting-profile",
 								},
+								Scope: "tenant",
 							},
 						},
 					},
@@ -852,11 +854,11 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:       true,
 							},
 							Type: persistence.TypeDefinition{
-								Settings: persistence.SettingsDefinition{
-									Schema:        "schemaid",
+								Type: config.SettingsType{
+									SchemaId:      "schemaid",
 									SchemaVersion: "1.2.3",
-									Scope:         "scope",
 								},
+								Scope: "scope",
 							},
 						},
 					},
@@ -927,7 +929,7 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:       true,
 							},
 							Type: persistence.TypeDefinition{
-								Automation: persistence.AutomationDefinition{
+								Type: config.AutomationType{
 									Resource: "workflow",
 								},
 							},
@@ -945,7 +947,7 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:       true,
 							},
 							Type: persistence.TypeDefinition{
-								Automation: persistence.AutomationDefinition{
+								Type: config.AutomationType{
 									Resource: "business-calendar",
 								},
 							},
@@ -963,7 +965,7 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:       true,
 							},
 							Type: persistence.TypeDefinition{
-								Automation: persistence.AutomationDefinition{
+								Type: config.AutomationType{
 									Resource: "scheduling-rule",
 								},
 							},
@@ -1007,7 +1009,7 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:     false,
 							},
 							Type: persistence.TypeDefinition{
-								Bucket: "bucket",
+								Type: config.BucketType{},
 							},
 						},
 					},
@@ -1050,16 +1052,16 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:       false,
 							},
 							Type: persistence.TypeDefinition{
-								Settings: persistence.SettingsDefinition{
-									Schema:        "schemaid",
+								Type: config.SettingsType{
+									SchemaId:      "schemaid",
 									SchemaVersion: "1.2.3",
-									Scope: map[any]any{
-										"type":       "reference",
-										"configType": "type",
-										"project":    "otherproject",
-										"property":   "prop",
-										"configId":   "id",
-									},
+								},
+								Scope: map[any]any{
+									"type":       "reference",
+									"configType": "type",
+									"project":    "otherproject",
+									"property":   "prop",
+									"configId":   "id",
 								},
 							},
 						},
@@ -1103,11 +1105,11 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:       false,
 							},
 							Type: persistence.TypeDefinition{
-								Settings: persistence.SettingsDefinition{
-									Schema:        "schemaid",
+								Type: config.SettingsType{
+									SchemaId:      "schemaid",
 									SchemaVersion: "1.2.3",
-									Scope:         "scope",
 								},
+								Scope: "scope",
 							},
 						},
 					},
@@ -1115,6 +1117,51 @@ func TestWriteConfigs(t *testing.T) {
 			},
 			expectedTemplatePaths: []string{
 				"general/schemaid/a.json",
+			},
+		},
+		{
+			name: "API with sub-path is persisted correctly",
+			configs: []config.Config{
+				{
+					Template: template.NewInMemoryTemplateWithPath(filepath.Join("general", "alerting-profile", "a.json"), ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "schemaid",
+						ConfigId: "configId",
+					},
+					Type: config.ClassicApiType{
+						Api: "alerting-profile",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: value.New("scope"),
+						config.NameParameter:  &value.ValueParameter{Value: "name"},
+					},
+					Skip: false,
+				},
+			},
+			expectedConfigs: map[string]persistence.TopLevelDefinition{
+				"schemaid": {
+					Configs: []persistence.TopLevelConfigDefinition{
+						{
+							Id: "configId",
+							Config: persistence.ConfigDefinition{
+								Name:       "name",
+								Parameters: nil,
+								Template:   "../../general/alerting-profile/a.json",
+								Skip:       false,
+							},
+							Type: persistence.TypeDefinition{
+								Type: config.ClassicApiType{
+									Api: "alerting-profile",
+								},
+								Scope: "scope",
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"general/alerting-profile/a.json",
 			},
 		},
 	}
@@ -1131,7 +1178,7 @@ func TestWriteConfigs(t *testing.T) {
 				ParametersSerde: config.DefaultParameterParsers,
 			}, tc.configs)
 			errutils.PrintErrors(errs)
-			assert.Equal(t, len(errs), len(tc.expectedErrs), "Produced errors do not match expected errors")
+			assert.Equal(t, len(tc.expectedErrs), len(errs), "Produced errors do not match expected errors")
 
 			for i := range tc.expectedErrs {
 				assert.ErrorContains(t, errs[i], tc.expectedErrs[i])

@@ -88,18 +88,75 @@ func Test_parseConfigs(t *testing.T) {
 			wantErrorsContain: []string{"failed to load config from file \"test-file.yaml"},
 		},
 		{
-			name:              "reports detailed error for invalid v2 config",
+			name:              "reports detailed error for invalid v2 config if template is missing",
 			filePathArgument:  "test-file.yaml",
 			filePathOnDisk:    "test-file.yaml",
 			fileContentOnDisk: "configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n  type:\n    api: some-api",
 			wantErrorsContain: []string{"missing property `template`"},
 		},
 		{
-			name:              "reports detailed error for invalid v2 config",
+			name:              "reports detailed error for invalid v2 config if an unknown API is used",
 			filePathArgument:  "test-file.yaml",
 			filePathOnDisk:    "test-file.yaml",
 			fileContentOnDisk: "configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n  type:\n    api: another-api",
 			wantErrorsContain: []string{"unknown API: another-api"},
+		},
+		{
+			name:             "multiple types in one config is not allowed",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    skip: false
+  type:
+    api: another-api
+    automation:
+      resource: workflow
+`,
+			wantErrorsContain: []string{"only one config type is allowed at once"},
+		},
+		{
+			name:             "integer as type definition",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    skip: false
+  type: 1337
+`,
+			wantErrorsContain: []string{"cannot parse definition"},
+		},
+		{
+			name:             "empty type definition",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    skip: false
+  type: {}
+`,
+			wantErrorsContain: []string{"no type is defined"},
+		},
+		{
+			name:             "unknown type definition",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+  type:
+    voyager: Captain Janeway
+`,
+			wantErrorsContain: []string{"unknown config-type"},
 		},
 		{
 			name:             "Skip parameter is referenced to true",
@@ -708,6 +765,84 @@ configs:
 			wantErrorsContain: []string{`unknown automation resource "does-not-exist"`},
 		},
 		{
+			name:             "no automation resource specified",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: automation-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    automation: {}
+`,
+			wantErrorsContain: []string{`missing automation resource property`},
+		},
+		{
+			name:             "empty automation resource specified",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: automation-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    automation:
+      resource: ""
+`,
+			wantErrorsContain: []string{`missing automation resource property`},
+		},
+		{
+			name:             "settings missing schemaid",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: automation-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    settings:
+      scope: scope
+`,
+			wantErrorsContain: []string{`missing settings schemaId`},
+		},
+		{
+			name:             "settings missing scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: automation-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    settings:
+      schema: schema
+`,
+			wantErrorsContain: []string{`missing settings scope`},
+		},
+		{
+			name:             "settings missing any property",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: automation-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    settings: {}
+`,
+			wantErrorsContain: []string{`missing settings`},
+		},
+		{
 			name:             "fails to load with a parameter that is 'id'",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -959,6 +1094,22 @@ configs:
 					Group:       "default",
 				},
 			},
+		},
+		{
+			name:             "API with invalid structure",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    api:
+    - name: 'some-api'
+`,
+			wantErrorsContain: []string{"failed to unmarshal api-type"},
 		},
 		{
 			name:             "loads complex api config with a full shorthand reference as scope",

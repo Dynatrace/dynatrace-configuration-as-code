@@ -39,18 +39,17 @@ func parseConfigEntry(
 	definition persistence.TopLevelConfigDefinition,
 ) ([]config.Config, []error) {
 
-	typ, err := definition.Type.GetApiType()
-	if err != nil {
-		return nil, []error{fmt.Errorf("failed to parse config entry %q: %w", configId, err)}
+	if definition.Type == (persistence.TypeDefinition{}) {
+		return nil, []error{errors.New("missing type definition")}
 	}
 
 	singleConfigContext := &singleConfigEntryLoadContext{
 		configFileLoaderContext: context,
-		Type:                    typ,
+		Type:                    definition.Type.GetApiType(),
 	}
 
-	if e := definition.Type.IsSound(context.KnownApis); e != nil {
-		return nil, []error{newDefinitionParserError(configId, singleConfigContext, e.Error())}
+	if err := definition.Type.Validate(context.KnownApis); err != nil {
+		return nil, []error{newDefinitionParserError(configId, singleConfigContext, err.Error())}
 	}
 
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
@@ -192,7 +191,6 @@ func getConfigFromDefinition(
 		}
 	}
 
-	t, err := getType(configType)
 	if err != nil {
 		return config.Config{}, []error{fmt.Errorf("failed to parse type of config %q: %w", configId, err)}
 	}
@@ -205,7 +203,7 @@ func getConfigFromDefinition(
 			parameters[config.NameParameter] = name
 		}
 
-	} else if t.ID() == config.ClassicApiTypeId {
+	} else if configType.Type.ID() == config.ClassicApiTypeId {
 		errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, "missing parameter `name`"))
 	}
 
@@ -213,8 +211,9 @@ func getConfigFromDefinition(
 		return config.Config{}, errs
 	}
 
-	if configType.IsSettings() {
-		scopeParam, err := parseParameter(context, environment, configId, config.ScopeParameter, configType.Settings.Scope)
+	// if we have a scope, we should parse it
+	if configType.Scope != nil {
+		scopeParam, err := parseParameter(context, environment, configId, config.ScopeParameter, configType.Scope)
 		if err != nil {
 			return config.Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
 		}
@@ -226,26 +225,6 @@ func getConfigFromDefinition(
 		parameters[config.ScopeParameter] = scopeParam
 	}
 
-	if configType.IsClassic() {
-		a, err := persistence.UnmarshalApiType(configType.Api)
-		if err != nil {
-			return config.Config{}, []error{fmt.Errorf("failed to parse config: %w", err)}
-		}
-
-		if a.Scope != nil {
-			scopeParam, err := parseParameter(context, environment, configId, config.ScopeParameter, a.Scope)
-			if err != nil {
-				return config.Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
-			}
-
-			if !slices.Contains(allowedScopeParameterTypes, scopeParam.GetType()) {
-				return config.Config{}, []error{fmt.Errorf("failed to parse api: cannot use parameter-type %q within the scope. Allowed types: %v", scopeParam.GetType(), allowedScopeParameterTypes)}
-			}
-
-			parameters[config.ScopeParameter] = scopeParam
-		}
-	}
-
 	return config.Config{
 		Template: tmpl,
 		Coordinate: coordinate.Coordinate{
@@ -253,43 +232,13 @@ func getConfigFromDefinition(
 			Type:     context.Type,
 			ConfigId: configId,
 		},
-		Type:           t,
+		Type:           configType.Type,
 		Group:          environment.Group,
 		Environment:    environment.Name,
 		Parameters:     parameters,
 		Skip:           skipConfig,
 		OriginObjectId: definition.OriginObjectId,
 	}, nil
-}
-
-func getType(typeDef persistence.TypeDefinition) (config.Type, error) {
-	switch {
-	case typeDef.IsSettings():
-		return config.SettingsType{
-			SchemaId:      typeDef.Settings.Schema,
-			SchemaVersion: typeDef.Settings.SchemaVersion,
-		}, nil
-
-	case typeDef.IsClassic():
-		a, err := persistence.UnmarshalApiType(typeDef.Api)
-		if err != nil {
-			return nil, err
-		}
-
-		return config.ClassicApiType{
-			Api: a.Name,
-		}, nil
-
-	case typeDef.IsAutomation():
-		return config.AutomationType{
-			Resource: typeDef.Automation.Resource,
-		}, nil
-	case typeDef.IsBucket():
-		return config.BucketType{}, nil
-
-	default:
-		return nil, errors.New("unknown type")
-	}
 }
 
 func parseSkip(
