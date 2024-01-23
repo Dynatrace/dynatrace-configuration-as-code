@@ -16,6 +16,8 @@
 
 package api
 
+import "strings"
+
 // API structure present definition of config endpoints
 type API struct {
 	ID                           string
@@ -39,6 +41,9 @@ type API struct {
 	// TweakResponseFunc can be optionally registered to add custom code that changes the
 	// payload of the downloaded api content (e.g. to exclude unwanted/unnecessary fields)
 	TweakResponseFunc func(map[string]any)
+
+	// SubPathIdentifier marks this API to have identifiers in the url (sub) paths
+	SubPathIdentifier bool
 }
 
 // CreateURL creates final URL for given environmentUrl/domain
@@ -48,4 +53,11 @@ func (a API) CreateURL(environmentURL string) string {
 
 func (a API) IsStandardAPI() bool {
 	return a.PropertyNameOfGetAllResponse == StandardApiPropertyNameOfGetAllResponse
+}
+
+// values: key - placeholder, value - resolved value
+func (a API) Resolve(value string) API {
+	newA := a
+	newA.URLPath = strings.ReplaceAll(a.URLPath, "{SCOPE}", value)
+	return newA
 }

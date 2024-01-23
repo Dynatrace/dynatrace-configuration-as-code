@@ -129,6 +129,11 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 }
 
 func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString string, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+
+	if theApi.SubPathIdentifier {
+		urlString = joinUrl(urlString, objectName)
+	}
+
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
@@ -143,7 +148,7 @@ func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString s
 		parsedUrl.RawQuery = queryParams.Encode()
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Post, objectName, parsedUrl.String(), body, theApi)
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Post, parsedUrl.String(), body, theApi)
 	if err != nil {
 		var respErr rest.RespError
 		if errors.As(err, &respErr) {
@@ -221,7 +226,7 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 		body = stripCreateOnlyPropertiesFromAppMobile(body)
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Put, objectName, path, body, theApi)
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Put, path, body, theApi)
 
 	if err != nil {
 		var respErr rest.RespError
@@ -260,8 +265,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of know errors on upload.
-func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall rest.SendRequestWithBody, objectName string, path string, body []byte, theApi api.API) (rest.Response, error) {
-
+func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall rest.SendRequestWithBody, path string, body []byte, theApi api.API) (rest.Response, error) {
 	resp, err := restCall(ctx, path, body)
 
 	if err == nil && resp.IsSuccess() {
@@ -304,7 +308,7 @@ func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, re
 	}
 
 	if setting.MaxRetries > 0 {
-		return rest.SendWithRetry(ctx, restCall, objectName, path, body, setting)
+		return rest.SendWithRetry(ctx, restCall, path, body, setting)
 	}
 	return resp, err
 }

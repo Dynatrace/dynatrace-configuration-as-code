@@ -360,4 +360,10 @@ var configEndpoints = []API{
 		DeprecatedBy:        "builtin:rum.ip-determination",
 		SingleConfiguration: true,
 	},
+	{
+		ID:                           "mrum-key-user-actions",
+		URLPath:                      "/api/config/v1/applications/mobile/{SCOPE}/keyUserActions",
+		SubPathIdentifier:            true,
+		PropertyNameOfGetAllResponse: "keyUserActions",
+	},
 }

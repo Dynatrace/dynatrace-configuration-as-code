@@ -51,7 +51,7 @@ var DefaultRetrySettings = RetrySettings{
 }
 
 // SendWithRetry will retry to call sendWithBody for a given number of times, waiting a give duration between calls
-func SendWithRetry(ctx context.Context, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
+func SendWithRetry(ctx context.Context, sendWithBody SendRequestWithBody, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 
 	for i := 0; i < setting.MaxRetries; i++ {
 		log.WithCtxFields(ctx).Warn("Failed to send HTTP request. Waiting for %s before retrying...", setting.WaitTime)
@@ -75,5 +75,5 @@ func SendWithRetryWithInitialTry(ctx context.Context, sendWithBody SendRequestWi
 		return resp, err
 	}
 
-	return SendWithRetry(ctx, sendWithBody, objectName, path, body, setting)
+	return SendWithRetry(ctx, sendWithBody, path, body, setting)
 }
