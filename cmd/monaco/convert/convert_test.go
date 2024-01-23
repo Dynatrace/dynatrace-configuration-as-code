@@ -301,7 +301,7 @@ func assertExpectedConfigurationCreated(t *testing.T, testFs afero.Fs) {
 	assert.True(t, outputConfigExists)
 	configContent, err := afero.ReadFile(testFs, "converted/project/alerting-profile/config.yaml")
 	assert.NoError(t, err)
-	assert.Equal(t, string(configContent), "configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    template: profile.json\n    skip: false\n  type:\n    api: alerting-profile\n")
+	assert.Equal(t, "configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    template: profile.json\n    skip: false\n  type:\n    api: alerting-profile\n", string(configContent))
 
 	outputPayloadExists, _ := afero.Exists(testFs, "converted/project/alerting-profile/profile.json")
 	assert.True(t, outputPayloadExists)
