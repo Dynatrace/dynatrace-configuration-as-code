@@ -361,9 +361,8 @@ var configEndpoints = []API{
 		SingleConfiguration: true,
 	},
 	{
-		ID:                           "mrum-key-user-actions",
+		ID:                           "key-user-actions-mobile",
 		URLPath:                      "/api/config/v1/applications/mobile/{SCOPE}/keyUserActions",
-		SubPathIdentifier:            true,
 		PropertyNameOfGetAllResponse: "keyUserActions",
 	},
 }

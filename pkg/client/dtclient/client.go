@@ -396,7 +396,7 @@ func (d *DynatraceClient) ListConfigs(ctx context.Context, api api.API) (values 
 }
 func (d *DynatraceClient) listConfigs(ctx context.Context, api api.API) (values []Value, err error) {
 
-	fullUrl := api.CreateURL(d.environmentURLClassic)
+	fullUrl := api.CreateURList(d.environmentURLClassic)
 	values, err = d.getExistingValuesFromEndpoint(ctx, api, fullUrl)
 	return values, err
 }

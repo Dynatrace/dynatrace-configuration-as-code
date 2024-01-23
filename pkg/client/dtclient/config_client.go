@@ -130,7 +130,7 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 
 func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString string, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 
-	if theApi.SubPathIdentifier {
+	if theApi.SubPath() {
 		urlString = joinUrl(urlString, objectName)
 	}
 

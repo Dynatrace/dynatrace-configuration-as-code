@@ -20,8 +20,9 @@ import "strings"
 
 // API structure present definition of config endpoints
 type API struct {
-	ID                           string
-	URLPath                      string
+	ID string
+	//URLPath defines default path
+	URLPath, ListURLPath         string
 	PropertyNameOfGetAllResponse string
 	// SingleConfiguration are those APIs that configure an environment global setting.
 	// Such settings require additional handling and can't be deleted.
@@ -41,9 +42,6 @@ type API struct {
 	// TweakResponseFunc can be optionally registered to add custom code that changes the
 	// payload of the downloaded api content (e.g. to exclude unwanted/unnecessary fields)
 	TweakResponseFunc func(map[string]any)
-
-	// SubPathIdentifier marks this API to have identifiers in the url (sub) paths
-	SubPathIdentifier bool
 }
 
 // CreateURL creates final URL for given environmentUrl/domain
@@ -51,13 +49,24 @@ func (a API) CreateURL(environmentURL string) string {
 	return environmentURL + a.URLPath
 }
 
+func (a API) CreateURList(environmentURL string) string {
+	if a.ListURLPath != "" {
+		return environmentURL + a.ListURLPath
+	}
+	return a.CreateURL(environmentURL)
+}
+
 func (a API) IsStandardAPI() bool {
 	return a.PropertyNameOfGetAllResponse == StandardApiPropertyNameOfGetAllResponse
 }
 
-// values: key - placeholder, value - resolved value
 func (a API) Resolve(value string) API {
 	newA := a
 	newA.URLPath = strings.ReplaceAll(a.URLPath, "{SCOPE}", value)
 	return newA
+}
+
+// SubPath is true if API have identifiers in the url
+func (a API) SubPath() bool {
+	return strings.Contains(a.URLPath, "{SCOPE}")
 }

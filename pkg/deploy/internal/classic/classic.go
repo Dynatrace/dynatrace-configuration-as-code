@@ -41,7 +41,7 @@ func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.AP
 		return entities.ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
 	}
 
-	if apiToDeploy.SubPathIdentifier {
+	if apiToDeploy.SubPath() {
 		scope, err := extract.Scope(properties)
 		if err != nil {
 			return entities.ResolvedEntity{}, err
