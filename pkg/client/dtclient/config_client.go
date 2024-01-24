@@ -226,6 +226,14 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 		body = stripCreateOnlyPropertiesFromAppMobile(body)
 	}
 
+	// Key user mobile actions can't be updated, thus we return immediately
+	if isKeyUserActionMobile(theApi) {
+		return DynatraceEntity{
+			Id:   existingObjectId,
+			Name: objectName,
+		}, nil
+	}
+
 	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Put, path, body, theApi)
 
 	if err != nil {
@@ -450,6 +458,10 @@ func isMobileApp(api api.API) bool {
 	return api.ID == "application-mobile"
 }
 
+func isKeyUserActionMobile(api api.API) bool {
+	return api.ID == "key-user-actions-mobile"
+}
+
 func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
 	if !theApi.NonUniqueName {
 		if values, cached := d.classicConfigsCache.Get(theApi.ID); cached {
@@ -553,6 +565,18 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 			}
 			values = translateSyntheticValues(jsonResp.Monitors)
 
+		} else if theApi.ID == "key-user-actions-mobile" {
+			var jsonResp KeyUserActionsMobileResponse
+			err := json.Unmarshal(resp.Body, &jsonResp)
+			if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
+				return nil, err
+			}
+			for _, kua := range jsonResp.KeyUserActions {
+				values = append(values, Value{
+					Id:   kua.Name,
+					Name: kua.Name,
+				})
+			}
 		} else if !theApi.IsStandardAPI() || isReportsApi(theApi) {
 
 			if err := json.Unmarshal(resp.Body, &objmap); err != nil {
