@@ -22,7 +22,7 @@ import "strings"
 type API struct {
 	ID string
 	//URLPath defines default path
-	URLPath, ListURLPath         string
+	URLPath                      string
 	PropertyNameOfGetAllResponse string
 	// SingleConfiguration are those APIs that configure an environment global setting.
 	// Such settings require additional handling and can't be deleted.
@@ -44,16 +44,8 @@ type API struct {
 	TweakResponseFunc func(map[string]any)
 }
 
-// CreateURL creates final URL for given environmentUrl/domain
 func (a API) CreateURL(environmentURL string) string {
 	return environmentURL + a.URLPath
-}
-
-func (a API) CreateURList(environmentURL string) string {
-	if a.ListURLPath != "" {
-		return environmentURL + a.ListURLPath
-	}
-	return a.CreateURL(environmentURL)
 }
 
 func (a API) IsStandardAPI() bool {
@@ -66,7 +58,6 @@ func (a API) Resolve(value string) API {
 	return newA
 }
 
-// SubPath is true if API have identifiers in the url
-func (a API) SubPath() bool {
+func (a API) IsSubPathAPI() bool {
 	return strings.Contains(a.URLPath, "{SCOPE}")
 }

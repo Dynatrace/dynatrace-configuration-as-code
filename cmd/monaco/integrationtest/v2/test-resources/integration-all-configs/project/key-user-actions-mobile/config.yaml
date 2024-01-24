@@ -6,7 +6,7 @@ configs:
     skip: false
   type:
     api:
-      name: key-user-actions-mobile
+      name: key-user-actions-mobile #monaco-test:no-replace
       scope:
         configType: application-mobile
         configId: mobile-application
