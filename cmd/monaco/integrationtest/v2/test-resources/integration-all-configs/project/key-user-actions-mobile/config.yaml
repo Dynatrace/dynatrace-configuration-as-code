@@ -1,0 +1,14 @@
+configs:
+- id: key-user-action-1
+  config:
+    name: abc
+    template: key-user-action.json
+    skip: false
+  type:
+    api:
+      name: key-user-actions-mobile
+      scope:
+        configType: application-mobile
+        configId: mobile-application
+        property: id
+        type: reference
