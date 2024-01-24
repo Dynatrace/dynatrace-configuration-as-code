@@ -42,6 +42,9 @@ type API struct {
 	// TweakResponseFunc can be optionally registered to add custom code that changes the
 	// payload of the downloaded api content (e.g. to exclude unwanted/unnecessary fields)
 	TweakResponseFunc func(map[string]any)
+
+	// IsSubPathApi indicates whenever an API is a sub-path API.
+	SubPathAPI bool
 }
 
 func (a API) CreateURL(environmentURL string) string {
@@ -56,8 +59,4 @@ func (a API) Resolve(value string) API {
 	newA := a
 	newA.URLPath = strings.ReplaceAll(a.URLPath, "{SCOPE}", value)
 	return newA
-}
-
-func (a API) IsSubPathAPI() bool {
-	return strings.Contains(a.URLPath, "{SCOPE}")
 }
