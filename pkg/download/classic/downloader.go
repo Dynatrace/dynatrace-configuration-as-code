@@ -53,6 +53,11 @@ type (
 	}
 
 	Option func(downloader *Downloader)
+
+	downloadedConfig struct {
+		config.Config
+		value dtclient.Value
+	}
 )
 
 // NewDownloader creates a new sound Downloader.
@@ -105,44 +110,37 @@ func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) p
 	startTime := time.Now()
 	for _, currentApi := range apisToDownload {
 		currentApi := currentApi // prevent data race
+
 		go func() {
 			defer wg.Done()
-			configsToDownload, err := d.findConfigsToDownload(currentApi)
-			remoteCount := len(configsToDownload)
-
 			lg := log.WithFields(field.Type(currentApi.ID))
-			if err != nil {
-				lg.WithFields(field.Error(err)).Error("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.ID, err)
-				return
-			}
-			// filter all configs we do not want to download. All remaining will be downloaded
-			configsToDownload = d.filterConfigsToSkip(currentApi, configsToDownload)
 
-			if len(configsToDownload) == 0 {
-				lg.Debug("No configs of type '%v' to download", currentApi.ID)
-				return
+			var downloadedConfigs []downloadedConfig
+			if currentApi.ID == "key-user-actions-mobile" {
+				downloadedConfigs = d.downloadKeyUserActions(projectName)
+			} else {
+				downloadedConfigs = d.downloadConfigsOfAPI(currentApi, projectName)
 			}
 
-			lg.Debug("Found %d configs of type %q to download", len(configsToDownload), currentApi.ID)
-			cfgs := d.downloadConfigsOfAPI(currentApi, configsToDownload, projectName)
-
-			if len(cfgs) > 0 {
+			var configsToPersist []downloadedConfig
+			for _, c := range downloadedConfigs {
+				content, err := c.Template.Content()
+				if err != nil {
+					return
+				}
+				if d.shouldPersist(currentApi, content) {
+					configsToPersist = append(configsToPersist, c)
+				} else {
+					lg.Debug("\tSkipping persisting config %v (%v) in API %v", c.value.Id, c.value.Name, currentApi.ID)
+				}
+			}
+			if len(configsToPersist) > 0 {
 				mutex.Lock()
-				results[currentApi.ID] = cfgs
+				results[currentApi.ID] = getConfigsFromCustomConfigs(configsToPersist)
 				mutex.Unlock()
 			}
-
-			lg = lg.WithFields(field.F("configsDownloaded", len(cfgs)))
-			switch remoteCount {
-			case 0:
-				lg.Debug("Did not find any configurations to download for API %q", currentApi.ID)
-			case len(cfgs):
-				lg.Info("Downloaded %d configurations for API %q", len(cfgs), currentApi.ID)
-			default:
-				lg.Info("Downloaded %d configurations for API %q. Skipped persisting %d unmodifiable config(s).", len(cfgs), currentApi.ID, remoteCount-len(cfgs))
-			}
-
 		}()
+
 	}
 	log.Debug("Started all downloads")
 	wg.Wait()
@@ -153,12 +151,35 @@ func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) p
 	return results
 }
 
-func (d *Downloader) downloadConfigsOfAPI(api api.API, values []dtclient.Value, projectName string) []config.Config {
-	results := make([]config.Config, 0, len(values))
+func getConfigsFromCustomConfigs(customConfigs []downloadedConfig) []config.Config {
+	var finalConfigs []config.Config
+	for _, c := range customConfigs {
+		finalConfigs = append(finalConfigs, c.Config)
+	}
+	return finalConfigs
+}
+
+func (d *Downloader) downloadConfigsOfAPI(api api.API, projectName string) []downloadedConfig {
+	var results []downloadedConfig
+	logger := log.WithFields(field.Type(api.ID))
+	values, err := d.findConfigsToDownload(api)
+	if err != nil {
+		logger.WithFields(field.Error(err)).Error("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", api.ID, err)
+		return results
+	}
+
+	values = d.filterConfigsToSkip(api, values)
+
+	if len(values) == 0 {
+		logger.Debug("No configs of type '%v' to download", api.ID)
+		return results
+	}
+
+	logger.Debug("Found %d configs of type %q to download", len(values), api.ID)
+
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	wg.Add(len(values))
-
 	for _, value := range values {
 		value := value
 		go func() {
@@ -172,20 +193,19 @@ func (d *Downloader) downloadConfigsOfAPI(api api.API, values []dtclient.Value, 
 				log.WithFields(field.Type(api.ID), field.F("value", value), field.Error(err)).Error("Error fetching config '%v' in api '%v': %v", value.Id, api.ID, err)
 				return
 			}
-
-			if !d.shouldPersist(api, downloadedJson) {
-				log.WithFields(field.Type(api.ID), field.F("value", value)).Debug("\tSkipping persisting config %v (%v) in API %v", value.Id, value.Name, api.ID)
-				return
-			}
-
 			c, err := d.createConfigForDownloadedJson(downloadedJson, api, value, projectName)
 			if err != nil {
 				log.WithFields(field.Type(api.ID), field.F("value", value), field.Error(err)).Error("Error creating config for %v in api %v: %v", value.Id, api.ID, err)
 				return
 			}
 
+			c1 := downloadedConfig{
+				Config: c,
+				value:  value,
+			}
+
 			mutex.Lock()
-			results = append(results, c)
+			results = append(results, c1)
 			mutex.Unlock()
 
 		}()
@@ -229,7 +249,6 @@ func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interfa
 		Type:       config.ClassicApiType{Api: theApi.ID},
 		Template:   templ,
 		Coordinate: coord,
-		Skip:       false,
 		Parameters: params,
 	}, nil
 }
@@ -256,14 +275,17 @@ func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]dtclient.Value
 	return d.client.ListConfigs(context.TODO(), currentApi)
 }
 
-func (d *Downloader) shouldPersist(a api.API, json map[string]interface{}) bool {
+func (d *Downloader) shouldPersist(a api.API, jsonStr string) bool {
 	if d.filter {
 		if cases := d.apiContentFilters[a.ID]; cases.ShouldConfigBePersisted != nil {
-			return cases.ShouldConfigBePersisted(json)
+			var unmarshalledJSON map[string]any
+			_ = json.Unmarshal([]byte(jsonStr), &unmarshalledJSON)
+			return cases.ShouldConfigBePersisted(unmarshalledJSON)
 		}
 	}
 	return true
 }
+
 func (d *Downloader) skipDownload(a api.API, value dtclient.Value) bool {
 	if d.filter {
 		if cases := d.apiContentFilters[a.ID]; cases.ShouldBeSkippedPreDownload != nil {

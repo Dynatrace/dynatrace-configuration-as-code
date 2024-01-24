@@ -21,6 +21,10 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
+	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -79,6 +83,30 @@ func TestDownload_ConfigsDownloaded(t *testing.T) {
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 2)
+}
+
+func TestDownload_KeyUserActionMobile(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["application-mobile"]).Return([]dtclient.Value{{Id: "some-application-id", Name: "some-application-name"}}, nil)
+	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["key-user-actions-mobile"].Resolve("some-application-id")).Return([]dtclient.Value{{Id: "some-key-id", Name: "some-key-name"}}, nil)
+
+	keyUserActionMobileAPI := api.API{ID: "key-user-actions-mobile", URLPath: "/some/path/"}
+	apiMap := api.APIs{"key-user-actions-mobile": keyUserActionMobileAPI}
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
+
+	configurations, err := downloader.Download("project")
+	assert.NoError(t, err)
+	assert.Len(t, configurations, 1)
+
+	assert.Len(t, configurations, 1)
+	gotConfig := configurations["key-user-actions-mobile"][0]
+	assert.Len(t, configurations["key-user-actions-mobile"], 1)
+	assert.Equal(t, reference.New("project", "application-mobile", "some-application-id", "id"), gotConfig.Parameters[config.ScopeParameter])
+	assert.Len(t, gotConfig.Parameters, 2)
+	assert.Equal(t, valueParam.New("some-key-name"), gotConfig.Parameters[config.NameParameter])
+	assert.Equal(t, config.ClassicApiType{Api: "key-user-actions-mobile"}, gotConfig.Type)
+	assert.Equal(t, coordinate.Coordinate{Project: "project", Type: "key-user-actions-mobile", ConfigId: "some-key-id"}, gotConfig.Coordinate)
+	assert.False(t, gotConfig.Skip)
 }
 
 func TestDownload_SingleConfigurationAPI(t *testing.T) {
