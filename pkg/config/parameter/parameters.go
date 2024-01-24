@@ -16,7 +16,6 @@ package parameter
 
 import (
 	"fmt"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 )

@@ -17,6 +17,7 @@
 package extract
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
@@ -38,4 +39,25 @@ func ConfigName(conf *config.Config, properties parameter.Properties) (string, e
 	}
 
 	return name, nil
+}
+
+func Scope(properties parameter.Properties) (string, error) {
+	scope, ok := properties[config.ScopeParameter]
+	if !ok {
+		return "", fmt.Errorf("property '%s' not found, this is most likely a bug", config.ScopeParameter)
+	}
+
+	switch v := scope.(type) {
+	case string:
+		if v == "" {
+			return "", fmt.Errorf("resolved scope is empty")
+		}
+		return v, nil
+	case []any:
+		return "", fmt.Errorf("scope needs to be string, was a list")
+	case map[any]any:
+		return "", fmt.Errorf("scope needs to be string, was a map")
+	default:
+		return "", fmt.Errorf("scope needs to be string, was unexpected type %T", scope)
+	}
 }

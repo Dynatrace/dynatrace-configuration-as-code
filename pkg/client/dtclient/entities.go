@@ -28,6 +28,12 @@ type SyntheticMonitorsResponse struct {
 	Monitors []SyntheticValue `json:"monitors"`
 }
 
+type KeyUserActionsMobileResponse struct {
+	KeyUserActions []struct {
+		Name string `json:"name"`
+	} `json:"keyUserActions"`
+}
+
 type Value struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
