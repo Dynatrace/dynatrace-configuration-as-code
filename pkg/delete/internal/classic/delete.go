@@ -38,23 +38,55 @@ type deleteValue struct {
 func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries []pointer.DeletePointer, targetApi string) error {
 	logger := log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID))
 
-	values, err := client.ListConfigs(ctx, theApi)
-	if err != nil {
-		logger.WithFields(field.Error(err)).Error("Failed to fetch existing configs of API type %q - skipping deletion: %v", theApi.ID, err)
-		return err
-	}
-
 	deleteErrs := 0
+	var err error
+	var delValues []deleteValue
 
-	delValues, err := filterValuesToDelete(logger, entries, values, theApi.ID)
+	// if the api is *not* a subpath api, we can just list all configs that exist for a given api and then filter the items that need to be deleted
+	if !theApi.SubPathAPI {
+		var values []dtclient.Value
+		values, err = client.ListConfigs(ctx, theApi)
+		if err != nil {
+			logger.WithFields(field.Error(err)).Error("Failed to fetch existing configs of API type %q - skipping deletion: %v", theApi.ID, err)
+			return err
+		}
 
-	if len(delValues) == 0 {
-		logger.Debug("No values found to delete for type %q.", targetApi)
-		return err // might or might not be nil after filtering
+		delValues, err = filterValuesToDelete(logger, entries, values, theApi.ID)
+
+	} else {
+		// for sub-path APIs, it is a bit more complex. we need to query all entries of each scope defined we can delete it.
+
+		// map all entries by scope, so we can later filter them by scope
+		scopedMapped := map[string][]pointer.DeletePointer{}
+		for _, entry := range entries {
+			scopedMapped[entry.Scope] = append(scopedMapped[entry.Scope], entry)
+		}
+
+		for scope, scopeEntries := range scopedMapped {
+			a := theApi.Resolve(scope)
+
+			var values []dtclient.Value
+			values, err = client.ListConfigs(ctx, a)
+			if err != nil {
+				logger.WithFields(field.Error(err)).Error("Failed to fetch existing configs for api %q (scope: %s): %w", a.ID, scope, err)
+				deleteErrs++
+				continue
+			}
+
+			var vals []deleteValue
+			vals, err = filterValuesToDelete(logger, scopeEntries, values, theApi.ID)
+
+			delValues = append(delValues, vals...)
+		}
 	}
 
 	if err != nil {
 		deleteErrs++
+	}
+
+	if len(delValues) == 0 {
+		logger.Debug("No values found to delete for type %q.", targetApi)
+		return err
 	}
 
 	logger.Info("Deleting %d config(s) of type %q...", len(delValues), theApi.ID)
@@ -62,9 +94,14 @@ func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries
 	for _, v := range delValues {
 		vLog := logger.WithFields(field.Coordinate(v.AsCoordinate()), field.F("value", v))
 
+		a := theApi
+		if a.SubPathAPI {
+			a = a.Resolve(v.DeletePointer.Scope)
+		}
+
 		vLog.Debug("Deleting %s with ID %s", targetApi, v.ID)
-		if err := client.DeleteConfigById(theApi, v.ID); err != nil {
-			vLog.Error("Failed to delete %s with ID %s: %v", theApi.ID, v.ID, err)
+		if err := client.DeleteConfigById(a, v.ID); err != nil {
+			vLog.Error("Failed to delete %s with ID %s: %v", a.ID, v.ID, err)
 			deleteErrs++
 		}
 	}

@@ -30,6 +30,9 @@ type DeletePointer struct {
 
 	//Identifier will either be the Name of a classic Config API object, or a configID for newer types like Settings
 	Identifier string
+
+	// Scope is the Entity ID / information necessary to delete the entity. This is required for sub-path entities.
+	Scope string
 }
 
 func (d DeletePointer) AsCoordinate() coordinate.Coordinate {

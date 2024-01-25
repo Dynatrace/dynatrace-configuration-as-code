@@ -136,7 +136,7 @@ func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDe
 	return result, nil
 }
 
-func parseDeleteEntry(ctx *loaderContext, index int, entry interface{}) (pointer.DeletePointer, error) {
+func parseDeleteEntry(ctx *loaderContext, index int, entry any) (pointer.DeletePointer, error) {
 
 	ptr, err := parseFullEntry(ctx, entry)
 
@@ -171,12 +171,15 @@ func parseAPIEntry(parsed persistence.DeleteEntry) (pointer.DeletePointer, error
 	if parsed.ConfigName == "" {
 		return pointer.DeletePointer{}, fmt.Errorf("delete entry of API type requiress config 'name' to be defined")
 	}
+
 	if parsed.ConfigId != "" {
 		log.Warn("Delete entry %q of API type defines config 'id' - only 'name' will be used.")
 	}
+
 	return pointer.DeletePointer{
 		Type:       parsed.Type,
 		Identifier: parsed.ConfigName,
+		Scope:      parsed.Scope,
 	}, nil
 }
 
