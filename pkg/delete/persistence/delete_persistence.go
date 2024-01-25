@@ -47,6 +47,9 @@ type DeleteEntry struct {
 	ConfigId string `yaml:"id,omitempty" json:"id,omitempty" mapstructure:"id" jsonschema:"description=The monaco ID of the config to be deleted - required for configs with generated IDs (e.g. Settings 2.0, Automations, Grail Buckets)."`
 	// ConfigName is the name of the config to be deleted - required for configs deleted by name (classic Config API types)
 	ConfigName string `yaml:"name,omitempty" json:"name,omitempty" mapstructure:"name" jsonschema:"description=The name of the config to be deleted - required for configs deleted by name (classic Config API types)."`
+
+	// Scope is the parent scope of a config. This field must be set if a classic config is used, and the classic config requires the scope to be set.
+	Scope string `yaml:"scope,omitempty" json:"scope,omitempty" mapstructure:"scope" jsonschema:"description=The scope of the config to be deleted - required for API configs that require a scope"`
 }
 
 type DeleteEntries []DeleteEntry
