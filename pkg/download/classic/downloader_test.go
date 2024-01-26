@@ -88,9 +88,9 @@ func TestDownload_ConfigsDownloaded(t *testing.T) {
 func TestDownload_KeyUserActionMobile(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["application-mobile"]).Return([]dtclient.Value{{Id: "some-application-id", Name: "some-application-name"}}, nil)
-	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["key-user-actions-mobile"].Resolve("some-application-id")).Return([]dtclient.Value{{Id: "some-key-id", Name: "some-key-name"}}, nil)
+	c.EXPECT().ReadConfigById(gomock.Any(), "").Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil)
 
-	keyUserActionMobileAPI := api.API{ID: "key-user-actions-mobile", URLPath: "/some/path/"}
+	keyUserActionMobileAPI := api.API{ID: "key-user-actions-mobile", URLPath: "/some/path/", PropertyNameOfGetAllResponse: "keyUserActions"}
 	apiMap := api.APIs{"key-user-actions-mobile": keyUserActionMobileAPI}
 	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
 
@@ -103,9 +103,9 @@ func TestDownload_KeyUserActionMobile(t *testing.T) {
 	assert.Len(t, configurations["key-user-actions-mobile"], 1)
 	assert.Equal(t, reference.New("project", "application-mobile", "some-application-id", "id"), gotConfig.Parameters[config.ScopeParameter])
 	assert.Len(t, gotConfig.Parameters, 2)
-	assert.Equal(t, valueParam.New("some-key-name"), gotConfig.Parameters[config.NameParameter])
+	assert.Equal(t, valueParam.New("abc"), gotConfig.Parameters[config.NameParameter])
 	assert.Equal(t, config.ClassicApiType{Api: "key-user-actions-mobile"}, gotConfig.Type)
-	assert.Equal(t, coordinate.Coordinate{Project: "project", Type: "key-user-actions-mobile", ConfigId: "some-key-id"}, gotConfig.Coordinate)
+	assert.Equal(t, coordinate.Coordinate{Project: "project", Type: "key-user-actions-mobile", ConfigId: "abc"}, gotConfig.Coordinate)
 	assert.False(t, gotConfig.Skip)
 }
 

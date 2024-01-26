@@ -19,36 +19,37 @@ package classic
 import (
 	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
+	"github.com/mitchellh/mapstructure"
 )
 
-func (d *Downloader) downloadKeyUserActions(projectName string) []downloadedConfig {
-
+func (d *Downloader) downloadKeyUserActions(theApi api.API, projectName string, applicationType string) []downloadedConfig {
 	var configs []downloadedConfig
-
-	keyUserActionApi := api.NewAPIs()["key-user-actions-mobile"]
-	appMobile, err := d.client.ListConfigs(context.TODO(), api.NewAPIs()["application-mobile"])
+	apps, err := d.client.ListConfigs(context.TODO(), api.NewAPIs()[applicationType])
 	if err != nil {
 		return configs
 	}
-	// grab all mobile applications
-	for _, a := range appMobile {
-		values, err := d.client.ListConfigs(context.TODO(), keyUserActionApi.Resolve(a.Id))
+	for _, a := range apps {
+		kuas, err := d.downloadAndUnmarshalConfig(theApi.Resolve(a.Id), dtclient.Value{})
 		if err != nil {
 			return configs
 		}
-		values = d.filterConfigsToSkip(keyUserActionApi, values)
-		// grab all key user actions for each application
-		for _, v := range values {
-			mappedJson := map[string]any{"name": v.Id}
-			cfg, err := d.createConfigForDownloadedJson(mappedJson, keyUserActionApi, v, projectName)
+		var keyUserActions dtclient.KeyUserActionsMobileResponse
+		mapstructure.Decode(kuas, &keyUserActions)
+
+		var arr []map[string]any
+		mapstructure.Decode(kuas[theApi.PropertyNameOfGetAllResponse], &arr)
+		for _, content := range arr {
+			value := dtclient.Value{Id: content["name"].(string), Name: content["name"].(string)}
+			cfg, err := d.createConfigForDownloadedJson(content, theApi, value, projectName)
 			if err != nil {
 				return configs
 			}
-			// set scope parameter because this config is referencing another config (application-mobile) via its url path
-			cfg.Parameters[config.ScopeParameter] = reference.New(projectName, "application-mobile", a.Id, "id")
-			configs = append(configs, downloadedConfig{Config: cfg, value: v})
+			cfg.Parameters[config.ScopeParameter] = reference.New(projectName, applicationType, a.Id, "id")
+			configs = append(configs, downloadedConfig{Config: cfg, value: value})
+
 		}
 	}
 

@@ -117,7 +117,7 @@ func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) p
 
 			var downloadedConfigs []downloadedConfig
 			if currentApi.ID == "key-user-actions-mobile" {
-				downloadedConfigs = d.downloadKeyUserActions(projectName)
+				downloadedConfigs = d.downloadKeyUserActions(currentApi, projectName, "application-mobile")
 			} else {
 				downloadedConfigs = d.downloadConfigsOfAPI(currentApi, projectName)
 			}
