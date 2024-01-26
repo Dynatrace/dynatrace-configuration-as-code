@@ -109,6 +109,30 @@ func TestDownload_KeyUserActionMobile(t *testing.T) {
 	assert.False(t, gotConfig.Skip)
 }
 
+func TestDownload_KeyUserActionWeb(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["application-web"]).Return([]dtclient.Value{{Id: "some-application-id", Name: "some-application-name"}}, nil)
+	c.EXPECT().ReadConfigById(gomock.Any(), "").Return([]byte(`{"keyUserActionList": [{"name": "abc","actionType": "Load","domain": "test.com","meIdentifier": "APPLICATION_METHOD-8590EE9F9CB3C4E9"}]}`), nil)
+
+	keyUserActionMobileAPI := api.API{ID: "key-user-actions-web", URLPath: "/some/path/", PropertyNameOfGetAllResponse: "keyUserActionList"}
+	apiMap := api.APIs{"key-user-actions-web": keyUserActionMobileAPI}
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
+
+	configurations, err := downloader.Download("project")
+	assert.NoError(t, err)
+	assert.Len(t, configurations, 1)
+
+	assert.Len(t, configurations, 1)
+	gotConfig := configurations["key-user-actions-web"][0]
+	assert.Len(t, configurations["key-user-actions-web"], 1)
+	assert.Equal(t, reference.New("project", "application-web", "some-application-id", "id"), gotConfig.Parameters[config.ScopeParameter])
+	assert.Len(t, gotConfig.Parameters, 2)
+	assert.Equal(t, valueParam.New("abc"), gotConfig.Parameters[config.NameParameter])
+	assert.Equal(t, config.ClassicApiType{Api: "key-user-actions-web"}, gotConfig.Type)
+	assert.Equal(t, coordinate.Coordinate{Project: "project", Type: "key-user-actions-web", ConfigId: "abc"}, gotConfig.Coordinate)
+	assert.False(t, gotConfig.Skip)
+}
+
 func TestDownload_SingleConfigurationAPI(t *testing.T) {
 	client := dtclient.NewMockClient(gomock.NewController(t))
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
