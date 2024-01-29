@@ -39,8 +39,8 @@ type loaderContext struct {
 	knownApis  api.APIs
 }
 
-// EntryParserError is an error that occurred while parsing a delete file
-type EntryParserError struct {
+// entryParserError is an error that occurred while parsing a delete file entry
+type entryParserError struct {
 	// Value of the DeleteEntry that failed to be parsed
 	Value string `json:"value"`
 	// Index of the entry that failed to be parsed
@@ -49,13 +49,14 @@ type EntryParserError struct {
 	Reason error `json:"reason"`
 }
 
-func (e EntryParserError) Error() string {
+func (e entryParserError) Error() string {
 	return fmt.Sprintf("invalid delete entry `%s` on index `%d`: %s", e.Value, e.Index, e.Reason)
 }
 
-type ParseErrors []error
+// parseErrors is a wrapper for multiple errors. It formats the children in a little bit nicer way.
+type parseErrors []error
 
-func (p ParseErrors) Error() string {
+func (p parseErrors) Error() string {
 	sb := strings.Builder{}
 
 	sb.WriteString("failed to parse delete file:")
@@ -111,13 +112,13 @@ func readDeleteFile(context *loaderContext) (persistence.FileDefinition, error) 
 
 func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDefinition) (DeleteEntries, error) {
 	result := DeleteEntries{}
-	var errs ParseErrors
+	var errs parseErrors
 
 	for i, e := range definition.DeleteEntries {
 		entry, err := parseDeleteEntry(ctx, e)
 
 		if err != nil {
-			errs = append(errs, EntryParserError{
+			errs = append(errs, entryParserError{
 				Value:  fmt.Sprintf("%v", e),
 				Index:  i,
 				Reason: err,
