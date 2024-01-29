@@ -30,8 +30,10 @@ type ContentFilter struct {
 	ShouldConfigBePersisted func(json map[string]interface{}) bool
 }
 
-// apiContentFilters defines default ContentFilter rules per API identifier
-var apiContentFilters = map[string]ContentFilter{
+type ContentFilters map[string]ContentFilter
+
+// ApiContentFilters defines default ContentFilter rules per API identifier
+var ApiContentFilters = map[string]ContentFilter{
 	"dashboard": {
 		ShouldBeSkippedPreDownload: func(value dtclient.Value) bool {
 			return value.Owner != nil && *value.Owner == "Dynatrace"

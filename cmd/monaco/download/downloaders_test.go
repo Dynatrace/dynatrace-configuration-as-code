@@ -19,27 +19,16 @@
 package download
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestDownloadersClassic(t *testing.T) {
-	downloaders := downloaders{
-		&classic.Downloader{},
-		&settings.Downloader{},
-		&automation.Downloader{},
-	}
-	classicDownloader := downloaders.Classic()
-	assert.IsType(t, &classic.Downloader{}, classicDownloader)
-}
-
 func TestDownloadersSettings(t *testing.T) {
 	downloaders := downloaders{
-		&classic.Downloader{},
 		&settings.Downloader{},
 		&automation.Downloader{},
 	}
@@ -49,7 +38,6 @@ func TestDownloadersSettings(t *testing.T) {
 
 func TestDownloadersAutomation(t *testing.T) {
 	downloaders := downloaders{
-		&classic.Downloader{},
 		&settings.Downloader{},
 		&automation.Downloader{},
 	}
@@ -58,13 +46,10 @@ func TestDownloadersAutomation(t *testing.T) {
 }
 func TestGetDownloader(t *testing.T) {
 	downloaders := downloaders{
-		&classic.Downloader{},
 		&settings.Downloader{},
 		&automation.Downloader{},
 	}
 
-	classicDownloader := getDownloader[config.ClassicApiType](downloaders)
-	assert.IsType(t, &classic.Downloader{}, classicDownloader)
 	settingsDownloader := getDownloader[config.SettingsType](downloaders)
 	assert.IsType(t, &settings.Downloader{}, settingsDownloader)
 	automationDownloader := getDownloader[config.AutomationType](downloaders)
@@ -100,7 +85,7 @@ func Test_prepareAPIs(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				actual := prepareAPIs(tc.given)
+				actual := prepareAPIs(api.NewAPIs(), tc.given)
 				assert.Nil(t, actual)
 			})
 		}
@@ -134,7 +119,7 @@ func Test_prepareAPIs(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				apis := prepareAPIs(tc.given)
+				apis := prepareAPIs(api.NewAPIs(), tc.given)
 				for _, e := range apis {
 					assert.False(t, e.SkipDownload)
 				}
@@ -163,7 +148,7 @@ func Test_prepareAPIs(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				apis := prepareAPIs(tc.given)
+				apis := prepareAPIs(api.NewAPIs(), tc.given)
 
 				a := false
 				for _, e := range apis {
@@ -197,7 +182,7 @@ func Test_prepareAPIs(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				apis := prepareAPIs(tc.given)
+				apis := prepareAPIs(api.NewAPIs(), tc.given)
 
 				a := false
 				for _, e := range apis {
@@ -244,7 +229,7 @@ func Test_prepareAPIs(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				apis := prepareAPIs(tc.given)
+				apis := prepareAPIs(api.NewAPIs(), tc.given)
 				exists := false
 
 				for _, e := range apis {
