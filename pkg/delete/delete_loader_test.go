@@ -166,7 +166,7 @@ func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
 		},
 	})
 
-	var e ParseErrors
+	var e parseErrors
 	assert.ErrorAs(t, err, &e)
 	assert.Equal(t, 1, len(e), "expected 1 error")
 	assert.Empty(t, result, "expected 0 results")
@@ -332,7 +332,7 @@ func TestLoadEntriesToDeleteFailsIfScopeIsUndefinedForSubPathAPI(t *testing.T) {
 
 	result, err := LoadEntriesToDelete(fs, deleteFilePath)
 
-	var e ParseErrors
+	var e parseErrors
 	assert.ErrorAs(t, err, &e)
 	assert.Equal(t, 1, len(e), "expected 1 error")
 	assert.Empty(t, result, "expected 0 results")
@@ -358,7 +358,7 @@ func TestLoadEntriesToDeleteFailsIfScopeIsDefinedForNonSubPathAPI(t *testing.T) 
 
 	result, err := LoadEntriesToDelete(fs, deleteFilePath)
 
-	var e ParseErrors
+	var e parseErrors
 	assert.ErrorAs(t, err, &e)
 	assert.Equal(t, 1, len(e), "expected 1 error")
 	assert.Empty(t, result, "expected 0 results")
@@ -384,7 +384,7 @@ func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
 
 	result, err := LoadEntriesToDelete(fs, deleteFilePath)
 
-	var e ParseErrors
+	var e parseErrors
 	assert.ErrorAs(t, err, &e)
 	assert.Equal(t, 1, len(e), "expected 1 error")
 	assert.Empty(t, result, "expected 0 results")
@@ -420,7 +420,7 @@ delete:
 
 	result, err := LoadEntriesToDelete(fs, deleteFilePath)
 
-	var e ParseErrors
+	var e parseErrors
 	assert.ErrorAs(t, err, &e)
 	assert.Equal(t, 5, len(e), "expected 5 errors")
 	assert.Empty(t, result, "expected 0 results")
