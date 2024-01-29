@@ -17,6 +17,7 @@
 package delete
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -35,7 +36,7 @@ const deleteDelimiter = "/"
 type loaderContext struct {
 	fs         afero.Fs
 	deleteFile string
-	knownApis  map[string]struct{}
+	knownApis  api.APIs
 }
 
 // DeleteEntryParserError is an error that occurred while parsing a delete file
@@ -57,15 +58,14 @@ func newDeleteEntryParserError(value string, index int, reason string) DeleteEnt
 }
 
 func (e DeleteEntryParserError) Error() string {
-	return fmt.Sprintf("invalid delete entry `%s` on index `%d`: %s",
-		e.Value, e.Index, e.Reason)
+	return fmt.Sprintf("invalid delete entry `%s` on index `%d`: %s", e.Value, e.Index, e.Reason)
 }
 
 func LoadEntriesToDelete(fs afero.Fs, deleteFile string) (DeleteEntries, []error) {
 	context := &loaderContext{
 		fs:         fs,
 		deleteFile: filepath.Clean(deleteFile),
-		knownApis:  toSetMap(api.NewAPIs().GetNames()),
+		knownApis:  api.NewAPIs(),
 	}
 
 	definition, err := readDeleteFile(context)
@@ -160,20 +160,33 @@ func parseFullEntry(ctx *loaderContext, entry interface{}) (pointer.DeletePointe
 		return pointer.DeletePointer{}, err
 	}
 
-	if _, known := ctx.knownApis[parsed.Type]; known {
-		return parseAPIEntry(parsed)
+	if a, known := ctx.knownApis[parsed.Type]; known {
+		p, err := parseAPIEntry(parsed, a)
+		if err != nil {
+			return pointer.DeletePointer{}, fmt.Errorf("failed to parse entry for API %q: %w", a.ID, err)
+		}
+		return p, nil
 	}
 
 	return parseCoordinateEntry(parsed)
 }
 
-func parseAPIEntry(parsed persistence.DeleteEntry) (pointer.DeletePointer, error) {
+func parseAPIEntry(parsed persistence.DeleteEntry, a api.API) (pointer.DeletePointer, error) {
 	if parsed.ConfigName == "" {
 		return pointer.DeletePointer{}, fmt.Errorf("delete entry of API type requiress config 'name' to be defined")
 	}
 
 	if parsed.ConfigId != "" {
 		log.Warn("Delete entry %q of API type defines config 'id' - only 'name' will be used.")
+	}
+
+	// The scope is required for sub-path APIs.
+	if a.SubPathAPI && parsed.Scope == "" {
+		return pointer.DeletePointer{}, errors.New("API requires a scope, but non was defined")
+	}
+	// Non sub-path APIs must not define the scope
+	if !a.SubPathAPI && parsed.Scope != "" {
+		return pointer.DeletePointer{}, errors.New("API does not allow a scope, but a scope was defined")
 	}
 
 	return pointer.DeletePointer{
