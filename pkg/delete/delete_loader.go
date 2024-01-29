@@ -77,16 +77,6 @@ func LoadEntriesToDelete(fs afero.Fs, deleteFile string) (DeleteEntries, []error
 	return parseDeleteFileDefinition(context, definition)
 }
 
-func toSetMap(strs []string) map[string]struct{} {
-	result := make(map[string]struct{})
-
-	for _, s := range strs {
-		result[s] = struct{}{}
-	}
-
-	return result
-}
-
 func readDeleteFile(context *loaderContext) (persistence.FileDefinition, error) {
 	targetFile, err := filepath.Abs(context.deleteFile)
 	if err != nil {
@@ -116,21 +106,21 @@ func readDeleteFile(context *loaderContext) (persistence.FileDefinition, error) 
 
 func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDefinition) (DeleteEntries, []error) {
 	var result = make(DeleteEntries)
-	var errors []error
+	var errs []error
 
 	for i, e := range definition.DeleteEntries {
 		entry, err := parseDeleteEntry(ctx, i, e)
 
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
 		result[entry.Type] = append(result[entry.Type], entry)
 	}
 
-	if errors != nil {
-		return nil, errors
+	if errs != nil {
+		return nil, errs
 	}
 
 	return result, nil
