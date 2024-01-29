@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 	"path/filepath"
 	"testing"
 
@@ -40,7 +41,7 @@ func TestParseDeleteEntry(t *testing.T) {
 		},
 	}
 
-	entry, err := parseDeleteEntry(&ctx, 0, apiID+deleteDelimiter+name)
+	entry, err := parseDeleteEntry(&ctx, apiID+deleteDelimiter+name)
 
 	assert.NoError(t, err)
 	assert.Equal(t, apiID, entry.Type)
@@ -58,7 +59,7 @@ func TestParseSettingsDeleteEntry(t *testing.T) {
 		},
 	}
 
-	entry, err := parseDeleteEntry(&ctx, 0, cfgType+deleteDelimiter+name)
+	entry, err := parseDeleteEntry(&ctx, cfgType+deleteDelimiter+name)
 
 	assert.NoError(t, err)
 	assert.Equal(t, cfgType, entry.Type)
@@ -76,7 +77,7 @@ func TestParseDeleteEntryWithMultipleSlashesShouldWork(t *testing.T) {
 		},
 	}
 
-	entry, err := parseDeleteEntry(&ctx, 0, apiID+deleteDelimiter+name)
+	entry, err := parseDeleteEntry(&ctx, apiID+deleteDelimiter+name)
 
 	assert.NoError(t, err)
 	assert.Equal(t, apiID, entry.Type)
@@ -93,9 +94,9 @@ func TestParseDeleteEntryInvalidEntryWithoutDelimiterShouldFail(t *testing.T) {
 		},
 	}
 
-	_, err := parseDeleteEntry(&ctx, 0, value)
+	_, err := parseDeleteEntry(&ctx, value)
 
-	assert.NotNil(t, err, "value `%s` should return error", value)
+	assert.Error(t, err, "value `%s` should return error", value)
 }
 
 func TestParseDeleteFileDefinitions(t *testing.T) {
@@ -114,14 +115,14 @@ func TestParseDeleteFileDefinitions(t *testing.T) {
 		},
 	}
 
-	result, errors := parseDeleteFileDefinition(&ctx, persistence.FileDefinition{
+	result, err := parseDeleteFileDefinition(&ctx, persistence.FileDefinition{
 		DeleteEntries: []interface{}{
 			entity,
 			entity2,
 		},
 	})
 
-	assert.Equal(t, 0, len(errors))
+	assert.NoError(t, err)
 	assert.Equal(t, 2, len(result))
 
 	apiEntities := result[apiID]
@@ -157,7 +158,7 @@ func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
 		},
 	}
 
-	result, errors := parseDeleteFileDefinition(&ctx, persistence.FileDefinition{
+	result, err := parseDeleteFileDefinition(&ctx, persistence.FileDefinition{
 		DeleteEntries: []interface{}{
 			entity,
 			entity2,
@@ -165,8 +166,10 @@ func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
 		},
 	})
 
-	assert.Equal(t, 1, len(errors))
-	assert.Equal(t, 0, len(result))
+	var e ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e), "expected 1 error")
+	assert.Empty(t, result, "expected 0 results")
 }
 
 func TestLoadEntriesToDelete(t *testing.T) {
@@ -299,9 +302,9 @@ func TestLoadEntriesToDelete(t *testing.T) {
 			err = afero.WriteFile(fs, deleteFile, []byte(tt.givenFileContent), 0666)
 			assert.NoError(t, err)
 
-			result, errors := LoadEntriesToDelete(fs, deleteFile)
+			result, err := LoadEntriesToDelete(fs, deleteFile)
 
-			assert.Empty(t, errors)
+			assert.NoError(t, err)
 			assert.Equal(t, len(tt.want), len(result))
 			assert.Equal(t, tt.want, result)
 		})
@@ -315,7 +318,7 @@ func TestLoadEntriesToDeleteFailsIfScopeIsUndefinedForSubPathAPI(t *testing.T) {
   name: my-action
 ` // scope should be defined
 
-	workingDir := filepath.FromSlash("/home/test/monaco")
+	workingDir := t.TempDir()
 	deleteFileName := "delete.yaml"
 	deleteFilePath := filepath.Join(workingDir, deleteFileName)
 
@@ -327,10 +330,12 @@ func TestLoadEntriesToDeleteFailsIfScopeIsUndefinedForSubPathAPI(t *testing.T) {
 	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
 	assert.NoError(t, err)
 
-	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
+	result, err := LoadEntriesToDelete(fs, deleteFilePath)
 
-	assert.Equal(t, 1, len(errors), "expected 1 error")
-	assert.Equal(t, 0, len(result), "expected 0 results")
+	var e ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e), "expected 1 error")
+	assert.Empty(t, result, "expected 0 results")
 }
 func TestLoadEntriesToDeleteFailsIfScopeIsDefinedForNonSubPathAPI(t *testing.T) {
 	fileContent := `delete:
@@ -339,7 +344,7 @@ func TestLoadEntriesToDeleteFailsIfScopeIsDefinedForNonSubPathAPI(t *testing.T) 
   name: my-action
   scope: my-scope # scope should NOT be defined
 `
-	workingDir := filepath.FromSlash("/home/test/monaco")
+	workingDir := t.TempDir()
 	deleteFileName := "delete.yaml"
 	deleteFilePath := filepath.Join(workingDir, deleteFileName)
 
@@ -351,10 +356,12 @@ func TestLoadEntriesToDeleteFailsIfScopeIsDefinedForNonSubPathAPI(t *testing.T) 
 	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
 	assert.NoError(t, err)
 
-	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
+	result, err := LoadEntriesToDelete(fs, deleteFilePath)
 
-	assert.Equal(t, 1, len(errors), "expected 1 error")
-	assert.Equal(t, 0, len(result), "expected 0 results")
+	var e ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e), "expected 1 error")
+	assert.Empty(t, result, "expected 0 results")
 }
 
 func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
@@ -363,7 +370,7 @@ func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
 - auto-invalid
 `
 
-	workingDir := filepath.FromSlash("/home/test/monaco")
+	workingDir := t.TempDir()
 	deleteFileName := "delete.yaml"
 	deleteFilePath := filepath.Join(workingDir, deleteFileName)
 
@@ -375,24 +382,62 @@ func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
 	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
 	assert.NoError(t, err)
 
-	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
+	result, err := LoadEntriesToDelete(fs, deleteFilePath)
 
-	assert.Equal(t, 1, len(errors))
-	assert.Equal(t, 0, len(result))
+	var e ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e), "expected 1 error")
+	assert.Empty(t, result, "expected 0 results")
 }
 
-func TestLoadEntriesToDeleteNonExistingFile(t *testing.T) {
-	workingDir := filepath.FromSlash("/home/test/monaco")
+func TestLoadEntriesToDeleteWithMultipleInvalidEntries(t *testing.T) {
+	fileContent := `
+delete:
+- management-zone/test entity/entities
+- auto-invalid
+- type: unknown-api
+  name: test
+- type: alerting-profile
+- type: alerting-profile
+  name: my-name-2
+  scope: no-scope-allowed
+- type: key-user-actions-mobile
+  name: test
+  scope: ''
+`
+
+	workingDir := t.TempDir()
+	deleteFileName := "delete.yaml"
+	deleteFilePath := filepath.Join(workingDir, deleteFileName)
 
 	fs := afero.NewMemMapFs()
 	err := fs.MkdirAll(workingDir, 0777)
 
 	assert.NoError(t, err)
 
-	result, errors := LoadEntriesToDelete(fs, "/home/test/monaco/non-existing-delete.yaml")
+	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
+	assert.NoError(t, err)
 
-	assert.Equal(t, 1, len(errors))
-	assert.Equal(t, 0, len(result))
+	result, err := LoadEntriesToDelete(fs, deleteFilePath)
+
+	var e ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 5, len(e), "expected 5 errors")
+	assert.Empty(t, result, "expected 0 results")
+}
+
+func TestLoadEntriesToDeleteNonExistingFile(t *testing.T) {
+	workingDir := t.TempDir()
+
+	fs := afero.NewMemMapFs()
+	err := fs.MkdirAll(workingDir, 0777)
+
+	assert.NoError(t, err)
+
+	result, err := LoadEntriesToDelete(fs, filepath.Join(t.TempDir(), "delete.yaml"))
+
+	assert.Error(t, err)
+	assert.Empty(t, result, "expected 0 results")
 }
 
 func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
@@ -400,26 +445,26 @@ func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
 - auto-invalid
 `
 
-	workingDir := filepath.FromSlash("/home/test/monaco")
+	workingDir := t.TempDir()
 	deleteFileName := "delete.yaml"
 	deleteFilePath := filepath.Join(workingDir, deleteFileName)
 
 	fs := afero.NewMemMapFs()
 	err := fs.MkdirAll(workingDir, 0777)
-
 	assert.NoError(t, err)
 
 	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
 	assert.NoError(t, err)
 
-	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
+	result, err := LoadEntriesToDelete(fs, deleteFilePath)
 
-	assert.Equal(t, 1, len(errors))
-	assert.Equal(t, 0, len(result))
+	var typeError *yaml.TypeError
+	assert.ErrorAs(t, err, &typeError)
+	assert.Empty(t, result, "expected 0 results")
 }
 
 func TestLoadEntriesToDeleteWithEmptyFile(t *testing.T) {
-	workingDir := filepath.FromSlash("/home/test/monaco")
+	workingDir := t.TempDir()
 	deleteFileName := "empty_delete_file.yaml"
 	deleteFilePath := filepath.Join(workingDir, deleteFileName)
 
@@ -431,8 +476,8 @@ func TestLoadEntriesToDeleteWithEmptyFile(t *testing.T) {
 	err = afero.WriteFile(fs, deleteFilePath, []byte{}, 0666)
 	assert.NoError(t, err)
 
-	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
+	result, err := LoadEntriesToDelete(fs, deleteFilePath)
 
-	assert.Equal(t, 1, len(errors))
-	assert.Equal(t, 0, len(result))
+	assert.ErrorContains(t, err, "is empty")
+	assert.Empty(t, result, "expected 0 results")
 }

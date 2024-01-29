@@ -75,9 +75,9 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 			}
 
 			// Try to load delete entries from delete file
-			entriesToDelete, errs := delete.LoadEntriesToDelete(fs, deleteFile)
-			if errs != nil {
-				return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
+			entriesToDelete, err := delete.LoadEntriesToDelete(fs, deleteFile)
+			if err != nil {
+				return fmt.Errorf("encountered errors while parsing %s: %w", deleteFile, err)
 			}
 
 			return Delete(manifest.Environments, entriesToDelete)
