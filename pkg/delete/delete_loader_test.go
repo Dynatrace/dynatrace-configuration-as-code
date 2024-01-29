@@ -19,6 +19,7 @@
 package delete
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/stretchr/testify/assert"
@@ -29,20 +30,20 @@ import (
 )
 
 func TestParseDeleteEntry(t *testing.T) {
-	api := "auto-tag"
+	apiID := "auto-tag"
 	name := "test entity"
 
 	ctx := loaderContext{
-		knownApis: toSetMap([]string{
-			"management-zone",
-			"auto-tag",
-		}),
+		knownApis: map[string]api.API{
+			"management-zone": {},
+			"auto-tag":        {},
+		},
 	}
 
-	entry, err := parseDeleteEntry(&ctx, 0, api+deleteDelimiter+name)
+	entry, err := parseDeleteEntry(&ctx, 0, apiID+deleteDelimiter+name)
 
 	assert.NoError(t, err)
-	assert.Equal(t, api, entry.Type)
+	assert.Equal(t, apiID, entry.Type)
 	assert.Equal(t, name, entry.Identifier)
 }
 
@@ -51,10 +52,10 @@ func TestParseSettingsDeleteEntry(t *testing.T) {
 	name := "test entity"
 
 	ctx := loaderContext{
-		knownApis: toSetMap([]string{
-			"management-zone",
-			"auto-tag",
-		}),
+		knownApis: map[string]api.API{
+			"management-zone": {},
+			"auto-tag":        {},
+		},
 	}
 
 	entry, err := parseDeleteEntry(&ctx, 0, cfgType+deleteDelimiter+name)
@@ -65,20 +66,20 @@ func TestParseSettingsDeleteEntry(t *testing.T) {
 }
 
 func TestParseDeleteEntryWithMultipleSlashesShouldWork(t *testing.T) {
-	api := "auto-tag"
+	apiID := "auto-tag"
 	name := "test entity/entry"
 
 	ctx := loaderContext{
-		knownApis: toSetMap([]string{
-			"management-zone",
-			"auto-tag",
-		}),
+		knownApis: map[string]api.API{
+			"management-zone": {},
+			"auto-tag":        {},
+		},
 	}
 
-	entry, err := parseDeleteEntry(&ctx, 0, api+deleteDelimiter+name)
+	entry, err := parseDeleteEntry(&ctx, 0, apiID+deleteDelimiter+name)
 
 	assert.NoError(t, err)
-	assert.Equal(t, api, entry.Type)
+	assert.Equal(t, apiID, entry.Type)
 	assert.Equal(t, name, entry.Identifier)
 }
 
@@ -86,10 +87,10 @@ func TestParseDeleteEntryInvalidEntryWithoutDelimiterShouldFail(t *testing.T) {
 	value := "auto-tag"
 
 	ctx := loaderContext{
-		knownApis: toSetMap([]string{
-			"management-zone",
-			"auto-tag",
-		}),
+		knownApis: map[string]api.API{
+			"management-zone": {},
+			"auto-tag":        {},
+		},
 	}
 
 	_, err := parseDeleteEntry(&ctx, 0, value)
@@ -98,19 +99,19 @@ func TestParseDeleteEntryInvalidEntryWithoutDelimiterShouldFail(t *testing.T) {
 }
 
 func TestParseDeleteFileDefinitions(t *testing.T) {
-	api := "auto-tag"
+	apiID := "auto-tag"
 	name := "test entity/entry"
-	entity := api + deleteDelimiter + name
+	entity := apiID + deleteDelimiter + name
 
 	api2 := "management-zone"
 	name2 := "test entity/entry"
 	entity2 := api2 + deleteDelimiter + name2
 
 	ctx := loaderContext{
-		knownApis: toSetMap([]string{
-			"management-zone",
-			"auto-tag",
-		}),
+		knownApis: map[string]api.API{
+			"management-zone": {},
+			"auto-tag":        {},
+		},
 	}
 
 	result, errors := parseDeleteFileDefinition(&ctx, persistence.FileDefinition{
@@ -123,11 +124,11 @@ func TestParseDeleteFileDefinitions(t *testing.T) {
 	assert.Equal(t, 0, len(errors))
 	assert.Equal(t, 2, len(result))
 
-	apiEntities := result[api]
+	apiEntities := result[apiID]
 
 	assert.Equal(t, 1, len(apiEntities))
 	assert.Equal(t, pointer.DeletePointer{
-		Type:       api,
+		Type:       apiID,
 		Identifier: name,
 	}, apiEntities[0])
 
@@ -141,19 +142,19 @@ func TestParseDeleteFileDefinitions(t *testing.T) {
 }
 
 func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
-	api := "auto-tag"
+	apiID := "auto-tag"
 	name := "test entity/entry"
-	entity := api + deleteDelimiter + name
+	entity := apiID + deleteDelimiter + name
 
 	api2 := "management-zone"
 	name2 := "test entity/entry"
 	entity2 := api2 + deleteDelimiter + name2
 
 	ctx := loaderContext{
-		knownApis: toSetMap([]string{
-			"management-zone",
-			"auto-tag",
-		}),
+		knownApis: map[string]api.API{
+			"management-zone": {},
+			"auto-tag":        {},
+		},
 	}
 
 	result, errors := parseDeleteFileDefinition(&ctx, persistence.FileDefinition{
@@ -314,6 +315,30 @@ func TestLoadEntriesToDeleteFailsIfScopeIsUndefinedForSubPathAPI(t *testing.T) {
   name: my-action
 ` // scope should be defined
 
+	workingDir := filepath.FromSlash("/home/test/monaco")
+	deleteFileName := "delete.yaml"
+	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+
+	fs := afero.NewMemMapFs()
+	err := fs.MkdirAll(workingDir, 0777)
+
+	assert.NoError(t, err)
+
+	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
+	assert.NoError(t, err)
+
+	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
+
+	assert.Equal(t, 1, len(errors), "expected 1 error")
+	assert.Equal(t, 0, len(result), "expected 0 results")
+}
+func TestLoadEntriesToDeleteFailsIfScopeIsDefinedForNonSubPathAPI(t *testing.T) {
+	fileContent := `delete:
+- project: some-project
+  type: alerting-profile
+  name: my-action
+  scope: my-scope # scope should NOT be defined
+`
 	workingDir := filepath.FromSlash("/home/test/monaco")
 	deleteFileName := "delete.yaml"
 	deleteFilePath := filepath.Join(workingDir, deleteFileName)
