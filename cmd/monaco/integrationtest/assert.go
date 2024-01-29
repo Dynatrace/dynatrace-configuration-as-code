@@ -136,33 +136,48 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 			apis := api.NewAPIs()
 			if _, found := projectsToValidate[coord.Project]; found {
+				var foundID string
 				switch typ := theConfig.Type.(type) {
 				case config.SettingsType:
-					AssertSetting(t, ctx, clients.Settings(), typ, env.Name, available, theConfig)
+					foundID = AssertSetting(t, ctx, clients.Settings(), typ, env.Name, available, theConfig)
 				case config.ClassicApiType:
 					assert.NotEmpty(t, configName, "classic API config %v is missing name, can not assert if it exists", theConfig.Coordinate)
-					AssertConfig(t, ctx, clients.Classic(), apis[typ.Api], env, available, theConfig, configName)
+
+					theApi := apis[typ.Api]
+					if theApi.SubPathAPI {
+
+						assert.NotEmpty(t, properties[config.ScopeParameter], "subPathAPI config is missing scope")
+						scope, ok := properties[config.ScopeParameter].(string)
+						assert.True(t, ok, "scope property could not be resolved to string, but was ", properties[config.ScopeParameter])
+						theApi = theApi.Resolve(scope)
+					}
+
+					foundID = AssertConfig(t, ctx, clients.Classic(), theApi, env, available, theConfig, configName)
 				case config.AutomationType:
 					if clients.Automation() == nil {
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
 						return
 					}
-					AssertAutomation(t, *clients.Automation(), env, available, typ.Resource, theConfig)
+					foundID = AssertAutomation(t, *clients.Automation(), env, available, typ.Resource, theConfig)
 				case config.BucketType:
 					if clients.Bucket() == nil {
 						t.Errorf("can not assert existience of Bucket config %q) because no BucketClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
 						return
 					}
-					AssertBucket(t, *clients.Bucket(), env, available, theConfig)
+					foundID = AssertBucket(t, *clients.Bucket(), env, available, theConfig)
 				default:
 					t.Errorf("Can not assert config of unknown type %q", theConfig.Coordinate.Type)
+				}
+
+				if foundID != "" { // store found IDs of asserted configs to allow resolving references (e.g. to assert Settings or SubPath configs referencing other test configs as scope)
+					lookup[coord].Properties[config.IdParameter] = foundID
 				}
 			}
 		}
 	}
 }
 
-func AssertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) {
+func AssertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) (id string) {
 
 	configType := config.Coordinate.Type
 
@@ -178,7 +193,7 @@ func AssertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClien
 
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err := wait(description, 120, func() bool {
-		exists, _, _ = client.ConfigExistsByName(ctx, theApi, name)
+		exists, id, _ = client.ConfigExistsByName(ctx, theApi, name)
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NoError(t, err)
@@ -188,9 +203,11 @@ func AssertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClien
 	} else {
 		assert.False(t, exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 	}
+
+	return id
 }
 
-func AssertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config) {
+func AssertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config) (id string) {
 	expectedExtId, err := idutils.GenerateExternalID(config.Coordinate)
 	if err != nil {
 		t.Errorf("Unable to generate external id: %v", err)
@@ -217,9 +234,10 @@ func AssertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient,
 	} else {
 		assert.False(t, exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environmentName, config.Coordinate, typ.SchemaId)
 	}
+	return objects[0].ObjectId
 }
 
-func AssertAutomation(t *testing.T, c automation.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) {
+func AssertAutomation(t *testing.T, c automation.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) (id string) {
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(resource)
 	assert.NoError(t, err, "failed to get resource type for: %s", cfg.Coordinate)
 
@@ -245,9 +263,10 @@ func AssertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 	} else {
 		assert.False(t, exists, "Automation Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
 	}
+	return expectedId
 }
 
-func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentDefinition, available bool, cfg config.Config) {
+func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentDefinition, available bool, cfg config.Config) (id string) {
 
 	var expectedId string
 	if cfg.OriginObjectId != "" {
@@ -280,6 +299,8 @@ func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentD
 	} else {
 		assert.Falsef(t, exists, "Bucket %q should NOT be available, but was. environment.Environment: '%s', failed for '%s'", expectedId, env.Name, cfg.Coordinate)
 	}
+
+	return expectedId
 }
 
 func getBucketWithRetry(client buckets.Client, bucketName string, try, maxTries int) (buckets.Response, error) {
