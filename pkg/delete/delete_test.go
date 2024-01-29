@@ -638,3 +638,112 @@ func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 
 	assert.NotEmpty(t, errs, "an error should be returned")
 }
+
+func TestDeleteSubPathAPIConfigs(t *testing.T) {
+	t.Run("TestDeleteSubPathAPIConfigs", func(t *testing.T) {
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, api api.API) (values []dtclient.Value, err error) {
+			assert.Equal(t, "/api/config/v1/applications/mobile/APPLICATION-1234/keyUserActions", api.URLPath)
+			return []dtclient.Value{
+				{
+					Id:   "12345",
+					Name: "test",
+				},
+			}, nil
+		})
+		c.EXPECT().DeleteConfigById(gomock.Any(), gomock.Eq("12345")).Return(nil)
+
+		entriesToDelete := DeleteEntries{
+			"key-user-actions-mobile": {
+				{
+					Type:       "key-user-actions-mobile",
+					Identifier: "test",
+					Scope:      "APPLICATION-1234",
+				},
+			},
+		}
+		err := Configs(context.TODO(), ClientSet{Classic: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.NoError(t, err)
+	})
+
+	t.Run("TestDeleteSubPathAPIConfigs - List fails", func(t *testing.T) {
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).Return([]dtclient.Value{}, monacoREST.RespError{Err: fmt.Errorf("FAIL"), StatusCode: 400})
+		entriesToDelete := DeleteEntries{
+			"key-user-actions-mobile": {
+				{
+					Type:       "key-user-actions-mobile",
+					Identifier: "test",
+					Scope:      "APPLICATION-1234",
+				},
+			},
+		}
+		err := Configs(context.TODO(), ClientSet{Classic: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Error(t, err)
+	})
+
+	t.Run("TestDeleteSubPathAPIConfigs - List returns no objects", func(t *testing.T) {
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).Return([]dtclient.Value{}, nil)
+		c.EXPECT().DeleteConfigById(gomock.Any(), gomock.Any()).Times(0)
+		entriesToDelete := DeleteEntries{
+			"key-user-actions-mobile": {
+				{
+					Type:       "key-user-actions-mobile",
+					Identifier: "test",
+					Scope:      "APPLICATION-1234",
+				},
+			},
+		}
+		err := Configs(context.TODO(), ClientSet{Classic: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.NoError(t, err)
+	})
+
+	t.Run("TestDeleteSubPathAPIConfigs - List returns no fitting object", func(t *testing.T) {
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).Return([]dtclient.Value{
+			{
+				Id:   "12345",
+				Name: "your princess is in another castle",
+			},
+		}, nil)
+		c.EXPECT().DeleteConfigById(gomock.Any(), gomock.Any()).Times(0)
+		entriesToDelete := DeleteEntries{
+			"key-user-actions-mobile": {
+				{
+					Type:       "key-user-actions-mobile",
+					Identifier: "test",
+					Scope:      "APPLICATION-1234",
+				},
+			},
+		}
+		err := Configs(context.TODO(), ClientSet{Classic: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.NoError(t, err)
+	})
+
+	t.Run("TestDeleteSubPathAPIConfigs - Delete based on ID fails", func(t *testing.T) {
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, api api.API) (values []dtclient.Value, err error) {
+			assert.Equal(t, "/api/config/v1/applications/mobile/APPLICATION-1234/keyUserActions", api.URLPath)
+			return []dtclient.Value{
+				{
+					Id:   "12345",
+					Name: "test",
+				},
+			}, nil
+		})
+		c.EXPECT().DeleteConfigById(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("FAILED"))
+
+		entriesToDelete := DeleteEntries{
+			"key-user-actions-mobile": {
+				{
+					Type:       "key-user-actions-mobile",
+					Identifier: "test",
+					Scope:      "APPLICATION-1234",
+				},
+			},
+		}
+		err := Configs(context.TODO(), ClientSet{Classic: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Error(t, err)
+	})
+}

@@ -267,6 +267,24 @@ func TestLoadEntriesToDelete(t *testing.T) {
 				},
 			},
 		},
+		{
+			"Loads Subpath Entries",
+			`delete:
+- project: some-project
+  type: key-user-actions-mobile
+  scope: APPLICATION-MOBILE-1234
+  name: my-action
+`,
+			DeleteEntries{
+				"key-user-actions-mobile": {
+					{
+						Type:       "key-user-actions-mobile",
+						Scope:      "APPLICATION-MOBILE-1234",
+						Identifier: "my-action",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -283,10 +301,35 @@ func TestLoadEntriesToDelete(t *testing.T) {
 			result, errors := LoadEntriesToDelete(fs, deleteFile)
 
 			assert.Empty(t, errors)
-			assert.Equal(t, 2, len(result))
+			assert.Equal(t, len(tt.want), len(result))
 			assert.Equal(t, tt.want, result)
 		})
 	}
+}
+
+func TestLoadEntriesToDeleteFailsIfScopeIsUndefinedForSubPathAPI(t *testing.T) {
+	fileContent := `delete:
+- project: some-project
+  type: key-user-actions-mobile
+  name: my-action
+` // scope should be defined
+
+	workingDir := filepath.FromSlash("/home/test/monaco")
+	deleteFileName := "delete.yaml"
+	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+
+	fs := afero.NewMemMapFs()
+	err := fs.MkdirAll(workingDir, 0777)
+
+	assert.NoError(t, err)
+
+	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
+	assert.NoError(t, err)
+
+	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
+
+	assert.Equal(t, 1, len(errors), "expected 1 error")
+	assert.Equal(t, 0, len(result), "expected 0 results")
 }
 
 func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
