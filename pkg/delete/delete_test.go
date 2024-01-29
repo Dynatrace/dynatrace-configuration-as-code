@@ -682,6 +682,22 @@ func TestDeleteSubPathAPIConfigs(t *testing.T) {
 		assert.Error(t, err)
 	})
 
+	t.Run("TestDeleteSubPathAPIConfigs - No error if scope object is not found", func(t *testing.T) {
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).Return([]dtclient.Value{}, monacoREST.RespError{Err: fmt.Errorf("GONE ALREADY"), StatusCode: 404})
+		entriesToDelete := DeleteEntries{
+			"key-user-actions-mobile": {
+				{
+					Type:       "key-user-actions-mobile",
+					Identifier: "test",
+					Scope:      "APPLICATION-1234",
+				},
+			},
+		}
+		err := Configs(context.TODO(), ClientSet{Classic: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.NoError(t, err)
+	})
+
 	t.Run("TestDeleteSubPathAPIConfigs - List returns no objects", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
 		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).Return([]dtclient.Value{}, nil)

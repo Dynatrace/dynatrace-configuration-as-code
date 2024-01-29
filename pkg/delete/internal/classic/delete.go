@@ -17,6 +17,7 @@
 package classic
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -24,7 +25,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/net/context"
+	"net/http"
 	"strings"
 )
 
@@ -67,9 +70,16 @@ func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries
 
 			var values []dtclient.Value
 			values, err = client.ListConfigs(ctx, a)
+
 			if err != nil {
-				logger.WithFields(field.Error(err)).Error("Failed to fetch existing configs for api %q (scope: %s): %w", a.ID, scope, err)
-				deleteErrs++
+				var respErr rest.RespError
+				if errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
+					logger.Debug("No config of type %q found to delete for scope %q :%s", theApi.ID, scope, respErr.Body)
+					err = nil
+				} else {
+					logger.WithFields(field.Error(err)).Error("Failed to fetch existing configs for api %q (scope: %s): %w", a.ID, scope, err)
+					deleteErrs++
+				}
 				continue
 			}
 
