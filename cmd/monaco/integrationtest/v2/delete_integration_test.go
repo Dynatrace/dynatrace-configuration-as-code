@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
@@ -292,4 +293,127 @@ environmentGroups:
 			ConfigId: bucketID,
 		},
 	})
+}
+
+func TestDeleteSubPathAPIConfigurations(t *testing.T) {
+
+	configFolder := "test-resources/delete-test-configs/"
+	deployManifestPath := configFolder + "deploy-manifest.yaml"
+
+	fs := testutils.CreateTestFileSystem()
+
+	//create config yaml
+	configTemplate := `
+configs:
+- id: app
+  type: application-mobile
+  config:
+    name: %s
+    template: application-mobile.json
+- id: action
+  type:
+    api:
+      name: key-user-actions-mobile
+      scope:
+        type: reference
+        configType: application-mobile
+        configId: app
+        property: id
+  config:
+    name: %s
+    template: key-user-action.json
+`
+	appName := fmt.Sprintf("app_%s", integrationtest.GenerateTestSuffix(t, "subpath_delete"))
+	actionName := fmt.Sprintf("key_ua_%s", integrationtest.GenerateTestSuffix(t, "subpath_delete"))
+
+	configContent := fmt.Sprintf(configTemplate, appName, actionName)
+
+	configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
+	assert.NoError(t, err)
+	err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
+	assert.NoError(t, err)
+
+	// DEPLOY Config
+	cmd := runner.BuildCli(fs)
+	cmd.SetArgs([]string{"deploy", "--verbose", deployManifestPath})
+	err = cmd.Execute()
+
+	assert.NoError(t, err)
+	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+
+	man, errs := manifestloader.Load(&manifestloader.Context{
+		Fs:           fs,
+		ManifestPath: deployManifestPath,
+		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
+	})
+	assert.Empty(t, errs)
+
+	envName := "environment"
+	env := man.Environments[envName]
+	clientSet := integrationtest.CreateDynatraceClients(t, env)
+	apis := api.NewAPIs()
+
+	// ASSERT test configs exist
+	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+
+	// get application ID
+	v, err := clientSet.Classic().ListConfigs(context.TODO(), apis["application-mobile"])
+	assert.NoError(t, err)
+
+	var appID string
+	for _, app := range v {
+		if app.Name == appName {
+			appID = app.Id
+		}
+	}
+	assert.NotEmpty(t, appID, "found no app with name ", appName)
+
+	// Only DELETE key-user action config, as deleting the application would auto-remove it
+	subPathOnlyDeleteTemplate := `delete:
+  - project: "project"
+    type: "key-user-actions-mobile"
+    scope: "%s"
+    name: "%s"`
+
+	deleteContent := fmt.Sprintf(subPathOnlyDeleteTemplate, appID, actionName)
+	deleteYamlPath, err := filepath.Abs("delete.yaml")
+	assert.NoError(t, err)
+	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
+	assert.NoError(t, err)
+
+	cmd = runner.BuildCli(fs)
+	cmd.SetArgs([]string{"delete", "--verbose", "--manifest", deployManifestPath})
+	err = cmd.Execute()
+	assert.NoError(t, err)
+
+	//Assert key-user-action is deleted
+	integrationtest.AssertConfig(t, context.TODO(), clientSet.Classic(), apis["key-user-actions-mobile"].Resolve(appID), env, false, config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project",
+			Type:     "key-user-actions-mobile",
+			ConfigId: "action",
+		}}, actionName)
+
+	//DELETE all
+	fullDeleteTemplate := `delete:
+  - type: "application-mobile"
+    name: "%s"
+  - project: "project"
+    type: "key-user-actions-mobile"
+    scope: "%s"
+    name: "%s"`
+
+	deleteContent = fmt.Sprintf(fullDeleteTemplate, appName, appID, actionName)
+	deleteYamlPath, err = filepath.Abs("delete.yaml")
+	assert.NoError(t, err)
+	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
+	assert.NoError(t, err)
+
+	cmd = runner.BuildCli(fs)
+	cmd.SetArgs([]string{"delete", "--verbose", "--manifest", deployManifestPath})
+	err = cmd.Execute()
+	assert.NoError(t, err)
+
+	// Assert expected deletions
+	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", false)
 }
