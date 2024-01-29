@@ -86,7 +86,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertFileExists(t, fs, expectedFile)
 
 	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
-	assert.Len(t, errs, 0)
+	assert.NoError(t, errs)
 
 	assertDeleteEntries(t, entries, "alerting-profile", "Star Trek Service", "Star Wars Service", "Star Gate Service", "Lord of the Rings Service", "A Song of Ice and Fire Service")
 	assertDeleteEntries(t, entries, "dashboard", "Alpha Quadrant")
@@ -122,7 +122,7 @@ func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 	assertFileExists(t, fs, expectedFile)
 
 	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
-	assert.Len(t, errs, 0)
+	assert.NoError(t, errs)
 
 	assertDeleteEntries(t, entries, "builtin:management-zones", "management-zone-setting")
 	assert.NotContains(t, entries, "notification")
@@ -151,7 +151,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 		assertFileExists(t, fs, expectedFile)
 
 		entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
-		assert.Len(t, errs, 0)
+		assert.NoError(t, errs)
 
 		assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "Captain's Log")
 	})
@@ -173,7 +173,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 		assertFileExists(t, fs, expectedFile)
 
 		entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
-		assert.Len(t, errs, 0)
+		assert.NoError(t, errs)
 
 		assertDeleteEntries(t, entries, "notification", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
 	})
@@ -193,7 +193,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 		assertFileExists(t, fs, expectedFile)
 
 		entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
-		assert.Len(t, errs, 0)
+		assert.NoError(t, errs)
 
 		assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
 	})
@@ -224,7 +224,7 @@ func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
 	assertFileExists(t, fs, expectedFile)
 
 	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
-	assert.Len(t, errs, 0)
+	assert.NoError(t, errs)
 
 	assertDeleteEntries(t, entries, "alerting-profile", "Lord of the Rings Service", "A Song of Ice and Fire Service")
 }
@@ -251,7 +251,7 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 	assertFileExists(t, fs, expectedFile)
 
 	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
-	assert.Len(t, errs, 0)
+	assert.NoError(t, errs)
 
 	assertDeleteEntries(t, entries, "alerting-profile", "Star Trek Service", "Star Wars Service", "Star Gate Service", "Lord of the Rings Service", "A Song of Ice and Fire Service")
 	assertDeleteEntries(t, entries, "dashboard", "Alpha Quadrant")

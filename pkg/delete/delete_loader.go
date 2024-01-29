@@ -39,29 +39,34 @@ type loaderContext struct {
 	knownApis  api.APIs
 }
 
-// DeleteEntryParserError is an error that occurred while parsing a delete file
-type DeleteEntryParserError struct {
+// EntryParserError is an error that occurred while parsing a delete file
+type EntryParserError struct {
 	// Value of the DeleteEntry that failed to be parsed
 	Value string `json:"value"`
 	// Index of the entry that failed to be parsed
 	Index int `json:"index"`
 	// Reason describing what went wrong
-	Reason string `json:"reason"`
+	Reason error `json:"reason"`
 }
 
-func newDeleteEntryParserError(value string, index int, reason string) DeleteEntryParserError {
-	return DeleteEntryParserError{
-		Value:  value,
-		Index:  index,
-		Reason: reason,
-	}
-}
-
-func (e DeleteEntryParserError) Error() string {
+func (e EntryParserError) Error() string {
 	return fmt.Sprintf("invalid delete entry `%s` on index `%d`: %s", e.Value, e.Index, e.Reason)
 }
 
-func LoadEntriesToDelete(fs afero.Fs, deleteFile string) (DeleteEntries, []error) {
+type ParseErrors []error
+
+func (p ParseErrors) Error() string {
+	sb := strings.Builder{}
+
+	sb.WriteString("failed to parse delete file:")
+	for _, err := range p {
+		sb.WriteString(fmt.Sprintf("\n\t%s", err.Error()))
+	}
+
+	return sb.String()
+}
+
+func LoadEntriesToDelete(fs afero.Fs, deleteFile string) (DeleteEntries, error) {
 	context := &loaderContext{
 		fs:         fs,
 		deleteFile: filepath.Clean(deleteFile),
@@ -71,7 +76,7 @@ func LoadEntriesToDelete(fs afero.Fs, deleteFile string) (DeleteEntries, []error
 	definition, err := readDeleteFile(context)
 
 	if err != nil {
-		return nil, []error{err}
+		return nil, err
 	}
 
 	return parseDeleteFileDefinition(context, definition)
@@ -104,15 +109,19 @@ func readDeleteFile(context *loaderContext) (persistence.FileDefinition, error) 
 	return result, nil
 }
 
-func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDefinition) (DeleteEntries, []error) {
-	var result = make(DeleteEntries)
-	var errs []error
+func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDefinition) (DeleteEntries, error) {
+	result := DeleteEntries{}
+	var errs ParseErrors
 
 	for i, e := range definition.DeleteEntries {
-		entry, err := parseDeleteEntry(ctx, i, e)
+		entry, err := parseDeleteEntry(ctx, e)
 
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, EntryParserError{
+				Value:  fmt.Sprintf("%v", e),
+				Index:  i,
+				Reason: err,
+			})
 			continue
 		}
 
@@ -126,20 +135,15 @@ func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDe
 	return result, nil
 }
 
-func parseDeleteEntry(ctx *loaderContext, index int, entry any) (pointer.DeletePointer, error) {
+func parseDeleteEntry(ctx *loaderContext, entry any) (pointer.DeletePointer, error) {
 
 	ptr, err := parseFullEntry(ctx, entry)
 
 	if str, ok := entry.(string); ok && err != nil {
-		ptr, err = parseSimpleEntry(str)
+		return parseSimpleEntry(str)
 	}
 
-	if err != nil {
-		return pointer.DeletePointer{},
-			newDeleteEntryParserError(fmt.Sprintf("%v", entry), index, err.Error())
-	}
-
-	return ptr, nil
+	return ptr, err
 }
 
 func parseFullEntry(ctx *loaderContext, entry interface{}) (pointer.DeletePointer, error) {
