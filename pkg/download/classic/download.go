@@ -43,21 +43,6 @@ type downloadedConfig struct {
 	value dtclient.Value
 }
 
-type downloaderMap map[string]func(dtclient.Client, api.API, string, ContentFilters) func() []downloadedConfig
-
-var downloaders = downloaderMap{
-	"key-user-actions-mobile": downloadKUAMobile, // key user actions for mobile applications
-	"key-user-actions-web":    downloadKuaWeb,    // key user actions for web applications
-	"any":                     downloadAny,       // generically treated configurations
-}
-
-func (df *downloaderMap) Get(client dtclient.Client, api api.API, projectName string, filters ContentFilters) func() []downloadedConfig {
-	if fn, ok := downloaders[api.ID]; ok {
-		return fn(client, api, projectName, filters)
-	}
-	return downloaders["any"](client, api, projectName, filters)
-}
-
 func Download(client dtclient.Client, projectName string, apisToDownload api.APIs, filters ContentFilters) (projectv2.ConfigsPerType, error) {
 	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
 	results := make(projectv2.ConfigsPerType, len(apisToDownload))
@@ -73,7 +58,7 @@ func Download(client dtclient.Client, projectName string, apisToDownload api.API
 		go func() {
 			defer wg.Done()
 			lg := log.WithFields(field.Type(currentApi.ID))
-			downloadedConfigs := downloaders.Get(client, currentApi, projectName, filters)()
+			downloadedConfigs := downloadConfigs(client, currentApi, projectName, filters)
 			var configsToPersist []downloadedConfig
 			for _, c := range downloadedConfigs {
 				content, err := c.Template.Content()
@@ -110,127 +95,120 @@ func getConfigsFromCustomConfigs(customConfigs []downloadedConfig) []config.Conf
 	return finalConfigs
 }
 
-func downloadKua(client dtclient.Client, theApi api.API, projectName string, appType string, _ ContentFilters) func() []downloadedConfig {
-	return func() []downloadedConfig {
-		var configs []downloadedConfig
-		apps, err := client.ListConfigs(context.TODO(), api.NewAPIs()[appType])
-		if err != nil {
-			return configs
-		}
-		for _, a := range apps {
-			kuas, err := downloadAndUnmarshalConfig(client, theApi.Resolve(a.Id), dtclient.Value{})
-			if theApi.TweakResponseFunc != nil {
-				theApi.TweakResponseFunc(kuas)
-			}
-
-			if err != nil {
-				return configs
-			}
-			var keyUserActions dtclient.KeyUserActionsMobileResponse
-			mapstructure.Decode(kuas, &keyUserActions)
-
-			var arr []map[string]any
-			mapstructure.Decode(kuas[theApi.PropertyNameOfGetAllResponse], &arr)
-			for _, content := range arr {
-				value := dtclient.Value{Id: content["name"].(string), Name: content["name"].(string)}
-				cfg, err := createConfigForDownloadedJson(content, theApi, value, projectName)
-				if err != nil {
-					return configs
-				}
-				cfg.Parameters[config.ScopeParameter] = reference.New(projectName, appType, a.Id, "id")
-				configs = append(configs, downloadedConfig{Config: cfg, value: value})
-
-			}
-		}
-		return configs
+func downloadConfigs(client dtclient.Client, api api.API, projectName string, filters ContentFilters) []downloadedConfig {
+	var results []downloadedConfig
+	logger := log.WithFields(field.Type(api.ID))
+	foundValues, err := findConfigsToDownload(client, api)
+	if err != nil {
+		logger.WithFields(field.Error(err)).Error("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", api.ID, err)
+		return results
 	}
-}
 
-func downloadKUAMobile(client dtclient.Client, theApi api.API, projectName string, filters ContentFilters) func() []downloadedConfig {
-	return downloadKua(client, theApi, projectName, "application-mobile", filters)
-}
+	values := filterConfigsToSkip(api, foundValues, filters)
 
-func downloadKuaWeb(client dtclient.Client, theApi api.API, projectName string, filters ContentFilters) func() []downloadedConfig {
-	return downloadKua(client, theApi, projectName, "application-web", filters)
-}
+	if len(values) == 0 {
+		logger.Debug("No configs of type '%v' to download", api.ID)
+		return results
+	}
 
-func downloadAny(client dtclient.Client, api api.API, projectName string, filters ContentFilters) func() []downloadedConfig {
-	return func() []downloadedConfig {
-		var results []downloadedConfig
-		logger := log.WithFields(field.Type(api.ID))
-		values, err := findConfigsToDownload(client, api)
-		if err != nil {
-			logger.WithFields(field.Error(err)).Error("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", api.ID, err)
-			return results
-		}
+	logger.Debug("Found %d configs of type %q to download", len(values), api.ID)
 
-		values = filterConfigsToSkip(api, values, filters)
+	mutex := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	wg.Add(len(values))
+	for _, v := range values {
+		v := v
+		go func() {
+			defer wg.Done()
 
-		if len(values) == 0 {
-			logger.Debug("No configs of type '%v' to download", api.ID)
-			return results
-		}
+			downloadedJsons, err := downloadAndUnmarshalConfig(client, v.api, value{value: v.value})
+			if err != nil {
+				log.WithFields(field.Type(v.api.ID), field.F("value", v), field.Error(err)).Error("Error fetching config '%v' in api '%v': %v", v.value.Id, api.ID, err)
+				return
+			}
 
-		logger.Debug("Found %d configs of type %q to download", len(values), api.ID)
-
-		mutex := sync.Mutex{}
-		wg := sync.WaitGroup{}
-		wg.Add(len(values))
-		for _, value := range values {
-			value := value
-			go func() {
-				defer wg.Done()
-				downloadedJson, err := downloadAndUnmarshalConfig(client, api, value)
-				if api.TweakResponseFunc != nil {
-					api.TweakResponseFunc(downloadedJson)
+			for _, downloadedJson := range downloadedJsons {
+				if v.api.TweakResponseFunc != nil {
+					v.api.TweakResponseFunc(downloadedJson)
 				}
 
+				c, err := createConfigForDownloadedJson(downloadedJson, v.api, v, projectName)
 				if err != nil {
-					log.WithFields(field.Type(api.ID), field.F("value", value), field.Error(err)).Error("Error fetching config '%v' in api '%v': %v", value.Id, api.ID, err)
-					return
-				}
-				c, err := createConfigForDownloadedJson(downloadedJson, api, value, projectName)
-				if err != nil {
-					log.WithFields(field.Type(api.ID), field.F("value", value), field.Error(err)).Error("Error creating config for %v in api %v: %v", value.Id, api.ID, err)
+					log.WithFields(field.Type(v.api.ID), field.F("value", v), field.Error(err)).Error("Error creating config for %v in api %v: %v", v.value.Id, api.ID, err)
 					return
 				}
 
 				c1 := downloadedConfig{
 					Config: c,
-					value:  value,
+					value:  v.value,
 				}
 
 				mutex.Lock()
 				results = append(results, c1)
 				mutex.Unlock()
-
-			}()
-		}
-		wg.Wait()
-		return results
+			}
+		}()
 	}
+	wg.Wait()
+	return results
 }
 
-func findConfigsToDownload(client dtclient.Client, currentApi api.API) ([]dtclient.Value, error) {
+type values []value
+
+type value struct {
+	value          dtclient.Value
+	api            api.API
+	parentConfigId string
+}
+
+func findConfigsToDownload(client dtclient.Client, currentApi api.API) (values, error) {
 	if currentApi.SingleConfiguration {
 		log.WithFields(field.Type(currentApi.ID)).Debug("\tFetching singleton-configuration '%v'", currentApi.ID)
 
 		// singleton-config. We use the api-id as mock-id
 		singletonConfigToDownload := dtclient.Value{Id: currentApi.ID, Name: currentApi.ID}
-		return []dtclient.Value{singletonConfigToDownload}, nil
+		return values{{value: singletonConfigToDownload, api: currentApi}}, nil
 	}
 	log.WithFields(field.Type(currentApi.ID)).Debug("\tFetching all '%v' configs", currentApi.ID)
-	return client.ListConfigs(context.TODO(), currentApi)
+
+	if currentApi.SubPathAPI {
+		var res values
+		vals, err := client.ListConfigs(context.TODO(), api.NewAPIs()[currentApi.Parent])
+		if err != nil {
+			return values{}, err
+		}
+		for _, v := range vals {
+			resolvedPathApi := currentApi.Resolve(v.Id)
+			vs, err := client.ListConfigs(context.TODO(), resolvedPathApi)
+			if err != nil {
+				return values{}, err
+			}
+			for _, vv := range vs {
+				res = append(res, value{value: vv, api: resolvedPathApi, parentConfigId: v.Id})
+			}
+		}
+		return res, nil
+	}
+	var res values
+	vals, err := client.ListConfigs(context.TODO(), currentApi)
+	for _, v := range vals {
+		res = append(res, value{value: v, api: currentApi})
+	}
+	if err != nil {
+		return values{}, err
+	}
+
+	return res, nil
 }
 
-func filterConfigsToSkip(a api.API, value []dtclient.Value, filters ContentFilters) []dtclient.Value {
-	valuesToDownload := make([]dtclient.Value, 0, len(value))
+func filterConfigsToSkip(a api.API, vals values, filters ContentFilters) values {
+	var valuesToDownload values
 
-	for _, value := range value {
-		if !skipDownload(a, value, filters) {
-			valuesToDownload = append(valuesToDownload, value)
+	for _, v := range vals {
+		if !skipDownload(a, v.value, filters) {
+			valuesToDownload = append(valuesToDownload, v)
 		} else {
-			log.WithFields(field.Type(a.ID), field.F("value", value)).Debug("Skipping download of config  '%v' of API '%v'", value.Id, a.ID)
+			log.WithFields(field.Type(a.ID), field.F("value", v)).Debug("Skipping download of config  '%v' of API '%v'", v.value.Id, a.ID)
 		}
 	}
 
@@ -261,8 +239,14 @@ func shouldFilter() bool {
 	return featureflags.DownloadFilter().Enabled() && featureflags.DownloadFilterClassicConfigs().Enabled()
 }
 
-func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value dtclient.Value) (map[string]interface{}, error) {
-	response, err := client.ReadConfigById(theApi, value.Id)
+func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value value) ([]map[string]interface{}, error) {
+	var response []byte
+	var err error
+	if theApi.SubPathAPI {
+		response, err = client.ReadConfigById(theApi, "") // skipping the id to enforce to read/download "all" configs instead of a single one
+	} else {
+		response, err = client.ReadConfigById(theApi, value.value.Id)
+	}
 
 	if err != nil {
 		return nil, err
@@ -274,17 +258,27 @@ func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value dt
 		return nil, err
 	}
 
-	return data, nil
+	if values, ok := data[theApi.PropertyNameOfGetAllResponse]; ok {
+		var res []map[string]any
+		err := mapstructure.Decode(values, &res)
+		return res, err
+	}
+
+	return []map[string]any{data}, nil
 }
 
-func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.API, value dtclient.Value, projectId string) (config.Config, error) {
-	templ, err := createTemplate(mappedJson, value, theApi.ID)
+func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.API, value value, projectId string) (config.Config, error) {
+	templ, err := createTemplate(mappedJson, value.value, theApi.ID)
 	if err != nil {
 		return config.Config{}, err
 	}
 
 	params := map[string]parameter.Parameter{}
-	params["name"] = &valueParam.ValueParameter{Value: value.Name}
+	params["name"] = &valueParam.ValueParameter{Value: value.value.Name}
+
+	if theApi.SubPathAPI {
+		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent, value.parentConfigId, "id")
+	}
 
 	coord := coordinate.Coordinate{
 		Project:  projectId,
