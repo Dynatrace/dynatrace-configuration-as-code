@@ -234,7 +234,12 @@ func AssertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient,
 	} else {
 		assert.False(t, exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environmentName, config.Coordinate, typ.SchemaId)
 	}
-	return objects[0].ObjectId
+
+	if exists {
+		return objects[0].ObjectId
+	}
+	return ""
+
 }
 
 func AssertAutomation(t *testing.T, c automation.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) (id string) {
