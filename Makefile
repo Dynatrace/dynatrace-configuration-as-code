@@ -31,7 +31,7 @@ endif
 
 mocks:
 	@echo Installing mockgen
-	@go install go.uber.org/mock/mockgen@v0.2.0
+	@go install go.uber.org/mock/mockgen@v0.4
 	@echo "Generating mocks"
 	@go generate ./...
 
@@ -128,6 +128,6 @@ docker-container:
 	DOCKER_BUILDKIT=1 docker build --build-arg VERSION=$(VERSION) --tag $(CONTAINER_NAME):$(VERSION) .
 
 sign-verify-image:
-	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1
+	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.2
 	COSIGN_PASSWORD=$(COSIGN_PASSWORD) cosign sign --key env://cosign_key $(FULL_IMAGE_NAME) -y
 	cosign verify --key env://cosign_pub $(FULL_IMAGE_NAME)
