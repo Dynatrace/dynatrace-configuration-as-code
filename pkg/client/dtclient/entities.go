@@ -34,6 +34,12 @@ type KeyUserActionsMobileResponse struct {
 	} `json:"keyUserActions"`
 }
 
+type KeyUserActionsWebResponse struct {
+	KeyUserActions []struct {
+		Name string `json:"name"`
+	} `json:"keyUserActionList"`
+}
+
 type Value struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`

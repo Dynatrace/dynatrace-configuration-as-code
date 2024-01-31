@@ -1,19 +1,19 @@
 //go:build unit
 
 /*
- * @license
- * Copyright 2023 Dynatrace LLC
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+* @license
+* Copyright 2023 Dynatrace LLC
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
  */
 
 package download
@@ -22,6 +22,7 @@ import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
@@ -153,9 +154,9 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 			tt.expectedBehaviour(c)
 
-			downloaders := downloaders{settings.NewDownloader(c), classicDownloader(c, tt.givenOpts)}
+			downloaders := downloaders{settings.NewDownloader(c)}
 
-			_, err := downloadConfigs(downloaders, tt.givenOpts)
+			_, err := downloadConfigs(&client.ClientSet{DTClient: c}, api.NewAPIs(), downloaders, tt.givenOpts, defaultDownloadFn)
 			assert.NoError(t, err)
 		})
 	}
@@ -203,19 +204,6 @@ func (a *settingAssertDownloader) Download(_ string, _ ...config.SettingsType) (
 	return nil, nil
 }
 
-type configAssertDownloader struct {
-	t        *testing.T
-	wantCall bool
-}
-
-var _ download.Downloader[config.ClassicApiType] = (*configAssertDownloader)(nil)
-
-func (a *configAssertDownloader) Download(_ string, _ ...config.ClassicApiType) (projectv2.ConfigsPerType, error) {
-	if !a.wantCall {
-		a.t.Fatalf("config API downloader was not meant to be called but was")
-	}
-	return nil, nil
-}
 func TestDownload_Options(t *testing.T) {
 	type wantDownload struct {
 		config, settings, bucket, automation bool
@@ -279,13 +267,21 @@ func TestDownload_Options(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			downloaders := downloaders{
-				&configAssertDownloader{t, tt.want.config},
 				&settingAssertDownloader{t, tt.want.settings},
 				&automationAssertDownloader{t, tt.want.automation},
 				&bucketAssertDownloader{t, tt.want.bucket},
 			}
 
-			_, err := downloadConfigs(downloaders, tt.given)
+			fn := downloadFn{
+				classicDownload: func(dtclient.Client, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
+					if !tt.want.config {
+						t.Fatalf("config API downloader was not meant to be called but was")
+					}
+					return nil, nil
+				},
+			}
+
+			_, err := downloadConfigs(&client.ClientSet{DTClient: dtclient.NewMockClient(gomock.NewController(t))}, api.NewAPIs(), downloaders, tt.given, fn)
 			assert.NoError(t, err)
 		})
 	}
@@ -393,8 +389,8 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 
 	c.EXPECT().ListSchemas().Return(dtclient.SchemaList{{"builtin:some.schema"}}, nil)
 
-	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c, classic.WithAPIs(nil))}
-	err := doDownloadConfigs(afero.NewMemMapFs(), downloaders, givenOpts)
+	downloaders := downloaders{settings.NewDownloader(c)}
+	err := doDownloadConfigs(afero.NewMemMapFs(), &client.ClientSet{DTClient: c}, downloaders, nil, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
 }
@@ -460,9 +456,9 @@ func TestDownloadConfigs_OnlyAutomationWithoutAutomationCredentials(t *testing.T
 		onlyAutomation: true,
 	}
 
-	downloaders := downloaders{automation.NoopAutomationDownloader{}, classic.NewDownloader(nil, classic.WithAPIs(nil))}
+	downloaders := downloaders{automation.NoopAutomationDownloader{}}
 
-	err := doDownloadConfigs(testutils.CreateTestFileSystem(), downloaders, opts)
+	err := doDownloadConfigs(testutils.CreateTestFileSystem(), &client.ClientSet{}, downloaders, nil, opts)
 	assert.ErrorContains(t, err, "no OAuth credentials configured")
 }
 

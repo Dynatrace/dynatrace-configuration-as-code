@@ -365,5 +365,6 @@ var configEndpoints = []API{
 		URLPath:                      "/api/config/v1/applications/mobile/{SCOPE}/keyUserActions",
 		PropertyNameOfGetAllResponse: "keyUserActions",
 		SubPathAPI:                   true,
+		Parent:                       "application-mobile",
 	},
 }

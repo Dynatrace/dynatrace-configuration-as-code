@@ -42,9 +42,11 @@ type API struct {
 	// TweakResponseFunc can be optionally registered to add custom code that changes the
 	// payload of the downloaded api content (e.g. to exclude unwanted/unnecessary fields)
 	TweakResponseFunc func(map[string]any)
-
 	// IsSubPathApi indicates whenever an API is a sub-path API.
 	SubPathAPI bool
+	// Parent is the parent API ID which is requred to download all possible values for sub-path apis.
+	// e.g. key-user-actions that are bound to applications
+	Parent string
 }
 
 func (a API) CreateURL(environmentURL string) string {

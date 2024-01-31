@@ -21,12 +21,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
 	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/bucket"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 )
 
@@ -59,29 +57,23 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 		automationDownloader = dlautomation.NewDownloader(clients.Automation())
 	}
 	var settingsDownloader download.Downloader[config.SettingsType] = settings.NewDownloader(clients.Settings())
-	var classicDownloader download.Downloader[config.ClassicApiType] = classicDownloader(clients.Classic(), options)
 	var bucketDownloader download.Downloader[config.BucketType] = bucket.NewDownloader(clients.Bucket())
 
-	return downloaders{settingsDownloader, classicDownloader, automationDownloader, bucketDownloader}, nil
+	return downloaders{settingsDownloader, automationDownloader, bucketDownloader}, nil
 }
 
-func classicDownloader(client dtclient.Client, opts downloadConfigsOptions) *classic.Downloader {
-	endpoints := prepareAPIs(opts)
-	return classic.NewDownloader(client, classic.WithAPIs(endpoints), classic.WithFiltering(shouldApplyFilter()))
-}
-
-func prepareAPIs(opts downloadConfigsOptions) api.APIs {
+func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
 	switch {
 	case opts.onlyAutomation:
 		return nil
 	case opts.onlySettings:
 		return nil
 	case opts.onlyAPIs:
-		return api.NewAPIs().Filter(removeSkipDownload, removeDeprecated(withWarn()))
+		return apis.Filter(removeSkipDownload, removeDeprecated(withWarn()))
 	case len(opts.specificAPIs) > 0:
-		return api.NewAPIs().Filter(api.RetainByName(opts.specificAPIs), removeSkipDownload, warnDeprecated())
+		return apis.Filter(api.RetainByName(opts.specificAPIs), removeSkipDownload, warnDeprecated())
 	case len(opts.specificSchemas) == 0:
-		return api.NewAPIs().Filter(removeSkipDownload, removeDeprecated())
+		return apis.Filter(removeSkipDownload, removeDeprecated())
 	default:
 		return nil
 	}

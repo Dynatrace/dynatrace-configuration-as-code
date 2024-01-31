@@ -1,47 +1,51 @@
-//go:build unit
+/*
+ * @license
+ * Copyright 2024 Dynatrace LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-// @license
-// Copyright 2022 Dynatrace LLC
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package classic_test
+package classic
 
 import (
 	"context"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
+	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"strconv"
+
 	"testing"
 )
 
-func TestDownloadConfigs_FailedToFindConfigsToDownload(t *testing.T) {
+func TestDownloadConfigs_FailedToFindConfigsToDownload_(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).Return([]dtclient.Value{}, fmt.Errorf("NO"))
 
 	testAPI := api.API{ID: "API_ID", URLPath: "API_PATH", NonUniqueName: true}
 	apiMap := api.APIs{"API_ID": testAPI}
 
-	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
-
-	configurations, err := downloader.Download("project")
+	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 0)
 }
 
-func TestDownload_NoConfigsToDownloadFound(t *testing.T) {
+func TestDownload_NoConfigsToDownloadFound_(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).Return([]dtclient.Value{}, nil)
 
@@ -49,14 +53,12 @@ func TestDownload_NoConfigsToDownloadFound(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID": testAPI}
 
-	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
-
-	configurations, err := downloader.Download("project")
+	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 0)
 }
 
-func TestDownload_ConfigsDownloaded(t *testing.T) {
+func TestDownload_ConfigsDownloaded_(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -74,28 +76,47 @@ func TestDownload_ConfigsDownloaded(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
-
-	configurations, err := downloader.Download("project")
+	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 2)
 }
 
-func TestDownload_SingleConfigurationAPI(t *testing.T) {
-	client := dtclient.NewMockClient(gomock.NewController(t))
-	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+func TestDownload_KeyUserActionMobile_(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["application-mobile"]).Return([]dtclient.Value{{Id: "some-application-id", Name: "some-application-name"}}, nil)
+	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["key-user-actions-mobile"].Resolve("some-application-id")).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil)
+	c.EXPECT().ReadConfigById(gomock.Any(), "").Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil)
+
+	apiMap := api.APIs{"key-user-actions-mobile": api.NewAPIs()["key-user-actions-mobile"]}
+
+	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
+	assert.NoError(t, err)
+	assert.Len(t, configurations, 1)
+
+	assert.Len(t, configurations, 1)
+	gotConfig := configurations["key-user-actions-mobile"][0]
+	assert.Len(t, configurations["key-user-actions-mobile"], 1)
+	assert.Equal(t, reference.New("project", "application-mobile", "some-application-id", "id"), gotConfig.Parameters[config.ScopeParameter])
+	assert.Len(t, gotConfig.Parameters, 2)
+	assert.Equal(t, valueParam.New("abc"), gotConfig.Parameters[config.NameParameter])
+	assert.Equal(t, config.ClassicApiType{Api: "key-user-actions-mobile"}, gotConfig.Type)
+	assert.Equal(t, coordinate.Coordinate{Project: "project", Type: "key-user-actions-mobile", ConfigId: "abc"}, gotConfig.Coordinate)
+	assert.False(t, gotConfig.Skip)
+}
+
+func TestDownload_SingleConfigurationAPI_(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
 	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", SingleConfiguration: true, NonUniqueName: true}
 	apiMap := api.APIs{"API_ID_1": testAPI1}
 
-	downloader := classic.NewDownloader(client, classic.WithAPIs(apiMap))
-
-	configurations, err := downloader.Download("project")
+	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
 
-func TestDownload_ErrorFetchingConfig(t *testing.T) {
+func TestDownload_ErrorFetchingConfig_(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -117,13 +138,12 @@ func TestDownload_ErrorFetchingConfig(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
-	configurations, err := downloader.Download("project")
+	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
 
-func TestDownload_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
+func TestDownload_ConfigsDownloaded_WithEmptyFilte_(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -141,14 +161,12 @@ func TestDownload_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap), classic.WithAPIContentFilters(map[string]classic.ContentFilter{}))
-
-	configurations, err := downloader.Download("project")
+	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 2)
 }
 
-func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
+func TestDownload_SkipConfigThatShouldNotBePersisted_(t *testing.T) {
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
@@ -161,7 +179,7 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	}).Times(2)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
 
-	apiFilters := map[string]classic.ContentFilter{"API_ID_1": {
+	filters := map[string]ContentFilter{"API_ID_1": {
 		ShouldConfigBePersisted: func(_ map[string]interface{}) bool {
 			return false
 		},
@@ -171,9 +189,7 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap), classic.WithAPIContentFilters(apiFilters))
-
-	configurations, err := downloader.Download("project")
+	configurations, err := Download(c, "project", apiMap, filters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
@@ -191,7 +207,7 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 	}).AnyTimes()
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
 
-	apiFilters := map[string]classic.ContentFilter{
+	filters := map[string]ContentFilter{
 		"API_ID_1": {
 			ShouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
 				return true
@@ -228,8 +244,10 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap), classic.WithAPIContentFilters(apiFilters), classic.WithFiltering(tt.withFiltering))
-			configurations, err := downloader.Download("project")
+			t.Setenv(featureflags.DownloadFilterClassicConfigs().EnvName(), strconv.FormatBool(tt.withFiltering))
+			t.Setenv(featureflags.DownloadFilter().EnvName(), strconv.FormatBool(tt.withFiltering))
+
+			configurations, err := Download(c, "project", apiMap, filters)
 			assert.NoError(t, err)
 			assert.Len(t, configurations, tt.wantDownloadedConfigs)
 		})
@@ -249,7 +267,7 @@ func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 	}).Times(2)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-	apiFilters := map[string]classic.ContentFilter{"API_ID_1": {
+	filters := map[string]ContentFilter{"API_ID_1": {
 		ShouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
 			return true
 		},
@@ -259,9 +277,7 @@ func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap), classic.WithAPIContentFilters(apiFilters))
-
-	configurations, err := downloader.Download("project")
+	configurations, err := Download(c, "project", apiMap, filters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
@@ -282,10 +298,7 @@ func TestDownload_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
-
-	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
-
-	configurations, err := downloader.Download("project")
+	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
@@ -307,9 +320,7 @@ func TestDownload_MalformedResponseFromAnAPI(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
-
-	configurations, err := downloader.Download("project")
+	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }

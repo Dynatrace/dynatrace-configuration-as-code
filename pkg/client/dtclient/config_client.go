@@ -463,7 +463,9 @@ func isKeyUserActionMobile(api api.API) bool {
 }
 
 func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
-	if !theApi.NonUniqueName {
+	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
+	// the cache cannot deal with that
+	if !theApi.NonUniqueName && !theApi.SubPathAPI {
 		if values, cached := d.classicConfigsCache.Get(theApi.ID); cached {
 			return values, nil
 		}
@@ -567,6 +569,18 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 
 		} else if theApi.ID == "key-user-actions-mobile" {
 			var jsonResp KeyUserActionsMobileResponse
+			err := json.Unmarshal(resp.Body, &jsonResp)
+			if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
+				return nil, err
+			}
+			for _, kua := range jsonResp.KeyUserActions {
+				values = append(values, Value{
+					Id:   kua.Name,
+					Name: kua.Name,
+				})
+			}
+		} else if theApi.ID == "key-user-actions-web" {
+			var jsonResp KeyUserActionsWebResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
 			if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
 				return nil, err

@@ -43,27 +43,27 @@ var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.Monitorin
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
 type ClientSet struct {
 	// dtClient is the client capable of updating or creating settings and classic configs
-	dtClient *dtclient.DynatraceClient
+	DTClient dtclient.Client
 	// autClient is the client capable of updating or creating automation API configs
-	autClient *automation.Client
+	AutClient *automation.Client
 	// bucketClient is the client capable of updating or creating Grail Bucket configs
-	bucketClient *buckets.Client
+	BucketClient *buckets.Client
 }
 
-func (s ClientSet) Classic() *dtclient.DynatraceClient {
-	return s.dtClient
+func (s ClientSet) Classic() dtclient.Client {
+	return s.DTClient
 }
 
-func (s ClientSet) Settings() *dtclient.DynatraceClient {
-	return s.dtClient
+func (s ClientSet) Settings() dtclient.Client {
+	return s.DTClient
 }
 
 func (s ClientSet) Automation() *automation.Client {
-	return s.autClient
+	return s.AutClient
 }
 
 func (s ClientSet) Bucket() *buckets.Client {
-	return s.bucketClient
+	return s.BucketClient
 }
 
 type ClientOptions struct {
@@ -102,7 +102,7 @@ func CreateClassicClientSet(url string, token string, opts ClientOptions) (*Clie
 	}
 
 	return &ClientSet{
-		dtClient: dtClient,
+		DTClient: dtClient,
 	}, nil
 }
 
@@ -176,8 +176,8 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 	}
 
 	return &ClientSet{
-		dtClient:     dtClient,
-		autClient:    autClient,
-		bucketClient: bucketClient,
+		DTClient:     dtClient,
+		AutClient:    autClient,
+		BucketClient: bucketClient,
 	}, nil
 }
