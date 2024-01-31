@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2024 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +17,32 @@
 package download
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
+
+type downloadConfigsOptions struct {
+	downloadOptionsShared
+	specificAPIs    []string
+	specificSchemas []string
+	onlyAPIs        bool
+	onlySettings    bool
+	onlyAutomation  bool
+}
+
+func (opts downloadConfigsOptions) valid() []error {
+	var retVal []error
+	knownEndpoints := api.NewAPIs()
+	for _, e := range opts.specificAPIs {
+		if !knownEndpoints.Contains(e) {
+			retVal = append(retVal, fmt.Errorf("unknown (or unsupported) classic endpoint with name %q provided via \"--api\" flag. A list of supported classic endpoints is in the documentation", e))
+		}
+	}
+
+	return retVal
+}
 
 func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
 	switch {

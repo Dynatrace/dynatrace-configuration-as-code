@@ -186,27 +186,6 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 	return doDownloadConfigs(fs, clientSet, prepareAPIs(api.NewAPIs(), options), options)
 }
 
-type downloadConfigsOptions struct {
-	downloadOptionsShared
-	specificAPIs    []string
-	specificSchemas []string
-	onlyAPIs        bool
-	onlySettings    bool
-	onlyAutomation  bool
-}
-
-func (opts downloadConfigsOptions) valid() []error {
-	var retVal []error
-	knownEndpoints := api.NewAPIs()
-	for _, e := range opts.specificAPIs {
-		if !knownEndpoints.Contains(e) {
-			retVal = append(retVal, fmt.Errorf("unknown (or unsupported) classic endpoint with name %q provided via \"--api\" flag. A list of supported classic endpoints is in the documentation", e))
-		}
-	}
-
-	return retVal
-}
-
 func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
