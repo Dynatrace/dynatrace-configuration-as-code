@@ -27,8 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -156,52 +154,10 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 			tt.expectedBehaviour(c)
 
-			_, err := downloadConfigs(&client.ClientSet{DTClient: c}, api.NewAPIs(), nil, tt.givenOpts, defaultDownloadFn)
+			_, err := downloadConfigs(&client.ClientSet{DTClient: c}, api.NewAPIs(), tt.givenOpts, defaultDownloadFn)
 			assert.NoError(t, err)
 		})
 	}
-}
-
-type automationAssertDownloader struct {
-	t        *testing.T
-	wantCall bool
-}
-
-var _ download.Downloader[config.AutomationType] = (*automationAssertDownloader)(nil)
-
-func (a *automationAssertDownloader) Download(_ string, _ ...config.AutomationType) (projectv2.ConfigsPerType, error) {
-	if !a.wantCall {
-		a.t.Fatalf("automation downloader was not meant to be called but was")
-	}
-	return nil, nil
-}
-
-type bucketAssertDownloader struct {
-	t        *testing.T
-	wantCall bool
-}
-
-var _ download.Downloader[config.BucketType] = (*bucketAssertDownloader)(nil)
-
-func (a *bucketAssertDownloader) Download(_ string, _ ...config.BucketType) (projectv2.ConfigsPerType, error) {
-	if !a.wantCall {
-		a.t.Fatalf("automation downloader was not meant to be called but was")
-	}
-	return nil, nil
-}
-
-type settingAssertDownloader struct {
-	t        *testing.T
-	wantCall bool
-}
-
-var _ download.Downloader[config.SettingsType] = (*settingAssertDownloader)(nil)
-
-func (a *settingAssertDownloader) Download(_ string, _ ...config.SettingsType) (projectv2.ConfigsPerType, error) {
-	if !a.wantCall {
-		a.t.Fatalf("settings downloader was not meant to be called but was")
-	}
-	return nil, nil
 }
 
 func TestDownload_Options(t *testing.T) {
@@ -266,12 +222,6 @@ func TestDownload_Options(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			downloaders := downloaders{
-				&settingAssertDownloader{t, tt.want.settings},
-				&automationAssertDownloader{t, tt.want.automation},
-				&bucketAssertDownloader{t, tt.want.bucket},
-			}
-
 			fn := downloadFn{
 				classicDownload: func(dtclient.Client, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
 					if !tt.want.config {
@@ -299,7 +249,7 @@ func TestDownload_Options(t *testing.T) {
 				},
 			}
 
-			_, err := downloadConfigs(&client.ClientSet{DTClient: dtclient.NewMockClient(gomock.NewController(t))}, api.NewAPIs(), downloaders, tt.given, fn)
+			_, err := downloadConfigs(&client.ClientSet{DTClient: dtclient.NewMockClient(gomock.NewController(t))}, api.NewAPIs(), tt.given, fn)
 			assert.NoError(t, err)
 		})
 	}
@@ -407,7 +357,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 
 	c.EXPECT().ListSchemas().Return(dtclient.SchemaList{{"builtin:some.schema"}}, nil)
 
-	err := doDownloadConfigs(afero.NewMemMapFs(), &client.ClientSet{DTClient: c}, nil, nil, givenOpts)
+	err := doDownloadConfigs(afero.NewMemMapFs(), &client.ClientSet{DTClient: c}, nil, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
 }
@@ -473,9 +423,7 @@ func TestDownloadConfigs_OnlyAutomationWithoutAutomationCredentials(t *testing.T
 		onlyAutomation: true,
 	}
 
-	downloaders := downloaders{automation.NoopAutomationDownloader{}}
-
-	err := doDownloadConfigs(testutils.CreateTestFileSystem(), &client.ClientSet{}, downloaders, nil, opts)
+	err := doDownloadConfigs(testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
 	assert.ErrorContains(t, err, "no OAuth credentials configured")
 }
 

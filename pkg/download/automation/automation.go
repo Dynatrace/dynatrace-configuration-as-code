@@ -127,9 +127,6 @@ func escapeJinjaTemplates(src []byte) ([]byte, error) {
 	return internal.EscapeJinjaTemplates(prettyJSON.Bytes()), err
 }
 
-type NoopAutomationDownloader struct {
-}
-
 func createTemplateFromRawJSON(obj automationutils.Response, configType, projectName string) (t template.Template, extractedName *string) {
 	configId := obj.ID
 
@@ -165,8 +162,4 @@ func createTemplateFromRawJSON(obj automationutils.Response, configType, project
 
 	t = template.NewInMemoryTemplate(configId, string(content))
 	return t, extractedName
-}
-
-func (d NoopAutomationDownloader) Download(_ string, _ ...config.AutomationType) (v2.ConfigsPerType, error) {
-	return nil, nil
 }

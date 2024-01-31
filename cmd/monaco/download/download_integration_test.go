@@ -86,7 +86,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -153,7 +153,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -239,7 +239,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -353,7 +353,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -417,7 +417,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -484,7 +484,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -579,7 +579,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 	t.Setenv(featureflags.DownloadFilterClassicConfigs().EnvName(), "false")
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -692,7 +692,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -829,7 +829,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 			// WHEN we download everything
-			err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
+			err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
 
 			assert.NilError(t, err)
 
@@ -898,7 +898,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apis, options)
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apis, options)
 
 	assert.NilError(t, err)
 
@@ -987,7 +987,7 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apis, opts)
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apis, opts)
 
 	assert.NilError(t, err)
 
@@ -1047,7 +1047,7 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	opts.onlyAPIs = true
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apis, opts)
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apis, opts)
 
 	assert.NilError(t, err)
 
@@ -1098,7 +1098,7 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, nil, opts)
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, opts)
 
 	assert.NilError(t, err)
 
@@ -1155,7 +1155,7 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	// GIVEN filter feature flag is turned OFF
 	t.Setenv(featureflags.DownloadFilterSettingsUnmodifiable().EnvName(), "false")
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, nil, opts)
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, opts)
 
 	assert.NilError(t, err)
 

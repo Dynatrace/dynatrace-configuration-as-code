@@ -20,17 +20,9 @@ package download
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
-
-func TestGetDownloaderPanic(t *testing.T) {
-	downloaders := downloaders{}
-	assert.Panics(t, func() {
-		getDownloader[config.ClassicApiType](downloaders)
-	})
-}
 
 func Test_prepareAPIs(t *testing.T) {
 	t.Run(`handling "--only*" flags`, func(t *testing.T) {
