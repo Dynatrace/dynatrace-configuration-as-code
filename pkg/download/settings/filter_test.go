@@ -100,7 +100,7 @@ func TestShouldDiscard(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			filter, found := defaultSettingsFilters[tc.schema]
+			filter, found := DefaultSettingsFilters[tc.schema]
 			assert.True(t, found, "filter for schema %q not found", tc.schema)
 
 			shouldDiscard, reason := filter.ShouldDiscard(tc.json)

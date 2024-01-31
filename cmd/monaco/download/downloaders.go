@@ -25,17 +25,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
 	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/bucket"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 )
 
 type downloaders []interface{}
 
 func (d downloaders) Classic() download.Downloader[config.ClassicApiType] {
 	return getDownloader[config.ClassicApiType](d)
-}
-
-func (d downloaders) Settings() download.Downloader[config.SettingsType] {
-	return getDownloader[config.SettingsType](d)
 }
 
 func (d downloaders) Automation() download.Downloader[config.AutomationType] {
@@ -56,10 +51,9 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 	if clients.Automation() != nil {
 		automationDownloader = dlautomation.NewDownloader(clients.Automation())
 	}
-	var settingsDownloader download.Downloader[config.SettingsType] = settings.NewDownloader(clients.Settings())
 	var bucketDownloader download.Downloader[config.BucketType] = bucket.NewDownloader(clients.Bucket())
 
-	return downloaders{settingsDownloader, automationDownloader, bucketDownloader}, nil
+	return downloaders{automationDownloader, bucketDownloader}, nil
 }
 
 func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {

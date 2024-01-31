@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -248,11 +249,13 @@ func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, downloaders dow
 }
 
 type downloadFn struct {
-	classicDownload func(dtclient.Client, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
+	classicDownload  func(dtclient.Client, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
+	settingsDownload func(dtclient.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
-	classicDownload: classic.Download,
+	classicDownload:  classic.Download,
+	settingsDownload: settings.Download,
 }
 
 func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, downloaders downloaders, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
@@ -268,8 +271,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, downl
 
 	if shouldDownloadSettings(opts) {
 		log.Info("Downloading settings objects")
-		settingTypes := makeSettingTypes(opts.specificSchemas)
-		settingCfgs, err := downloaders.Settings().Download(opts.projectName, settingTypes...)
+		settingCfgs, err := fn.settingsDownload(clientSet.Settings(), opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
 		if err != nil {
 			return nil, err
 		}

@@ -39,52 +39,22 @@ import (
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-// Downloader is responsible for downloading Settings 2.0 objects
-type Downloader struct {
-	// client is the settings 2.0 client to be used by the Downloader
-	client dtclient.SettingsClient
-
-	// filters specifies which settings 2.0 objects need special treatment under
-	// certain conditions and need to be skipped
-	filters Filters
-}
-
-// WithFilters sets specific settings filters for settings 2.0 object that needs to be filtered following
-// to some custom criteria
-func WithFilters(filters Filters) func(*Downloader) {
-	return func(d *Downloader) {
-		d.filters = filters
-	}
-}
-
-// NewDownloader creates a new downloader for Settings 2.0 objects
-func NewDownloader(client dtclient.SettingsClient, opts ...func(*Downloader)) *Downloader {
-	d := &Downloader{
-		client:  client,
-		filters: defaultSettingsFilters,
-	}
-	for _, o := range opts {
-		o(d)
-	}
-	return d
-}
-
-func (d *Downloader) Download(projectName string, schemaIDs ...config.SettingsType) (v2.ConfigsPerType, error) {
+func Download(client dtclient.SettingsClient, projectName string, filters Filters, schemaIDs ...config.SettingsType) (v2.ConfigsPerType, error) {
 	if len(schemaIDs) == 0 {
-		return d.downloadAll(projectName)
+		return downloadAll(client, projectName, filters)
 	}
 	var schemas []string
 	for _, s := range schemaIDs {
 		schemas = append(schemas, s.SchemaId)
 	}
-	return d.downloadSpecific(projectName, schemas)
+	return downloadSpecific(client, projectName, schemas, filters)
 }
 
-func (d *Downloader) downloadAll(projectName string) (v2.ConfigsPerType, error) {
+func downloadAll(client dtclient.SettingsClient, projectName string, filters Filters) (v2.ConfigsPerType, error) {
 	log.Debug("Fetching all schemas to download")
 
 	// get ALL schemas
-	schemas, err := d.client.ListSchemas()
+	schemas, err := client.ListSchemas()
 	if err != nil {
 		log.WithFields(field.Error(err)).Error("Failed to fetch all known schemas. Skipping settings download. Reason: %s", err)
 		return nil, err
@@ -95,22 +65,22 @@ func (d *Downloader) downloadAll(projectName string) (v2.ConfigsPerType, error) 
 		ids = append(ids, i.SchemaId)
 	}
 
-	result := d.download(ids, projectName)
+	result := download(client, ids, projectName, filters)
 	return result, nil
 }
 
-func (d *Downloader) downloadSpecific(projectName string, schemaIDs []string) (v2.ConfigsPerType, error) {
-	if ok, unknownSchemas := validateSpecificSchemas(d.client, schemaIDs); !ok {
+func downloadSpecific(client dtclient.SettingsClient, projectName string, schemaIDs []string, filters Filters) (v2.ConfigsPerType, error) {
+	if ok, unknownSchemas := validateSpecificSchemas(client, schemaIDs); !ok {
 		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
 		log.WithFields(field.F("unknownSchemas", unknownSchemas), field.Error(err)).Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
 		return nil, err
 	}
 	log.Debug("Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
-	result := d.download(schemaIDs, projectName)
+	result := download(client, schemaIDs, projectName, filters)
 	return result, nil
 }
 
-func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPerType {
+func download(client dtclient.SettingsClient, schemas []string, projectName string, filters Filters) v2.ConfigsPerType {
 	results := make(v2.ConfigsPerType, len(schemas))
 	downloadMutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
@@ -122,7 +92,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			lg := log.WithFields(field.Type(s))
 
 			lg.Debug("Downloading all settings for schema %s", s)
-			objects, err := d.client.ListSettings(context.TODO(), s, dtclient.ListSettingsOptions{})
+			objects, err := client.ListSettings(context.TODO(), s, dtclient.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string
 				var respErr clientErrors.RespError
@@ -135,7 +105,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 				return
 			}
 
-			cfgs := d.convertAllObjects(objects, projectName)
+			cfgs := convertAllObjects(objects, projectName, filters)
 			downloadMutex.Lock()
 			results[s] = cfgs
 			downloadMutex.Unlock()
@@ -156,7 +126,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 	return results
 }
 
-func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName string) []config.Config {
+func convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName string, filters Filters) []config.Config {
 	result := make([]config.Config, 0, len(objects))
 	for _, o := range objects {
 
@@ -172,7 +142,7 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 			return result
 		}
 		// skip discarded settings objects
-		if shouldDiscard, reason := d.filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled); shouldFilterSettings() && shouldDiscard {
+		if shouldDiscard, reason := filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled); shouldFilterSettings() && shouldDiscard {
 			log.WithFields(field.Type(o.SchemaId), field.F("object", o)).Debug("Discarded setting object %q (%s). Reason: %s", o.ObjectId, o.SchemaId, reason)
 			continue
 		}

@@ -22,23 +22,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestDownloadersSettings(t *testing.T) {
-	downloaders := downloaders{
-		&settings.Downloader{},
-		&automation.Downloader{},
-	}
-	settingsDownloader := downloaders.Settings()
-	assert.IsType(t, &settings.Downloader{}, settingsDownloader)
-}
-
 func TestDownloadersAutomation(t *testing.T) {
 	downloaders := downloaders{
-		&settings.Downloader{},
 		&automation.Downloader{},
 	}
 	automationDownloader := downloaders.Automation()
@@ -46,12 +35,8 @@ func TestDownloadersAutomation(t *testing.T) {
 }
 func TestGetDownloader(t *testing.T) {
 	downloaders := downloaders{
-		&settings.Downloader{},
 		&automation.Downloader{},
 	}
-
-	settingsDownloader := getDownloader[config.SettingsType](downloaders)
-	assert.IsType(t, &settings.Downloader{}, settingsDownloader)
 	automationDownloader := getDownloader[config.AutomationType](downloaders)
 	assert.IsType(t, &automation.Downloader{}, automationDownloader)
 }

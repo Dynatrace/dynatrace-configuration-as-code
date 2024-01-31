@@ -270,7 +270,7 @@ func TestDownloadAll(t *testing.T) {
 			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			res, _ := NewDownloader(c, WithFilters(tt.filters)).Download("projectName")
+			res, _ := Download(c, "projectName", tt.filters)
 			assert.Equal(t, tt.want, res)
 		})
 	}
@@ -351,7 +351,7 @@ func TestDownload(t *testing.T) {
 			settings, err2 := tt.mockValues.Settings()
 			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err1)
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err2)
-			res, _ := NewDownloader(c).Download("projectName", tt.Schemas...)
+			res, _ := Download(c, "projectName", DefaultSettingsFilters, tt.Schemas...)
 			assert.Equal(t, tt.want, res)
 		})
 	}
