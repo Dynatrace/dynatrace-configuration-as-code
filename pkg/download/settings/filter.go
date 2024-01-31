@@ -51,8 +51,8 @@ func formatDefaultDiscardReasonMsg(entityName interface{}) string {
 	return fmt.Sprintf("%q cannot be managed via configuration as code", entityName)
 }
 
-// defaultSettingsFilters is the default Filters used for settings 2.0
-var defaultSettingsFilters = Filters{
+// DefaultSettingsFilters is the default Filters used for settings 2.0
+var DefaultSettingsFilters = Filters{
 	"builtin:logmonitoring.logs-on-grail-activate": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
 			return json["activated"] == false, "'activated' field is set to false"

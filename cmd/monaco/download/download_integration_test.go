@@ -30,7 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	projectLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -86,10 +85,8 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -155,10 +152,8 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -243,10 +238,8 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -359,10 +352,8 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -425,10 +416,8 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -494,9 +483,8 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -590,10 +578,8 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 	t.Setenv(featureflags.DownloadFilterClassicConfigs().EnvName(), "false")
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -705,10 +691,8 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -844,10 +828,8 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 
 			dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-			downloaders := downloaders{settings.NewDownloader(dtClient)}
-
 			// WHEN we download everything
-			err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
+			err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
 
 			assert.NilError(t, err)
 
@@ -915,9 +897,8 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	options.outputFolder = testBasePath
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apis, options)
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apis, options)
 
 	assert.NilError(t, err)
 
@@ -1006,9 +987,7 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apis, opts)
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apis, opts)
 
 	assert.NilError(t, err)
 
@@ -1068,9 +1047,7 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	opts.onlyAPIs = true
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, apis, opts)
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, apis, opts)
 
 	assert.NilError(t, err)
 
@@ -1121,9 +1098,7 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, nil, opts)
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, nil, opts)
 
 	assert.NilError(t, err)
 
@@ -1177,12 +1152,10 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
-
 	// GIVEN filter feature flag is turned OFF
 	t.Setenv(featureflags.DownloadFilterSettingsUnmodifiable().EnvName(), "false")
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, downloaders, nil, opts)
+	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, nil, opts)
 
 	assert.NilError(t, err)
 

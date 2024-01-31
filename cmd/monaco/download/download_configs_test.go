@@ -154,9 +154,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 			tt.expectedBehaviour(c)
 
-			downloaders := downloaders{settings.NewDownloader(c)}
-
-			_, err := downloadConfigs(&client.ClientSet{DTClient: c}, api.NewAPIs(), downloaders, tt.givenOpts, defaultDownloadFn)
+			_, err := downloadConfigs(&client.ClientSet{DTClient: c}, api.NewAPIs(), nil, tt.givenOpts, defaultDownloadFn)
 			assert.NoError(t, err)
 		})
 	}
@@ -275,7 +273,13 @@ func TestDownload_Options(t *testing.T) {
 			fn := downloadFn{
 				classicDownload: func(dtclient.Client, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
 					if !tt.want.config {
-						t.Fatalf("config API downloader was not meant to be called but was")
+						t.Fatalf("classic config download was not meant to be called but was")
+					}
+					return nil, nil
+				},
+				settingsDownload: func(settingsClient dtclient.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (projectv2.ConfigsPerType, error) {
+					if !tt.want.settings {
+						t.Fatalf("settings download was not meant to be called but was")
 					}
 					return nil, nil
 				},
@@ -389,8 +393,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 
 	c.EXPECT().ListSchemas().Return(dtclient.SchemaList{{"builtin:some.schema"}}, nil)
 
-	downloaders := downloaders{settings.NewDownloader(c)}
-	err := doDownloadConfigs(afero.NewMemMapFs(), &client.ClientSet{DTClient: c}, downloaders, nil, givenOpts)
+	err := doDownloadConfigs(afero.NewMemMapFs(), &client.ClientSet{DTClient: c}, nil, nil, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
 }
