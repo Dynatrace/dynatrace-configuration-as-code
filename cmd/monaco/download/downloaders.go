@@ -20,16 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
 )
-
-type downloaders []interface{}
-
-func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
-
-	return downloaders{}, nil
-}
 
 func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
 	switch {
@@ -89,13 +80,4 @@ func warnDeprecated() api.Filter {
 		}
 		return false
 	}
-}
-
-func getDownloader[T config.Type](d downloaders) download.Downloader[T] {
-	for _, downloader := range d {
-		if dl, ok := downloader.(download.Downloader[T]); ok {
-			return dl
-		}
-	}
-	panic("No downloader implementation found")
 }

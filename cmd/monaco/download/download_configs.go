@@ -142,18 +142,12 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		return err
 	}
 
-	// NOTE: downloaders will be removed
-	downloaders, err := makeDownloaders(options)
-	if err != nil {
-		return err
-	}
-
 	clientSet, err := dynatrace.CreateClientSet(options.environmentURL, options.auth)
 	if err != nil {
 		return err
 	}
 
-	return doDownloadConfigs(fs, clientSet, downloaders, prepareAPIs(api.NewAPIs(), options), options)
+	return doDownloadConfigs(fs, clientSet, prepareAPIs(api.NewAPIs(), options), options)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptions) error {
@@ -184,18 +178,12 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		return err
 	}
 
-	// NOTE: downloaders will be removed
-	downloaders, err := makeDownloaders(options)
-	if err != nil {
-		return err
-	}
-
 	clientSet, err := dynatrace.CreateClientSet(options.environmentURL, options.auth)
 	if err != nil {
 		return err
 	}
 
-	return doDownloadConfigs(fs, clientSet, downloaders, prepareAPIs(api.NewAPIs(), options), options)
+	return doDownloadConfigs(fs, clientSet, prepareAPIs(api.NewAPIs(), options), options)
 }
 
 type downloadConfigsOptions struct {
@@ -219,14 +207,14 @@ func (opts downloadConfigsOptions) valid() []error {
 	return retVal
 }
 
-func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, downloaders downloaders, apisToDownload api.APIs, opts downloadConfigsOptions) error {
+func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
 	}
 
 	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentURL, opts.projectName)
-	downloadedConfigs, err := downloadConfigs(clientSet, apisToDownload, downloaders, opts, defaultDownloadFn)
+	downloadedConfigs, err := downloadConfigs(clientSet, apisToDownload, opts, defaultDownloadFn)
 	if err != nil {
 		return err
 	}
@@ -266,7 +254,7 @@ var defaultDownloadFn = downloadFn{
 	bucketDownload:     bucket.Download,
 }
 
-func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, downloaders downloaders, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
+func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
 	configs := make(project.ConfigsPerType)
 
 	if shouldDownloadConfigs(opts) {
