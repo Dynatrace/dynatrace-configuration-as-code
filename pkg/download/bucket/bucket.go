@@ -42,22 +42,9 @@ func (s skipErr) Error() string {
 	return s.msg
 }
 
-type BucketClient interface {
-	List(ctx context.Context) (buckets.ListResponse, error)
-}
-
-type Downloader struct {
-	client BucketClient
-}
-
-func NewDownloader(client BucketClient) *Downloader {
-	return &Downloader{
-		client: client,
-	}
-}
-func (d *Downloader) Download(projectName string, _ ...config.BucketType) (v2.ConfigsPerType, error) { // error in return is just to complain to interface
+func Download(client *buckets.Client, projectName string) (v2.ConfigsPerType, error) {
 	result := make(v2.ConfigsPerType)
-	response, err := d.client.List(context.TODO())
+	response, err := client.List(context.TODO())
 	if err != nil {
 		log.WithFields(field.Type("bucket"), field.Error(err)).Error("Failed to fetch all bucket definitions: %v", err)
 		return nil, nil
@@ -68,12 +55,12 @@ func (d *Downloader) Download(projectName string, _ ...config.BucketType) (v2.Co
 		return nil, nil
 	}
 
-	configs := d.convertAllObjects(projectName, response.All())
+	configs := convertAllObjects(projectName, response.All())
 	result["bucket"] = configs
 	return result, nil
 }
 
-func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []config.Config {
+func convertAllObjects(projectName string, objects [][]byte) []config.Config {
 	result := make([]config.Config, 0, len(objects))
 
 	lg := log.WithFields(field.Type("bucket"))

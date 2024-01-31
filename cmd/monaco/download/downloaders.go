@@ -17,29 +17,18 @@
 package download
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/bucket"
 )
 
 type downloaders []interface{}
 
-func (d downloaders) Bucket() download.Downloader[config.BucketType] {
-	return getDownloader[config.BucketType](d)
-}
-
 func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
-	clients, err := dynatrace.CreateClientSet(options.environmentURL, options.auth)
-	if err != nil {
-		return nil, err
-	}
-	var bucketDownloader download.Downloader[config.BucketType] = bucket.NewDownloader(clients.Bucket())
 
-	return downloaders{bucketDownloader}, nil
+	return downloaders{}, nil
 }
 
 func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {

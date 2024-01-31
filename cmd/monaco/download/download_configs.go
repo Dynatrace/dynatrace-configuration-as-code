@@ -17,7 +17,8 @@ package download
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
+	automationClient "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
+	bucketClient "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
@@ -25,6 +26,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
@@ -252,12 +255,15 @@ func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, downloaders dow
 type downloadFn struct {
 	classicDownload    func(dtclient.Client, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
 	settingsDownload   func(dtclient.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
-	automationDownload func(*automation.Client, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
+	automationDownload func(*automationClient.Client, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
+	bucketDownload     func(*bucketClient.Client, string) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
-	classicDownload:  classic.Download,
-	settingsDownload: settings.Download,
+	classicDownload:    classic.Download,
+	settingsDownload:   settings.Download,
+	automationDownload: automation.Download,
+	bucketDownload:     bucket.Download,
 }
 
 func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, downloaders downloaders, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
@@ -295,8 +301,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, downl
 
 	if shouldDownloadBuckets(opts) && opts.auth.OAuth != nil {
 		log.Info("Downloading Grail buckets")
-
-		bucketCfgs, err := downloaders.Bucket().Download(opts.projectName)
+		bucketCfgs, err := fn.bucketDownload(clientSet.Bucket(), opts.projectName)
 		if err != nil {
 			return nil, err
 		}
