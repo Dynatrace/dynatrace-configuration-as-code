@@ -21,25 +21,9 @@ package download
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
-
-func TestDownloadersAutomation(t *testing.T) {
-	downloaders := downloaders{
-		&automation.Downloader{},
-	}
-	automationDownloader := downloaders.Automation()
-	assert.IsType(t, &automation.Downloader{}, automationDownloader)
-}
-func TestGetDownloader(t *testing.T) {
-	downloaders := downloaders{
-		&automation.Downloader{},
-	}
-	automationDownloader := getDownloader[config.AutomationType](downloaders)
-	assert.IsType(t, &automation.Downloader{}, automationDownloader)
-}
 
 func TestGetDownloaderPanic(t *testing.T) {
 	downloaders := downloaders{}

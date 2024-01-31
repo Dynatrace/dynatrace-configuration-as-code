@@ -43,21 +43,9 @@ var automationTypesToResources = map[config.AutomationType]automationAPI.Resourc
 	config.AutomationType{Resource: config.SchedulingRule}:   automationAPI.SchedulingRules,
 }
 
-// Downloader can be used to download automation resources/configs
-type Downloader struct {
-	client *client.Client
-}
-
-// NewDownloader creates a new [Downloader] for automation resources/configs
-func NewDownloader(client *client.Client) *Downloader {
-	return &Downloader{
-		client: client,
-	}
-}
-
 // Download downloads all automation resources for a given project
 // If automationTypes is given it will just download those types of automation resources
-func (d *Downloader) Download(projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
+func Download(client *client.Client, projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
 	if len(automationTypes) == 0 {
 		automationTypes = maps.Keys(automationTypesToResources)
 	}
@@ -71,7 +59,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 			lg.Warn("No resource mapping for automation type %s found", at.Resource)
 			continue
 		}
-		response, err := d.client.List(context.TODO(), resource)
+		response, err := client.List(context.TODO(), resource)
 		if err != nil {
 			lg.WithFields(field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
