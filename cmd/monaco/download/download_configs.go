@@ -17,6 +17,7 @@ package download
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
@@ -249,8 +250,9 @@ func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, downloaders dow
 }
 
 type downloadFn struct {
-	classicDownload  func(dtclient.Client, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
-	settingsDownload func(dtclient.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
+	classicDownload    func(dtclient.Client, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
+	settingsDownload   func(dtclient.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
+	automationDownload func(*automation.Client, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
@@ -281,8 +283,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, downl
 	if shouldDownloadAutomationResources(opts) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading automation resources")
-
-			automationCfgs, err := downloaders.Automation().Download(opts.projectName)
+			automationCfgs, err := fn.automationDownload(clientSet.Automation(), opts.projectName)
 			if err != nil {
 				return nil, err
 			}

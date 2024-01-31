@@ -53,8 +53,7 @@ func TestDownloader_Download(t *testing.T) {
 		serverURL, err := url.Parse(server.URL)
 		assert.NoError(t, err)
 		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-		downloader := NewDownloader(httpClient)
-		result, err := downloader.Download("projectName")
+		result, err := Download(httpClient, "projectName")
 		assert.Len(t, result, 3)
 		assert.Len(t, result[string(config.Workflow)], 3)
 		assert.Len(t, result[string(config.SchedulingRule)], 6)
@@ -82,8 +81,7 @@ func TestDownloader_Download(t *testing.T) {
 		serverURL, err := url.Parse(server.URL)
 		assert.NoError(t, err)
 		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-		downloader := NewDownloader(httpClient)
-		result, err := downloader.Download("projectName",
+		result, err := Download(httpClient, "projectName",
 			config.AutomationType{Resource: config.Workflow}, config.AutomationType{Resource: config.BusinessCalendar})
 		assert.Len(t, result, 2)
 		assert.Len(t, result[string(config.Workflow)], 3)
@@ -107,8 +105,7 @@ func TestDownloader_Download(t *testing.T) {
 		assert.NoError(t, err)
 		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 
-		downloader := NewDownloader(httpClient)
-		result, err := downloader.Download("projectName", config.AutomationType{Resource: config.Workflow})
+		result, err := Download(httpClient, "projectName", config.AutomationType{Resource: config.Workflow})
 		assert.NoError(t, err)
 
 		assert.Len(t, result, 1)
@@ -142,8 +139,7 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(t, err)
 	httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-	downloader := NewDownloader(httpClient)
-	result, err := downloader.Download("projectName")
+	result, err := Download(httpClient, "projectName")
 	assert.Len(t, result, 2)
 	assert.Len(t, result[string(config.Workflow)], 3)
 	assert.Len(t, result[string(config.SchedulingRule)], 6)
