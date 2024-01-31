@@ -129,9 +129,10 @@ configs:
     config:
       name:
         type: compound
-        format: "My {{.some_param}} 2.0 SLO #5"
+        format: "My {{.some_param}} 2.0 SLO #5 {{.testSuffix}}"
         references:
         - some_param
+        - testSuffix
       parameters:
         some_param: "Settings"
         metricName:
