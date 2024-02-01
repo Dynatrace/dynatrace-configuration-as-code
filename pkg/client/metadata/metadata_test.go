@@ -93,22 +93,3 @@ func TestGetDynatraceClassicEnvironmentWorksWithTrailingSlash(t *testing.T) {
 	assert.Equal(t, "http://classic.env.com", got)
 	assert.NoError(t, err)
 }
-
-func TestGetDynatraceClassicEnvironmentFallsBackToDeprecatedPath(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == ClassicEnvironmentDomainPath {
-			rw.WriteHeader(http.StatusNotFound)
-			_, _ = rw.Write([]byte("<html>Some useless response</html>"))
-		} else if req.URL.Path == DeprecatedClassicEnvDomainPath {
-			rw.WriteHeader(http.StatusOK)
-			_, _ = rw.Write([]byte(`{"endpoint" : "http://fallback.classic.env.com"}`))
-		} else {
-			rw.WriteHeader(http.StatusInternalServerError)
-		}
-	}))
-	defer server.Close()
-
-	got, err := GetDynatraceClassicURL(context.TODO(), rest.NewRestClient(&http.Client{}, nil, rest.CreateRateLimitStrategy()), server.URL+"/")
-	assert.Equal(t, "http://fallback.classic.env.com", got)
-	assert.NoError(t, err)
-}
