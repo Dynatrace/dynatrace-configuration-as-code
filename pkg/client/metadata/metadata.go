@@ -54,6 +54,12 @@ func GetDynatraceClassicURL(ctx context.Context, client *rest.Client, environmen
 		return "", fmt.Errorf("failed to query classic environment URL: %w", err)
 	}
 
+	if resp.StatusCode >= 401 && resp.StatusCode <= 403 { //auth error
+		return "", rest.NewRespErr(
+			"missing permissions to query classic environment URL: oAuth client may be missing required scope 'app-engine:apps:run'",
+			resp)
+	}
+
 	if !resp.IsSuccess() {
 		return "", rest.NewRespErr(
 			fmt.Sprintf("failed to query classic environment URL: (HTTP %v) %v", resp.StatusCode, string(resp.Body)),
