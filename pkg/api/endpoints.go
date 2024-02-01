@@ -370,4 +370,12 @@ var configEndpoints = []API{
 		Parent:                       "application-mobile",
 		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.Experimental()},
 	},
+	{
+		ID:                       "user-action-and-session-properties-mobile",
+		URLPath:                  "/api/config/v1/applications/mobile/{SCOPE}/userActionAndSessionProperties",
+		SubPathAPI:               true,
+		Parent:                   "application-mobile",
+		PropertyNameOfIdentifier: "key",
+		NonUniqueName:            true,
+	},
 }

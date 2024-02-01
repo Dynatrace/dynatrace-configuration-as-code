@@ -242,7 +242,10 @@ func shouldFilter() bool {
 func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value value) ([]map[string]interface{}, error) {
 	var response []byte
 	var err error
-	if theApi.SubPathAPI {
+
+	if theApi.ID == "user-action-and-session-properties-mobile" {
+		response, err = client.ReadConfigById(theApi, value.value.Id)
+	} else if theApi.SubPathAPI {
 		response, err = client.ReadConfigById(theApi, "") // skipping the id to enforce to read/download "all" configs instead of a single one
 	} else {
 		response, err = client.ReadConfigById(theApi, value.value.Id)

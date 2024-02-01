@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"golang.org/x/exp/maps"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -591,6 +592,23 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 					Name: kua.Name,
 				})
 			}
+		} else if theApi.ID == "user-action-and-session-properties-mobile" {
+			var jsonResp UserActionAndSessionPropertyResponse
+			err := json.Unmarshal(resp.Body, &jsonResp)
+			if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
+				return nil, err
+			}
+
+			// The entries are potentially duplicated, that's why we need to map by the unique key
+			entries := map[string]Value{}
+			for _, entry := range jsonResp.UserActionProperties {
+				entries[entry.Key] = Value{Id: entry.Key, Name: entry.DisplayName}
+			}
+			for _, entry := range jsonResp.SessionProperties {
+				entries[entry.Key] = Value{Id: entry.Key, Name: entry.DisplayName}
+			}
+			values = maps.Values(entries)
+
 		} else if !theApi.IsStandardAPI() || isReportsApi(theApi) {
 
 			if err := json.Unmarshal(resp.Body, &objmap); err != nil {

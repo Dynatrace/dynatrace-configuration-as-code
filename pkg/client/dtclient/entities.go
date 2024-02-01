@@ -40,6 +40,16 @@ type KeyUserActionsWebResponse struct {
 	} `json:"keyUserActionList"`
 }
 
+type UserActionAndSessionPropertyEntry struct {
+	Key         string `json:"key"`
+	DisplayName string `json:"displayName"`
+}
+
+type UserActionAndSessionPropertyResponse struct {
+	SessionProperties    []UserActionAndSessionPropertyEntry `json:"sessionProperties"`
+	UserActionProperties []UserActionAndSessionPropertyEntry `json:"userActionProperties"`
+}
+
 type Value struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`

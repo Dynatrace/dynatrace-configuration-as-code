@@ -53,6 +53,8 @@ type API struct {
 
 	// RequireAllFF lists all feature flags that needs to be enabled in order to utilize this API
 	RequireAllFF []featureflags.FeatureFlag
+	// PropertyNameOfIdentifier defines the id field if it's not called 'ID'
+	PropertyNameOfIdentifier string
 }
 
 func (a API) CreateURL(environmentURL string) string {

@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
+	"strings"
 )
 
 func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (entities.ResolvedEntity, error) {
@@ -89,6 +90,12 @@ func upsertNonUniqueNameConfig(ctx context.Context, client dtclient.ConfigClient
 	isUUIDOrMeID := idutils.IsUUID(entityUuid) || idutils.IsMeId(entityUuid)
 	if !isUUIDOrMeID {
 		entityUuid = idutils.GenerateUUIDFromConfigId(projectId, configID)
+	}
+
+	// user-action-and-session-properties-mobile ids are not allowed to have "-" and must be lowercase
+	if apiToDeploy.ID == "user-action-and-session-properties-mobile" {
+		entityUuid = strings.ReplaceAll(entityUuid, "-", "")
+		entityUuid = strings.ToLower(entityUuid)
 	}
 
 	// check if we are dealing with a non-unique name configuration that appears multiple times
