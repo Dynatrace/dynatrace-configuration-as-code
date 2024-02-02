@@ -34,12 +34,6 @@ type KeyUserActionsMobileResponse struct {
 	} `json:"keyUserActions"`
 }
 
-type KeyUserActionsWebResponse struct {
-	KeyUserActions []struct {
-		Name string `json:"name"`
-	} `json:"keyUserActionList"`
-}
-
 type UserActionAndSessionPropertyEntry struct {
 	Key         string `json:"key"`
 	DisplayName string `json:"displayName"`

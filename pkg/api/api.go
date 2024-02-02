@@ -21,6 +21,8 @@ import (
 	"strings"
 )
 
+const StandardApiPropertyNameOfGetAllResponse string = "values"
+
 type Config struct {
 	configType string
 	configId   string
@@ -57,7 +59,7 @@ type API struct {
 	// TweakResponseFunc can be optionally registered to add custom code that changes the
 	// payload of the downloaded api content (e.g. to exclude unwanted/unnecessary fields)
 	TweakResponseFunc func(map[string]any)
-	// IsSubPathApi indicates whenever an API is a sub-path API.
+	// SubPathApi indicates that url contains sub-path.
 	SubPathAPI bool
 	// Parent is used for SubPath APIs to store information about the configuration type and ID of the related
 	// configuration once Resolved() is called.
