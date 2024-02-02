@@ -289,11 +289,17 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 		Type:     theApi.ID,
 	}
 
+	var originObjectId string
+	if theApi.StoreOriginObjectID {
+		originObjectId = value.value.Id
+	}
+
 	return config.Config{
-		Type:       config.ClassicApiType{Api: theApi.ID},
-		Template:   templ,
-		Coordinate: coord,
-		Parameters: params,
+		Type:           config.ClassicApiType{Api: theApi.ID},
+		Template:       templ,
+		Coordinate:     coord,
+		Parameters:     params,
+		OriginObjectId: originObjectId,
 	}, nil
 }
 

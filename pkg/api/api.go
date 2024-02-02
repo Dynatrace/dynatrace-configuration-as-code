@@ -55,6 +55,8 @@ type API struct {
 	RequireAllFF []featureflags.FeatureFlag
 	// PropertyNameOfIdentifier defines the id field if it's not called 'ID'
 	PropertyNameOfIdentifier string
+	// StoreOriginObjectID defines whether the original ID of the configuraiton should be stored as "originObjectID"
+	StoreOriginObjectID bool
 }
 
 func (a API) CreateURL(environmentURL string) string {

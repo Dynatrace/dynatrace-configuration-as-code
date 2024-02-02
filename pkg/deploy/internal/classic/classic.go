@@ -92,10 +92,17 @@ func upsertNonUniqueNameConfig(ctx context.Context, client dtclient.ConfigClient
 		entityUuid = idutils.GenerateUUIDFromConfigId(projectId, configID)
 	}
 
-	// user-action-and-session-properties-mobile ids are not allowed to have "-" and must be lowercase
+	// for now I only use the origin object id (if set) as entityUuid for "user-action-and-session-properties-mobile",
+	// as i am not sure what side effects it will have it is occasionally set for others as well.
 	if apiToDeploy.ID == "user-action-and-session-properties-mobile" {
-		entityUuid = strings.ReplaceAll(entityUuid, "-", "")
-		entityUuid = strings.ToLower(entityUuid)
+		if conf.OriginObjectId != "" {
+			entityUuid = conf.OriginObjectId
+		} else {
+			// if we didn't got an origin object id from a download, lets use the generated entity id,
+			// however "user-action-and-session-properties-mobile" ids (keys) don't allow "-" and must be lowercase
+			entityUuid = strings.ReplaceAll(entityUuid, "-", "")
+			entityUuid = strings.ToLower(entityUuid)
+		}
 	}
 
 	// check if we are dealing with a non-unique name configuration that appears multiple times
