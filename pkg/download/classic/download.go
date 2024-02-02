@@ -173,7 +173,7 @@ func findConfigsToDownload(client dtclient.Client, currentApi api.API) (values, 
 
 	if currentApi.SubPathAPI {
 		var res values
-		vals, err := client.ListConfigs(context.TODO(), api.NewAPIs()[currentApi.Parent])
+		vals, err := client.ListConfigs(context.TODO(), api.NewAPIs()[currentApi.Parent.ConfigType])
 		if err != nil {
 			return values{}, err
 		}
@@ -280,12 +280,12 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	params["name"] = &valueParam.ValueParameter{Value: value.value.Name}
 
 	if theApi.SubPathAPI {
-		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent, value.parentConfigId, "id")
+		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent.ConfigType, value.parentConfigId, "id")
 	}
 
 	coord := coordinate.Coordinate{
 		Project:  projectId,
-		ConfigId: templ.ID(),
+		ConfigId: templ.ID() + theApi.Parent.Id(),
 		Type:     theApi.ID,
 	}
 
