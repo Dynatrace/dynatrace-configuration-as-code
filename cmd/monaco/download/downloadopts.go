@@ -34,7 +34,7 @@ type downloadConfigsOptions struct {
 
 func (opts downloadConfigsOptions) valid() []error {
 	var retVal []error
-	knownEndpoints := api.NewAPIs()
+	knownEndpoints := api.NewAPIs().Filter(api.RemoveDisabled)
 	for _, e := range opts.specificAPIs {
 		if !knownEndpoints.Contains(e) {
 			retVal = append(retVal, fmt.Errorf("unknown (or unsupported) classic endpoint with name %q provided via \"--api\" flag. A list of supported classic endpoints is in the documentation", e))

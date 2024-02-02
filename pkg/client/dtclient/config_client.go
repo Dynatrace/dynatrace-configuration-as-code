@@ -131,7 +131,7 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 
 func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString string, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 
-	if theApi.SubPathAPI {
+	if theApi.ID == "key-user-actions-mobile" {
 		urlString = joinUrl(urlString, objectName)
 	}
 
@@ -141,9 +141,7 @@ func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString s
 	}
 	body := payload
 
-	configType := theApi.ID
-
-	if configType == "app-detection-rule" {
+	if theApi.ID == "app-detection-rule" {
 		queryParams := parsedUrl.Query()
 		queryParams.Add("position", "PREPEND")
 		parsedUrl.RawQuery = queryParams.Encode()
@@ -157,12 +155,11 @@ func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString s
 		}
 		return DynatraceEntity{}, err
 	}
-
 	if !resp.IsSuccess() {
 		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, parsedUrl.String())
 	}
 
-	return unmarshalCreateResponse(ctx, resp, urlString, configType, objectName)
+	return unmarshalCreateResponse(ctx, resp, urlString, theApi.ID, objectName)
 }
 
 func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl string, configType string, objectName string) (DynatraceEntity, error) {
@@ -176,7 +173,7 @@ func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl st
 		}
 		dtEntity = translateSyntheticEntityResponse(entity, objectName)
 
-	} else if available, locationSlice := isLocationHeaderAvailable(resp); available {
+	} else if locationSlice, exist := getLocationFromHeader(resp); exist {
 
 		// The POST of the SLO API does not return the ID of the config in its response. Instead, it contains a
 		// Location header, which contains the URL to the created resource. This URL needs to be cleaned, to get the
@@ -228,7 +225,7 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 	}
 
 	// Key user mobile actions can't be updated, thus we return immediately
-	if isKeyUserActionMobile(theApi) {
+	if isKeyUserActionMobile(theApi) || isKeyUserActionWeb(theApi) {
 		return DynatraceEntity{
 			Id:   existingObjectId,
 			Name: objectName,
@@ -393,11 +390,11 @@ func joinUrl(urlBase string, path string) string {
 	return trimmedUrl + "/" + url.PathEscape(trimmedPath)
 }
 
-func isLocationHeaderAvailable(resp rest.Response) (headerAvailable bool, headerArray []string) {
+func getLocationFromHeader(resp rest.Response) ([]string, bool) {
 	if resp.Headers["Location"] != nil {
-		return true, resp.Headers["Location"]
+		return resp.Headers["Location"], true
 	}
-	return false, make([]string, 0)
+	return make([]string, 0), false
 }
 
 func (d *DynatraceClient) getObjectIdIfAlreadyExists(ctx context.Context, api api.API, url string, objectName string) (string, error) {
@@ -557,98 +554,91 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 
 	// This API returns an untyped list as a response -> it needs a special handling
 	if theApi.ID == "aws-credentials" {
-
 		var jsonResp []Value
 		err := json.Unmarshal(resp.Body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
 			return values, err
 		}
 		values = jsonResp
-
-	} else {
-
-		if theApi.ID == "synthetic-location" {
-
-			var jsonResp SyntheticLocationResponse
-			err := json.Unmarshal(resp.Body, &jsonResp)
-			if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
-				return nil, err
-			}
-			values = translateSyntheticValues(jsonResp.Locations)
-
-		} else if theApi.ID == "synthetic-monitor" {
-
-			var jsonResp SyntheticMonitorsResponse
-			err := json.Unmarshal(resp.Body, &jsonResp)
-			if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
-				return nil, err
-			}
-			values = translateSyntheticValues(jsonResp.Monitors)
-
-		} else if theApi.ID == "key-user-actions-mobile" {
-			var jsonResp KeyUserActionsMobileResponse
-			err := json.Unmarshal(resp.Body, &jsonResp)
-			if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
-				return nil, err
-			}
-			for _, kua := range jsonResp.KeyUserActions {
-				values = append(values, Value{
-					Id:   kua.Name,
-					Name: kua.Name,
-				})
-			}
-		} else if theApi.ID == "key-user-actions-web" {
-			var jsonResp KeyUserActionsWebResponse
-			err := json.Unmarshal(resp.Body, &jsonResp)
-			if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
-				return nil, err
-			}
-			for _, kua := range jsonResp.KeyUserActions {
-				values = append(values, Value{
-					Id:   kua.Name,
-					Name: kua.Name,
-				})
-			}
-		} else if theApi.ID == "user-action-and-session-properties-mobile" {
-			var jsonResp UserActionAndSessionPropertyResponse
-			err := json.Unmarshal(resp.Body, &jsonResp)
-			if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
-				return nil, err
-			}
-
-			// The entries are potentially duplicated, that's why we need to map by the unique key
-			entries := map[string]Value{}
-			for _, entry := range jsonResp.UserActionProperties {
-				entries[entry.Key] = Value{Id: entry.Key, Name: entry.DisplayName}
-			}
-			for _, entry := range jsonResp.SessionProperties {
-				entries[entry.Key] = Value{Id: entry.Key, Name: entry.DisplayName}
-			}
-			values = maps.Values(entries)
-
-		} else if !theApi.IsStandardAPI() || isReportsApi(theApi) {
-
-			if err := json.Unmarshal(resp.Body, &objmap); err != nil {
-				return nil, err
-			}
-
-			if available, array := isResultArrayAvailable(objmap, theApi); available {
-				jsonResp, err := translateGenericValues(ctx, array, theApi.ID)
-				if err != nil {
-					return nil, err
-				}
-				values = jsonResp
-			}
-
-		} else {
-
-			var jsonResponse ValuesResponse
-			err := json.Unmarshal(resp.Body, &jsonResponse)
-			if errutils.CheckError(err, "Cannot unmarshal API response for existing objects") {
-				return nil, err
-			}
-			values = jsonResponse.Values
+	} else if theApi.ID == "synthetic-location" {
+		var jsonResp SyntheticLocationResponse
+		err := json.Unmarshal(resp.Body, &jsonResp)
+		if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
+			return nil, err
 		}
+		values = translateSyntheticValues(jsonResp.Locations)
+	} else if theApi.ID == "synthetic-monitor" {
+		var jsonResp SyntheticMonitorsResponse
+		err := json.Unmarshal(resp.Body, &jsonResp)
+		if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
+			return nil, err
+		}
+		values = translateSyntheticValues(jsonResp.Monitors)
+	} else if theApi.ID == "key-user-actions-mobile" {
+		var jsonResp KeyUserActionsMobileResponse
+		err := json.Unmarshal(resp.Body, &jsonResp)
+		if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
+			return nil, err
+		}
+		for _, kua := range jsonResp.KeyUserActions {
+			values = append(values, Value{
+				Id:   kua.Name,
+				Name: kua.Name,
+			})
+		}
+	} else if theApi.ID == "key-user-actions-web" {
+		var jsonResp struct {
+			List []struct {
+				Name         string `json:"name"`
+				MeIdentifier string `json:"meIdentifier"`
+			} `json:"keyUserActionList"`
+		}
+		err := json.Unmarshal(resp.Body, &jsonResp)
+		if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
+			return nil, err
+		}
+		for _, kua := range jsonResp.List {
+			values = append(values, Value{
+				Id:   kua.MeIdentifier,
+				Name: kua.Name,
+			})
+		}
+	} else if theApi.ID == "user-action-and-session-properties-mobile" {
+		var jsonResp UserActionAndSessionPropertyResponse
+		err := json.Unmarshal(resp.Body, &jsonResp)
+		if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
+			return nil, err
+		}
+
+		// The entries are potentially duplicated, that's why we need to map by the unique key
+		entries := map[string]Value{}
+		for _, entry := range jsonResp.UserActionProperties {
+			entries[entry.Key] = Value{Id: entry.Key, Name: entry.DisplayName}
+		}
+		for _, entry := range jsonResp.SessionProperties {
+			entries[entry.Key] = Value{Id: entry.Key, Name: entry.DisplayName}
+		}
+		values = maps.Values(entries)
+
+	} else if !theApi.IsStandardAPI() || isReportsApi(theApi) {
+		if err := json.Unmarshal(resp.Body, &objmap); err != nil {
+			return nil, err
+		}
+
+		if available, array := isResultArrayAvailable(objmap, theApi); available {
+			jsonResp, err := translateGenericValues(ctx, array, theApi.ID)
+			if err != nil {
+				return nil, err
+			}
+			values = jsonResp
+		}
+	} else {
+		var jsonResponse ValuesResponse
+		err := json.Unmarshal(resp.Body, &jsonResponse)
+		if errutils.CheckError(err, "Cannot unmarshal API response for existing objects") {
+			return nil, err
+		}
+		values = jsonResponse.Values
 	}
 
 	return values, nil

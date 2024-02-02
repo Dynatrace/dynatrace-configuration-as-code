@@ -1,0 +1,5 @@
+{
+    "name": "{{.name}}",
+    "actionType": "Load",
+    "domain": "skelin.com"
+}

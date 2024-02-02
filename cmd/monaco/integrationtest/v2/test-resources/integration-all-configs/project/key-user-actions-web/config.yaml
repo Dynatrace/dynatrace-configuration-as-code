@@ -1,0 +1,14 @@
+configs:
+- id: key-user-action-web-1
+  config:
+    name: the_name key user action
+    template: key-user-action-web.json
+    skip: false
+  type:
+    api:
+      name: key-user-actions-web #monaco-test:no-replace
+      scope:
+        configType: application-web
+        configId: application
+        property: id
+        type: reference

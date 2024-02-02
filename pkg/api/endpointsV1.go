@@ -18,8 +18,6 @@ package api
 
 import "strings"
 
-var StandardApiPropertyNameOfGetAllResponse = "values"
-
 // configEndpointsV1 contains API definitions present in v1 to allow conversion and fallback deployment of v1
 // This includes deprecated APIs removed with v2, as well as the '-v2' non-unique-name APIs moved to being the default
 // and dropping the '-v2' suffix with v2.

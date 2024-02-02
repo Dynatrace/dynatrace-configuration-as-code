@@ -33,7 +33,7 @@ import (
 	"testing"
 )
 
-func TestDownloadConfigs_FailedToFindConfigsToDownload_(t *testing.T) {
+func TestDownloadConfigs_FailedToFindConfigsToDownload(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).Return([]dtclient.Value{}, fmt.Errorf("NO"))
 
@@ -58,7 +58,7 @@ func TestDownload_NoConfigsToDownloadFound_(t *testing.T) {
 	assert.Len(t, configurations, 0)
 }
 
-func TestDownload_ConfigsDownloaded_(t *testing.T) {
+func TestDownload_ConfigsDownloaded(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -81,7 +81,7 @@ func TestDownload_ConfigsDownloaded_(t *testing.T) {
 	assert.Len(t, configurations, 2)
 }
 
-func TestDownload_KeyUserActionMobile_(t *testing.T) {
+func TestDownload_KeyUserActionMobile(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["application-mobile"]).Return([]dtclient.Value{{Id: "some-application-id", Name: "some-application-name"}}, nil)
 	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["key-user-actions-mobile"].Resolve("some-application-id")).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil)
@@ -93,9 +93,8 @@ func TestDownload_KeyUserActionMobile_(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 
-	assert.Len(t, configurations, 1)
-	gotConfig := configurations["key-user-actions-mobile"][0]
 	assert.Len(t, configurations["key-user-actions-mobile"], 1)
+	gotConfig := configurations["key-user-actions-mobile"][0]
 	assert.Equal(t, reference.New("project", "application-mobile", "some-application-id", "id"), gotConfig.Parameters[config.ScopeParameter])
 	assert.Len(t, gotConfig.Parameters, 2)
 	assert.Equal(t, valueParam.New("abc"), gotConfig.Parameters[config.NameParameter])
@@ -104,7 +103,48 @@ func TestDownload_KeyUserActionMobile_(t *testing.T) {
 	assert.False(t, gotConfig.Skip)
 }
 
-func TestDownload_SingleConfigurationAPI_(t *testing.T) {
+type apiMatcher struct {
+	x api.API
+}
+
+func apiEq(x api.API) gomock.Matcher { return apiMatcher{x: x} }
+
+func (e apiMatcher) Matches(x any) bool {
+	if a, ok := x.(api.API); ok {
+		return a.ID == e.x.ID && a.URLPath == e.x.URLPath
+	}
+	return false
+}
+
+func (e apiMatcher) String() string {
+	return fmt.Sprintf("is equal to %v (%T)", e.x, e.x)
+}
+
+func TestDownload_KeyUserActionWeb(t *testing.T) {
+
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	ctx := context.TODO()
+	apis := api.NewAPIs()
+	c.EXPECT().ListConfigs(ctx, apiEq(apis["application-web"])).Return([]dtclient.Value{{Id: "applicationID", Name: "web-application"}}, nil)
+	c.EXPECT().ListConfigs(ctx, apiEq(apis["key-user-actions-web"].Resolve("applicationID"))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
+	c.EXPECT().ReadConfigById(gomock.Any(), "").Return([]byte(`{"keyUserActionList":[{"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"}]}`), nil)
+
+	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{"key-user-actions-web"}))
+
+	configurations, err := Download(c, "project", apiMap, map[string]ContentFilter{})
+	assert.NoError(t, err)
+	assert.Len(t, configurations, 1)
+	gotConfig := configurations["key-user-actions-web"][0]
+	assert.Len(t, configurations["key-user-actions-web"], 1)
+	assert.Equal(t, reference.New("project", "application-web", "applicationID", "id"), gotConfig.Parameters[config.ScopeParameter])
+	assert.Len(t, gotConfig.Parameters, 2)
+	assert.Equal(t, valueParam.New("the_name"), gotConfig.Parameters[config.NameParameter])
+	assert.Equal(t, config.ClassicApiType{Api: "key-user-actions-web"}, gotConfig.Type)
+	assert.Equal(t, coordinate.Coordinate{Project: "project", Type: "key-user-actions-web", ConfigId: "APPLICATION_METHOD-IDapplicationID"}, gotConfig.Coordinate)
+	assert.False(t, gotConfig.Skip)
+}
+
+func TestDownload_SingleConfigurationAPI(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
@@ -116,7 +156,7 @@ func TestDownload_SingleConfigurationAPI_(t *testing.T) {
 	assert.Len(t, configurations, 1)
 }
 
-func TestDownload_ErrorFetchingConfig_(t *testing.T) {
+func TestDownload_ErrorFetchingConfig(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -143,7 +183,7 @@ func TestDownload_ErrorFetchingConfig_(t *testing.T) {
 	assert.Len(t, configurations, 1)
 }
 
-func TestDownload_ConfigsDownloaded_WithEmptyFilte_(t *testing.T) {
+func TestDownload_ConfigsDownloaded_WithEmptyFile(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -166,7 +206,7 @@ func TestDownload_ConfigsDownloaded_WithEmptyFilte_(t *testing.T) {
 	assert.Len(t, configurations, 2)
 }
 
-func TestDownload_SkipConfigThatShouldNotBePersisted_(t *testing.T) {
+func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {

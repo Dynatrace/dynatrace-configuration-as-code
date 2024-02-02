@@ -371,6 +371,15 @@ var configEndpoints = []API{
 		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.Experimental()},
 	},
 	{
+		ID:                           "key-user-actions-web",
+		URLPath:                      "/api/config/v1/applications/web/{SCOPE}/keyUserActions",
+		PropertyNameOfGetAllResponse: "keyUserActionList",
+		SubPathAPI:                   true,
+		Parent:                       Config{configType: "application-web"},
+		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.Experimental()},
+		TweakResponseFunc:            func(m map[string]any) { delete(m, "meIdentifier") },
+	},
+	{
 		ID:                       "user-action-and-session-properties-mobile",
 		URLPath:                  "/api/config/v1/applications/mobile/{SCOPE}/userActionAndSessionProperties",
 		SubPathAPI:               true,
