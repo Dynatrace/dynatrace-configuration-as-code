@@ -16,6 +16,8 @@
 
 package api
 
+import "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+
 // configEndpoints is map of the http endpoints for configuration API (aka classic/config endpoints).
 var configEndpoints = []API{
 	{
@@ -366,5 +368,6 @@ var configEndpoints = []API{
 		PropertyNameOfGetAllResponse: "keyUserActions",
 		SubPathAPI:                   true,
 		Parent:                       "application-mobile",
+		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.Experimental()},
 	},
 }

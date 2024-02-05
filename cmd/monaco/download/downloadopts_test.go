@@ -19,6 +19,7 @@
 package download
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -88,8 +89,61 @@ func Test_prepareAPIs(t *testing.T) {
 		}
 	})
 
+	t.Run("require to set all of listed FF", func(t *testing.T) {
+		testApi := api.API{
+			ID:           "test-endpoint",
+			RequireAllFF: []featureflags.FeatureFlag{featureflags.Experimental(), featureflags.ExtractScopeAsParameter()},
+		}
+		type given struct {
+			apis api.APIs
+			ff   []featureflags.FeatureFlag
+		}
+		tests := []struct {
+			name     string
+			given    given
+			expected api.APIs
+		}{
+			{
+				name: "with set FF",
+				given: given{
+					apis: api.APIs{testApi.ID: testApi},
+					ff:   []featureflags.FeatureFlag{featureflags.Experimental(), featureflags.ExtractScopeAsParameter()},
+				},
+				expected: api.APIs{testApi.ID: testApi},
+			},
+			{
+				name: "without set FF",
+				given: given{
+					apis: api.APIs{testApi.ID: testApi},
+				},
+				expected: api.APIs{},
+			},
+			{
+				name: "with only one FF set",
+				given: given{
+					apis: api.APIs{testApi.ID: testApi},
+					ff:   []featureflags.FeatureFlag{featureflags.Experimental()},
+				},
+				expected: api.APIs{},
+			},
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+
+				for _, ff := range tc.given.ff {
+					t.Setenv(ff.EnvName(), "true")
+				}
+
+				actualAPIs := prepareAPIs(tc.given.apis, downloadConfigsOptions{})
+
+				assert.Equal(t, tc.expected, actualAPIs)
+			})
+		}
+	})
+
 	t.Run("do not skip anything when `MONACO_FEAT_DOWNLOAD_FILTER` are disabled", func(t *testing.T) {
-		t.Setenv("MONACO_FEAT_DOWNLOAD_FILTER", "false")
+		t.Setenv(featureflags.DownloadFilter().EnvName(), "false") //by default, it is true
 		tests := []struct {
 			name  string
 			given downloadConfigsOptions

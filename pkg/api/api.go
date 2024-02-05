@@ -16,7 +16,10 @@
 
 package api
 
-import "strings"
+import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"strings"
+)
 
 // API structure present definition of config endpoints
 type API struct {
@@ -47,6 +50,9 @@ type API struct {
 	// Parent is the parent API ID which is requred to download all possible values for sub-path apis.
 	// e.g. key-user-actions that are bound to applications
 	Parent string
+
+	// RequireAllFF lists all feature flags that needs to be enabled in order to utilize this API
+	RequireAllFF []featureflags.FeatureFlag
 }
 
 func (a API) CreateURL(environmentURL string) string {

@@ -114,7 +114,7 @@ func verifyEnvironmentGen(environments manifest.Environments, dryRun bool) bool 
 
 func loadProjects(fs afero.Fs, manifestPath string, man *manifest.Manifest) ([]project.Project, error) {
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-		KnownApis:       api.NewAPIs().GetApiNameLookup(),
+		KnownApis:       api.NewAPIs().Filter(api.RemoveDisabled).GetApiNameLookup(),
 		WorkingDir:      filepath.Dir(manifestPath),
 		Manifest:        *man,
 		ParametersSerde: config.DefaultParameterParsers,

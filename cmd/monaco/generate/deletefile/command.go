@@ -68,7 +68,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 				return fmt.Errorf("failed to load manifest %q", manifestName)
 			}
 
-			apis := api.NewAPIs()
+			apis := api.NewAPIs().Filter(api.RemoveDisabled)
 			loadedProjects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
 				KnownApis:       apis.GetApiNameLookup(),
 				WorkingDir:      filepath.Dir(manifestName),

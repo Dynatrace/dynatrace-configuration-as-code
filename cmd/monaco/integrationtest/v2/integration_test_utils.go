@@ -103,13 +103,13 @@ func runIntegrationWithCleanup(t *testing.T, opts TestOptions, testFunc TestFunc
 
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
 
-	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, envs, suffix)
-	})
-
 	for k, v := range opts.envVars {
 		setTestEnvVar(t, k, v, suffix)
 	}
+
+	t.Cleanup(func() {
+		integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, envs, suffix)
+	})
 
 	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)
 
