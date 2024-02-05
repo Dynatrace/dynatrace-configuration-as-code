@@ -89,6 +89,15 @@ func ExtractScopeAsParameter() FeatureFlag {
 	}
 }
 
+// BuildSimpleClassicURL returns the feature flag to controlling whether we attempt to create the Classic URL of a platform environment via string replacement before using the metadata API.
+// As there may be networking/DNS edge-cases where the replaced URL is valid (GET returns 200) but is not actually a Classic environment, this feature flag allows deactivation of the feature.
+func BuildSimpleClassicURL() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_SIMPLE_CLASSIC_URL",
+		defaultEnabled: true,
+	}
+}
+
 // Experimental returns the feature flag to indicate whether a feature is under development
 func Experimental() FeatureFlag {
 	return FeatureFlag{
