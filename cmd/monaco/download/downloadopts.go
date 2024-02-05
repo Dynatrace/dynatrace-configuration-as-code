@@ -45,6 +45,7 @@ func (opts downloadConfigsOptions) valid() []error {
 }
 
 func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
+	apis = apis.Filter(api.RemoveDisabled)
 	switch {
 	case opts.onlyAutomation:
 		return nil

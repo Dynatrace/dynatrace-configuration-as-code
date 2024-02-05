@@ -88,3 +88,11 @@ func ExtractScopeAsParameter() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+// Experimental returns the feature flag to indicate whether a feature is under development
+func Experimental() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_EXPERIMENTAL",
+		defaultEnabled: false,
+	}
+}

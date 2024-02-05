@@ -72,6 +72,16 @@ func noFilter(API) bool {
 	return false
 }
 
+// RemoveDisabled filter every endpoint for which all of required featureflags.FeatureFlag aren't set
+func RemoveDisabled(api API) bool {
+	for _, ff := range api.RequireAllFF {
+		if !ff.Enabled() {
+			return true
+		}
+	}
+	return false
+}
+
 // RetainByName creates a Filter that leaves the API in the map if API.ID is part of the provided list. If the provided list is empty, a no-op filter is returned.
 func RetainByName(apis []string) Filter {
 	if len(apis) == 0 {

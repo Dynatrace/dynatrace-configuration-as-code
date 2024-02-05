@@ -20,6 +20,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"testing"
 
@@ -45,7 +46,9 @@ func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "AllConfigs", func(fs afero.Fs, _ TestContext) {
+	envVars := map[string]string{featureflags.Experimental().EnvName(): "true"}
+
+	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
 
 		// This causes a POST for all configs:
 
@@ -69,6 +72,7 @@ func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 func TestIntegrationValidationAllConfigs(t *testing.T) {
 
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
+	t.Setenv(featureflags.Experimental().EnvName(), "true")
 
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
