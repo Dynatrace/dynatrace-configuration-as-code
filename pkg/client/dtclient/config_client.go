@@ -347,6 +347,9 @@ func isApplicationNotReadyYet(resp rest.Response, theApi api.API) bool {
 		isSyntheticMonitorServerError(resp, theApi) ||
 		isApplicationAPIError(resp, theApi) ||
 		isApplicationDetectionRuleException(resp, theApi) ||
+		isKeyUserActionMobile(theApi) ||
+		isKeyUserActionWeb(theApi) ||
+		isUserSessionPropertiesMobile(theApi) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
 }
 func isNetworkZoneFeatureNotEnabledYet(resp rest.Response, theApi api.API) bool {
@@ -463,6 +466,14 @@ func isKeyUserActionMobile(api api.API) bool {
 	return api.ID == "key-user-actions-mobile"
 }
 
+func isKeyUserActionWeb(api api.API) bool {
+	return api.ID == "key-user-actions-web"
+}
+
+func isUserSessionPropertiesMobile(api api.API) bool {
+	return api.ID == "user-action-and-session-properties-mobile"
+}
+
 func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
@@ -478,7 +489,9 @@ func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, the
 
 	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
 
-	resp, err := d.classicClient.Get(ctx, parsedUrl.String())
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, func(ctx context.Context, url string, _ []byte) (rest.Response, error) {
+		return d.classicClient.Get(ctx, url)
+	}, parsedUrl.String(), nil, theApi)
 
 	if err != nil {
 		return nil, err
