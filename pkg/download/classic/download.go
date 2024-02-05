@@ -243,9 +243,7 @@ func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value va
 	var response []byte
 	var err error
 
-	if theApi.ID == "user-action-and-session-properties-mobile" {
-		response, err = client.ReadConfigById(theApi, value.value.Id)
-	} else if theApi.SubPathAPI {
+	if theApi.SubPathAPI && theApi.ID != "user-action-and-session-properties-mobile" {
 		response, err = client.ReadConfigById(theApi, "") // skipping the id to enforce to read/download "all" configs instead of a single one
 	} else {
 		response, err = client.ReadConfigById(theApi, value.value.Id)
@@ -289,8 +287,10 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 		Type:     theApi.ID,
 	}
 
+	// for "user-action-and-session-properties-mobile" we store the identifier (key) as origin object id
+	// in order to deploy it with the same id again
 	var originObjectId string
-	if theApi.StoreOriginObjectID {
+	if theApi.ID == "user-action-and-session-properties-mobile" {
 		originObjectId = value.value.Id
 	}
 

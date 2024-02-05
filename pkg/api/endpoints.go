@@ -377,6 +377,5 @@ var configEndpoints = []API{
 		Parent:                   Parent{ConfigType: "application-mobile"},
 		PropertyNameOfIdentifier: "key",
 		NonUniqueName:            true,
-		StoreOriginObjectID:      true,
 	},
 }
