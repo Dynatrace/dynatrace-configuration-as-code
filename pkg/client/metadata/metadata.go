@@ -19,9 +19,12 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/net/context"
 	"net/url"
+	"strings"
 )
 
 const ClassicEnvironmentDomainPath = "/platform/metadata/v1/classic-environment-domain"
@@ -44,6 +47,11 @@ func (u classicEnvURL) GetURL() string {
 // GetDynatraceClassicURL tries to fetch the URL of the classic environment using the API of a platform enabled
 // environment
 func GetDynatraceClassicURL(ctx context.Context, client *rest.Client, environmentURL string) (string, error) {
+	if classicURL, ok := findSimpleClassicURL(ctx, client, environmentURL); ok {
+		log.Debug("Found classic environment URL based on Platform URL: %s", classicURL)
+		return classicURL, nil
+	}
+
 	endpointURL, err := url.JoinPath(environmentURL, ClassicEnvironmentDomainPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to build URL for API %q on environment URL %q", ClassicEnvironmentDomainPath, environmentURL)
@@ -74,4 +82,20 @@ func GetDynatraceClassicURL(ctx context.Context, client *rest.Client, environmen
 		return "", fmt.Errorf("failed to parse classic environment response payload from %q. Please check your dynatrace environment URL to match the following pattern: https://<env-id>.apps.dynatrace.com", endpointURL)
 	}
 	return jsonResp.GetURL(), nil
+}
+
+func findSimpleClassicURL(ctx context.Context, client *rest.Client, environmentURL string) (url string, ok bool) {
+	if !featureflags.BuildSimpleClassicURL().Enabled() {
+		return "", false
+	}
+
+	url = strings.Replace(environmentURL, ".apps.", ".live.", 1)
+	resp, err := client.Get(ctx, url)
+
+	if err == nil && resp.IsSuccess() {
+		log.Debug("Found classic environment URL based on Platform URL: %s", url)
+		return url, true
+	}
+
+	return "", false
 }
