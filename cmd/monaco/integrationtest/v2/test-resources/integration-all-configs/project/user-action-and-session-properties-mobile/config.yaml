@@ -1,0 +1,14 @@
+configs:
+- id: user-action-and-session-properties-mobile
+  config:
+    name: test
+    template: test.json
+    skip: false
+  type:
+    api:
+      name: user-action-and-session-properties-mobile #monaco-test:no-replace
+      scope:
+        configId: mobile-application
+        configType: application-mobile
+        property: id
+        type: reference
