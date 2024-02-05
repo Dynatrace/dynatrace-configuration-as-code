@@ -21,12 +21,15 @@ import (
 	"strings"
 )
 
-type Parent struct {
-	ConfigType string
+type Config struct {
+	configType string
 	configId   string
 }
 
-func (p Parent) Id() string {
+func (p Config) Type() string {
+	return p.configType
+}
+func (p Config) Id() string {
 	return p.configId
 }
 
@@ -56,10 +59,9 @@ type API struct {
 	TweakResponseFunc func(map[string]any)
 	// IsSubPathApi indicates whenever an API is a sub-path API.
 	SubPathAPI bool
-	// Parent is the parent API ID which is requred to download all possible values for sub-path apis.
-	// e.g. key-user-actions that are bound to applications
-	Parent Parent
-
+	// Parent is used for SubPath APIs to store information about the configuration type and ID of the related
+	// configuration once Resolved() is called.
+	Parent Config
 	// RequireAllFF lists all feature flags that needs to be enabled in order to utilize this API
 	RequireAllFF []featureflags.FeatureFlag
 	// PropertyNameOfIdentifier defines the id field if it's not called 'ID'
