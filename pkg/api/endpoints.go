@@ -377,5 +377,6 @@ var configEndpoints = []API{
 		Parent:                   Config{configType: "application-mobile"},
 		PropertyNameOfIdentifier: "key",
 		NonUniqueName:            true,
+		RequireAllFF:             []featureflags.FeatureFlag{featureflags.Experimental()},
 	},
 }
