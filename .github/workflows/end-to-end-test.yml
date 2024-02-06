@@ -99,7 +99,7 @@ jobs:
         OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
 
     - name: ⬆️ Upload Test Results
-      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
       if: always()
       with:
         name: Test Results - Integration
@@ -140,7 +140,7 @@ jobs:
         OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
 
     - name: ⬆️ Upload Test Results
-      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
       if: always()
       with:
         name: Test Results - Integration Legacy
@@ -181,7 +181,7 @@ jobs:
         OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
 
     - name: ⬆️ Upload Test Results
-      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
       if: always()
       with:
         name: Test Results - Integration Download
@@ -212,7 +212,7 @@ jobs:
       run: make test testopts="--junitfile test-result-windows-latest-unit.xml"
 
     - name: ⬆️ Upload Test Results
-      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
       if: always()
       with:
         name: Test Results - Unit Windows
@@ -262,7 +262,7 @@ jobs:
         OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
 
     - name: ⬆️ Upload Test Results
-      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
       if: always()
       with:
         name: Test Results - Integration Nightly
@@ -274,7 +274,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Upload
-      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
       with:
         name: event_file
         path: ${{ github.event_path }}
