@@ -286,10 +286,6 @@ func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, re
 		log.WithCtxFields(ctx).WithFields(field.F("statusCode", resp.StatusCode)).Warn("Failed to send HTTP request: (HTTP %d)!\n    Response was: %s", resp.StatusCode, string(resp.Body))
 	}
 
-	if isCalculatedLogMonitoringAPIDisabled(resp) {
-		return resp, err
-	}
-
 	var setting rest.RetrySetting
 	// It can take longer until calculated service metrics are ready to be used in SLOs
 	if isCalculatedMetricNotReadyYet(resp) ||
@@ -330,10 +326,6 @@ func isGeneralDependencyNotReadyYet(resp rest.Response) bool {
 func isCalculatedMetricNotReadyYet(resp rest.Response) bool {
 	return strings.Contains(string(resp.Body), "Metric selector") &&
 		strings.Contains(string(resp.Body), "invalid")
-}
-
-func isCalculatedLogMonitoringAPIDisabled(resp rest.Response) bool {
-	return strings.Contains(string(resp.Body), "Old API endpoints are disabled")
 }
 
 func isRequestAttributeNotYetReady(resp rest.Response) bool {
@@ -494,9 +486,16 @@ func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, the
 
 	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, func(ctx context.Context, url string, _ []byte) (rest.Response, error) {
-		return d.classicClient.Get(ctx, url)
-	}, parsedUrl.String(), nil, theApi)
+	var resp rest.Response
+	// For any subpath API like e.g. Key user Actions, it can be that we need to do longer retries
+	// because the parent config (e.g. an application) is not ready yet
+	if theApi.SubPathAPI {
+		resp, err = rest.SendWithRetryWithInitialTry(ctx, func(ctx context.Context, url string, _ []byte) (rest.Response, error) {
+			return d.classicClient.Get(ctx, url)
+		}, parsedUrl.String(), nil, rest.DefaultRetrySettings.Long)
+	} else {
+		resp, err = d.classicClient.Get(ctx, parsedUrl.String())
+	}
 
 	if err != nil {
 		return nil, err

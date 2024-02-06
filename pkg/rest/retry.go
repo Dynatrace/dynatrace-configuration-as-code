@@ -69,7 +69,7 @@ func SendWithRetry(ctx context.Context, sendWithBody SendRequestWithBody, path s
 }
 
 // SendWithRetryWithInitialTry will try to call sendWithBody and if it didn't succeed call [SendWithRetry]
-func SendWithRetryWithInitialTry(ctx context.Context, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
+func SendWithRetryWithInitialTry(ctx context.Context, sendWithBody SendRequestWithBody, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 	resp, err = sendWithBody(ctx, path, body)
 	if err == nil && resp.IsSuccess() {
 		return resp, err
