@@ -276,11 +276,9 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // retrying in case of know errors on upload.
 func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall rest.SendRequestWithBody, path string, body []byte, theApi api.API) (rest.Response, error) {
 	resp, err := restCall(ctx, path, body)
-
 	if err == nil && resp.IsSuccess() {
 		return resp, nil
 	}
-
 	if err != nil {
 		log.WithCtxFields(ctx).WithFields(field.Error(err)).Warn("Failed to send HTTP request: %v", err)
 	} else {
@@ -288,8 +286,11 @@ func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, re
 		log.WithCtxFields(ctx).WithFields(field.F("statusCode", resp.StatusCode)).Warn("Failed to send HTTP request: (HTTP %d)!\n    Response was: %s", resp.StatusCode, string(resp.Body))
 	}
 
-	var setting rest.RetrySetting
+	if isCalculatedLogMonitoringAPIDisabled(resp) {
+		return resp, err
+	}
 
+	var setting rest.RetrySetting
 	// It can take longer until calculated service metrics are ready to be used in SLOs
 	if isCalculatedMetricNotReadyYet(resp) ||
 		// It can take longer until management zones are ready to be used in SLOs
@@ -329,6 +330,10 @@ func isGeneralDependencyNotReadyYet(resp rest.Response) bool {
 func isCalculatedMetricNotReadyYet(resp rest.Response) bool {
 	return strings.Contains(string(resp.Body), "Metric selector") &&
 		strings.Contains(string(resp.Body), "invalid")
+}
+
+func isCalculatedLogMonitoringAPIDisabled(resp rest.Response) bool {
+	return strings.Contains(string(resp.Body), "Old API endpoints are disabled")
 }
 
 func isRequestAttributeNotYetReady(resp rest.Response) bool {
