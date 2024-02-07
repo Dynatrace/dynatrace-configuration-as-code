@@ -196,6 +196,12 @@ func TestRemoveIdentifiers(t *testing.T) {
 			"does-not-matter",
 			`{"x":"", "y": 1234, "z": null, "rules": {"methodRules":{}}, "dashboardMetadata": {"name": "{{.name}}"}}`,
 		},
+		{
+			"entity id is not removed for CMS, but all other ids are",
+			`{"entityId": "some-id", "id": "must be removed"}`,
+			"calculated-metrics-service",
+			`{"entityId": "some-id"}`,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
