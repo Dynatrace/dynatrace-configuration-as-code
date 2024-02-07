@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -296,6 +297,7 @@ environmentGroups:
 }
 
 func TestDeleteSubPathAPIConfigurations(t *testing.T) {
+	t.Setenv(featureflags.Experimental().EnvName(), "true")
 
 	configFolder := "test-resources/delete-test-configs/"
 	deployManifestPath := configFolder + "deploy-manifest.yaml"
