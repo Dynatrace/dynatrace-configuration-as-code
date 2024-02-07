@@ -45,19 +45,24 @@ var apiSanitizeFunctions = map[string]func(properties map[string]interface{}) ma
 }
 
 func sanitizeProperties(properties map[string]interface{}, apiId string) map[string]interface{} {
-	properties = removeIdentifyingProperties(properties)
+	properties = removeIdentifyingProperties(properties, apiId)
 	properties = removePropertiesNotAllowedOnUpload(properties, apiId)
 	return replaceTemplateProperties(properties, apiId)
 }
 
-func removeIdentifyingProperties(dat map[string]interface{}) map[string]interface{} {
+func removeIdentifyingProperties(dat map[string]interface{}, apiId string) map[string]interface{} {
 	dat = removeByPath(dat, []string{"metadata"})
 	dat = removeByPath(dat, []string{"id"})
 	dat = removeByPath(dat, []string{"applicationId"})
 	dat = removeByPath(dat, []string{"identifier"})
 	dat = removeByPath(dat, []string{"rules", "id"})
 	dat = removeByPath(dat, []string{"rules", "methodRules", "id"})
-	dat = removeByPath(dat, []string{"entityId"})
+
+	// After manual inspection, it appears that only 'calculated-metrics-service' needs to still keep the entityId.
+	// The other APIs are self-referencing (e.g. HTTP-CHECK-0123 has entityId set to its own ID).
+	if apiId != "calculated-metrics-service" {
+		dat = removeByPath(dat, []string{"entityId"})
+	}
 
 	return dat
 }
