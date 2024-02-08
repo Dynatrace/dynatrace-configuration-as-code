@@ -100,7 +100,7 @@ func TestDownload_KeyUserActionMobile_(t *testing.T) {
 	assert.Len(t, gotConfig.Parameters, 2)
 	assert.Equal(t, valueParam.New("abc"), gotConfig.Parameters[config.NameParameter])
 	assert.Equal(t, config.ClassicApiType{Api: "key-user-actions-mobile"}, gotConfig.Type)
-	assert.Equal(t, coordinate.Coordinate{Project: "project", Type: "key-user-actions-mobile", ConfigId: "abc"}, gotConfig.Coordinate)
+	assert.Equal(t, coordinate.Coordinate{Project: "project", Type: "key-user-actions-mobile", ConfigId: "abcsome-application-id"}, gotConfig.Coordinate)
 	assert.False(t, gotConfig.Skip)
 }
 

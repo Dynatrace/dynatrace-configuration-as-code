@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
+	"strings"
 )
 
 func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (entities.ResolvedEntity, error) {
@@ -89,6 +90,19 @@ func upsertNonUniqueNameConfig(ctx context.Context, client dtclient.ConfigClient
 	isUUIDOrMeID := idutils.IsUUID(entityUuid) || idutils.IsMeId(entityUuid)
 	if !isUUIDOrMeID {
 		entityUuid = idutils.GenerateUUIDFromConfigId(projectId, configID)
+	}
+
+	// for now I only use the origin object id (if set) as entityUuid for "user-action-and-session-properties-mobile",
+	// as i am not sure what side effects it will have it is occasionally set for others as well.
+	if apiToDeploy.ID == "user-action-and-session-properties-mobile" {
+		if conf.OriginObjectId != "" {
+			entityUuid = conf.OriginObjectId
+		} else {
+			// if we didn't got an origin object id from a download, lets use the generated entity id,
+			// however "user-action-and-session-properties-mobile" ids (keys) don't allow "-" and must be lowercase
+			entityUuid = strings.ReplaceAll(entityUuid, "-", "")
+			entityUuid = strings.ToLower(entityUuid)
+		}
 	}
 
 	// check if we are dealing with a non-unique name configuration that appears multiple times

@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"golang.org/x/exp/maps"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -275,11 +276,9 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // retrying in case of know errors on upload.
 func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall rest.SendRequestWithBody, path string, body []byte, theApi api.API) (rest.Response, error) {
 	resp, err := restCall(ctx, path, body)
-
 	if err == nil && resp.IsSuccess() {
 		return resp, nil
 	}
-
 	if err != nil {
 		log.WithCtxFields(ctx).WithFields(field.Error(err)).Warn("Failed to send HTTP request: %v", err)
 	} else {
@@ -288,7 +287,6 @@ func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, re
 	}
 
 	var setting rest.RetrySetting
-
 	// It can take longer until calculated service metrics are ready to be used in SLOs
 	if isCalculatedMetricNotReadyYet(resp) ||
 		// It can take longer until management zones are ready to be used in SLOs
@@ -346,6 +344,9 @@ func isApplicationNotReadyYet(resp rest.Response, theApi api.API) bool {
 		isSyntheticMonitorServerError(resp, theApi) ||
 		isApplicationAPIError(resp, theApi) ||
 		isApplicationDetectionRuleException(resp, theApi) ||
+		isKeyUserActionMobile(theApi) ||
+		isKeyUserActionWeb(theApi) ||
+		isUserSessionPropertiesMobile(theApi) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
 }
 func isNetworkZoneFeatureNotEnabledYet(resp rest.Response, theApi api.API) bool {
@@ -462,6 +463,14 @@ func isKeyUserActionMobile(api api.API) bool {
 	return api.ID == "key-user-actions-mobile"
 }
 
+func isKeyUserActionWeb(api api.API) bool {
+	return api.ID == "key-user-actions-web"
+}
+
+func isUserSessionPropertiesMobile(api api.API) bool {
+	return api.ID == "user-action-and-session-properties-mobile"
+}
+
 func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
@@ -477,7 +486,16 @@ func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, the
 
 	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
 
-	resp, err := d.classicClient.Get(ctx, parsedUrl.String())
+	var resp rest.Response
+	// For any subpath API like e.g. Key user Actions, it can be that we need to do longer retries
+	// because the parent config (e.g. an application) is not ready yet
+	if theApi.SubPathAPI {
+		resp, err = rest.SendWithRetryWithInitialTry(ctx, func(ctx context.Context, url string, _ []byte) (rest.Response, error) {
+			return d.classicClient.Get(ctx, url)
+		}, parsedUrl.String(), nil, rest.DefaultRetrySettings.Long)
+	} else {
+		resp, err = d.classicClient.Get(ctx, parsedUrl.String())
+	}
 
 	if err != nil {
 		return nil, err
@@ -591,6 +609,23 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 					Name: kua.Name,
 				})
 			}
+		} else if theApi.ID == "user-action-and-session-properties-mobile" {
+			var jsonResp UserActionAndSessionPropertyResponse
+			err := json.Unmarshal(resp.Body, &jsonResp)
+			if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
+				return nil, err
+			}
+
+			// The entries are potentially duplicated, that's why we need to map by the unique key
+			entries := map[string]Value{}
+			for _, entry := range jsonResp.UserActionProperties {
+				entries[entry.Key] = Value{Id: entry.Key, Name: entry.DisplayName}
+			}
+			for _, entry := range jsonResp.SessionProperties {
+				entries[entry.Key] = Value{Id: entry.Key, Name: entry.DisplayName}
+			}
+			values = maps.Values(entries)
+
 		} else if !theApi.IsStandardAPI() || isReportsApi(theApi) {
 
 			if err := json.Unmarshal(resp.Body, &objmap); err != nil {

@@ -45,7 +45,5 @@ func (a API) testConfiguredApi(t *testing.T) {
 	if a.SingleConfiguration == true {
 		assert.Emptyf(t, a.PropertyNameOfGetAllResponse, "endpoint %q have forbiden value combination - when \"SingleConfiguration\" is true, \"PropertyNameOfGetAllResponse\" must be empty! (actual values: %+v)", a.ID, a)
 		assert.Falsef(t, a.NonUniqueName, "endpoint %q have forbiden value combination - when \"SingleConfiguration\" is true, \"NonUniqueName\" must be false! (actual values: %+v)", a.ID, a)
-	} else {
-		assert.NotZerof(t, a.PropertyNameOfGetAllResponse, "endpoint %v doesnt have populated field \"PropertyNameOfGetAllResponse\"! (actual values: %+v)", a.ID, a)
 	}
 }

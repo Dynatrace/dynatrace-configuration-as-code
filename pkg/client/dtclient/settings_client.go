@@ -278,7 +278,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	}
 
 	requestUrl := d.environmentURL + d.settingsObjectAPIPath
-	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.platformClient.Post, obj.Coordinate.ConfigId, requestUrl, payload, retrySetting)
+	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.platformClient.Post, requestUrl, payload, retrySetting)
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)

@@ -173,7 +173,7 @@ func findConfigsToDownload(client dtclient.Client, currentApi api.API) (values, 
 
 	if currentApi.SubPathAPI {
 		var res values
-		vals, err := client.ListConfigs(context.TODO(), api.NewAPIs()[currentApi.Parent])
+		vals, err := client.ListConfigs(context.TODO(), api.NewAPIs()[currentApi.Parent.Type()])
 		if err != nil {
 			return values{}, err
 		}
@@ -242,7 +242,8 @@ func shouldFilter() bool {
 func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value value) ([]map[string]interface{}, error) {
 	var response []byte
 	var err error
-	if theApi.SubPathAPI {
+
+	if theApi.SubPathAPI && theApi.ID != "user-action-and-session-properties-mobile" {
 		response, err = client.ReadConfigById(theApi, "") // skipping the id to enforce to read/download "all" configs instead of a single one
 	} else {
 		response, err = client.ReadConfigById(theApi, value.value.Id)
@@ -277,20 +278,28 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	params["name"] = &valueParam.ValueParameter{Value: value.value.Name}
 
 	if theApi.SubPathAPI {
-		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent, value.parentConfigId, "id")
+		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent.Type(), value.parentConfigId, "id")
 	}
 
 	coord := coordinate.Coordinate{
 		Project:  projectId,
-		ConfigId: templ.ID(),
+		ConfigId: templ.ID() + theApi.Parent.Id(),
 		Type:     theApi.ID,
 	}
 
+	// for "user-action-and-session-properties-mobile" we store the identifier (key) as origin object id
+	// in order to deploy it with the same id again
+	var originObjectId string
+	if theApi.ID == "user-action-and-session-properties-mobile" {
+		originObjectId = value.value.Id
+	}
+
 	return config.Config{
-		Type:       config.ClassicApiType{Api: theApi.ID},
-		Template:   templ,
-		Coordinate: coord,
-		Parameters: params,
+		Type:           config.ClassicApiType{Api: theApi.ID},
+		Template:       templ,
+		Coordinate:     coord,
+		Parameters:     params,
+		OriginObjectId: originObjectId,
 	}, nil
 }
 
