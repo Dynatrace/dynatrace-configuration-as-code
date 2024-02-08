@@ -59,8 +59,6 @@ type API struct {
 	// TweakResponseFunc can be optionally registered to add custom code that changes the
 	// payload of the downloaded api content (e.g. to exclude unwanted/unnecessary fields)
 	TweakResponseFunc func(map[string]any)
-	// SubPathApi indicates that url contains sub-path.
-	SubPathAPI bool
 	// Parent is used for SubPath APIs to store information about the configuration type and ID of the related
 	// configuration once Resolved() is called.
 	Parent string
@@ -72,6 +70,10 @@ type API struct {
 
 func (a API) CreateURL(environmentURL string) string {
 	return environmentURL + a.URLPath
+}
+
+func (a API) IsSubPathAPI() bool {
+	return len(a.Parent) > 0
 }
 
 func (a API) IsStandardAPI() bool {

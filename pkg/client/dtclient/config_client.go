@@ -50,7 +50,7 @@ func NewApiData(theApi api.API) APIData {
 		ID:                           theApi.ID,
 		SingleConfiguration:          theApi.SingleConfiguration,
 		UrlPath:                      theApi.URLPath,
-		SubPathAPI:                   theApi.SubPathAPI,
+		SubPathAPI:                   theApi.IsSubPathAPI(),
 		NonUniqueName:                theApi.NonUniqueName,
 		PropertyNameOfGetAllResponse: theApi.PropertyNameOfGetAllResponse,
 	}

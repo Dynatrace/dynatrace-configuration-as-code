@@ -46,16 +46,9 @@ func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries
 	var delValues []deleteValue
 
 	// if the api is *not* a subpath api, we can just list all configs that exist for a given api and then filter the items that need to be deleted
-	if !theApi.SubPathAPI {
+	if !theApi.IsSubPathAPI() {
 		var values []dtclient.Value
-		values, err = client.ListConfigs(ctx, dtclient.APIData{
-			ID:                           theApi.ID,
-			SingleConfiguration:          theApi.SingleConfiguration,
-			UrlPath:                      theApi.URLPath,
-			SubPathAPI:                   theApi.SubPathAPI,
-			NonUniqueName:                theApi.NonUniqueName,
-			PropertyNameOfGetAllResponse: theApi.PropertyNameOfGetAllResponse,
-		})
+		values, err = client.ListConfigs(ctx, dtclient.NewApiData(theApi))
 		if err != nil {
 			logger.WithFields(field.Error(err)).Error("Failed to fetch existing configs of API type %q - skipping deletion: %v", theApi.ID, err)
 			return err
@@ -112,7 +105,7 @@ func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries
 		vLog := logger.WithFields(field.Coordinate(v.AsCoordinate()), field.F("value", v))
 
 		a := theApi
-		if a.SubPathAPI {
+		if a.IsSubPathAPI() {
 			a = a.Resolve(v.DeletePointer.Scope)
 		}
 
@@ -146,14 +139,7 @@ func DeleteAll(ctx context.Context, client dtclient.ConfigClient, apis api.APIs)
 	for _, a := range apis {
 		logger := log.WithCtxFields(ctx).WithFields(field.Type(a.ID))
 		logger.Info("Collecting configs of type %q...", a.ID)
-		values, err := client.ListConfigs(ctx, dtclient.APIData{
-			ID:                           a.ID,
-			SingleConfiguration:          a.SingleConfiguration,
-			UrlPath:                      a.URLPath,
-			SubPathAPI:                   a.SubPathAPI,
-			NonUniqueName:                a.NonUniqueName,
-			PropertyNameOfGetAllResponse: a.PropertyNameOfGetAllResponse,
-		})
+		values, err := client.ListConfigs(ctx, dtclient.NewApiData(a))
 		if err != nil {
 			errs++
 			continue

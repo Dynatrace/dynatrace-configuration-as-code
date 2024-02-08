@@ -42,7 +42,7 @@ func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.AP
 		return entities.ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
 	}
 
-	if apiToDeploy.SubPathAPI {
+	if apiToDeploy.IsSubPathAPI() {
 		scope, err := extract.Scope(properties)
 		if err != nil {
 			return entities.ResolvedEntity{}, fmt.Errorf("failed to extract scope for config %q", conf.Type.ID())
@@ -63,14 +63,7 @@ func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.AP
 	if apiToDeploy.NonUniqueName {
 		dtEntity, err = upsertNonUniqueNameConfig(ctx, configClient, apiToDeploy, conf, configName, renderedConfig)
 	} else {
-		dtEntity, err = configClient.UpsertConfigByName(ctx, dtclient.APIData{
-			ID:                           apiToDeploy.ID,
-			SingleConfiguration:          apiToDeploy.SingleConfiguration,
-			UrlPath:                      apiToDeploy.URLPath,
-			SubPathAPI:                   apiToDeploy.SubPathAPI,
-			NonUniqueName:                apiToDeploy.NonUniqueName,
-			PropertyNameOfGetAllResponse: apiToDeploy.PropertyNameOfGetAllResponse,
-		}, configName, []byte(renderedConfig))
+		dtEntity, err = configClient.UpsertConfigByName(ctx, dtclient.NewApiData(apiToDeploy), configName, []byte(renderedConfig))
 	}
 
 	if err != nil {
@@ -127,12 +120,5 @@ func upsertNonUniqueNameConfig(ctx context.Context, client dtclient.ConfigClient
 		}
 		duplicate = resolvedValBool
 	}
-	return client.UpsertConfigByNonUniqueNameAndId(ctx, dtclient.APIData{
-		ID:                           apiToDeploy.ID,
-		SingleConfiguration:          apiToDeploy.SingleConfiguration,
-		UrlPath:                      apiToDeploy.URLPath,
-		SubPathAPI:                   apiToDeploy.SubPathAPI,
-		NonUniqueName:                apiToDeploy.NonUniqueName,
-		PropertyNameOfGetAllResponse: apiToDeploy.PropertyNameOfGetAllResponse,
-	}, entityUuid, configName, []byte(renderedConfig), duplicate)
+	return client.UpsertConfigByNonUniqueNameAndId(ctx, dtclient.NewApiData(apiToDeploy), entityUuid, configName, []byte(renderedConfig), duplicate)
 }
