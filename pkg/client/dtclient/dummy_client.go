@@ -28,7 +28,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 )
@@ -51,7 +50,7 @@ var (
 	_ Client = (*DummyClient)(nil)
 )
 
-func (c *DummyClient) GetEntries(a api.API) ([]DataEntry, bool) {
+func (c *DummyClient) GetEntries(a APIData) ([]DataEntry, bool) {
 	c.entriesLock.RLock()
 	defer c.entriesLock.RUnlock()
 
@@ -62,7 +61,7 @@ func (c *DummyClient) GetEntries(a api.API) ([]DataEntry, bool) {
 	return v, true
 }
 
-func (c *DummyClient) storeEntry(a api.API, e DataEntry) {
+func (c *DummyClient) storeEntry(a APIData, e DataEntry) {
 	c.entriesLock.Lock()
 	defer c.entriesLock.Unlock()
 
@@ -89,7 +88,7 @@ func (c *DummyClient) CreatedObjects() int {
 	return objects
 }
 
-func (c *DummyClient) ListConfigs(_ context.Context, a api.API) (values []Value, err error) {
+func (c *DummyClient) ListConfigs(_ context.Context, a APIData) (values []Value, err error) {
 	entries, found := c.GetEntries(a)
 
 	if !found {
@@ -110,7 +109,7 @@ func (c *DummyClient) ListConfigs(_ context.Context, a api.API) (values []Value,
 	return result, nil
 }
 
-func (c *DummyClient) ReadConfigById(a api.API, id string) ([]byte, error) {
+func (c *DummyClient) ReadConfigById(a APIData, id string) ([]byte, error) {
 	entries, found := c.GetEntries(a)
 
 	if !found {
@@ -126,7 +125,7 @@ func (c *DummyClient) ReadConfigById(a api.API, id string) ([]byte, error) {
 	return nil, fmt.Errorf("nothing found for id %s in api %s", id, a.ID)
 }
 
-func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
+func (c *DummyClient) UpsertConfigByName(_ context.Context, a APIData, name string, data []byte) (entity DynatraceEntity, err error) {
 	entries, _ := c.GetEntries(a)
 
 	var dataEntry DataEntry
@@ -159,7 +158,7 @@ func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name stri
 	}, nil
 }
 
-func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a api.API, entityId string, name string, data []byte, _ bool) (entity DynatraceEntity, err error) {
+func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a APIData, entityId string, name string, data []byte, _ bool) (entity DynatraceEntity, err error) {
 	entries, _ := c.GetEntries(a)
 
 	var dataEntry DataEntry
@@ -192,7 +191,7 @@ func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a api.
 	}, nil
 }
 
-func (c *DummyClient) writeRequest(a api.API, name string, payload []byte) {
+func (c *DummyClient) writeRequest(a APIData, name string, payload []byte) {
 	if c.Fs == nil {
 		return
 	}
@@ -211,7 +210,7 @@ func (c *DummyClient) writeRequest(a api.API, name string, payload []byte) {
 	}
 }
 
-func (c *DummyClient) DeleteConfigById(a api.API, id string) error {
+func (c *DummyClient) DeleteConfigById(a APIData, id string) error {
 
 	c.entriesLock.Lock()
 	defer c.entriesLock.Unlock()
@@ -239,7 +238,7 @@ func (c *DummyClient) DeleteConfigById(a api.API, id string) error {
 	return nil
 }
 
-func (c *DummyClient) ConfigExistsByName(_ context.Context, a api.API, name string) (exists bool, id string, err error) {
+func (c *DummyClient) ConfigExistsByName(_ context.Context, a APIData, name string) (exists bool, id string, err error) {
 	entries, found := c.GetEntries(a)
 
 	if !found {

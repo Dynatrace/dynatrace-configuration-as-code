@@ -104,37 +104,36 @@ func downloadConfigs(client dtclient.Client, api api.API, projectName string, fi
 		return results
 	}
 
-	values := filterConfigsToSkip(api, foundValues, filters)
-
-	if len(values) == 0 {
+	foundValues = filterConfigsToSkip(api, foundValues, filters)
+	if len(foundValues) == 0 {
 		logger.Debug("No configs of type '%v' to download", api.ID)
 		return results
 	}
 
-	logger.Debug("Found %d configs of type %q to download", len(values), api.ID)
+	logger.Debug("Found %d configs of type %q to download", len(foundValues), api.ID)
 
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	wg.Add(len(values))
-	for _, v := range values {
+	wg.Add(len(foundValues))
+	for _, v := range foundValues {
 		v := v
 		go func() {
 			defer wg.Done()
 
-			downloadedJsons, err := downloadAndUnmarshalConfig(client, v.api, value{value: v.value})
+			downloadedJsons, err := downloadAndUnmarshalConfig(client, api, v)
 			if err != nil {
-				log.WithFields(field.Type(v.api.ID), field.F("value", v), field.Error(err)).Error("Error fetching config '%v' in api '%v': %v", v.value.Id, api.ID, err)
+				log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Error("Error fetching config '%v' in api '%v': %v", v.value.Id, api.ID, err)
 				return
 			}
 
 			for _, downloadedJson := range downloadedJsons {
-				if v.api.TweakResponseFunc != nil {
-					v.api.TweakResponseFunc(downloadedJson)
+				if api.TweakResponseFunc != nil {
+					api.TweakResponseFunc(downloadedJson)
 				}
 
-				c, err := createConfigForDownloadedJson(downloadedJson, v.api, v, projectName)
+				c, err := createConfigForDownloadedJson(downloadedJson, api, v, projectName)
 				if err != nil {
-					log.WithFields(field.Type(v.api.ID), field.F("value", v), field.Error(err)).Error("Error creating config for %v in api %v: %v", v.value.Id, api.ID, err)
+					log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Error("Error creating config for %v in api %v: %v", v.value.Id, api.ID, err)
 					return
 				}
 
@@ -153,46 +152,53 @@ func downloadConfigs(client dtclient.Client, api api.API, projectName string, fi
 	return results
 }
 
+// values represents values that basically hold IDs and values of dynatrace objects
+// to be downloaded
 type values []value
 
+// value is a wrapper around the clients dtclient.Value and adds additional information to it
 type value struct {
-	value          dtclient.Value
-	api            api.API
+	// value holds the id and name of the found dynatrace entity
+	value dtclient.Value
+	// parentConfigId optionally holds the id of the parent dynatrace entity id.
+	// If parentConfigId is empty, means that there is no parent
 	parentConfigId string
 }
 
-func findConfigsToDownload(client dtclient.Client, currentApi api.API) (values, error) {
-	if currentApi.SingleConfiguration {
-		log.WithFields(field.Type(currentApi.ID)).Debug("\tFetching singleton-configuration '%v'", currentApi.ID)
+// findConfigsToDownload tries to identify all values that should be downloaded from a Dynatrace environment for
+// the given API
+func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (values, error) {
+	if apiToDownload.SingleConfiguration {
+		log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching singleton-configuration '%v'", apiToDownload.ID)
 
 		// singleton-config. We use the api-id as mock-id
-		singletonConfigToDownload := dtclient.Value{Id: currentApi.ID, Name: currentApi.ID}
-		return values{{value: singletonConfigToDownload, api: currentApi}}, nil
+		singletonConfigToDownload := dtclient.Value{Id: apiToDownload.ID, Name: apiToDownload.ID}
+		return values{{value: singletonConfigToDownload}}, nil
 	}
-	log.WithFields(field.Type(currentApi.ID)).Debug("\tFetching all '%v' configs", currentApi.ID)
+	log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching all '%v' configs", apiToDownload.ID)
 
-	if currentApi.SubPathAPI {
+	if apiToDownload.SubPathAPI {
+		parentAPI := api.NewAPIs()[apiToDownload.Parent]
 		var res values
-		vals, err := client.ListConfigs(context.TODO(), api.NewAPIs()[currentApi.Parent.Type()])
+		parentAPIValues, err := client.ListConfigs(context.TODO(), dtclient.NewApiData(parentAPI))
 		if err != nil {
 			return values{}, err
 		}
-		for _, v := range vals {
-			resolvedPathApi := currentApi.Resolve(v.Id)
-			vs, err := client.ListConfigs(context.TODO(), resolvedPathApi)
+		for _, parentAPIValue := range parentAPIValues {
+			apiValues, err := client.ListConfigs(context.TODO(), dtclient.NewApiData(apiToDownload.Resolve(parentAPIValue.Id)))
 			if err != nil {
 				return values{}, err
 			}
-			for _, vv := range vs {
-				res = append(res, value{value: vv, api: resolvedPathApi, parentConfigId: v.Id})
+			for _, vv := range apiValues {
+				res = append(res, value{value: vv, parentConfigId: parentAPIValue.Id})
 			}
 		}
 		return res, nil
 	}
 	var res values
-	vals, err := client.ListConfigs(context.TODO(), currentApi)
+	vals, err := client.ListConfigs(context.TODO(), dtclient.NewApiData(apiToDownload))
 	for _, v := range vals {
-		res = append(res, value{value: v, api: currentApi})
+		res = append(res, value{value: v})
 	}
 	if err != nil {
 		return values{}, err
@@ -244,9 +250,9 @@ func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value va
 	var err error
 
 	if theApi.SubPathAPI && theApi.ID != "user-action-and-session-properties-mobile" {
-		response, err = client.ReadConfigById(theApi, "") // skipping the id to enforce to read/download "all" configs instead of a single one
+		response, err = client.ReadConfigById(dtclient.NewApiData(theApi.Resolve(value.parentConfigId)), "") // skipping the id to enforce to read/download "all" configs instead of a single one
 	} else {
-		response, err = client.ReadConfigById(theApi, value.value.Id)
+		response, err = client.ReadConfigById(dtclient.NewApiData(theApi.Resolve(value.parentConfigId)), value.value.Id)
 	}
 
 	if err != nil {
@@ -278,12 +284,12 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	params["name"] = &valueParam.ValueParameter{Value: value.value.Name}
 
 	if theApi.SubPathAPI {
-		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent.Type(), value.parentConfigId, "id")
+		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent, value.parentConfigId, "id")
 	}
 
 	coord := coordinate.Coordinate{
 		Project:  projectId,
-		ConfigId: templ.ID() + theApi.Parent.Id(),
+		ConfigId: templ.ID() + value.parentConfigId,
 		Type:     theApi.ID,
 	}
 

@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"mime/multipart"
 	"net/http"
@@ -40,7 +39,7 @@ const (
 	extensionNeedsUpdate
 )
 
-func (d *DynatraceClient) uploadExtension(ctx context.Context, api api.API, extensionName string, payload []byte) (DynatraceEntity, error) {
+func (d *DynatraceClient) uploadExtension(ctx context.Context, api APIData, extensionName string, payload []byte) (DynatraceEntity, error) {
 	fullURL := api.CreateURL(d.environmentURLClassic)
 	status, err := d.validateIfExtensionShouldBeUploaded(ctx, fullURL, extensionName, payload)
 	if err != nil {

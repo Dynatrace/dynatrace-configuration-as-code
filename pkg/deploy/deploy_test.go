@@ -101,7 +101,7 @@ func TestDeployConfigGraph_SingleConfig(t *testing.T) {
 
 	assert.Emptyf(t, errors, "errors: %v", errors)
 
-	createdEntities, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	createdEntities, found := dummyClient.GetEntries(dtclient.NewApiData(api.NewAPIs()["dashboard"]))
 	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
 	assert.Len(t, createdEntities, 1)
 
@@ -231,7 +231,7 @@ func TestDeployConfigGraph_DoesNotDeploySkippedConfig(t *testing.T) {
 
 	errors := deploy.Deploy(p, c, deploy.DeployConfigsOptions{})
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
-	createdEntities, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	createdEntities, found := dummyClient.GetEntries(dtclient.NewApiData(api.NewAPIs()["dashboard"]))
 	assert.False(t, found, "expected NO entries for dashboard API to exist")
 	assert.Len(t, createdEntities, 0)
 }
@@ -666,7 +666,7 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {
 	errs := deploy.Deploy(projects, clients, deploy.DeployConfigsOptions{})
 	assert.NoError(t, errs)
 
-	dashboards, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	dashboards, found := dummyClient.GetEntries(dtclient.NewApiData(api.NewAPIs()["dashboard"]))
 	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
 	assert.Len(t, dashboards, 1)
 
@@ -788,7 +788,7 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations_IfContinuingAfterFai
 	errs := deploy.Deploy(projects, clients, deploy.DeployConfigsOptions{ContinueOnErr: true})
 	assert.Len(t, errs, 1)
 
-	dashboards, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	dashboards, found := dummyClient.GetEntries(dtclient.NewApiData(api.NewAPIs()["dashboard"]))
 	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
 	assert.Len(t, dashboards, 1)
 

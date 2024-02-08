@@ -367,7 +367,7 @@ var configEndpoints = []API{
 		URLPath:                      "/api/config/v1/applications/mobile/{SCOPE}/keyUserActions",
 		PropertyNameOfGetAllResponse: "keyUserActions",
 		SubPathAPI:                   true,
-		Parent:                       Config{configType: "application-mobile"},
+		Parent:                       "application-mobile",
 		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.Experimental()},
 	},
 	{
@@ -383,7 +383,7 @@ var configEndpoints = []API{
 		ID:                       "user-action-and-session-properties-mobile",
 		URLPath:                  "/api/config/v1/applications/mobile/{SCOPE}/userActionAndSessionProperties",
 		SubPathAPI:               true,
-		Parent:                   Config{configType: "application-mobile"},
+		Parent:                   "application-mobile",
 		PropertyNameOfIdentifier: "key",
 		NonUniqueName:            true,
 		RequireAllFF:             []featureflags.FeatureFlag{featureflags.Experimental()},

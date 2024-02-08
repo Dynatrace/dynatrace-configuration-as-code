@@ -63,7 +63,7 @@ type API struct {
 	SubPathAPI bool
 	// Parent is used for SubPath APIs to store information about the configuration type and ID of the related
 	// configuration once Resolved() is called.
-	Parent Config
+	Parent string
 	// RequireAllFF lists all feature flags that needs to be enabled in order to utilize this API
 	RequireAllFF []featureflags.FeatureFlag
 	// PropertyNameOfIdentifier defines the id field if it's not called 'ID'
@@ -81,6 +81,5 @@ func (a API) IsStandardAPI() bool {
 func (a API) Resolve(value string) API {
 	newA := a
 	newA.URLPath = strings.ReplaceAll(a.URLPath, "{SCOPE}", value)
-	newA.Parent.configId = value
 	return newA
 }

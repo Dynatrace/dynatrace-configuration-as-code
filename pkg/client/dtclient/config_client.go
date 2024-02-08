@@ -35,7 +35,36 @@ import (
 	"strings"
 )
 
-func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
+// APIData holds information about the api of the config to be read or written on the server
+type APIData struct {
+	ID                           string
+	SingleConfiguration          bool
+	UrlPath                      string
+	SubPathAPI                   bool
+	NonUniqueName                bool
+	PropertyNameOfGetAllResponse string
+}
+
+func NewApiData(theApi api.API) APIData {
+	return APIData{
+		ID:                           theApi.ID,
+		SingleConfiguration:          theApi.SingleConfiguration,
+		UrlPath:                      theApi.URLPath,
+		SubPathAPI:                   theApi.SubPathAPI,
+		NonUniqueName:                theApi.NonUniqueName,
+		PropertyNameOfGetAllResponse: theApi.PropertyNameOfGetAllResponse,
+	}
+}
+
+func (a APIData) CreateURL(environmentURL string) string {
+	return environmentURL + a.UrlPath
+}
+
+func (a APIData) IsStandardAPI() bool {
+	return a.PropertyNameOfGetAllResponse == api.StandardApiPropertyNameOfGetAllResponse
+}
+
+func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi APIData, objectName string, payload []byte) (DynatraceEntity, error) {
 	doUpsert := func() (DynatraceEntity, error) {
 		var existingObjectID string
 
@@ -81,7 +110,7 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	ctx context.Context,
 	entityId string,
 	objectName string,
-	theApi api.API,
+	theApi APIData,
 	payload []byte,
 	duplicate bool,
 ) (DynatraceEntity, error) {
@@ -129,7 +158,7 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	return d.updateDynatraceObject(ctx, fullUrl, objectName, entityId, theApi, body)
 }
 
-func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString string, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString string, objectName string, theApi APIData, payload []byte) (DynatraceEntity, error) {
 
 	if theApi.ID == "key-user-actions-mobile" {
 		urlString = joinUrl(urlString, objectName)
@@ -209,7 +238,7 @@ func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl st
 	return dtEntity, nil
 }
 
-func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl string, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl string, objectName string, existingObjectId string, theApi APIData, payload []byte) (DynatraceEntity, error) {
 	path := joinUrl(fullUrl, existingObjectId)
 	body := payload
 
@@ -271,7 +300,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of know errors on upload.
-func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall rest.SendRequestWithBody, path string, body []byte, theApi api.API) (rest.Response, error) {
+func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall rest.SendRequestWithBody, path string, body []byte, theApi APIData) (rest.Response, error) {
 	resp, err := restCall(ctx, path, body)
 	if err == nil && resp.IsSuccess() {
 		return resp, nil
@@ -336,7 +365,7 @@ func isManagementZoneNotReadyYet(resp rest.Response) bool {
 		strings.Contains(string(resp.Body), "Unknown management zone")
 }
 
-func isApplicationNotReadyYet(resp rest.Response, theApi api.API) bool {
+func isApplicationNotReadyYet(resp rest.Response, theApi APIData) bool {
 	return isCalculatedMetricsError(resp, theApi) ||
 		isSyntheticMonitorServerError(resp, theApi) ||
 		isApplicationAPIError(resp, theApi) ||
@@ -346,22 +375,22 @@ func isApplicationNotReadyYet(resp rest.Response, theApi api.API) bool {
 		isUserSessionPropertiesMobile(theApi) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
 }
-func isNetworkZoneFeatureNotEnabledYet(resp rest.Response, theApi api.API) bool {
+func isNetworkZoneFeatureNotEnabledYet(resp rest.Response, theApi APIData) bool {
 	return strings.HasPrefix(theApi.ID, "network-zone") && (resp.Is4xxError()) && strings.Contains(string(resp.Body), "network zones are disabled")
 }
 
-func isCalculatedMetricsError(resp rest.Response, theApi api.API) bool {
+func isCalculatedMetricsError(resp rest.Response, theApi APIData) bool {
 	return strings.HasPrefix(theApi.ID, "calculated-metrics") && (resp.Is4xxError() || resp.Is5xxError())
 }
-func isSyntheticMonitorServerError(resp rest.Response, theApi api.API) bool {
+func isSyntheticMonitorServerError(resp rest.Response, theApi APIData) bool {
 	return theApi.ID == "synthetic-monitor" && resp.Is5xxError()
 }
 
-func isGeneralSyntheticAPIError(resp rest.Response, theApi api.API) bool {
+func isGeneralSyntheticAPIError(resp rest.Response, theApi APIData) bool {
 	return (strings.HasPrefix(theApi.ID, "synthetic-") || theApi.ID == "credential-vault") && (resp.StatusCode == http.StatusNotFound || resp.Is5xxError())
 }
 
-func isApplicationAPIError(resp rest.Response, theApi api.API) bool {
+func isApplicationAPIError(resp rest.Response, theApi APIData) bool {
 	return isAnyApplicationApi(theApi) &&
 		(resp.Is5xxError() || resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusNotFound)
 }
@@ -369,7 +398,7 @@ func isApplicationAPIError(resp rest.Response, theApi api.API) bool {
 // Special case (workaround):
 // Sometimes, the API returns 500 Internal Server Error e.g. when an application referenced by
 // an application detection rule is not fully "ready" yet.
-func isApplicationDetectionRuleException(resp rest.Response, theApi api.API) bool {
+func isApplicationDetectionRuleException(resp rest.Response, theApi APIData) bool {
 	return theApi.ID == "app-detection-rule" && !resp.IsSuccess()
 }
 
@@ -397,7 +426,7 @@ func getLocationFromHeader(resp rest.Response) ([]string, bool) {
 	return make([]string, 0), false
 }
 
-func (d *DynatraceClient) getObjectIdIfAlreadyExists(ctx context.Context, api api.API, url string, objectName string) (string, error) {
+func (d *DynatraceClient) getObjectIdIfAlreadyExists(ctx context.Context, api APIData, url string, objectName string) (string, error) {
 	values, err := d.getExistingValuesFromEndpoint(ctx, api, url)
 
 	if err != nil {
@@ -436,39 +465,39 @@ func escapeApiValueName(ctx context.Context, value Value) string {
 	return valueName.(string)
 }
 
-func isApiDashboard(api api.API) bool {
+func isApiDashboard(api APIData) bool {
 	return api.ID == "dashboard" || api.ID == "dashboard-v2"
 }
 
-func isReportsApi(api api.API) bool {
+func isReportsApi(api APIData) bool {
 	return api.ID == "reports"
 }
 
-func isAnyServiceDetectionApi(api api.API) bool {
+func isAnyServiceDetectionApi(api APIData) bool {
 	return strings.HasPrefix(api.ID, "service-detection-")
 }
 
-func isAnyApplicationApi(api api.API) bool {
+func isAnyApplicationApi(api APIData) bool {
 	return strings.HasPrefix(api.ID, "application-")
 }
 
-func isMobileApp(api api.API) bool {
+func isMobileApp(api APIData) bool {
 	return api.ID == "application-mobile"
 }
 
-func isKeyUserActionMobile(api api.API) bool {
+func isKeyUserActionMobile(api APIData) bool {
 	return api.ID == "key-user-actions-mobile"
 }
 
-func isKeyUserActionWeb(api api.API) bool {
+func isKeyUserActionWeb(api APIData) bool {
 	return api.ID == "key-user-actions-web"
 }
 
-func isUserSessionPropertiesMobile(api api.API) bool {
+func isUserSessionPropertiesMobile(api APIData) bool {
 	return api.ID == "user-action-and-session-properties-mobile"
 }
 
-func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
+func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi APIData, urlString string) (values []Value, err error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
 	if !theApi.NonUniqueName && !theApi.SubPathAPI {
@@ -534,7 +563,7 @@ func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, the
 	return existingValues, nil
 }
 
-func addQueryParamsForNonStandardApis(theApi api.API, url *url.URL) *url.URL {
+func addQueryParamsForNonStandardApis(theApi APIData, url *url.URL) *url.URL {
 
 	queryParams := url.Query()
 	if theApi.ID == "anomaly-detection-metrics" {
@@ -547,7 +576,7 @@ func addQueryParamsForNonStandardApis(theApi api.API, url *url.URL) *url.URL {
 	return url
 }
 
-func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]Value, error) {
+func unmarshalJson(ctx context.Context, theApi APIData, resp rest.Response) ([]Value, error) {
 
 	var values []Value
 	var objmap map[string]interface{}
@@ -644,7 +673,7 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 	return values, nil
 }
 
-func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi api.API) (resultArrayAvailable bool, results []interface{}) {
+func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi APIData) (resultArrayAvailable bool, results []interface{}) {
 	if jsonResponse[theApi.PropertyNameOfGetAllResponse] != nil {
 		return true, jsonResponse[theApi.PropertyNameOfGetAllResponse].([]interface{})
 	}
