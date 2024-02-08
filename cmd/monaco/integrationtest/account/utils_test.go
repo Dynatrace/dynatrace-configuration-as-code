@@ -24,27 +24,55 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 )
+
+type monacoCmd struct {
+	cmd string
+	fs  afero.Fs
+}
+
+func monaco(cmd string) *monacoCmd {
+	cmd = regexp.MustCompile(`\s+`).ReplaceAllString(cmd, " ")
+	cmd = strings.Trim(cmd, " ")
+	cmd = strings.TrimPrefix(cmd, "monaco ")
+
+	return &monacoCmd{cmd: cmd}
+}
+func monacof(cmd string, args ...any) *monacoCmd {
+	return monaco(fmt.Sprintf(cmd, args...))
+}
+
+func (cmd *monacoCmd) withFs(fs afero.Fs) *monacoCmd {
+	cmd.fs = fs
+	return cmd
+}
+
+func (cmd *monacoCmd) run() error {
+	fs := cmd.fs
+	if fs == nil {
+		fs = afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs())
+	}
+	fmt.Println(cmd)
+
+	cli := runner.BuildCli(fs)
+	cli.SetArgs(strings.Split(cmd.cmd, " "))
+
+	return cli.Execute()
+}
+
+func (cmd *monacoCmd) String() string {
+	return fmt.Sprintf("%s %s", "monaco", cmd.cmd)
+}
 
 func createMZone(t *testing.T) {
 	command := "deploy resources/mzones/manifest.yaml"
 	printCommand(command)
 
 	cli := runner.BuildCli(afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()))
-	cli.SetArgs(strings.Split(command, " "))
-	err := cli.Execute()
-	require.NoError(t, err)
-
-}
-
-func deleteResources(t *testing.T, fs afero.Fs) {
-	command := "account delete --manifest manifest.yaml --file delete.yaml"
-	printCommand(command)
-
-	cli := runner.BuildCli(fs)
 	cli.SetArgs(strings.Split(command, " "))
 	err := cli.Execute()
 	require.NoError(t, err)

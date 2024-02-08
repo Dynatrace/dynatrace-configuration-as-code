@@ -20,7 +20,6 @@ package account
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
@@ -28,19 +27,14 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"strings"
 	"testing"
 )
 
 func TestIdempotenceOfDeployment(t *testing.T) {
 
 	deploy := func(project string, fs afero.Fs) *account.Resources {
-		command := fmt.Sprintf("account deploy --project %s --verbose", project)
-		printCommand(command)
-		cli := runner.BuildCli(fs)
-		cli.SetArgs(strings.Split(command, " "))
+		err := monacof("account deploy --project %s --verbose", project).withFs(fs).run()
 
-		err := cli.Execute()
 		require.NoError(t, err)
 
 		r, err := loader.Load(fs, project)
@@ -49,12 +43,7 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 		return r
 	}
 	download := func(project string, fs afero.Fs) *account.Resources {
-		command := fmt.Sprintf("account download --project %s --output-folder output --verbose", project)
-		printCommand(command)
-		cli := runner.BuildCli(fs)
-		cli.SetArgs(strings.Split(command, " "))
-
-		err := cli.Execute()
+		err := monacof("account download --project %s --output-folder output --verbose", project).withFs(fs).run()
 		require.NoError(t, err)
 
 		r, err := loader.Load(fs, fmt.Sprintf("%s/%s/%s", "output", project, "test-account"))
@@ -100,5 +89,6 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 		assert.Equal(t, deploy1st.Groups[g.ID], deploy2nd.Groups[g.ID])
 	}
 
-	deleteResources(t, baseFs)
+	err := monaco("account delete --manifest manifest.yaml --file delete.yaml").withFs(baseFs).run()
+	require.NoError(t, err)
 }
