@@ -16,6 +16,8 @@ package v2
 
 import (
 	"fmt"
+	"slices"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -28,7 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
 	"github.com/spf13/afero"
-	"slices"
 )
 
 type ProjectLoaderContext struct {
@@ -78,6 +79,10 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error
 		workingDirFs = fs
 	} else {
 		workingDirFs = afero.NewBasePathFs(fs, context.WorkingDir)
+	}
+
+	if len(context.Manifest.Projects) == 0 {
+		return nil, []error{fmt.Errorf("no projects defined in manifest")}
 	}
 
 	log.Info("Loading %d projects...", len(context.Manifest.Projects))
