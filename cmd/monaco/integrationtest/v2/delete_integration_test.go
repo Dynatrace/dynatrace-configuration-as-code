@@ -25,7 +25,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
@@ -360,7 +359,7 @@ configs:
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
 	// get application ID
-	v, err := clientSet.Classic().ListConfigs(context.TODO(), dtclient.NewApiData(apis["application-mobile"]))
+	v, err := clientSet.Classic().ListConfigs(context.TODO(), apis["application-mobile"])
 	assert.NoError(t, err)
 
 	var appID string

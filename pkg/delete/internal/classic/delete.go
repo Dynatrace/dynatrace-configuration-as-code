@@ -48,7 +48,7 @@ func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries
 	// if the api is *not* a subpath api, we can just list all configs that exist for a given api and then filter the items that need to be deleted
 	if !theApi.IsSubPathAPI() {
 		var values []dtclient.Value
-		values, err = client.ListConfigs(ctx, dtclient.NewApiData(theApi))
+		values, err = client.ListConfigs(ctx, theApi)
 		if err != nil {
 			logger.WithFields(field.Error(err)).Error("Failed to fetch existing configs of API type %q - skipping deletion: %v", theApi.ID, err)
 			return err
@@ -69,7 +69,7 @@ func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries
 			a := theApi.Resolve(scope)
 
 			var values []dtclient.Value
-			values, err = client.ListConfigs(ctx, dtclient.NewApiData(a))
+			values, err = client.ListConfigs(ctx, a)
 
 			if err != nil {
 				var respErr rest.RespError
@@ -110,7 +110,7 @@ func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries
 		}
 
 		vLog.Debug("Deleting %s with ID %s", targetApi, v.ID)
-		if err := client.DeleteConfigById(dtclient.NewApiData(a), v.ID); err != nil {
+		if err := client.DeleteConfigById(a, v.ID); err != nil {
 			vLog.Error("Failed to delete %s with ID %s: %v", a.ID, v.ID, err)
 			deleteErrs++
 		}
@@ -139,7 +139,7 @@ func DeleteAll(ctx context.Context, client dtclient.ConfigClient, apis api.APIs)
 	for _, a := range apis {
 		logger := log.WithCtxFields(ctx).WithFields(field.Type(a.ID))
 		logger.Info("Collecting configs of type %q...", a.ID)
-		values, err := client.ListConfigs(ctx, dtclient.NewApiData(a))
+		values, err := client.ListConfigs(ctx, a)
 		if err != nil {
 			errs++
 			continue
@@ -150,7 +150,7 @@ func DeleteAll(ctx context.Context, client dtclient.ConfigClient, apis api.APIs)
 		for _, v := range values {
 			logger := logger.WithFields(field.F("value", v))
 			logger.Debug("Deleting config %s:%s...", a.ID, v.Id)
-			err := client.DeleteConfigById(dtclient.NewApiData(a), v.Id)
+			err := client.DeleteConfigById(a, v.Id)
 
 			if err != nil {
 				logger.WithFields(field.Error(err)).Error("Failed to delete %s with ID %s: %v", a.ID, v.Id, err)

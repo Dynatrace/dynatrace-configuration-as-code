@@ -32,13 +32,13 @@ import (
 	"testing"
 )
 
-var testReportsApi = NewApiData(api.API{ID: "reports", URLPath: "/api/config/v1/reports"})
-var testDashboardApi = NewApiData(api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueName: true, DeprecatedBy: "dashboard-v2"})
-var testMobileAppApi = NewApiData(api.API{ID: "application-mobile", URLPath: "/api/config/v1/applications/mobile"})
-var testServiceDetectionApi = NewApiData(api.API{ID: "service-detection-full-web-request", URLPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST"})
-var testSyntheticApi = NewApiData(api.API{ID: "synthetic-monitor", URLPath: "/api/environment/v1/synthetic/monitor"})
+var testReportsApi = api.API{ID: "reports", URLPath: "/api/config/v1/reports"}
+var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueName: true, DeprecatedBy: "dashboard-v2"}
+var testMobileAppApi = api.API{ID: "application-mobile", URLPath: "/api/config/v1/applications/mobile"}
+var testServiceDetectionApi = api.API{ID: "service-detection-full-web-request", URLPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST"}
+var testSyntheticApi = api.API{ID: "synthetic-monitor", URLPath: "/api/environment/v1/synthetic/monitor"}
 
-var testNetworkZoneApi = NewApiData(api.API{ID: "network-zone"})
+var testNetworkZoneApi = api.API{ID: "network-zone"}
 
 func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 
@@ -150,7 +150,7 @@ func TestIsAnyApplicationApi(t *testing.T) {
 
 	assert.Equal(t, true, isAnyApplicationApi(testMobileAppApi))
 
-	testWebApi := NewApiData(api.API{ID: "application-web", URLPath: "/api/config/v1/applications/web"})
+	testWebApi := api.API{ID: "application-web", URLPath: "/api/config/v1/applications/web"}
 	assert.Equal(t, true, isAnyApplicationApi(testWebApi))
 
 	assert.Equal(t, false, isAnyApplicationApi(testDashboardApi))
@@ -227,7 +227,7 @@ func Test_success(t *testing.T) {
 func Test_isApplicationNotReadyYet(t *testing.T) {
 	type args struct {
 		resp   rest.Response
-		theApi APIData
+		theApi api.API
 	}
 	tests := []struct {
 		name string
@@ -295,7 +295,7 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 func Test_isNetworkZoneFeatureNotEnabledYet(t *testing.T) {
 	type args struct {
 		resp   rest.Response
-		theApi APIData
+		theApi api.API
 	}
 	tests := []struct {
 		name string
@@ -350,7 +350,7 @@ func Test_isNetworkZoneFeatureNotEnabledYet(t *testing.T) {
 
 func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 
-	testApi := NewApiData(api.API{ID: "test", URLPath: "/test/api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse})
+	testApi := api.API{ID: "test", URLPath: "/test/api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
 	tests := []struct {
 		name                    string
@@ -423,19 +423,19 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 func TestUpsertConfigByName(t *testing.T) {
 	tests := []struct {
 		name             string
-		testApi          APIData
+		testApi          api.API
 		givenApiResponse string
 		expectedAPIHits  int
 	}{
 		{
 			name:             "cache is used for fetching existing values",
-			testApi:          NewApiData(api.API{ID: "test", URLPath: "/test/api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}),
+			testApi:          api.API{ID: "test", URLPath: "/test/api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse},
 			givenApiResponse: `{ "values": [ { "id": "42", "name": "MY CONFIG" }, {"id": "43", "name": "MY CONFIG 2" } ] }`,
 			expectedAPIHits:  3, // one for getting existing values, one for updating MY CONFIG and one for updating MY CONFIG 2
 		},
 		{
 			name:             "cache is not used for fetching existing values when dealing with non unique name configs",
-			testApi:          NewApiData(api.API{ID: "test", URLPath: "/test/api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}),
+			testApi:          api.API{ID: "test", URLPath: "/test/api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse},
 			givenApiResponse: `{ "values": [ { "id": "42", "name": "MY CONFIG" }, {"id": "43", "name": "MY CONFIG 2" } ] }`,
 			expectedAPIHits:  4, // one for getting existing values, one for updating MY CONFIG another one for getting existing values and one for updating MY CONFIG 2
 		},
@@ -630,7 +630,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 				assert.LessOrEqual(t, apiCalls, tt.expectedApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.expectedApiCalls, apiCalls)
 			}))
 			defer server.Close()
-			testApi := NewApiData(api.API{ID: tt.apiKey})
+			testApi := api.API{ID: tt.apiKey}
 			s := rest.RetrySettings{
 				Normal: rest.RetrySetting{
 					WaitTime:   0,
@@ -727,7 +727,7 @@ func Test_createDynatraceObject(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			testApi := NewApiData(api.API{ID: tt.apiKey})
+			testApi := api.API{ID: tt.apiKey}
 
 			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(testRetrySettings))
 			got, err := dtclient.createDynatraceObject(context.TODO(), server.URL, tt.objectName, testApi, []byte("{}"))
@@ -781,7 +781,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 			}))
 			defer server.Close()
 
-			testApi := NewApiData(api.API{ID: "some-api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse})
+			testApi := api.API{ID: "some-api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
 			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(testRetrySettings))
 			got, err := dtclient.upsertDynatraceEntityByNonUniqueNameAndId(context.TODO(), generatedUuid, theConfigName, testApi, []byte("{}"), false)

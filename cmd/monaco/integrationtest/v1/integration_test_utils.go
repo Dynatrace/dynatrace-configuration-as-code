@@ -111,7 +111,7 @@ func assertConfigAvailable(t *testing.T, ctx context.Context, client dtclient.Co
 	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", c.Coordinate, typ.Api)
 
 	if c.Skip {
-		exists, _, err := client.ConfigExistsByName(ctx, dtclient.NewApiData(a), fmt.Sprint(name))
+		exists, _, err := client.ConfigExistsByName(ctx, a, fmt.Sprint(name))
 		assert.NilError(t, err)
 		assert.Check(t, !exists, "Config '%s' should NOT be available on env '%s', but was. environment.", env.Name, c.Coordinate)
 
@@ -123,7 +123,7 @@ func assertConfigAvailable(t *testing.T, ctx context.Context, client dtclient.Co
 	exists := false
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err = wait(description, 120, func() bool {
-		exists, _, err = client.ConfigExistsByName(ctx, dtclient.NewApiData(a), fmt.Sprint(name))
+		exists, _, err = client.ConfigExistsByName(ctx, a, fmt.Sprint(name))
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NilError(t, err)

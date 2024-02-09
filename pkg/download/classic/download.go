@@ -180,12 +180,12 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (value
 	if apiToDownload.IsSubPathAPI() {
 		parentAPI := api.NewAPIs()[apiToDownload.Parent]
 		var res values
-		parentAPIValues, err := client.ListConfigs(context.TODO(), dtclient.NewApiData(parentAPI))
+		parentAPIValues, err := client.ListConfigs(context.TODO(), parentAPI)
 		if err != nil {
 			return values{}, err
 		}
 		for _, parentAPIValue := range parentAPIValues {
-			apiValues, err := client.ListConfigs(context.TODO(), dtclient.NewApiData(apiToDownload.Resolve(parentAPIValue.Id)))
+			apiValues, err := client.ListConfigs(context.TODO(), apiToDownload.Resolve(parentAPIValue.Id))
 			if err != nil {
 				return values{}, err
 			}
@@ -196,7 +196,7 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (value
 		return res, nil
 	}
 	var res values
-	vals, err := client.ListConfigs(context.TODO(), dtclient.NewApiData(apiToDownload))
+	vals, err := client.ListConfigs(context.TODO(), apiToDownload)
 	for _, v := range vals {
 		res = append(res, value{value: v})
 	}
@@ -250,9 +250,9 @@ func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value va
 	var err error
 
 	if theApi.IsSubPathAPI() && theApi.ID != "user-action-and-session-properties-mobile" {
-		response, err = client.ReadConfigById(dtclient.NewApiData(theApi.Resolve(value.parentConfigId)), "") // skipping the id to enforce to read/download "all" configs instead of a single one
+		response, err = client.ReadConfigById(theApi.Resolve(value.parentConfigId), "") // skipping the id to enforce to read/download "all" configs instead of a single one
 	} else {
-		response, err = client.ReadConfigById(dtclient.NewApiData(theApi.Resolve(value.parentConfigId)), value.value.Id)
+		response, err = client.ReadConfigById(theApi.Resolve(value.parentConfigId), value.value.Id)
 	}
 
 	if err != nil {

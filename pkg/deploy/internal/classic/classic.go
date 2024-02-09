@@ -63,7 +63,7 @@ func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.AP
 	if apiToDeploy.NonUniqueName {
 		dtEntity, err = upsertNonUniqueNameConfig(ctx, configClient, apiToDeploy, conf, configName, renderedConfig)
 	} else {
-		dtEntity, err = configClient.UpsertConfigByName(ctx, dtclient.NewApiData(apiToDeploy), configName, []byte(renderedConfig))
+		dtEntity, err = configClient.UpsertConfigByName(ctx, apiToDeploy, configName, []byte(renderedConfig))
 	}
 
 	if err != nil {
@@ -120,5 +120,5 @@ func upsertNonUniqueNameConfig(ctx context.Context, client dtclient.ConfigClient
 		}
 		duplicate = resolvedValBool
 	}
-	return client.UpsertConfigByNonUniqueNameAndId(ctx, dtclient.NewApiData(apiToDeploy), entityUuid, configName, []byte(renderedConfig), duplicate)
+	return client.UpsertConfigByNonUniqueNameAndId(ctx, apiToDeploy, entityUuid, configName, []byte(renderedConfig), duplicate)
 }

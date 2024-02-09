@@ -609,10 +609,10 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			entriesToDelete := DeleteEntries{a.ID: tc.args.entries}
 
 			c := dtclient.NewMockClient(gomock.NewController(t))
-			c.EXPECT().ListConfigs(gomock.Any(), dtclient.NewApiData(a)).Return(tc.args.values, nil)
+			c.EXPECT().ListConfigs(gomock.Any(), a).Return(tc.args.values, nil)
 
 			for _, id := range tc.expect.ids {
-				c.EXPECT().DeleteConfigById(dtclient.NewApiData(a), id)
+				c.EXPECT().DeleteConfigById(a, id)
 			}
 
 			err := Configs(context.TODO(), ClientSet{Classic: c}, apiMap, automationTypes, entriesToDelete)
@@ -632,7 +632,7 @@ func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 	entriesToDelete := DeleteEntries{a.ID: {{}}}
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any(), dtclient.NewApiData(a)).Return(nil, errors.New("error"))
+	c.EXPECT().ListConfigs(gomock.Any(), a).Return(nil, errors.New("error"))
 
 	errs := Configs(context.TODO(), ClientSet{Classic: c}, apiMap, automationTypes, entriesToDelete)
 
@@ -642,8 +642,8 @@ func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 func TestDeleteSubPathAPIConfigs(t *testing.T) {
 	t.Run("TestDeleteSubPathAPIConfigs", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, api dtclient.APIData) (values []dtclient.Value, err error) {
-			assert.Equal(t, "/api/config/v1/applications/mobile/APPLICATION-1234/keyUserActions", api.UrlPath)
+		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, api api.API) (values []dtclient.Value, err error) {
+			assert.Equal(t, "/api/config/v1/applications/mobile/APPLICATION-1234/keyUserActions", api.URLPath)
 			return []dtclient.Value{
 				{
 					Id:   "12345",
@@ -739,8 +739,8 @@ func TestDeleteSubPathAPIConfigs(t *testing.T) {
 
 	t.Run("TestDeleteSubPathAPIConfigs - Delete based on ID fails", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, api dtclient.APIData) (values []dtclient.Value, err error) {
-			assert.Equal(t, "/api/config/v1/applications/mobile/APPLICATION-1234/keyUserActions", api.UrlPath)
+		c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, api api.API) (values []dtclient.Value, err error) {
+			assert.Equal(t, "/api/config/v1/applications/mobile/APPLICATION-1234/keyUserActions", api.URLPath)
 			return []dtclient.Value{
 				{
 					Id:   "12345",

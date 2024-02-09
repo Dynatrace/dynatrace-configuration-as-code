@@ -82,7 +82,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				onlySettings:    false,
 			},
 			expectedBehaviour: func(c *dtclient.MockClient) {
-				c.EXPECT().ListConfigs(gomock.Any(), dtclient.NewApiData(api.NewAPIs()["alerting-profile"])).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
+				c.EXPECT().ListConfigs(gomock.Any(), api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
 				c.EXPECT().ReadConfigById(gomock.Any(), "42").AnyTimes().Return([]byte("{}"), nil)
 				c.EXPECT().ListSchemas().Times(0)
 				c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
@@ -97,7 +97,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				onlySettings:    false,
 			},
 			expectedBehaviour: func(c *dtclient.MockClient) {
-				c.EXPECT().ListConfigs(gomock.Any(), dtclient.NewApiData(api.NewAPIs()["alerting-profile"])).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
+				c.EXPECT().ListConfigs(gomock.Any(), api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
 				c.EXPECT().ReadConfigById(gomock.Any(), "42").AnyTimes().Return([]byte("{}"), nil)
 				c.EXPECT().ListSchemas().AnyTimes().Return(dtclient.SchemaList{{SchemaId: "builtin:magic.secret"}}, nil)
 				c.EXPECT().ListSettings(gomock.Any(), "builtin:magic.secret", gomock.Any()).AnyTimes().Return([]dtclient.DownloadSettingsObject{}, nil)

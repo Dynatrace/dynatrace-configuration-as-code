@@ -28,8 +28,8 @@ import (
 	"testing"
 )
 
-var mockAPI = NewApiData(api.API{ID: "mock-api", SingleConfiguration: true})
-var mockAPINotSingle = NewApiData(api.API{ID: "mock-api", SingleConfiguration: false})
+var mockAPI = api.API{ID: "mock-api", SingleConfiguration: true}
+var mockAPINotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
 
 func TestNewClassicClient(t *testing.T) {
 	t.Run("Client has correct urls and settings api path", func(t *testing.T) {
