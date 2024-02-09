@@ -19,14 +19,15 @@ package v2
 import (
 	"errors"
 	"fmt"
+	"reflect"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
-	"reflect"
-	"testing"
 
 	"gotest.tools/assert"
 )
@@ -103,6 +104,17 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadProjects_RejectsManifestsWithNoProjects(t *testing.T) {
+	testFs := afero.NewMemMapFs()
+	context := getSimpleProjectLoaderContext([]string{})
+
+	got, gotErrs := LoadProjects(testFs, context)
+
+	assert.Equal(t, len(got), 0, "Expected no project loaded")
+	assert.Equal(t, len(gotErrs), 1, "Expected to fail with no projects")
+	assert.ErrorContains(t, gotErrs[0], "no projects")
 }
 
 func TestLoadProjects_LoadsSimpleProject(t *testing.T) {

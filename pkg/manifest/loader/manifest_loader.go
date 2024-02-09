@@ -19,6 +19,11 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -29,10 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
-	"os"
-	"path/filepath"
-	"slices"
-	"strings"
 )
 
 // Context holds all information for [Load]
@@ -175,8 +176,6 @@ func Load(context *Context) (manifest.Manifest, []error) {
 	}, manifestYAML.Projects)
 	if projectErrors != nil {
 		errs = append(errs, projectErrors...)
-	} else if len(projectDefinitions) == 0 {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, "no projects defined in manifest"))
 	}
 
 	// environments
