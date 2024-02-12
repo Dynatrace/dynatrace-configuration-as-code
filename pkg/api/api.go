@@ -59,11 +59,9 @@ type API struct {
 	// TweakResponseFunc can be optionally registered to add custom code that changes the
 	// payload of the downloaded api content (e.g. to exclude unwanted/unnecessary fields)
 	TweakResponseFunc func(map[string]any)
-	// SubPathApi indicates that url contains sub-path.
-	SubPathAPI bool
 	// Parent is used for SubPath APIs to store information about the configuration type and ID of the related
 	// configuration once Resolved() is called.
-	Parent Config
+	Parent string
 	// RequireAllFF lists all feature flags that needs to be enabled in order to utilize this API
 	RequireAllFF []featureflags.FeatureFlag
 	// PropertyNameOfIdentifier defines the id field if it's not called 'ID'
@@ -74,6 +72,14 @@ func (a API) CreateURL(environmentURL string) string {
 	return environmentURL + a.URLPath
 }
 
+// HasParent returns true if the API has a relation to another (parent) API.
+// This is typically the case for "Sub-path" APIs, e.g. Key User Actions for Mobile applications.
+// In this case "mobile-application" would be the parent API, which is also reflected in the URLs to be used to query
+// and create key user actions.
+func (a API) HasParent() bool {
+	return len(a.Parent) > 0
+}
+
 func (a API) IsStandardAPI() bool {
 	return a.PropertyNameOfGetAllResponse == StandardApiPropertyNameOfGetAllResponse
 }
@@ -81,6 +87,5 @@ func (a API) IsStandardAPI() bool {
 func (a API) Resolve(value string) API {
 	newA := a
 	newA.URLPath = strings.ReplaceAll(a.URLPath, "{SCOPE}", value)
-	newA.Parent.configId = value
 	return newA
 }

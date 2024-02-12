@@ -22,13 +22,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 )

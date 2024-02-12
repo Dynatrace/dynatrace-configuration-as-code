@@ -144,7 +144,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 					assert.NotEmpty(t, configName, "classic API config %v is missing name, can not assert if it exists", theConfig.Coordinate)
 
 					theApi := apis[typ.Api]
-					if theApi.SubPathAPI {
+					if theApi.HasParent() {
 
 						assert.NotEmpty(t, properties[config.ScopeParameter], "subPathAPI config is missing scope")
 						scope, ok := properties[config.ScopeParameter].(string)

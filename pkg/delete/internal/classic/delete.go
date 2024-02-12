@@ -46,7 +46,7 @@ func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries
 	var delValues []deleteValue
 
 	// if the api is *not* a subpath api, we can just list all configs that exist for a given api and then filter the items that need to be deleted
-	if !theApi.SubPathAPI {
+	if !theApi.HasParent() {
 		var values []dtclient.Value
 		values, err = client.ListConfigs(ctx, theApi)
 		if err != nil {
@@ -105,7 +105,7 @@ func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries
 		vLog := logger.WithFields(field.Coordinate(v.AsCoordinate()), field.F("value", v))
 
 		a := theApi
-		if a.SubPathAPI {
+		if a.HasParent() {
 			a = a.Resolve(v.DeletePointer.Scope)
 		}
 
