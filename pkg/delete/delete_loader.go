@@ -176,11 +176,11 @@ func parseAPIEntry(parsed persistence.DeleteEntry, a api.API) (pointer.DeletePoi
 	}
 
 	// The scope is required for sub-path APIs.
-	if a.IsSubPathAPI() && parsed.Scope == "" {
+	if a.HasParent() && parsed.Scope == "" {
 		return pointer.DeletePointer{}, errors.New("API requires a scope, but non was defined")
 	}
 	// Non sub-path APIs must not define the scope
-	if !a.IsSubPathAPI() && parsed.Scope != "" {
+	if !a.HasParent() && parsed.Scope != "" {
 		return pointer.DeletePointer{}, errors.New("API does not allow a scope, but a scope was defined")
 	}
 

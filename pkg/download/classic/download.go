@@ -177,7 +177,7 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (value
 	}
 	log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching all '%v' configs", apiToDownload.ID)
 
-	if apiToDownload.IsSubPathAPI() {
+	if apiToDownload.HasParent() {
 		parentAPI := api.NewAPIs()[apiToDownload.Parent]
 		var res values
 		parentAPIValues, err := client.ListConfigs(context.TODO(), parentAPI)
@@ -249,7 +249,7 @@ func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value va
 	var response []byte
 	var err error
 
-	if theApi.IsSubPathAPI() && theApi.ID != "user-action-and-session-properties-mobile" {
+	if theApi.HasParent() && theApi.ID != "user-action-and-session-properties-mobile" {
 		response, err = client.ReadConfigById(theApi.Resolve(value.parentConfigId), "") // skipping the id to enforce to read/download "all" configs instead of a single one
 	} else {
 		response, err = client.ReadConfigById(theApi.Resolve(value.parentConfigId), value.value.Id)
@@ -283,7 +283,7 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	params := map[string]parameter.Parameter{}
 	params["name"] = &valueParam.ValueParameter{Value: value.value.Name}
 
-	if theApi.IsSubPathAPI() {
+	if theApi.HasParent() {
 		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent, value.parentConfigId, "id")
 	}
 

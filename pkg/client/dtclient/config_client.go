@@ -471,7 +471,7 @@ func isUserSessionPropertiesMobile(api api.API) bool {
 func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
-	if !theApi.NonUniqueName && !theApi.IsSubPathAPI() {
+	if !theApi.NonUniqueName && !theApi.HasParent() {
 		if values, cached := d.classicConfigsCache.Get(theApi.ID); cached {
 			return values, nil
 		}
@@ -486,7 +486,7 @@ func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, the
 	var resp rest.Response
 	// For any subpath API like e.g. Key user Actions, it can be that we need to do longer retries
 	// because the parent config (e.g. an application) is not ready yet
-	if theApi.IsSubPathAPI() {
+	if theApi.HasParent() {
 		resp, err = rest.SendWithRetryWithInitialTry(ctx, func(ctx context.Context, url string, _ []byte) (rest.Response, error) {
 			return d.classicClient.Get(ctx, url)
 		}, parsedUrl.String(), nil, rest.DefaultRetrySettings.Long)
