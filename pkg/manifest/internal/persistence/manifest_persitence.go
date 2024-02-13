@@ -108,17 +108,17 @@ type Environment struct {
 // Group defines a group of Environment
 type Group struct {
 	Name         string        `yaml:"name" json:"name" jsonschema:"required,description=The name of the group - this can be freely defined and will be used in logs, etc."`
-	Environments []Environment `yaml:"environments" json:"environments" jsonschema:"required,minLength=1,description=The environments that are part of this group."`
+	Environments []Environment `yaml:"environments" json:"environments" jsonschema:"required,minItems=1,description=The environments that are part of this group."`
 }
 
 type Manifest struct {
 	ManifestVersion string `yaml:"manifestVersion" json:"manifestVersion"  jsonschema:"required,oneof_type=string;number,description=The version of this manifest. It is used when loading a manifest to ensure the CLI version is able to parse this manifest."`
 	// Projects is a list of projects that will be deployed with this manifest
-	Projects []Project `yaml:"projects" json:"projects" jsonschema:"required,minLength=1,description=A list of projects that will be deployed with this manifest"`
+	Projects []Project `yaml:"projects" json:"projects" jsonschema:"required,minItems=1,description=A list of projects that will be deployed with this manifest"`
 	// EnvironmentGroups is a list of environment groups that configs in Projects will be deployed to
-	EnvironmentGroups []Group `yaml:"environmentGroups" json:"environmentGroups" jsonschema:"minLength=1,description=A list of environment groups that configs in the defined 'projects' will be deployed to. Required when deploying environment configurations."`
+	EnvironmentGroups []Group `yaml:"environmentGroups" json:"environmentGroups" jsonschema:"minItems=1,description=A list of environment groups that configs in the defined 'projects' will be deployed to. Required when deploying environment configurations."`
 	// Accounts is a list of accounts that account resources in Projects will be deployed to
-	Accounts []Account `yaml:"accounts,omitempty" json:"accounts" jsonschema:"minLength=1,description=A list of of accounts that account resources defined in 'projects' will be deployed to. Required when deploying account resources."`
+	Accounts []Account `yaml:"accounts,omitempty" json:"accounts" jsonschema:"minItems=1,description=A list of of accounts that account resources defined in 'projects' will be deployed to. Required when deploying account resources."`
 }
 
 type Account struct {
