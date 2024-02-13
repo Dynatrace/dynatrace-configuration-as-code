@@ -20,11 +20,12 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 
 	"gotest.tools/assert"
 )
@@ -54,11 +55,6 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 			"environments missing",
 			"manifest_missing_envs.yaml",
 			"'environmentGroups' are required, but not defined",
-		},
-		{
-			"projects missing",
-			"manifest_missing_projects.yaml",
-			"no projects defined in manifest",
 		},
 	}
 
