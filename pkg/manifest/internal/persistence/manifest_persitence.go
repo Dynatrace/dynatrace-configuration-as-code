@@ -18,6 +18,7 @@ package persistence
 
 import (
 	"fmt"
+
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -113,11 +114,11 @@ type Group struct {
 type Manifest struct {
 	ManifestVersion string `yaml:"manifestVersion" json:"manifestVersion"  jsonschema:"required,oneof_type=string;number,description=The version of this manifest. It is used when loading a manifest to ensure the CLI version is able to parse this manifest."`
 	// Projects is a list of projects that will be deployed with this manifest
-	Projects []Project `yaml:"projects" json:"projects" jsonschema:"required,minLength=1,description=A list of environment groups that configs in the defined 'projects' will be deployed to."`
+	Projects []Project `yaml:"projects" json:"projects" jsonschema:"required,minLength=1,description=A list of projects that will be deployed with this manifest"`
 	// EnvironmentGroups is a list of environment groups that configs in Projects will be deployed to
 	EnvironmentGroups []Group `yaml:"environmentGroups" json:"environmentGroups" jsonschema:"minLength=1,description=A list of environment groups that configs in the defined 'projects' will be deployed to. Required when deploying environment configurations."`
 	// Accounts is a list of accounts that account resources in Projects will be deployed to
-	Accounts []Account `yaml:"accounts,omitempty" json:"accounts" jsonschema:"minLength=1,description=A list of environment groups that configs in Projects will be deployed to. Required when deploying account resources."`
+	Accounts []Account `yaml:"accounts,omitempty" json:"accounts" jsonschema:"minLength=1,description=A list of of accounts that account resources defined in 'projects' will be deployed to. Required when deploying account resources."`
 }
 
 type Account struct {
