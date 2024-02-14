@@ -19,11 +19,6 @@ package loader
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"slices"
-	"strings"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -34,6 +29,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
 )
 
 // Context holds all information for [Load]

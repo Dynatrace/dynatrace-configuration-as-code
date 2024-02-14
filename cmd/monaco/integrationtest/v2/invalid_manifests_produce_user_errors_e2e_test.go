@@ -20,14 +20,12 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"gotest.tools/assert"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-
-	"gotest.tools/assert"
 )
 
 func TestInvalidManifest_ReportsError(t *testing.T) {
