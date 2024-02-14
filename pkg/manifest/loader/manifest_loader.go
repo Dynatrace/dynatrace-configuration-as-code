@@ -318,7 +318,6 @@ func readManifestYAML(context *Context) (persistence.Manifest, error) {
 	return m, nil
 }
 
-var manifestAccountSupport, _ = version2.ParseVersion("1.1")
 var maxSupportedManifestVersion, _ = version2.ParseVersion(version.ManifestVersion)
 var minSupportedManifestVersion, _ = version2.ParseVersion(version.MinManifestVersion)
 
@@ -339,10 +338,6 @@ func validateVersion(m persistence.Manifest) error {
 
 	if v.GreaterThan(maxSupportedManifestVersion) {
 		return fmt.Errorf("`manifestVersion` %s is not supported by monaco %s. Max supported version is %s, please check manifest or update monaco", m.ManifestVersion, version.MonitoringAsCode, version.ManifestVersion)
-	}
-
-	if len(m.Accounts) > 0 && v.SmallerThan(manifestAccountSupport) {
-		return fmt.Errorf("`accounts` are unsupported prior to `manifestVersion: \"1.1\"`, please update `manifestVersion` to at least `1.1`")
 	}
 
 	return nil
