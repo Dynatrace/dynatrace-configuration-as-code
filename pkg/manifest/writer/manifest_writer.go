@@ -75,13 +75,12 @@ func Write(context *Context, manifestToWrite manifest.Manifest) error {
 	groups := toWriteableEnvironmentGroups(manifestToWrite.Environments)
 
 	m := persistence.Manifest{
-		ManifestVersion:   "1.0", // we default to old version unless account management FF is active
+		ManifestVersion:   version.ManifestVersion,
 		Projects:          projects,
 		EnvironmentGroups: groups,
 	}
 
 	if featureflags.AccountManagement().Enabled() {
-		m.ManifestVersion = version.ManifestVersion
 		m.Accounts = toWriteableAccounts(manifestToWrite.Accounts)
 	}
 

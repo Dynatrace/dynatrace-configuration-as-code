@@ -623,47 +623,6 @@ environmentGroups:
 `,
 		},
 		{
-			"writes manifest 1.1 if account feature is active but account defined",
-			true,
-			manifest.Manifest{
-				Projects: manifest.ProjectDefinitionByProjectID{
-					"p1": {
-						Name: "p1",
-						Path: "projects/p1",
-					},
-				},
-				Environments: manifest.Environments{
-					"env1": {
-						Name: "env1",
-						URL: manifest.URLDefinition{
-							Value: "https://a.dynatrace.environment",
-						},
-						Group: "group1",
-						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
-								Name: "TOKEN_VAR",
-							},
-						},
-					},
-				},
-			},
-			`manifestVersion: "1.1"
-projects:
-- name: p1
-  path: projects/p1
-environmentGroups:
-- name: group1
-  environments:
-  - name: env1
-    url:
-      value: https://a.dynatrace.environment
-    auth:
-      token:
-        type: environment
-        name: TOKEN_VAR
-`,
-		},
-		{
 			"writes manifest with accounts if FF active",
 			true,
 			manifest.Manifest{
@@ -704,7 +663,7 @@ environmentGroups:
 					},
 				},
 			},
-			`manifestVersion: "1.1"
+			`manifestVersion: "1.0"
 projects:
 - name: p1
   path: projects/p1

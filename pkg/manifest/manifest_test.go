@@ -251,25 +251,9 @@ func TestManifestLoading_AccountsInvalid(t *testing.T) {
 		accDef string
 	}{
 		{
-			name: "manifest version too low",
-			accDef: `
-manifestVersion: "1.0"
-accounts:
-- name: "name"
-  accountUUID: 8f9935ee-2068-455d-85ce-47447f19d5d5
-  apiUrl:
-    value: "https://[13::37]:42"
-  oAuth:
-    clientId:
-      name: SECRET
-    clientSecret:
-      name: SECRET
-`,
-		},
-		{
 			name: "Empty name",
 			accDef: `
-manifestVersion: "1.1"
+manifestVersion: "1.0"
 accounts:
 - name: ""
   accountUUID: 8f9935ee-2068-455d-85ce-47447f19d5d5
@@ -285,7 +269,7 @@ accounts:
 		{
 			name: "Missing name",
 			accDef: `
-manifestVersion: "1.1"
+manifestVersion: "1.0"
 accounts:
 - accountUUID: 8f9935ee-2068-455d-85ce-47447f19d5d5
   oAuth:
@@ -298,7 +282,7 @@ accounts:
 		{
 			name: "Missing account uuid",
 			accDef: `
-manifestVersion: "1.1"
+manifestVersion: "1.0"
 accounts:
 - name: name
   oAuth:
@@ -311,7 +295,7 @@ accounts:
 		{
 			name: "Empty account uuid",
 			accDef: `
-manifestVersion: "1.1"
+manifestVersion: "1.0"
 accounts:
 - name: name
   accountUUID: ""
@@ -325,7 +309,7 @@ accounts:
 		{
 			name: "Missing oauth",
 			accDef: `
-manifestVersion: "1.1"
+manifestVersion: "1.0"
 accounts:
 - name: name
   accountUUID: 8f9935ee-2068-455d-85ce-47447f19d5d5
@@ -334,7 +318,7 @@ accounts:
 		{
 			name: "Missing client id",
 			accDef: `
-manifestVersion: "1.1"
+manifestVersion: "1.0"
 accounts:
 - name: name
   accountUUID: 8f9935ee-2068-455d-85ce-47447f19d5d5
@@ -346,7 +330,7 @@ accounts:
 		{
 			name: "Missing client secret",
 			accDef: `
-manifestVersion: "1.1"
+manifestVersion: "1.0"
 accounts:
 - name: name
   accountUUID: 8f9935ee-2068-455d-85ce-47447f19d5d5
