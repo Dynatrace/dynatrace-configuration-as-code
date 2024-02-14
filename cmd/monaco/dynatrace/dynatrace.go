@@ -85,7 +85,8 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 	return true
 }
 
-func CreateClientSet(url string, auth manifest.Auth) (*client.ClientSet, error) {
+// CreateClients creates a new client set based on the provided URL and authentication information.
+func CreateClients(url string, auth manifest.Auth) (*client.ClientSet, error) {
 	if auth.OAuth == nil {
 		return client.CreateClassicClientSet(url, auth.Token.Value.Value(), client.ClientOptions{
 			SupportArchive: support.SupportArchive,
@@ -165,7 +166,7 @@ func CreateEnvironmentClients(environments manifest.Environments) (EnvironmentCl
 	clients := make(EnvironmentClients, len(environments))
 	for _, env := range environments {
 
-		clientSet, err := CreateClientSet(env.URL.Value, env.Auth)
+		clientSet, err := CreateClients(env.URL.Value, env.Auth)
 		if err != nil {
 			return EnvironmentClients{}, err
 		}

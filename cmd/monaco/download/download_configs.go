@@ -142,7 +142,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		return err
 	}
 
-	clientSet, err := dynatrace.CreateClientSet(options.environmentURL, options.auth)
+	clientSet, err := dynatrace.CreateClients(options.environmentURL, options.auth)
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		return err
 	}
 
-	clientSet, err := dynatrace.CreateClientSet(options.environmentURL, options.auth)
+	clientSet, err := dynatrace.CreateClients(options.environmentURL, options.auth)
 	if err != nil {
 		return err
 	}

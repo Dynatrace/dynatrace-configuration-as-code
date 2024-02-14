@@ -57,7 +57,7 @@ func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 		extIDProject1, _ := idutils.GenerateExternalID(sortedConfigs["platform_env"][0].Coordinate)
 		extIDProject2, _ := idutils.GenerateExternalID(sortedConfigs["platform_env"][1].Coordinate)
 
-		clientSet, err := dynatrace.CreateClientSet(environment.URL.Value, environment.Auth)
+		clientSet, err := dynatrace.CreateClients(environment.URL.Value, environment.Auth)
 		assert.NoError(t, err)
 		c := clientSet.Settings()
 		settings, _ := c.ListSettings(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
