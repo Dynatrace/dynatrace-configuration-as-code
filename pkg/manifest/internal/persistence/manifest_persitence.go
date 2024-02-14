@@ -18,7 +18,6 @@ package persistence
 
 import (
 	"fmt"
-
 	"github.com/mitchellh/mapstructure"
 )
 

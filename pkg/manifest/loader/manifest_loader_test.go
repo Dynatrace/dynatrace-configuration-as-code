@@ -20,11 +20,6 @@ package loader
 
 import (
 	"fmt"
-	"math"
-	"path/filepath"
-	"reflect"
-	"testing"
-
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
@@ -32,6 +27,10 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
+	"math"
+	"path/filepath"
+	"reflect"
+	"testing"
 )
 
 func Test_extractUrlType(t *testing.T) {

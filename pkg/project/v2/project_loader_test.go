@@ -19,17 +19,15 @@ package v2
 import (
 	"errors"
 	"fmt"
-	"reflect"
-	"testing"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
-
 	"gotest.tools/assert"
+	"reflect"
+	"testing"
 )
 
 func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
