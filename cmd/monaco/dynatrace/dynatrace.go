@@ -85,7 +85,8 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 	return true
 }
 
-func CreateClientSet(url string, auth manifest.Auth) (*client.ClientSet, error) {
+// CreateClients creates a new client set based on the provided URL and authentication information.
+func CreateClients(url string, auth manifest.Auth) (*client.ClientSet, error) {
 	if auth.OAuth == nil {
 		return client.CreateClassicClientSet(url, auth.Token.Value.Value(), client.ClientOptions{
 			SupportArchive: support.SupportArchive,
@@ -101,6 +102,7 @@ func CreateClientSet(url string, auth manifest.Auth) (*client.ClientSet, error) 
 	})
 }
 
+// CreateAccountClients gives back clients to use for specific accounts
 func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[account.AccountInfo]*accounts.Client, error) {
 	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	accClients := make(map[account.AccountInfo]*accounts.Client, len(manifestAccounts))
@@ -138,4 +140,41 @@ func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[acc
 		}] = accClient
 	}
 	return accClients, nil
+}
+
+type (
+	// EnvironmentInfo environment specific information
+	EnvironmentInfo struct {
+		Name  string
+		Group string
+	}
+	// EnvironmentClients is a collection of clients to use for specific environments
+	EnvironmentClients map[EnvironmentInfo]*client.ClientSet
+)
+
+// Names gives back all environment Names for which the EnvironmentClients has a client sets
+func (e EnvironmentClients) Names() []string {
+	n := make([]string, 0, len(e))
+	for k := range e {
+		n = append(n, k.Name)
+	}
+	return n
+}
+
+// CreateEnvironmentClients gives back clients to use for specific environments
+func CreateEnvironmentClients(environments manifest.Environments) (EnvironmentClients, error) {
+	clients := make(EnvironmentClients, len(environments))
+	for _, env := range environments {
+
+		clientSet, err := CreateClients(env.URL.Value, env.Auth)
+		if err != nil {
+			return EnvironmentClients{}, err
+		}
+		clients[EnvironmentInfo{
+			Name:  env.Name,
+			Group: env.Group,
+		}] = clientSet
+	}
+
+	return clients, nil
 }

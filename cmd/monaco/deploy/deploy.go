@@ -17,7 +17,6 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/internal/clientset"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/internal/logging"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
@@ -68,7 +67,7 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	logging.LogProjectsInfo(filteredProjects)
 	logging.LogEnvironmentsInfo(loadedManifest.Environments)
 
-	clientSets, err := clientset.NewEnvironmentClients(loadedManifest.Environments, dryRun)
+	clientSets, err := dynatrace.CreateEnvironmentClients(loadedManifest.Environments)
 	if err != nil {
 		return fmt.Errorf("failed to create API clients: %w", err)
 	}

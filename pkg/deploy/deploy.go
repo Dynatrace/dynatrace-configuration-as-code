@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/mutlierror"
@@ -63,27 +64,13 @@ var DummyClientSet = ClientSet{
 	Bucket:     &bucket.DummyClient{},
 }
 
-type EnvironmentInfo struct {
-	Name  string
-	Group string
-}
-type EnvironmentClients map[EnvironmentInfo]ClientSet
-
-func (e EnvironmentClients) Names() []string {
-	n := make([]string, 0, len(e))
-	for k := range e {
-		n = append(n, k.Name)
-	}
-	return n
-}
-
 var (
 	lock sync.Mutex
 
 	skipError = errors.New("skip error")
 )
 
-func Deploy(projects []project.Project, environmentClients EnvironmentClients, opts DeployConfigsOptions) error {
+func Deploy(projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
 	g := graph.New(projects, environmentClients.Names())
 	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
 
@@ -103,7 +90,19 @@ func Deploy(projects []project.Project, environmentClients EnvironmentClients, o
 			return fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)
 		}
 
-		if err = deployComponents(ctx, sortedConfigs, clients); err != nil {
+		var clientSet ClientSet
+		if opts.DryRun {
+			clientSet = DummyClientSet
+		} else {
+			clientSet = ClientSet{
+				Classic:    clients.DTClient,
+				Settings:   clients.DTClient,
+				Automation: clients.AutClient,
+				Bucket:     clients.BucketClient,
+			}
+		}
+
+		if err = deployComponents(ctx, sortedConfigs, clientSet); err != nil {
 			log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Error("Deployment failed for environment %q: %v", env.Name, err)
 			deploymentErrors = deploymentErrors.Append(env.Name, err)
 			if !opts.ContinueOnErr && !opts.DryRun {
@@ -312,6 +311,6 @@ func logResponseError(ctx context.Context, responseErr clientErrors.RespError) {
 	log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
 }
 
-func createContextWithEnvironment(env EnvironmentInfo) context.Context {
+func createContextWithEnvironment(env dynatrace.EnvironmentInfo) context.Context {
 	return context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 }
