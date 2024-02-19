@@ -24,6 +24,68 @@ import (
 	"testing"
 )
 
+func TestGetConfigFor(t *testing.T) {
+	tests := []struct {
+		name            string
+		givenCoordinate coordinate.Coordinate
+		givenProject    project.Project
+		wantConfig      config.Config
+		wantFound       bool
+	}{
+		{
+			name:            "Config found",
+			givenCoordinate: coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"},
+			givenProject: project.Project{
+
+				Id: "p1",
+				Configs: project.ConfigsPerTypePerEnvironments{
+					"env1": project.ConfigsPerType{"t1": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c1"}}}},
+					"env2": project.ConfigsPerType{"t2": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c2"}}}},
+				},
+			},
+
+			wantFound:  true,
+			wantConfig: config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c1"}},
+		},
+		{
+			name:            "Config not found - type mismatch",
+			givenCoordinate: coordinate.Coordinate{Project: "p1", Type: "t2", ConfigId: "c1"},
+			givenProject: project.Project{
+
+				Id: "p1",
+				Configs: project.ConfigsPerTypePerEnvironments{
+					"env1": project.ConfigsPerType{"t1": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c1"}}}},
+					"env2": project.ConfigsPerType{"t2": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c2"}}}},
+				},
+			},
+
+			wantFound:  false,
+			wantConfig: config.Config{},
+		},
+		{
+			name:            "Config not found - id mismatch",
+			givenCoordinate: coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c2"},
+			givenProject: project.Project{
+
+				Id: "p1",
+				Configs: project.ConfigsPerTypePerEnvironments{
+					"env1": project.ConfigsPerType{"t1": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c1"}}}},
+					"env2": project.ConfigsPerType{"t2": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c2"}}}},
+				},
+			},
+
+			wantFound:  false,
+			wantConfig: config.Config{},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, found := tc.givenProject.GetConfigFor(tc.givenCoordinate)
+			assert.Equal(t, tc.wantConfig, cfg)
+			assert.Equal(t, tc.wantFound, found)
+		})
+	}
+}
 func TestHasDependencyOn(t *testing.T) {
 	environment := "dev"
 	referencedProjectId := "projct2"
