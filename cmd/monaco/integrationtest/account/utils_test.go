@@ -23,9 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
-	"math/rand"
 	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -83,8 +81,7 @@ func printCommand(c string) {
 	fmt.Printf("%s %s\n", "monaco", c)
 }
 
-func randomizeConfiguration(t *testing.T, fs afero.Fs, path string) {
-	r := strconv.Itoa(rand.Int())
+func randomizeConfiguration(t *testing.T, fs afero.Fs, path string, randomStr string) {
 	ff, err := files.FindYamlFiles(fs, path)
 	require.NoError(t, err)
 	for _, f := range ff {
@@ -92,8 +89,8 @@ func randomizeConfiguration(t *testing.T, fs afero.Fs, path string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		fileContentRandomized := bytes.ReplaceAll(fileContent, []byte("%RAND%"), []byte(r))
-		err = afero.WriteFile(fs, f, []byte(fileContentRandomized), 0644)
+		fileContentRandomized := bytes.ReplaceAll(fileContent, []byte("%RAND%"), []byte(randomStr))
+		err = afero.WriteFile(fs, f, fileContentRandomized, 0644)
 		if err != nil {
 			t.Fatal(err)
 		}

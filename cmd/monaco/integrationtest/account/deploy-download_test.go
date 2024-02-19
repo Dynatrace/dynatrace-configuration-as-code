@@ -27,6 +27,8 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"math/rand"
+	"strconv"
 	"testing"
 )
 
@@ -57,7 +59,10 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	t.Setenv(featureflags.AccountManagement().EnvName(), "true")
 	createMZone(t)
 	baseFs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(afero.NewOsFs(), "resources/deploy-download"), afero.NewMemMapFs())
-	randomizeConfiguration(t, baseFs, project)
+
+	randomString := strconv.Itoa(rand.Int())
+	randomizeConfiguration(t, baseFs, project, randomString)
+	randomizeConfiguration(t, baseFs, "delete.yaml", randomString)
 	baseFs = afero.NewReadOnlyFs(baseFs)
 
 	deploy1st := deploy(project, baseFs)
