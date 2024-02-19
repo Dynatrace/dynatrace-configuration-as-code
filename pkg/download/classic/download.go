@@ -275,7 +275,7 @@ func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value va
 }
 
 func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.API, value value, projectId string) (config.Config, error) {
-	templ, err := createTemplate(mappedJson, value.value, theApi.ID)
+	templ, err := createTemplate(mappedJson, value, theApi.ID)
 	if err != nil {
 		return config.Config{}, err
 	}
@@ -289,7 +289,7 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 
 	coord := coordinate.Coordinate{
 		Project:  projectId,
-		ConfigId: templ.ID() + value.parentConfigId,
+		ConfigId: templ.ID(),
 		Type:     theApi.ID,
 	}
 
@@ -309,12 +309,12 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	}, nil
 }
 
-func createTemplate(mappedJson map[string]interface{}, value dtclient.Value, apiId string) (tmpl template.Template, err error) {
+func createTemplate(mappedJson map[string]interface{}, value value, apiId string) (tmpl template.Template, err error) {
 	mappedJson = sanitizeProperties(mappedJson, apiId)
 	bytes, err := json.MarshalIndent(mappedJson, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	templ := template.NewInMemoryTemplate(value.Id, string(bytes))
+	templ := template.NewInMemoryTemplate(value.value.Id+value.parentConfigId, string(bytes))
 	return templ, nil
 }
