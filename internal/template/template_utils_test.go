@@ -20,6 +20,7 @@ package template
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/regex"
+	assert2 "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -121,17 +122,20 @@ func Test_escapeCharactersForJson(t *testing.T) {
 			"String { containing {{ some {json : like text } stays as is",
 			`String { containing {{ some {json : like text } stays as is`,
 		},
+		{
+			"String containing <, >, and & must not be escaped",
+			"String containing <, >, and & must not be escaped",
+		},
+		{
+			"Real world example: [8/5] Disk space available < 15% (/media/datastore)",
+			"Real world example: [8/5] Disk space available < 15% (/media/datastore)",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputString, func(t *testing.T) {
 			got, err := escapeCharactersForJson(tt.inputString)
-			if err != nil {
-				t.Errorf("escapeCharactersForJson() unexpected error = %v", err)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("escapeCharactersForJson() got = %v, want %v", got, tt.want)
-			}
+			assert2.NoError(t, err)
+			assert2.Equal(t, tt.want, got)
 		})
 	}
 }

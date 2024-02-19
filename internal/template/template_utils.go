@@ -17,6 +17,7 @@
 package template
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/regex"
@@ -94,15 +95,13 @@ func escapeSimpleCharacters(rawString string) (string, error) {
 	return escapeNewlines(rawString), nil
 }
 
-// Due to APM-387662 this is currently NOT used
-//
 // escapeCharactersForJson ensures a string can be placed into a json by just marshalling it to json.
 // This will escape anything that needs to be escaped - but explicitly excludes strings that are of string list format.
 // Such list strings can be used to place several values into a json list and their double-quotes are needed to render
 // valid json and must not be escaped. As a caveat this means any other characters aren't escaped either for lists.
 // As marshalling additionally places quotes around the output these first and last characters are cut off before returning.
 func escapeCharactersForJson(rawString string) (string, error) {
-	b, err := json.Marshal(rawString)
+	b, err := marshalWithoutEscapeHTML(rawString)
 	if err != nil {
 		// errors should never occur for marshalling a string value - better safe than sorry if implementation details change
 		return "", err
@@ -110,6 +109,21 @@ func escapeCharactersForJson(rawString string) (string, error) {
 	s := string(b)
 	s = s[1 : len(s)-1] // marshalling places quotes around the json string which we don't want
 	return s, nil
+}
+
+// marshalWithoutEscapeHTML works the same way as json.Marshal, with the exception that HTML entities (<, >, &) are
+// NOT escaped.
+func marshalWithoutEscapeHTML(v any) ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(v); err != nil {
+		return nil, err
+	}
+
+	buf := buffer.Bytes()
+	// Encoder.Encode adds a new \n to the bytes, which json.Marshal does not
+	return buf[:len(buf)-1], nil
 }
 
 // escapeNewlines only escapes newline characters in an input string by replacing all occurrences with a raw \n
