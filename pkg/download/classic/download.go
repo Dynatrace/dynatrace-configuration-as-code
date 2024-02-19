@@ -283,6 +283,11 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	params := map[string]parameter.Parameter{}
 	params["name"] = &valueParam.ValueParameter{Value: value.value.Name}
 
+	// we use the id (key) of user-action-and-session-properties-mobile as it is its unique identifier
+	if theApi.ID == "user-action-and-session-properties-mobile" {
+		params["name"] = &valueParam.ValueParameter{Value: value.value.Id}
+	}
+
 	if theApi.HasParent() {
 		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent, value.parentConfigId, "id")
 	}
@@ -293,19 +298,11 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 		Type:     theApi.ID,
 	}
 
-	// for "user-action-and-session-properties-mobile" we store the identifier (key) as origin object id
-	// in order to deploy it with the same id again
-	var originObjectId string
-	if theApi.ID == "user-action-and-session-properties-mobile" {
-		originObjectId = value.value.Id
-	}
-
 	return config.Config{
-		Type:           config.ClassicApiType{Api: theApi.ID},
-		Template:       templ,
-		Coordinate:     coord,
-		Parameters:     params,
-		OriginObjectId: originObjectId,
+		Type:       config.ClassicApiType{Api: theApi.ID},
+		Template:   templ,
+		Coordinate: coord,
+		Parameters: params,
 	}, nil
 }
 
