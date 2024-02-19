@@ -94,11 +94,6 @@ type TestOptions struct {
 }
 
 func runIntegrationWithCleanup(t *testing.T, opts TestOptions, testFunc TestFunc) {
-	var envs []string
-	if len(opts.specificEnvironment) > 0 {
-		envs = append(envs, opts.specificEnvironment)
-	}
-
 	configFolder, _ := filepath.Abs(opts.configFolder)
 
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
@@ -108,7 +103,7 @@ func runIntegrationWithCleanup(t *testing.T, opts TestOptions, testFunc TestFunc
 	}
 
 	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, envs, suffix)
+		integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, opts.specificEnvironment, suffix)
 	})
 
 	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)

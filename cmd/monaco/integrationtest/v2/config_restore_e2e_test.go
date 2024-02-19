@@ -21,16 +21,17 @@ package v2
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/internal/test"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/spf13/afero"
-	"gotest.tools/assert"
 )
 
 type downloadFunction func(*testing.T, afero.Fs, string, string, string, string, bool) error
@@ -205,23 +206,21 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		RunIntegrationWithCleanup(t, configsFolder, configsFolderManifest, "", tt.name, func(fs afero.Fs, _ TestContext) {
-			t.Run(tt.name, func(t *testing.T) {
-
-				t.Log("Deploying configs")
-				cmd := runner.BuildCli(fs)
-				cmd.SetArgs([]string{"deploy", "-v", configsFolderManifest})
-				err := cmd.Execute()
+		tc := tt
+		t.Run(tc.name, func(t *testing.T) {
+			RunIntegrationWithCleanup(t, configsFolder, configsFolderManifest, "", "", func(fs afero.Fs, _ TestContext) {
+				_, err := test.Monacof("monaco deploy %s", configsFolderManifest).WithFs(fs).Run()
+				require.NoError(t, err)
 
 				t.Log("Downloading configs")
-				err = tt.downloadFunc(t, tt.fs, downloadFolder, tt.manifest, tt.apisToDownload, tt.settingsToDownload, false)
-				assert.Equal(t, tt.wantErr, err != nil)
-				for _, f := range tt.expectedFolders {
-					folderExists, _ := afero.DirExists(tt.fs, f)
-					assert.Check(t, folderExists, "folder "+f+" does not exist")
+				err = tc.downloadFunc(t, tc.fs, downloadFolder, tc.manifest, tc.apisToDownload, tc.settingsToDownload, false)
+				assert.Equal(t, tc.wantErr, err != nil)
+				for _, f := range tc.expectedFolders {
+					folderExists, _ := afero.DirExists(tc.fs, f)
+					assert.Truef(t, folderExists, "folder %s does not exist", f)
 				}
-				files, _ := afero.ReadDir(tt.fs, tt.projectFolder)
-				assert.Equal(t, len(tt.expectedFolders), len(files))
+				files, _ := afero.ReadDir(tc.fs, tc.projectFolder)
+				assert.Equal(t, len(tc.expectedFolders), len(files))
 			})
 		})
 	}
@@ -251,17 +250,17 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 	fs := testutils.CreateTestFileSystem()
 	suffix, err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, manifestFile)
 
-	assert.NilError(t, err, "Error during download preparation stage")
+	assert.NoError(t, err, "Error during download preparation stage")
 
 	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload, "", oauthEnabled)
-	assert.NilError(t, err, "Error during download execution stage")
+	assert.NoError(t, err, "Error during download execution stage")
 
-	integrationtest.CleanupIntegrationTest(t, fs, manifestFile, nil, suffix) // remove previously deployed configs
+	integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix) // remove previously deployed configs
 
 	downloadedManifestPath := filepath.Join(downloadFolder, "manifest.yaml")
 
 	t.Cleanup(func() { // cleanup uploaded configs after test run
-		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, nil, suffix)
+		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
 	})
 
 	validation_uploadDownloadedConfigs(t, fs, downloadFolder, downloadedManifestPath) // re-deploy from download
@@ -283,7 +282,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 	}
 
 	t.Cleanup(func() { // register extra cleanup in case test fails after deployment
-		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, nil, suffix)
+		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
 	})
 
 	cmd := runner.BuildCli(fs)
@@ -293,7 +292,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 		manifestFile,
 	})
 	err = cmd.Execute()
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	return suffix, nil
 }
@@ -332,7 +331,7 @@ func execution_downloadConfigsWithCLIParameters(
 	cmd := runner.BuildCli(fs)
 	cmd.SetArgs(parameters)
 	err = cmd.Execute()
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	return nil
 }
 
@@ -385,7 +384,7 @@ func execution_downloadConfigs(
 	cmd := runner.BuildCli(fs)
 	cmd.SetArgs(parameters)
 	err = cmd.Execute()
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	return nil
 }
 
@@ -406,5 +405,5 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 		manifestFile,
 	})
 	err := cmd.Execute()
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }

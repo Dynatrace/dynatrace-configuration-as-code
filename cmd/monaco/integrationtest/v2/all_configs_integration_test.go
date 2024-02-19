@@ -19,52 +19,49 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/internal/test"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"testing"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
-// tests all configs for a single environment
-func TestIntegrationAllConfigsClassic(t *testing.T) {
-	specificEnvironment := "classic_env"
+func TestAllConfigs(t *testing.T) {
+	tests := []struct {
+		name, environment string
+	}{
+		{
+			name:        "tests all known configs against classic url",
+			environment: "classic_env",
+		},
+		{
+			name:        "tests all known configs against platform url",
+			environment: "platform_env",
+		},
+	}
 
-	runAllConfigsTest(t, specificEnvironment)
-}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			configFolder := "test-resources/integration-all-configs/"
+			manifest := configFolder + "manifest.yaml"
 
-func TestIntegrationAllConfigsPlatform(t *testing.T) {
-	specificEnvironment := "platform_env"
+			envVars := map[string]string{featureflags.Experimental().EnvName(): "true"}
 
-	runAllConfigsTest(t, specificEnvironment)
-}
-
-func runAllConfigsTest(t *testing.T, specificEnvironment string) {
-	configFolder := "test-resources/integration-all-configs/"
-	manifest := configFolder + "manifest.yaml"
-
-	envVars := map[string]string{featureflags.Experimental().EnvName(): "true"}
-
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
-
-		// This causes a POST for all configs:
-
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
-		err := cmd.Execute()
-
-		assert.NilError(t, err)
-
-		// This causes a PUT for all configs:
-
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
-		err = cmd.Execute()
-		assert.NilError(t, err)
-
-	})
+			RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, tc.environment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
+				{
+					// This causes a POST for all configs:
+					_, err := test.Monacof("deploy %s --environment %s", manifest, tc.environment).WithFs(fs).Run()
+					require.NoError(t, err)
+				}
+				{
+					// This causes a PUT for all configs:
+					_, err := test.Monacof("deploy %s --environment %s", manifest, tc.environment).WithFs(fs).Run()
+					require.NoError(t, err)
+				}
+			})
+		})
+	}
 }
 
 // Tests a dry run (validation)
@@ -76,9 +73,6 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
-	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
-	err := cmd.Execute()
-
-	assert.NilError(t, err)
+	_, err := test.Monacof("monaco deploy %s --dry-run", manifest).Run()
+	assert.NoError(t, err)
 }

@@ -19,15 +19,15 @@
 package delete
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
 	"testing"
-
-	"github.com/spf13/afero"
 )
 
 func TestParseDeleteEntry(t *testing.T) {
@@ -173,6 +173,7 @@ func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
 }
 
 func TestLoadEntriesToDelete(t *testing.T) {
+	t.Setenv(featureflags.Experimental().EnvName(), "true")
 
 	tests := []struct {
 		name             string

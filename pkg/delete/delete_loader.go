@@ -71,7 +71,7 @@ func LoadEntriesToDelete(fs afero.Fs, deleteFile string) (DeleteEntries, error) 
 	context := &loaderContext{
 		fs:         fs,
 		deleteFile: filepath.Clean(deleteFile),
-		knownApis:  api.NewAPIs(),
+		knownApis:  api.NewAPIs().Filter(api.RemoveDisabled),
 	}
 
 	definition, err := readDeleteFile(context)
