@@ -18,67 +18,16 @@ package account
 
 import (
 	"bytes"
-	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/internal/test"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
-	"regexp"
-	"strings"
 	"testing"
 )
 
-type monacoCmd struct {
-	cmd string
-	fs  afero.Fs
-}
-
-func monaco(cmd string) *monacoCmd {
-	cmd = regexp.MustCompile(`\s+`).ReplaceAllString(cmd, " ")
-	cmd = strings.Trim(cmd, " ")
-	cmd = strings.TrimPrefix(cmd, "monaco ")
-
-	return &monacoCmd{cmd: cmd}
-}
-func monacof(cmd string, args ...any) *monacoCmd {
-	return monaco(fmt.Sprintf(cmd, args...))
-}
-
-func (cmd *monacoCmd) withFs(fs afero.Fs) *monacoCmd {
-	cmd.fs = fs
-	return cmd
-}
-
-func (cmd *monacoCmd) run() error {
-	fs := cmd.fs
-	if fs == nil {
-		fs = afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs())
-	}
-	fmt.Println(cmd)
-
-	cli := runner.BuildCli(fs)
-	cli.SetArgs(strings.Split(cmd.cmd, " "))
-
-	return cli.Execute()
-}
-
-func (cmd *monacoCmd) String() string {
-	return fmt.Sprintf("%s %s", "monaco", cmd.cmd)
-}
-
 func createMZone(t *testing.T) {
-	command := "deploy resources/mzones/manifest.yaml"
-	printCommand(command)
-
-	cli := runner.BuildCli(afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()))
-	cli.SetArgs(strings.Split(command, " "))
-	err := cli.Execute()
+	_, err := test.Monacof("monaco deploy resources/mzones/manifest.yaml").WithFs(afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs())).Run()
 	require.NoError(t, err)
-
-}
-
-func printCommand(c string) {
-	fmt.Printf("%s %s\n", "monaco", c)
 }
 
 func randomizeConfiguration(t *testing.T, fs afero.Fs, path string, randomStr string) {
