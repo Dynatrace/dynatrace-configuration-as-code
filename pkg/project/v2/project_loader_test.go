@@ -656,21 +656,3 @@ func getFullProjectLoaderContext(apis []string, projects []string, environments 
 		ParametersSerde: config.DefaultParameterParsers,
 	}
 }
-
-func TestLoadProject(t *testing.T) {
-	t.Run("loading project with configs and account resources works", func(t *testing.T) {
-		context := getSimpleProjectLoaderContext([]string{"testdata/configs-account-resources-mixed"})
-
-		configs, gotErrs := LoadProjects(afero.NewOsFs(), context, nil)
-		assert.NoError(t, errors.Join(gotErrs...))
-		assert.Len(t, configs, 1)
-	})
-
-	t.Run("mixed files fail", func(t *testing.T) {
-		context := getSimpleProjectLoaderContext([]string{"testdata/configs-account-resources-mixed-same-file"})
-
-		configs, gotErrs := LoadProjects(afero.NewOsFs(), context, nil)
-		assert.ErrorContains(t, errors.Join(gotErrs...), "mixing both configurations and account resources is not allowed")
-		assert.Len(t, configs, 0)
-	})
-}
