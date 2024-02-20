@@ -919,7 +919,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 		WorkingDir:      testBasePath,
 		Manifest:        man,
 		ParametersSerde: config.DefaultParameterParsers,
-	})
+	}, nil)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Fatalf("%v", err)
@@ -1223,7 +1223,7 @@ func loadDownloadedProjects(fs afero.Fs, apis api.APIs) ([]projectLoader.Project
 		WorkingDir:      "out",
 		Manifest:        man,
 		ParametersSerde: config.DefaultParameterParsers,
-	})
+	}, nil)
 }
 
 func jsonEqual(jsonA, jsonB string) bool {

@@ -150,7 +150,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 						WorkingDir:      "download",
 						Manifest:        mani,
 						ParametersSerde: config.DefaultParameterParsers,
-					})
+					}, nil)
 					assert.Empty(t, errs, "load project: did not expect do get error(s)")
 
 					projectAndEnvName := "proj_" + env // for manifest downloads proj + env name

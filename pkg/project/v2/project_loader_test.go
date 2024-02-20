@@ -17,7 +17,6 @@
 package v2
 
 import (
-	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
@@ -110,7 +109,7 @@ func TestLoadProjects_RejectsManifestsWithNoProjects(t *testing.T) {
 	testFs := testutils.TempFs(t)
 	context := getSimpleProjectLoaderContext([]string{})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, got, 0, "Expected no project loaded")
 	assert.Len(t, gotErrs, 1, "Expected to fail with no projects")
@@ -128,7 +127,7 @@ func TestLoadProjects_LoadsSimpleProject(t *testing.T) {
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
 
@@ -150,7 +149,7 @@ func TestLoadProjects_LoadsSimpleProjectInFoldersNotMatchingApiName(t *testing.T
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
 
@@ -171,7 +170,7 @@ func TestLoadProjects_LoadsProjectInRootDir(t *testing.T) {
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
@@ -195,7 +194,7 @@ func TestLoadProjects_LoadsProjectInManyDirs(t *testing.T) {
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 
 	errutils.PrintErrors(gotErrs)
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
@@ -222,7 +221,7 @@ func TestLoadProjects_LoadsProjectInHiddenDirDoesNotLoad(t *testing.T) {
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 
 	errutils.PrintErrors(gotErrs)
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
@@ -246,7 +245,7 @@ func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForOneEnvironmen
 		[]string{"project"},
 		[]string{"env"})
 
-	projects, gotErrs := LoadProjects(testFs, context)
+	projects, gotErrs := LoadProjects(testFs, context, nil)
 	assert.Empty(t, gotErrs)
 	assert.Len(t, projects, 1, "expected one project")
 
@@ -268,7 +267,7 @@ func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForTwoEnvironmen
 		[]string{"project"},
 		[]string{"env", "env2"})
 
-	projects, gotErrs := LoadProjects(testFs, context)
+	projects, gotErrs := LoadProjects(testFs, context, nil)
 	assert.Empty(t, gotErrs)
 	assert.Len(t, projects, 1, "expected one project")
 
@@ -291,7 +290,7 @@ func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedT
 		[]string{"project"},
 		[]string{"env", "env2"})
 
-	projects, gotErrs := LoadProjects(testFs, context)
+	projects, gotErrs := LoadProjects(testFs, context, nil)
 	assert.Empty(t, gotErrs)
 	assert.Len(t, projects, 1, "expected one project")
 
@@ -314,7 +313,7 @@ func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedO
 		[]string{"project"},
 		[]string{"env"})
 
-	projects, gotErrs := LoadProjects(testFs, context)
+	projects, gotErrs := LoadProjects(testFs, context, nil)
 	assert.Empty(t, gotErrs)
 	assert.Len(t, projects, 1, "expected one project")
 
@@ -350,7 +349,7 @@ func TestLoadProjects_LoadsKnownAndUnknownApiNames(t *testing.T) {
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, gotErrs, 1, "Expected to load project with an error")
 	assert.ErrorContains(t, gotErrs[0], "unknown API: unknown-api")
@@ -391,7 +390,7 @@ configs:
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
@@ -444,7 +443,7 @@ configs:
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
@@ -485,7 +484,7 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentApis(t *testing.T) {
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
@@ -502,7 +501,7 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentProjects(t *testing.T) {
 
 	context := getSimpleProjectLoaderContext([]string{"project", "project2"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 2, "Expected two loaded project")
@@ -530,7 +529,7 @@ configs:
 
 	context := getFullProjectLoaderContext([]string{"alerting-profile"}, []string{"project"}, []string{"env1", "env2"})
 
-	got, gotErrs := LoadProjects(testFs, context)
+	got, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
@@ -554,7 +553,7 @@ func TestLoadProjects_ContainsCoordinateWhenReturningErrorForDuplicates(t *testi
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	_, gotErrs := LoadProjects(testFs, context)
+	_, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, gotErrs, 2, "Expected to fail on overlapping coordinates")
 	assert.ErrorContains(t, gotErrs[0], "project:alerting-profile:OVERLAP")
@@ -570,7 +569,7 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InDifferentFiles(t *test
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	_, gotErrs := LoadProjects(testFs, context)
+	_, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, gotErrs, 1, "Expected to fail on overlapping coordinates")
 }
@@ -596,7 +595,7 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InSameFile(t *testing.T)
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
-	_, gotErrs := LoadProjects(testFs, context)
+	_, gotErrs := LoadProjects(testFs, context, nil)
 
 	assert.Len(t, gotErrs, 1, "Expected to fail on overlapping coordinates")
 }
@@ -662,7 +661,7 @@ func TestLoadProject(t *testing.T) {
 	t.Run("loading project with configs and account resources works", func(t *testing.T) {
 		context := getSimpleProjectLoaderContext([]string{"testdata/configs-account-resources-mixed"})
 
-		configs, gotErrs := LoadProjects(afero.NewOsFs(), context)
+		configs, gotErrs := LoadProjects(afero.NewOsFs(), context, nil)
 		assert.NoError(t, errors.Join(gotErrs...))
 		assert.Len(t, configs, 1)
 	})
@@ -670,7 +669,7 @@ func TestLoadProject(t *testing.T) {
 	t.Run("mixed files fail", func(t *testing.T) {
 		context := getSimpleProjectLoaderContext([]string{"testdata/configs-account-resources-mixed-same-file"})
 
-		configs, gotErrs := LoadProjects(afero.NewOsFs(), context)
+		configs, gotErrs := LoadProjects(afero.NewOsFs(), context, nil)
 		assert.ErrorContains(t, errors.Join(gotErrs...), "mixing both configurations and account resources is not allowed")
 		assert.Len(t, configs, 0)
 	})
