@@ -3,7 +3,7 @@ policies:
     id: my-policy
     level:
       type: account
-    description: abcde
+    description: policy from all-resources e2e test
     policy: |-
       ALLOW automation:workflows:read;
   - name: My Policy 2%RAND%
@@ -11,6 +11,6 @@ policies:
     level:
       type: environment
       environment: vkb66581
-    description: abcde
+    description: policy from all-resources e2e test
     policy: |-
       ALLOW automation:workflows:read;
