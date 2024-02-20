@@ -1,7 +1,7 @@
 groups:
   - name: My Group%RAND%
     id: my-group
-    description: This is my group
+    description: This is my group from all-resources e2e test
     account:
       permissions:
         - account-viewer
