@@ -75,7 +75,7 @@ func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string
 		WorkingDir:      filepath.Dir(manifestPath),
 		Manifest:        m,
 		ParametersSerde: config.DefaultParameterParsers,
-	})
+	}, nil)
 
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)

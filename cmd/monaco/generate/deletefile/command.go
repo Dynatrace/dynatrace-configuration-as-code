@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
@@ -74,18 +73,11 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 				WorkingDir:      filepath.Dir(manifestName),
 				Manifest:        m,
 				ParametersSerde: config.DefaultParameterParsers,
-			})
+			}, projects)
 
 			if len(errs) > 0 {
 				errutils.PrintErrors(errs)
 				return fmt.Errorf("failed to load projects")
-			}
-
-			filteredProjects, err := filterProjects(loadedProjects, projects)
-
-			if err != nil {
-				log.WithFields(field.Error(err)).Error("Failed to filter requested projects: %v", err)
-				return err
 			}
 
 			options := createDeleteFileOptions{
@@ -96,7 +88,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 				outputFolder:     outputFolder,
 			}
 
-			return createDeleteFile(fs, filteredProjects, apis, options)
+			return createDeleteFile(fs, loadedProjects, apis, options)
 		},
 	}
 

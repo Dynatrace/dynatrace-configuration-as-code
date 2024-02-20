@@ -29,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
 	"github.com/spf13/afero"
 	"slices"
+	"strings"
 )
 
 type ProjectLoaderContext struct {
@@ -68,10 +69,8 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 	}
 }
 
-func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error) {
+func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjects []string) ([]Project, []error) {
 	environments := toEnvironmentSlice(context.Manifest.Environments)
-	projects := make([]Project, 0)
-
 	var workingDirFs afero.Fs
 
 	if context.WorkingDir == "." {
@@ -84,13 +83,95 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error
 		return nil, []error{fmt.Errorf("no projects defined in manifest")}
 	}
 
-	log.Info("Loading %d projects...", len(context.Manifest.Projects))
+	if len(specificProjects) == 0 {
+		log.Info("Loading %d projects...", len(context.Manifest.Projects))
+		return loadProjectsFromProjectDefinitions(workingDirFs, context, context.Manifest.Projects, environments)
+	}
 
+	specificProjectDefinitions, err := filterProjectDefinitionsByProjectNames(context.Manifest.Projects, specificProjects)
+	if err != nil {
+		return nil, []error{err}
+	}
+	log.Info("Loading %d projects...", len(specificProjectDefinitions))
+	projects, errors := loadProjectsFromProjectDefinitions(workingDirFs, context, specificProjectDefinitions, environments)
+	if errors != nil {
+		return nil, errors
+	}
+
+	additionalDepedencyProjectNames := getAdditionalDependencyProjectNames(projects, environments)
+	if len(additionalDepedencyProjectNames) > 0 {
+		log.Info("Loading %d additional dependent projects...", len(additionalDepedencyProjectNames))
+		dependencyProjectDefinitions, err := filterProjectDefinitionsByProjectNames(context.Manifest.Projects, additionalDepedencyProjectNames)
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		dependencyProjects, errors := loadProjectsFromProjectDefinitions(workingDirFs, context, dependencyProjectDefinitions, environments)
+		if errors != nil {
+			return nil, errors
+		}
+
+		projects = append(projects, dependencyProjects...)
+	}
+
+	return projects, nil
+}
+
+func getAdditionalDependencyProjectNames(projects []Project, environments []manifest.EnvironmentDefinition) []string {
+	seenProjectNames := map[string]struct{}{}
+	for _, p := range projects {
+		seenProjectNames[p.Id] = struct{}{}
+	}
+
+	additionalDependencyProjectNames := []string{}
+	for _, p := range projects {
+		for _, env := range environments {
+			for _, d := range p.Dependencies[env.Name] {
+				if _, found := seenProjectNames[d]; !found {
+					seenProjectNames[d] = struct{}{}
+					additionalDependencyProjectNames = append(additionalDependencyProjectNames, d)
+				}
+			}
+		}
+	}
+
+	return additionalDependencyProjectNames
+}
+
+func filterProjectDefinitionsByProjectNames(projectDefinitions manifest.ProjectDefinitionByProjectID, projectNames []string) (manifest.ProjectDefinitionByProjectID, error) {
+	filteredProjectDefinitions := make(manifest.ProjectDefinitionByProjectID, len(projectDefinitions))
+
+	seenProjectNames := map[string]struct{}{}
+
+	for projectName, projectDefinition := range projectDefinitions {
+		if slices.Contains(projectNames, projectName) {
+			filteredProjectDefinitions[projectName] = projectDefinition
+			seenProjectNames[projectName] = struct{}{}
+		} else if slices.Contains(projectNames, projectDefinition.Group) {
+			filteredProjectDefinitions[projectName] = projectDefinition
+			seenProjectNames[projectDefinition.Group] = struct{}{}
+		}
+	}
+
+	var notSeenProjectNames []string
+	for _, name := range projectNames {
+		if _, found := seenProjectNames[name]; !found {
+			notSeenProjectNames = append(notSeenProjectNames, name)
+		}
+	}
+
+	if notSeenProjectNames != nil {
+		return nil, fmt.Errorf("no project with names `%s` found", strings.Join(notSeenProjectNames, ", "))
+	}
+
+	return filteredProjectDefinitions, nil
+}
+
+func loadProjectsFromProjectDefinitions(workingDirFs afero.Fs, context ProjectLoaderContext, projectDefinitions manifest.ProjectDefinitionByProjectID, environments []manifest.EnvironmentDefinition) ([]Project, []error) {
+	projects := make([]Project, 0)
 	var errors []error
-
-	for _, projectDefinition := range context.Manifest.Projects {
+	for _, projectDefinition := range projectDefinitions {
 		project, projectErrors := loadProject(workingDirFs, context, projectDefinition, environments)
-
 		if projectErrors != nil {
 			errors = append(errors, projectErrors...)
 			continue

@@ -94,27 +94,6 @@ func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, op
 	return nil
 }
 
-func filterProjects(projects []project.Project, projectsToUse []string) ([]project.Project, error) {
-	if len(projectsToUse) == 0 {
-		return projects, nil
-	}
-	var filteredProjects []project.Project
-	for _, id := range projectsToUse {
-		for _, p := range projects {
-			if p.Id == id {
-				filteredProjects = append(filteredProjects, p)
-				break
-			}
-		}
-	}
-
-	if len(filteredProjects) == 0 {
-		return nil, fmt.Errorf("requested projects %v not found in manifest", projectsToUse)
-	}
-
-	return filteredProjects, nil
-}
-
 func generateDeleteFileContent(apis api.APIs, projects []project.Project, options createDeleteFileOptions) ([]byte, error) {
 
 	log.Info("Generating delete file...")
