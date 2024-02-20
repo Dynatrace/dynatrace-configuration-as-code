@@ -21,6 +21,7 @@ package deletefile_test
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/deletefile"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
@@ -67,6 +68,7 @@ func TestInvalidCommandUsage(t *testing.T) {
 func TestGeneratesValidDeleteFile(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
+	t.Setenv(featureflags.Experimental().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -94,12 +96,14 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "management-zone", "mzone-1")
 	assertDeleteEntries(t, entries, "builtin:management-zones", "management-zone-setting")
 	assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
+	assertDeleteEntries(t, entries, "application-mobile", "app-1", "app-2")
+	assertDeleteEntries(t, entries, "user-action-and-session-properties-mobile", "property1:app-1", "property2:app-1", "property1:app-2")
 }
 
 func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-
+	t.Setenv(featureflags.Experimental().EnvName(), "1")
 	fs := testutils.CreateTestFileSystem()
 
 	outputFolder := "output-folder"
@@ -132,6 +136,7 @@ func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
+	t.Setenv(featureflags.Experimental().EnvName(), "1")
 	outputFolder := "output-folder"
 
 	t.Run("env1 includes base notification name", func(t *testing.T) {
@@ -203,6 +208,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
+	t.Setenv(featureflags.Experimental().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -232,6 +238,7 @@ func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
 func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
+	t.Setenv(featureflags.Experimental().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -269,6 +276,10 @@ func assertDeleteEntries(t *testing.T, entries map[string][]pointer.DeletePointe
 	deleted := make([]string, len(vals))
 	for i, v := range vals {
 		deleted[i] = v.Identifier
+		if v.Scope != "" {
+			deleted[i] = deleted[i] + ":" + v.Scope
+		}
+
 	}
 	assert.ElementsMatch(t, deleted, expectedCfgIdentifiers)
 }
@@ -276,6 +287,7 @@ func assertDeleteEntries(t *testing.T, entries map[string][]pointer.DeletePointe
 func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
+	t.Setenv(featureflags.Experimental().EnvName(), "1")
 
 	t.Run("default filename", func(t *testing.T) {
 		time := timeutils.TimeAnchor().Format("20060102-150405")

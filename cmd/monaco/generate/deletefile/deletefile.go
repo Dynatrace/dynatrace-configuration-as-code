@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
+	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
@@ -146,7 +147,8 @@ func generateDeleteEntries(apis api.APIs, projects []project.Project, options cr
 			if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
 				return
 			}
-			entry, err := createDeleteEntry(c, apis)
+
+			entry, err := createDeleteEntry(c, apis, p)
 			if err != nil {
 				log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
 				return
@@ -171,7 +173,7 @@ func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Proj
 				if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
 					return
 				}
-				entry, err := createDeleteEntry(c, apis)
+				entry, err := createDeleteEntry(c, apis, p)
 				if err != nil {
 					log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
 					return
@@ -204,9 +206,9 @@ func skipping(ttype string, included, excluded map[string]struct{}) bool {
 	return false
 }
 
-func createDeleteEntry(c config.Config, apis api.APIs) (persistence.DeleteEntry, error) {
+func createDeleteEntry(c config.Config, apis api.APIs, project project.Project) (persistence.DeleteEntry, error) {
 	if apis.Contains(c.Coordinate.Type) {
-		return createConfigAPIEntry(c)
+		return createConfigAPIEntry(c, apis, project)
 	}
 
 	return persistence.DeleteEntry{
@@ -216,7 +218,7 @@ func createDeleteEntry(c config.Config, apis api.APIs) (persistence.DeleteEntry,
 	}, nil
 }
 
-func createConfigAPIEntry(c config.Config) (persistence.DeleteEntry, error) {
+func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Project) (persistence.DeleteEntry, error) {
 	nameParam := c.Parameters[config.NameParameter]
 
 	if nameParam.GetType() == reference.ReferenceParameterType {
@@ -238,8 +240,49 @@ func createConfigAPIEntry(c config.Config) (persistence.DeleteEntry, error) {
 		return persistence.DeleteEntry{}, fmt.Errorf("'name' parameter was empty")
 	}
 
+	var scopeValue string
+	if apis[c.Coordinate.Type].HasParent() {
+		scopeParam, ok := c.Parameters[config.ScopeParameter]
+		if !ok {
+			return persistence.DeleteEntry{}, fmt.Errorf("no scope parameter found")
+		}
+
+		refs := scopeParam.GetReferences()
+		if len(refs) < 1 {
+			return persistence.DeleteEntry{}, fmt.Errorf("scope parameter has no references")
+		}
+
+		refCfg, ok := project.GetConfigFor(refs[0].Config)
+		if !ok {
+			return persistence.DeleteEntry{}, fmt.Errorf("no config for referenced scope found")
+		}
+
+		refCfgNameParam, ok := refCfg.Parameters[config.NameParameter]
+		if !ok {
+			return persistence.DeleteEntry{}, fmt.Errorf("no name parameter for reference config found")
+		}
+
+		refCfgNamParamVal, ok := refCfgNameParam.(*valueParam.ValueParameter)
+		if !ok {
+			return persistence.DeleteEntry{}, fmt.Errorf("name parameter of referenced config is no value parameter")
+		}
+
+		nameOfRefCfg, err := refCfgNamParamVal.ResolveValue(parameter.ResolveContext{})
+		if err != nil {
+			log.Warn("Unable to create delete entry for %s: %v", err)
+			return persistence.DeleteEntry{}, err
+		}
+
+		nameOfRefCfgStr, ok := nameOfRefCfg.(string)
+		if !ok {
+			return persistence.DeleteEntry{}, fmt.Errorf("resolved name parameter is no string")
+		}
+		scopeValue = nameOfRefCfgStr
+	}
+
 	return persistence.DeleteEntry{
 		Type:       c.Coordinate.Type,
 		ConfigName: name,
+		Scope:      scopeValue,
 	}, nil
 }

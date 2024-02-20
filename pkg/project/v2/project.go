@@ -17,6 +17,7 @@ package v2
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
 type (
@@ -67,6 +68,23 @@ func (p Project) HasDependencyOn(environment string, project Project) bool {
 	}
 
 	return false
+}
+
+// GetConfigFor searches a config object for matching the given coordinate in the
+// current project
+func (p Project) GetConfigFor(c coordinate.Coordinate) (config.Config, bool) {
+	for _, configsPerEnvironments := range p.Configs {
+		for cType, configsPerType := range configsPerEnvironments {
+			if c.Type == cType {
+				for _, cfg := range configsPerType {
+					if cfg.Coordinate.ConfigId == c.ConfigId {
+						return cfg, true
+					}
+				}
+			}
+		}
+	}
+	return config.Config{}, false
 }
 
 func (p Project) String() string {

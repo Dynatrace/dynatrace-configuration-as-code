@@ -1,0 +1,40 @@
+configs:
+  - id: property1app1
+    config:
+      name: property1
+      template: property1.json
+      skip: false
+    type:
+      api:
+        name: user-action-and-session-properties-mobile
+        scope:
+          configId: app1
+          configType: application-mobile
+          property: id
+          type: reference
+  - id: property1app2
+    config:
+      name: property1
+      template: property1.json
+      skip: false
+    type:
+      api:
+        name: user-action-and-session-properties-mobile
+        scope:
+          configId: app2
+          configType: application-mobile
+          property: id
+          type: reference
+  - id: property2app1
+    config:
+      name: property2
+      template: property1.json
+      skip: false
+    type:
+      api:
+        name: user-action-and-session-properties-mobile
+        scope:
+          configId: app1
+          configType: application-mobile
+          property: id
+          type: reference
