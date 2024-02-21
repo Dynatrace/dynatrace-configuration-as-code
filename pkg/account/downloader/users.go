@@ -21,6 +21,7 @@ import (
 	"fmt"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 )
 
@@ -43,13 +44,13 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 
 	retVal := make(Users, 0, len(dtos))
 	for i := range dtos {
-		log.WithCtxFields(ctx).Debug("Downloading details for user %q", dtos[i].Email)
+		log.WithCtxFields(ctx).Debug("Downloading details for user %q", secret.MaskedMail(dtos[i].Email))
 		dtoGroups, err := a.httpClient.GetGroupsForUser(ctx, dtos[i].Email, a.accountInfo.AccountUUID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get a list of bind groups for user %q: %w", dtos[i].Email, err)
+			return nil, fmt.Errorf("failed to get a list of bind groups for user %q: %w", secret.MaskedMail(dtos[i].Email), err)
 		}
 		if dtoGroups == nil {
-			return nil, fmt.Errorf("failed to get a list of bind groups for the user %q", dtos[i].Email)
+			return nil, fmt.Errorf("failed to get a list of bind groups for the user %q", secret.MaskedMail(dtos[i].Email))
 		}
 
 		g := &account.User{

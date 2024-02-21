@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
 
 type User struct {
@@ -67,12 +68,12 @@ func AccountResources(ctx context.Context, account Account, resourcesToDelete Re
 
 	for _, user := range resourcesToDelete.Users {
 		if err := account.APIClient.DeleteUser(ctx, user.Email); err != nil && errors.Is(err, NotFoundErr) {
-			log.Info("User %q does not exist for account %s", user.Email, account)
+			log.Info("User %q does not exist for account %s", secret.MaskedMail(user.Email), account)
 		} else if err != nil {
-			log.Error("Failed to delete user %q from account %s: %v", user.Email, account, err)
+			log.Error("Failed to delete user %q from account %s: %v", secret.MaskedMail(user.Email), account, err)
 			deleteErrors++
 		} else {
-			log.Info("Deleted user %q from account %s", user.Email, account)
+			log.Info("Deleted user %q from account %s", secret.MaskedMail(user.Email), account)
 		}
 	}
 	for _, group := range resourcesToDelete.Groups {
