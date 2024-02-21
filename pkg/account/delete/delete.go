@@ -25,7 +25,7 @@ import (
 )
 
 type User struct {
-	Email string
+	Email secret.MaskedMail
 }
 type Group struct {
 	Name string
@@ -67,13 +67,13 @@ func AccountResources(ctx context.Context, account Account, resourcesToDelete Re
 	deleteErrors := 0
 
 	for _, user := range resourcesToDelete.Users {
-		if err := account.APIClient.DeleteUser(ctx, user.Email); err != nil && errors.Is(err, NotFoundErr) {
-			log.Info("User %q does not exist for account %s", secret.MaskedMail(user.Email), account)
+		if err := account.APIClient.DeleteUser(ctx, user.Email.Value()); err != nil && errors.Is(err, NotFoundErr) {
+			log.Info("User %q does not exist for account %s", user.Email, account)
 		} else if err != nil {
-			log.Error("Failed to delete user %q from account %s: %v", secret.MaskedMail(user.Email), account, err)
+			log.Error("Failed to delete user %q from account %s: %v", user.Email, account, err)
 			deleteErrors++
 		} else {
-			log.Info("Deleted user %q from account %s", secret.MaskedMail(user.Email), account)
+			log.Info("Deleted user %q from account %s", user.Email, account)
 		}
 	}
 	for _, group := range resourcesToDelete.Groups {

@@ -30,6 +30,10 @@ func (m MaskedMail) String() string {
 	return maskMail(string(m))
 }
 
+func (m MaskedMail) Value() string {
+	return string(m)
+}
+
 func maskMail(str string) string {
 	if !isValidEmail(str) {
 		return str

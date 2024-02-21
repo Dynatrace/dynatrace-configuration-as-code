@@ -208,7 +208,7 @@ func toPersistenceUsers(users map[string]account.User) []persistence.User {
 	}
 	// sort users by email so that they are stable within a persisted file
 	slices.SortFunc(out, func(a, b persistence.User) bool {
-		return caseInsensitiveLexicographicSmaller(a.Email, b.Email)
+		return caseInsensitiveLexicographicSmaller(a.Email.Value(), b.Email.Value())
 	})
 	return out
 }

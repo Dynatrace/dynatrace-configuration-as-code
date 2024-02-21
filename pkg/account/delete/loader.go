@@ -18,6 +18,7 @@ package delete
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -105,7 +106,7 @@ func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 			if err != nil {
 				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, err.Error())
 			}
-			users = append(users, User{Email: parsed.Email})
+			users = append(users, User{Email: secret.MaskedMail(parsed.Email)})
 		case "group":
 			var parsed GroupDeleteEntry
 			err := mapstructure.Decode(e, &parsed)

@@ -69,7 +69,7 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	download1st := download(project, afero.NewCopyOnWriteFs(baseFs, afero.NewMemMapFs()))
 
 	for _, u := range deploy1st.Users {
-		assert.Contains(t, download1st.Users, u.Email)
+		assert.Contains(t, download1st.Users, u.Email.Value())
 	}
 	for _, p := range deploy1st.Policies {
 		assert.Contains(t, download1st.Policies, toID(p.Name)) // when downloading, ID is generated from name
@@ -83,7 +83,7 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	assert.Equal(t, deploy2nd, deploy1st)
 
 	for _, u := range deploy1st.Users {
-		assert.Equal(t, download1st.Users[u.Email], download2nd.Users[u.Email])
+		assert.Equal(t, download1st.Users[u.Email.Value()], download2nd.Users[u.Email.Value()])
 	}
 	for _, p := range deploy1st.Policies {
 		p.ID = toID(p.Name)

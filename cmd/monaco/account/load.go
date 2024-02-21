@@ -18,7 +18,6 @@ package account
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	accountLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
@@ -48,10 +47,10 @@ func loadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefi
 		}
 
 		for _, us := range res.Users {
-			if _, exists := resources.Users[us.Email]; exists {
-				return nil, fmt.Errorf("group with id %q already defined in another project", secret.MaskedMail(us.Email))
+			if _, exists := resources.Users[us.Email.Value()]; exists {
+				return nil, fmt.Errorf("group with id %q already defined in another project", us.Email)
 			}
-			resources.Users[us.Email] = us
+			resources.Users[us.Email.Value()] = us
 		}
 	}
 

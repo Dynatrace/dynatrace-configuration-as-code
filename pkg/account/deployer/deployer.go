@@ -7,7 +7,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/go-logr/logr"
 	"strings"
@@ -237,7 +236,7 @@ func (d *AccountDeployer) deployUsers(users map[string]account.User, dispatcher 
 		user := user
 		deployUserJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.Info("Deploying user %s", secret.MaskedMail(user.Email))
+			d.logger.Info("Deploying user %s", user.Email)
 			if _, err := d.upsertUser(d.logCtx(), user); err != nil {
 				errCh <- fmt.Errorf("unable to deploy user for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
@@ -274,7 +273,7 @@ func (d *AccountDeployer) deployUserBindings(users map[account.UserId]account.Us
 		deployUserBindingsJob :=
 			func(wg *sync.WaitGroup, errCh chan error) {
 				defer wg.Done()
-				d.logger.Info("Updating group bindings for user %s", secret.MaskedMail(user.Email))
+				d.logger.Info("Updating group bindings for user %s", user.Email)
 				if err := d.updateUserGroupBindings(d.logCtx(), user); err != nil {
 					errCh <- fmt.Errorf("unable to deploy user binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 				}
@@ -314,7 +313,7 @@ func (d *AccountDeployer) upsertGroup(ctx context.Context, group account.Group) 
 }
 
 func (d *AccountDeployer) upsertUser(ctx context.Context, user account.User) (remoteId, error) {
-	return d.accClient.upsertUser(ctx, user.Email)
+	return d.accClient.upsertUser(ctx, user.Email.Value())
 }
 
 func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group account.Group) error {
@@ -358,7 +357,7 @@ func (d *AccountDeployer) updateUserGroupBindings(ctx context.Context, user acco
 		return err
 	}
 
-	if err := d.accClient.updateGroupBindings(ctx, user.Email, remoteGroupIds); err != nil {
+	if err := d.accClient.updateGroupBindings(ctx, user.Email.Value(), remoteGroupIds); err != nil {
 		return err
 	}
 	return nil

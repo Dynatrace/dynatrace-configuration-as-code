@@ -54,7 +54,7 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 		}
 
 		g := &account.User{
-			Email:  dtos[i].Email,
+			Email:  secret.MaskedMail(dtos[i].Email),
 			Groups: groups.refFromDTOs(dtoGroups.Groups),
 		}
 
@@ -72,7 +72,7 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 func (u Users) asAccountUsers() map[account.UserId]account.User {
 	retVal := make(map[account.UserId]account.User, len(u))
 	for i := range u {
-		retVal[u[i].user.Email] = *u[i].user
+		retVal[u[i].user.Email.Value()] = *u[i].user
 	}
 	return retVal
 }
