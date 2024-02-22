@@ -35,6 +35,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation/internal"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"golang.org/x/exp/maps"
+	"time"
 )
 
 var automationTypesToResources = map[config.AutomationType]automationAPI.ResourceType{
@@ -45,7 +46,7 @@ var automationTypesToResources = map[config.AutomationType]automationAPI.Resourc
 
 // Download downloads all automation resources for a given project
 // If automationTypes is given it will just download those types of automation resources
-func Download(client *client.Client, projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
+func Download(cl *client.Client, projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
 	if len(automationTypes) == 0 {
 		automationTypes = maps.Keys(automationTypesToResources)
 	}
@@ -59,7 +60,12 @@ func Download(client *client.Client, projectName string, automationTypes ...conf
 			lg.Warn("No resource mapping for automation type %s found", at.Resource)
 			continue
 		}
-		response, err := client.List(context.TODO(), resource)
+		response, err := func() (client.ListResponse, error) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			return cl.List(ctx, resource)
+		}()
+
 		if err != nil {
 			lg.WithFields(field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
