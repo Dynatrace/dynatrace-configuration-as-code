@@ -140,9 +140,10 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 		return Project{}, errors
 	}
 
-	// find and memoroize (non-unique-name) configurations with identical names and set a special parameter on them
+	// find and memorize (non-unique-name) configurations with identical names and set a special parameter on them
 	// to be able to identify them later
-	nonUniqueNameConfigCount := make(map[string]int)
+	// splitting is map[environment]map[name]count
+	nonUniqueNameConfigCount := make(map[string]map[string]int)
 	apis := api.NewAPIs()
 	for _, c := range configs {
 		if c.Type.ID() == config.ClassicApiTypeId && apis[c.Coordinate.Type].NonUniqueName {
@@ -150,8 +151,13 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 			if err != nil {
 				log.WithFields(field.Error(err), field.Coordinate(c.Coordinate)).Error("Unable to resolve name of configuration")
 			}
+
+			if _, f := nonUniqueNameConfigCount[c.Environment]; !f {
+				nonUniqueNameConfigCount[c.Environment] = make(map[string]int)
+			}
+
 			if nameStr, ok := name.(string); ok {
-				nonUniqueNameConfigCount[nameStr]++
+				nonUniqueNameConfigCount[c.Environment][nameStr]++
 			}
 		}
 	}
@@ -162,7 +168,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 		// set special parameter for non-unique configs that appear multiple times with the same name
 		// in order to be able to identify them during deployment
 		if nameStr, ok := name.(string); ok {
-			if nonUniqueNameConfigCount[nameStr] > 1 {
+			if nonUniqueNameConfigCount[conf.Environment][nameStr] > 1 {
 				configs[i].Parameters[config.NonUniqueNameConfigDuplicationParameter] = value.New(true)
 			}
 		}
