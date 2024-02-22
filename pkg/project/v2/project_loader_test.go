@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
+	assert2 "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
 	"reflect"
 	"testing"
@@ -254,6 +255,103 @@ func TestLoadProjects_LoadsProjectInHiddenDirDoesNotLoad(t *testing.T) {
 	a, found := c["alerting-profile"]
 	assert.Assert(t, found, "Expected configs loaded for dashboard api")
 	assert.Equal(t, len(a), 1, "Expected a one config to be loaded for alerting-profile")
+}
+
+func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForOneEnvironment(t *testing.T) {
+	testFs := afero.NewMemMapFs()
+	_ = afero.WriteFile(testFs, "project/b/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
+	_ = afero.WriteFile(testFs, "project/b/profile.json", []byte("{}"), 0644)
+
+	context := getFullProjectLoaderContext(
+		[]string{"alerting-profile", "dashboard"},
+		[]string{"project"},
+		[]string{"env"})
+
+	projects, gotErrs := LoadProjects(testFs, context)
+	assert2.Empty(t, gotErrs)
+	assert2.Len(t, projects, 1, "expected one project")
+
+	envProfile := findConfig(t, projects[0], "env", "alerting-profile", 0)
+	assert2.NotContains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should not be present")
+}
+
+func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForTwoEnvironments(t *testing.T) {
+	// the name duplication check should find names that are duplicated in the configs **in the same env**
+	// it is valid that configs have the same name if they're deployed to separate environments.
+
+	testFs := afero.NewMemMapFs()
+	_ = afero.WriteFile(testFs, "project/b/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
+	_ = afero.WriteFile(testFs, "project/b/profile.json", []byte("{}"), 0644)
+
+	context := getFullProjectLoaderContext(
+		[]string{"alerting-profile", "dashboard"},
+		[]string{"project"},
+		[]string{"env", "env2"})
+
+	projects, gotErrs := LoadProjects(testFs, context)
+	assert2.Empty(t, gotErrs)
+	assert2.Len(t, projects, 1, "expected one project")
+
+	envProfile := findConfig(t, projects[0], "env", "alerting-profile", 0)
+	env2Profile := findConfig(t, projects[0], "env2", "alerting-profile", 0)
+
+	assert2.NotContains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should not be present")
+	assert2.NotContains(t, env2Profile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should not be present")
+}
+
+func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedTwoEnvironments(t *testing.T) {
+	testFs := afero.NewMemMapFs()
+	_ = afero.WriteFile(testFs, "project/b/dashboard.yaml", []byte("configs:\n- id: dashboard\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644)
+	_ = afero.WriteFile(testFs, "project/b/dashboard2.yaml", []byte("configs:\n- id: dashboard2\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644)
+	_ = afero.WriteFile(testFs, "project/b/dashboard.json", []byte("{}"), 0644)
+
+	context := getFullProjectLoaderContext(
+		[]string{"alerting-profile", "dashboard"},
+		[]string{"project"},
+		[]string{"env", "env2"})
+
+	projects, gotErrs := LoadProjects(testFs, context)
+	assert2.Empty(t, gotErrs)
+	assert2.Len(t, projects, 1, "expected one project")
+
+	envProfile := findConfig(t, projects[0], "env", "dashboard", 0)
+	env2Profile := findConfig(t, projects[0], "env2", "dashboard", 0)
+
+	assert2.Contains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should be present")
+	assert2.Contains(t, env2Profile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should be present")
+}
+
+func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedOneEnvironment(t *testing.T) {
+	testFs := afero.NewMemMapFs()
+	_ = afero.WriteFile(testFs, "project/b/dashboard.yaml", []byte("configs:\n- id: dashboard\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644)
+	_ = afero.WriteFile(testFs, "project/b/dashboard2.yaml", []byte("configs:\n- id: dashboard2\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644)
+	_ = afero.WriteFile(testFs, "project/b/dashboard.json", []byte("{}"), 0644)
+
+	context := getFullProjectLoaderContext(
+		[]string{"alerting-profile", "dashboard"},
+		[]string{"project"},
+		[]string{"env"})
+
+	projects, gotErrs := LoadProjects(testFs, context)
+	assert2.Empty(t, gotErrs)
+	assert2.Len(t, projects, 1, "expected one project")
+
+	envProfile := findConfig(t, projects[0], "env", "dashboard", 0)
+
+	assert2.Contains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should be present")
+}
+
+func findConfig(t *testing.T, p Project, e, a string, cIndex int) config.Config {
+	assert2.Containsf(t, p.Configs, e, "Expected to find environment '%s'", e)
+
+	env := p.Configs[e]
+	assert2.Containsf(t, env, a, "Expected to find api '%s'", a)
+
+	configs := env[a]
+	assert2.NotEmpty(t, configs)
+	assert2.True(t, len(configs) > cIndex, "Config on index %d does not exist. Configs loaded: %d", cIndex, len(configs))
+
+	return configs[cIndex]
 }
 
 func TestLoadProjects_LoadsKnownAndUnknownApiNames(t *testing.T) {
@@ -533,6 +631,30 @@ func Test_loadProject_returnsErrorIfProjectPathDoesNotExist(t *testing.T) {
 	}
 
 	_, gotErrs := loadProject(fs, ctx, definition, []manifest.EnvironmentDefinition{})
+	assert.Assert(t, len(gotErrs) == 1)
+	assert.ErrorContains(t, gotErrs[0], "filepath `this/does/not/exist` does not exist")
+}
+
+func Test_loadProject_(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	ctx := ProjectLoaderContext{}
+	definition := manifest.ProjectDefinition{
+		Name: "project",
+		Path: "this/does/not/exist",
+	}
+
+	envDefs := []manifest.EnvironmentDefinition{
+		{
+			Name:  "",
+			Group: "",
+		},
+		{
+			Name:  "",
+			Group: "",
+		},
+	}
+
+	_, gotErrs := loadProject(fs, ctx, definition, envDefs)
 	assert.Assert(t, len(gotErrs) == 1)
 	assert.ErrorContains(t, gotErrs[0], "filepath `this/does/not/exist` does not exist")
 }
