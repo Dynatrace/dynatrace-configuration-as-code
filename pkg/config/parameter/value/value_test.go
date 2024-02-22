@@ -19,11 +19,10 @@ package value
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-
-	"gotest.tools/assert"
 )
 
 func TestParseValueParameter(t *testing.T) {
@@ -35,13 +34,12 @@ func TestParseValueParameter(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
+	require.Nil(t, err)
 
 	valueParam, ok := param.(*ValueParameter)
-	assert.Assert(t, ok, "parsed parameter should be value parameter")
-	assert.Equal(t, valueParam.GetType(), "value")
-
-	assert.Equal(t, value, valueParam.Value)
+	require.True(t, ok, "parsed parameter should be value parameter")
+	require.Equal(t, valueParam.GetType(), "value")
+	require.Equal(t, value, valueParam.Value)
 }
 
 func TestParseValueParameterMap(t *testing.T) {
@@ -56,18 +54,15 @@ func TestParseValueParameterMap(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	valueParam, ok := param.(*ValueParameter)
-	assert.Assert(t, ok, "parsed parameter should be value parameter")
+	require.True(t, ok, "parsed parameter should be value parameter")
 
 	result, ok := valueParam.Value.(map[string]string)
-	assert.Assert(t, ok, "result should be of type map[string]string, is: %T", valueParam.Value)
-	assert.Equal(t, len(result), 2)
-
-	for key, val := range value {
-		assert.Equal(t, result[key], val)
-	}
+	require.True(t, ok, "result should be of type map[string]string, is: %T", valueParam.Value)
+	require.Len(t, result, 2)
+	require.Equal(t, value, result)
 }
 
 func TestParseValueParameterMissingValueParameterShouldReturnError(t *testing.T) {
@@ -79,7 +74,7 @@ func TestParseValueParameterMissingValueParameterShouldReturnError(t *testing.T)
 		},
 	})
 
-	assert.Assert(t, err != nil)
+	require.Error(t, err)
 }
 
 func TestGetReferencesShouldNotReturnAnything(t *testing.T) {
@@ -87,7 +82,7 @@ func TestGetReferencesShouldNotReturnAnything(t *testing.T) {
 
 	refs := fixture.GetReferences()
 
-	assert.Assert(t, len(refs) == 0)
+	require.Len(t, refs, 0)
 }
 
 func TestResolveValue(t *testing.T) {
@@ -96,8 +91,8 @@ func TestResolveValue(t *testing.T) {
 
 	result, err := fixture.ResolveValue(parameter.ResolveContext{})
 
-	assert.NilError(t, err)
-	assert.Equal(t, value, result)
+	require.NoError(t, err)
+	require.Equal(t, value, result)
 }
 
 func TestResolveValueMap(t *testing.T) {
@@ -109,15 +104,12 @@ func TestResolveValueMap(t *testing.T) {
 
 	result, err := fixture.ResolveValue(parameter.ResolveContext{})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	resultMap, ok := result.(map[string]string)
-	assert.Assert(t, ok, "result should be of type map[string]string, is: %T", result)
-	assert.Equal(t, len(resultMap), 2)
-
-	for key, val := range value {
-		assert.Equal(t, resultMap[key], val)
-	}
+	require.Truef(t, ok, "result should be of type map[string]string, is: %T", result)
+	require.Len(t, resultMap, 2)
+	require.Equal(t, resultMap, value)
 }
 
 func TestWriteValueParameter(t *testing.T) {
@@ -130,12 +122,12 @@ func TestWriteValueParameter(t *testing.T) {
 
 	result, err := writeValueParameter(context)
 
-	assert.NilError(t, err)
-	assert.Equal(t, len(result), 1, "should have 1 property")
+	require.NoError(t, err)
+	require.Len(t, result, 1, "should have 1 property")
 
 	resultVal, ok := result["value"]
-	assert.Assert(t, ok, "should have property `name`")
-	assert.Equal(t, resultVal, value)
+	require.True(t, ok, "should have property 'name'")
+	require.Equal(t, value, resultVal)
 }
 
 func TestValuesWithSpecialCharactersReturnContentValidForJson(t *testing.T) {
@@ -172,14 +164,14 @@ func TestValuesWithSpecialCharactersReturnContentValidForJson(t *testing.T) {
 
 			result, err := fixture.ResolveValue(parameter.ResolveContext{})
 
-			assert.NilError(t, err)
+			require.NoError(t, err)
 
 			resString := result.(string)
 
 			sampleJson := fmt.Sprintf(`{ "val": "%s"}`, resString)
 
 			err = json.ValidateJson(sampleJson, json.Location{})
-			assert.NilError(t, err)
+			require.NoError(t, err)
 		})
 	}
 }

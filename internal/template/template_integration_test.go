@@ -21,7 +21,7 @@ package template
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -32,17 +32,17 @@ const test_json = "test-resources/templating-integration-test-template.json"
 func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewOsFs())
 	bytes, err := afero.ReadFile(fs, test_yaml)
-	assert.NilError(t, err, "Expected config yaml (%s) to be read without error", test_yaml)
+	require.NoErrorf(t, err, "Expected config yaml (%s) to be read without error", test_yaml)
 
 	properties, err := UnmarshalYaml(string(bytes), test_yaml)
-	assert.NilError(t, err, "Expected config yaml (%s) to be parsed without error", test_yaml)
+	require.NoErrorf(t, err, "Expected config yaml (%s) to be parsed without error", test_yaml)
 
 	template, err := NewTemplate(fs, test_json)
-	assert.NilError(t, err, "Expected template json (%s) to be loaded without error", test_json)
+	require.NoErrorf(t, err, "Expected template json (%s) to be loaded without error", test_json)
 
 	rendered, err := template.ExecuteTemplate(properties["properties"])
-	assert.NilError(t, err, "Expected template to render without error\n %s", rendered)
+	require.NoError(t, err, "Expected template to render without error\n %s", rendered)
 
 	err = json.ValidateJson(rendered, json.Location{})
-	assert.NilError(t, err, "Expected rendered template to be valid JSON:\n %s", rendered)
+	require.NoError(t, err, "Expected rendered template to be valid JSON:\n %s", rendered)
 }

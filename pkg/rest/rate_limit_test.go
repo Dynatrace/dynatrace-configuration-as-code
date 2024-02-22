@@ -22,8 +22,8 @@ import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/throttle"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"gotest.tools/assert"
 	"net/http"
 	"strconv"
 	"testing"
@@ -65,9 +65,9 @@ func TestRateLimitHeaderExtractionForCorrectHeaders(t *testing.T) {
 
 	limit, _, resetTimeInMicroseconds, err := rateLimitStrategy.extractRateLimitHeaders(response)
 
-	assert.NilError(t, err)
-	assert.Equal(t, "20", limit)
-	assert.Equal(t, 0, int(resetTimeInMicroseconds))
+	require.NoError(t, err)
+	require.Equal(t, "20", limit)
+	require.Equal(t, int64(0), resetTimeInMicroseconds)
 }
 
 func TestRateLimitHeaderExtractionForMissingHeaders(t *testing.T) {
@@ -78,7 +78,7 @@ func TestRateLimitHeaderExtractionForMissingHeaders(t *testing.T) {
 	}
 
 	_, _, _, err := rateLimitStrategy.extractRateLimitHeaders(response)
-	assert.ErrorContains(t, err, "not found")
+	require.ErrorContains(t, err, "not found")
 }
 
 func TestRateLimitHeaderExtractionForInvalidHeader(t *testing.T) {
@@ -92,7 +92,7 @@ func TestRateLimitHeaderExtractionForInvalidHeader(t *testing.T) {
 	}
 
 	_, _, _, err := rateLimitStrategy.extractRateLimitHeaders(response)
-	assert.ErrorContains(t, err, "not a valid unix timestamp")
+	require.ErrorContains(t, err, "not a valid unix timestamp")
 }
 
 func TestSimpleRateLimitStrategySleepsFor42Seconds(t *testing.T) {
@@ -121,8 +121,8 @@ func TestSimpleRateLimitStrategySleepsFor42Seconds(t *testing.T) {
 
 	response, err := rateLimitStrategy.ExecuteRequest(timelineProvider, callback)
 
-	assert.NilError(t, err)
-	assert.Equal(t, response.StatusCode, 200)
+	require.NoError(t, err)
+	require.Equal(t, 200, response.StatusCode)
 }
 
 func TestSimpleRateLimitStrategySleepsGeneratedTimeout_IfHeaderIsMissingLimit(t *testing.T) {
@@ -145,13 +145,13 @@ func TestSimpleRateLimitStrategySleepsGeneratedTimeout_IfHeaderIsMissingLimit(t 
 
 	timelineProvider.EXPECT().Now().Times(1).Return(time.Unix(0, 0)) // time travel to the 70s
 	timelineProvider.EXPECT().Sleep(gomock.Any()).Times(1).Do(func(duration time.Duration) {
-		assert.Assert(t, duration >= throttle.MinWaitDuration)
+		require.GreaterOrEqual(t, duration, throttle.MinWaitDuration)
 	})
 
 	response, err := rateLimitStrategy.ExecuteRequest(timelineProvider, callback)
 
-	assert.NilError(t, err)
-	assert.Equal(t, response.StatusCode, 200)
+	require.NoError(t, err)
+	require.Equal(t, 200, response.StatusCode)
 }
 
 func TestSimpleRateLimitStrategy2Iterations(t *testing.T) {
@@ -180,8 +180,8 @@ func TestSimpleRateLimitStrategy2Iterations(t *testing.T) {
 
 	response, err := rateLimitStrategy.ExecuteRequest(timelineProvider, callback)
 
-	assert.NilError(t, err)
-	assert.Equal(t, response.StatusCode, 200)
+	require.NoError(t, err)
+	require.Equal(t, 200, response.StatusCode)
 }
 
 func TestHandleEmptyResponse(t *testing.T) {
@@ -193,5 +193,5 @@ func TestHandleEmptyResponse(t *testing.T) {
 	}
 
 	_, err := rateLimitStrategy.ExecuteRequest(timelineProvider, callback)
-	assert.ErrorContains(t, err, "foo Error")
+	require.ErrorContains(t, err, "foo Error")
 }
