@@ -313,7 +313,7 @@ func (d *AccountDeployer) upsertGroup(ctx context.Context, group account.Group) 
 }
 
 func (d *AccountDeployer) upsertUser(ctx context.Context, user account.User) (remoteId, error) {
-	return d.accClient.upsertUser(ctx, user.Email)
+	return d.accClient.upsertUser(ctx, user.Email.Value())
 }
 
 func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group account.Group) error {
@@ -357,7 +357,7 @@ func (d *AccountDeployer) updateUserGroupBindings(ctx context.Context, user acco
 		return err
 	}
 
-	if err := d.accClient.updateGroupBindings(ctx, user.Email, remoteGroupIds); err != nil {
+	if err := d.accClient.updateGroupBindings(ctx, user.Email.Value(), remoteGroupIds); err != nil {
 		return err
 	}
 	return nil

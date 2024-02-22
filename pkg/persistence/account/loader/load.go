@@ -129,10 +129,10 @@ func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 			if err := validateUser(u); err != nil {
 				return nil, fmt.Errorf("error in file %q: %w", yamlFilePath, err)
 			}
-			if _, exists := resources.Users[u.Email]; exists {
+			if _, exists := resources.Users[u.Email.Value()]; exists {
 				return nil, fmt.Errorf("found duplicate user with email %q", u.Email)
 			}
-			resources.Users[u.Email] = u
+			resources.Users[u.Email.Value()] = u
 		}
 	}
 	return resources, nil

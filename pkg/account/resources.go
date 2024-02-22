@@ -16,6 +16,8 @@
 
 package account
 
+import "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
+
 func NewAccountManagementResources() *Resources {
 	resources := Resources{
 		Groups:   make(map[GroupId]Group),
@@ -77,7 +79,7 @@ type (
 	}
 
 	User struct {
-		Email  string
+		Email  secret.Email
 		Groups []Ref
 	}
 	Reference struct {

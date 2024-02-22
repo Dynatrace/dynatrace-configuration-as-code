@@ -47,10 +47,10 @@ func loadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefi
 		}
 
 		for _, us := range res.Users {
-			if _, exists := resources.Users[us.Email]; exists {
+			if _, exists := resources.Users[us.Email.Value()]; exists {
 				return nil, fmt.Errorf("group with id %q already defined in another project", us.Email)
 			}
-			resources.Users[us.Email] = us
+			resources.Users[us.Email.Value()] = us
 		}
 	}
 
