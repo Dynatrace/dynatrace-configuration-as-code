@@ -108,7 +108,7 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 }
 
 func TestLoadProjects_RejectsManifestsWithNoProjects(t *testing.T) {
-	testFs := afero.NewMemMapFs()
+	testFs := testutils.TempFs(t)
 	context := getSimpleProjectLoaderContext([]string{})
 
 	got, gotErrs := LoadProjects(testFs, context)
@@ -119,11 +119,13 @@ func TestLoadProjects_RejectsManifestsWithNoProjects(t *testing.T) {
 }
 
 func TestLoadProjects_LoadsSimpleProject(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-profile", 0755))
+	require.NoError(t, testFs.MkdirAll("project/dashboard", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -146,11 +148,13 @@ func TestLoadProjects_LoadsSimpleProject(t *testing.T) {
 }
 
 func TestLoadProjects_LoadsSimpleProjectInFoldersNotMatchingApiName(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/not-dashboard-dir/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/not-dashboard-dir/board.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-profile", 0755))
+	require.NoError(t, testFs.MkdirAll("project/not-dashboard-dir", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/not-dashboard-dir/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/not-dashboard-dir/board.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -173,11 +177,12 @@ func TestLoadProjects_LoadsSimpleProjectInFoldersNotMatchingApiName(t *testing.T
 }
 
 func TestLoadProjects_LoadsProjectInRootDir(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/profile.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/board.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/profile.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/board.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -200,13 +205,14 @@ func TestLoadProjects_LoadsProjectInRootDir(t *testing.T) {
 }
 
 func TestLoadProjects_LoadsProjectInManyDirs(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/a/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: ../profile.json\n  type:\n    api: alerting-profile\n- id: profile2\n  config:\n    name: Test Profile\n    template: b/c/profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/profile.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/a/b/c/profile.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/a/b/c", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/a/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: ../profile.json\n  type:\n    api: alerting-profile\n- id: profile2\n  config:\n    name: Test Profile\n    template: b/c/profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/profile.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/a/b/c/profile.json", []byte("{}"), 0644))
 
-	_ = afero.WriteFile(testFs, "project/a/b/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: ../../board.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/board.json", []byte("{}"), 0644)
+	require.NoError(t, afero.WriteFile(testFs, "project/a/b/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: ../../board.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/board.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -230,13 +236,16 @@ func TestLoadProjects_LoadsProjectInManyDirs(t *testing.T) {
 }
 
 func TestLoadProjects_LoadsProjectInHiddenDirDoesNotLoad(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/.a/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: ../b/profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/b/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/b/profile.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/.a", 0755))
+	require.NoError(t, testFs.MkdirAll("project/b", 0755))
+	require.NoError(t, testFs.MkdirAll("project/a/.b/c", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/.a/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: ../b/profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/b/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/b/profile.json", []byte("{}"), 0644))
 
-	_ = afero.WriteFile(testFs, "project/a/.b/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: ../../board.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/a/.b/c/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: ../../board.json\n  type:\n    api: dashboard"), 0644)
+	require.NoError(t, afero.WriteFile(testFs, "project/a/.b/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: ../../board.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/a/.b/c/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: ../../board.json\n  type:\n    api: dashboard"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -361,11 +370,13 @@ func findConfig(t *testing.T, p Project, e, a string, cIndex int) config.Config 
 }
 
 func TestLoadProjects_LoadsKnownAndUnknownApiNames(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/not-dashboard-dir/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: unknown-api"), 0644)
-	_ = afero.WriteFile(testFs, "project/not-dashboard-dir/board.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-profile", 0755))
+	require.NoError(t, testFs.MkdirAll("project/not-dashboard-dir", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/not-dashboard-dir/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: unknown-api"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/not-dashboard-dir/board.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -377,12 +388,14 @@ func TestLoadProjects_LoadsKnownAndUnknownApiNames(t *testing.T) {
 }
 
 func TestLoadProjects_LoadsProjectWithConfigAndSettingsConfigurations(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/settings.yaml", []byte(`
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-profile", 0755))
+	require.NoError(t, testFs.MkdirAll("project/dashboard", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/settings.yaml", []byte(`
 configs:
 - id: setting_one
   type:
@@ -401,9 +414,10 @@ configs:
   config:
     name: Setting Two
     template: my_second_setting.json
-`), 0644)
-	_ = afero.WriteFile(testFs, "project/my_first_setting.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/my_second_setting.json", []byte("{}"), 0644)
+`), 0644))
+	require.NoError(t, testFs.MkdirAll("project", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/my_first_setting.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/my_second_setting.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -435,12 +449,14 @@ configs:
 
 func TestLoadProjects_LoadsProjectConfigsWithCorrectTypeInformation(t *testing.T) {
 
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/settings.yaml", []byte(`
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-profile", 0755))
+	require.NoError(t, testFs.MkdirAll("project/dashboard", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/settings.yaml", []byte(`
 configs:
 - id: setting_one
   type:
@@ -459,9 +475,10 @@ configs:
   config:
     name: Setting Two
     template: my_second_setting.json
-`), 0644)
-	_ = afero.WriteFile(testFs, "project/my_first_setting.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/my_second_setting.json", []byte("{}"), 0644)
+`), 0644))
+	require.NoError(t, testFs.MkdirAll("project", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/my_first_setting.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/my_second_setting.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -511,11 +528,13 @@ configs:
 }
 
 func TestLoadProjects_AllowsOverlappingIdsInDifferentApis(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-profile", 0755))
+	require.NoError(t, testFs.MkdirAll("project/dashboard", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -526,11 +545,13 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentApis(t *testing.T) {
 }
 
 func TestLoadProjects_AllowsOverlappingIdsInDifferentProjects(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project2/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project2/alerting-profile/profile.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-profile", 0755))
+	require.NoError(t, testFs.MkdirAll("project2/alerting-profile", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project2/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project2/alerting-profile/profile.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project", "project2"})
 
@@ -541,8 +562,9 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentProjects(t *testing.T) {
 }
 
 func TestLoadProjects_AllowsOverlappingIdsInEnvironmentOverride(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte(`
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-profile", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte(`
 configs:
 - id: profile
   config:
@@ -556,8 +578,8 @@ configs:
         name: Some Special Name
     - environment: env2
       override:
-        skip: true`), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
+        skip: true`), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644))
 
 	context := getFullProjectLoaderContext([]string{"alerting-profile"}, []string{"project"}, []string{"env1", "env2"})
 
@@ -574,12 +596,14 @@ configs:
 }
 
 func TestLoadProjects_ContainsCoordinateWhenReturningErrorForDuplicates(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile2.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/dashboard/config.yaml", []byte("configs:\n- id: DASH_OVERLAP\n  config:\n    name: Test Dash\n    template: dash.json\n  type:\n    api: dashboard\n- id: DASH_OVERLAP\n  config:\n    name: Test Dash 2\n    template: dash.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/dashboard/dash.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-profile", 0755))
+	require.NoError(t, testFs.MkdirAll("project/dashboard", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile2.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard/config.yaml", []byte("configs:\n- id: DASH_OVERLAP\n  config:\n    name: Test Dash\n    template: dash.json\n  type:\n    api: dashboard\n- id: DASH_OVERLAP\n  config:\n    name: Test Dash 2\n    template: dash.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard/dash.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -591,10 +615,11 @@ func TestLoadProjects_ContainsCoordinateWhenReturningErrorForDuplicates(t *testi
 }
 
 func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InDifferentFiles(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-some-profile/profile.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-some-profile/profile2.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-some-profile/profile.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-some-profile", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-some-profile/profile.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-some-profile/profile2.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-some-profile/profile.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -604,8 +629,9 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InDifferentFiles(t *test
 }
 
 func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InSameFile(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml",
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.MkdirAll("project/alerting-profile", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.yaml",
 		[]byte(`configs:
 - id: OVERLAP
   config:
@@ -618,8 +644,8 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InSameFile(t *testing.T)
 	api: alerting-profile
   config:
     name: Some Other Profile
-    template: profile.json`), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
+    template: profile.json`), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644))
 
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
@@ -629,7 +655,7 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InSameFile(t *testing.T)
 }
 
 func Test_loadProject_returnsErrorIfProjectPathDoesNotExist(t *testing.T) {
-	fs := afero.NewMemMapFs()
+	fs := testutils.TempFs(t)
 	ctx := ProjectLoaderContext{}
 	definition := manifest.ProjectDefinition{
 		Name: "project",
@@ -637,30 +663,6 @@ func Test_loadProject_returnsErrorIfProjectPathDoesNotExist(t *testing.T) {
 	}
 
 	_, gotErrs := loadProject(fs, ctx, definition, []manifest.EnvironmentDefinition{})
-	assert.Assert(t, len(gotErrs) == 1)
-	assert.ErrorContains(t, gotErrs[0], "filepath `this/does/not/exist` does not exist")
-}
-
-func Test_loadProject_(t *testing.T) {
-	fs := afero.NewMemMapFs()
-	ctx := ProjectLoaderContext{}
-	definition := manifest.ProjectDefinition{
-		Name: "project",
-		Path: "this/does/not/exist",
-	}
-
-	envDefs := []manifest.EnvironmentDefinition{
-		{
-			Name:  "",
-			Group: "",
-		},
-		{
-			Name:  "",
-			Group: "",
-		},
-	}
-
-	_, gotErrs := loadProject(fs, ctx, definition, envDefs)
 	assert.Assert(t, len(gotErrs) == 1)
 	assert.ErrorContains(t, gotErrs[0], "filepath `this/does/not/exist` does not exist")
 }
