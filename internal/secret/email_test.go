@@ -30,14 +30,14 @@ func TestMaskEmail(t *testing.T) {
 		{"test@example.com", "te***@ex***.com"},
 		{"short@ex.com", "sh***@***.com"},
 		{"a@b.co.uk", "***@***.co.uk"},
-		{"invalid", "invalid"},
-		{"invalid@", "invalid@"},
-		{"invalid.com", "invalid.com"},
+		{"invalid", "***"},
+		{"invalid@", "***"},
+		{"invalid.com", "***"},
 	}
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("MaskEmail(%s)", tc.email), func(t *testing.T) {
-			assert.Equal(t, tc.expectedOutput, fmt.Sprintf("%s", MaskedMail(tc.email)))
+			assert.Equal(t, tc.expectedOutput, fmt.Sprintf("%s", Email(tc.email)))
 		})
 	}
 }

@@ -22,21 +22,21 @@ import (
 	"strings"
 )
 
-// MaskedMail is a string that masks parts of its string representation
+// Email is a string that masks parts of its string representation
 // if it's an email. If it's no valid email address the value is unchanged
-type MaskedMail string
+type Email string
 
-func (m MaskedMail) String() string {
+func (m Email) String() string {
 	return maskMail(string(m))
 }
 
-func (m MaskedMail) Value() string {
+func (m Email) Value() string {
 	return string(m)
 }
 
 func maskMail(str string) string {
 	if !isValidEmail(str) {
-		return str
+		return "***"
 	}
 	parts := strings.Split(str, "@")
 	if len(parts) != 2 {

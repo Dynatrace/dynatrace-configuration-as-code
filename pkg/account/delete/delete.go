@@ -25,7 +25,7 @@ import (
 )
 
 type User struct {
-	Email secret.MaskedMail
+	Email secret.Email
 }
 type Group struct {
 	Name string

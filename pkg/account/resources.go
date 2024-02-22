@@ -79,7 +79,7 @@ type (
 	}
 
 	User struct {
-		Email  secret.MaskedMail
+		Email  secret.Email
 		Groups []Ref
 	}
 	Reference struct {

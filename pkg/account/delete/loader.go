@@ -106,7 +106,7 @@ func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 			if err != nil {
 				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, err.Error())
 			}
-			users = append(users, User{Email: secret.MaskedMail(parsed.Email)})
+			users = append(users, User{Email: secret.Email(parsed.Email)})
 		case "group":
 			var parsed GroupDeleteEntry
 			err := mapstructure.Decode(e, &parsed)

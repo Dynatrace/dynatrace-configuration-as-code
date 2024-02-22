@@ -80,8 +80,8 @@ type (
 		Permissions    []string `yaml:"permissions" json:"permissions" jsonschema:"required,description=Permissions for this management zone."`
 	}
 	User struct {
-		Email  secret.MaskedMail `yaml:"email" json:"email" jsonschema:"required,description=Email address of this user."`
-		Groups ReferenceSlice    `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups this user is part of - either defined by name directly or as a reference to a group configuration."`
+		Email  secret.Email   `yaml:"email" json:"email" jsonschema:"required,description=Email address of this user."`
+		Groups ReferenceSlice `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups this user is part of - either defined by name directly or as a reference to a group configuration."`
 	}
 
 	Reference struct {
