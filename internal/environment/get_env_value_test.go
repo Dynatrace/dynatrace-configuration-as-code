@@ -19,7 +19,7 @@
 package environment
 
 import (
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -27,33 +27,33 @@ func TestWithParallelRequestLimitFromEnvOption(t *testing.T) {
 
 	testEnvVar := ConcurrentRequestsEnvKey
 	t.Setenv(ConcurrentRequestsEnvKey, "")
-	assert.Equal(t, defaultValuesInt[testEnvVar], GetEnvValueInt(testEnvVar), "expected default value if no env var is set")
-	assert.Equal(t, defaultValuesInt[testEnvVar], GetEnvValueIntLog(testEnvVar), "expected default value if no env var is set")
-	assert.Equal(t, "Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault), "expected default value if no env var is set")
+	require.Equal(t, defaultValuesInt[testEnvVar], GetEnvValueInt(testEnvVar), "expected default value if no env var is set")
+	require.Equal(t, defaultValuesInt[testEnvVar], GetEnvValueIntLog(testEnvVar), "expected default value if no env var is set")
+	require.Equal(t, "Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault), "expected default value if no env var is set")
 
 	t.Setenv(testEnvVar, "NOT_AN_INT")
-	assert.Equal(t, defaultValuesInt[testEnvVar], GetEnvValueInt(testEnvVar), "expected default value if env var is not an integer")
-	assert.Equal(t, defaultValuesInt[testEnvVar], GetEnvValueIntLog(testEnvVar), "expected default value if env var is not an integer")
-	assert.Equal(t, "Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault), "expected default value if env var is not an integer")
+	require.Equal(t, defaultValuesInt[testEnvVar], GetEnvValueInt(testEnvVar), "expected default value if env var is not an integer")
+	require.Equal(t, defaultValuesInt[testEnvVar], GetEnvValueIntLog(testEnvVar), "expected default value if env var is not an integer")
+	require.Equal(t, "Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault), "expected default value if env var is not an integer")
 
 	t.Setenv(testEnvVar, "51")
-	assert.Equal(t, 51, GetEnvValueInt(testEnvVar))
-	assert.Equal(t, 51, GetEnvValueIntLog(testEnvVar))
-	assert.Equal(t, "Concurrent Request Limit: %d, from '%s' environment variable", getLogMessage(testEnvVar, logStringInt))
+	require.Equal(t, 51, GetEnvValueInt(testEnvVar))
+	require.Equal(t, 51, GetEnvValueIntLog(testEnvVar))
+	require.Equal(t, "Concurrent Request Limit: %d, from '%s' environment variable", getLogMessage(testEnvVar, logStringInt))
 
 	testEnvVar = "TEST_ENV_VAR_GET_ENV_VALUE"
 	t.Setenv(testEnvVar, "")
-	assert.Equal(t, 0, GetEnvValueInt(testEnvVar))
-	assert.Equal(t, 0, GetEnvValueIntLog(testEnvVar))
-	assert.Equal(t, "Environment variable %s: %d, variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault))
+	require.Equal(t, 0, GetEnvValueInt(testEnvVar))
+	require.Equal(t, 0, GetEnvValueIntLog(testEnvVar))
+	require.Equal(t, "Environment variable %s: %d, variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault))
 
 	t.Setenv(testEnvVar, "NOT_AN_INT")
-	assert.Equal(t, 0, GetEnvValueInt(testEnvVar))
-	assert.Equal(t, 0, GetEnvValueIntLog(testEnvVar))
-	assert.Equal(t, "Environment variable %s: %d, variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault))
+	require.Equal(t, 0, GetEnvValueInt(testEnvVar))
+	require.Equal(t, 0, GetEnvValueIntLog(testEnvVar))
+	require.Equal(t, "Environment variable %s: %d, variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault))
 
 	t.Setenv(testEnvVar, "11")
-	assert.Equal(t, 11, GetEnvValueInt(testEnvVar))
-	assert.Equal(t, 11, GetEnvValueIntLog(testEnvVar))
-	assert.Equal(t, "Environment variable %s: %d", getLogMessage(testEnvVar, logStringInt))
+	require.Equal(t, 11, GetEnvValueInt(testEnvVar))
+	require.Equal(t, 11, GetEnvValueIntLog(testEnvVar))
+	require.Equal(t, "Environment variable %s: %d", getLogMessage(testEnvVar, logStringInt))
 }

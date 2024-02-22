@@ -19,10 +19,9 @@
 package json
 
 import (
+	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
-
-	"gotest.tools/assert"
 )
 
 const validJson1 = `{
@@ -41,10 +40,10 @@ const validJson2 = `{
 
 func TestJsonUnmarshallingWorks(t *testing.T) {
 	err := ValidateJson(validJson1, Location{TemplateFilePath: "test.json"})
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	err = ValidateJson(validJson2, Location{TemplateFilePath: "test2.json"})
-	assert.NilError(t, err)
+	require.NoError(t, err)
 }
 
 const syntaxErrorMisplacedContext = `{
@@ -55,16 +54,16 @@ const syntaxErrorMisplacedContext = `{
 func TestJsonUnmarshallingWithMisplacedContentExpectedError(t *testing.T) {
 
 	err := ValidateJson(syntaxErrorMisplacedContext, Location{TemplateFilePath: "test.json"})
-	assert.Check(t, err != nil)
+	require.Error(t, err)
 
 	jsonErr, ok := err.(JsonValidationError)
-	assert.Assert(t, ok, "err should be of type JsonValidationError, is: %T", err)
+	require.Truef(t, ok, "err should be of type JsonValidationError, is: %T", err)
 
-	assert.Equal(t, "test.json", jsonErr.Location.TemplateFilePath)
-	assert.Equal(t, 3, jsonErr.LineNumber)
-	assert.Equal(t, 2, jsonErr.CharacterNumberInLine)
-	assert.Equal(t, "\tsneakySyntaxError", jsonErr.LineContent)
-	assert.Check(t, jsonErr.Err != nil)
+	require.Equal(t, "test.json", jsonErr.Location.TemplateFilePath)
+	require.Equal(t, 3, jsonErr.LineNumber)
+	require.Equal(t, 2, jsonErr.CharacterNumberInLine)
+	require.Equal(t, "\tsneakySyntaxError", jsonErr.LineContent)
+	require.Error(t, jsonErr.Err)
 }
 
 const syntaxErrorNoClosingBracket = `{
@@ -78,16 +77,16 @@ const syntaxErrorNoClosingBracket = `{
 func TestJsonUnmarshallingWithNoClosingBracketExpectedError(t *testing.T) {
 
 	err := ValidateJson(syntaxErrorNoClosingBracket, Location{TemplateFilePath: "test.json"})
-	assert.Check(t, err != nil)
+	require.Error(t, err)
 
 	jsonErr, ok := err.(JsonValidationError)
-	assert.Assert(t, ok, "err should be of type JsonValidationError, is: %T", err)
+	require.Truef(t, ok, "err should be of type JsonValidationError, is: %T", err)
 
-	assert.Equal(t, "test.json", jsonErr.Location.TemplateFilePath)
-	assert.Equal(t, 6, jsonErr.LineNumber)
-	assert.Equal(t, 2, jsonErr.CharacterNumberInLine)
-	assert.Equal(t, "\t]", jsonErr.LineContent)
-	assert.Check(t, jsonErr.Err != nil)
+	require.Equal(t, "test.json", jsonErr.Location.TemplateFilePath)
+	require.Equal(t, 6, jsonErr.LineNumber)
+	require.Equal(t, 2, jsonErr.CharacterNumberInLine)
+	require.Equal(t, "\t]", jsonErr.LineContent)
+	require.Error(t, jsonErr.Err)
 }
 
 const syntaxErrorNoComma = `{
@@ -104,16 +103,16 @@ const syntaxErrorNoComma = `{
 func TestJsonUnmarshallingNoCommaExpectedError(t *testing.T) {
 
 	err := ValidateJson(syntaxErrorNoComma, Location{TemplateFilePath: "no-comma.json"})
-	assert.Check(t, err != nil)
+	require.Error(t, err)
 
 	jsonErr, ok := err.(JsonValidationError)
-	assert.Assert(t, ok, "err should be of type JsonValidationError, is: %T", err)
+	require.Truef(t, ok, "err should be of type JsonValidationError, is: %T", err)
 
-	assert.Equal(t, "no-comma.json", jsonErr.Location.TemplateFilePath)
-	assert.Equal(t, 7, jsonErr.LineNumber)
-	assert.Equal(t, 4, jsonErr.CharacterNumberInLine)
-	assert.Equal(t, "\t\t\t\"boolean\": true", jsonErr.LineContent)
-	assert.Check(t, jsonErr.Err != nil)
+	require.Equal(t, "no-comma.json", jsonErr.Location.TemplateFilePath)
+	require.Equal(t, 7, jsonErr.LineNumber)
+	require.Equal(t, 4, jsonErr.CharacterNumberInLine)
+	require.Equal(t, "\t\t\t\"boolean\": true", jsonErr.LineContent)
+	require.Error(t, jsonErr.Err)
 }
 
 const syntaxErrorInFirstLine = `"key": "value",
@@ -127,16 +126,16 @@ const syntaxErrorInFirstLine = `"key": "value",
 func TestJsonUnmarshallingNoOpeningParenthesisExpectedError(t *testing.T) {
 
 	err := ValidateJson(syntaxErrorInFirstLine, Location{TemplateFilePath: "syntax-err.json"})
-	assert.Check(t, err != nil)
+	require.Error(t, err)
 
 	jsonErr, ok := err.(JsonValidationError)
-	assert.Assert(t, ok, "err should be of type JsonValidationError, is: %T", err)
+	require.Truef(t, ok, "err should be of type JsonValidationError, is: %T", err)
 
-	assert.Equal(t, "syntax-err.json", jsonErr.Location.TemplateFilePath)
-	assert.Equal(t, 1, jsonErr.LineNumber)
-	assert.Equal(t, 6, jsonErr.CharacterNumberInLine)
-	assert.Equal(t, "\"key\": \"value\",", jsonErr.LineContent)
-	assert.Check(t, jsonErr.Err != nil)
+	require.Equal(t, "syntax-err.json", jsonErr.Location.TemplateFilePath)
+	require.Equal(t, 1, jsonErr.LineNumber)
+	require.Equal(t, 6, jsonErr.CharacterNumberInLine)
+	require.Equal(t, "\"key\": \"value\",", jsonErr.LineContent)
+	require.Error(t, jsonErr.Err)
 }
 
 func TestMarshalIndent(t *testing.T) {
