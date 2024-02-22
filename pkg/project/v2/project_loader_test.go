@@ -26,9 +26,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
-	assert2 "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gotest.tools/assert"
 	"reflect"
 	"testing"
 )
@@ -113,8 +112,8 @@ func TestLoadProjects_RejectsManifestsWithNoProjects(t *testing.T) {
 
 	got, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(got), 0, "Expected no project loaded")
-	assert.Equal(t, len(gotErrs), 1, "Expected to fail with no projects")
+	assert.Len(t, got, 0, "Expected no project loaded")
+	assert.Len(t, gotErrs, 1, "Expected to fail with no projects")
 	assert.ErrorContains(t, gotErrs[0], "no projects")
 }
 
@@ -130,21 +129,14 @@ func TestLoadProjects_LoadsSimpleProject(t *testing.T) {
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
 	got, gotErrs := LoadProjects(testFs, context)
+	assert.Len(t, gotErrs, 0, "Expected to load project without error")
+	assert.Len(t, got, 1, "Expected a single loaded project")
 
-	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
-	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+	dashboards := findConfigs(t, got[0], "env", "dashboard")
+	assert.Len(t, dashboards, 1, "Expected a one config to be loaded for dashboard")
 
-	c, found := got[0].Configs["env"]
-	assert.Assert(t, found, "Expected configs loaded for test environment")
-	assert.Equal(t, len(c), 2, "Expected a dashboard and alerting-profile configs in loaded project")
-
-	db, found := c["dashboard"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(db), 1, "Expected a one config to be loaded for dashboard")
-
-	a, found := c["alerting-profile"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(a), 1, "Expected a one config to be loaded for alerting-profile")
+	alertingProfiles := findConfigs(t, got[0], "env", "alerting-profile")
+	assert.Len(t, alertingProfiles, 1, "Expected a one config to be loaded for alerting-profile")
 }
 
 func TestLoadProjects_LoadsSimpleProjectInFoldersNotMatchingApiName(t *testing.T) {
@@ -159,21 +151,14 @@ func TestLoadProjects_LoadsSimpleProjectInFoldersNotMatchingApiName(t *testing.T
 	context := getSimpleProjectLoaderContext([]string{"project"})
 
 	got, gotErrs := LoadProjects(testFs, context)
+	assert.Len(t, gotErrs, 0, "Expected to load project without error")
+	assert.Len(t, got, 1, "Expected a single loaded project")
 
-	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
-	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+	db := findConfigs(t, got[0], "env", "dashboard")
+	assert.Len(t, db, 1, "Expected a one config to be loaded for dashboard")
 
-	c, found := got[0].Configs["env"]
-	assert.Assert(t, found, "Expected configs loaded for test environment")
-	assert.Equal(t, len(c), 2, "Expected a dashboard and alerting-profile configs in loaded project")
-
-	db, found := c["dashboard"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(db), 1, "Expected a one config to be loaded for dashboard")
-
-	a, found := c["alerting-profile"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(a), 1, "Expected a one config to be loaded for alerting-profile")
+	a := findConfigs(t, got[0], "env", "alerting-profile")
+	assert.Len(t, a, 1, "Expected a one config to be loaded for alerting-profile")
 }
 
 func TestLoadProjects_LoadsProjectInRootDir(t *testing.T) {
@@ -188,20 +173,14 @@ func TestLoadProjects_LoadsProjectInRootDir(t *testing.T) {
 
 	got, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
-	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+	assert.Len(t, gotErrs, 0, "Expected to load project without error")
+	assert.Len(t, got, 1, "Expected a single loaded project")
 
-	c, found := got[0].Configs["env"]
-	assert.Assert(t, found, "Expected configs loaded for test environment")
-	assert.Equal(t, len(c), 2, "Expected a dashboard and alerting-profile configs in loaded project")
+	db := findConfigs(t, got[0], "env", "dashboard")
+	assert.Len(t, db, 1, "Expected a one config to be loaded for dashboard")
 
-	db, found := c["dashboard"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(db), 1, "Expected a one config to be loaded for dashboard")
-
-	a, found := c["alerting-profile"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(a), 1, "Expected a one config to be loaded for alerting-profile")
+	a := findConfigs(t, got[0], "env", "alerting-profile")
+	assert.Len(t, a, 1, "Expected a one config to be loaded for ")
 }
 
 func TestLoadProjects_LoadsProjectInManyDirs(t *testing.T) {
@@ -219,20 +198,14 @@ func TestLoadProjects_LoadsProjectInManyDirs(t *testing.T) {
 	got, gotErrs := LoadProjects(testFs, context)
 
 	errutils.PrintErrors(gotErrs)
-	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
-	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+	assert.Len(t, gotErrs, 0, "Expected to load project without error")
+	assert.Len(t, got, 1, "Expected a single loaded project")
 
-	c, found := got[0].Configs["env"]
-	assert.Assert(t, found, "Expected configs loaded for test environment")
-	assert.Equal(t, len(c), 2, "Expected a dashboard and alerting-profile configs in loaded project")
+	db := findConfigs(t, got[0], "env", "dashboard")
+	assert.Len(t, db, 1, "Expected a one config to be loaded for dashboard")
 
-	db, found := c["dashboard"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(db), 1, "Expected a one config to be loaded for dashboard")
-
-	a, found := c["alerting-profile"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(a), 2, "Expected a one config to be loaded for alerting-profile")
+	a := findConfigs(t, got[0], "env", "alerting-profile")
+	assert.Len(t, a, 2, "Expected a one config to be loaded for alerting-profile")
 }
 
 func TestLoadProjects_LoadsProjectInHiddenDirDoesNotLoad(t *testing.T) {
@@ -252,20 +225,14 @@ func TestLoadProjects_LoadsProjectInHiddenDirDoesNotLoad(t *testing.T) {
 	got, gotErrs := LoadProjects(testFs, context)
 
 	errutils.PrintErrors(gotErrs)
-	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
-	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+	assert.Len(t, gotErrs, 0, "Expected to load project without error")
+	assert.Len(t, got, 1, "Expected a single loaded project")
 
-	c, found := got[0].Configs["env"]
-	assert.Assert(t, found, "Expected configs loaded for test environment")
-	assert.Equal(t, len(c), 1, "Expected a alerting-profile configs in loaded project")
+	db := findConfigs(t, got[0], "env", "dashboard")
+	assert.Len(t, db, 0, "Expected zero config to be loaded for dashboard")
 
-	db, found := c["dashboard"]
-	assert.Equal(t, found, false, "Expected no configs loaded for dashboard api")
-	assert.Equal(t, len(db), 0, "Expected zero config to be loaded for dashboard")
-
-	a, found := c["alerting-profile"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(a), 1, "Expected a one config to be loaded for alerting-profile")
+	a := findConfigs(t, got[0], "env", "alerting-profile")
+	assert.Len(t, a, 1, "Expected a one config to be loaded for alerting-profile")
 }
 
 func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForOneEnvironment(t *testing.T) {
@@ -280,11 +247,11 @@ func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForOneEnvironmen
 		[]string{"env"})
 
 	projects, gotErrs := LoadProjects(testFs, context)
-	assert2.Empty(t, gotErrs)
-	assert2.Len(t, projects, 1, "expected one project")
+	assert.Empty(t, gotErrs)
+	assert.Len(t, projects, 1, "expected one project")
 
 	envProfile := findConfig(t, projects[0], "env", "alerting-profile", 0)
-	assert2.NotContains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should not be present")
+	assert.NotContains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should not be present")
 }
 
 func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForTwoEnvironments(t *testing.T) {
@@ -302,14 +269,14 @@ func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForTwoEnvironmen
 		[]string{"env", "env2"})
 
 	projects, gotErrs := LoadProjects(testFs, context)
-	assert2.Empty(t, gotErrs)
-	assert2.Len(t, projects, 1, "expected one project")
+	assert.Empty(t, gotErrs)
+	assert.Len(t, projects, 1, "expected one project")
 
 	envProfile := findConfig(t, projects[0], "env", "alerting-profile", 0)
 	env2Profile := findConfig(t, projects[0], "env2", "alerting-profile", 0)
 
-	assert2.NotContains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should not be present")
-	assert2.NotContains(t, env2Profile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should not be present")
+	assert.NotContains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should not be present")
+	assert.NotContains(t, env2Profile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should not be present")
 }
 
 func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedTwoEnvironments(t *testing.T) {
@@ -325,14 +292,14 @@ func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedT
 		[]string{"env", "env2"})
 
 	projects, gotErrs := LoadProjects(testFs, context)
-	assert2.Empty(t, gotErrs)
-	assert2.Len(t, projects, 1, "expected one project")
+	assert.Empty(t, gotErrs)
+	assert.Len(t, projects, 1, "expected one project")
 
 	envProfile := findConfig(t, projects[0], "env", "dashboard", 0)
 	env2Profile := findConfig(t, projects[0], "env2", "dashboard", 0)
 
-	assert2.Contains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should be present")
-	assert2.Contains(t, env2Profile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should be present")
+	assert.Contains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should be present")
+	assert.Contains(t, env2Profile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should be present")
 }
 
 func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedOneEnvironment(t *testing.T) {
@@ -348,23 +315,26 @@ func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedO
 		[]string{"env"})
 
 	projects, gotErrs := LoadProjects(testFs, context)
-	assert2.Empty(t, gotErrs)
-	assert2.Len(t, projects, 1, "expected one project")
+	assert.Empty(t, gotErrs)
+	assert.Len(t, projects, 1, "expected one project")
 
 	envProfile := findConfig(t, projects[0], "env", "dashboard", 0)
 
-	assert2.Contains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should be present")
+	assert.Contains(t, envProfile.Parameters, config.NonUniqueNameConfigDuplicationParameter, "name duplication parameter should be present")
+}
+
+func findConfigs(t *testing.T, p Project, e, a string) []config.Config {
+	assert.Containsf(t, p.Configs, e, "Expected to find environment '%s'", e)
+
+	env := p.Configs[e]
+
+	return env[a]
 }
 
 func findConfig(t *testing.T, p Project, e, a string, cIndex int) config.Config {
-	assert2.Containsf(t, p.Configs, e, "Expected to find environment '%s'", e)
-
-	env := p.Configs[e]
-	assert2.Containsf(t, env, a, "Expected to find api '%s'", a)
-
-	configs := env[a]
-	assert2.NotEmpty(t, configs)
-	assert2.True(t, len(configs) > cIndex, "Config on index %d does not exist. Configs loaded: %d", cIndex, len(configs))
+	configs := findConfigs(t, p, e, a)
+	assert.NotEmpty(t, configs)
+	assert.True(t, len(configs) > cIndex, "Config on index %d does not exist. Configs loaded: %d", cIndex, len(configs))
 
 	return configs[cIndex]
 }
@@ -382,9 +352,9 @@ func TestLoadProjects_LoadsKnownAndUnknownApiNames(t *testing.T) {
 
 	got, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 1, "Expected to load project with an error")
+	assert.Len(t, gotErrs, 1, "Expected to load project with an error")
 	assert.ErrorContains(t, gotErrs[0], "unknown API: unknown-api")
-	assert.Equal(t, len(got), 0, "Expected no loaded projects")
+	assert.Len(t, got, 0, "Expected no loaded projects")
 }
 
 func TestLoadProjects_LoadsProjectWithConfigAndSettingsConfigurations(t *testing.T) {
@@ -423,28 +393,20 @@ configs:
 
 	got, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
-	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+	assert.Len(t, gotErrs, 0, "Expected to load project without error")
+	assert.Len(t, got, 1, "Expected a single loaded project")
 
-	c, found := got[0].Configs["env"]
-	assert.Assert(t, found, "Expected configs loaded for test environment")
-	assert.Equal(t, len(c), 4, "Expected a dashboard, alerting-profile and two Settings configs in loaded project")
+	db := findConfigs(t, got[0], "env", "dashboard")
+	assert.Len(t, db, 1, "Expected a one config to be loaded for dashboard")
 
-	db, found := c["dashboard"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(db), 1, "Expected a one config to be loaded for dashboard")
+	a := findConfigs(t, got[0], "env", "alerting-profile")
+	assert.Len(t, a, 1, "Expected a one config to be loaded for alerting-profile")
 
-	a, found := c["alerting-profile"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, len(a), 1, "Expected a one config to be loaded for alerting-profile")
+	s1 := findConfigs(t, got[0], "env", "builtin:super.special.schema")
+	assert.Len(t, s1, 1, "Expected a one config to be loaded for 'builtin:super.special.schema'")
 
-	s1, found := c["builtin:super.special.schema"]
-	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:super.special.schema'")
-	assert.Equal(t, len(s1), 1, "Expected a one config to be loaded for 'builtin:super.special.schema'")
-
-	s2, found := c["builtin:other.cool.schema"]
-	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:other.cool.schema'")
-	assert.Equal(t, len(s2), 1, "Expected a one config to be loaded for 'builtin:other.cool.schema'")
+	s2 := findConfigs(t, got[0], "env", "builtin:other.cool.schema")
+	assert.Len(t, s2, 1, "Expected a one config to be loaded for 'builtin:other.cool.schema'")
 }
 
 func TestLoadProjects_LoadsProjectConfigsWithCorrectTypeInformation(t *testing.T) {
@@ -484,47 +446,32 @@ configs:
 
 	got, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
-	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+	assert.Len(t, gotErrs, 0, "Expected to load project without error")
+	assert.Len(t, got, 1, "Expected a single loaded project")
 
-	c, found := got[0].Configs["env"]
-	assert.Assert(t, found, "Expected configs loaded for test environment")
-
-	db, found := c["dashboard"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	dbType, ok := db[0].Type.(config.ClassicApiType)
-	assert.Assert(t, ok)
-	assert.Equal(t, dbType, config.ClassicApiType{
+	db := findConfigs(t, got[0], "env", "dashboard")
+	assert.Equal(t, db[0].Type, config.ClassicApiType{
 		Api: "dashboard",
 	})
 
-	a, found := c["alerting-profile"]
-	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	aType, ok := a[0].Type.(config.ClassicApiType)
-	assert.Assert(t, ok)
-	assert.Equal(t, aType, config.ClassicApiType{
+	a := findConfigs(t, got[0], "env", "alerting-profile")
+	assert.Equal(t, a[0].Type, config.ClassicApiType{
 		Api: "alerting-profile",
 	})
 
-	s1, found := c["builtin:super.special.schema"]
-	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:super.special.schema'")
-	sType, ok := s1[0].Type.(config.SettingsType)
-	assert.Assert(t, ok)
-	assert.Equal(t, sType, config.SettingsType{
+	s1 := findConfigs(t, got[0], "env", "builtin:super.special.schema")
+	assert.Equal(t, s1[0].Type, config.SettingsType{
 		SchemaId:      "builtin:super.special.schema",
 		SchemaVersion: "1.42.14",
 	})
-	assert.DeepEqual(t, s1[0].Parameters[config.ScopeParameter], &value.ValueParameter{Value: "tenant"})
+	assert.Equal(t, s1[0].Parameters[config.ScopeParameter], &value.ValueParameter{Value: "tenant"})
 
-	s2, found := c["builtin:other.cool.schema"]
-	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:other.cool.schema'")
-	s2Type, ok := s2[0].Type.(config.SettingsType)
-	assert.Equal(t, s2Type, config.SettingsType{
+	s2 := findConfigs(t, got[0], "env", "builtin:other.cool.schema")
+	assert.Equal(t, s2[0].Type, config.SettingsType{
 		SchemaId:      "builtin:other.cool.schema",
 		SchemaVersion: "",
 	})
-	assert.DeepEqual(t, s2[0].Parameters[config.ScopeParameter], &value.ValueParameter{Value: "HOST-1234567"})
-
+	assert.Equal(t, s2[0].Parameters[config.ScopeParameter], &value.ValueParameter{Value: "HOST-1234567"})
 }
 
 func TestLoadProjects_AllowsOverlappingIdsInDifferentApis(t *testing.T) {
@@ -540,8 +487,8 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentApis(t *testing.T) {
 
 	got, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
-	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+	assert.Len(t, gotErrs, 0, "Expected to load project without error")
+	assert.Len(t, got, 1, "Expected a single loaded project")
 }
 
 func TestLoadProjects_AllowsOverlappingIdsInDifferentProjects(t *testing.T) {
@@ -557,8 +504,8 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentProjects(t *testing.T) {
 
 	got, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
-	assert.Equal(t, len(got), 2, "Expected two loaded project")
+	assert.Len(t, gotErrs, 0, "Expected to load project without error")
+	assert.Len(t, got, 2, "Expected two loaded project")
 }
 
 func TestLoadProjects_AllowsOverlappingIdsInEnvironmentOverride(t *testing.T) {
@@ -585,10 +532,10 @@ configs:
 
 	got, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
-	assert.Equal(t, len(got), 1, "Expected a single loaded project")
-	assert.Equal(t, len(got[0].Configs["env1"]), 1, "Expected one config for env1")
-	assert.Equal(t, len(got[0].Configs["env2"]), 1, "Expected one config for env2")
+	assert.Len(t, gotErrs, 0, "Expected to load project without error")
+	assert.Len(t, got, 1, "Expected a single loaded project")
+	assert.Len(t, got[0].Configs["env1"], 1, "Expected one config for env1")
+	assert.Len(t, got[0].Configs["env2"], 1, "Expected one config for env2")
 
 	env1ConfCoordinate := got[0].Configs["env1"]["alerting-profile"][0].Coordinate
 	env2ConfCoordinate := got[0].Configs["env2"]["alerting-profile"][0].Coordinate
@@ -609,7 +556,7 @@ func TestLoadProjects_ContainsCoordinateWhenReturningErrorForDuplicates(t *testi
 
 	_, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 2, "Expected to fail on overlapping coordinates")
+	assert.Len(t, gotErrs, 2, "Expected to fail on overlapping coordinates")
 	assert.ErrorContains(t, gotErrs[0], "project:alerting-profile:OVERLAP")
 	assert.ErrorContains(t, gotErrs[1], "project:dashboard:DASH_OVERLAP")
 }
@@ -625,7 +572,7 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InDifferentFiles(t *test
 
 	_, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 1, "Expected to fail on overlapping coordinates")
+	assert.Len(t, gotErrs, 1, "Expected to fail on overlapping coordinates")
 }
 
 func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InSameFile(t *testing.T) {
@@ -651,7 +598,7 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InSameFile(t *testing.T)
 
 	_, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 1, "Expected to fail on overlapping coordinates")
+	assert.Len(t, gotErrs, 1, "Expected to fail on overlapping coordinates")
 }
 
 func Test_loadProject_returnsErrorIfProjectPathDoesNotExist(t *testing.T) {
@@ -663,7 +610,7 @@ func Test_loadProject_returnsErrorIfProjectPathDoesNotExist(t *testing.T) {
 	}
 
 	_, gotErrs := loadProject(fs, ctx, definition, []manifest.EnvironmentDefinition{})
-	assert.Assert(t, len(gotErrs) == 1)
+	assert.Len(t, gotErrs, 1)
 	assert.ErrorContains(t, gotErrs[0], "filepath `this/does/not/exist` does not exist")
 }
 
@@ -716,8 +663,8 @@ func TestLoadProject(t *testing.T) {
 		context := getSimpleProjectLoaderContext([]string{"testdata/configs-account-resources-mixed"})
 
 		configs, gotErrs := LoadProjects(afero.NewOsFs(), context)
-		assert.NilError(t, errors.Join(gotErrs...))
-		assert.Equal(t, len(configs), 1)
+		assert.NoError(t, errors.Join(gotErrs...))
+		assert.Len(t, configs, 1)
 	})
 
 	t.Run("mixed files fail", func(t *testing.T) {
@@ -725,6 +672,6 @@ func TestLoadProject(t *testing.T) {
 
 		configs, gotErrs := LoadProjects(afero.NewOsFs(), context)
 		assert.ErrorContains(t, errors.Join(gotErrs...), "mixing both configurations and account resources is not allowed")
-		assert.Equal(t, len(configs), 0)
+		assert.Len(t, configs, 0)
 	})
 }
