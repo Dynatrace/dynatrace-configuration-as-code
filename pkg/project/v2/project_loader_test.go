@@ -20,12 +20,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
 	assert2 "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gotest.tools/assert"
 	"reflect"
 	"testing"
@@ -258,9 +260,10 @@ func TestLoadProjects_LoadsProjectInHiddenDirDoesNotLoad(t *testing.T) {
 }
 
 func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForOneEnvironment(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/b/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/b/profile.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.Mkdir("project", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/profile.json", []byte("{}"), 0644))
 
 	context := getFullProjectLoaderContext(
 		[]string{"alerting-profile", "dashboard"},
@@ -279,9 +282,10 @@ func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForTwoEnvironmen
 	// the name duplication check should find names that are duplicated in the configs **in the same env**
 	// it is valid that configs have the same name if they're deployed to separate environments.
 
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/b/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
-	_ = afero.WriteFile(testFs, "project/b/profile.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.Mkdir("project", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/profile.json", []byte("{}"), 0644))
 
 	context := getFullProjectLoaderContext(
 		[]string{"alerting-profile", "dashboard"},
@@ -300,10 +304,11 @@ func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForTwoEnvironmen
 }
 
 func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedTwoEnvironments(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/b/dashboard.yaml", []byte("configs:\n- id: dashboard\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/b/dashboard2.yaml", []byte("configs:\n- id: dashboard2\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/b/dashboard.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.Mkdir("project", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard.yaml", []byte("configs:\n- id: dashboard\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard2.yaml", []byte("configs:\n- id: dashboard2\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard.json", []byte("{}"), 0644))
 
 	context := getFullProjectLoaderContext(
 		[]string{"alerting-profile", "dashboard"},
@@ -322,10 +327,11 @@ func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedT
 }
 
 func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedOneEnvironment(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/b/dashboard.yaml", []byte("configs:\n- id: dashboard\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/b/dashboard2.yaml", []byte("configs:\n- id: dashboard2\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644)
-	_ = afero.WriteFile(testFs, "project/b/dashboard.json", []byte("{}"), 0644)
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.Mkdir("project", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard.yaml", []byte("configs:\n- id: dashboard\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard2.yaml", []byte("configs:\n- id: dashboard2\n  config:\n    name: Dashboard\n    template: dashboard.json\n  type:\n    api: dashboard"), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/dashboard.json", []byte("{}"), 0644))
 
 	context := getFullProjectLoaderContext(
 		[]string{"alerting-profile", "dashboard"},
