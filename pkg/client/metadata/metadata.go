@@ -44,9 +44,13 @@ func (u classicEnvURL) GetURL() string {
 	return u.Domain
 }
 
+type client interface {
+	Get(ctx context.Context, url string) (rest.Response, error)
+}
+
 // GetDynatraceClassicURL tries to fetch the URL of the classic environment using the API of a platform enabled
 // environment
-func GetDynatraceClassicURL(ctx context.Context, client *rest.Client, environmentURL string) (string, error) {
+func GetDynatraceClassicURL(ctx context.Context, client client, environmentURL string) (string, error) {
 	if classicURL, ok := findSimpleClassicURL(ctx, client, environmentURL); ok {
 		log.Debug("Found classic environment URL based on Platform URL: %s", classicURL)
 		return classicURL, nil
@@ -84,7 +88,7 @@ func GetDynatraceClassicURL(ctx context.Context, client *rest.Client, environmen
 	return jsonResp.GetURL(), nil
 }
 
-func findSimpleClassicURL(ctx context.Context, client *rest.Client, environmentURL string) (url string, ok bool) {
+func findSimpleClassicURL(ctx context.Context, client client, environmentURL string) (url string, ok bool) {
 	if !featureflags.BuildSimpleClassicURL().Enabled() {
 		return "", false
 	}
