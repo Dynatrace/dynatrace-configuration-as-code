@@ -25,7 +25,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -43,17 +44,17 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	}
 
 	cfgs, errs := LoadConfigFile(fs, &context, test_yaml)
-	assert.Check(t, len(errs) == 0, "Expected test config to load without error")
-	assert.Check(t, len(cfgs) == 1, "Expected test config to contain a single definition")
+	require.Empty(t, errs, "Expected test config to load without error")
+	require.Len(t, cfgs, 1, "Expected test config to contain a single definition")
 
 	testCfg := cfgs[0]
 	properties := getProperties(t, testCfg)
 
 	rendered, err := template.Render(testCfg.Template, properties)
-	assert.NilError(t, err, "Expected template to render without error:\n %s", rendered)
+	require.NoError(t, err, "Expected template to render without error:\n %s", rendered)
 
 	err = json.ValidateJson(rendered, json.Location{})
-	assert.NilError(t, err, "Expected rendered template to be valid JSON:\n %s", rendered)
+	require.NoError(t, err, "Expected rendered template to be valid JSON:\n %s", rendered)
 }
 
 func getProperties(t *testing.T, cfg config.Config) map[string]interface{} {
@@ -61,7 +62,7 @@ func getProperties(t *testing.T, cfg config.Config) map[string]interface{} {
 	props := map[string]interface{}{}
 	for k, p := range cfg.Parameters {
 		val, err := p.ResolveValue(emptyResolveCtxt)
-		assert.NilError(t, err, "Expected simple string Parameter to resolve without error")
+		assert.NoError(t, err, "Expected simple string Parameter to resolve without error")
 		props[k] = val
 	}
 	return props

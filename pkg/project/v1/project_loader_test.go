@@ -21,14 +21,12 @@ package v1
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/stretchr/testify/assert"
-	assert2 "gotest.tools/assert"
 )
 
 func TestIfProjectHasSubproject(t *testing.T) {
@@ -36,12 +34,12 @@ func TestIfProjectHasSubproject(t *testing.T) {
 	mth := files.ReplacePathSeparators("marvin/trillian/hacktar")
 	rth := files.ReplacePathSeparators("robot/trillian/hacktar")
 	projects := []string{"zem", "marvin", mt, mth, rth}
-	assert.Equal(t, hasSubprojectFolder("marvin", projects), true, "Check if `marvin` project has subprojects")
-	assert.Equal(t, hasSubprojectFolder(mt, projects), true, "Check if `marvin/trillian` project has subprojects")
-	assert.Equal(t, hasSubprojectFolder(mth, projects), false, "Check if `marvin/trillian` project has subprojects")
-	assert.Equal(t, hasSubprojectFolder(rth, projects), false, "Check if `marvin/trillian` project has subprojects")
-	assert.Equal(t, hasSubprojectFolder("zem", projects), false, "Check if `zem` project has subprojects")
-	assert.Equal(t, hasSubprojectFolder("unknown", projects), false, "Check if `zem` project has subprojects")
+	assert.True(t, hasSubprojectFolder("marvin", projects), "Check if `marvin` project has subprojects")
+	assert.True(t, hasSubprojectFolder(mt, projects), "Check if `marvin/trillian` project has subprojects")
+	assert.False(t, hasSubprojectFolder(mth, projects), "Check if `marvin/trillian` project has subprojects")
+	assert.False(t, hasSubprojectFolder(rth, projects), "Check if `marvin/trillian` project has subprojects")
+	assert.False(t, hasSubprojectFolder("zem", projects), "Check if `zem` project has subprojects")
+	assert.False(t, hasSubprojectFolder("unknown", projects), "Check if `zem` project has subprojects")
 }
 
 func TestFilterProjectsWithSubproject(t *testing.T) {
@@ -51,11 +49,11 @@ func TestFilterProjectsWithSubproject(t *testing.T) {
 	allProjectFolders := []string{"zem", ca, cag, mt, "trillian"}
 	allProjectFolders = filterProjectsWithSubproject(allProjectFolders)
 
-	assert.Equal(t, allProjectFolders[0], "zem", "Check if `zem` folder in list")
-	assert.Equal(t, allProjectFolders[1], cag, "Check if `caveman/anjie/garkbit` folder in list")
-	assert.Equal(t, allProjectFolders[2], mt, "Check if `marvin/trillian` folder in list")
-	assert.Equal(t, allProjectFolders[3], "trillian", "Check if `trillian` folder in list")
-	assert.Equal(t, len(allProjectFolders), 4, "Check if only 4 project folders are returned.")
+	assert.Equal(t, "zem", allProjectFolders[0], "Check if `zem` folder in list")
+	assert.Equal(t, cag, allProjectFolders[1], "Check if `caveman/anjie/garkbit` folder in list")
+	assert.Equal(t, mt, allProjectFolders[2], "Check if `marvin/trillian` folder in list")
+	assert.Equal(t, "trillian", allProjectFolders[3], "Check if `trillian` folder in list")
+	assert.Len(t, allProjectFolders, 4, "Check if only 4 project folders are returned.")
 }
 
 func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolder(t *testing.T) {
@@ -65,7 +63,7 @@ func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolder(t *testing.T) {
 	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 
 	expected := files.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project1")
-	assert.Error(t, err, expected)
+	require.Error(t, err, expected)
 }
 
 func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolderInSubproject(t *testing.T) {
@@ -75,7 +73,7 @@ func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolderInSubproject(t *testin
 	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 
 	expected := files.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project2/subproject2")
-	assert.Error(t, err, expected)
+	require.Error(t, err, expected)
 }
 
 func TestGetAllProjectFoldersRecursivelyPassesOnSeparatedFolders(t *testing.T) {
@@ -83,14 +81,14 @@ func TestGetAllProjectFoldersRecursivelyPassesOnSeparatedFolders(t *testing.T) {
 	fs := testutils.CreateTestFileSystem()
 	apis := api.NewAPIs()
 	_, err := getAllProjectFoldersRecursively(fs, apis, path)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnHiddenFolders(t *testing.T) {
 	path := files.ReplacePathSeparators("test-resources/hidden-directories/project1")
 	fs := testutils.CreateTestFileSystem()
 	_, err := getAllProjectFoldersRecursively(fs, api.NewV1APIs(), path)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *testing.T) {
@@ -98,7 +96,7 @@ func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *
 	fs := testutils.CreateTestFileSystem()
 	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1APIs(), path)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// NOT test-resources/hidden-directories/project2/.logs
 	assert.Equal(t, []string{filepath.FromSlash("test-resources/hidden-directories/project2/subproject")}, projects)
@@ -109,14 +107,15 @@ func TestGetAllProjectsFoldersRecursivelyPassesOnProjects(t *testing.T) {
 	fs := testutils.CreateTestFileSystem()
 	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1APIs(), path)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// NOT test-resources/hidden-directories/.logs
 	// NOT test-resources/hidden-directories/project2/.logs
-	assert2.DeepEqual(t, projects, []string{
+
+	assert.ElementsMatch(t, projects, []string{
 		filepath.FromSlash("test-resources/hidden-directories/project1"),
 		filepath.FromSlash("test-resources/hidden-directories/project2/subproject"),
-	}, cmpopts.SortSlices(func(a, b string) bool { return strings.Compare(a, b) < 0 }))
+	})
 }
 
 func TestContainsApiName(t *testing.T) {

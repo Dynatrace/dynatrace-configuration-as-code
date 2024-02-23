@@ -20,7 +20,8 @@ package template
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -30,19 +31,19 @@ const testMatrixTemplateWithProperty = "Follow the {{.color}} {{ .ANIMAL }}"
 func TestGetStringWithEnvVar(t *testing.T) {
 
 	template, err := NewTemplateFromString("template_test", testMatrixTemplateWithEnvVar)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	t.Setenv("ANIMAL", "cow")
 	result, err := template.ExecuteTemplate(getTemplateTestProperties())
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Follow the white cow", result)
 }
 
 func TestGetStringWithEnvVarLeadsToErrorIfEnvVarNotPresent(t *testing.T) {
 
 	template, err := NewTemplateFromString("template_test", testMatrixTemplateWithEnvVar)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	_, err = template.ExecuteTemplate(getTemplateTestProperties())
 
@@ -52,7 +53,7 @@ func TestGetStringWithEnvVarLeadsToErrorIfEnvVarNotPresent(t *testing.T) {
 func TestGetStringLeadsToErrorIfPropertyNotPresent(t *testing.T) {
 
 	template, err := NewTemplateFromString("template_test", testMatrixTemplateWithEnvVar)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	t.Setenv("ANIMAL", "cow")
 	_, err = template.ExecuteTemplate(make(map[string]string)) // empty map
@@ -63,24 +64,24 @@ func TestGetStringLeadsToErrorIfPropertyNotPresent(t *testing.T) {
 func TestGetStringWithEnvVarAndProperty(t *testing.T) {
 
 	template, err := NewTemplateFromString("template_test", testMatrixTemplateWithProperty)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	t.Setenv("ANIMAL", "cow")
 	result, err := template.ExecuteTemplate(getTemplateTestPropertiesClashingWithEnvVars())
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Follow the white rabbit", result)
 }
 
 func TestGetStringWithEnvVarIncludingEqualSigns(t *testing.T) {
 
 	template, err := NewTemplateFromString("template_test", testMatrixTemplateWithEnvVar)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	t.Setenv("ANIMAL", "cow=rabbit=chicken")
 	result, err := template.ExecuteTemplate(getTemplateTestProperties())
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Follow the white cow=rabbit=chicken", result)
 }
 
@@ -156,14 +157,14 @@ func TestTemplatesWithSpecialCharactersProduceValidJson(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			template, err := NewTemplateFromString("template_test", tt.templateString)
-			assert.NilError(t, err)
+			require.NoError(t, err)
 
 			result, err := template.ExecuteTemplate(tt.properties)
-			assert.NilError(t, err)
-			assert.Equal(t, result, tt.want)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, result)
 
 			err = json.ValidateJson(result, json.Location{})
-			assert.NilError(t, err)
+			require.NoError(t, err)
 		})
 	}
 }

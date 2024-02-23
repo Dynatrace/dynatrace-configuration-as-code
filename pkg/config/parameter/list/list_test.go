@@ -19,11 +19,12 @@ package list
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"gotest.tools/assert"
 )
 
 func TestParseListParameter(t *testing.T) {
@@ -94,14 +95,14 @@ func TestParseListParameter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			param, err := parseListParameter(tt.context)
-			assert.NilError(t, err)
+			require.NoError(t, err)
 
 			listParam, ok := param.(*ListParameter)
 
-			assert.Assert(t, ok, "parsed parameter should be list parameter")
-			assert.Equal(t, listParam.GetType(), "list")
+			require.True(t, ok, "parsed parameter should be list parameter")
+			require.Equal(t, "list", listParam.GetType())
 
-			assert.DeepEqual(t, tt.wantVals, listParam.Values)
+			require.Equal(t, tt.wantVals, listParam.Values)
 		})
 	}
 }
@@ -152,7 +153,7 @@ func TestParseListParameter_Error(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := parseListParameter(tt.context)
 
-			assert.ErrorContains(t, err, tt.expextedError)
+			require.ErrorContains(t, err, tt.expextedError)
 		})
 	}
 }
@@ -163,8 +164,7 @@ func TestResolveValue(t *testing.T) {
 	compoundParameter := New([]value.ValueParameter{{Value: "a"}, {Value: "b"}, {Value: "c"}})
 
 	result, err := compoundParameter.ResolveValue(context)
-	assert.NilError(t, err)
-
+	require.NoError(t, err)
 	assert.Equal(t, `[ "a","b","c" ]`, strings.ToString(result))
 }
 
@@ -174,8 +174,7 @@ func TestResolveSingleValue(t *testing.T) {
 	compoundParameter := New([]value.ValueParameter{{Value: "a"}})
 
 	result, err := compoundParameter.ResolveValue(context)
-	assert.NilError(t, err)
-
+	require.NoError(t, err)
 	assert.Equal(t, `[ "a" ]`, strings.ToString(result))
 }
 
@@ -185,8 +184,7 @@ func TestResolveEmptyValue(t *testing.T) {
 	compoundParameter := New([]value.ValueParameter{})
 
 	result, err := compoundParameter.ResolveValue(context)
-	assert.NilError(t, err)
-
+	require.NoError(t, err)
 	assert.Equal(t, `[  ]`, strings.ToString(result))
 }
 

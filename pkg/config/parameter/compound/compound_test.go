@@ -18,11 +18,12 @@ package compound
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"gotest.tools/assert"
 )
 
 func TestParseCompoundParameter(t *testing.T) {
@@ -33,17 +34,17 @@ func TestParseCompoundParameter(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	compoundParameter, ok := param.(*CompoundParameter)
 
-	assert.Assert(t, ok, "parsed parameter should be compound parameter")
-	assert.Equal(t, compoundParameter.GetType(), "compound")
+	require.True(t, ok, "parsed parameter should be compound parameter")
+	assert.Equal(t, "compound", compoundParameter.GetType())
 
 	refs := compoundParameter.GetReferences()
-	assert.Equal(t, len(refs), 2, "should be referencing 2 parameters")
-	assert.Equal(t, refs[0].Property, "firstName")
-	assert.Equal(t, refs[1].Property, "lastName")
+	require.Len(t, refs, 2, "should be referencing 2 parameters")
+	assert.Equal(t, "firstName", refs[0].Property)
+	assert.Equal(t, "lastName", refs[1].Property)
 }
 
 func TestParseCompoundParameterComplexValue(t *testing.T) {
@@ -54,14 +55,14 @@ func TestParseCompoundParameterComplexValue(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	compoundParameter, ok := param.(*CompoundParameter)
-	assert.Assert(t, ok, "parsed parameter should be compound parameter")
+	require.True(t, ok, "parsed parameter should be compound parameter")
 
 	refs := compoundParameter.GetReferences()
-	assert.Equal(t, len(refs), 1, "should be referencing 1")
-	assert.Equal(t, refs[0].Property, "person")
+	require.Len(t, refs, 1, "should be referencing 1")
+	assert.Equal(t, "person", refs[0].Property)
 }
 
 func TestParseCompoundParameterErrorOnMissingFormat(t *testing.T) {
@@ -71,7 +72,7 @@ func TestParseCompoundParameterErrorOnMissingFormat(t *testing.T) {
 		},
 	})
 
-	assert.Assert(t, err != nil, "expected an error parsing missing format")
+	require.Error(t, err, "expected an error parsing missing format")
 }
 
 func TestParseCompoundParameterErrorOnMissingReferences(t *testing.T) {
@@ -81,7 +82,7 @@ func TestParseCompoundParameterErrorOnMissingReferences(t *testing.T) {
 		},
 	})
 
-	assert.Assert(t, err != nil, "expected an error parsing missing references")
+	require.Error(t, err, "expected an error parsing missing references")
 }
 
 func TestParseCompoundParameterErrorOnWrongReferenceFormat(t *testing.T) {
@@ -91,7 +92,7 @@ func TestParseCompoundParameterErrorOnWrongReferenceFormat(t *testing.T) {
 			"references": []int{3, 4},
 		}})
 
-	assert.Assert(t, err != nil, "expected an error parsing invalid references")
+	require.Error(t, err, "expected an error parsing invalid references")
 }
 
 func TestParseCompoundParameterErrorOnWrongReferences(t *testing.T) {
@@ -101,7 +102,7 @@ func TestParseCompoundParameterErrorOnWrongReferences(t *testing.T) {
 			"references": []interface{}{[]interface{}{}},
 		}})
 
-	assert.Assert(t, err != nil, "expected an error parsing invalid references")
+	require.Error(t, err, "expected an error parsing invalid references")
 }
 
 func TestResolveValue(t *testing.T) {
@@ -116,10 +117,10 @@ func TestResolveValue(t *testing.T) {
 		{Property: "greeting"},
 		{Property: "entity"},
 	})
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	result, err := compoundParameter.ResolveValue(context)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "Hello World!", strings.ToString(result))
 }
@@ -136,10 +137,10 @@ func TestResolveComplexValue(t *testing.T) {
 	}
 	compoundParameter, err := New("testName", testFormat,
 		[]parameter.ParameterReference{{Property: "person"}})
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	result, err := compoundParameter.ResolveValue(context)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "Hansi is 12 years old", strings.ToString(result))
 }
@@ -156,11 +157,11 @@ func TestResolveValueErrorOnUndefinedReference(t *testing.T) {
 	}
 	compoundParameter, err := New("testName", testFormat,
 		[]parameter.ParameterReference{{Property: "firstName"}})
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	_, err = compoundParameter.ResolveValue(context)
 
-	assert.Assert(t, err != nil, "expected an error resolving undefined references")
+	require.Error(t, err, "expected an error resolving undefined references")
 }
 
 func TestWriteCompoundParameter(t *testing.T) {
@@ -172,28 +173,28 @@ func TestWriteCompoundParameter(t *testing.T) {
 		{Property: testRef2},
 	}
 	compoundParameter, err := New("testName", testFormat, testRefs)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	context := parameter.ParameterWriterContext{Parameter: compoundParameter}
 
 	result, err := writeCompoundParameter(context)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, len(result), 2)
+	require.Len(t, result, 2)
 
 	format, ok := result["format"]
-	assert.Assert(t, ok, "should have parameter format")
-	assert.Equal(t, format, testFormat)
+	require.True(t, ok, "should have parameter format")
+	assert.Equal(t, testFormat, format)
 
 	references, ok := result["references"]
-	assert.Assert(t, ok, "should have parameter references")
+	require.True(t, ok, "should have parameter references")
 
 	referenceSlice, ok := references.([]interface{})
-	assert.Assert(t, ok, "references should be slice")
+	require.True(t, ok, "references should be slice")
 
-	assert.Equal(t, len(referenceSlice), 2)
+	require.Len(t, referenceSlice, 2)
 	for i, testRef := range testRefs {
-		assert.Equal(t, referenceSlice[i], testRef.Property)
+		assert.Equal(t, testRef.Property, referenceSlice[i])
 	}
 }
 
@@ -201,25 +202,25 @@ func TestWriteCompoundParameterErrorOnNonCompoundParameter(t *testing.T) {
 	context := parameter.ParameterWriterContext{Parameter: &value.ValueParameter{}}
 
 	_, err := writeCompoundParameter(context)
-	assert.Assert(t, err != nil, "expected an error writing wrong parameter type")
+	require.Error(t, err, "expected an error writing wrong parameter type")
 }
 
 func TestWriteCompoundParameterErrorOnMissingFormat(t *testing.T) {
 	compoundParameter, err := New("testName", "", nil)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	context := parameter.ParameterWriterContext{Parameter: compoundParameter}
 
 	_, err = writeCompoundParameter(context)
-	assert.Assert(t, err != nil, "expected an error writing missing format")
+	require.Error(t, err, "expected an error writing missing format")
 }
 
 func TestWriteCompoundParameterErrorOnMissingReferences(t *testing.T) {
 	compoundParameter, err := New("testName", "testFormat", nil)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	context := parameter.ParameterWriterContext{Parameter: compoundParameter}
 
 	_, err = writeCompoundParameter(context)
-	assert.Assert(t, err != nil, "expected an error writing missing references")
+	require.Error(t, err, "expected an error writing missing references")
 }

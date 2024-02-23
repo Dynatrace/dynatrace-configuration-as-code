@@ -27,7 +27,8 @@ import (
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -43,22 +44,22 @@ func TestParametersAreLoadedAsExpected(t *testing.T) {
 	}
 
 	cfgs, errs := LoadConfigFile(fs, &context, "testdata/parameter-type-test-config.yaml")
-	assert.Check(t, len(errs) == 0, "Expected test config to load without error")
-	assert.Check(t, len(cfgs) == 1, "Expected test config to contain a single definition")
+	require.Empty(t, errs, "Expected test config to load without error")
+	assert.Len(t, cfgs, 1, "Expected test config to contain a single definition")
 
 	cfg := cfgs[0]
-	assert.Equal(t, cfg.Parameters["simple_value"].GetType(), valueParam.ValueParameterType)
-	assert.Equal(t, cfg.Parameters["full_value"].GetType(), valueParam.ValueParameterType)
-	assert.Equal(t, cfg.Parameters["complex_value"].GetType(), valueParam.ValueParameterType)
-	assert.Equal(t, cfg.Parameters["simple_reference"].GetType(), reference.ReferenceParameterType)
-	assert.Equal(t, cfg.Parameters["multiline_reference"].GetType(), reference.ReferenceParameterType)
-	assert.Equal(t, cfg.Parameters["full_reference"].GetType(), reference.ReferenceParameterType)
-	assert.Equal(t, cfg.Parameters["environment"].GetType(), envParam.EnvironmentVariableParameterType)
-	assert.Equal(t, cfg.Parameters["list"].GetType(), listParam.ListParameterType)
-	assert.Equal(t, cfg.Parameters["list_array"].GetType(), listParam.ListParameterType)
-	assert.Equal(t, cfg.Parameters["list_full_values"].GetType(), listParam.ListParameterType)
-	assert.Equal(t, cfg.Parameters["list_complex_values"].GetType(), listParam.ListParameterType)
-	assert.Equal(t, cfg.Parameters["compound_value"].GetType(), compound.CompoundParameterType)
-	assert.Equal(t, cfg.Parameters["empty_compound"].GetType(), compound.CompoundParameterType)
-	assert.Equal(t, cfg.Parameters["compound_on_compound"].GetType(), compound.CompoundParameterType)
+	assert.Equal(t, valueParam.ValueParameterType, cfg.Parameters["simple_value"].GetType())
+	assert.Equal(t, valueParam.ValueParameterType, cfg.Parameters["full_value"].GetType())
+	assert.Equal(t, valueParam.ValueParameterType, cfg.Parameters["complex_value"].GetType())
+	assert.Equal(t, reference.ReferenceParameterType, cfg.Parameters["simple_reference"].GetType())
+	assert.Equal(t, reference.ReferenceParameterType, cfg.Parameters["multiline_reference"].GetType())
+	assert.Equal(t, reference.ReferenceParameterType, cfg.Parameters["full_reference"].GetType())
+	assert.Equal(t, envParam.EnvironmentVariableParameterType, cfg.Parameters["environment"].GetType())
+	assert.Equal(t, listParam.ListParameterType, cfg.Parameters["list"].GetType())
+	assert.Equal(t, listParam.ListParameterType, cfg.Parameters["list_array"].GetType())
+	assert.Equal(t, listParam.ListParameterType, cfg.Parameters["list_full_values"].GetType())
+	assert.Equal(t, listParam.ListParameterType, cfg.Parameters["list_complex_values"].GetType())
+	assert.Equal(t, compound.CompoundParameterType, cfg.Parameters["compound_value"].GetType())
+	assert.Equal(t, compound.CompoundParameterType, cfg.Parameters["empty_compound"].GetType())
+	assert.Equal(t, compound.CompoundParameterType, cfg.Parameters["compound_on_compound"].GetType())
 }

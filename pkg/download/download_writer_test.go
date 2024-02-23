@@ -24,7 +24,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"path/filepath"
 	"testing"
 )
@@ -240,12 +241,12 @@ func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
 	manifestPath := filepath.Join(outputFolder, "manifest.yaml")
 	fs := testFsWithWithExistingManifest(outputFolder)
 	previousManifest, err := afero.ReadFile(fs, manifestPath)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	//WHEN writing to disk with overwrite forced
 	writerContext.ForceOverwrite = true
 	err = writeToDisk(fs, writerContext)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	//THEN manifest.yaml is overwritten
 	if exists, err := afero.Exists(fs, "test-output/manifest.yaml"); err != nil || !exists {
@@ -258,8 +259,8 @@ func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
 	}
 
 	writtenManifest, err := afero.ReadFile(fs, manifestPath)
-	assert.NilError(t, err)
-	assert.Assert(t, string(writtenManifest) != string(previousManifest), "Expected manifest to be overwritten with new data")
+	require.NoError(t, err)
+	assert.NotEqual(t, string(writtenManifest), string(previousManifest), "Expected manifest to be overwritten with new data")
 
 }
 

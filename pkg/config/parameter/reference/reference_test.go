@@ -18,12 +18,13 @@ package reference
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"gotest.tools/assert"
 )
 
 func TestParseReferenceParameter(t *testing.T) {
@@ -41,17 +42,17 @@ func TestParseReferenceParameter(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	refParam, ok := param.(*ReferenceParameter)
 
-	assert.Assert(t, ok, "parsed parameter should reference parameter")
-	assert.Equal(t, refParam.GetType(), "reference")
+	require.True(t, ok, "parsed parameter should reference parameter")
+	assert.Equal(t, "reference", refParam.GetType())
 
-	assert.Equal(t, project, refParam.Config.Project)
-	assert.Equal(t, configType, refParam.Config.Type)
-	assert.Equal(t, config, refParam.Config.ConfigId)
-	assert.Equal(t, property, refParam.Property)
+	assert.Equal(t, refParam.Config.Project, project)
+	assert.Equal(t, refParam.Config.Type, configType)
+	assert.Equal(t, refParam.Config.ConfigId, config)
+	assert.Equal(t, refParam.Property, property)
 }
 
 func TestParseReferenceParameterShouldFillValuesFromCurrentConfigIfMissing(t *testing.T) {
@@ -67,15 +68,15 @@ func TestParseReferenceParameterShouldFillValuesFromCurrentConfigIfMissing(t *te
 		},
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	refParam, ok := param.(*ReferenceParameter)
 
-	assert.Assert(t, ok, "parsed parameter should be reference parameter")
-	assert.Equal(t, project, refParam.Config.Project)
-	assert.Equal(t, configType, refParam.Config.Type)
-	assert.Equal(t, config, refParam.Config.ConfigId)
-	assert.Equal(t, property, refParam.Property)
+	require.True(t, ok, "parsed parameter should be reference parameter")
+	assert.Equal(t, refParam.Config.Project, project)
+	assert.Equal(t, refParam.Config.Type, configType)
+	assert.Equal(t, refParam.Config.ConfigId, config)
+	assert.Equal(t, refParam.Property, property)
 }
 
 func TestParseReferenceParameterShouldFailIfPropertyIsMissing(t *testing.T) {
@@ -91,7 +92,7 @@ func TestParseReferenceParameterShouldFailIfPropertyIsMissing(t *testing.T) {
 		},
 	})
 
-	assert.Assert(t, err != nil, "should return error")
+	require.Error(t, err, "should return error")
 }
 
 func TestParseReferenceParameterShouldFailIfProjectIsSetButApiIsNot(t *testing.T) {
@@ -107,7 +108,7 @@ func TestParseReferenceParameterShouldFailIfProjectIsSetButApiIsNot(t *testing.T
 		},
 	})
 
-	assert.Assert(t, err != nil, "should return error")
+	require.Error(t, err, "should return error")
 }
 
 func TestParseReferenceParameterShouldFailIfProjectIsSetButApiAndConfigAreNot(t *testing.T) {
@@ -121,7 +122,7 @@ func TestParseReferenceParameterShouldFailIfProjectIsSetButApiAndConfigAreNot(t 
 		},
 	})
 
-	assert.Assert(t, err != nil, "should return error")
+	require.Error(t, err, "should return error")
 }
 
 func TestParseReferenceParameterShouldFailIfProjectAndApiAreSetButConfigIsNot(t *testing.T) {
@@ -137,7 +138,7 @@ func TestParseReferenceParameterShouldFailIfProjectAndApiAreSetButConfigIsNot(t 
 		},
 	})
 
-	assert.Assert(t, err != nil, "should return an error")
+	require.Error(t, err, "should return an error")
 }
 
 func TestParseReferenceParameterShouldFailIfApiIsSetButConfigIsNot(t *testing.T) {
@@ -151,7 +152,7 @@ func TestParseReferenceParameterShouldFailIfApiIsSetButConfigIsNot(t *testing.T)
 		},
 	})
 
-	assert.Assert(t, err != nil, "should return error")
+	require.Error(t, err, "should return error")
 }
 
 func TestGetReferences(t *testing.T) {
@@ -164,7 +165,7 @@ func TestGetReferences(t *testing.T) {
 
 	refs := fixture.GetReferences()
 
-	assert.Assert(t, len(refs) == 1, "reference parameter should return a single reference")
+	require.Len(t, refs, 1, "reference parameter should return a single reference")
 
 	ref := refs[0]
 
@@ -212,7 +213,7 @@ func TestResolveValue(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, propertyValue, result)
 }
 
@@ -242,7 +243,7 @@ func TestResolveComplexValueMap(t *testing.T) {
 		PropertyResolver: entityMap,
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "value", result)
 }
 
@@ -267,7 +268,7 @@ func TestResolveComplexValueMapInSameConfig(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "value", result)
 }
 
@@ -305,7 +306,7 @@ func TestResolveComplexValueNestedMap(t *testing.T) {
 		PropertyResolver: entityMap,
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "value", result)
 }
 
@@ -338,8 +339,8 @@ func TestResolveComplexValueNestedMapInSameConfig(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
-	assert.Equal(t, "value", result)
+	require.NoError(t, err)
+	require.Equal(t, "value", result)
 }
 
 func TestResolveValueOnPropertyInSameConfig(t *testing.T) {
@@ -359,8 +360,8 @@ func TestResolveValueOnPropertyInSameConfig(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
-	assert.Equal(t, propertyValue, result)
+	require.NoError(t, err)
+	require.Equal(t, propertyValue, result)
 }
 
 func TestResolveValuePropertyNotYetResolved(t *testing.T) {
@@ -373,7 +374,7 @@ func TestResolveValuePropertyNotYetResolved(t *testing.T) {
 
 	_, err := fixture.ResolveValue(parameter.ResolveContext{PropertyResolver: testResolver{}})
 
-	assert.Assert(t, err != nil, "should return an error")
+	require.Error(t, err, "should return an error")
 }
 
 func TestResolveValueOwnPropertyNotYetResolved(t *testing.T) {
@@ -389,7 +390,7 @@ func TestResolveValueOwnPropertyNotYetResolved(t *testing.T) {
 		ConfigCoordinate: referenceCoordinate,
 	})
 
-	assert.Assert(t, err != nil, "should return an error")
+	assert.Error(t, err, "should return an error")
 }
 
 func TestWriteReferenceParameter(t *testing.T) {
@@ -408,25 +409,25 @@ func TestWriteReferenceParameter(t *testing.T) {
 	context := parameter.ParameterWriterContext{Parameter: refParam, Coordinate: coord}
 
 	result, err := writeReferenceParameter(context)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, len(result), 4)
+	require.Equal(t, len(result), 4)
 
 	project, ok := result["project"]
-	assert.Assert(t, ok, "should have parameter project")
-	assert.Equal(t, project, refProject)
+	require.True(t, ok, "should have parameter project")
+	assert.Equal(t, refProject, project)
 
 	api, ok := result["configType"]
-	assert.Assert(t, ok, "should have parameter configType")
-	assert.Equal(t, api, refType)
+	require.True(t, ok, "should have parameter configType")
+	assert.Equal(t, refType, api)
 
 	config, ok := result["configId"]
-	assert.Assert(t, ok, "should have parameter configId")
-	assert.Equal(t, config, refConfig)
+	require.True(t, ok, "should have parameter configId")
+	assert.Equal(t, refConfig, config)
 
 	property, ok := result["property"]
-	assert.Assert(t, ok, "should have parameter property")
-	assert.Equal(t, property, refProperty)
+	require.True(t, ok, "should have parameter property")
+	require.Equal(t, property, refProperty)
 
 }
 
@@ -446,21 +447,21 @@ func TestWriteReferenceParameterOnMatchingProject(t *testing.T) {
 	context := parameter.ParameterWriterContext{Parameter: refParam, Coordinate: coord}
 
 	result, err := writeReferenceParameter(context)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, len(result), 3)
+	require.Equal(t, len(result), 3)
 
 	api, ok := result["configType"]
-	assert.Assert(t, ok, "should have parameter configType")
-	assert.Equal(t, api, refApi)
+	require.True(t, ok, "should have parameter configType")
+	assert.Equal(t, refApi, api)
 
 	config, ok := result["configId"]
-	assert.Assert(t, ok, "should have parameter configId")
-	assert.Equal(t, config, refConfig)
+	require.True(t, ok, "should have parameter configId")
+	assert.Equal(t, refConfig, config)
 
 	property, ok := result["property"]
-	assert.Assert(t, ok, "should have parameter property")
-	assert.Equal(t, property, refProperty)
+	require.True(t, ok, "should have parameter property")
+	assert.Equal(t, refProperty, property)
 
 }
 
@@ -480,17 +481,17 @@ func TestWriteReferenceParameterOnMatchingApi(t *testing.T) {
 	context := parameter.ParameterWriterContext{Parameter: refParam, Coordinate: coord}
 
 	result, err := writeReferenceParameter(context)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, len(result), 2)
+	require.Equal(t, len(result), 2)
 
 	config, ok := result["configId"]
-	assert.Assert(t, ok, "should have parameter configId")
-	assert.Equal(t, config, refConfig)
+	require.True(t, ok, "should have parameter configId")
+	assert.Equal(t, refConfig, config)
 
 	property, ok := result["property"]
-	assert.Assert(t, ok, "should have parameter property")
-	assert.Equal(t, property, refProperty)
+	require.True(t, ok, "should have parameter property")
+	assert.Equal(t, refProperty, property)
 
 }
 
@@ -510,13 +511,13 @@ func TestWriteReferenceParameterOnMatchingConfig(t *testing.T) {
 	context := parameter.ParameterWriterContext{Parameter: refParam, Coordinate: coord}
 
 	result, err := writeReferenceParameter(context)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, len(result), 1)
+	require.Equal(t, len(result), 1)
 
 	property, ok := result["property"]
-	assert.Assert(t, ok, "should have parameter property")
-	assert.Equal(t, property, refProperty)
+	require.True(t, ok, "should have parameter property")
+	assert.Equal(t, refProperty, property)
 
 }
 
@@ -524,5 +525,5 @@ func TestWriteCompoundParameterErrorOnNonCompoundParameter(t *testing.T) {
 	context := parameter.ParameterWriterContext{Parameter: &value.ValueParameter{}}
 
 	_, err := writeReferenceParameter(context)
-	assert.Assert(t, err != nil, "expected an error writing wrong parameter type")
+	require.Error(t, err, "expected an error writing wrong parameter type")
 }

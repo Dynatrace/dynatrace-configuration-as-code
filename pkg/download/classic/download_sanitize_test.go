@@ -17,7 +17,7 @@
 package classic
 
 import (
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -209,7 +209,7 @@ func TestRemoveIdentifiers(t *testing.T) {
 
 			expected := unmarshal(t, test.expectedJson)
 
-			assert.DeepEqual(t, result, expected)
+			require.Equal(t, result, expected)
 		})
 	}
 }

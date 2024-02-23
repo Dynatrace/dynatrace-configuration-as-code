@@ -18,7 +18,7 @@ package classic
 
 import (
 	"encoding/json"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -26,7 +26,7 @@ func unmarshal(t *testing.T, content string) map[string]interface{} {
 	mapped := map[string]interface{}{}
 	err := json.Unmarshal([]byte(content), &mapped)
 
-	assert.NilError(t, err, "Error in test definition")
+	assert.NoError(t, err, "Error in test definition")
 
 	return mapped
 }

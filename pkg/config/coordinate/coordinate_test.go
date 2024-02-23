@@ -17,7 +17,7 @@
 package coordinate
 
 import (
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -34,7 +34,7 @@ func TestMatch(t *testing.T) {
 		ConfigId: "dashboard1",
 	})
 
-	assert.Assert(t, result, "should match")
+	assert.True(t, result, "should match")
 }
 
 func TestMatchShouldReturnFalseOnNonMatching(t *testing.T) {
@@ -50,7 +50,7 @@ func TestMatchShouldReturnFalseOnNonMatching(t *testing.T) {
 		ConfigId: "tags",
 	})
 
-	assert.Assert(t, !result, "shouldn't match")
+	assert.False(t, result, "shouldn't match")
 }
 
 func TestMatchShouldReturnFalseOnNonMatchingSameApi(t *testing.T) {
@@ -66,5 +66,5 @@ func TestMatchShouldReturnFalseOnNonMatchingSameApi(t *testing.T) {
 		ConfigId: "dashboard2",
 	})
 
-	assert.Assert(t, !result, "shouldn't match")
+	assert.False(t, result, "shouldn't match")
 }
