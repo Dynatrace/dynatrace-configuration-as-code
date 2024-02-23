@@ -20,7 +20,8 @@ package dtclient
 
 import (
 	"context"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -37,8 +38,8 @@ func TestCorrectlyIdentifiesLowerLocalVersion(t *testing.T) {
 
 	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
 	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
-	assert.Assert(t, err != nil)
-	assert.Equal(t, status, extensionConfigOutdated)
+	require.Error(t, err)
+	assert.Equal(t, extensionConfigOutdated, status)
 }
 
 func TestCorrectlyIdentifiesEqualVersion(t *testing.T) {
@@ -52,8 +53,8 @@ func TestCorrectlyIdentifiesEqualVersion(t *testing.T) {
 
 	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
 	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
-	assert.NilError(t, err)
-	assert.Equal(t, status, extensionUpToDate)
+	require.NoError(t, err)
+	assert.Equal(t, extensionUpToDate, status)
 }
 
 func TestCorrectlyIdentifiesNecessaryUpdate(t *testing.T) {
@@ -66,8 +67,8 @@ func TestCorrectlyIdentifiesNecessaryUpdate(t *testing.T) {
 	defer server.Close()
 	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
 	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
-	assert.NilError(t, err)
-	assert.Equal(t, status, extensionNeedsUpdate)
+	require.NoError(t, err)
+	assert.Equal(t, extensionNeedsUpdate, status)
 }
 
 func TestCorrectlyIdentifiesMissingExtension(t *testing.T) {
@@ -78,8 +79,8 @@ func TestCorrectlyIdentifiesMissingExtension(t *testing.T) {
 
 	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
 	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", nil)
-	assert.NilError(t, err)
-	assert.Equal(t, status, extensionNeedsUpdate)
+	require.NoError(t, err)
+	assert.Equal(t, extensionNeedsUpdate, status)
 }
 
 func TestThrowsErrorOnRemoteParsingProblems(t *testing.T) {
@@ -93,8 +94,8 @@ func TestThrowsErrorOnRemoteParsingProblems(t *testing.T) {
 
 	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
 	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
-	assert.Assert(t, err != nil)
-	assert.Equal(t, status, extensionValidationError)
+	require.Error(t, err)
+	assert.Equal(t, extensionValidationError, status)
 }
 
 func TestThrowsErrorOnLocalParsingProblems(t *testing.T) {
@@ -109,8 +110,8 @@ func TestThrowsErrorOnLocalParsingProblems(t *testing.T) {
 	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
 
 	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
-	assert.Assert(t, err != nil)
-	assert.Equal(t, status, extensionValidationError)
+	require.Error(t, err)
+	assert.Equal(t, extensionValidationError, status)
 }
 
 func TestThrowsErrorOnRemoteMissingVersions(t *testing.T) {
@@ -124,8 +125,8 @@ func TestThrowsErrorOnRemoteMissingVersions(t *testing.T) {
 
 	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
 	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
-	assert.Assert(t, err != nil)
-	assert.Equal(t, status, extensionValidationError)
+	require.Error(t, err)
+	assert.Equal(t, extensionValidationError, status)
 }
 
 func TestThrowsErrorOnLocalMissingVersions(t *testing.T) {
@@ -139,8 +140,8 @@ func TestThrowsErrorOnLocalMissingVersions(t *testing.T) {
 
 	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
 	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
-	assert.Assert(t, err != nil)
-	assert.Equal(t, status, extensionValidationError)
+	require.Error(t, err)
+	assert.Equal(t, extensionValidationError, status)
 }
 
 func TestThrowsErrorOnRemoteNilReturn(t *testing.T) {
@@ -153,8 +154,8 @@ func TestThrowsErrorOnRemoteNilReturn(t *testing.T) {
 
 	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
 	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
-	assert.Assert(t, err != nil)
-	assert.Equal(t, status, extensionValidationError)
+	require.Error(t, err)
+	assert.Equal(t, extensionValidationError, status)
 }
 
 func TestThrowsErrorOnLocalNilPayload(t *testing.T) {
@@ -167,6 +168,6 @@ func TestThrowsErrorOnLocalNilPayload(t *testing.T) {
 
 	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
 	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", nil)
-	assert.Assert(t, err != nil)
-	assert.Equal(t, status, extensionValidationError)
+	require.Error(t, err)
+	assert.Equal(t, extensionValidationError, status)
 }

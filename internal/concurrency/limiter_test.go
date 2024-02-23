@@ -19,7 +19,8 @@
 package concurrency
 
 import (
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -68,8 +69,8 @@ func TestNewLimiter(t *testing.T) {
 	capacity := cap(limiter.waitChan)
 	length := len(limiter.waitChan)
 
-	assert.Equal(t, capacity, 47, "Capacity is not correct")
-	assert.Equal(t, length, 0, "Limiter should be empty")
+	assert.Equal(t, 47, capacity, "Capacity is not correct")
+	assert.Equal(t, 0, length, "Limiter should be empty")
 }
 
 func TestCallbackExecutions(t *testing.T) {
@@ -118,7 +119,7 @@ func TestCallbackExecutions(t *testing.T) {
 
 			wg.Wait()
 
-			assert.Equal(t, int32(0), counter, "Counter should be 0")
+			require.Equal(t, int32(0), counter, "Counter should be 0")
 		})
 	}
 }
@@ -147,7 +148,7 @@ func TestExecutionsAreActuallyParallel(t *testing.T) {
 	}
 
 	wgPre.Wait() // wait all goroutines started
-	assert.Equal(t, len(limiter.waitChan), 10, "goroutines should be running")
+	require.Len(t, limiter.waitChan, 10, "goroutines should be running")
 
 	m.Unlock() // unlock to run all goroutines
 }
@@ -199,7 +200,7 @@ func TestExecuteBlockingDoesNotReturnImmediately(t *testing.T) {
 		wgBothGoroutinesStarted.Done()
 
 		limiter.ExecuteBlocking(func() {})
-		assert.Equal(t, firstCallbackCalled.Load(), true)
+		assert.True(t, firstCallbackCalled.Load())
 
 		secondCallbackDone.Store(true)
 		wgBothGoroutinesDone.Done()
@@ -210,5 +211,5 @@ func TestExecuteBlockingDoesNotReturnImmediately(t *testing.T) {
 	firstCallbackWaitUntilTestSetupIsComplete.Unlock()
 
 	wgBothGoroutinesDone.Wait()
-	assert.Equal(t, secondCallbackDone.Load(), true)
+	assert.True(t, secondCallbackDone.Load())
 }

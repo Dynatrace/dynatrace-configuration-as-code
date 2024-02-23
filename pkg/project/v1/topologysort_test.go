@@ -21,7 +21,8 @@ package v1
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"strings"
 	"testing"
@@ -54,13 +55,13 @@ func TestSortingByConfigDependencyWithRootDirectory(t *testing.T) {
 	configs := []*Config{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, configA, configs[0])
-	assert.Equal(t, configB, configs[1])
+	require.Equal(t, configs[0], configA)
+	require.Equal(t, configs[1], configB)
 
-	assert.Check(t, !configA.HasDependencyOn(configB))
-	assert.Check(t, configB.HasDependencyOn(configA))
+	require.False(t, configA.HasDependencyOn(configB))
+	require.True(t, configB.HasDependencyOn(configA))
 }
 
 func TestFailsOnCircularConfigDependency(t *testing.T) {
@@ -73,10 +74,10 @@ func TestFailsOnCircularConfigDependency(t *testing.T) {
 	configs := []*Config{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
-	assert.Error(t, err, "failed to sort configs, circular dependency on config "+pathB+"profile detected, please check dependencies")
+	require.Error(t, err, "failed to sort configs, circular dependency on config "+pathB+"profile detected, please check dependencies")
 
-	assert.Check(t, configA.HasDependencyOn(configB))
-	assert.Check(t, configB.HasDependencyOn(configA))
+	assert.True(t, configA.HasDependencyOn(configB))
+	assert.True(t, configB.HasDependencyOn(configA))
 }
 
 func TestSortingByConfigDependencyWithoutRootDirectory(t *testing.T) {
@@ -89,12 +90,12 @@ func TestSortingByConfigDependencyWithoutRootDirectory(t *testing.T) {
 	configs := []*Config{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, configA, configs[0])
 	assert.Equal(t, configB, configs[1])
 
-	assert.Check(t, !configA.HasDependencyOn(configB))
-	assert.Check(t, configB.HasDependencyOn(configA))
+	assert.False(t, configA.HasDependencyOn(configB))
+	assert.True(t, configB.HasDependencyOn(configA))
 }
 
 func TestSortingByConfigDependencyWithRelativePath(t *testing.T) {
@@ -107,10 +108,10 @@ func TestSortingByConfigDependencyWithRelativePath(t *testing.T) {
 	configs := []*Config{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
-	assert.NilError(t, err)
-	assert.Equal(t, configA, configs[0])
-	assert.Equal(t, configB, configs[1])
+	require.NoError(t, err)
+	require.Equal(t, configA, configs[0])
+	require.Equal(t, configB, configs[1])
 
-	assert.Check(t, !configA.HasDependencyOn(configB))
-	assert.Check(t, configB.HasDependencyOn(configA))
+	require.False(t, configA.HasDependencyOn(configB))
+	require.True(t, configB.HasDependencyOn(configA))
 }

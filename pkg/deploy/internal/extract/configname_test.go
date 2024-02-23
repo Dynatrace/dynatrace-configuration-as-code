@@ -23,7 +23,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -48,7 +49,7 @@ func TestExtractConfigName(t *testing.T) {
 
 	val, err := ConfigName(&conf, properties)
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, name, val)
 }
 
@@ -69,7 +70,7 @@ func TestExtractConfigNameShouldFailOnMissingName(t *testing.T) {
 
 	_, err := ConfigName(&conf, properties)
 
-	assert.Assert(t, err != nil, "error should not be nil (error val: %s)", err)
+	require.Errorf(t, err, "error should not be nil (error val: %s)", err)
 }
 
 func TestExtractConfigNameShouldFailOnNameWithNonStringType(t *testing.T) {
@@ -91,5 +92,5 @@ func TestExtractConfigNameShouldFailOnNameWithNonStringType(t *testing.T) {
 
 	_, err := ConfigName(&conf, properties)
 
-	assert.Assert(t, err != nil, "error should not be nil (error val: %s)", err)
+	require.Errorf(t, err, "error should not be nil (error val: %s)", err)
 }

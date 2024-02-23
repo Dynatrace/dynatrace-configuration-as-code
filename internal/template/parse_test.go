@@ -20,11 +20,12 @@ package template
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
 	"gopkg.in/yaml.v2"
-	"gotest.tools/assert"
 )
 
 const testYaml = `
@@ -39,15 +40,15 @@ dark:
 func TestUnmarshalYaml(t *testing.T) {
 
 	result, e := UnmarshalYaml(testYaml, "test-yaml")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
-	assert.Check(t, len(result) == 2)
+	require.Len(t, result, 2)
 
 	light := result["light"]
 	dark := result["dark"]
 
-	assert.Check(t, light != nil)
-	assert.Check(t, dark != nil)
+	assert.NotNil(t, light)
+	assert.NotNil(t, dark)
 
 	assert.Equal(t, "Solo", light["Han"])
 	assert.Equal(t, "Baca", light["Chew"])
@@ -75,7 +76,7 @@ someExtension:
 
 func TestUnmarshalYamlNormalizesPathSeparatorsIfValueIsReferencingVariableInAnotherYaml(t *testing.T) {
 	result, e := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	config := result["config"]
 	arbitraryPaths := result["arbitraryPaths"]
@@ -84,38 +85,38 @@ func TestUnmarshalYamlNormalizesPathSeparatorsIfValueIsReferencingVariableInAnot
 	// Shorthand 'ps' for platform-dependant path separator so that less code is needed in assertions below
 	ps := string(os.PathSeparator)
 
-	assert.Equal(t, arbitraryPaths["p4"], fmt.Sprintf("%sabsolute%spath%sdashboard.id", ps, ps, ps))
-	assert.Equal(t, arbitraryPaths["p5"], fmt.Sprintf("relative%spath%sdashboard.name", ps, ps))
-	assert.Equal(t, arbitraryPaths["p6"], fmt.Sprintf("%sabsolute%sbackslash%sdashboard.id", ps, ps, ps))
-	assert.Equal(t, arbitraryPaths["p7"], fmt.Sprintf("relative%sbackslash%sdashboard.name", ps, ps))
+	assert.Equal(t, fmt.Sprintf("%sabsolute%spath%sdashboard.id", ps, ps, ps), arbitraryPaths["p4"])
+	assert.Equal(t, fmt.Sprintf("relative%spath%sdashboard.name", ps, ps), arbitraryPaths["p5"])
+	assert.Equal(t, fmt.Sprintf("%sabsolute%sbackslash%sdashboard.id", ps, ps, ps), arbitraryPaths["p6"])
+	assert.Equal(t, fmt.Sprintf("relative%sbackslash%sdashboard.name", ps, ps), arbitraryPaths["p7"])
 
-	assert.Equal(t, url["url"], "https://dynatrace.com/")
-	assert.Equal(t, config["application-tagging"], "application-tagging.json")
+	assert.Equal(t, "https://dynatrace.com/", url["url"])
+	assert.Equal(t, "application-tagging.json", config["application-tagging"])
 }
 
 func TestUnmarshalYamlDoesNotNormalizePathSeparatorsIfValueIsNotReferencingVariableInAnotherYaml(t *testing.T) {
 	result, e := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	config := result["config"]
 	arbitraryPaths := result["arbitraryPaths"]
 	url := result["retainURLs"]
 
-	assert.Equal(t, arbitraryPaths["p1"], "// represents a comment maybe")
-	assert.Equal(t, arbitraryPaths["p2"], "\\ only back slashes \\")
-	assert.Equal(t, arbitraryPaths["p3"], "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36")
+	assert.Equal(t, "// represents a comment maybe", arbitraryPaths["p1"])
+	assert.Equal(t, "\\ only back slashes \\", arbitraryPaths["p2"])
+	assert.Equal(t, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36", arbitraryPaths["p3"])
 
-	assert.Equal(t, url["url"], "https://dynatrace.com/")
-	assert.Equal(t, config["application-tagging"], "application-tagging.json")
+	assert.Equal(t, "https://dynatrace.com/", url["url"])
+	assert.Equal(t, "application-tagging.json", config["application-tagging"])
 }
 
 func TestUnmarshalYamlDoesNotReplaceSlashesAndBackslashesInJsonReferenceInSectionOtherThanConfigSection(t *testing.T) {
 	result, e := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	someExtension := result["someExtension"]
 
-	assert.Equal(t, someExtension["path"], "/this/is\\a/path/with\\slashes/and\\backslashes/to\\extension.json")
+	assert.Equal(t, "/this/is\\a/path/with\\slashes/and\\backslashes/to\\extension.json", someExtension["path"])
 }
 
 const yamlTestEnvVar = `
@@ -129,7 +130,7 @@ func TestReplaceEnvVarWhenVarIsPresent(t *testing.T) {
 	t.Setenv("TEST_ENV_VAR", "I'm the king of the World!")
 
 	result, e := UnmarshalYaml(yamlTestEnvVar, "test-yaml-test-env-var")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	testMap := result["envVars"]
 	assert.Equal(t, "I'm the king of the World!", testMap["env-var"])
@@ -139,7 +140,7 @@ func TestReplaceEnvVarWhenVarIsPresent(t *testing.T) {
 func TestReplaceEnvVarWhenVarIsNotPresent(t *testing.T) {
 
 	_, err := UnmarshalYaml(yamlTestEnvVar, "test-yaml-test-env-var")
-	assert.ErrorContains(t, err, "map has no entry for key \"TEST_ENV_VAR\"")
+	require.ErrorContains(t, err, "map has no entry for key \"TEST_ENV_VAR\"")
 }
 
 func TestUnmarshalYamlWithoutTemplatingDoesNotReplaceVariables(t *testing.T) {
@@ -147,7 +148,7 @@ func TestUnmarshalYamlWithoutTemplatingDoesNotReplaceVariables(t *testing.T) {
 	t.Setenv("TEST_ENV_VAR", "I'm the king of the World!")
 
 	result, e := UnmarshalYamlWithoutTemplating(yamlTestEnvVar, "test-yaml-test-env-var")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	testMap := result["envVars"]
 	assert.Equal(t, "{{ .Env.TEST_ENV_VAR }}", testMap["env-var"])
@@ -156,7 +157,7 @@ func TestUnmarshalYamlWithoutTemplatingDoesNotReplaceVariables(t *testing.T) {
 
 func TestUnmarshalYamlWithoutTemplatingDoesNotFailIfVariablesAreMissing(t *testing.T) {
 	_, e := UnmarshalYamlWithoutTemplating(yamlTestEnvVar, "test-yaml-test-env-var")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 }
 
 const testYamlParsingIssueOnLevel1 = `
@@ -172,7 +173,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel1(t *testing.T) {
 	_, e := convert(m)
 
 	// Then
-	assert.ErrorContains(t, e, "cannot convert YAML on level 1: value of key 'light' has unexpected type")
+	require.ErrorContains(t, e, "cannot convert YAML on level 1: value of key 'light' has unexpected type")
 }
 
 const testYamlParsingIssueOnLevel2 = `
@@ -190,7 +191,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel2(t *testing.T) {
 	_, e := convert(m)
 
 	// Then
-	assert.ErrorContains(t, e, "cannot convert YAML on level 2: test - test2")
+	require.ErrorContains(t, e, "cannot convert YAML on level 2: test - test2")
 }
 
 const testYamlParsingIssueOnLevel3 = `
@@ -207,7 +208,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel3(t *testing.T) {
 	_, e := convert(m)
 
 	// Then
-	assert.ErrorContains(t, e, "cannot convert YAML on level 3: invalid key type '%!s(int=123)'")
+	require.ErrorContains(t, e, "cannot convert YAML on level 3: invalid key type '%!s(int=123)'")
 }
 
 const testYamlParsingIssueOnLevel4 = `
@@ -225,7 +226,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel4(t *testing.T) {
 	_, e := convert(m)
 
 	// Then
-	assert.ErrorContains(t, e, "cannot convert YAML on level 4: value of key 'Han' has unexpected type")
+	require.ErrorContains(t, e, "cannot convert YAML on level 4: value of key 'Han' has unexpected type")
 }
 
 func Test_ensureAnyTemplateStringsAreInQuotes(t *testing.T) {

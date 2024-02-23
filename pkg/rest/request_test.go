@@ -21,7 +21,8 @@ package rest
 import (
 	"context"
 	"fmt"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -39,9 +40,9 @@ func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 	})
 
 	gotResp, err := SendWithRetry(context.TODO(), mockCall, "some/path", []byte("body"), RetrySetting{MaxRetries: 5})
-	assert.NilError(t, err)
-	assert.Equal(t, gotResp.StatusCode, 200)
-	assert.Equal(t, string(gotResp.Body), "Success")
+	require.NoError(t, err)
+	assert.Equal(t, 200, gotResp.StatusCode)
+	assert.Equal(t, "Success", string(gotResp.Body))
 }
 
 func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
@@ -59,8 +60,8 @@ func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 	})
 
 	_, err := SendWithRetry(context.TODO(), mockCall, "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
-	assert.Check(t, err != nil)
-	assert.Equal(t, i, 2)
+	require.Error(t, err)
+	assert.Equal(t, 2, i)
 }
 
 func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
@@ -78,7 +79,7 @@ func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 	})
 
 	_, err := SendWithRetry(context.TODO(), mockCall, "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
-	assert.Check(t, err != nil)
+	require.Error(t, err)
 	assert.ErrorContains(t, err, "Something wrong")
 }
 
@@ -100,7 +101,7 @@ func Test_sendWithRetryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
 	})
 
 	_, err := SendWithRetry(context.TODO(), mockCall, "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
-	assert.Check(t, err != nil)
+	require.Error(t, err)
 	assert.ErrorContains(t, err, "400")
 	assert.ErrorContains(t, err, "{ err: 'failed to create thing'}")
 }

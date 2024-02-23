@@ -29,8 +29,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution/resolver"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/google/go-cmp/cmp"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -681,15 +681,15 @@ func TestDependencyResolution(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name+"_BasicResolver", func(t *testing.T) {
 			result, err := ResolveDependencies(test.setup)
-			assert.NilError(t, err)
-			assert.DeepEqual(t, test.expected, result, cmp.AllowUnexported(template.InMemoryTemplate{}))
+			require.NoError(t, err)
+			assert.Equal(t, test.expected, result)
 		})
 
 		t.Run(test.name+"_FastResolver", func(t *testing.T) {
 			t.Setenv(featureflags.FastDependencyResolver().EnvName(), "true")
 			result, err := ResolveDependencies(test.setup)
-			assert.NilError(t, err)
-			assert.DeepEqual(t, test.expected, result, cmp.AllowUnexported(template.InMemoryTemplate{}))
+			require.NoError(t, err)
+			assert.Equal(t, test.expected, result)
 		})
 	}
 }

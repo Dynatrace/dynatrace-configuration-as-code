@@ -17,11 +17,12 @@
 package environment
 
 import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"gotest.tools/assert"
 )
 
 func TestParseValueParameter(t *testing.T) {
@@ -33,15 +34,15 @@ func TestParseValueParameter(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	envParameter, ok := param.(*EnvironmentVariableParameter)
 
-	assert.Assert(t, ok, "parsed parameter should be environment parameter")
-	assert.Equal(t, envParameter.GetType(), "environment")
+	require.True(t, ok, "parsed parameter should be environment parameter")
+	assert.Equal(t, "environment", envParameter.GetType())
 
-	assert.Equal(t, name, envParameter.Name)
-	assert.Assert(t, !envParameter.HasDefaultValue, "environment parameter should not have default")
+	require.Equal(t, name, envParameter.Name)
+	assert.False(t, envParameter.HasDefaultValue, "environment parameter should not have default")
 }
 
 func TestParseValueParameterWithDefault(t *testing.T) {
@@ -55,13 +56,13 @@ func TestParseValueParameterWithDefault(t *testing.T) {
 		},
 	})
 
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	envParameter, ok := param.(*EnvironmentVariableParameter)
 
-	assert.Assert(t, ok, "parsed parameter should be environment parameter")
+	require.True(t, ok, "parsed parameter should be environment parameter")
 	assert.Equal(t, name, envParameter.Name)
-	assert.Assert(t, envParameter.HasDefaultValue, "environment parameter should have default")
+	assert.True(t, envParameter.HasDefaultValue, "environment parameter should have default")
 	assert.Equal(t, defaultValue, envParameter.DefaultValue)
 }
 
@@ -73,7 +74,7 @@ func TestParseValueParameterMissingRequiredField(t *testing.T) {
 		},
 	})
 
-	assert.Assert(t, err != nil, "error should be present")
+	require.Error(t, err, "error should be present")
 }
 
 func TestGetReferences(t *testing.T) {
@@ -81,7 +82,7 @@ func TestGetReferences(t *testing.T) {
 
 	references := fixture.GetReferences()
 
-	assert.Equal(t, len(references), 0, "environment parameter should not have references")
+	require.Empty(t, references, "environment parameter should not have references")
 }
 
 func TestResolveValue(t *testing.T) {
@@ -96,8 +97,8 @@ func TestResolveValue(t *testing.T) {
 		ParameterName: "test",
 	})
 
-	assert.NilError(t, err)
-	assert.Equal(t, value, result)
+	require.NoError(t, err)
+	require.Equal(t, value, result)
 }
 
 func TestResolveValue_EscapesSpecialCharacters(t *testing.T) {
@@ -113,8 +114,8 @@ func TestResolveValue_EscapesSpecialCharacters(t *testing.T) {
 		ParameterName: "test",
 	})
 
-	assert.NilError(t, err)
-	assert.Equal(t, expected, result)
+	require.NoError(t, err)
+	require.Equal(t, expected, result)
 }
 
 func TestResolveValueWithDefaultValue(t *testing.T) {
@@ -127,8 +128,8 @@ func TestResolveValueWithDefaultValue(t *testing.T) {
 		ParameterName: name,
 	})
 
-	assert.NilError(t, err)
-	assert.Equal(t, defaultValue, result)
+	require.NoError(t, err)
+	require.Equal(t, defaultValue, result)
 }
 
 func TestResolveValueErrorOnUnsetEnvVar(t *testing.T) {
@@ -140,7 +141,7 @@ func TestResolveValueErrorOnUnsetEnvVar(t *testing.T) {
 		ParameterName: name,
 	})
 
-	assert.Assert(t, err != nil, "expected an error when resolving unset var without default")
+	require.Error(t, err, "expected an error when resolving unset var without default")
 }
 
 func TestWriteEnvironmentValueParameter(t *testing.T) {
@@ -153,12 +154,12 @@ func TestWriteEnvironmentValueParameter(t *testing.T) {
 
 	result, err := writeEnvironmentValueParameter(context)
 
-	assert.NilError(t, err)
-	assert.Equal(t, len(result), 1, "should have 1 property")
+	require.NoError(t, err)
+	require.Equal(t, len(result), 1, "should have 1 property")
 
 	resultEnv, ok := result["name"]
-	assert.Assert(t, ok, "should have property `name`")
-	assert.Equal(t, resultEnv, name)
+	require.True(t, ok, "should have property `name`")
+	require.Equal(t, name, resultEnv)
 }
 
 func TestWriteEnvironmentValueParameterWithDefault(t *testing.T) {
@@ -172,16 +173,16 @@ func TestWriteEnvironmentValueParameterWithDefault(t *testing.T) {
 
 	result, err := writeEnvironmentValueParameter(context)
 
-	assert.NilError(t, err)
-	assert.Equal(t, len(result), 2, "should have 2 properties")
+	require.NoError(t, err)
+	require.Equal(t, len(result), 2, "should have 2 properties")
 
 	resultDefault, ok := result["default"]
-	assert.Assert(t, ok, "should have property `default`")
-	assert.Equal(t, resultDefault, defaultVal)
+	require.True(t, ok, "should have property `default`")
+	assert.Equal(t, defaultVal, resultDefault)
 
 	resultEnv, ok := result["name"]
-	assert.Assert(t, ok, "should have property `name`")
-	assert.Equal(t, resultEnv, name)
+	require.True(t, ok, "should have property `name`")
+	assert.Equal(t, name, resultEnv)
 }
 
 func TestWriteEnvironmentValueParameterErrorOnOtherParameterType(t *testing.T) {
@@ -193,5 +194,5 @@ func TestWriteEnvironmentValueParameterErrorOnOtherParameterType(t *testing.T) {
 
 	_, err := writeEnvironmentValueParameter(context)
 
-	assert.Assert(t, err != nil)
+	require.Error(t, err)
 }

@@ -19,7 +19,7 @@
 package regex
 
 import (
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 )
@@ -220,12 +220,12 @@ list"   :
 
 	for _, s := range patternsThatShouldMatch {
 		t.Run(s, func(t *testing.T) {
-			assert.Assert(t, ListVariableRegexPattern.MatchString(s))
+			assert.True(t, ListVariableRegexPattern.MatchString(s))
 			matches := ListVariableRegexPattern.FindStringSubmatch(s)
-			assert.Equal(t, len(matches), 3, "expected regex matching to return 3 matches - - full match, list match & variable name capture group")
-			assert.Equal(t, matches[2], "expectedValue")
+			assert.Len(t, matches, 3, "expected regex matching to return 3 matches - - full match, list match & variable name capture group")
+			assert.Equal(t, "expectedValue", matches[2])
 			sanitizedFullMatch := strings.ReplaceAll(strings.ReplaceAll(matches[1], " ", ""), "\n", "")
-			assert.Equal(t, sanitizedFullMatch, "[{{.expectedValue}}]")
+			assert.Equal(t, "[{{.expectedValue}}]", sanitizedFullMatch)
 		})
 	}
 }
@@ -300,12 +300,12 @@ list"   :
 
 			if !tt.wantErr {
 				sanitizedFullMatch := strings.ReplaceAll(strings.ReplaceAll(gotFullMatch, " ", ""), "\n", "")
-				assert.Equal(t, sanitizedFullMatch, `"list":[{{.expectedValue}}]`)
+				assert.Equal(t, `"list":[{{.expectedValue}}]`, sanitizedFullMatch)
 
 				sanitizedListMatch := strings.ReplaceAll(strings.ReplaceAll(gotListMatch, " ", ""), "\n", "")
-				assert.Equal(t, sanitizedListMatch, "[{{.expectedValue}}]")
+				assert.Equal(t, "[{{.expectedValue}}]", sanitizedListMatch)
 
-				assert.Equal(t, gotVariableName, "expectedValue")
+				assert.Equal(t, "expectedValue", gotVariableName)
 			}
 		})
 	}

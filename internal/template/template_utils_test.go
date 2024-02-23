@@ -20,8 +20,8 @@ package template
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/regex"
-	assert2 "github.com/stretchr/testify/assert"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -45,7 +45,7 @@ func Test_EscapeSpecialCharacters_EscapesNewline(t *testing.T) {
 	}
 
 	result, err := EscapeSpecialCharacters(p)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	expected := map[string]interface{}{
 		`string without newline`: `just some string`,
@@ -64,7 +64,7 @@ func Test_EscapeSpecialCharacters_EscapesNewline(t *testing.T) {
 		},
 	}
 
-	assert.DeepEqual(t, expected, result)
+	require.Equal(t, expected, result)
 }
 
 func Test_EscapeSpecialCharacters_WithEmptyMap(t *testing.T) {
@@ -73,8 +73,8 @@ func Test_EscapeSpecialCharacters_WithEmptyMap(t *testing.T) {
 
 	res, err := EscapeSpecialCharacters(empty)
 
-	assert.NilError(t, err)
-	assert.DeepEqual(t, res, empty)
+	require.NoError(t, err)
+	assert.Equal(t, empty, res)
 }
 
 func Test_escapeCharactersForJson(t *testing.T) {
@@ -134,8 +134,8 @@ func Test_escapeCharactersForJson(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.inputString, func(t *testing.T) {
 			got, err := escapeCharactersForJson(tt.inputString)
-			assert2.NoError(t, err)
-			assert2.Equal(t, tt.want, got)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -208,7 +208,7 @@ func TestEscapeNewlineCharacters(t *testing.T) {
 	}
 
 	result, err := EscapeSpecialCharacters(p)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 
 	expected := map[string]interface{}{
 		`string without newline`: `just some string`,
@@ -227,7 +227,7 @@ func TestEscapeNewlineCharacters(t *testing.T) {
 		},
 	}
 
-	assert.DeepEqual(t, expected, result)
+	assert.Equal(t, expected, result)
 }
 
 func TestEscapeNewlineCharactersWithEmptyMap(t *testing.T) {
@@ -236,8 +236,8 @@ func TestEscapeNewlineCharactersWithEmptyMap(t *testing.T) {
 
 	res, err := EscapeSpecialCharacters(empty)
 
-	assert.NilError(t, err)
-	assert.DeepEqual(t, res, empty)
+	require.NoError(t, err)
+	assert.Equal(t, empty, res)
 }
 
 func Test_isListDefinition(t *testing.T) {

@@ -20,10 +20,9 @@ package v1environment
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
-	"gotest.tools/assert"
 )
 
 const testYamlEnvironment = `
@@ -86,50 +85,50 @@ var testTrailingSlashEnvironment = NewEnvironmentV1("trailing-slash-environment"
 func TestShouldParseYaml(t *testing.T) {
 
 	result, e := template.UnmarshalYaml(testYamlEnvironment, "test-yaml")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	environments, errorList := newEnvironmentsV1(result)
 
-	assert.Check(t, len(errorList) == 0)
-	assert.Check(t, len(environments) == 3)
+	assert.Empty(t, errorList)
+	assert.Len(t, environments, 3)
 
 	dev := environments["development"]
 	hardening := environments["hardening"]
 	production := environments["prod-environment"]
 
-	assert.Check(t, dev != nil)
-	assert.Check(t, hardening != nil)
-	assert.Check(t, production != nil)
+	require.NotNil(t, dev)
+	require.NotNil(t, hardening)
+	require.NotNil(t, production)
 
-	assert.DeepEqual(t, dev, testDevEnvironment, cmp.AllowUnexported(EnvironmentV1{}))
-	assert.DeepEqual(t, hardening, testHardeningEnvironment, cmp.AllowUnexported(EnvironmentV1{}))
-	assert.DeepEqual(t, production, testProductionEnvironment, cmp.AllowUnexported(EnvironmentV1{}))
+	assert.Equal(t, testDevEnvironment, dev)
+	assert.Equal(t, testHardeningEnvironment, hardening)
+	assert.Equal(t, testProductionEnvironment, production)
 }
 
 func TestParsingEnvironmentsWithMultipleGroups(t *testing.T) {
 	result, e := template.UnmarshalYaml(testYamlEnvironmentWithGroups, "test-yaml")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	environments, errorList := newEnvironmentsV1(result)
-	assert.Check(t, len(errorList) == 3)
-	assert.Check(t, len(environments) == 1)
+	assert.Len(t, errorList, 3)
+	assert.Len(t, environments, 1)
 
 	production := environments["prod-environment"]
-	assert.Check(t, production != nil)
-	assert.DeepEqual(t, production, testProductionEnvironment, cmp.AllowUnexported(EnvironmentV1{}))
+	require.NotNil(t, production)
+	assert.Equal(t, testProductionEnvironment, production)
 
 }
 
 func TestParsingEnvironmentsWithSameIds(t *testing.T) {
 	result, e := template.UnmarshalYaml(testYamlEnvironmentSameIds, "test-yaml")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	environments, errorList := newEnvironmentsV1(result)
-	assert.Check(t, len(errorList) == 1)
-	assert.Check(t, len(environments) == 1)
+	require.Len(t, errorList, 1)
+	require.Len(t, environments, 1)
 
 	myenvironment := environments["myenvironment"]
-	assert.Check(t, myenvironment != nil)
+	require.NotNil(t, myenvironment)
 }
 
 func TestUrlAvailableWithTemplating(t *testing.T) {
@@ -137,7 +136,7 @@ func TestUrlAvailableWithTemplating(t *testing.T) {
 	t.Setenv("URL", "1234")
 	e, devEnvironment := setupEnvironment(t, testYamlEnvironmentWithNewPropertyFormat, "development")
 
-	assert.NilError(t, e)
+	require.NoError(t, e)
 	assert.Equal(t, "1234", devEnvironment.GetEnvironmentUrl())
 
 }
@@ -145,7 +144,7 @@ func TestUrlAvailableWithTemplating(t *testing.T) {
 func TestTokenNotAvailableOnGetterCallWithTemplating(t *testing.T) {
 
 	_, e := template.UnmarshalYaml(testYamlEnvironmentWithNewPropertyFormat, "test-yaml")
-	assert.ErrorContains(t, e, "map has no entry for key \"URL\"")
+	require.ErrorContains(t, e, "map has no entry for key \"URL\"")
 }
 
 func TestTrailingSlashTrimmedFromEnvironmentURL(t *testing.T) {
@@ -160,13 +159,13 @@ func TestTrailingSlashTrimmedFromEnvironmentURL(t *testing.T) {
 func setupEnvironment(t *testing.T, environmentYamlContent string, environmentOfInterest string) (error, *EnvironmentV1) {
 
 	result, e := template.UnmarshalYaml(environmentYamlContent, "test-yaml")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	environments, errorList := newEnvironmentsV1(result)
-	assert.Check(t, len(errorList) == 0)
+	assert.Empty(t, errorList)
 
 	devEnvironment := environments[environmentOfInterest]
-	assert.Check(t, devEnvironment != nil)
+	assert.NotNil(t, devEnvironment)
 
 	return e, devEnvironment
 }

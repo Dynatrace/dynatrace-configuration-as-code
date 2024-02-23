@@ -19,13 +19,13 @@
 package v1
 
 import (
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"gotest.tools/assert"
 )
 
 func TestFilterProperties(t *testing.T) {
@@ -42,8 +42,8 @@ func TestFilterProperties(t *testing.T) {
 
 	properties := filterProperties("Captains", m)
 
-	assert.Check(t, len(properties) == 1)
-	assert.Check(t, properties["Captains"] != nil)
+	require.Len(t, properties, 1)
+	assert.NotNil(t, properties["Captains"])
 }
 
 func TestFilterPropertiesToReturnExactMatchOnlyForConfigName(t *testing.T) {
@@ -54,8 +54,8 @@ func TestFilterPropertiesToReturnExactMatchOnlyForConfigName(t *testing.T) {
 
 	properties := filterProperties("dashboard", m)
 
-	assert.Check(t, len(properties) == 1)
-	assert.Check(t, properties["dashboard"] != nil)
+	require.Len(t, properties, 1)
+	assert.NotNil(t, properties["dashboard"])
 }
 
 func TestFilterPropertiesToReturnExactMatchOnlyForConfigNameAndEnvironment(t *testing.T) {
@@ -78,9 +78,9 @@ func TestFilterPropertiesToReturnExactMatchOnlyForConfigNameAndEnvironment(t *te
 
 	properties := filterProperties("dashboard.dev", m)
 
-	assert.Check(t, len(properties) == 1)
-	assert.Check(t, properties["dashboard.dev"] != nil)
-	assert.Check(t, len(properties["dashboard.dev"]) == 2)
+	require.Len(t, properties, 1)
+	assert.NotNil(t, properties["dashboard.dev"])
+	assert.Len(t, properties["dashboard.dev"], 2)
 }
 
 func TestFilterPropertiesToReturnMoreSpecificProperties(t *testing.T) {
@@ -99,8 +99,8 @@ func TestFilterPropertiesToReturnMoreSpecificProperties(t *testing.T) {
 
 	properties := filterProperties("dashboard.dev", m)
 
-	assert.Check(t, properties["dashboard.dev"]["prop1"] == "B")
-	assert.Check(t, properties["dashboard.dev"]["prop2"] == "C")
+	require.Equal(t, "B", properties["dashboard.dev"]["prop1"])
+	require.Equal(t, "C", properties["dashboard.dev"]["prop2"])
 }
 
 func TestFilterPropertiesToReturnNoGeneralPropertiesForMissingSpecificOnes(t *testing.T) {
@@ -118,9 +118,8 @@ func TestFilterPropertiesToReturnNoGeneralPropertiesForMissingSpecificOnes(t *te
 
 	properties := filterProperties("dashboard.dev", m)
 
-	fmt.Println(properties)
-	assert.Check(t, properties["dashboard.dev"]["prop1"] == "B")
-	assert.Check(t, len(properties["dashboard.dev"]) == 1)
+	assert.Equal(t, "B", properties["dashboard.dev"]["prop1"])
+	assert.Len(t, properties["dashboard.dev"], 1)
 }
 
 func TestHasDependencyCheck(t *testing.T) {
@@ -130,7 +129,7 @@ func TestHasDependencyCheck(t *testing.T) {
 	prop["test"]["name"] = "A name"
 	prop["test"]["somethingelse"] = files.ReplacePathSeparators("testproject/management-zone/other.id")
 	temp, e := template.NewTemplateFromString("test", "{{.name}}{{.somethingelse}}")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	config := newConfigWithTemplate("test", "testproject", temp, prop, testManagementZoneApi, "test.json")
 
@@ -149,7 +148,7 @@ func TestHasDependencyWithMultipleDependenciesCheck(t *testing.T) {
 	prop["test"]["someDependency"] = "management-zone/not-existing-dep.name"
 	prop["test"]["somethingelse"] = files.ReplacePathSeparators("management-zone/other.id")
 	temp, e := template.NewTemplateFromString("test", "{{.name}}{{.somethingelse}}")
-	assert.NilError(t, e)
+	require.NoError(t, e)
 
 	config := newConfigWithTemplate("test", "testproject", temp, prop, testManagementZoneApi, "test.json")
 
