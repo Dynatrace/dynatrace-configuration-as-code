@@ -69,7 +69,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		// DEPLOY RESOURCES
 		cli.SetArgs([]string{"account", "deploy", "-m", "manifest-account.yaml"})
 		err = cli.Execute()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// CHECK IF RESOURCES ARE INDEED DEPLOYED
 		check.UserAvailable(t, accountUUID, myEmail)
@@ -93,7 +93,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 		// REMOVE SOME BINDINGS
 		resources, err := loader.Load(o.fs, "accounts")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		resources.Groups["my-group"].Environment[0].Policies = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Policies, func(ref account.Ref) bool {
 			return ref.ID() == "Environment role - Replay session data without masking"
 		})
@@ -111,11 +111,11 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 		// WRITE RESOURCES
 		err = writer.Write(writer.Context{Fs: o.fs, OutputFolder: ".", ProjectFolder: "accounts"}, *resources)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// DEPLOY
 		err = cli.Execute()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// CHECK BINDINGS ARE REMOVED
 		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 1)
@@ -131,11 +131,11 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 		// WRITE RESOURCES
 		err = writer.Write(writer.Context{Fs: o.fs, OutputFolder: ".", ProjectFolder: "accounts"}, *resources)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// DEPLOY
 		err = cli.Execute()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 0)
 		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 0)
@@ -144,7 +144,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		// DELETE RESOURCES
 		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "delete.yaml", "--account", accountName})
 		err = cli.Execute()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// CHECK IF RESOURCES ARE DELETED
 		check.UserNotAvailable(t, accountUUID, myEmail)
@@ -187,47 +187,49 @@ type AccountResourceChecker struct {
 func (a AccountResourceChecker) UserAvailable(t *testing.T, accountUUID, email string) {
 	expectedEmail := a.randomize(email)
 	deployedUser, _, err := a.Client.UserManagementAPI.GetUserGroups(context.TODO(), accountUUID, expectedEmail).Execute()
-	assert.NotNil(t, deployedUser)
-	assert.NoError(t, err)
+	require.NotNil(t, deployedUser)
+	require.NoError(t, err)
 	assert.Equal(t, expectedEmail, deployedUser.Email)
 }
 
 func (a AccountResourceChecker) UserNotAvailable(t *testing.T, accountUUID, email string) {
 	expectedEmail := a.randomize(email)
-	_, res, _ := a.Client.UserManagementAPI.GetUserGroups(context.TODO(), accountUUID, expectedEmail).Execute()
+	_, res, err := a.Client.UserManagementAPI.GetUserGroups(context.TODO(), accountUUID, expectedEmail).Execute()
+	require.NoError(t, err)
+	require.NotNil(t, res)
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
 
 func (a AccountResourceChecker) GroupAvailable(t *testing.T, accountUUID, groupName string) {
 	expectedGroupName := a.randomize(groupName)
 	all, _, err := a.Client.GroupManagementAPI.GetGroups(context.TODO(), accountUUID).Execute()
-	assert.NotNil(t, all)
-	assert.NoError(t, err)
+	require.NotNil(t, all)
+	require.NoError(t, err)
 	assertElementInSlice(t, all.GetItems(), func(el accountmanagement.GetGroupDto) bool { return el.Name == expectedGroupName })
 }
 
 func (a AccountResourceChecker) PolicyAvailable(t *testing.T, levelType, levelId, policyName string) {
 	expectedPolicyName := a.randomize(policyName)
 	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelType, levelId).Name(expectedPolicyName).Execute()
-	assert.NotNil(t, policies)
-	assert.NoError(t, err)
+	require.NotNil(t, policies)
+	require.NoError(t, err)
 	_, found := getElementInSlice(policies.Policies, func(el accountmanagement.PolicyDto) bool { return el.Name == expectedPolicyName })
-	assert.True(t, found)
+	require.True(t, found)
 }
 
 func (a AccountResourceChecker) PolicyNotAvailable(t *testing.T, levelType, levelId, policyName string) {
 	expectedPolicyName := a.randomize(policyName)
 	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelType, levelId).Execute()
-	assert.NotNil(t, policies)
-	assert.NoError(t, err)
+	require.NotNil(t, policies)
+	require.NoError(t, err)
 	assertElementNotInSlice(t, policies.Policies, func(el accountmanagement.PolicyDto) bool { return el.Name == expectedPolicyName })
 }
 
 func (a AccountResourceChecker) GroupNotAvailable(t *testing.T, accountUUID, groupName string) {
 	expectedGroupName := a.randomize(groupName)
 	groups, _, err := a.Client.GroupManagementAPI.GetGroups(context.TODO(), accountUUID).Execute()
-	assert.NotNil(t, groups)
-	assert.NoError(t, err)
+	require.NotNil(t, groups)
+	require.NoError(t, err)
 	assertElementNotInSlice(t, groups.GetItems(), func(el accountmanagement.GetGroupDto) bool { return el.Name == expectedGroupName })
 }
 
@@ -241,14 +243,15 @@ func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUU
 	if !found {
 		pid, found = getPolicyIdByName(a.Client, expectedPolicyName, "global", "global")
 	}
-	assert.True(t, found)
+	require.True(t, found)
 
 	expectedGroupName := a.randomize(groupName)
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
-	assert.True(t, found)
+	require.True(t, found)
 
 	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), "environment", environmentName).Execute()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, envPolBindings)
 	assertElementInSlice(t, envPolBindings.PolicyBindings, func(el accountmanagement.Binding) bool {
 		return el.PolicyUuid == pid && slices.Contains(el.Groups, gid)
 	})
@@ -257,16 +260,17 @@ func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUU
 func (a AccountResourceChecker) PolicyBindingsCount(t *testing.T, accountUUID string, levelType string, levelId string, groupName string, number int) {
 	expectedGroupName := a.randomize(groupName)
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
-	assert.True(t, found)
+	require.True(t, found)
 
 	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), levelType, levelId).Execute()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, envPolBindings)
 
 	result := slices.DeleteFunc(envPolBindings.PolicyBindings, func(binding accountmanagement.Binding) bool {
 		return !slices.Contains(binding.Groups, gid)
 	})
 
-	assert.Equal(t, number, len(result))
+	require.Equal(t, number, len(result))
 }
 
 func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, groupName, policyName string) {
@@ -276,14 +280,15 @@ func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, 
 	if !found {
 		pid, found = getPolicyIdByName(a.Client, expectedPolicyName, "global", "global")
 	}
-	assert.True(t, found)
+	require.True(t, found)
 
 	expectedGroupName := a.randomize(groupName)
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
-	assert.True(t, found)
+	require.True(t, found)
 
 	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), "account", accountUUID).Execute()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, envPolBindings)
 	assertElementInSlice(t, envPolBindings.PolicyBindings, func(el accountmanagement.Binding) bool {
 		return el.PolicyUuid == pid && slices.Contains(el.Groups, gid)
 	})
@@ -292,10 +297,11 @@ func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, 
 func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, scopeType, scope, permissionName, groupName string) {
 	expectedGroupName := a.randomize(groupName)
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
-	assert.True(t, found)
+	require.True(t, found)
 
 	permissions, _, err := a.Client.PermissionManagementAPI.GetGroupPermissions(context.TODO(), accountUUID, gid).Execute()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, permissions)
 	assertElementInSlice(t, permissions.Permissions, func(el accountmanagement.PermissionsDto) bool {
 		permissionFound := el.PermissionName == permissionName
 		scopeTypeEqual := el.ScopeType == scopeType
@@ -307,10 +313,11 @@ func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, sco
 func (a AccountResourceChecker) PermissionBindingsCount(t *testing.T, accountUUID, groupName string, count int) {
 	expectedGroupName := a.randomize(groupName)
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
-	assert.True(t, found)
+	require.True(t, found)
 
 	permissions, _, err := a.Client.PermissionManagementAPI.GetGroupPermissions(context.TODO(), accountUUID, gid).Execute()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, permissions)
 	assert.Equal(t, count, len(permissions.Permissions))
 }
 
