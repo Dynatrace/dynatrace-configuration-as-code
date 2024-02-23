@@ -89,6 +89,11 @@ func findSimpleClassicURL(ctx context.Context, client *rest.Client, environmentU
 		return "", false
 	}
 
+	if !strings.Contains(environmentURL, ".apps.") {
+		log.Debug("Environment URL not matching expected Platform URL pattern, unable to build Classic environment URL directly.")
+		return "", false
+	}
+
 	url = strings.Replace(environmentURL, ".apps.", ".live.", 1)
 	resp, err := client.Get(ctx, url)
 
