@@ -27,9 +27,13 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io/fs"
 	"reflect"
 	"testing"
 )
+
+const testDirectoryFileMode = fs.FileMode(0755)
+const testFileFileMode = fs.FileMode(0644)
 
 func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 	tests := []struct {
@@ -655,4 +659,501 @@ func getFullProjectLoaderContext(apis []string, projects []string, environments 
 		},
 		ParametersSerde: config.DefaultParameterParsers,
 	}
+}
+
+func requireProjectsWithNames(t *testing.T, projects []Project, projectNames ...string) {
+	require.Equal(t, len(projects), len(projectNames), "Unexpected number of projects")
+	requiredProjectNamesMap := make(map[string]struct{}, len(projectNames))
+	for _, projectName := range projectNames {
+		requiredProjectNamesMap[projectName] = struct{}{}
+	}
+
+	for _, project := range projects {
+		_, found := requiredProjectNamesMap[project.Id]
+		require.True(t, found, "No project found with name %s", project.Id)
+		delete(requiredProjectNamesMap, project.Id)
+	}
+}
+
+func TestLoadProjects_Simple(t *testing.T) {
+	managementZoneConfig := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:management-zones
+      schemaVersion: 1.0.9
+      scope: environment`)
+
+	managementZoneConfigWithReference := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+    skip: false
+    parameters:
+      mzId:
+        type: reference
+        project: a
+        configType: builtin:management-zones
+        configId: mz
+        property: id
+  type:
+    settings:
+      schema: builtin:management-zones
+      schemaVersion: 1.0.9
+      scope: environment`)
+
+	managementZoneJSON := []byte(`{ "name": "", "rules": [] }`)
+
+	testFs := testutils.TempFs(t)
+
+	require.NoError(t, testFs.MkdirAll("a/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("b/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "b/builtinmanagement-zones/config.yaml", managementZoneConfigWithReference, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "b/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("c/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "c/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "c/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	testContext := ProjectLoaderContext{
+		KnownApis:  map[string]struct{}{"builtin:management-zones": {}},
+		WorkingDir: ".",
+		Manifest: manifest.Manifest{
+			Projects: manifest.ProjectDefinitionByProjectID{
+				"a": {
+					Name: "a",
+					Path: "a/",
+				},
+				"b": {
+					Name: "b",
+					Path: "b/",
+				},
+				"c": {
+					Name: "c",
+					Path: "c/",
+				},
+			},
+			Environments: manifest.Environments{
+				"default": {
+					Name: "default",
+					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+				},
+			},
+		},
+		ParametersSerde: config.DefaultParameterParsers,
+	}
+
+	t.Run("loads all projects in manifest if none are specified", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, nil)
+		require.Len(t, gotErrs, 0, "Expected no errors loading all projects")
+		require.Len(t, gotProjects, 3, "Expected to load 3 projects")
+	})
+
+	t.Run("loads specified projects", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"a", "c"})
+		require.Len(t, gotErrs, 0, "Expected no errors loading specified projects")
+		requireProjectsWithNames(t, gotProjects, "a", "c")
+	})
+
+	t.Run("returns error if specified project is not found", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"a", "d"})
+		require.Len(t, gotErrs, 1, "Expected error if project is not found")
+		require.Len(t, gotProjects, 0, "Expected to load no projects")
+		require.Contains(t, gotErrs[0].Error(), "no project with names", "Unexpected error message")
+	})
+
+	t.Run("also loads dependent projects", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"b"})
+		require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects")
+		requireProjectsWithNames(t, gotProjects, "b", "a")
+	})
+}
+
+func TestLoadProjects_Groups(t *testing.T) {
+	managementZoneConfig := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:management-zones
+      schemaVersion: 1.0.9
+      scope: environment`)
+
+	managementZoneJSON := []byte(`{ "name": "", "rules": [] }`)
+
+	testFs := testutils.TempFs(t)
+
+	require.NoError(t, testFs.MkdirAll("g1/a/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "g1/a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "g1/a/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("g1/b/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "g1/b/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "g1/b/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("g2/a/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "g2/a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "g2/a/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("g2/b/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "g2/b/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "g2/b/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("c/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "c/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "c/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	testContext := ProjectLoaderContext{
+		KnownApis:  map[string]struct{}{"builtin:management-zones": {}},
+		WorkingDir: ".",
+		Manifest: manifest.Manifest{
+			Projects: manifest.ProjectDefinitionByProjectID{
+				"g1.a": {
+					Name:  "g1.a",
+					Group: "g1",
+					Path:  "g1/a/",
+				},
+				"g1.b": {
+					Name:  "g1.b",
+					Group: "g1",
+					Path:  "g1/b/",
+				},
+				"g2.a": {
+					Name:  "g2.a",
+					Group: "g2",
+					Path:  "g2/a/",
+				},
+				"g2.b": {
+					Name:  "g2.b",
+					Group: "g2",
+					Path:  "g2/b/",
+				},
+				"c": {
+					Name: "c",
+					Path: "c/",
+				},
+			},
+			Environments: manifest.Environments{
+				"default": {
+					Name: "default",
+					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+				},
+			},
+		},
+		ParametersSerde: config.DefaultParameterParsers,
+	}
+
+	t.Run("loads all projects in manifest if none are specified", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, nil)
+		require.Len(t, gotErrs, 0, "Expected no errors loading all projects")
+		require.Len(t, gotProjects, 5, "Expected to load 5 projects")
+	})
+
+	t.Run("loads specified projects", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"g1.a", "c"})
+		require.Len(t, gotErrs, 0, "Expected no errors loading specified projects")
+		requireProjectsWithNames(t, gotProjects, "g1.a", "c")
+	})
+
+	t.Run("loads specified groups", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"g1"})
+		require.Len(t, gotErrs, 0, "Expected no errors loading specified groups")
+		requireProjectsWithNames(t, gotProjects, "g1.a", "g1.b")
+	})
+
+	t.Run("loads specified groups and projects", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"g1", "c"})
+		require.Len(t, gotErrs, 0, "Expected no errors loading specified groups and projects")
+		requireProjectsWithNames(t, gotProjects, "g1.a", "g1.b", "c")
+	})
+
+	t.Run("returns error if specified group is not found", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"g3", "c"})
+		require.Len(t, gotErrs, 1, "Expected an error if specified group is not found")
+		require.Len(t, gotProjects, 0, "Expected to load no projects")
+		require.Contains(t, gotErrs[0].Error(), "no project with names", "Unexpected error message")
+	})
+}
+
+func TestLoadProjects_WithEnvironmentOverrides(t *testing.T) {
+	managementZoneConfig := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:management-zones
+      schemaVersion: 1.0.9
+      scope: environment`)
+
+	managementZoneConfigWithReference := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+    skip: false
+    parameters:
+      mzId: "ID"
+  type:
+    settings:
+      schema: builtin:management-zones
+      schemaVersion: 1.0.9
+      scope: environment
+  environmentOverrides:
+  - environment: dev
+    override:
+      parameters:
+        mzId:
+          type: reference
+          project: a
+          configType: builtin:management-zones
+          configId: mz
+          property: id
+  - environment: prod
+    override:
+      parameters:
+        mzId:
+          type: reference
+          project: c
+          configType: builtin:management-zones
+          configId: mz
+          property: id`)
+
+	managementZoneJSON := []byte(`{ "name": "", "rules": [] }`)
+
+	testFs := testutils.TempFs(t)
+
+	require.NoError(t, testFs.MkdirAll("a/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("b/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "b/builtinmanagement-zones/config.yaml", managementZoneConfigWithReference, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "b/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("c/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "c/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "c/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	testContext := ProjectLoaderContext{
+		KnownApis:  map[string]struct{}{"builtin:management-zones": {}},
+		WorkingDir: ".",
+		Manifest: manifest.Manifest{
+			Projects: manifest.ProjectDefinitionByProjectID{
+				"a": {
+					Name: "a",
+					Path: "a/",
+				},
+				"b": {
+					Name: "b",
+					Path: "b/",
+				},
+				"c": {
+					Name: "c",
+					Path: "c/",
+				},
+			},
+			Environments: manifest.Environments{
+				"dev": {
+					Name: "dev",
+					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+				},
+				"prod": {
+					Name: "prod",
+					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+				},
+			},
+		},
+		ParametersSerde: config.DefaultParameterParsers,
+	}
+
+	t.Run("loads all projects in manifest if none are specified", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, nil)
+		require.Len(t, gotErrs, 0, "Expected no errors loading all projects")
+		require.Len(t, gotProjects, 3, "Expected to load 3 projects")
+	})
+
+	t.Run("loads specified projects", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"a"})
+		require.Len(t, gotErrs, 0, "Expected no errors loading specified projects")
+		requireProjectsWithNames(t, gotProjects, "a")
+	})
+
+	t.Run("returns error if specified project is not found", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"d"})
+		require.Len(t, gotErrs, 1, "Expected errors if specified project is not found")
+		require.Len(t, gotProjects, 0, "Expected to load no projects")
+		require.Contains(t, gotErrs[0].Error(), "no project with names", "Unexpected error message")
+	})
+
+	t.Run("also loads dependent projects", func(t *testing.T) {
+		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"b"})
+		require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects")
+		requireProjectsWithNames(t, gotProjects, "b", "a", "c")
+	})
+}
+
+func TestLoadProjects_WithEnvironmentOverridesAndLimitedEnvironments(t *testing.T) {
+	managementZoneConfig := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:management-zones
+      schemaVersion: 1.0.9
+      scope: environment`)
+
+	managementZoneConfigWithReference := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+    skip: false
+    parameters:
+      mzId: "ID"
+  type:
+    settings:
+      schema: builtin:management-zones
+      schemaVersion: 1.0.9
+      scope: environment
+  environmentOverrides:
+  - environment: dev
+    override:
+      parameters:
+        mzId:
+          type: reference
+          project: a
+          configType: builtin:management-zones
+          configId: mz
+          property: id
+  - environment: prod
+    override:
+      parameters:
+        mzId:
+          type: reference
+          project: c
+          configType: builtin:management-zones
+          configId: mz
+          property: id`)
+
+	managementZoneJSON := []byte(`{ "name": "", "rules": [] }`)
+
+	testFs := testutils.TempFs(t)
+
+	require.NoError(t, testFs.MkdirAll("a/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("b/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "b/builtinmanagement-zones/config.yaml", managementZoneConfigWithReference, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "b/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("c/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "c/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "c/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	testContext := ProjectLoaderContext{
+		KnownApis:  map[string]struct{}{"builtin:management-zones": {}},
+		WorkingDir: ".",
+		Manifest: manifest.Manifest{
+			Projects: manifest.ProjectDefinitionByProjectID{
+				"a": {
+					Name: "a",
+					Path: "a/",
+				},
+				"b": {
+					Name: "b",
+					Path: "b/",
+				},
+				"c": {
+					Name: "c",
+					Path: "c/",
+				},
+			},
+			Environments: manifest.Environments{
+				"dev": {
+					Name: "dev",
+					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+				},
+			},
+		},
+		ParametersSerde: config.DefaultParameterParsers,
+	}
+
+	gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"b"})
+	require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects ")
+	requireProjectsWithNames(t, gotProjects, "b", "a")
+}
+
+func TestLoadProjects_IgnoresIrrelevantProjectWithErrors(t *testing.T) {
+	managementZoneConfig := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:management-zones
+      schemaVersion: 1.0.9
+      scope: environment`)
+
+	managementZoneConfigWithError := []byte(`configurations:
+- id: mz
+  configurations:
+    template: mz.json
+      skip: false
+  type:
+    settings:
+      schema: builtin:management-zones
+      schemaVersion: 1.0.9
+      scope: environment`)
+
+	managementZoneJSON := []byte(`{ "name": "", "rules": [] }`)
+
+	testFs := testutils.TempFs(t)
+
+	require.NoError(t, testFs.MkdirAll("a/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	require.NoError(t, testFs.MkdirAll("b/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "b/builtinmanagement-zones/config.yaml", managementZoneConfigWithError, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "b/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	testContext := ProjectLoaderContext{
+		KnownApis:  map[string]struct{}{"builtin:management-zones": {}},
+		WorkingDir: ".",
+		Manifest: manifest.Manifest{
+			Projects: manifest.ProjectDefinitionByProjectID{
+				"a": {
+					Name: "a",
+					Path: "a/",
+				},
+				"b": {
+					Name: "b",
+					Path: "b/",
+				},
+			},
+			Environments: manifest.Environments{
+				"dev": {
+					Name: "dev",
+					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+				},
+			},
+		},
+		ParametersSerde: config.DefaultParameterParsers,
+	}
+
+	gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"a"})
+	require.Len(t, gotErrs, 0, "Expected no errors loading specified projects")
+	requireProjectsWithNames(t, gotProjects, "a")
 }
