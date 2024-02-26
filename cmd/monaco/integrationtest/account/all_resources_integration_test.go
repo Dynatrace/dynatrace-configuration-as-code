@@ -194,8 +194,7 @@ func (a AccountResourceChecker) UserAvailable(t *testing.T, accountUUID, email s
 
 func (a AccountResourceChecker) UserNotAvailable(t *testing.T, accountUUID, email string) {
 	expectedEmail := a.randomize(email)
-	_, res, err := a.Client.UserManagementAPI.GetUserGroups(context.TODO(), accountUUID, expectedEmail).Execute()
-	require.NoError(t, err)
+	_, res, _ := a.Client.UserManagementAPI.GetUserGroups(context.TODO(), accountUUID, expectedEmail).Execute()
 	require.NotNil(t, res)
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
