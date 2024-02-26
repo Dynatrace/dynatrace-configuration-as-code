@@ -127,6 +127,16 @@ Instead, whenever you need to test a path, make sure to do it in one of these wa
 * Construct any paths you need using `os.PathSeparator`
 * Use the public function `ReplacePathSeparators`, which replaces path separators in a given string with `os.PathSeparator`
 
+We use [github.com/stretchr/testify](github.com/stretchr/testify) as our testing library.
+
+> You might still find `gotest.tools` used for asserts in a few places, as it's being replaced. If you change a test file using it, replace it.
+ 
+We use `require` for asserting test requirements after which it makes no sense to continue - e.g. no error was returned, a slice has the expected length, pointers aren't nil, etc. - as it will fail the test immediately and exit. 
+
+We use `assert` for asserting results after which we still want to know about more results - e.g. checking the values of several struct fields, checking the complete contents of a slice, etc.
+
+If in doubt, use `require` to avoid follow-on errors and panics if data was already invalid.
+
 ## Checking in go mod and sum files
 
 Go module files `go.mod` and `go.sum` are checked-in in the root folder of the repo, so generally, run `go` from there.
