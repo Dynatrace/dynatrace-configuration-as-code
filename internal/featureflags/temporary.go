@@ -70,7 +70,7 @@ func UpdateNonUniqueByNameIfSingleOneExists() FeatureFlag {
 func AccountManagement() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_ACCOUNT_MANAGEMENT",
-		defaultEnabled: false,
+		defaultEnabled: true,
 	}
 }
 

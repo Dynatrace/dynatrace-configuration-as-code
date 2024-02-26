@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"sort"
+	"strconv"
 	"testing"
 )
 
@@ -750,9 +751,7 @@ environmentGroups:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.accountFeatureActive {
-				t.Setenv(featureflags.AccountManagement().EnvName(), "true")
-			}
+			t.Setenv(featureflags.AccountManagement().EnvName(), strconv.FormatBool(tt.accountFeatureActive))
 
 			c := Context{
 				Fs:           afero.NewMemMapFs(),
