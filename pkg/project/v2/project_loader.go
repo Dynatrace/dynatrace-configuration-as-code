@@ -98,8 +98,13 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjects []
 		return nil, errors
 	}
 
-	additionalDepedencyProjectNames := getAdditionalDependencyProjectNames(projects, environments)
-	if len(additionalDepedencyProjectNames) > 0 {
+	for {
+		additionalDepedencyProjectNames := getAdditionalDependencyProjectNames(projects, environments)
+
+		if len(additionalDepedencyProjectNames) == 0 {
+			break
+		}
+
 		log.Info("Loading %d additional dependent projects...", len(additionalDepedencyProjectNames))
 		dependencyProjectDefinitions, err := filterProjectDefinitionsByProjectNames(context.Manifest.Projects, additionalDepedencyProjectNames)
 		if err != nil {
