@@ -54,7 +54,6 @@ func resolve(configs project.ConfigsPerType) error {
 	wg := sync.WaitGroup{}
 	// currently a simple brute force approach
 	for _, configs := range configs {
-		configs := configs
 		for i := range configs {
 			wg.Add(1)
 

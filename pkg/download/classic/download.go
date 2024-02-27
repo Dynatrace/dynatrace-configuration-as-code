@@ -53,8 +53,6 @@ func Download(client dtclient.Client, projectName string, apisToDownload api.API
 	log.Debug("Fetching configs to download")
 	startTime := time.Now()
 	for _, currentApi := range apisToDownload {
-		currentApi := currentApi // prevent data race
-
 		go func() {
 			defer wg.Done()
 			lg := log.WithFields(field.Type(currentApi.ID))
@@ -116,7 +114,6 @@ func downloadConfigs(client dtclient.Client, api api.API, projectName string, fi
 	wg := sync.WaitGroup{}
 	wg.Add(len(foundValues))
 	for _, v := range foundValues {
-		v := v
 		go func() {
 			defer wg.Done()
 
