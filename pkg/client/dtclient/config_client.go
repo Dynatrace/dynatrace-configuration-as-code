@@ -48,6 +48,11 @@ func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.
 			}
 		}
 
+		// Single configurations with a parent use the parent's ID
+		if theApi.SingleConfiguration && theApi.HasParent() {
+			existingObjectID = theApi.ParentObjectID
+		}
+
 		// The network-zone API doesn't have a POST endpoint, hence, we need to treat it as an update operation
 		// per default
 		if theApi.ID == api.UserActionAndSessionPropertiesMobile {
@@ -216,11 +221,14 @@ func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl st
 }
 
 func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl string, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
-	path := joinUrl(fullUrl, existingObjectId)
-	body := payload
+	path := fullUrl
+	if !theApi.SingleConfiguration {
+		path = joinUrl(fullUrl, existingObjectId)
+	}
 
+	body := payload
 	// Updating a dashboard, reports or any service detection API requires the ID to be contained in the JSON, so we just add it...
-	if isApiDashboard(theApi) || isReportsApi(theApi) || isAnyServiceDetectionApi(theApi) {
+	if isApiDashboard(theApi) || isApiDashboardShareSettings(theApi) || isReportsApi(theApi) || isAnyServiceDetectionApi(theApi) {
 		tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 		body = []byte(tmp)
 	}
@@ -444,6 +452,10 @@ func escapeApiValueName(ctx context.Context, value Value) string {
 
 func isApiDashboard(a api.API) bool {
 	return a.ID == api.Dashboard || a.ID == api.DashboardV2
+}
+
+func isApiDashboardShareSettings(a api.API) bool {
+	return a.ID == api.DashboardShareSettings
 }
 
 func isReportsApi(a api.API) bool {

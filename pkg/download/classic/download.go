@@ -194,7 +194,7 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API, filter
 			}
 
 			if apiToDownload.SingleConfiguration {
-				vv := dtclient.Value{Id: parentAPIValue.Id, Name: parentAPIValue.Id, Owner: parentAPIValue.Owner}
+				vv := dtclient.Value{Id: parentAPIValue.Id, Name: parentAPIValue.Name, Owner: parentAPIValue.Owner}
 				res = append(res, value{value: vv, parentConfigId: parentAPIValue.Id})
 				continue
 			}
