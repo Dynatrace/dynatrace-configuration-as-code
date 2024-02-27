@@ -123,6 +123,13 @@ var configEndpoints = []API{
 		NonUniqueName:                true,
 	},
 	{
+		ID:                  DashboardShareSettings,
+		URLPath:             "/api/config/v1/dashboards/{SCOPE}/shareSettings",
+		Parent:              Dashboard,
+		SingleConfiguration: true,
+		RequireAllFF:        []featureflags.FeatureFlag{featureflags.DashboardShareSettings()},
+	},
+	{
 		ID:                           Notification,
 		URLPath:                      "/api/config/v1/notifications",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
