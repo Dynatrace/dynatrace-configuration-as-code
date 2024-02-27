@@ -124,17 +124,17 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjects []
 
 func getAdditionalDependencyProjectNames(projects []Project, environments []manifest.EnvironmentDefinition) []string {
 	seenProjectNames := map[string]struct{}{}
-	for _, p := range projects {
-		seenProjectNames[p.Id] = struct{}{}
+	for _, project := range projects {
+		seenProjectNames[project.Id] = struct{}{}
 	}
 
 	additionalDependencyProjectNames := []string{}
-	for _, p := range projects {
-		for _, env := range environments {
-			for _, d := range p.Dependencies[env.Name] {
-				if _, found := seenProjectNames[d]; !found {
-					seenProjectNames[d] = struct{}{}
-					additionalDependencyProjectNames = append(additionalDependencyProjectNames, d)
+	for _, project := range projects {
+		for _, environment := range environments {
+			for _, dependency := range project.Dependencies[environment.Name] {
+				if _, found := seenProjectNames[dependency]; !found {
+					seenProjectNames[dependency] = struct{}{}
+					additionalDependencyProjectNames = append(additionalDependencyProjectNames, dependency)
 				}
 			}
 		}
