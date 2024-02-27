@@ -70,7 +70,6 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 }
 
 func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjects []string) ([]Project, []error) {
-	environments := toEnvironmentSlice(context.Manifest.Environments)
 	var workingDirFs afero.Fs
 
 	if context.WorkingDir == "." {
@@ -83,43 +82,36 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjects []
 		return nil, []error{fmt.Errorf("no projects defined in manifest")}
 	}
 
+	// what projects to load. If none are passed, all projects defined in the manifest must be loaded
+	projectsToLoad := specificProjects
 	if len(specificProjects) == 0 {
-		log.Info("Loading %d projects...", len(context.Manifest.Projects))
-		return loadProjectsFromProjectDefinitions(workingDirFs, context, context.Manifest.Projects, environments)
-	}
-
-	specificProjectDefinitions, err := filterProjectDefinitionsByProjectNames(context.Manifest.Projects, specificProjects)
-	if err != nil {
-		return nil, []error{err}
-	}
-	log.Info("Loading %d projects...", len(specificProjectDefinitions))
-	projects, errors := loadProjectsFromProjectDefinitions(workingDirFs, context, specificProjectDefinitions, environments)
-	if errors != nil {
-		return nil, errors
-	}
-
-	for {
-		additionalDepedencyProjectNames := getAdditionalDependencyProjectNames(projects, environments)
-
-		if len(additionalDepedencyProjectNames) == 0 {
-			break
+		for projectId := range context.Manifest.Projects {
+			projectsToLoad = append(projectsToLoad, projectId)
 		}
+	}
 
-		log.Info("Loading %d additional dependent projects...", len(additionalDepedencyProjectNames))
-		dependencyProjectDefinitions, err := filterProjectDefinitionsByProjectNames(context.Manifest.Projects, additionalDepedencyProjectNames)
+	// all loaded projects
+	var loadedProjects []Project
+
+	environments := toEnvironmentSlice(context.Manifest.Environments)
+	for len(projectsToLoad) > 0 {
+		specificProjectDefinitions, err := filterProjectDefinitionsByProjectNames(context.Manifest.Projects, projectsToLoad)
 		if err != nil {
 			return nil, []error{err}
 		}
 
-		dependencyProjects, errors := loadProjectsFromProjectDefinitions(workingDirFs, context, dependencyProjectDefinitions, environments)
+		log.Info("Loading %d projects...", len(specificProjectDefinitions))
+		projects, errors := loadProjectsFromProjectDefinitions(workingDirFs, context, specificProjectDefinitions, environments)
 		if errors != nil {
 			return nil, errors
 		}
 
-		projects = append(projects, dependencyProjects...)
+		projectsToLoad = getAdditionalDependencyProjectNames(projects, environments)
+
+		loadedProjects = append(loadedProjects, projects...)
 	}
 
-	return projects, nil
+	return loadedProjects, nil
 }
 
 func getAdditionalDependencyProjectNames(projects []Project, environments []manifest.EnvironmentDefinition) []string {
