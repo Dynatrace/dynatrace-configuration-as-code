@@ -1,0 +1,20 @@
+name: Snyk Security Scan
+
+on:
+  pull_request:
+    branches: [ main ]
+  merge_group: # run if triggered as part of a merge queue
+  push:
+    branches: [ main ]
+
+jobs:
+  security:
+    name: Code security scanning alerts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/golang@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_API_TOKEN }}
