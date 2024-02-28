@@ -68,7 +68,8 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 	}
 }
 
-func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectOrGroupNames []string) ([]Project, []error) {
+// Tries to load the specified projects. If no project names are specified, all projects are loaded.
+func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectNames []string) ([]Project, []error) {
 	var workingDirFs afero.Fs
 
 	if context.WorkingDir == "." {
@@ -83,7 +84,7 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectOrGr
 
 	environments := toEnvironmentSlice(context.Manifest.Environments)
 
-	projectNamesToLoad, errors := getProjectNamesToLoad(context.Manifest.Projects, specificProjectOrGroupNames)
+	projectNamesToLoad, errors := getProjectNamesToLoad(context.Manifest.Projects, specificProjectNames)
 
 	seenProjectNames := make(map[string]struct{}, len(projectNamesToLoad))
 	var loadedProjects []Project
