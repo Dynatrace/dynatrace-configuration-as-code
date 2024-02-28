@@ -765,7 +765,7 @@ func TestLoadProjects_Simple(t *testing.T) {
 		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"a", "d"})
 		require.Len(t, gotErrs, 1, "Expected error if project is not found")
 		require.Len(t, gotProjects, 0, "Expected to load no projects")
-		require.Contains(t, gotErrs[0].Error(), "no project with names", "Unexpected error message")
+		require.Contains(t, gotErrs[0].Error(), "no project named", "Unexpected error message")
 	})
 
 	t.Run("also loads dependent projects", func(t *testing.T) {
@@ -879,7 +879,7 @@ func TestLoadProjects_Groups(t *testing.T) {
 		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"g3", "c"})
 		require.Len(t, gotErrs, 1, "Expected an error if specified group is not found")
 		require.Len(t, gotProjects, 0, "Expected to load no projects")
-		require.Contains(t, gotErrs[0].Error(), "no project with names", "Unexpected error message")
+		require.Contains(t, gotErrs[0].Error(), "no project named", "Unexpected error message")
 	})
 }
 
@@ -991,7 +991,7 @@ func TestLoadProjects_WithEnvironmentOverrides(t *testing.T) {
 		gotProjects, gotErrs := LoadProjects(testFs, testContext, []string{"d"})
 		require.Len(t, gotErrs, 1, "Expected errors if specified project is not found")
 		require.Len(t, gotProjects, 0, "Expected to load no projects")
-		require.Contains(t, gotErrs[0].Error(), "no project with names", "Unexpected error message")
+		require.Contains(t, gotErrs[0].Error(), "no project named", "Unexpected error message")
 	})
 
 	t.Run("also loads dependent projects", func(t *testing.T) {
