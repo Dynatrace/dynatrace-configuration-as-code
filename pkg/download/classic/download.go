@@ -165,7 +165,7 @@ type value struct {
 // findConfigsToDownload tries to identify all values that should be downloaded from a Dynatrace environment for
 // the given API
 func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (values, error) {
-	if apiToDownload.SingleConfiguration {
+	if apiToDownload.SingleConfiguration && !apiToDownload.HasParent() {
 		log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching singleton-configuration '%v'", apiToDownload.ID)
 
 		// singleton-config. We use the api-id as mock-id
@@ -182,6 +182,12 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (value
 			return values{}, err
 		}
 		for _, parentAPIValue := range parentAPIValues {
+			if apiToDownload.SingleConfiguration {
+				vv := dtclient.Value{Id: parentAPIValue.Id, Name: parentAPIValue.Id, Owner: parentAPIValue.Owner}
+				res = append(res, value{value: vv, parentConfigId: parentAPIValue.Id})
+				continue
+			}
+
 			apiValues, err := client.ListConfigs(context.TODO(), apiToDownload.Resolve(parentAPIValue.Id))
 			if err != nil {
 				return values{}, err
@@ -192,6 +198,7 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (value
 		}
 		return res, nil
 	}
+
 	var res values
 	vals, err := client.ListConfigs(context.TODO(), apiToDownload)
 	for _, v := range vals {
