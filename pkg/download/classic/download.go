@@ -96,7 +96,7 @@ func getConfigsFromCustomConfigs(customConfigs []downloadedConfig) []config.Conf
 func downloadConfigs(client dtclient.Client, api api.API, projectName string, filters ContentFilters) []downloadedConfig {
 	var results []downloadedConfig
 	logger := log.WithFields(field.Type(api.ID))
-	foundValues, err := findConfigsToDownload(client, api)
+	foundValues, err := findConfigsToDownload(client, api, filters)
 	if err != nil {
 		logger.WithFields(field.Error(err)).Error("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", api.ID, err)
 		return results
@@ -164,7 +164,7 @@ type value struct {
 
 // findConfigsToDownload tries to identify all values that should be downloaded from a Dynatrace environment for
 // the given API
-func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (values, error) {
+func findConfigsToDownload(client dtclient.Client, apiToDownload api.API, filters ContentFilters) (values, error) {
 	if apiToDownload.SingleConfiguration && !apiToDownload.HasParent() {
 		log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching singleton-configuration '%v'", apiToDownload.ID)
 
@@ -182,6 +182,11 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (value
 			return values{}, err
 		}
 		for _, parentAPIValue := range parentAPIValues {
+
+			if skipDownload(parentAPI, parentAPIValue, filters) {
+				continue
+			}
+
 			if apiToDownload.SingleConfiguration {
 				vv := dtclient.Value{Id: parentAPIValue.Id, Name: parentAPIValue.Id, Owner: parentAPIValue.Owner}
 				res = append(res, value{value: vv, parentConfigId: parentAPIValue.Id})
