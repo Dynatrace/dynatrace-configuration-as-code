@@ -94,7 +94,7 @@ func upsertNonUniqueNameConfig(ctx context.Context, client dtclient.ConfigClient
 
 	// for now I only use the origin object id (if set) as entityUuid for "user-action-and-session-properties-mobile",
 	// as i am not sure what side effects it will have it is occasionally set for others as well.
-	if apiToDeploy.ID == "user-action-and-session-properties-mobile" {
+	if apiToDeploy.ID == api.UserActionAndSessionPropertiesMobile {
 		if conf.OriginObjectId != "" {
 			entityUuid = conf.OriginObjectId
 		} else {

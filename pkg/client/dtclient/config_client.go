@@ -50,13 +50,13 @@ func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.
 
 		// The network-zone API doesn't have a POST endpoint, hence, we need to treat it as an update operation
 		// per default
-		if theApi.ID == "network-zone" {
+		if theApi.ID == api.NetworkZone {
 			existingObjectID = objectName
 		}
 
 		// The calculated-metrics-log API doesn't have a POST endpoint, to create a new log metric we need to use PUT which
 		// requires a metric key for which we can just take the objectName
-		if theApi.ID == "calculated-metrics-log" && existingObjectID == "" {
+		if theApi.ID == api.CalculatedMetricsLog && existingObjectID == "" {
 			existingObjectID = objectName
 		}
 
@@ -131,7 +131,7 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 
 func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString string, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 
-	if theApi.ID == "key-user-actions-mobile" {
+	if theApi.ID == api.KeyUserActionsMobile {
 		urlString = joinUrl(urlString, objectName)
 	}
 
@@ -141,7 +141,7 @@ func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString s
 	}
 	body := payload
 
-	if theApi.ID == "app-detection-rule" {
+	if theApi.ID == api.AppDetectionRule {
 		queryParams := parsedUrl.Query()
 		queryParams.Add("position", "PREPEND")
 		parsedUrl.RawQuery = queryParams.Encode()
@@ -354,7 +354,7 @@ func isCalculatedMetricsError(resp rest.Response, theApi api.API) bool {
 	return strings.HasPrefix(theApi.ID, "calculated-metrics") && (resp.Is4xxError() || resp.Is5xxError())
 }
 func isSyntheticMonitorServerError(resp rest.Response, theApi api.API) bool {
-	return theApi.ID == "synthetic-monitor" && resp.Is5xxError()
+	return theApi.ID == api.SyntheticMonitor && resp.Is5xxError()
 }
 
 func isGeneralSyntheticAPIError(resp rest.Response, theApi api.API) bool {
@@ -370,7 +370,7 @@ func isApplicationAPIError(resp rest.Response, theApi api.API) bool {
 // Sometimes, the API returns 500 Internal Server Error e.g. when an application referenced by
 // an application detection rule is not fully "ready" yet.
 func isApplicationDetectionRuleException(resp rest.Response, theApi api.API) bool {
-	return theApi.ID == "app-detection-rule" && !resp.IsSuccess()
+	return theApi.ID == api.AppDetectionRule && !resp.IsSuccess()
 }
 
 func isCredentialNotReadyYet(resp rest.Response) bool {
@@ -436,12 +436,12 @@ func escapeApiValueName(ctx context.Context, value Value) string {
 	return valueName.(string)
 }
 
-func isApiDashboard(api api.API) bool {
-	return api.ID == "dashboard" || api.ID == "dashboard-v2"
+func isApiDashboard(a api.API) bool {
+	return a.ID == api.Dashboard || a.ID == api.DashboardV2
 }
 
-func isReportsApi(api api.API) bool {
-	return api.ID == "reports"
+func isReportsApi(a api.API) bool {
+	return a.ID == api.Reports
 }
 
 func isAnyServiceDetectionApi(api api.API) bool {
@@ -452,20 +452,20 @@ func isAnyApplicationApi(api api.API) bool {
 	return strings.HasPrefix(api.ID, "application-")
 }
 
-func isMobileApp(api api.API) bool {
-	return api.ID == "application-mobile"
+func isMobileApp(a api.API) bool {
+	return a.ID == api.ApplicationMobile
 }
 
-func isKeyUserActionMobile(api api.API) bool {
-	return api.ID == "key-user-actions-mobile"
+func isKeyUserActionMobile(a api.API) bool {
+	return a.ID == api.KeyUserActionsMobile
 }
 
-func isKeyUserActionWeb(api api.API) bool {
-	return api.ID == "key-user-actions-web"
+func isKeyUserActionWeb(a api.API) bool {
+	return a.ID == api.KeyUserActionsWeb
 }
 
-func isUserSessionPropertiesMobile(api api.API) bool {
-	return api.ID == "user-action-and-session-properties-mobile"
+func isUserSessionPropertiesMobile(a api.API) bool {
+	return a.ID == api.UserActionAndSessionPropertiesMobile
 }
 
 func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
@@ -537,10 +537,10 @@ func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, the
 func addQueryParamsForNonStandardApis(theApi api.API, url *url.URL) *url.URL {
 
 	queryParams := url.Query()
-	if theApi.ID == "anomaly-detection-metrics" {
+	if theApi.ID == api.AnomalyDetectionMetrics {
 		queryParams.Add("includeEntityFilterMetricEvents", "true")
 	}
-	if theApi.ID == "slo" {
+	if theApi.ID == api.Slo {
 		queryParams.Add("enabledSlos", "all")
 	}
 	url.RawQuery = queryParams.Encode()
@@ -553,28 +553,28 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 	var objmap map[string]interface{}
 
 	// This API returns an untyped list as a response -> it needs a special handling
-	if theApi.ID == "aws-credentials" {
+	if theApi.ID == api.AwsCredentials {
 		var jsonResp []Value
 		err := json.Unmarshal(resp.Body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
 			return values, err
 		}
 		values = jsonResp
-	} else if theApi.ID == "synthetic-location" {
+	} else if theApi.ID == api.SyntheticLocation {
 		var jsonResp SyntheticLocationResponse
 		err := json.Unmarshal(resp.Body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 			return nil, err
 		}
 		values = translateSyntheticValues(jsonResp.Locations)
-	} else if theApi.ID == "synthetic-monitor" {
+	} else if theApi.ID == api.SyntheticMonitor {
 		var jsonResp SyntheticMonitorsResponse
 		err := json.Unmarshal(resp.Body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 			return nil, err
 		}
 		values = translateSyntheticValues(jsonResp.Monitors)
-	} else if theApi.ID == "key-user-actions-mobile" {
+	} else if theApi.ID == api.KeyUserActionsMobile {
 		var jsonResp KeyUserActionsMobileResponse
 		err := json.Unmarshal(resp.Body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
@@ -586,7 +586,7 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 				Name: kua.Name,
 			})
 		}
-	} else if theApi.ID == "key-user-actions-web" {
+	} else if theApi.ID == api.KeyUserActionsWeb {
 		var jsonResp struct {
 			List []struct {
 				Name         string `json:"name"`
@@ -603,7 +603,7 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 				Name: kua.Name,
 			})
 		}
-	} else if theApi.ID == "user-action-and-session-properties-mobile" {
+	} else if theApi.ID == api.UserActionAndSessionPropertiesMobile {
 		var jsonResp UserActionAndSessionPropertyResponse
 		err := json.Unmarshal(resp.Body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
