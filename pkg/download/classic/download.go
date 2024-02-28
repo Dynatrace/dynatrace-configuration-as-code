@@ -281,7 +281,7 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	params["name"] = &valueParam.ValueParameter{Value: value.value.Name}
 
 	// we use the id (key) of user-action-and-session-properties-mobile as it is its unique identifier
-	if theApi.ID == "user-action-and-session-properties-mobile" {
+	if theApi.ID == api.UserActionAndSessionPropertiesMobile {
 		params["name"] = &valueParam.ValueParameter{Value: value.value.Id}
 	}
 

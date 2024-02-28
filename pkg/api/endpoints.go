@@ -18,17 +18,82 @@ package api
 
 import "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 
+const (
+	AlertingProfile                      = "alerting-profile"
+	NetworkZone                          = "network-zone"
+	ManagementZone                       = "management-zone"
+	Autotag                              = "auto-tag"
+	Dashboard                            = "dashboard"
+	DashboardV2                          = "dashboard-v2"
+	Notification                         = "notification"
+	Extension                            = "extension"
+	ExtensionElasticSearch               = "extension-elasticsearch"
+	CustomServiceJava                    = "custom-service-java"
+	CustomServiceDotNet                  = "custom-service-dotnet"
+	CustomServiceGo                      = "custom-service-go"
+	CustomServiceNodeJs                  = "custom-service-nodejs"
+	CustomServicePhp                     = "custom-service-php"
+	AnomalyDetectionMetrics              = "anomaly-detection-metrics"
+	AnomalyDetectionDisks                = "anomaly-detection-disks"
+	SyntheticLocation                    = "synthetic-location"
+	SyntheticMonitor                     = "synthetic-monitor"
+	ApplicationWeb                       = "application-web"
+	ApplicationMobile                    = "application-mobile"
+	AppDetectionRule                     = "app-detection-rule"
+	AwsCredentials                       = "aws-credentials"
+	KubernetesCredentials                = "kubernetes-credentials" // #nosec G101
+	AzureCredentials                     = "azure-credentials"      // #nosec G101
+	RequestAttributes                    = "request-attributes"
+	CalculatedMetricsService             = "calculated-metrics-service"
+	CalculatedMetricsLog                 = "calculated-metrics-log"
+	CalculatedMetricsApplicationMobile   = "calculated-metrics-application-mobile"
+	CalculatedMetricsSynthetic           = "calculated-metrics-synthetic"
+	CalculatedMetricsApplicationWeb      = "calculated-metrics-application-web"
+	ConditionalNamingProcessgroup        = "conditional-naming-processgroup"
+	ConditionalNamingHost                = "conditional-naming-host"
+	ConditionalNamingService             = "conditional-naming-service"
+	MaintenanceWindow                    = "maintenance-window"
+	RequestNamingService                 = "request-naming-service"
+	Slo                                  = "slo"
+	CredentialVault                      = "credential-vault" // #nosec G101
+	FailureDetectionParametersets        = "failure-detection-parametersets"
+	FailureDetectionRules                = "failure-detection-rules"
+	ServiceDetectionFullWebRequest       = "service-detection-full-web-request"
+	ServiceDetectionFullWebService       = "service-detection-full-web-service"
+	ServiceDetectionOpaqueWebRequest     = "service-detection-opaque-web-request"
+	ServiceDetectionOpaqueWebService     = "service-detection-opaque-web-service"
+	Reports                              = "reports"
+	FrequentIssueDetection               = "frequent-issue-detection"
+	DataPrivacy                          = "data-privacy"
+	HostsAutoUpdate                      = "hosts-auto-update"
+	AnomalyDetectionApplications         = "anomaly-detection-applications"
+	AnomalyDetectionAws                  = "anomaly-detection-aws"
+	AnomalyDetectionDatabaseServices     = "anomaly-detection-database-services"
+	AnomalyDetectionHosts                = "anomaly-detection-hosts"
+	AnomalyDetectionServices             = "anomaly-detection-services"
+	AnomalyDetectionVmware               = "anomaly-detection-vmware"
+	ServiceResourceNaming                = "service-resource-naming"
+	AppDetectionRuleHost                 = "app-detection-rule-host"
+	ContentResources                     = "content-resources"
+	AllowedBeaconOrigins                 = "allowed-beacon-origins"
+	GeoIpDetectionHeaders                = "geo-ip-detection-headers"
+	GeoIpAddressMappings                 = "geo-ip-address-mappings"
+	KeyUserActionsMobile                 = "key-user-actions-mobile"
+	KeyUserActionsWeb                    = "key-user-actions-web"
+	UserActionAndSessionPropertiesMobile = "user-action-and-session-properties-mobile"
+)
+
 // configEndpoints is map of the http endpoints for configuration API (aka classic/config endpoints).
 var configEndpoints = []API{
 	{
-		ID:                           "alerting-profile",
+		ID:                           AlertingProfile,
 		URLPath:                      "/api/config/v1/alertingProfiles",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:alerting.profile",
 		NonUniqueName:                true,
 	},
 	{
-		ID:                           "network-zone",
+		ID:                           NetworkZone,
 		URLPath:                      "/api/v2/networkZones",
 		PropertyNameOfGetAllResponse: "networkZones",
 		TweakResponseFunc: func(m map[string]any) {
@@ -39,67 +104,67 @@ var configEndpoints = []API{
 		},
 	},
 	{
-		ID:                           "management-zone",
+		ID:                           ManagementZone,
 		URLPath:                      "/api/config/v1/managementZones",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:management-zones",
 	},
 	{
-		ID:                           "auto-tag",
+		ID:                           Autotag,
 		URLPath:                      "/api/config/v1/autoTags",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:tags.auto-tagging",
 	},
 	{
-		ID:                           "dashboard",
+		ID:                           Dashboard,
 		URLPath:                      "/api/config/v1/dashboards",
 		PropertyNameOfGetAllResponse: "dashboards",
 		NonUniqueName:                true,
 	},
 	{
-		ID:                           "notification",
+		ID:                           Notification,
 		URLPath:                      "/api/config/v1/notifications",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:problem.notifications",
 	},
 	{
-		ID:                           "extension",
+		ID:                           Extension,
 		URLPath:                      "/api/config/v1/extensions",
 		PropertyNameOfGetAllResponse: "extensions",
 		SkipDownload:                 true,
 	},
 	{
-		ID:                  "extension-elasticsearch",
+		ID:                  ExtensionElasticSearch,
 		URLPath:             "/api/config/v1/extensions/dynatrace.python.elasticsearch/global",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                           "custom-service-java",
+		ID:                           CustomServiceJava,
 		URLPath:                      "/api/config/v1/service/customServices/java",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "custom-service-dotnet",
+		ID:                           CustomServiceDotNet,
 		URLPath:                      "/api/config/v1/service/customServices/dotNet",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "custom-service-go",
+		ID:                           CustomServiceGo,
 		URLPath:                      "/api/config/v1/service/customServices/go",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "custom-service-nodejs",
+		ID:                           CustomServiceNodeJs,
 		URLPath:                      "/api/config/v1/service/customServices/nodeJS",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "custom-service-php",
+		ID:                           CustomServicePhp,
 		URLPath:                      "/api/config/v1/service/customServices/php",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "anomaly-detection-metrics",
+		ID:                           AnomalyDetectionMetrics,
 		URLPath:                      "/api/config/v1/anomalyDetection/metricEvents",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:anomaly-detection.metric-events",
@@ -107,48 +172,48 @@ var configEndpoints = []API{
 	},
 	// Early adopter API !
 	{
-		ID:                           "anomaly-detection-disks",
+		ID:                           AnomalyDetectionDisks,
 		URLPath:                      "/api/config/v1/anomalyDetection/diskEvents",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:anomaly-detection.infrastructure-disks",
 	},
 	// Environment API not Config API
 	{
-		ID:                           "synthetic-location",
+		ID:                           SyntheticLocation,
 		URLPath:                      "/api/v1/synthetic/locations",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	// Environment API not Config API
 	{
-		ID:                           "synthetic-monitor",
+		ID:                           SyntheticMonitor,
 		URLPath:                      "/api/v1/synthetic/monitors",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "application-web",
+		ID:                           ApplicationWeb,
 		URLPath:                      "/api/config/v1/applications/web",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "application-mobile",
+		ID:                           ApplicationMobile,
 		URLPath:                      "/api/config/v1/applications/mobile",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "app-detection-rule",
+		ID:                           AppDetectionRule,
 		URLPath:                      "/api/config/v1/applicationDetectionRules",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:rum.web.app-detection",
 	},
 	{
-		ID:                           "aws-credentials",
+		ID:                           AwsCredentials,
 		URLPath:                      "/api/config/v1/aws/credentials",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		SkipDownload:                 true,
 	},
 	// Early adopter API !
 	{
-		ID:                           "kubernetes-credentials",
+		ID:                           KubernetesCredentials,
 		URLPath:                      "/api/config/v1/kubernetes/credentials",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:cloud.kubernetes",
@@ -156,214 +221,214 @@ var configEndpoints = []API{
 		SkipDownload: true,
 	},
 	{
-		ID:                           "azure-credentials",
+		ID:                           AzureCredentials,
 		URLPath:                      "/api/config/v1/azure/credentials",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		SkipDownload:                 true,
 	},
 	{
-		ID:                           "request-attributes",
+		ID:                           RequestAttributes,
 		URLPath:                      "/api/config/v1/service/requestAttributes",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "calculated-metrics-service",
+		ID:                           CalculatedMetricsService,
 		URLPath:                      "/api/config/v1/calculatedMetrics/service",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	// Early adopter API !
 	{
-		ID:                           "calculated-metrics-log",
+		ID:                           CalculatedMetricsLog,
 		URLPath:                      "/api/config/v1/calculatedMetrics/log",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "calculated-metrics-application-mobile",
+		ID:                           CalculatedMetricsApplicationMobile,
 		URLPath:                      "/api/config/v1/calculatedMetrics/mobile",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "calculated-metrics-synthetic",
+		ID:                           CalculatedMetricsSynthetic,
 		URLPath:                      "/api/config/v1/calculatedMetrics/synthetic",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "calculated-metrics-application-web",
+		ID:                           CalculatedMetricsApplicationWeb,
 		URLPath:                      "/api/config/v1/calculatedMetrics/rum",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "conditional-naming-processgroup",
+		ID:                           ConditionalNamingProcessgroup,
 		URLPath:                      "/api/config/v1/conditionalNaming/processGroup",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "conditional-naming-host",
+		ID:                           ConditionalNamingHost,
 		URLPath:                      "/api/config/v1/conditionalNaming/host",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "conditional-naming-service",
+		ID:                           ConditionalNamingService,
 		URLPath:                      "/api/config/v1/conditionalNaming/service",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                           "maintenance-window",
+		ID:                           MaintenanceWindow,
 		URLPath:                      "/api/config/v1/maintenanceWindows",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:alerting.maintenance-window",
 	},
 	{
-		ID:                           "request-naming-service",
+		ID:                           RequestNamingService,
 		URLPath:                      "/api/config/v1/service/requestNaming",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		NonUniqueName:                true,
 	},
 	// Environment API not Config API
 	{
-		ID:                           "slo",
+		ID:                           Slo,
 		URLPath:                      "/api/v2/slo",
 		PropertyNameOfGetAllResponse: "slo",
 	},
 	{
-		ID:                           "credential-vault",
+		ID:                           CredentialVault,
 		URLPath:                      "/api/config/v1/credentials",
 		PropertyNameOfGetAllResponse: "credentials",
 		SkipDownload:                 true,
 	},
 	{
-		ID:                           "failure-detection-parametersets",
+		ID:                           FailureDetectionParametersets,
 		URLPath:                      "/api/config/v1/service/failureDetection/parameterSelection/parameterSets",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:failure-detection.environment.parameters",
 	},
 	{
-		ID:                           "failure-detection-rules",
+		ID:                           FailureDetectionRules,
 		URLPath:                      "/api/config/v1/service/failureDetection/parameterSelection/rules",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:failure-detection.environment.rules",
 	},
 	{
-		ID:                           "service-detection-full-web-request",
+		ID:                           ServiceDetectionFullWebRequest,
 		URLPath:                      "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:service-detection.full-web-request",
 	},
 	{
-		ID:                           "service-detection-full-web-service",
+		ID:                           ServiceDetectionFullWebService,
 		URLPath:                      "/api/config/v1/service/detectionRules/FULL_WEB_SERVICE",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:service-detection.full-web-service",
 	},
 	{
-		ID:                           "service-detection-opaque-web-request",
+		ID:                           ServiceDetectionOpaqueWebRequest,
 		URLPath:                      "/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_REQUEST",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:service-detection.external-web-request",
 	},
 	{
-		ID:                           "service-detection-opaque-web-service",
+		ID:                           ServiceDetectionOpaqueWebService,
 		URLPath:                      "/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_SERVICE",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:service-detection.external-web-service",
 	},
 	// Early adopter API !
 	{
-		ID:                           "reports",
+		ID:                           Reports,
 		URLPath:                      "/api/config/v1/reports",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                  "frequent-issue-detection",
+		ID:                  FrequentIssueDetection,
 		URLPath:             "/api/config/v1/frequentIssueDetection",
 		DeprecatedBy:        "builtin:anomaly-detection.frequent-issues",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "data-privacy",
+		ID:                  DataPrivacy,
 		URLPath:             "/api/config/v1/dataPrivacy",
 		DeprecatedBy:        "builtin:preferences.privacy",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "hosts-auto-update",
+		ID:                  HostsAutoUpdate,
 		URLPath:             "/api/config/v1/hosts/autoupdate",
 		DeprecatedBy:        "builtin:deployment.oneagent.updates",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "anomaly-detection-applications",
+		ID:                  AnomalyDetectionApplications,
 		URLPath:             "/api/config/v1/anomalyDetection/applications",
 		DeprecatedBy:        "builtin:anomaly-detection.rum-web, builtin:anomaly-detection.rum-mobile",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "anomaly-detection-aws",
+		ID:                  AnomalyDetectionAws,
 		URLPath:             "/api/config/v1/anomalyDetection/aws",
 		DeprecatedBy:        "builtin:anomaly-detection.infrastructure-aws",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "anomaly-detection-database-services",
+		ID:                  AnomalyDetectionDatabaseServices,
 		URLPath:             "/api/config/v1/anomalyDetection/databaseServices",
 		DeprecatedBy:        "builtin:anomaly-detection.databases",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "anomaly-detection-hosts",
+		ID:                  AnomalyDetectionHosts,
 		URLPath:             "/api/config/v1/anomalyDetection/hosts",
 		DeprecatedBy:        "builtin:anomaly-detection.infrastructure-hosts",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "anomaly-detection-services",
+		ID:                  AnomalyDetectionServices,
 		URLPath:             "/api/config/v1/anomalyDetection/services",
 		DeprecatedBy:        "builtin:anomaly-detection.services",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "anomaly-detection-vmware",
+		ID:                  AnomalyDetectionVmware,
 		URLPath:             "/api/config/v1/anomalyDetection/vmware",
 		DeprecatedBy:        "builtin:anomaly-detection.infrastructure-vmware",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "service-resource-naming",
+		ID:                  ServiceResourceNaming,
 		URLPath:             "/api/config/v1/service/resourceNaming",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "app-detection-rule-host",
+		ID:                  AppDetectionRuleHost,
 		URLPath:             "/api/config/v1/applicationDetectionRules/hostDetection",
 		DeprecatedBy:        "builtin:rum.host-headers",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "content-resources",
+		ID:                  ContentResources,
 		URLPath:             "/api/config/v1/contentResources",
 		DeprecatedBy:        "builtin:rum.provider-breakdown",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "allowed-beacon-origins",
+		ID:                  AllowedBeaconOrigins,
 		URLPath:             "/api/config/v1/allowedBeaconOriginsForCors",
 		DeprecatedBy:        "builtin:rum.web.beacon-domain-origins",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "geo-ip-detection-headers",
+		ID:                  GeoIpDetectionHeaders,
 		URLPath:             "/api/config/v1/geographicRegions/ipDetectionHeaders",
 		DeprecatedBy:        "builtin:rum.ip-mappings",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                  "geo-ip-address-mappings",
+		ID:                  GeoIpAddressMappings,
 		URLPath:             "/api/config/v1/geographicRegions/ipAddressMappings",
 		DeprecatedBy:        "builtin:rum.ip-determination",
 		SingleConfiguration: true,
 	},
 	{
-		ID:                           "key-user-actions-mobile",
+		ID:                           KeyUserActionsMobile,
 		URLPath:                      "/api/config/v1/applications/mobile/{SCOPE}/keyUserActions",
 		PropertyNameOfGetAllResponse: "keyUserActions",
 		Parent:                       "application-mobile",
@@ -378,7 +443,7 @@ var configEndpoints = []API{
 		TweakResponseFunc:            func(m map[string]any) { delete(m, "meIdentifier") },
 	},
 	{
-		ID:                       "user-action-and-session-properties-mobile",
+		ID:                       UserActionAndSessionPropertiesMobile,
 		URLPath:                  "/api/config/v1/applications/mobile/{SCOPE}/userActionAndSessionProperties",
 		Parent:                   "application-mobile",
 		PropertyNameOfIdentifier: "key",
