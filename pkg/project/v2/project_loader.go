@@ -98,7 +98,6 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectOrGr
 
 		projectDefinition, found := context.Manifest.Projects[projectNameToLoad]
 		if !found {
-			errors = append(errors, fmt.Errorf("no project named `%s` could be found in the manifest", projectNameToLoad))
 			continue
 		}
 
