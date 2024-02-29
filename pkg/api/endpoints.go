@@ -127,7 +127,13 @@ var configEndpoints = []API{
 		URLPath:             "/api/config/v1/dashboards/{SCOPE}/shareSettings",
 		Parent:              Dashboard,
 		SingleConfiguration: true,
-		RequireAllFF:        []featureflags.FeatureFlag{featureflags.DashboardShareSettings()},
+		TweakResponseFunc: func(m map[string]any) {
+			if publicAccess, found := m["publicAccess"]; found {
+				publicAccessMap := publicAccess.(map[string]any)
+				delete(publicAccessMap, "urls")
+			}
+		},
+		RequireAllFF: []featureflags.FeatureFlag{featureflags.DashboardShareSettings()},
 	},
 	{
 		ID:                           Notification,
