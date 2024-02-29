@@ -21,11 +21,11 @@ package v2
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
 )
 
 var multiProjectFolder = "test-resources/integration-multi-project/"
@@ -42,7 +42,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", multiProjectManifest})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
 	})
@@ -55,7 +55,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", multiProjectManifest})
 	err := cmd.Execute()
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }
 
 // tests a single project with dependencies
@@ -70,7 +70,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 			multiProjectManifest})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		// Validate Star Trek sub-projects were deployed
 		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"star-trek.star-wars", "star-trek.star-gate"}, multiProjectSpecificEnvironment, true)
@@ -88,5 +88,5 @@ func TestIntegrationMultiProject_ReturnsErrorOnInvalidProjectDefinitions(t *test
 	cmd.SetArgs([]string{"deploy", "--verbose", invalidManifest})
 	err := cmd.Execute()
 
-	assert.Check(t, err != nil)
+	assert.Error(t, err)
 }

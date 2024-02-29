@@ -24,13 +24,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
 )
 
 type downloadFunction func(*testing.T, afero.Fs, string, string, string, string, bool) error
@@ -218,7 +218,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 				assert.Equal(t, tt.wantErr, err != nil)
 				for _, f := range tt.expectedFolders {
 					folderExists, _ := afero.DirExists(tt.fs, f)
-					assert.Check(t, folderExists, "folder "+f+" does not exist")
+					assert.True(t, folderExists, "folder "+f+" does not exist")
 				}
 				files, _ := afero.ReadDir(tt.fs, tt.projectFolder)
 				assert.Equal(t, len(tt.expectedFolders), len(files))
@@ -251,10 +251,10 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 	fs := testutils.CreateTestFileSystem()
 	suffix, err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, manifestFile)
 
-	assert.NilError(t, err, "Error during download preparation stage")
+	assert.NoError(t, err, "Error during download preparation stage")
 
 	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload, "", oauthEnabled)
-	assert.NilError(t, err, "Error during download execution stage")
+	assert.NoError(t, err, "Error during download execution stage")
 
 	integrationtest.CleanupIntegrationTest(t, fs, manifestFile, nil, suffix) // remove previously deployed configs
 
@@ -293,7 +293,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 		manifestFile,
 	})
 	err = cmd.Execute()
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	return suffix, nil
 }
@@ -332,7 +332,7 @@ func execution_downloadConfigsWithCLIParameters(
 	cmd := runner.BuildCli(fs)
 	cmd.SetArgs(parameters)
 	err = cmd.Execute()
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	return nil
 }
 
@@ -385,7 +385,7 @@ func execution_downloadConfigs(
 	cmd := runner.BuildCli(fs)
 	cmd.SetArgs(parameters)
 	err = cmd.Execute()
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	return nil
 }
 
@@ -406,5 +406,5 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 		manifestFile,
 	})
 	err := cmd.Execute()
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }

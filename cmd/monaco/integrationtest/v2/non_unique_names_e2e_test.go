@@ -30,7 +30,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/google/uuid"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+
 	"os"
 	"strings"
 	"testing"
@@ -52,10 +53,10 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	httpClient := rest.NewRestClient(auth.NewTokenAuthClient(token), nil, rest.CreateRateLimitStrategy())
 	c, err := dtclient.NewClassicClient(url, httpClient)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	a := api.NewAPIs()["alerting-profile"]
-	assert.Assert(t, a.NonUniqueName)
+	assert.True(t, a.NonUniqueName)
 
 	t.Cleanup(func() {
 		for _, id := range []string{firstExistingObjectUUID, secondExistingObjectUUID, monacoGeneratedUUID} {
@@ -69,41 +70,41 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	// ensure blank slate start
 	existing := getConfigsOfName(t, c, a, name)
-	assert.Assert(t, len(existing) == 0, "Test requires no pre-existing configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(existing) == 0, "Test requires no pre-existing configs of name %q but found %d", name, len(existing))
 
 	// create initial object of unknown UUID via direct PUT
 	createObjectViaDirectPut(t, httpClient, url, a, firstExistingObjectUUID, payload)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 1. if only one config of non-unique-name exist it MUST be updated
 	e, err := c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, e.Id, firstExistingObjectUUID, "expected existing single config %d to be updated, but reply UUID was", firstExistingObjectUUID, e.Id)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 1.1. Deploying another config of the same name is also just an update (unwanted behaviour if a project re-uses names)
 	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, uuid2.GenerateUUIDFromConfigId("test_project", "other-config"), name, payload, false)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, e.Id, firstExistingObjectUUID, "expected existing single config %d to be updated, but reply UUID was", firstExistingObjectUUID, e.Id)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// generate additional config
 	createObjectViaDirectPut(t, httpClient, url, a, secondExistingObjectUUID, payload)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 2, "Expected two configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 2, "Expected two configs of name %q but found %d", name, len(existing))
 
 	// 2. if several configs of non-unique-name exist an additional config with monaco controlled UUID is created
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, e.Id, monacoGeneratedUUID)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
 
 	// 3. if several configs of non-unique-name exist and one with known monaco-controlled UUID is found that MUST be updated
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, e.Id, monacoGeneratedUUID)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
 }
 
 // TestNonUniqueNameUpserts_InactiveUpdateByName asserts that the logic to update single non-unique name configs can be
@@ -125,10 +126,10 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 
 	httpClient := rest.NewRestClient(auth.NewTokenAuthClient(token), nil, rest.CreateRateLimitStrategy())
 	c, err := dtclient.NewClassicClient(url, httpClient)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	a := api.NewAPIs()["alerting-profile"]
-	assert.Assert(t, a.NonUniqueName)
+	assert.True(t, a.NonUniqueName)
 
 	t.Cleanup(func() {
 		for _, id := range []string{firstExistingObjectUUID, secondExistingObjectUUID, monacoGeneratedUUID, otherMonacoGeneratedUUID} {
@@ -142,40 +143,40 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 
 	// ensure blank slate start
 	existing := getConfigsOfName(t, c, a, name)
-	assert.Assert(t, len(existing) == 0, "Test requires no pre-existing configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(existing) == 0, "Test requires no pre-existing configs of name %q but found %d", name, len(existing))
 
 	// create initial object of unknown UUID via direct PUT
 	createObjectViaDirectPut(t, httpClient, url, a, firstExistingObjectUUID, payload)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 1. if only one config of non-unique-name exist an additional one is still create (update feature OFF)
 	e, err := c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, e.Id, monacoGeneratedUUID, "expected existing single config %d to be updated, but reply UUID was", firstExistingObjectUUID, e.Id)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 2, "Expected single configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 2, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 2. Deploying another config of the same name is also just an update (unwanted behaviour if a project re-uses names)
 	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, otherMonacoGeneratedUUID, name, payload, false)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, e.Id, otherMonacoGeneratedUUID, "expected existing single config %d to be updated, but reply UUID was", firstExistingObjectUUID, e.Id)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected single configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// generate additional config
 	createObjectViaDirectPut(t, httpClient, url, a, secondExistingObjectUUID, payload)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 4, "Expected two configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 4, "Expected two configs of name %q but found %d", name, len(existing))
 
 	// 3. if several configs of non-unique-name exist and one with known monaco-controlled UUID is found that MUST be updated
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, e.Id, monacoGeneratedUUID)
-	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 4, "Expected three configs of name %q but found %d", name, len(existing))
+	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 4, "Expected three configs of name %q but found %d", name, len(existing))
 }
 
 func getConfigsOfName(t *testing.T, c dtclient.Client, a api.API, name string) []dtclient.Value {
 	var existingEntities []dtclient.Value
 	entities, err := c.ListConfigs(context.TODO(), a)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	for _, e := range entities {
 		if e.Name == name {
 			existingEntities = append(existingEntities, e)
@@ -186,19 +187,19 @@ func getConfigsOfName(t *testing.T, c dtclient.Client, a api.API, name string) [
 
 func getRandomUUID(t *testing.T) string {
 	id, err := uuid.NewUUID()
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	return id.String()
 }
 
 func createObjectViaDirectPut(t *testing.T, c *rest.Client, url string, a api.API, id string, payload []byte) {
 	url = strings.TrimSuffix(url, "/")
 	res, err := c.Put(context.TODO(), a.CreateURL(url)+"/"+id, payload)
-	assert.NilError(t, err)
-	assert.Assert(t, res.StatusCode >= 200 && res.StatusCode < 300, "Expected status code to be within [200, 299], but was %d. Response-body: %v", res.StatusCode, string(res.Body))
+	assert.NoError(t, err)
+	assert.True(t, res.StatusCode >= 200 && res.StatusCode < 300, "Expected status code to be within [200, 299], but was %d. Response-body: %v", res.StatusCode, string(res.Body))
 
 	var dtEntity dtclient.DynatraceEntity
 	err = json.Unmarshal(res.Body, &dtEntity)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, dtEntity.Id, id)
 }
