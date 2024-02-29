@@ -21,7 +21,8 @@ package v2
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+
 	"path/filepath"
 	"strings"
 	"testing"
@@ -68,7 +69,7 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 
 			runLog := strings.ToLower(logOutput.String())
 			lowerCaseExpectedErrorLog := strings.ToLower(tt.expectedErrorLog)
-			assert.Assert(t, strings.Contains(runLog, lowerCaseExpectedErrorLog), "Expected command output to contain: %s", tt.expectedErrorLog)
+			assert.True(t, strings.Contains(runLog, lowerCaseExpectedErrorLog), "Expected command output to contain: %s", tt.expectedErrorLog)
 		})
 	}
 }
@@ -85,6 +86,6 @@ func TestNonExistentProjectInManifestReturnsError(t *testing.T) {
 
 	runLog := strings.ToLower(logOutput.String())
 	expectedErrorLog := "filepath `this_does_not_exist` does not exist"
-	assert.Assert(t, strings.Contains(runLog, expectedErrorLog), "Expected command output to contain: %s", expectedErrorLog)
+	assert.True(t, strings.Contains(runLog, expectedErrorLog), "Expected command output to contain: %s", expectedErrorLog)
 
 }

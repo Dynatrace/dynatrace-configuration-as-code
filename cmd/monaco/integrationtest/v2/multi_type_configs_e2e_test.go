@@ -21,11 +21,11 @@ package v2
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
 )
 
 const multiTypeProjectFolder = "test-resources/integration-multi-type-configs/"
@@ -39,7 +39,7 @@ func TestMultiTypeConfigsDeployment(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", multiTypeManifest})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, multiTypeManifest, []string{}, "", true)
 	})
@@ -51,5 +51,5 @@ func TestMultiTypeConfigsValidation(t *testing.T) {
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", multiTypeManifest})
 	err := cmd.Execute()
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }

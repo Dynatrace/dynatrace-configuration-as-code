@@ -24,7 +24,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+
 	"path/filepath"
 	"strings"
 	"testing"
@@ -57,9 +58,9 @@ func testPagination(t *testing.T, specificEnvironment string) {
 	}
 
 	configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestPath, specificEnvironment, "Pagination", func(fs afero.Fs, _ TestContext) {
 
@@ -68,7 +69,7 @@ func testPagination(t *testing.T, specificEnvironment string) {
 		cmd := runner.BuildCliWithLogSpy(fs, &logOutput)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
 		err := cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
@@ -79,7 +80,7 @@ func testPagination(t *testing.T, specificEnvironment string) {
 		cmd = runner.BuildCliWithLogSpy(fs, &logOutput)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
 		err = cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)

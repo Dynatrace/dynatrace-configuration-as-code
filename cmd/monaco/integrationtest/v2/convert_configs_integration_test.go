@@ -20,13 +20,13 @@ package v2
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/stretchr/testify/assert"
 	"path"
 	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
 )
 
 func setupConvertedConfig(t *testing.T) (testFs afero.Fs, convertedFolder string) {
@@ -34,7 +34,7 @@ func setupConvertedConfig(t *testing.T) (testFs afero.Fs, convertedFolder string
 	env := path.Join(configV1Folder, "environments.yaml")
 
 	convertedConfigV2Folder, err := filepath.Abs("./test-resources/converted-v1-integration-all-configs")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -49,7 +49,7 @@ func setupConvertedConfig(t *testing.T) (testFs afero.Fs, convertedFolder string
 	)
 	err = cmd.Execute()
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	return fs, convertedConfigV2Folder
 }
@@ -66,7 +66,7 @@ func TestV1ConfigurationCanBeConverted(t *testing.T) {
 
 func assertExpectedPathExists(t *testing.T, fs afero.Fs, path string) {
 	fileExists, _ := afero.Exists(fs, path)
-	assert.Check(t, fileExists, "Expected %s to exist", path)
+	assert.True(t, fileExists, "Expected %s to exist", path)
 }
 
 // tests conversion from v1 by converting v1 test-resources before deploying as v2
@@ -85,6 +85,6 @@ func TestV1ConfigurationCanBeConvertedAndDeployedAfterConversion(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 	})
 }

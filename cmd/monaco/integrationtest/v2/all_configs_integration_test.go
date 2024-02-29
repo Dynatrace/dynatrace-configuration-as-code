@@ -21,11 +21,11 @@ package v2
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
 )
 
 // tests all configs for a single environment
@@ -55,14 +55,14 @@ func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		// This causes a PUT for all configs:
 
 		cmd = runner.BuildCli(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
 		err = cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 	})
 }
@@ -80,5 +80,5 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }

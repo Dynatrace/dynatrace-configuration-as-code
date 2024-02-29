@@ -22,7 +22,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+
 	"testing"
 )
 
@@ -42,13 +43,13 @@ func TestIntegrationScopeParameters(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		// This causes an Update of all Settings
 		cmd = runner.BuildCli(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err = cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 	})
 }
 
@@ -65,5 +66,5 @@ func TestIntegrationScopeParameterValidation(t *testing.T) {
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }
