@@ -48,6 +48,11 @@ type DeleteEntries = map[configurationType][]pointer.DeletePointer
 func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) error {
 	deleteErrors := 0
 	for entryType, entries := range entriesToDelete {
+		if entryType == api.DashboardShareSettings {
+			log.Warn("Classic config of type %s cannot be deleted. Note, that they can be removed by deleting the associated dashboard.", api.DashboardShareSettings)
+			continue
+		}
+
 		var err error
 		if targetApi, isClassicAPI := apis[entryType]; isClassicAPI {
 			err = classic.Delete(ctx, clients.Classic, targetApi, entries, entryType)
