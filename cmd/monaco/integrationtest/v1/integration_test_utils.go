@@ -35,7 +35,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"path"
 	"path/filepath"
 	"testing"
@@ -48,7 +48,7 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 	mani := integrationtest.LoadManifest(t, fs, manifestFile, "")
 
 	envDefinition, found := mani.Environments[env]
-	assert.Assert(t, found, "environment %s not found", env)
+	assert.True(t, found, "environment %s not found", env)
 
 	clients := integrationtest.CreateDynatraceClients(t, envDefinition)
 
@@ -66,7 +66,7 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 		}
 	}
 
-	assert.Assert(t, conf != nil, "config %s not found", coord)
+	assert.True(t, conf != nil, "config %s not found", coord)
 
 	ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, coord)
 	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: conf.Environment, Group: conf.Group})
@@ -76,7 +76,7 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 
 func getConfigsForEnv(t *testing.T, project project.Project, env manifest.EnvironmentDefinition) project.ConfigsPerType {
 	confsMap, found := project.Configs[env.Name]
-	assert.Assert(t, found != false, "env %s not found", env)
+	assert.True(t, found != false, "env %s not found", env)
 
 	return confsMap
 }
@@ -91,7 +91,7 @@ func findProjectByName(t *testing.T, projects []project.Project, projName string
 		}
 	}
 
-	assert.Assert(t, project != nil, "project %s not found", projName)
+	assert.True(t, project != nil, "project %s not found", projName)
 
 	return *project
 }
@@ -99,21 +99,21 @@ func findProjectByName(t *testing.T, projects []project.Project, projName string
 func assertConfigAvailable(t *testing.T, ctx context.Context, client dtclient.ConfigClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, c config.Config) {
 
 	nameParam, found := c.Parameters["name"]
-	assert.Assert(t, found, "Config %s should have a name parameter", c.Coordinate)
+	assert.True(t, found, "Config %s should have a name parameter", c.Coordinate)
 
 	name, err := nameParam.ResolveValue(parameter.ResolveContext{})
-	assert.NilError(t, err, "Config %s should have a trivial name to resolve", c.Coordinate)
+	assert.NoError(t, err, "Config %s should have a trivial name to resolve", c.Coordinate)
 
 	typ, ok := c.Type.(config.ClassicApiType)
-	assert.Assert(t, ok, "Config %s should be a ClassicApiType, but is a %q", c.Coordinate, c.Type.ID())
+	assert.True(t, ok, "Config %s should be a ClassicApiType, but is a %q", c.Coordinate, c.Type.ID())
 
 	a, found := api.NewAPIs()[typ.Api]
-	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", c.Coordinate, typ.Api)
+	assert.True(t, found, "Config %s should have a known api, but does not. Api %s does not exist", c.Coordinate, typ.Api)
 
 	if c.Skip {
 		exists, _, err := client.ConfigExistsByName(ctx, a, fmt.Sprint(name))
-		assert.NilError(t, err)
-		assert.Check(t, !exists, "Config '%s' should NOT be available on env '%s', but was. environment.", env.Name, c.Coordinate)
+		assert.NoError(t, err)
+		assert.False(t, !exists, "Config '%s' should NOT be available on env '%s', but was. environment.", env.Name, c.Coordinate)
 
 		return
 	}
@@ -126,12 +126,12 @@ func assertConfigAvailable(t *testing.T, ctx context.Context, client dtclient.Co
 		exists, _, err = client.ConfigExistsByName(ctx, a, fmt.Sprint(name))
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	if shouldBeAvailable {
-		assert.Check(t, exists, "Object %s on environment %s should be available, but wasn't. environment.", c.Coordinate, env.Name)
+		assert.True(t, exists, "Object %s on environment %s should be available, but wasn't. environment.", c.Coordinate, env.Name)
 	} else {
-		assert.Check(t, !exists, "Object %s on environment %s should NOT be available, but was. environment.", c.Coordinate, env.Name)
+		assert.False(t, exists, "Object %s on environment %s should NOT be available, but was. environment.", c.Coordinate, env.Name)
 	}
 }
 
@@ -189,7 +189,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
 	targetDir, err := filepath.Abs("out")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	manifestPath := path.Join(targetDir, "manifest.yaml")
 
@@ -204,11 +204,11 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 		targetDir,
 	})
 	err = cmd.Execute()
-	assert.NilError(t, err, "Conversion should had happened without errors")
+	assert.NoError(t, err, "Conversion should had happened without errors")
 
 	exists, err := afero.Exists(fs, manifestPath)
-	assert.NilError(t, err)
-	assert.Assert(t, exists, "manifest should exist on path '%s' but does not", manifestPath)
+	assert.NoError(t, err)
+	assert.True(t, exists, "manifest should exist on path '%s' but does not", manifestPath)
 
 	if doCleanup {
 		t.Cleanup(func() {

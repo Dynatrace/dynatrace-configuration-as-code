@@ -21,13 +21,11 @@ package v1
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"path/filepath"
-	"testing"
-
-	"gotest.tools/assert"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"path/filepath"
+	"testing"
 )
 
 var folder = AbsOrPanicFromSlash("test-resources/integration-multi-environment/")
@@ -45,7 +43,7 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 			manifest,
 		})
 		err := cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
 	})
@@ -64,7 +62,7 @@ func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 		})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 	})
 }
 
@@ -81,7 +79,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 			"-p", "cinema-infrastructure",
 		})
 		err := cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{"cinema-infrastructure"}, "", true)
 	})
@@ -100,7 +98,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 			"-p", "star-trek",
 		})
 		err := cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{"star-trek"}, "", true)
 	})
@@ -119,7 +117,7 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 			"-e", "environment2",
 		})
 		err := cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{"star-trek"}, "environment2", true)
 	})

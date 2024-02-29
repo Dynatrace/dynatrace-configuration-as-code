@@ -20,12 +20,12 @@
 package v1
 
 import (
+	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
 )
 
 // tests all configs for a single environment
@@ -42,7 +42,7 @@ func TestIntegrationAllConfigs(t *testing.T) {
 			manifest,
 		})
 		err := cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		// This causes a PUT for all configs:
 		cmd = runner.BuildCli(fs)
@@ -52,6 +52,6 @@ func TestIntegrationAllConfigs(t *testing.T) {
 			manifest,
 		})
 		err = cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 	})
 }
