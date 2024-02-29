@@ -86,7 +86,7 @@ func LoadProjects(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest
 		WorkingDir:      cwd,
 		Manifest:        loadedManifest,
 		ParametersSerde: config.DefaultParameterParsers,
-	})
+	}, nil)
 	testutils.FailTestOnAnyError(t, errs, "loading of projects failed")
 	return projects
 }

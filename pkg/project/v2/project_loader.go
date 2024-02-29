@@ -68,10 +68,8 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 	}
 }
 
-func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error) {
-	environments := toEnvironmentSlice(context.Manifest.Environments)
-	projects := make([]Project, 0)
-
+// Tries to load the specified projects. If no project names are specified, all projects are loaded.
+func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectNames []string) ([]Project, []error) {
 	var workingDirFs afero.Fs
 
 	if context.WorkingDir == "." {
@@ -84,26 +82,81 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error
 		return nil, []error{fmt.Errorf("no projects defined in manifest")}
 	}
 
-	log.Info("Loading %d projects...", len(context.Manifest.Projects))
+	environments := toEnvironmentSlice(context.Manifest.Environments)
 
-	var errors []error
+	projectNamesToLoad, errors := getProjectNamesToLoad(context.Manifest.Projects, specificProjectNames)
 
-	for _, projectDefinition := range context.Manifest.Projects {
-		project, projectErrors := loadProject(workingDirFs, context, projectDefinition, environments)
+	seenProjectNames := make(map[string]struct{}, len(projectNamesToLoad))
+	var loadedProjects []Project
+	for len(projectNamesToLoad) > 0 {
+		projectNameToLoad := projectNamesToLoad[0]
+		projectNamesToLoad = projectNamesToLoad[1:]
 
-		if projectErrors != nil {
-			errors = append(errors, projectErrors...)
+		if _, found := seenProjectNames[projectNameToLoad]; found {
+			continue
+		}
+		seenProjectNames[projectNameToLoad] = struct{}{}
+
+		projectDefinition, found := context.Manifest.Projects[projectNameToLoad]
+		if !found {
 			continue
 		}
 
-		projects = append(projects, project)
+		project, errs := loadProject(workingDirFs, context, projectDefinition, environments)
+		if len(errs) > 0 {
+			errors = append(errors, errs...)
+			continue
+		}
+
+		loadedProjects = append(loadedProjects, project)
+
+		for _, environment := range environments {
+			projectNamesToLoad = append(projectNamesToLoad, project.Dependencies[environment.Name]...)
+		}
 	}
 
-	if errors != nil {
+	if len(errors) > 0 {
 		return nil, errors
 	}
 
-	return projects, nil
+	return loadedProjects, nil
+}
+
+// Gets full project names to load specified by project or grouping project names. If none are specified, all project names are returned. Errors are returned for any project names that do not exist.
+func getProjectNamesToLoad(allProjectsDefinitions manifest.ProjectDefinitionByProjectID, specificProjectNames []string) ([]string, []error) {
+	projectNamesToLoad := make([]string, 0, len(specificProjectNames))
+
+	// if no projects are specified, all projects should be loaded
+	if len(specificProjectNames) == 0 {
+		for projectId := range allProjectsDefinitions {
+			projectNamesToLoad = append(projectNamesToLoad, projectId)
+		}
+		return projectNamesToLoad, nil
+	}
+
+	var errors []error
+	for _, projectName := range specificProjectNames {
+		// try to find a project with the given name
+		if _, found := allProjectsDefinitions[projectName]; found {
+			projectNamesToLoad = append(projectNamesToLoad, projectName)
+			continue
+		}
+
+		// try to find projects in a grouping project with the given name
+		found := false
+		for _, projectDefinition := range allProjectsDefinitions {
+			if projectDefinition.Group == projectName {
+				projectNamesToLoad = append(projectNamesToLoad, projectDefinition.Name)
+				found = true
+			}
+		}
+
+		if !found {
+			errors = append(errors, fmt.Errorf("no project named `%s` could be found in the manifest", projectName))
+		}
+	}
+
+	return projectNamesToLoad, errors
 }
 
 func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) []manifest.EnvironmentDefinition {
