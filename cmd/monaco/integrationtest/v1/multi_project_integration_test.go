@@ -21,12 +21,12 @@ package v1
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
 )
 
 var multiProjectFolder = AbsOrPanicFromSlash("test-resources/integration-multi-project/")
@@ -44,7 +44,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 			manifest,
 		})
 		err := cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
 	})
@@ -62,7 +62,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 		})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 	})
 }
 
@@ -78,7 +78,7 @@ func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T)
 		})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 	})
 
 }
@@ -97,7 +97,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 			"-p", "star-trek",
 		})
 		err := cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 
 		t.Log("Asserting available configs")
 

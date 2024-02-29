@@ -23,7 +23,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+
 	"path/filepath"
 	"testing"
 )
@@ -44,7 +45,7 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 		})
 		err := cmd.Execute()
 		// deployment should fail
-		assert.Assert(t, err != nil, "deployment should fail")
+		assert.Error(t, err, "deployment should fail")
 
 		deployedConfig := coordinate.Coordinate{Project: "project", Type: "dashboard", ConfigId: "dashboard"}
 		AssertConfigAvailability(t, fs, manifest, deployedConfig, "environment1", "project", true)
