@@ -172,7 +172,7 @@ func TestIsReferencingShouldReturnFalseForNotReferencing(t *testing.T) {
 
 	result := parameterReference(param, referencingConfig, referencedParameter)
 
-	assert.True(t, !result, "should not reference parameter")
+	assert.False(t, result, "should not reference parameter")
 }
 
 func TestIsReferencingShouldReturnFalseForParameterWithoutReferences(t *testing.T) {
@@ -194,7 +194,7 @@ func TestIsReferencingShouldReturnFalseForParameterWithoutReferences(t *testing.
 
 	result := parameterReference(param, referencingConfig, referencedParameter)
 
-	assert.True(t, !result, "should not reference parameter")
+	assert.False(t, result, "should not reference parameter")
 }
 
 func TestIsReferencingOneOfSeveral(t *testing.T) {

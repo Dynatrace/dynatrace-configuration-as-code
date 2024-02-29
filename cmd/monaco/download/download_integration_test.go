@@ -36,7 +36,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
@@ -88,7 +88,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, apiMap)
@@ -99,18 +99,18 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
-	assert.Equal(t, len(configs), 1)
+	assert.True(t, found)
+	assert.Len(t, configs, 1)
 
 	var _ config.Type = config.ClassicApiType{}
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
 		fakeApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-1"},
@@ -125,6 +125,10 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
+
+	if diff != "" {
+		assert.Fail(t, "Objects do not match match: %s", diff)
+	}
 }
 
 func TestDownloadIntegrationWithReference(t *testing.T) {
@@ -155,7 +159,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, apiMap)
@@ -166,15 +170,15 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
+	assert.True(t, found)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
 		fakeApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-1"},
@@ -201,6 +205,11 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
+
+	if diff != "" {
+		assert.Fail(t, "Objects do not match: %s", diff)
+	}
+
 }
 
 func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
@@ -241,7 +250,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	projects, errs := loadDownloadedProjects(fs, apiMap)
 	if len(errs) != 0 {
@@ -251,15 +260,15 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
+	assert.True(t, found)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
 		fakeApi1.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.ID, ConfigId: "id-1"},
@@ -327,6 +336,10 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
+
+	if diff != "" {
+		assert.Fail(t, "Objects do not match: %s", diff)
+	}
 }
 
 func TestDownloadIntegrationSingletonConfig(t *testing.T) {
@@ -355,7 +368,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, apiMap)
@@ -366,16 +379,16 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
-	assert.Equal(t, len(configs), 1)
+	assert.True(t, found)
+	assert.Len(t, configs, 1)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
 		fakeApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "fake-id"},
@@ -390,6 +403,10 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
+
+	if diff != "" {
+		assert.Fail(t, "Objects do not match: %s", diff)
+	}
 }
 
 func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
@@ -419,7 +436,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, apiMap)
@@ -430,16 +447,16 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
-	assert.Equal(t, len(configs), 1)
+	assert.True(t, found)
+	assert.Len(t, configs, 1)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
 		syntheticLocationApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: syntheticLocationApi.ID, ConfigId: "id-2"},
@@ -454,6 +471,10 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
+
+	if diff != "" {
+		assert.Fail(t, "Objects do not match: %s", diff)
+	}
 }
 
 func TestDownloadIntegrationDashboards(t *testing.T) {
@@ -486,7 +507,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, apiMap)
@@ -497,18 +518,18 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
-	assert.Equal(t, len(configs), 1)
+	assert.True(t, found)
+	assert.Len(t, configs, 1)
 
-	assert.Equal(t, len(configs["dashboard"]), 3)
+	assert.Len(t, configs["dashboard"], 3)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
 		dashboardApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-1"},
@@ -547,6 +568,10 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
+
+	if diff != "" {
+		assert.Fail(t, "Objects do not match: %s", diff)
+	}
 }
 
 func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *testing.T) {
@@ -581,7 +606,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, apiMap)
@@ -592,18 +617,18 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
-	assert.Equal(t, len(configs), 1)
+	assert.True(t, found)
+	assert.Len(t, configs, 1)
 
-	assert.Equal(t, len(configs["dashboard"]), 5)
+	assert.Len(t, configs["dashboard"], 5)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
 		dashboardApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-1"},
@@ -664,6 +689,10 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 			},
 		},
 	}, compareOptions...)
+
+	if diff != "" {
+		assert.Fail(t, "Objects do not match: %s", diff)
+	}
 }
 
 func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
@@ -694,7 +723,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, apiMap)
@@ -705,16 +734,16 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
-	assert.Equal(t, len(configs), 1)
+	assert.True(t, found)
+	assert.Len(t, configs, 1)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
 		dashboardApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "b836ff25-24e3-496d-8dce-d94110815ab5"},
@@ -740,6 +769,10 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
+
+	if diff != "" {
+		assert.Fail(t, "Objects do not match: %s", diff)
+	}
 }
 
 func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
@@ -831,7 +864,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			// WHEN we download everything
 			err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
 
-			assert.NilError(t, err)
+			assert.NoError(t, err)
 
 			// THEN we can load the project again and verify its content
 			projects, errs := loadDownloadedProjects(fs, apiMap)
@@ -848,18 +881,22 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, len(projects), 1)
+			assert.Len(t, projects, 1)
 			p := projects[0]
 			assert.Equal(t, p.Id, testcase.projectName)
-			assert.Equal(t, len(p.Configs), 1)
+			assert.Len(t, p.Configs, 1)
 
 			configs, found := p.Configs[testcase.projectName]
-			assert.Equal(t, found, true)
-			assert.Equal(t, len(configs), 1)
+			assert.True(t, found)
+			assert.Len(t, configs, 1)
 
-			assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+			diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
 				hostAutoUpdateApi.ID: testcase.expectedConfigs,
 			}, compareOptions...)
+
+			if diff != "" {
+				assert.Fail(t, "Objects do not match: %s", diff)
+			}
 		})
 	}
 }
@@ -900,7 +937,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apis, options)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	man, errs := manifestloader.Load(&manifestloader.Context{
@@ -927,19 +964,19 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	}
 
 	writtenManifest, err := afero.ReadFile(fs, filepath.Join(testBasePath, "manifest.yaml"))
-	assert.NilError(t, err)
-	assert.Assert(t, string(writtenManifest) != "OVERWRITE ME", "Expected manifest to be overwritten with new data")
+	assert.NoError(t, err)
+	assert.NotEqualf(t, string(writtenManifest), "OVERWRITE ME", "Expected manifest to be overwritten with new data")
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
-	assert.Equal(t, len(configs), 1)
+	assert.True(t, found)
+	assert.Len(t, configs, 1)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
 		fakeApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-1"},
@@ -954,6 +991,10 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
+
+	if diff != "" {
+		assert.Fail(t, "Objects do not match: %s", diff)
+	}
 }
 
 func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
@@ -989,7 +1030,7 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apis, opts)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, apis)
@@ -1000,21 +1041,21 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
+	assert.True(t, found)
 	assert.Equal(t, len(configs), 2, "Expected one config API and one Settings schema to be downloaded")
 
 	_, fakeApiDownloaded := configs[fakeApi.ID]
-	assert.Assert(t, fakeApiDownloaded)
+	assert.True(t, fakeApiDownloaded)
 	assert.Equal(t, len(configs[fakeApi.ID]), 2, "Expected 2 config objects")
 
 	_, settingsDownloaded := configs["settings-schema"]
-	assert.Assert(t, settingsDownloaded)
+	assert.True(t, settingsDownloaded)
 	assert.Equal(t, len(configs["settings-schema"]), 3, "Expected 3 settings objects")
 }
 
@@ -1049,7 +1090,7 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apis, opts)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, apis)
@@ -1060,21 +1101,21 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
+	assert.True(t, found)
 	assert.Equal(t, len(configs), 1, "Expected one config API to be downloaded")
 
 	_, fakeApiDownloaded := configs[fakeApi.ID]
-	assert.Assert(t, fakeApiDownloaded)
+	assert.True(t, fakeApiDownloaded)
 	assert.Equal(t, len(configs[fakeApi.ID]), 2, "Expected 2 config objects")
 
 	_, settingsDownloaded := configs["settings-schema"]
-	assert.Assert(t, !settingsDownloaded, "Expected no Settings to the downloaded, when onlyAPIs is set")
+	assert.False(t, settingsDownloaded, "Expected no Settings to the downloaded, when onlyAPIs is set")
 }
 
 func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
@@ -1100,7 +1141,7 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, opts)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, api.APIs{})
@@ -1111,23 +1152,23 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
+	assert.True(t, found)
 	assert.Equal(t, len(configs), 1, "Expected one Settings schema to be downloaded")
 
 	_, settingsDownloaded := configs["settings-schema"]
-	assert.Assert(t, settingsDownloaded)
+	assert.True(t, settingsDownloaded)
 	assert.Equal(t, len(configs["settings-schema"]), 2, "Expected 2 settings objects")
 
 	expectedConfigs := map[string]struct{}{"so_1": {}, "so_3": {}}
 	for _, cfg := range configs["settings-schema"] {
 		_, found := expectedConfigs[cfg.OriginObjectId]
-		assert.Assert(t, found, "did not expect config %s to be downloaded", cfg.OriginObjectId)
+		assert.True(t, found, "did not expect config %s to be downloaded", cfg.OriginObjectId)
 	}
 }
 
@@ -1157,7 +1198,7 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, opts)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
 	projects, errs := loadDownloadedProjects(fs, api.APIs{})
@@ -1168,23 +1209,23 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 		return
 	}
 
-	assert.Equal(t, len(projects), 1)
+	assert.Len(t, projects, 1)
 	p := projects[0]
 	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
+	assert.Len(t, p.Configs, 1)
 
 	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
+	assert.True(t, found)
 	assert.Equal(t, len(configs), 1, "Expected one Settings schema to be downloaded")
 
 	_, settingsDownloaded := configs["settings-schema"]
-	assert.Assert(t, settingsDownloaded)
+	assert.True(t, settingsDownloaded)
 	assert.Equal(t, len(configs["settings-schema"]), 3, "Expected 3 settings objects")
 
 	expectedConfigs := map[string]struct{}{"so_1": {}, "so_2": {}, "so_3": {}}
 	for _, cfg := range configs["settings-schema"] {
 		_, found := expectedConfigs[cfg.OriginObjectId]
-		assert.Assert(t, found, "did not expect config %s to be downloaded", cfg.OriginObjectId)
+		assert.True(t, found, "did not expect config %s to be downloaded", cfg.OriginObjectId)
 	}
 }
 

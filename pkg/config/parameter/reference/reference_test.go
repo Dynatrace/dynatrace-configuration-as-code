@@ -411,7 +411,7 @@ func TestWriteReferenceParameter(t *testing.T) {
 	result, err := writeReferenceParameter(context)
 	require.NoError(t, err)
 
-	require.Equal(t, len(result), 4)
+	require.Len(t, result, 4)
 
 	project, ok := result["project"]
 	require.True(t, ok, "should have parameter project")
@@ -449,7 +449,7 @@ func TestWriteReferenceParameterOnMatchingProject(t *testing.T) {
 	result, err := writeReferenceParameter(context)
 	require.NoError(t, err)
 
-	require.Equal(t, len(result), 3)
+	require.Len(t, result, 3)
 
 	api, ok := result["configType"]
 	require.True(t, ok, "should have parameter configType")
@@ -483,7 +483,7 @@ func TestWriteReferenceParameterOnMatchingApi(t *testing.T) {
 	result, err := writeReferenceParameter(context)
 	require.NoError(t, err)
 
-	require.Equal(t, len(result), 2)
+	require.Len(t, result, 2)
 
 	config, ok := result["configId"]
 	require.True(t, ok, "should have parameter configId")
@@ -513,7 +513,7 @@ func TestWriteReferenceParameterOnMatchingConfig(t *testing.T) {
 	result, err := writeReferenceParameter(context)
 	require.NoError(t, err)
 
-	require.Equal(t, len(result), 1)
+	require.Len(t, result, 1)
 
 	property, ok := result["property"]
 	require.True(t, ok, "should have parameter property")
