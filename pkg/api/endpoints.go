@@ -24,6 +24,7 @@ const (
 	ManagementZone                       = "management-zone"
 	Autotag                              = "auto-tag"
 	Dashboard                            = "dashboard"
+	DashboardShareSettings               = "dashboard-share-settings"
 	DashboardV2                          = "dashboard-v2"
 	Notification                         = "notification"
 	Extension                            = "extension"

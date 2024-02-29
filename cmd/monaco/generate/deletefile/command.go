@@ -88,6 +88,10 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 				outputFolder:     outputFolder,
 			}
 
+			// dashboard-share-settings are excluded per default, as they cannot be deleted,
+			// hence it makes no sense to generate delete entries for it
+			options.excludeTypes = append(options.excludeTypes, api.DashboardShareSettings)
+
 			return createDeleteFile(fs, loadedProjects, apis, options)
 		},
 	}
