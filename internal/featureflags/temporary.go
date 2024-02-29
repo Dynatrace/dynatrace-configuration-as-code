@@ -81,3 +81,12 @@ func GenerateJSONSchemas() FeatureFlag {
 		defaultEnabled: true,
 	}
 }
+
+// DashboardShareSettings toggles whether the dashboard share settings are downloaded and / or deployed.
+// Introduced: 2024-02-29; v2.12.0
+func DashboardShareSettings() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_DASHBOARD_SHARE_SETTINGS",
+		defaultEnabled: false,
+	}
+}
