@@ -28,7 +28,8 @@ import (
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+
 	"path/filepath"
 	"testing"
 )
@@ -56,7 +57,7 @@ func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefini
 			CachingDisabled: true, // disabled to avoid wrong cache reads
 		})
 	}
-	assert.NilError(t, err, "failed to create test client")
+	assert.NoError(t, err, "failed to create test client")
 	return clients
 }
 
@@ -79,7 +80,7 @@ func LoadManifest(t *testing.T, fs afero.Fs, manifestFile string, specificEnviro
 
 func LoadProjects(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest) []project.Project {
 	cwd, err := filepath.Abs(filepath.Dir(manifestPath))
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
 		KnownApis:       api.NewAPIs().GetApiNameLookup(),
