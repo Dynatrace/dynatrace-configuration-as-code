@@ -17,6 +17,7 @@
 package classic
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"strings"
 )
@@ -34,7 +35,7 @@ type ContentFilters map[string]ContentFilter
 
 // ApiContentFilters defines default ContentFilter rules per API identifier
 var ApiContentFilters = map[string]ContentFilter{
-	"dashboard": {
+	api.Dashboard: {
 		ShouldBeSkippedPreDownload: func(value dtclient.Value) bool {
 			return value.Owner != nil && *value.Owner == "Dynatrace"
 		},
@@ -50,12 +51,12 @@ var ApiContentFilters = map[string]ContentFilter{
 			return true
 		},
 	},
-	"synthetic-location": {
+	api.SyntheticLocation: {
 		ShouldConfigBePersisted: func(json map[string]interface{}) bool {
 			return json["type"] == "PRIVATE"
 		},
 	},
-	"hosts-auto-update": {
+	api.HostsAutoUpdate: {
 		// check that the property 'updateWindows' is not empty, otherwise discard.
 		ShouldConfigBePersisted: func(json map[string]interface{}) bool {
 			autoUpdates, ok := json["updateWindows"]
@@ -71,12 +72,12 @@ var ApiContentFilters = map[string]ContentFilter{
 			return len(windows) > 0
 		},
 	},
-	"anomaly-detection-metrics": {
+	api.AnomalyDetectionMetrics: {
 		ShouldBeSkippedPreDownload: func(value dtclient.Value) bool {
 			return strings.HasPrefix(value.Id, "dynatrace.") || strings.HasPrefix(value.Id, "ruxit.")
 		},
 	},
-	"network-zone": {
+	api.NetworkZone: {
 		ShouldBeSkippedPreDownload: func(value dtclient.Value) bool {
 			return value.Id == "default"
 		},

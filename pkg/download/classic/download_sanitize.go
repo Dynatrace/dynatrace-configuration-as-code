@@ -16,12 +16,14 @@
 
 package classic
 
+import "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+
 var apiSanitizeFunctions = map[string]func(properties map[string]interface{}) map[string]interface{}{
-	"service-detection-full-web-service":   removeOrderProperty,
-	"service-detection-full-web-request":   removeOrderProperty,
-	"service-detection-opaque-web-service": removeOrderProperty,
-	"service-detection-opaque-web-request": removeOrderProperty,
-	"maintenance-window": func(properties map[string]interface{}) map[string]interface{} {
+	api.ServiceDetectionFullWebService:   removeOrderProperty,
+	api.ServiceDetectionFullWebRequest:   removeOrderProperty,
+	api.ServiceDetectionOpaqueWebService: removeOrderProperty,
+	api.ServiceDetectionOpaqueWebRequest: removeOrderProperty,
+	api.MaintenanceWindow: func(properties map[string]interface{}) map[string]interface{} {
 		if s, ok := properties["scope"].(map[string]interface{}); ok {
 			var emptyEntities, emptyMatches bool
 			if entities, ok := s["entities"].([]interface{}); ok && len(entities) == 0 {
@@ -39,7 +41,7 @@ var apiSanitizeFunctions = map[string]func(properties map[string]interface{}) ma
 
 		return properties
 	},
-	"user-action-and-session-properties-mobile": func(properties map[string]interface{}) map[string]interface{} {
+	api.UserActionAndSessionPropertiesMobile: func(properties map[string]interface{}) map[string]interface{} {
 		return removeByPath(properties, []string{"key"})
 	},
 }
@@ -60,7 +62,7 @@ func removeIdentifyingProperties(dat map[string]interface{}, apiId string) map[s
 
 	// After manual inspection, it appears that only 'calculated-metrics-service' needs to still keep the entityId.
 	// The other APIs are self-referencing (e.g. HTTP-CHECK-0123 has entityId set to its own ID).
-	if apiId != "calculated-metrics-service" {
+	if apiId != api.CalculatedMetricsService {
 		dat = removeByPath(dat, []string{"entityId"})
 	}
 
@@ -110,7 +112,7 @@ func replaceTemplateProperties(dat map[string]interface{}, apiId string) map[str
 
 	// for user-action-and-session-properties-mobile the display name is actually the name we are looking for
 	// even if both, name and display name are available in the json
-	if apiId == "user-action-and-session-properties-mobile" {
+	if apiId == api.UserActionAndSessionPropertiesMobile {
 		dat["displayName"] = nameTemplate
 	} else if dat["name"] != nil {
 		dat["name"] = nameTemplate

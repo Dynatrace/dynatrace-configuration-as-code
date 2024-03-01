@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"strings"
 )
 
@@ -154,7 +155,7 @@ func getPermissionFor(scope string, perDTOs *accountmanagement.PermissionsGroupD
 func getManagementZonesFor(scope string, perDTOs *accountmanagement.PermissionsGroupDto) map[string][]string {
 	retVal := make(map[string][]string)
 	for _, p := range perDTOs.Permissions {
-		if p.ScopeType == "management-zone" {
+		if p.ScopeType == api.ManagementZone {
 			if after, found := strings.CutPrefix(p.Scope, scope+":"); found {
 				retVal[after] = append(retVal[after], p.PermissionName)
 			}

@@ -482,11 +482,11 @@ func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, api api.API, n
 	return
 }
 
-func (d *DynatraceClient) upsertConfigByName(ctx context.Context, api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
-	if api.ID == "extension" {
-		return d.uploadExtension(ctx, api, name, payload)
+func (d *DynatraceClient) upsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+	if a.ID == api.Extension {
+		return d.uploadExtension(ctx, a, name, payload)
 	}
-	return d.upsertDynatraceObject(ctx, api, name, payload)
+	return d.upsertDynatraceObject(ctx, a, name, payload)
 }
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {

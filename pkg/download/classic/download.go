@@ -246,7 +246,7 @@ func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value va
 	var response []byte
 	var err error
 
-	if theApi.HasParent() && theApi.ID != "user-action-and-session-properties-mobile" {
+	if theApi.HasParent() && theApi.ID != api.UserActionAndSessionPropertiesMobile {
 		response, err = client.ReadConfigById(theApi.Resolve(value.parentConfigId), "") // skipping the id to enforce to read/download "all" configs instead of a single one
 	} else {
 		response, err = client.ReadConfigById(theApi.Resolve(value.parentConfigId), value.value.Id)
