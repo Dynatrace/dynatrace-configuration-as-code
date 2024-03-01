@@ -19,6 +19,9 @@ package classic
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -28,10 +31,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"strconv"
-
-	"testing"
 )
 
 func TestDownloadConfigs_FailedToFindConfigsToDownload(t *testing.T) {
@@ -83,25 +84,32 @@ func TestDownload_ConfigsDownloaded(t *testing.T) {
 }
 
 func TestDownload_KeyUserActionMobile(t *testing.T) {
-	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["application-mobile"]).Return([]dtclient.Value{{Id: "some-application-id", Name: "some-application-name"}}, nil)
-	c.EXPECT().ListConfigs(context.TODO(), api.NewAPIs()["key-user-actions-mobile"].Resolve("some-application-id")).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil)
-	c.EXPECT().ReadConfigById(gomock.Any(), "").Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil)
+	standardAPIs := api.NewAPIs()
+	apiMap := api.APIs{api.KeyUserActionsMobile: standardAPIs[api.KeyUserActionsMobile],
+		api.ApplicationMobile: standardAPIs[api.ApplicationMobile],
+	}
 
-	apiMap := api.APIs{"key-user-actions-mobile": api.NewAPIs()["key-user-actions-mobile"]}
+	applicationId := "some-application-id"
+
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(context.TODO(), apiMap[api.ApplicationMobile]).Return([]dtclient.Value{{Id: applicationId, Name: "some-application-name"}}, nil).Times(2)
+	c.EXPECT().ListConfigs(context.TODO(), apiMap[api.KeyUserActionsMobile].Resolve(applicationId)).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil).Times(1)
+	c.EXPECT().ReadConfigById(apiMap[api.ApplicationMobile], applicationId).Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil).Times(1)
+	c.EXPECT().ReadConfigById(apiMap[api.KeyUserActionsMobile].Resolve(applicationId), "").Return([]byte(`{}`), nil).Times(1)
 
 	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
-	assert.NoError(t, err)
-	assert.Len(t, configurations, 1)
+	require.NoError(t, err)
+	assert.Len(t, configurations, 2, "Expected two configurations downloaded")
 
-	assert.Len(t, configurations["key-user-actions-mobile"], 1)
-	gotConfig := configurations["key-user-actions-mobile"][0]
-	assert.Equal(t, reference.New("project", "application-mobile", "some-application-id", "id"), gotConfig.Parameters[config.ScopeParameter])
-	assert.Len(t, gotConfig.Parameters, 2)
-	assert.Equal(t, valueParam.New("abc"), gotConfig.Parameters[config.NameParameter])
-	assert.Equal(t, config.ClassicApiType{Api: "key-user-actions-mobile"}, gotConfig.Type)
-	assert.Equal(t, coordinate.Coordinate{Project: "project", Type: "key-user-actions-mobile", ConfigId: "abcsome-application-id"}, gotConfig.Coordinate)
-	assert.False(t, gotConfig.Skip)
+	require.Len(t, configurations[api.KeyUserActionsMobile], 1)
+	gotKeyUserActionsMobileConfig := configurations[api.KeyUserActionsMobile][0]
+
+	assert.Equal(t, reference.New("project", api.ApplicationMobile, applicationId, "id"), gotKeyUserActionsMobileConfig.Parameters[config.ScopeParameter])
+	assert.Len(t, gotKeyUserActionsMobileConfig.Parameters, 2)
+	assert.Equal(t, valueParam.New("abc"), gotKeyUserActionsMobileConfig.Parameters[config.NameParameter])
+	assert.Equal(t, config.ClassicApiType{Api: api.KeyUserActionsMobile}, gotKeyUserActionsMobileConfig.Type)
+	assert.Equal(t, coordinate.Coordinate{Project: "project", Type: api.KeyUserActionsMobile, ConfigId: "abcsome-application-id"}, gotKeyUserActionsMobileConfig.Coordinate)
+	assert.False(t, gotKeyUserActionsMobileConfig.Skip)
 }
 
 func TestDownload_KeyUserActionWeb(t *testing.T) {
@@ -347,4 +355,71 @@ func TestDownload_MalformedResponseFromAnAPI(t *testing.T) {
 	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
+}
+
+func TestDownload_SkippedParentsSkipChildren(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
+		if a.ID == "PARENT_API_ID" {
+			return []dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil
+		}
+		require.FailNow(t, "Unexpected API ID")
+		return nil, nil
+	}).Times(2)
+
+	apiMap := api.APIs{
+		"PARENT_API_ID": api.API{
+			ID:            "PARENT_API_ID",
+			URLPath:       "PARENT_API_PATH",
+			NonUniqueName: true},
+		"CHILD_API_ID": api.API{ID: "CHILD_API_ID",
+			URLPath:       "CHILD_API_PATH",
+			NonUniqueName: false,
+			Parent:        "PARENT_API_ID"}}
+
+	contentFilters := map[string]ContentFilter{
+		"PARENT_API_ID": {
+			ShouldBeSkippedPreDownload: func(value dtclient.Value) bool { return true },
+		},
+	}
+	configurations, err := Download(c, "project", apiMap, contentFilters)
+	require.NoError(t, err)
+	assert.Len(t, configurations, 0, "Expected no configurations as everything is skipped")
+}
+
+func TestDownload_SingleConfigurationChild(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
+		if a.ID == "PARENT_API_ID" {
+			return []dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil
+		}
+		require.FailNow(t, "Unexpected API ID")
+		return nil, nil
+	}).Times(2)
+
+	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
+
+	apiMap := api.APIs{
+		"PARENT_API_ID": api.API{
+			ID:            "PARENT_API_ID",
+			URLPath:       "PARENT_API_PATH",
+			NonUniqueName: true},
+		"CHILD_API_ID": api.API{ID: "CHILD_API_ID",
+			URLPath:             "CHILD_API_PATH",
+			NonUniqueName:       false,
+			Parent:              "PARENT_API_ID",
+			SingleConfiguration: true}}
+
+	contentFilters := map[string]ContentFilter{
+		"PARENT_API_ID": {
+			ShouldBeSkippedPreDownload: func(value dtclient.Value) bool { return false },
+		},
+	}
+
+	configurations, err := Download(c, "project", apiMap, contentFilters)
+	require.NoError(t, err)
+	require.Len(t, configurations, 2, "Expected two configurations")
+	require.Len(t, configurations["PARENT_API_ID"], 1)
+	require.Len(t, configurations["CHILD_API_ID"], 1)
+	assert.Equal(t, configurations["PARENT_API_ID"][0].Coordinate.ConfigId, configurations["CHILD_API_ID"][0].Coordinate.ConfigId, "Single child config should have the same config ID as parent")
 }

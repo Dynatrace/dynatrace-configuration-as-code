@@ -84,6 +84,13 @@ const (
 	UserActionAndSessionPropertiesMobile = "user-action-and-session-properties-mobile"
 )
 
+func removeURLsFromPublicAccess(m map[string]any) {
+	if publicAccess, found := m["publicAccess"]; found {
+		publicAccessMap := publicAccess.(map[string]any)
+		delete(publicAccessMap, "urls")
+	}
+}
+
 // configEndpoints is map of the http endpoints for configuration API (aka classic/config endpoints).
 var configEndpoints = []API{
 	{
@@ -127,13 +134,8 @@ var configEndpoints = []API{
 		URLPath:             "/api/config/v1/dashboards/{SCOPE}/shareSettings",
 		Parent:              Dashboard,
 		SingleConfiguration: true,
-		TweakResponseFunc: func(m map[string]any) {
-			if publicAccess, found := m["publicAccess"]; found {
-				publicAccessMap := publicAccess.(map[string]any)
-				delete(publicAccessMap, "urls")
-			}
-		},
-		RequireAllFF: []featureflags.FeatureFlag{featureflags.DashboardShareSettings()},
+		TweakResponseFunc:   removeURLsFromPublicAccess,
+		RequireAllFF:        []featureflags.FeatureFlag{featureflags.DashboardShareSettings()},
 	},
 	{
 		ID:                           Notification,

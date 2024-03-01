@@ -175,7 +175,7 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API, filter
 	log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching all '%v' configs", apiToDownload.ID)
 
 	if apiToDownload.HasParent() {
-		parentAPI := api.NewAPIs()[apiToDownload.Parent]
+		parentAPI := apisToDownload[apiToDownload.Parent]
 		var res values
 		parentAPIValues, err := client.ListConfigs(context.TODO(), parentAPI)
 		if err != nil {
