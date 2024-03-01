@@ -8,6 +8,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/go-logr/logr"
 	"strings"
 	"sync"
@@ -435,7 +436,7 @@ func (d *AccountDeployer) getManagementZonePermissions(mzones []account.Manageme
 		for _, p := range mz.Permissions {
 			perm := accountmanagement.PermissionsDto{
 				PermissionName: p,
-				ScopeType:      "management-zone",
+				ScopeType:      api.ManagementZone,
 				Scope:          fmt.Sprintf("%s:%s", mz.Environment, mzId),
 			}
 			perms = append(perms, perm)

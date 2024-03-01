@@ -165,7 +165,7 @@ func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString s
 func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl string, configType string, objectName string) (DynatraceEntity, error) {
 	var dtEntity DynatraceEntity
 
-	if configType == "synthetic-monitor" || configType == "synthetic-location" {
+	if configType == api.SyntheticMonitor || configType == api.SyntheticLocation {
 		var entity SyntheticEntity
 		err := json.Unmarshal(resp.Body, &entity)
 		if errutils.CheckError(err, "Failed to unmarshal Synthetic API response") {
@@ -358,7 +358,7 @@ func isSyntheticMonitorServerError(resp rest.Response, theApi api.API) bool {
 }
 
 func isGeneralSyntheticAPIError(resp rest.Response, theApi api.API) bool {
-	return (strings.HasPrefix(theApi.ID, "synthetic-") || theApi.ID == "credential-vault") && (resp.StatusCode == http.StatusNotFound || resp.Is5xxError())
+	return (strings.HasPrefix(theApi.ID, "synthetic-") || theApi.ID == api.CredentialVault) && (resp.StatusCode == http.StatusNotFound || resp.Is5xxError())
 }
 
 func isApplicationAPIError(resp rest.Response, theApi api.API) bool {
@@ -673,7 +673,7 @@ func translateGenericValues(ctx context.Context, inputValues []interface{}, conf
 			substitutedName := ""
 
 			// Differentiate handling for reports API from others
-			isReportsApi := configType == "reports"
+			isReportsApi := configType == api.Reports
 			if isReportsApi {
 				// Substitute name with dashboard id since it is unique identifier for entity
 				substitutedName = input["dashboardId"].(string)
