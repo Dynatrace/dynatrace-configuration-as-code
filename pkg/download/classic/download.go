@@ -162,6 +162,13 @@ type value struct {
 	parentConfigId string
 }
 
+func (v value) ID() string {
+	if v.value.Id == v.parentConfigId {
+		return v.value.Id
+	}
+	return v.value.Id + v.parentConfigId
+}
+
 // findConfigsToDownload tries to identify all values that should be downloaded from a Dynatrace environment for
 // the given API
 func findConfigsToDownload(client dtclient.Client, apiToDownload api.API, filters ContentFilters) (values, error) {
@@ -319,6 +326,6 @@ func createTemplate(mappedJson map[string]interface{}, value value, apiId string
 	if err != nil {
 		return nil, err
 	}
-	templ := template.NewInMemoryTemplate(value.value.Id+value.parentConfigId, string(bytes))
+	templ := template.NewInMemoryTemplate(value.ID(), string(bytes))
 	return templ, nil
 }
