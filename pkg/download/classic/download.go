@@ -175,15 +175,14 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API, filter
 	log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching all '%v' configs", apiToDownload.ID)
 
 	if apiToDownload.HasParent() {
-		parentAPI := apisToDownload[apiToDownload.Parent]
 		var res values
-		parentAPIValues, err := client.ListConfigs(context.TODO(), parentAPI)
+		parentAPIValues, err := client.ListConfigs(context.TODO(), *apiToDownload.Parent)
 		if err != nil {
 			return values{}, err
 		}
 		for _, parentAPIValue := range parentAPIValues {
 
-			if skipDownload(parentAPI, parentAPIValue, filters) {
+			if skipDownload(*apiToDownload.Parent, parentAPIValue, filters) {
 				continue
 			}
 
@@ -255,15 +254,14 @@ func shouldFilter() bool {
 }
 
 func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value value) ([]map[string]interface{}, error) {
-	var response []byte
-	var err error
+	id := value.value.Id
 
+	// check if we should skip the id to enforce to read/download "all" configs instead of a single one
 	if theApi.HasParent() && theApi.ID != api.UserActionAndSessionPropertiesMobile {
-		response, err = client.ReadConfigById(theApi.Resolve(value.parentConfigId), "") // skipping the id to enforce to read/download "all" configs instead of a single one
-	} else {
-		response, err = client.ReadConfigById(theApi.Resolve(value.parentConfigId), value.value.Id)
+		id = ""
 	}
 
+	response, err := client.ReadConfigById(theApi.Resolve(value.parentConfigId), id)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +296,7 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	}
 
 	if theApi.HasParent() {
-		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent, value.parentConfigId, "id")
+		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent.ID, value.parentConfigId, "id")
 	}
 
 	coord := coordinate.Coordinate{
