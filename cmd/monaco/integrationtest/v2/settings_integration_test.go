@@ -97,7 +97,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	configToDeploy := sortedConfigs[env][0]
 
 	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, fs, manifestPath, []string{env}, "")
+		integrationtest.CleanupIntegrationTest(t, fs, manifestPath, env, "")
 	})
 
 	// first deploy with external id generate that does not consider the project name

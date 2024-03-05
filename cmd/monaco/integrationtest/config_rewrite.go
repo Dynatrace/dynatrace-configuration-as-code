@@ -37,7 +37,10 @@ func GenerateTestSuffix(t *testing.T, generalSuffix string) string {
 	}
 
 	timestamp := time.Now().Format("20060102150405")
-	suffix := fmt.Sprintf("%s_%d_%s", timestamp, randomNumber, generalSuffix)
+	suffix := fmt.Sprintf("_%s_%d", timestamp, randomNumber)
+	if generalSuffix != "" {
+		suffix = fmt.Sprintf("%s_%s", suffix, generalSuffix)
+	}
 	return strings.ToLower(suffix)
 }
 
