@@ -20,6 +20,7 @@ package account
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
@@ -35,7 +36,7 @@ import (
 func TestIdempotenceOfDeployment(t *testing.T) {
 
 	deploy := func(project string, fs afero.Fs) *account.Resources {
-		err := monacof("account deploy --project %s --verbose", project).withFs(fs).run()
+		err := monaco.RunWithFsf(fs, "monaco account deploy --project %s --verbose", project)
 
 		require.NoError(t, err)
 
@@ -45,7 +46,7 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 		return r
 	}
 	download := func(project string, fs afero.Fs) *account.Resources {
-		err := monacof("account download --project %s --output-folder output --verbose", project).withFs(fs).run()
+		err := monaco.RunWithFsf(fs, "monaco account download --project %s --output-folder output --verbose", project)
 		require.NoError(t, err)
 
 		r, err := loader.Load(fs, fmt.Sprintf("%s/%s/%s", "output", project, "test-account"))
@@ -94,6 +95,6 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 		assert.Equal(t, deploy1st.Groups[g.ID], deploy2nd.Groups[g.ID])
 	}
 
-	err := monaco("account delete --manifest manifest.yaml --file delete.yaml").withFs(baseFs).run()
+	err := monaco.RunWithFsf(baseFs, "monaco account delete --manifest manifest.yaml --file delete.yaml")
 	require.NoError(t, err)
 }
