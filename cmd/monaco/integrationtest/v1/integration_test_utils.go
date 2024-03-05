@@ -213,7 +213,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	if doCleanup {
 		t.Cleanup(func() {
 			t.Log("Cleaning up environment")
-			integrationtest.CleanupIntegrationTest(t, fs, manifestPath, nil, suffix)
+			integrationtest.CleanupIntegrationTest(t, fs, manifestPath, "", suffix)
 		})
 	}
 
