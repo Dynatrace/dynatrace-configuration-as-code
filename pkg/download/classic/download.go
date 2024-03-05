@@ -162,7 +162,7 @@ type value struct {
 	parentConfigId string
 }
 
-func (v value) ID() string {
+func (v value) id() string {
 	if v.value.Id == v.parentConfigId {
 		return v.value.Id
 	}
@@ -326,6 +326,6 @@ func createTemplate(mappedJson map[string]interface{}, value value, apiId string
 	if err != nil {
 		return nil, err
 	}
-	templ := template.NewInMemoryTemplate(value.ID(), string(bytes))
+	templ := template.NewInMemoryTemplate(value.id(), string(bytes))
 	return templ, nil
 }
