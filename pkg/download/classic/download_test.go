@@ -358,15 +358,6 @@ func TestDownload_MalformedResponseFromAnAPI(t *testing.T) {
 }
 
 func TestDownload_SkippedParentsSkipChildren(t *testing.T) {
-	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
-		if a.ID == "PARENT_API_ID" {
-			return []dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil
-		}
-		require.FailNow(t, "Unexpected API ID")
-		return nil, nil
-	}).Times(2)
-
 	parentAPI := api.API{
 		ID:            "PARENT_API_ID",
 		URLPath:       "PARENT_API_PATH",
@@ -384,23 +375,16 @@ func TestDownload_SkippedParentsSkipChildren(t *testing.T) {
 			ShouldBeSkippedPreDownload: func(value dtclient.Value) bool { return true },
 		},
 	}
+
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(parentAPI)).Return([]dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil).Times(2)
+
 	configurations, err := Download(c, "project", apiMap, contentFilters)
 	require.NoError(t, err)
 	assert.Len(t, configurations, 0, "Expected no configurations as everything is skipped")
 }
 
 func TestDownload_SingleConfigurationChild(t *testing.T) {
-	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, a api.API) ([]dtclient.Value, error) {
-		if a.ID == "PARENT_API_ID" {
-			return []dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil
-		}
-		require.FailNow(t, "Unexpected API ID")
-		return nil, nil
-	}).Times(2)
-
-	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
-
 	parentAPI := api.API{
 		ID:            "PARENT_API_ID",
 		URLPath:       "PARENT_API_PATH",
@@ -414,11 +398,11 @@ func TestDownload_SingleConfigurationChild(t *testing.T) {
 			Parent:              &parentAPI,
 			SingleConfiguration: true}}
 
-	contentFilters := map[string]ContentFilter{
-		"PARENT_API_ID": {
-			ShouldBeSkippedPreDownload: func(value dtclient.Value) bool { return false },
-		},
-	}
+	contentFilters := map[string]ContentFilter{}
+
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(parentAPI)).Return([]dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil).Times(2)
+	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
 
 	configurations, err := Download(c, "project", apiMap, contentFilters)
 	require.NoError(t, err)
