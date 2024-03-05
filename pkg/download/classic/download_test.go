@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -103,30 +104,13 @@ func TestDownload_KeyUserActionMobile(t *testing.T) {
 	assert.False(t, gotConfig.Skip)
 }
 
-type apiMatcher struct {
-	x api.API
-}
-
-func apiEq(x api.API) gomock.Matcher { return apiMatcher{x: x} }
-
-func (e apiMatcher) Matches(x any) bool {
-	if a, ok := x.(api.API); ok {
-		return a.ID == e.x.ID && a.URLPath == e.x.URLPath
-	}
-	return false
-}
-
-func (e apiMatcher) String() string {
-	return fmt.Sprintf("is equal to %v (%T)", e.x, e.x)
-}
-
 func TestDownload_KeyUserActionWeb(t *testing.T) {
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	ctx := context.TODO()
 	apis := api.NewAPIs()
-	c.EXPECT().ListConfigs(ctx, apiEq(apis["application-web"])).Return([]dtclient.Value{{Id: "applicationID", Name: "web-application"}}, nil)
-	c.EXPECT().ListConfigs(ctx, apiEq(apis["key-user-actions-web"].Resolve("applicationID"))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
+	c.EXPECT().ListConfigs(ctx, matcher.EqAPI(apis["application-web"])).Return([]dtclient.Value{{Id: "applicationID", Name: "web-application"}}, nil)
+	c.EXPECT().ListConfigs(ctx, matcher.EqAPI((apis["key-user-actions-web"].Resolve("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
 	c.EXPECT().ReadConfigById(gomock.Any(), "").Return([]byte(`{"keyUserActionList":[{"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"}]}`), nil)
 
 	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{"key-user-actions-web"}))

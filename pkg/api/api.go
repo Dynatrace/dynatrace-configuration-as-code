@@ -89,3 +89,7 @@ func (a API) Resolve(value string) API {
 	newA.URLPath = strings.ReplaceAll(a.URLPath, "{SCOPE}", value)
 	return newA
 }
+
+func (a API) String() string {
+	return a.ID
+}
