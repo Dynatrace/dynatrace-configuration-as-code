@@ -49,7 +49,14 @@ var apiSanitizeFunctions = map[string]func(properties map[string]interface{}) ma
 func sanitizeProperties(properties map[string]interface{}, apiId string) map[string]interface{} {
 	properties = removeIdentifyingProperties(properties, apiId)
 	properties = removePropertiesNotAllowedOnUpload(properties, apiId)
-	return replaceTemplateProperties(properties, apiId)
+
+	// user action and session properties configs have the "key" as name, hence
+	// we must avoid overwriting the name property with wrong values
+	if apiId == api.UserActionAndSessionPropertiesMobile {
+		return properties
+	}
+
+	return replaceTemplateProperties(properties)
 }
 
 func removeIdentifyingProperties(dat map[string]interface{}, apiId string) map[string]interface{} {
@@ -107,14 +114,10 @@ func removeByPath(dat map[string]interface{}, key []string) map[string]interface
 	return dat
 }
 
-func replaceTemplateProperties(dat map[string]interface{}, apiId string) map[string]interface{} {
+func replaceTemplateProperties(dat map[string]interface{}) map[string]interface{} {
 	const nameTemplate = "{{.name}}"
 
-	// for user-action-and-session-properties-mobile the display name is actually the name we are looking for
-	// even if both, name and display name are available in the json
-	if apiId == api.UserActionAndSessionPropertiesMobile {
-		dat["displayName"] = nameTemplate
-	} else if dat["name"] != nil {
+	if dat["name"] != nil {
 		dat["name"] = nameTemplate
 	} else if dat["displayName"] != nil {
 		dat["displayName"] = nameTemplate
