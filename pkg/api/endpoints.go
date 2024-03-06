@@ -468,11 +468,9 @@ var configEndpoints = []API{
 		TweakResponseFunc:            func(m map[string]any) { delete(m, "meIdentifier") },
 	},
 	{
-		ID:                       UserActionAndSessionPropertiesMobile,
-		URLPath:                  "/api/config/v1/applications/mobile/{SCOPE}/userActionAndSessionProperties",
-		Parent:                   &applicationMobileAPI,
-		PropertyNameOfIdentifier: "key",
-		NonUniqueName:            true,
-		RequireAllFF:             []featureflags.FeatureFlag{featureflags.Experimental()},
+		ID:           UserActionAndSessionPropertiesMobile,
+		URLPath:      "/api/config/v1/applications/mobile/{SCOPE}/userActionAndSessionProperties",
+		Parent:       &applicationMobileAPI,
+		RequireAllFF: []featureflags.FeatureFlag{featureflags.Experimental()},
 	},
 }
