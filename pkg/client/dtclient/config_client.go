@@ -50,6 +50,12 @@ func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.
 
 		// The network-zone API doesn't have a POST endpoint, hence, we need to treat it as an update operation
 		// per default
+		if theApi.ID == api.UserActionAndSessionPropertiesMobile {
+			existingObjectID = objectName
+		}
+
+		// The network-zone API doesn't have a POST endpoint, hence, we need to treat it as an update operation
+		// per default
 		if theApi.ID == api.NetworkZone {
 			existingObjectID = objectName
 		}
