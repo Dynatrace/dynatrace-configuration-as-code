@@ -1,0 +1,40 @@
+configs:
+- id: prop1myapp1MOBILE_APPLICATION-EADDE70CD35C4FBE
+  config:
+    name: prop1myapp1
+    template: prop1myapp1.json
+    skip: false
+  type:
+    api:
+      name: user-action-and-session-properties-mobile #monaco-test:no-replace
+      scope:
+        configId: app1
+        configType: application-mobile
+        property: id
+        type: reference
+- id: prop1myapp2MOBILE_APPLICATION-1DC0D09F58CC4498
+  config:
+    name: prop1myapp2
+    template: prop1myapp2.json
+    skip: false
+  type:
+    api:
+      name: user-action-and-session-properties-mobile #monaco-test:no-replace
+      scope:
+        configId: app2
+        configType: application-mobile
+        property: id
+        type: reference
+- id: prop2myapp2MOBILE_APPLICATION-1DC0D09F58CC4498
+  config:
+    name: prop2myapp2
+    template: prop2myapp2.json
+    skip: false
+  type:
+    api:
+      name: user-action-and-session-properties-mobile #monaco-test:no-replace
+      scope:
+        configId: app2
+        configType: application-mobile
+        property: id
+        type: reference

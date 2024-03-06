@@ -1,0 +1,10 @@
+{
+  "aggregation": "LAST",
+  "cleanupRule": "",
+  "displayName": "Prop1MyApp1",
+  "name": "prop1myapp1",
+  "origin": "API",
+  "storeAsSessionProperty": true,
+  "storeAsUserActionProperty": false,
+  "type": "STRING"
+}

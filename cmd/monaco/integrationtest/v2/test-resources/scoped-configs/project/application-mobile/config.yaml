@@ -1,0 +1,15 @@
+configs:
+- id: app2
+  config:
+    name: MyApp2
+    template: app2.json
+    skip: false
+  type:
+    api: application-mobile
+- id: app1
+  config:
+    name: MyApp1
+    template: app1.json
+    skip: false
+  type:
+    api: application-mobile
