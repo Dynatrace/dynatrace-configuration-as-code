@@ -21,106 +21,99 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/net/context"
 	"net/http"
-	"strings"
 )
 
-type deleteValue struct {
-	pointer.DeletePointer
-	ID   string
-	Name string
-}
-
 // Delete removes the given pointer.DeletePointer entries from the environment the supplied client dtclient.Client connects to
-func Delete(ctx context.Context, client dtclient.Client, theApi api.API, entries []pointer.DeletePointer, targetApi string) error {
-	logger := log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID))
-
-	deleteErrs := 0
+func Delete(ctx context.Context, client dtclient.Client, theAPI api.API, dps []pointer.DeletePointer) error {
+	client = newCachedDTClient(client)
 	var err error
-	var delValues []deleteValue
 
-	// if the api is *not* a subpath api, we can just list all configs that exist for a given api and then filter the items that need to be deleted
-	if !theApi.HasParent() {
-		var values []dtclient.Value
-		values, err = client.ListConfigs(ctx, theApi)
-		if err != nil {
-			logger.WithFields(field.Error(err)).Error("Failed to fetch existing configs of API type %q - skipping deletion: %v", theApi.ID, err)
-			return err
-		}
-
-		delValues, err = filterValuesToDelete(logger, entries, values, theApi.ID)
-
-	} else {
-		// for sub-path APIs, it is a bit more complex. we need to query all entries of each scope defined we can delete it.
-
-		// map all entries by scope, so we can later filter them by scope
-		scopedMapped := map[string][]pointer.DeletePointer{}
-		for _, entry := range entries {
-			scopedMapped[entry.Scope] = append(scopedMapped[entry.Scope], entry)
-		}
-
-		for scope, scopeEntries := range scopedMapped {
-			a := theApi.Resolve(scope)
-
-			var values []dtclient.Value
-			values, err = client.ListConfigs(ctx, a)
-
-			if err != nil {
-				var respErr rest.RespError
-				if errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
-					logger.Debug("No config of type %q found to delete for scope %q :%s", theApi.ID, scope, respErr.Body)
-					err = nil
-				} else {
-					logger.WithFields(field.Error(err)).Error("Failed to fetch existing configs for api %q (scope: %s): %w", a.ID, scope, err)
-					deleteErrs++
-				}
+	for _, dp := range dps {
+		log := log.WithCtxFields(ctx).WithFields(field.Coordinate(dp.AsCoordinate()))
+		var id, parentID string
+		var e error
+		if theAPI.HasParent() {
+			parentID, e = resolveIdentifier(ctx, client, theAPI.Parent, dp.Scope)
+			if e != nil && !is404(e) {
+				log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w")
+				err = errors.Join(err, e)
+				continue
+			} else if parentID == "" {
+				log.Debug("parent doesn't exist - no need for action")
 				continue
 			}
-
-			var vals []deleteValue
-			vals, err = filterValuesToDelete(logger, scopeEntries, values, theApi.ID)
-
-			delValues = append(delValues, vals...)
 		}
-	}
 
+		a := theAPI.Resolve(parentID)
+		id, e = resolveIdentifier(ctx, client, &a, dp.Identifier)
+		if e != nil && !is404(e) {
+			log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w")
+			err = errors.Join(err, e)
+			continue
+		} else if id == "" {
+			log.Debug("config doesn't exist - no need for action")
+			continue
+		}
+
+		if e := client.DeleteConfigById(a, id); e != nil && !is404(e) {
+			log.WithFields(field.Error(e)).Error("failed to delete config: %w")
+			err = errors.Join(err, e)
+		}
+		log.Debug("successfully deleted")
+	}
+	return err
+}
+
+func is404(err error) bool {
+	var v rest.RespError
+	if errors.As(err, &v) {
+		return v.StatusCode == http.StatusNotFound
+	}
+	return false
+}
+
+// resolveIdentifier get the actual ID from DT and update entries with it
+func resolveIdentifier(ctx context.Context, client dtclient.Client, theAPI *api.API, identifier string) (string, error) {
+	knownValues, err := client.ListConfigs(ctx, *theAPI)
 	if err != nil {
-		deleteErrs++
+		return "", err
 	}
 
-	if len(delValues) == 0 {
-		logger.Debug("No values found to delete for type %q.", targetApi)
-		return err
+	id, err := findUniqueID(knownValues, identifier)
+	if err != nil {
+		return "", err
 	}
 
-	logger.Info("Deleting %d config(s) of type %q...", len(delValues), theApi.ID)
+	return id, nil
+}
 
-	for _, v := range delValues {
-		vLog := logger.WithFields(field.Coordinate(v.AsCoordinate()), field.F("value", v))
+func findUniqueID(knownValues []dtclient.Value, identifier string) (string, error) {
+	type resolvedID = string
+	var knownByName []resolvedID
+	var knownByID resolvedID
 
-		a := theApi
-		if a.HasParent() {
-			a = a.Resolve(v.DeletePointer.Scope)
+	for i := range knownValues {
+		if identifier == knownValues[i].Name {
+			knownByName = append(knownByName, knownValues[i].Id)
+		} else if identifier == knownValues[i].Id {
+			knownByID = knownValues[i].Id
 		}
-
-		vLog.Debug("Deleting %s with ID %s", targetApi, v.ID)
-		if err := client.DeleteConfigById(a, v.ID); err != nil {
-			vLog.Error("Failed to delete %s with ID %s: %v", a.ID, v.ID, err)
-			deleteErrs++
-		}
 	}
 
-	if deleteErrs > 0 {
-		return fmt.Errorf("failed to delete %d config(s) of type %q", deleteErrs, theApi.ID)
+	if len(knownByName) == 0 {
+		return knownByID, nil
 	}
-
-	return nil
+	if len(knownByName) == 1 { //unique identifier-id pair
+		return knownByName[0], nil
+	}
+	//multiple configs with this name found -> error
+	return "", fmt.Errorf("unable to find unique config - matching IDs are %s", knownByName)
 }
 
 // DeleteAll collects and deletes all classic API configuration objects using the provided ConfigClient.
@@ -138,6 +131,9 @@ func DeleteAll(ctx context.Context, client dtclient.ConfigClient, apis api.APIs)
 
 	for _, a := range apis {
 		logger := log.WithCtxFields(ctx).WithFields(field.Type(a.ID))
+		if a.HasParent() {
+			logger.Debug("Skipping %q, will be deleted by the parent api %q", a.ID, a.Parent)
+		}
 		logger.Info("Collecting configs of type %q...", a.ID)
 		values, err := client.ListConfigs(ctx, a)
 		if err != nil {
@@ -164,73 +160,4 @@ func DeleteAll(ctx context.Context, client dtclient.ConfigClient, apis api.APIs)
 	}
 
 	return nil
-}
-
-// filterValuesToDelete filters the given values for only values we want to delete.
-// We first search the names of the config-to-be-deleted, and if we find it, return them.
-// If we don't find it, we look if the name is actually an id, and if we find it, return them.
-// If a given name is found multiple times, we return an error for each name.
-func filterValuesToDelete(logger loggers.Logger, entries []pointer.DeletePointer, existingValues []dtclient.Value, apiName string) ([]deleteValue, error) {
-
-	toDeleteByDelPtr := make(map[pointer.DeletePointer][]dtclient.Value, len(entries))
-	valuesById := make(map[string]dtclient.Value, len(existingValues))
-
-	for _, v := range existingValues {
-		valuesById[v.Id] = v
-
-		for _, entry := range entries {
-			if toDeleteByDelPtr[entry] == nil {
-				toDeleteByDelPtr[entry] = []dtclient.Value{}
-			}
-
-			if v.Name == entry.Identifier {
-				toDeleteByDelPtr[entry] = append(toDeleteByDelPtr[entry], v)
-			}
-		}
-	}
-
-	result := make([]deleteValue, 0, len(entries))
-	filterErr := false
-
-	for delPtr, valuesToDelete := range toDeleteByDelPtr {
-
-		switch len(valuesToDelete) {
-		case 1:
-			result = append(result, deleteValue{
-				DeletePointer: delPtr,
-				ID:            valuesToDelete[0].Id,
-				Name:          valuesToDelete[0].Name,
-			})
-		case 0:
-			v, found := valuesById[delPtr.Identifier]
-
-			if found {
-				result = append(result, deleteValue{
-					DeletePointer: delPtr,
-					ID:            v.Id,
-					Name:          v.Name,
-				})
-			} else {
-				logger.WithFields(field.F("expectedID", delPtr.Identifier)).Debug("No config of type %s found with the name or ID %q", apiName, delPtr.Identifier)
-			}
-
-		default:
-			// multiple configs with this name found -> error
-			matches := strings.Builder{}
-			for i, v := range valuesToDelete {
-				matches.WriteString(v.Id)
-				if i < len(valuesToDelete)-1 {
-					matches.WriteString(", ")
-				}
-			}
-			logger.WithFields(field.F("expectedID", delPtr.Identifier)).Error("Unable to delete unique config - multiple configs of type %q found with the name %q. Please manually delete the desired configuration(s) with IDs: %s", apiName, delPtr.Identifier, matches.String())
-			filterErr = true
-		}
-	}
-
-	if filterErr {
-		return result, fmt.Errorf("failed to identify all configurations to be deleted")
-	}
-
-	return result, nil
 }
