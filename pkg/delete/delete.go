@@ -54,8 +54,9 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 		}
 
 		var err error
-		if targetApi, isClassicAPI := apis[entryType]; isClassicAPI {
-			err = classic.Delete(ctx, clients.Classic, targetApi, entries, entryType)
+
+		if theAPI, isClassicAPI := apis[entryType]; isClassicAPI {
+			err = classic.Delete(ctx, clients.Classic, theAPI, entries)
 		} else if targetAutomation, isAutomationAPI := automationResources[entryType]; isAutomationAPI {
 			if reflect.ValueOf(clients.Automation).IsNil() {
 				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), entryType)
