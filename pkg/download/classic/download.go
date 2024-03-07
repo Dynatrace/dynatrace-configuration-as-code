@@ -96,7 +96,7 @@ func getConfigsFromCustomConfigs(customConfigs []downloadedConfig) []config.Conf
 func downloadConfigs(client dtclient.Client, api api.API, projectName string, filters ContentFilters) []downloadedConfig {
 	var results []downloadedConfig
 	logger := log.WithFields(field.Type(api.ID))
-	foundValues, err := findConfigsToDownload(client, api)
+	foundValues, err := findConfigsToDownload(client, api, filters)
 	if err != nil {
 		logger.WithFields(field.Error(err)).Error("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", api.ID, err)
 		return results
@@ -162,10 +162,17 @@ type value struct {
 	parentConfigId string
 }
 
+func (v value) id() string {
+	if v.value.Id == v.parentConfigId {
+		return v.value.Id
+	}
+	return v.value.Id + v.parentConfigId
+}
+
 // findConfigsToDownload tries to identify all values that should be downloaded from a Dynatrace environment for
 // the given API
-func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (values, error) {
-	if apiToDownload.SingleConfiguration {
+func findConfigsToDownload(client dtclient.Client, apiToDownload api.API, filters ContentFilters) (values, error) {
+	if apiToDownload.SingleConfiguration && !apiToDownload.HasParent() {
 		log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching singleton-configuration '%v'", apiToDownload.ID)
 
 		// singleton-config. We use the api-id as mock-id
@@ -175,13 +182,23 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (value
 	log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching all '%v' configs", apiToDownload.ID)
 
 	if apiToDownload.HasParent() {
-		parentAPI := api.NewAPIs()[apiToDownload.Parent]
 		var res values
-		parentAPIValues, err := client.ListConfigs(context.TODO(), parentAPI)
+		parentAPIValues, err := client.ListConfigs(context.TODO(), *apiToDownload.Parent)
 		if err != nil {
 			return values{}, err
 		}
 		for _, parentAPIValue := range parentAPIValues {
+
+			if skipDownload(*apiToDownload.Parent, parentAPIValue, filters) {
+				continue
+			}
+
+			if apiToDownload.SingleConfiguration {
+				vv := dtclient.Value{Id: parentAPIValue.Id, Name: parentAPIValue.Id, Owner: parentAPIValue.Owner}
+				res = append(res, value{value: vv, parentConfigId: parentAPIValue.Id})
+				continue
+			}
+
 			apiValues, err := client.ListConfigs(context.TODO(), apiToDownload.Resolve(parentAPIValue.Id))
 			if err != nil {
 				return values{}, err
@@ -192,6 +209,7 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API) (value
 		}
 		return res, nil
 	}
+
 	var res values
 	vals, err := client.ListConfigs(context.TODO(), apiToDownload)
 	for _, v := range vals {
@@ -243,15 +261,14 @@ func shouldFilter() bool {
 }
 
 func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value value) ([]map[string]interface{}, error) {
-	var response []byte
-	var err error
+	id := value.value.Id
 
+	// check if we should skip the id to enforce to read/download "all" configs instead of a single one
 	if theApi.HasParent() && theApi.ID != api.UserActionAndSessionPropertiesMobile {
-		response, err = client.ReadConfigById(theApi.Resolve(value.parentConfigId), "") // skipping the id to enforce to read/download "all" configs instead of a single one
-	} else {
-		response, err = client.ReadConfigById(theApi.Resolve(value.parentConfigId), value.value.Id)
+		id = ""
 	}
 
+	response, err := client.ReadConfigById(theApi.Resolve(value.parentConfigId), id)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +303,7 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	}
 
 	if theApi.HasParent() {
-		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent, value.parentConfigId, "id")
+		params[config.ScopeParameter] = reference.New(projectId, theApi.Parent.ID, value.parentConfigId, "id")
 	}
 
 	coord := coordinate.Coordinate{
@@ -309,6 +326,6 @@ func createTemplate(mappedJson map[string]interface{}, value value, apiId string
 	if err != nil {
 		return nil, err
 	}
-	templ := template.NewInMemoryTemplate(value.value.Id+value.parentConfigId, string(bytes))
+	templ := template.NewInMemoryTemplate(value.id(), string(bytes))
 	return templ, nil
 }

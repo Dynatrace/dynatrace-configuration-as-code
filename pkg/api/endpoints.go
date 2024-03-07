@@ -84,6 +84,35 @@ const (
 	UserActionAndSessionPropertiesMobile = "user-action-and-session-properties-mobile"
 )
 
+func removeURLsFromPublicAccess(m map[string]any) {
+	if publicAccess, found := m["publicAccess"]; found {
+		publicAccessMap := publicAccess.(map[string]any)
+		delete(publicAccessMap, "urls")
+	}
+}
+
+// Dashboard has DashboardShareSettings as child API and so is defined here explicitly
+var dashboardAPI = API{
+	ID:                           Dashboard,
+	URLPath:                      "/api/config/v1/dashboards",
+	PropertyNameOfGetAllResponse: "dashboards",
+	NonUniqueName:                true,
+}
+
+// ApplicationWeb has KeyUserActionsWeb as a child API and so is defined here explicitly
+var applicationWebAPI = API{
+	ID:                           ApplicationWeb,
+	URLPath:                      "/api/config/v1/applications/web",
+	PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
+}
+
+// ApplicationMobile has KeyUserActionsMobile and UserActionAndSessionPropertiesMobile as child APIs and so is defined here explicitly
+var applicationMobileAPI = API{
+	ID:                           ApplicationMobile,
+	URLPath:                      "/api/config/v1/applications/mobile",
+	PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
+}
+
 // configEndpoints is map of the http endpoints for configuration API (aka classic/config endpoints).
 var configEndpoints = []API{
 	{
@@ -116,11 +145,14 @@ var configEndpoints = []API{
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 		DeprecatedBy:                 "builtin:tags.auto-tagging",
 	},
+	dashboardAPI,
 	{
-		ID:                           Dashboard,
-		URLPath:                      "/api/config/v1/dashboards",
-		PropertyNameOfGetAllResponse: "dashboards",
-		NonUniqueName:                true,
+		ID:                  DashboardShareSettings,
+		URLPath:             "/api/config/v1/dashboards/{SCOPE}/shareSettings",
+		Parent:              &dashboardAPI,
+		SingleConfiguration: true,
+		TweakResponseFunc:   removeURLsFromPublicAccess,
+		RequireAllFF:        []featureflags.FeatureFlag{featureflags.DashboardShareSettings()},
 	},
 	{
 		ID:                           Notification,
@@ -190,16 +222,8 @@ var configEndpoints = []API{
 		URLPath:                      "/api/v1/synthetic/monitors",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
-	{
-		ID:                           ApplicationWeb,
-		URLPath:                      "/api/config/v1/applications/web",
-		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
-	},
-	{
-		ID:                           ApplicationMobile,
-		URLPath:                      "/api/config/v1/applications/mobile",
-		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
-	},
+	applicationWebAPI,
+	applicationMobileAPI,
 	{
 		ID:                           AppDetectionRule,
 		URLPath:                      "/api/config/v1/applicationDetectionRules",
@@ -432,21 +456,21 @@ var configEndpoints = []API{
 		ID:                           KeyUserActionsMobile,
 		URLPath:                      "/api/config/v1/applications/mobile/{SCOPE}/keyUserActions",
 		PropertyNameOfGetAllResponse: "keyUserActions",
-		Parent:                       ApplicationMobile,
+		Parent:                       &applicationMobileAPI,
 		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.Experimental()},
 	},
 	{
-		ID:                           "key-user-actions-web",
+		ID:                           KeyUserActionsWeb,
 		URLPath:                      "/api/config/v1/applications/web/{SCOPE}/keyUserActions",
 		PropertyNameOfGetAllResponse: "keyUserActionList",
-		Parent:                       ApplicationWeb,
+		Parent:                       &applicationWebAPI,
 		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.Experimental()},
 		TweakResponseFunc:            func(m map[string]any) { delete(m, "meIdentifier") },
 	},
 	{
 		ID:                       UserActionAndSessionPropertiesMobile,
 		URLPath:                  "/api/config/v1/applications/mobile/{SCOPE}/userActionAndSessionProperties",
-		Parent:                   ApplicationMobile,
+		Parent:                   &applicationMobileAPI,
 		PropertyNameOfIdentifier: "key",
 		NonUniqueName:            true,
 		RequireAllFF:             []featureflags.FeatureFlag{featureflags.Experimental()},

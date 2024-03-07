@@ -61,7 +61,7 @@ type API struct {
 	TweakResponseFunc func(map[string]any)
 	// Parent is used for SubPath APIs to store information about the configuration type and ID of the related
 	// configuration once Resolved() is called.
-	Parent string
+	Parent *API
 	// RequireAllFF lists all feature flags that needs to be enabled in order to utilize this API
 	RequireAllFF []featureflags.FeatureFlag
 	// PropertyNameOfIdentifier defines the id field if it's not called 'ID'
@@ -77,7 +77,7 @@ func (a API) CreateURL(environmentURL string) string {
 // In this case "mobile-application" would be the parent API, which is also reflected in the URLs to be used to query
 // and create key user actions.
 func (a API) HasParent() bool {
-	return len(a.Parent) > 0
+	return a.Parent != nil
 }
 
 func (a API) IsStandardAPI() bool {
