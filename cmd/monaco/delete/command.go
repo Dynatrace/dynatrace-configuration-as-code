@@ -39,11 +39,10 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 	deleteCmd = &cobra.Command{
 		Use:     "delete --manifest <manifest.yaml> --file <delete.yaml>",
 		Short:   "Delete configurations defined in delete.yaml from the environments defined in the manifest",
-		Example: "monaco delete --manifest manifest.yaml --file delete.yaml -e dev-environment",
+		Example: "monaco delete --manifest manifest.yaml --file delete.yaml --environment dev-environment",
 		Args:    cobra.NoArgs,
 		PreRun:  cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			if !files.IsYamlFileExtension(manifestName) {
 				err := fmt.Errorf("wrong format for manifest file! Expected a .yaml file, but got %s", manifestName)
 				return err
