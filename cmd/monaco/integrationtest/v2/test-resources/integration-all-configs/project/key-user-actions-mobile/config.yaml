@@ -1,7 +1,20 @@
 configs:
 - id: key-user-action-1
   config:
-    name: abc
+    name: key user action mobile
+    template: key-user-action.json
+    skip: false
+  type:
+    api:
+      name: key-user-actions-mobile #monaco-test:no-replace
+      scope:
+        configType: application-mobile
+        configId: mobile-application
+        property: id
+        type: reference
+- id: key-user-action-2
+  config:
+    name: key user action mobile 2
     template: key-user-action.json
     skip: false
   type:
