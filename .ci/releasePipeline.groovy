@@ -292,7 +292,7 @@ class GithubRelease {
 
     void addToRelease(Context ctx, Release release) {
         githubTools.pushFileToRelease(rleaseName: release.binary.name(), source: release.binary.localPath(), releaseId: this.releaseId)
-        githubTools.pushFileToRelease(rleaseName: "${release.binary.name()}.sha", source: release.binary.shaPath(), releaseId: this.releaseId)
+        githubTools.pushFileToRelease(rleaseName: "${release.binary.name()}.sha256", source: release.binary.shaPath(), releaseId: this.releaseId)
     }
 }
 
