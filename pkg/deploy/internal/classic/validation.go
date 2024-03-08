@@ -42,7 +42,7 @@ func (v *Validator) Validate(c config.Config) error {
 	}
 
 	a, ok := c.Type.(config.ClassicApiType)
-	if !ok || apis[a.Api].NonUniqueName {
+	if !ok || apis[a.Api].NonUniqueName || apis[a.Api].HasParent() {
 		return nil
 	}
 
