@@ -50,6 +50,12 @@ func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.
 
 		// The network-zone API doesn't have a POST endpoint, hence, we need to treat it as an update operation
 		// per default
+		if theApi.ID == api.UserActionAndSessionPropertiesMobile {
+			existingObjectID = objectName
+		}
+
+		// The network-zone API doesn't have a POST endpoint, hence, we need to treat it as an update operation
+		// per default
 		if theApi.ID == api.NetworkZone {
 			existingObjectID = objectName
 		}
@@ -613,10 +619,10 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 		// The entries are potentially duplicated, that's why we need to map by the unique key
 		entries := map[string]Value{}
 		for _, entry := range jsonResp.UserActionProperties {
-			entries[entry.Key] = Value{Id: entry.Key, Name: entry.DisplayName}
+			entries[entry.Key] = Value{Id: entry.Key, Name: entry.Key}
 		}
 		for _, entry := range jsonResp.SessionProperties {
-			entries[entry.Key] = Value{Id: entry.Key, Name: entry.DisplayName}
+			entries[entry.Key] = Value{Id: entry.Key, Name: entry.Key}
 		}
 		values = maps.Values(entries)
 

@@ -1,0 +1,10 @@
+{
+  "aggregation": "LAST",
+  "cleanupRule": "",
+  "displayName": "prop2App2",
+  "name": "proppy",
+  "origin": "API",
+  "storeAsSessionProperty": true,
+  "storeAsUserActionProperty": false,
+  "type": "STRING"
+}
