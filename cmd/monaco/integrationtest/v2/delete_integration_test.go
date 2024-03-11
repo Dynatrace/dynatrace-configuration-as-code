@@ -389,7 +389,7 @@ configs:
 	assert.NoError(t, err)
 
 	//Assert key-user-action is deleted
-	integrationtest.AssertConfig(t, context.TODO(), clientSet.Classic(), apis["key-user-actions-mobile"].Resolve(appID), env, false, config.Config{
+	integrationtest.AssertConfig(t, context.TODO(), clientSet.Classic(), apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "key-user-actions-mobile",
