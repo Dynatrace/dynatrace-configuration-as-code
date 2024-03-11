@@ -19,6 +19,7 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -203,7 +204,7 @@ func getConfigFromDefinition(
 			parameters[config.NameParameter] = name
 		}
 
-	} else if configType.Type.ID() == config.ClassicApiTypeId {
+	} else if (configType.Type.ID() == config.ClassicApiTypeId) && (configType.GetApiType() != api.DashboardShareSettings) {
 		errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, "missing parameter `name`"))
 	}
 

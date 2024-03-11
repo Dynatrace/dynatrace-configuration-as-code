@@ -261,9 +261,9 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 	}
 
 	if theApi.NonUniqueName {
-		log.WithCtxFields(ctx).Debug("Created/Updated object by ID for %s (%s)", objectName, existingObjectId)
+		log.WithCtxFields(ctx).Debug("Created/Updated object by ID for %s", getNameIDDescription(objectName, existingObjectId))
 	} else {
-		log.WithCtxFields(ctx).Debug("Updated existing object for %s (%s)", objectName, existingObjectId)
+		log.WithCtxFields(ctx).Debug("Updated existing object for %s", getNameIDDescription(objectName, existingObjectId))
 	}
 
 	return DynatraceEntity{
@@ -271,6 +271,14 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 		Name:        objectName,
 		Description: "Updated existing object",
 	}, nil
+}
+
+func getNameIDDescription(objectName, objectID string) string {
+	if objectName == "" {
+		return objectID
+	}
+
+	return fmt.Sprintf("%s (%s)", objectName, objectID)
 }
 
 func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
