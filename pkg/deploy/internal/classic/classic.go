@@ -50,9 +50,13 @@ func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.AP
 		apiToDeploy = apiToDeploy.ApplyParentObjectID(scope)
 	}
 
-	configName, err := extract.ConfigName(conf, properties)
-	if err != nil {
-		return entities.ResolvedEntity{}, err
+	configName := ""
+	var err error
+	if t.Api != api.DashboardShareSettings {
+		configName, err = extract.ConfigName(conf, properties)
+		if err != nil {
+			return entities.ResolvedEntity{}, err
+		}
 	}
 
 	if apiToDeploy.DeprecatedBy != "" {

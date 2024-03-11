@@ -44,7 +44,7 @@ func Test_parseConfigs(t *testing.T) {
 	testLoaderContext := &LoaderContext{
 		ProjectId: "project",
 		Path:      "some-dir/",
-		KnownApis: map[string]struct{}{"some-api": {}},
+		KnownApis: map[string]struct{}{"some-api": {}, "dashboard-share-settings": {}},
 		Environments: []manifest.EnvironmentDefinition{
 			{
 				Name:  "env name",
@@ -943,7 +943,7 @@ configs:
 			},
 		},
 		{
-			name:             "reports error if config API is missing name",
+			name:             "reports error if some-api API is missing name",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -954,6 +954,42 @@ configs:
   type: some-api
 `,
 			wantErrorsContain: []string{"missing parameter `name`"},
+		},
+		{
+			name:             "dashboard-share-settings do not require a name",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    template: 'profile.json'
+  type:
+    api:
+      name: dashboard-share-settings
+      scope:
+        configId: 12345678-1234-1234-1234-123456789012
+        configType: dashboard
+        property: id
+        type: reference`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "dashboard-share-settings",
+						ConfigId: "profile-id",
+					},
+					Type: config.ClassicApiType{
+						Api: "dashboard-share-settings",
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.ScopeParameter: ref.New("project", "dashboard", "12345678-1234-1234-1234-123456789012", "id")},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
 		},
 		{
 			name:             "Settings do not require a name",
