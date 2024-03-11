@@ -32,7 +32,7 @@ func TestDeployScopedConfigurations(t *testing.T) {
 	configFolder := "test-resources/scoped-configs/"
 	environment := "classic_env"
 	manifest := configFolder + "manifest.yaml"
-	envVars := map[string]string{featureflags.Experimental().EnvName(): "true"}
+	envVars := map[string]string{featureflags.MRumProperties().EnvName(): "true"}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, environment, "ScopedConfigs", envVars, func(fs afero.Fs, _ TestContext) {
 

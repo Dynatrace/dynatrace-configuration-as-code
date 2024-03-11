@@ -45,7 +45,7 @@ func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	envVars := map[string]string{featureflags.Experimental().EnvName(): "true"}
+	envVars := map[string]string{featureflags.MRumProperties().EnvName(): "true"}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
 
@@ -71,7 +71,7 @@ func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 func TestIntegrationValidationAllConfigs(t *testing.T) {
 
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
-	t.Setenv(featureflags.Experimental().EnvName(), "true")
+	t.Setenv(featureflags.MRumProperties().EnvName(), "true")
 
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"

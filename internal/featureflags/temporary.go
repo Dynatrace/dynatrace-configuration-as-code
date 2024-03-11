@@ -90,3 +90,12 @@ func DashboardShareSettings() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+// MRumProperties toggles whether the key user actions, user actions and session properties for mobile/web applications are downloaded and / or deployed.
+// Introduced: 2024-03-11; v2.12.0
+func MRumProperties() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_MRUM_PROPERTIES",
+		defaultEnabled: false,
+	}
+}

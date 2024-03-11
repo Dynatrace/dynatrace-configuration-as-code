@@ -92,7 +92,7 @@ func Test_prepareAPIs(t *testing.T) {
 	t.Run("require to set all of listed FF", func(t *testing.T) {
 		testApi := api.API{
 			ID:           "test-endpoint",
-			RequireAllFF: []featureflags.FeatureFlag{featureflags.Experimental(), featureflags.ExtractScopeAsParameter()},
+			RequireAllFF: []featureflags.FeatureFlag{featureflags.MRumProperties(), featureflags.ExtractScopeAsParameter()},
 		}
 		type given struct {
 			apis api.APIs
@@ -107,7 +107,7 @@ func Test_prepareAPIs(t *testing.T) {
 				name: "with set FF",
 				given: given{
 					apis: api.APIs{testApi.ID: testApi},
-					ff:   []featureflags.FeatureFlag{featureflags.Experimental(), featureflags.ExtractScopeAsParameter()},
+					ff:   []featureflags.FeatureFlag{featureflags.MRumProperties(), featureflags.ExtractScopeAsParameter()},
 				},
 				expected: api.APIs{testApi.ID: testApi},
 			},
@@ -122,7 +122,7 @@ func Test_prepareAPIs(t *testing.T) {
 				name: "with only one FF set",
 				given: given{
 					apis: api.APIs{testApi.ID: testApi},
-					ff:   []featureflags.FeatureFlag{featureflags.Experimental()},
+					ff:   []featureflags.FeatureFlag{featureflags.MRumProperties()},
 				},
 				expected: api.APIs{},
 			},
