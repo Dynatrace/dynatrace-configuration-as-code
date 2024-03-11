@@ -93,9 +93,9 @@ func TestDownload_KeyUserActionMobile(t *testing.T) {
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(context.TODO(), apiMap[api.ApplicationMobile]).Return([]dtclient.Value{{Id: applicationId, Name: "some-application-name"}}, nil).Times(2)
-	c.EXPECT().ListConfigs(context.TODO(), apiMap[api.KeyUserActionsMobile].Resolve(applicationId)).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil).Times(1)
+	c.EXPECT().ListConfigs(context.TODO(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId)).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil).Times(1)
 	c.EXPECT().ReadConfigById(apiMap[api.ApplicationMobile], applicationId).Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil).Times(1)
-	c.EXPECT().ReadConfigById(apiMap[api.KeyUserActionsMobile].Resolve(applicationId), "").Return([]byte(`{}`), nil).Times(1)
+	c.EXPECT().ReadConfigById(apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId), "").Return([]byte(`{}`), nil).Times(1)
 
 	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
 	require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestDownload_KeyUserActionWeb(t *testing.T) {
 	ctx := context.TODO()
 	apis := api.NewAPIs()
 	c.EXPECT().ListConfigs(ctx, matcher.EqAPI(apis["application-web"])).Return([]dtclient.Value{{Id: "applicationID", Name: "web-application"}}, nil)
-	c.EXPECT().ListConfigs(ctx, matcher.EqAPI((apis["key-user-actions-web"].Resolve("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
+	c.EXPECT().ListConfigs(ctx, matcher.EqAPI((apis["key-user-actions-web"].ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
 	c.EXPECT().ReadConfigById(gomock.Any(), "").Return([]byte(`{"keyUserActionList":[{"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"}]}`), nil)
 
 	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{"key-user-actions-web"}))

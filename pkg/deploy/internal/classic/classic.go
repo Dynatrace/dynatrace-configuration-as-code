@@ -47,7 +47,7 @@ func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.AP
 		if err != nil {
 			return entities.ResolvedEntity{}, fmt.Errorf("failed to extract scope for config %q", conf.Type.ID())
 		}
-		apiToDeploy = apiToDeploy.Resolve(scope)
+		apiToDeploy = apiToDeploy.ApplyParentObjectID(scope)
 	}
 
 	configName, err := extract.ConfigName(conf, properties)

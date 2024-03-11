@@ -59,9 +59,10 @@ type API struct {
 	// TweakResponseFunc can be optionally registered to add custom code that changes the
 	// payload of the downloaded api content (e.g. to exclude unwanted/unnecessary fields)
 	TweakResponseFunc func(map[string]any)
-	// Parent is used for SubPath APIs to store information about the configuration type and ID of the related
-	// configuration once Resolved() is called.
+	// Parent is used for SubPath APIs to store the related configuration.
 	Parent *API
+	// ParentObjectID is the parent object ID for a SubPath API once it has been applied.
+	ParentObjectID string
 	// RequireAllFF lists all feature flags that needs to be enabled in order to utilize this API
 	RequireAllFF []featureflags.FeatureFlag
 	// PropertyNameOfIdentifier defines the id field if it's not called 'ID'
@@ -84,9 +85,11 @@ func (a API) IsStandardAPI() bool {
 	return a.PropertyNameOfGetAllResponse == StandardApiPropertyNameOfGetAllResponse
 }
 
-func (a API) Resolve(value string) API {
+// ApplyParentObjectID returns a new API instance with the specified parent object ID applied within the URLPath.
+func (a API) ApplyParentObjectID(parentObjectID string) API {
 	newA := a
-	newA.URLPath = strings.ReplaceAll(a.URLPath, "{SCOPE}", value)
+	newA.URLPath = strings.ReplaceAll(a.URLPath, "{SCOPE}", parentObjectID)
+	newA.ParentObjectID = parentObjectID
 	return newA
 }
 

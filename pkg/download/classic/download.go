@@ -199,7 +199,7 @@ func findConfigsToDownload(client dtclient.Client, apiToDownload api.API, filter
 				continue
 			}
 
-			apiValues, err := client.ListConfigs(context.TODO(), apiToDownload.Resolve(parentAPIValue.Id))
+			apiValues, err := client.ListConfigs(context.TODO(), apiToDownload.ApplyParentObjectID(parentAPIValue.Id))
 			if err != nil {
 				return values{}, err
 			}
@@ -268,7 +268,7 @@ func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value va
 		id = ""
 	}
 
-	response, err := client.ReadConfigById(theApi.Resolve(value.parentConfigId), id)
+	response, err := client.ReadConfigById(theApi.ApplyParentObjectID(value.parentConfigId), id)
 	if err != nil {
 		return nil, err
 	}

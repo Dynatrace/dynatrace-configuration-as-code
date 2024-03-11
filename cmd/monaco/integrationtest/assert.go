@@ -149,7 +149,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						assert.NotEmpty(t, properties[config.ScopeParameter], "subPathAPI config is missing scope")
 						scope, ok := properties[config.ScopeParameter].(string)
 						assert.True(t, ok, "scope property could not be resolved to string, but was ", properties[config.ScopeParameter])
-						theApi = theApi.Resolve(scope)
+						theApi = theApi.ApplyParentObjectID(scope)
 					}
 
 					foundID = AssertConfig(t, ctx, clients.Classic(), theApi, env, available, theConfig, configName)

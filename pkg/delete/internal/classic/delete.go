@@ -50,7 +50,7 @@ func Delete(ctx context.Context, client dtclient.Client, theAPI api.API, dps []p
 			}
 		}
 
-		a := theAPI.Resolve(parentID)
+		a := theAPI.ApplyParentObjectID(parentID)
 		id, e = resolveIdentifier(ctx, client, &a, dp.Identifier)
 		if e != nil && !is404(e) {
 			log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w")

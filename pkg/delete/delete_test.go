@@ -660,11 +660,11 @@ func TestConfigsWithParent(t *testing.T) {
 					response: []dtclient.Value{{Id: "APP-ID", Name: "application name"}},
 				},
 				list: &listMock{
-					api:      theAPI.Resolve("APP-ID"),
+					api:      theAPI.ApplyParentObjectID("APP-ID"),
 					response: []dtclient.Value{{Id: "DT-id-of-app", Name: "test"}},
 				},
 				del: &delMock{
-					api: theAPI.Resolve("APP-ID"),
+					api: theAPI.ApplyParentObjectID("APP-ID"),
 					id:  "DT-id-of-app",
 				},
 			},
@@ -686,7 +686,7 @@ func TestConfigsWithParent(t *testing.T) {
 					response: []dtclient.Value{{Id: "APP-ID", Name: "application name"}},
 				},
 				list: &listMock{
-					api: theAPI.Resolve("APP-ID"),
+					api: theAPI.ApplyParentObjectID("APP-ID"),
 					err: monacoREST.RespError{Err: fmt.Errorf("FAIL"), StatusCode: http.StatusBadRequest},
 				}},
 			forDelete: delete.DeleteEntries{
@@ -744,7 +744,7 @@ func TestConfigsWithParent(t *testing.T) {
 					response: []dtclient.Value{{Id: "APP-ID", Name: "application name"}},
 				},
 				list: &listMock{
-					api:      theAPI.Resolve("APP-ID"),
+					api:      theAPI.ApplyParentObjectID("APP-ID"),
 					response: []dtclient.Value{{Id: "12345", Name: "your princess is in another castle"}},
 				},
 			},
@@ -766,11 +766,11 @@ func TestConfigsWithParent(t *testing.T) {
 					response: []dtclient.Value{{Id: "APP-ID", Name: "application name"}},
 				},
 				list: &listMock{
-					api:      theAPI.Resolve("APP-ID"),
+					api:      theAPI.ApplyParentObjectID("APP-ID"),
 					response: []dtclient.Value{{Id: "DT-id-of-app", Name: "test"}},
 				},
 				del: &delMock{
-					api: theAPI.Resolve("APP-ID"),
+					api: theAPI.ApplyParentObjectID("APP-ID"),
 					id:  "DT-id-of-app",
 					err: monacoREST.RespError{Err: fmt.Errorf("GONE ALREADY"), StatusCode: http.StatusNotFound},
 				},
@@ -793,11 +793,11 @@ func TestConfigsWithParent(t *testing.T) {
 					response: []dtclient.Value{{Id: "APP-ID", Name: "application name"}},
 				},
 				list: &listMock{
-					api:      theAPI.Resolve("APP-ID"),
+					api:      theAPI.ApplyParentObjectID("APP-ID"),
 					response: []dtclient.Value{{Id: "DT-id-of-app", Name: "test"}},
 				},
 				del: &delMock{
-					api: theAPI.Resolve("APP-ID"),
+					api: theAPI.ApplyParentObjectID("APP-ID"),
 					id:  "DT-id-of-app",
 					err: fmt.Errorf("FAILED"),
 				},
