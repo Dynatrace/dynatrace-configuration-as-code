@@ -457,20 +457,20 @@ var configEndpoints = []API{
 		URLPath:                      "/api/config/v1/applications/mobile/{SCOPE}/keyUserActions",
 		PropertyNameOfGetAllResponse: "keyUserActions",
 		Parent:                       &applicationMobileAPI,
-		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.Experimental()},
+		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.MRumProperties()},
 	},
 	{
 		ID:                           KeyUserActionsWeb,
 		URLPath:                      "/api/config/v1/applications/web/{SCOPE}/keyUserActions",
 		PropertyNameOfGetAllResponse: "keyUserActionList",
 		Parent:                       &applicationWebAPI,
-		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.Experimental()},
+		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.MRumProperties()},
 		TweakResponseFunc:            func(m map[string]any) { delete(m, "meIdentifier") },
 	},
 	{
 		ID:           UserActionAndSessionPropertiesMobile,
 		URLPath:      "/api/config/v1/applications/mobile/{SCOPE}/userActionAndSessionProperties",
 		Parent:       &applicationMobileAPI,
-		RequireAllFF: []featureflags.FeatureFlag{featureflags.Experimental()},
+		RequireAllFF: []featureflags.FeatureFlag{featureflags.MRumProperties()},
 	},
 }

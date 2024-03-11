@@ -19,7 +19,6 @@
 package delete
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
@@ -173,7 +172,6 @@ func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
 }
 
 func TestLoadEntriesToDelete(t *testing.T) {
-	t.Setenv(featureflags.Experimental().EnvName(), "true")
 
 	tests := []struct {
 		name             string
