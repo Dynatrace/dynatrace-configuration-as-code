@@ -61,8 +61,8 @@ type API struct {
 	TweakResponseFunc func(map[string]any)
 	// Parent is used for SubPath APIs to store the related configuration.
 	Parent *API
-	// ParentObjectID is the parent object ID for a SubPath API once it has been applied.
-	ParentObjectID string
+	// AppliedParentObjectID is the parent object ID for a SubPath API once it has been applied.
+	AppliedParentObjectID string
 	// RequireAllFF lists all feature flags that needs to be enabled in order to utilize this API
 	RequireAllFF []featureflags.FeatureFlag
 	// PropertyNameOfIdentifier defines the id field if it's not called 'ID'
@@ -89,7 +89,7 @@ func (a API) IsStandardAPI() bool {
 func (a API) ApplyParentObjectID(parentObjectID string) API {
 	newA := a
 	newA.URLPath = strings.ReplaceAll(a.URLPath, "{SCOPE}", parentObjectID)
-	newA.ParentObjectID = parentObjectID
+	newA.AppliedParentObjectID = parentObjectID
 	return newA
 }
 
