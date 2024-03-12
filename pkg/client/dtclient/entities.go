@@ -53,6 +53,10 @@ type Value struct {
 
 	// Type is used by synthetic-locations to indicate whether it is a PRIVATE location or not.
 	Type *string `json:"type,omitempty"`
+
+	// CustomFields holds additional fields. Note that this is not set automatically but would need to be populated
+	// when unmarshalling the payload
+	CustomFields map[string]any `json:"-"`
 }
 
 type SyntheticValue struct {

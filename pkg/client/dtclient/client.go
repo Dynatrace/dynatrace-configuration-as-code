@@ -471,7 +471,7 @@ func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, n
 
 func (d *DynatraceClient) configExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
 	apiURL := api.CreateURL(d.environmentURLClassic)
-	existingObjectId, err := d.getObjectIdIfAlreadyExists(ctx, api, apiURL, name)
+	existingObjectId, err := d.getObjectIdIfAlreadyExists(ctx, api, apiURL, name, nil)
 	return existingObjectId != "", existingObjectId, err
 }
 
