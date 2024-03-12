@@ -42,7 +42,7 @@ func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.
 		// Single configuration APIs don't have an id which allows skipping this step
 		if !theApi.SingleConfiguration {
 			var err error
-			existingObjectID, err = d.getObjectIdIfAlreadyExists(ctx, theApi, theApi.CreateURL(d.environmentURLClassic), objectName)
+			existingObjectID, err = d.getObjectIdIfAlreadyExists(ctx, theApi, theApi.CreateURL(d.environmentURLClassic), objectName, payload)
 			if err != nil {
 				return DynatraceEntity{}, err
 			}
@@ -421,8 +421,8 @@ func getLocationFromHeader(resp rest.Response) ([]string, bool) {
 	return make([]string, 0), false
 }
 
-func (d *DynatraceClient) getObjectIdIfAlreadyExists(ctx context.Context, api api.API, url string, objectName string) (string, error) {
-	values, err := d.getExistingValuesFromEndpoint(ctx, api, url)
+func (d *DynatraceClient) getObjectIdIfAlreadyExists(ctx context.Context, theAPI api.API, url string, objectName string, payload []byte) (string, error) {
+	values, err := d.getExistingValuesFromEndpoint(ctx, theAPI, url)
 
 	if err != nil {
 		return "", err
@@ -432,11 +432,22 @@ func (d *DynatraceClient) getObjectIdIfAlreadyExists(ctx context.Context, api ap
 	var matchingObjectsFound = 0
 	for i := 0; i < len(values); i++ {
 		value := values[i]
-		if value.Name == objectName || escapeApiValueName(ctx, value) == objectName {
-			if matchingObjectsFound == 0 {
-				objectId = value.Id
+		if theAPI.CheckEqualFunc != nil {
+			var pl map[string]any
+			if err = json.Unmarshal(payload, &pl); err != nil {
+				return "", err
 			}
-			matchingObjectsFound++
+			if theAPI.CheckEqualFunc(value.CustomFields, pl) {
+				objectId = value.Id
+				matchingObjectsFound++
+			}
+		} else {
+			if value.Name == objectName || escapeApiValueName(ctx, value) == objectName {
+				if matchingObjectsFound == 0 {
+					objectId = value.Id
+				}
+				matchingObjectsFound++
+			}
 		}
 	}
 
@@ -445,7 +456,7 @@ func (d *DynatraceClient) getObjectIdIfAlreadyExists(ctx context.Context, api ap
 	}
 
 	if objectId != "" {
-		log.WithCtxFields(ctx).Debug("Found existing config %s (%s) with id %s", objectName, api.ID, objectId)
+		log.WithCtxFields(ctx).Debug("Found existing config %s (%s) with id %s", objectName, theAPI.ID, objectId)
 	}
 
 	return objectId, nil
@@ -619,6 +630,8 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 			List []struct {
 				Name         string `json:"name"`
 				MeIdentifier string `json:"meIdentifier"`
+				Domain       string `json:"domain"`
+				ActionType   string `json:"actionType"`
 			} `json:"keyUserActionList"`
 		}
 		err := json.Unmarshal(resp.Body, &jsonResp)
@@ -627,8 +640,9 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 		}
 		for _, kua := range jsonResp.List {
 			values = append(values, Value{
-				Id:   kua.MeIdentifier,
-				Name: kua.Name,
+				Id:           kua.MeIdentifier,
+				Name:         kua.Name,
+				CustomFields: map[string]any{"name": kua.Name, "domain": kua.Domain, "actionType": kua.ActionType},
 			})
 		}
 	} else if theApi.ID == api.UserActionAndSessionPropertiesMobile {
