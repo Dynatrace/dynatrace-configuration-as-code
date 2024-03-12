@@ -20,6 +20,7 @@ package loader
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -44,7 +45,7 @@ func Test_parseConfigs(t *testing.T) {
 	testLoaderContext := &LoaderContext{
 		ProjectId: "project",
 		Path:      "some-dir/",
-		KnownApis: map[string]struct{}{"some-api": {}, "dashboard-share-settings": {}},
+		KnownApis: map[string]struct{}{"some-api": {}, api.DashboardShareSettings: {}},
 		Environments: []manifest.EnvironmentDefinition{
 			{
 				Name:  "env name",
