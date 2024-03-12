@@ -50,7 +50,7 @@ func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.
 
 		// Single configurations with a parent use the parent's ID
 		if theApi.SingleConfiguration && theApi.HasParent() {
-			existingObjectID = theApi.ParentObjectID
+			existingObjectID = theApi.AppliedParentObjectID
 		}
 
 		// The network-zone API doesn't have a POST endpoint, hence, we need to treat it as an update operation
