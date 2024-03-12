@@ -1,0 +1,15 @@
+{
+    "enabled": true,
+    "permissions": [
+      {
+        "permission": "VIEW",
+        "type": "ALL"
+      }
+    ],
+    "preset": false,
+    "publicAccess": {
+      "managementZoneIds": [
+        "default"
+      ]
+    }
+  }

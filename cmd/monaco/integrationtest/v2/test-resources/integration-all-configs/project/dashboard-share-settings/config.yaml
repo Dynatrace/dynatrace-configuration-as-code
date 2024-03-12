@@ -1,0 +1,13 @@
+configs:
+- id: dashboard-share-settings
+  config:
+    template: dashboard-share-settings.json
+    skip: false
+  type:
+    api:
+      name: dashboard-share-settings #monaco-test:no-replace
+      scope:
+        configId: dashboard
+        configType: dashboard
+        property: id
+        type: reference
