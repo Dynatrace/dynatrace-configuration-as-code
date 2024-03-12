@@ -63,6 +63,8 @@ type API struct {
 	Parent *API
 	// AppliedParentObjectID is the parent object ID for a SubPath API once it has been applied.
 	AppliedParentObjectID string
+	// CheckEqualFunc can be used to compare existing objects with current objects based on their payload
+	CheckEqualFunc func(map[string]any, map[string]any) bool
 	// RequireAllFF lists all feature flags that needs to be enabled in order to utilize this API
 	RequireAllFF []featureflags.FeatureFlag
 	// PropertyNameOfIdentifier defines the id field if it's not called 'ID'

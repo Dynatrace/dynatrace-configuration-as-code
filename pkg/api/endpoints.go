@@ -466,6 +466,11 @@ var configEndpoints = []API{
 		Parent:                       &applicationWebAPI,
 		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.MRumProperties()},
 		TweakResponseFunc:            func(m map[string]any) { delete(m, "meIdentifier") },
+		CheckEqualFunc: func(existing map[string]any, current map[string]any) bool {
+			return existing["name"] == current["name"] &&
+				existing["actionType"] == current["actionType"] &&
+				existing["domain"] == current["domain"]
+		},
 	},
 	{
 		ID:           UserActionAndSessionPropertiesMobile,
