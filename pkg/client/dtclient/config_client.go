@@ -226,16 +226,14 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 		path = joinUrl(fullUrl, existingObjectId)
 	}
 
-	body := payload
 	// Updating a dashboard, reports or any service detection API requires the ID to be contained in the JSON, so we just add it...
 	if isApiDashboard(theApi) || isApiDashboardShareSettings(theApi) || isReportsApi(theApi) || isAnyServiceDetectionApi(theApi) {
-		tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
-		body = []byte(tmp)
+		payload = addObjectIDToPayload(payload, existingObjectId)
 	}
 
 	// Updating a Mobile Application does not allow changing the applicationType as such this property required on Create, must be stripped on Update
 	if isMobileApp(theApi) {
-		body = stripCreateOnlyPropertiesFromAppMobile(body)
+		payload = stripCreateOnlyPropertiesFromAppMobile(payload)
 	}
 
 	// Key user mobile actions can't be updated, thus we return immediately
@@ -246,7 +244,7 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 		}, nil
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Put, path, body, theApi)
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Put, path, payload, theApi)
 
 	if err != nil {
 		var respErr rest.RespError
@@ -271,6 +269,10 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 		Name:        objectName,
 		Description: "Updated existing object",
 	}, nil
+}
+
+func addObjectIDToPayload(payload []byte, objectID string) []byte {
+	return []byte(strings.Replace(string(payload), "{", "{\n\"id\":\""+objectID+"\",\n", 1))
 }
 
 func getNameIDDescription(objectName, objectID string) string {
