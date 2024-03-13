@@ -397,7 +397,7 @@ func (d *DynatraceClient) ListConfigs(ctx context.Context, api api.API) (values 
 func (d *DynatraceClient) listConfigs(ctx context.Context, api api.API) (values []Value, err error) {
 
 	fullUrl := api.CreateURL(d.environmentURLClassic)
-	values, err = d.getExistingValuesFromEndpoint(ctx, api, fullUrl)
+	values, err = d.fetchExistingValues(ctx, api, fullUrl)
 	return values, err
 }
 
@@ -470,8 +470,7 @@ func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, n
 }
 
 func (d *DynatraceClient) configExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
-	apiURL := api.CreateURL(d.environmentURLClassic)
-	existingObjectId, err := d.getObjectIdIfAlreadyExists(ctx, api, apiURL, name, nil)
+	existingObjectId, err := d.getExistingObjectId(ctx, name, api, nil)
 	return existingObjectId != "", existingObjectId, err
 }
 

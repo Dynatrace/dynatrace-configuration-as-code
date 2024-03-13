@@ -37,15 +37,9 @@ import (
 
 func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
 	doUpsert := func() (DynatraceEntity, error) {
-		var existingObjectID string
-
-		// Single configuration APIs don't have an id which allows skipping this step
-		if !theApi.SingleConfiguration {
-			var err error
-			existingObjectID, err = d.getObjectIdIfAlreadyExists(ctx, theApi, theApi.CreateURL(d.environmentURLClassic), objectName, payload)
-			if err != nil {
-				return DynatraceEntity{}, err
-			}
+		existingObjectID, err := d.getExistingObjectId(ctx, objectName, theApi, payload)
+		if err != nil {
+			return DynatraceEntity{}, err
 		}
 
 		// Single configurations with a parent use the parent's ID
@@ -99,7 +93,7 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	fullUrl := theApi.CreateURL(d.environmentURLClassic)
 	body := payload
 
-	existingEntities, err := d.getExistingValuesFromEndpoint(ctx, theApi, fullUrl)
+	existingEntities, err := d.fetchExistingValues(ctx, theApi, fullUrl)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities: %w", err)
 	}
@@ -421,56 +415,6 @@ func getLocationFromHeader(resp rest.Response) ([]string, bool) {
 	return make([]string, 0), false
 }
 
-func (d *DynatraceClient) getObjectIdIfAlreadyExists(ctx context.Context, theAPI api.API, url string, objectName string, payload []byte) (string, error) {
-	values, err := d.getExistingValuesFromEndpoint(ctx, theAPI, url)
-
-	if err != nil {
-		return "", err
-	}
-
-	var objectId = ""
-	var matchingObjectsFound = 0
-	for i := 0; i < len(values); i++ {
-		value := values[i]
-		if theAPI.CheckEqualFunc != nil {
-			var pl map[string]any
-			if err = json.Unmarshal(payload, &pl); err != nil {
-				return "", err
-			}
-			if theAPI.CheckEqualFunc(value.CustomFields, pl) {
-				objectId = value.Id
-				matchingObjectsFound++
-			}
-		} else {
-			if value.Name == objectName || escapeApiValueName(ctx, value) == objectName {
-				if matchingObjectsFound == 0 {
-					objectId = value.Id
-				}
-				matchingObjectsFound++
-			}
-		}
-	}
-
-	if matchingObjectsFound > 1 {
-		log.WithCtxFields(ctx).Warn("Found %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound, objectName)
-	}
-
-	if objectId != "" {
-		log.WithCtxFields(ctx).Debug("Found existing config %s (%s) with id %s", objectName, theAPI.ID, objectId)
-	}
-
-	return objectId, nil
-}
-
-func escapeApiValueName(ctx context.Context, value Value) string {
-	valueName, err := template.EscapeSpecialCharactersInValue(value.Name, template.FullStringEscapeFunction)
-	if err != nil {
-		log.WithCtxFields(ctx).Warn("failed to string escape API value '%s' while checking if object exists, check directly", value.Name)
-		return value.Name
-	}
-	return valueName.(string)
-}
-
 func isApiDashboard(a api.API) bool {
 	return a.ID == api.Dashboard || a.ID == api.DashboardV2
 }
@@ -507,7 +451,30 @@ func isUserSessionPropertiesMobile(a api.API) bool {
 	return a.ID == api.UserActionAndSessionPropertiesMobile
 }
 
-func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
+func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName string, theApi api.API, payload []byte) (string, error) {
+	// if there is a custom equal function registered, use that instead of just the Object name
+	// in order to search for existing values
+	if theApi.CheckEqualFunc != nil {
+		values, err := d.fetchExistingValues(ctx, theApi, theApi.CreateURL(d.environmentURLClassic))
+		if err != nil {
+			return "", err
+		}
+		return d.findUnique(values, payload, theApi.CheckEqualFunc)
+	}
+
+	// Single configuration APIs don't have an id which allows skipping this step
+	if !theApi.SingleConfiguration {
+		values, err := d.fetchExistingValues(ctx, theApi, theApi.CreateURL(d.environmentURLClassic))
+		if err != nil {
+			return "", err
+		}
+		return d.findUniqueByName(ctx, theApi, values, objectName)
+
+	}
+	return "", nil
+}
+
+func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
 	if !theApi.NonUniqueName && !theApi.HasParent() {
@@ -571,6 +538,62 @@ func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, the
 	}
 	d.classicConfigsCache.Set(theApi.ID, existingValues)
 	return existingValues, nil
+}
+
+func (d *DynatraceClient) findUniqueByName(ctx context.Context, theApi api.API, values []Value, objectName string) (string, error) {
+	var objectId = ""
+	var matchingObjectsFound = 0
+	for i := 0; i < len(values); i++ {
+		value := values[i]
+		if value.Name == objectName || escapeApiValueName(ctx, value) == objectName {
+			if matchingObjectsFound == 0 {
+				objectId = value.Id
+			}
+			matchingObjectsFound++
+		}
+	}
+
+	if matchingObjectsFound > 1 {
+		log.WithCtxFields(ctx).Warn("Found %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound, objectName)
+	}
+
+	if objectId != "" {
+		log.WithCtxFields(ctx).Debug("Found existing config %s (%s) with id %s", objectName, theApi.ID, objectId)
+	}
+
+	return objectId, nil
+}
+
+func escapeApiValueName(ctx context.Context, value Value) string {
+	valueName, err := template.EscapeSpecialCharactersInValue(value.Name, template.FullStringEscapeFunction)
+	if err != nil {
+		log.WithCtxFields(ctx).Warn("failed to string escape API value '%s' while checking if object exists, check directly", value.Name)
+		return value.Name
+	}
+	return valueName.(string)
+}
+
+func (d *DynatraceClient) findUnique(values []Value, payload []byte, checkEqualFunc func(map[string]any, map[string]any) bool) (string, error) {
+	if checkEqualFunc == nil {
+		return "", nil
+	}
+	var objectId = ""
+	var matchingObjectsFound = 0
+	for i := 0; i < len(values); i++ {
+		value := values[i]
+		var pl map[string]any
+		if err := json.Unmarshal(payload, &pl); err != nil {
+			return "", err
+		}
+		if checkEqualFunc(value.CustomFields, pl) {
+			if matchingObjectsFound == 0 {
+				objectId = value.Id
+			}
+			matchingObjectsFound++
+		}
+	}
+
+	return objectId, nil
 }
 
 func addQueryParamsForNonStandardApis(theApi api.API, url *url.URL) *url.URL {
