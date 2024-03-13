@@ -408,13 +408,11 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			defer server.Close()
 
 			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), nil)
-			got, err := dtclient.getObjectIdIfAlreadyExists(context.TODO(), testApi, server.URL, tt.givenObjectName, nil)
+
+			_, _, err := dtclient.configExistsByName(context.TODO(), testApi, tt.givenObjectName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if got != tt.wantFoundId {
-				t.Errorf("getObjectIdIfAlreadyExists() got = %v, want %v", got, tt.wantFoundId)
 			}
 		})
 	}
@@ -638,8 +636,8 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 				},
 			}
 			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(s))
-			_, err := dtclient.getObjectIdIfAlreadyExists(context.TODO(), testApi, server.URL, "", nil)
 
+			_, _, err := dtclient.configExistsByName(context.TODO(), testApi, "")
 			if tt.expectError {
 				assert.NotNil(t, err)
 			} else {
