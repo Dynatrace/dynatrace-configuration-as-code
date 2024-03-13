@@ -292,7 +292,7 @@ class GithubRelease {
 
     void addToRelease(Context ctx, Release release) {
         githubTools.pushFileToRelease(rleaseName: release.binary.name(), source: release.binary.localPath(), releaseId: this.releaseId)
-        githubTools.pushFileToRelease(rleaseName: "${release.binary.name()}.sha256", source: release.binary.shaPath(), releaseId: this.releaseId)
+        githubTools.pushFileToRelease(rleaseName: "${release.binary.shaName()}", source: release.binary.shaPath(), releaseId: this.releaseId)
     }
 }
 
@@ -334,12 +334,16 @@ class Release {
             return "monaco-${os}-${arch}"
         }
 
+        String shaName() {
+            return "${binary.name()}.sha256"
+        }
+
         String localPath() {
             return "${BINARIES}/${binary.name()}"
         }
 
         String shaPath() {
-            return "${BINARIES}/${binary.name()}.sha256"
+            return "${BINARIES}/${binary.shaName()}"
         }
 
         String dtRepositoryPath(Context ctx) {
@@ -347,7 +351,7 @@ class Release {
         }
 
         String dtRepositoryArtifactoryPathSha(Context ctx) {
-            return "monaco/${ctx.version}/${binary.name()}.sha256"
+            return "monaco/${ctx.version}/${binary.shaName()}"
         }
     }
 }
