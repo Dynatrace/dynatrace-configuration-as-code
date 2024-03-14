@@ -452,6 +452,7 @@ func isUserSessionPropertiesMobile(a api.API) bool {
 }
 
 func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName string, theApi api.API, payload []byte) (string, error) {
+	var objID string
 	// if there is a custom equal function registered, use that instead of just the Object name
 	// in order to search for existing values
 	if theApi.CheckEqualFunc != nil {
@@ -459,7 +460,10 @@ func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName st
 		if err != nil {
 			return "", err
 		}
-		return d.findUnique(values, payload, theApi.CheckEqualFunc)
+		objID, err = d.findUnique(ctx, values, payload, theApi.CheckEqualFunc)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// Single configuration APIs don't have an id which allows skipping this step
@@ -468,10 +472,13 @@ func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName st
 		if err != nil {
 			return "", err
 		}
-		return d.findUniqueByName(ctx, theApi, values, objectName)
-
+		objID = d.findUniqueByName(ctx, values, objectName)
 	}
-	return "", nil
+
+	if objID != "" {
+		log.WithCtxFields(ctx).Debug("Found existing config of type %s with id %s", theApi.ID, objID)
+	}
+	return objID, nil
 }
 
 func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
@@ -540,7 +547,7 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 	return existingValues, nil
 }
 
-func (d *DynatraceClient) findUniqueByName(ctx context.Context, theApi api.API, values []Value, objectName string) (string, error) {
+func (d *DynatraceClient) findUniqueByName(ctx context.Context, values []Value, objectName string) string {
 	var objectId = ""
 	var matchingObjectsFound = 0
 	for i := 0; i < len(values); i++ {
@@ -556,12 +563,7 @@ func (d *DynatraceClient) findUniqueByName(ctx context.Context, theApi api.API, 
 	if matchingObjectsFound > 1 {
 		log.WithCtxFields(ctx).Warn("Found %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound, objectName)
 	}
-
-	if objectId != "" {
-		log.WithCtxFields(ctx).Debug("Found existing config %s (%s) with id %s", objectName, theApi.ID, objectId)
-	}
-
-	return objectId, nil
+	return objectId
 }
 
 func escapeApiValueName(ctx context.Context, value Value) string {
@@ -573,7 +575,7 @@ func escapeApiValueName(ctx context.Context, value Value) string {
 	return valueName.(string)
 }
 
-func (d *DynatraceClient) findUnique(values []Value, payload []byte, checkEqualFunc func(map[string]any, map[string]any) bool) (string, error) {
+func (d *DynatraceClient) findUnique(ctx context.Context, values []Value, payload []byte, checkEqualFunc func(map[string]any, map[string]any) bool) (string, error) {
 	if checkEqualFunc == nil {
 		return "", nil
 	}
@@ -591,6 +593,10 @@ func (d *DynatraceClient) findUnique(values []Value, payload []byte, checkEqualF
 			}
 			matchingObjectsFound++
 		}
+	}
+
+	if matchingObjectsFound > 1 {
+		log.WithCtxFields(ctx).Warn("Found %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound)
 	}
 
 	return objectId, nil
