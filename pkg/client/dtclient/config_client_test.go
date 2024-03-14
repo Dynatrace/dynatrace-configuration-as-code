@@ -408,11 +408,13 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			defer server.Close()
 
 			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), nil)
-
-			_, _, err := dtclient.configExistsByName(context.TODO(), testApi, tt.givenObjectName)
+			_, got, err := dtclient.configExistsByName(context.TODO(), testApi, tt.givenObjectName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+			if got != tt.wantFoundId {
+				t.Errorf("getObjectIdIfAlreadyExists() got = %v, want %v", got, tt.wantFoundId)
 			}
 		})
 	}
