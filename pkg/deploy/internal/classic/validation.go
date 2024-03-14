@@ -42,7 +42,17 @@ func (v *Validator) Validate(c config.Config) error {
 	}
 
 	a, ok := c.Type.(config.ClassicApiType)
-	if !ok || apis[a.Api].NonUniqueName || apis[a.Api].HasParent() {
+	if !ok {
+		return nil
+	}
+
+	theAPI := apis[a.Api]
+	if theAPI.NonUniqueName {
+		return nil
+	}
+
+	// as the uniqueness of a key-user-action-web configuration is defined by its payload no validation can be performed
+	if a.Api == api.KeyUserActionsWeb {
 		return nil
 	}
 
@@ -51,6 +61,24 @@ func (v *Validator) Validate(c config.Config) error {
 	}
 
 	for _, c2 := range v.uniqueNames[c.Environment][a.Api] {
+
+		// if the configs have a scope and they are different then the configs are unique
+		if theAPI.HasParent() {
+			s1, err := config.GetScopeParameterForConfig(c)
+			if err != nil {
+				return err
+			}
+
+			s2, err := config.GetScopeParameterForConfig(c2)
+			if err != nil {
+				return err
+			}
+
+			if !cmp.Equal(s1, s2) {
+				return nil
+			}
+		}
+
 		n1, err := config.GetNameForConfig(c)
 		if err != nil {
 			return err

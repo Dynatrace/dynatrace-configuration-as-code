@@ -275,3 +275,13 @@ func GetNameForConfig(c Config) (any, error) {
 		return c.Parameters[NameParameter], nil
 	}
 }
+
+// GetScopeParameterForConfig gets the scope paramter for the specified config or returns an error if there is none.
+func GetScopeParameterForConfig(c Config) (parameter.Parameter, error) {
+	scopeParameter, exist := c.Parameters[ScopeParameter]
+	if !exist {
+		return nil, fmt.Errorf("New error: configuration %s has no 'scope' parameter defined", c.Coordinate)
+	}
+
+	return scopeParameter, nil
+}
