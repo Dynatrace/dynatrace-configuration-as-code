@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package classic
+package classic_test
 
 import (
 	"context"
@@ -30,6 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -49,7 +50,7 @@ func TestDownload_KeyUserActionMobile(t *testing.T) {
 	c.EXPECT().ReadConfigById(apiMap[api.ApplicationMobile], applicationId).Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil).Times(1)
 	c.EXPECT().ReadConfigById(apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId), "").Return([]byte(`{}`), nil).Times(1)
 
-	configurations, err := Download(c, "project", apiMap, ApiContentFilters)
+	configurations, err := classic.Download(c, "project", apiMap, classic.ApiContentFilters)
 	require.NoError(t, err)
 	assert.Len(t, configurations, 2, "Expected two configurations downloaded")
 
@@ -85,7 +86,7 @@ func TestDownload_KeyUserActionWeb(t *testing.T) {
 
 	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{api.KeyUserActionsWeb}))
 
-	configurations, err := Download(c, "project", apiMap, map[string]ContentFilter{})
+	configurations, err := classic.Download(c, "project", apiMap, map[string]classic.ContentFilter{})
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 	gotConfig := configurations[api.KeyUserActionsWeb][0]
@@ -98,6 +99,26 @@ func TestDownload_KeyUserActionWeb(t *testing.T) {
 	assert.False(t, gotConfig.Skip)
 }
 
+func TestDownload_KeyUserActionWeb_Uniqnes(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	ctx := context.TODO()
+	c.EXPECT().ListConfigs(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
+	c.EXPECT().ListConfigs(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID2", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID3", Name: "the_name"}}, nil)
+	c.EXPECT().ReadConfigById(matcher.EqAPI(apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")), "").Return([]byte(`{
+"keyUserActionList":[
+  {"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"},
+  {"name":"the_name","actionType":"Load","domain":"dt2.com","meIdentifier":"APPLICATION_METHOD-ID2"},
+  {"name":"the_name","actionType":"Custom","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID3"}
+]}`), nil).Times(3)
+
+	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{api.KeyUserActionsWeb}))
+
+	configurations, err := classic.Download(c, "project", apiMap, map[string]classic.ContentFilter{})
+	assert.NoError(t, err)
+	assert.Len(t, configurations, 1)
+	assert.Len(t, configurations[api.KeyUserActionsWeb], 3)
+}
+
 func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	api1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
 	api2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
@@ -107,13 +128,13 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
 
-	filters := map[string]ContentFilter{"API_ID_1": {
+	filters := map[string]classic.ContentFilter{"API_ID_1": {
 		ShouldConfigBePersisted: func(_ map[string]interface{}) bool {
 			return false
 		},
 	}}
 
-	configurations, err := Download(c, "project", toAPIs(api1, api2), filters)
+	configurations, err := classic.Download(c, "project", toAPIs(api1, api2), filters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
@@ -122,7 +143,7 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 	api1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
 	api2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 
-	filters := map[string]ContentFilter{
+	filters := map[string]classic.ContentFilter{
 		"API_ID_1": {
 			ShouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
 				return true
@@ -162,7 +183,7 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 			t.Setenv(featureflags.DownloadFilterClassicConfigs().EnvName(), strconv.FormatBool(tt.withFiltering))
 			t.Setenv(featureflags.DownloadFilter().EnvName(), strconv.FormatBool(tt.withFiltering))
 
-			configurations, err := Download(c, "project", toAPIs(api1, api2), filters)
+			configurations, err := classic.Download(c, "project", toAPIs(api1, api2), filters)
 			assert.NoError(t, err)
 			assert.Len(t, configurations, tt.wantDownloadedConfigs)
 		})
@@ -178,13 +199,13 @@ func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-	filters := map[string]ContentFilter{"API_ID_1": {
+	filters := map[string]classic.ContentFilter{"API_ID_1": {
 		ShouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
 			return true
 		},
 	}}
 
-	configurations, err := Download(c, "project", toAPIs(api1, api2), filters)
+	configurations, err := classic.Download(c, "project", toAPIs(api1, api2), filters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
@@ -277,13 +298,8 @@ func Test_generalCases(t *testing.T) {
 			for _, m := range tc.mockConfigByID {
 				c.EXPECT().ReadConfigById(gomock.Any(), m.id).Return([]byte(m.response), m.err)
 			}
-			//var apis []api.API
-			//for _, a := range tc.mockList {
-			//	apis = append(apis, a.api)
-			//}
 
-			//actual, err := Download(c, "project", toAPIs(apis...), ApiContentFilters)
-			actual, err := Download(c, "project", toAPIs(api1, api2), ApiContentFilters)
+			actual, err := classic.Download(c, "project", toAPIs(api1, api2), classic.ApiContentFilters)
 
 			require.NoError(t, err)
 			require.Len(t, actual, len(tc.expectedKeys))
@@ -319,7 +335,7 @@ func TestDownload_SkippedParentsSkipChildren(t *testing.T) {
 			NonUniqueName: false,
 			Parent:        &parentAPI}}
 
-	contentFilters := map[string]ContentFilter{
+	contentFilters := map[string]classic.ContentFilter{
 		"PARENT_API_ID": {
 			ShouldBeSkippedPreDownload: func(value dtclient.Value) bool { return true },
 		},
@@ -328,7 +344,7 @@ func TestDownload_SkippedParentsSkipChildren(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(parentAPI)).Return([]dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil).Times(2)
 
-	configurations, err := Download(c, "project", apiMap, contentFilters)
+	configurations, err := classic.Download(c, "project", apiMap, contentFilters)
 	require.NoError(t, err)
 	assert.Len(t, configurations, 0, "Expected no configurations as everything is skipped")
 }
@@ -347,13 +363,13 @@ func TestDownload_SingleConfigurationChild(t *testing.T) {
 			Parent:              &parentAPI,
 			SingleConfiguration: true}}
 
-	contentFilters := map[string]ContentFilter{}
+	contentFilters := map[string]classic.ContentFilter{}
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(parentAPI)).Return([]dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil).Times(2)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
 
-	configurations, err := Download(c, "project", apiMap, contentFilters)
+	configurations, err := classic.Download(c, "project", apiMap, contentFilters)
 	require.NoError(t, err)
 	require.Len(t, configurations, 2, "Expected two configurations")
 	require.Len(t, configurations["PARENT_API_ID"], 1)

@@ -19,6 +19,7 @@ package classic
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -279,13 +280,29 @@ func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value va
 		return nil, err
 	}
 
-	if values, ok := data[theApi.PropertyNameOfGetAllResponse]; ok {
-		var res []map[string]any
-		err := mapstructure.Decode(values, &res)
-		return res, err
+	values, found := data[theApi.PropertyNameOfGetAllResponse]
+	if !found {
+		return []map[string]any{data}, nil
 	}
 
-	return []map[string]any{data}, nil
+	var res []map[string]any
+	err = mapstructure.Decode(values, &res)
+	if err != nil {
+		return []map[string]any{}, err
+	}
+	if theApi.ID == api.KeyUserActionsWeb { //clean unwanted configs
+		return filterResponses(res, value)
+	}
+	return res, nil
+}
+
+func filterResponses(res []map[string]any, value value) ([]map[string]any, error) {
+	for _, v := range res {
+		if v["meIdentifier"] == value.value.Id {
+			return []map[string]any{v}, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to find %q configuration with ID %q", api.KeyUserActionsWeb, value.value.Id)
 }
 
 func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.API, value value, projectId string) (config.Config, error) {
