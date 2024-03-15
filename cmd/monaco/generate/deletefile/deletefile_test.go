@@ -25,9 +25,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 	"path/filepath"
 	"testing"
 )
@@ -97,7 +100,44 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "builtin:management-zones", "management-zone-setting")
 	assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
 	assertDeleteEntries(t, entries, "application-mobile", "app-1", "app-2")
+	assertDeleteEntries(t, entries, "application-web", "My first Web application")
+	assertDeleteEntries(t, entries, "key-user-actions-web", "first-kua:My first Web application")
 	assertDeleteEntries(t, entries, "user-action-and-session-properties-mobile", "property1:app-1", "property2:app-1", "property1:app-2")
+}
+
+func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
+	t.Setenv("TOKEN", "some-value")
+	t.Setenv(featureflags.MRumProperties().EnvName(), "1")
+
+	fs := testutils.CreateTestFileSystem()
+
+	outputFolder := "output-folder"
+
+	cmd := deletefile.Command(fs)
+
+	cmd.SetArgs([]string{
+		"./test-resources/manifest.yaml",
+		"-o",
+		outputFolder,
+	})
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join(outputFolder, "delete.yaml")
+	assertFileExists(t, fs, expectedFile)
+
+	deleteFileContent := readFile(t, fs, expectedFile)
+
+	var deleteEntries persistence.FullFileDefinition
+	err = yaml.Unmarshal(deleteFileContent, &deleteEntries)
+	require.NoError(t, err)
+
+	assert.Contains(t, deleteEntries.DeleteEntries, persistence.DeleteEntry{
+		Type:         "key-user-actions-web",
+		ConfigName:   "first-kua",
+		Scope:        "My first Web application",
+		CustomValues: map[string]string{"actionType": "Load", "domain": "domain.com"},
+	})
 }
 
 func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
@@ -368,4 +408,12 @@ func assertFileExists(t *testing.T, fs afero.Fs, file string) {
 	exists, err := afero.Exists(fs, path)
 	assert.NoError(t, err)
 	assert.True(t, exists)
+}
+
+func readFile(t *testing.T, fs afero.Fs, file string) []byte {
+	path, err := filepath.Abs(file)
+	require.NoError(t, err)
+	content, err := afero.ReadFile(fs, path)
+	require.NoError(t, err)
+	return content
 }

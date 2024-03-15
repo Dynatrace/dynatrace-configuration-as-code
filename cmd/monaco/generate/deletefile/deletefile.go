@@ -17,12 +17,15 @@
 package deletefile
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
@@ -246,6 +249,7 @@ func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Projec
 	}
 
 	var scopeValue string
+	var customValues = make(map[string]string)
 	if apis[c.Coordinate.Type].HasParent() {
 		scopeParam, ok := c.Parameters[config.ScopeParameter]
 		if !ok {
@@ -283,11 +287,39 @@ func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Projec
 			return persistence.DeleteEntry{}, fmt.Errorf("resolved name parameter is no string")
 		}
 		scopeValue = nameOfRefCfgStr
+
+		if apis[c.Coordinate.Type].ID == api.KeyUserActionsWeb {
+			// while generating the delete file (which happens offline) we are not able
+			// to resolve Reference Parameters
+			for pName, p := range c.Parameters {
+				if p.GetType() == reference.ReferenceParameterType {
+					delete(c.Parameters, pName)
+				}
+			}
+			props, resolvErr := c.ResolveParameterValues(entities.New())
+			if resolvErr != nil {
+				return persistence.DeleteEntry{}, errors.Join(resolvErr...)
+			}
+			rendered, err := c.Render(props)
+			if err != nil {
+				return persistence.DeleteEntry{}, err
+			}
+
+			var jsonM map[string]string
+			err = json.Unmarshal([]byte(rendered), &jsonM)
+			if err != nil {
+				return persistence.DeleteEntry{}, err
+			}
+
+			customValues["domain"] = jsonM["domain"]
+			customValues["actionType"] = jsonM["actionType"]
+		}
 	}
 
 	return persistence.DeleteEntry{
-		Type:       c.Coordinate.Type,
-		ConfigName: name,
-		Scope:      scopeValue,
+		Type:         c.Coordinate.Type,
+		ConfigName:   name,
+		Scope:        scopeValue,
+		CustomValues: customValues,
 	}, nil
 }
