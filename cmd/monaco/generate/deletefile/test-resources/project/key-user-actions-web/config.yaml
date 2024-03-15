@@ -1,0 +1,19 @@
+configs:
+- id: APPLICATION_METHOD-12450DAFDF40984DAPPLICATION-90E9D1214FA5929C
+  config:
+    name: first-kua
+    template: kuaweb.json
+    skip: false
+    parameters:
+      domain:
+        name: domain
+        type: environment
+        default: "domain.com"
+  type:
+    api:
+      name: key-user-actions-web
+      scope:
+        configId: app1
+        configType: application-web
+        property: id
+        type: reference
