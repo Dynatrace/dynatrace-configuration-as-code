@@ -50,6 +50,8 @@ type DeleteEntry struct {
 
 	// Scope is the parent scope of a config. This field must be set if a classic config is used, and the classic config requires the scope to be set.
 	Scope string `yaml:"scope,omitempty" json:"scope,omitempty" mapstructure:"scope" jsonschema:"description=The scope of the config to be deleted - required for API configs that require a scope"`
+	// CustomValues holds special values that are not general enough to add as a field to a DeleteEntry but are still important for specific APIs
+	CustomValues map[string]string `yaml:",inline"`
 }
 
 type DeleteEntries []DeleteEntry

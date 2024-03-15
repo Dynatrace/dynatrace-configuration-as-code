@@ -32,6 +32,7 @@ import (
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -115,7 +116,7 @@ func generateDeleteFileContent(apis api.APIs, projects []project.Project, option
 }
 
 func generateDeleteEntries(apis api.APIs, projects []project.Project, options createDeleteFileOptions) []persistence.DeleteEntry {
-	entries := make(map[persistence.DeleteEntry]struct{}) // set to ensure cfgs without environment overwrites are only added once
+	entries := make(map[string]persistence.DeleteEntry) // set to ensure cfgs without environment overwrites are only added once
 
 	inclTypesLookup := toStrLookupMap(options.includeTypes)
 	exclTypesLookup := toStrLookupMap(options.excludeTypes)
@@ -132,15 +133,15 @@ func generateDeleteEntries(apis api.APIs, projects []project.Project, options cr
 				log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
 				return
 			}
-			entries[entry] = struct{}{}
+			entries[toMapKey(entry)] = entry
 		})
 	}
 
-	return maps.Keys(entries)
+	return maps.Values(entries)
 }
 
 func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Project, options createDeleteFileOptions) []persistence.DeleteEntry {
-	entries := make(map[persistence.DeleteEntry]struct{}) // set to ensure cfgs without environment overwrites are only added once
+	entries := make(map[string]persistence.DeleteEntry) // set to ensure cfgs without environment overwrites are only added once
 
 	inclTypesLookup := toStrLookupMap(options.includeTypes)
 	exclTypesLookup := toStrLookupMap(options.excludeTypes)
@@ -157,12 +158,12 @@ func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Proj
 					log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
 					return
 				}
-				entries[entry] = struct{}{}
+				entries[toMapKey(entry)] = entry
 			})
 		}
 	}
 
-	return maps.Keys(entries)
+	return maps.Values(entries)
 }
 
 func toStrLookupMap(sl []string) map[string]struct{} {
@@ -183,6 +184,31 @@ func skipping(ttype string, included, excluded map[string]struct{}) bool {
 		}
 	}
 	return false
+}
+
+// toMapKey creates a unique key for persistence.DeleteEntries so that they can be managed in maps.
+// Note, that persistence.DeleteEntry itself cannot be used as a map key, because it contains a map as field for which
+// no == and != comparison is defined.
+func toMapKey(d persistence.DeleteEntry) string {
+	values := make(map[string]string)
+	values["project"] = d.Project
+	values["type"] = d.Type
+	values["configId"] = d.ConfigId
+	values["configName"] = d.ConfigName
+	values["scope"] = d.Scope
+	maps.Copy(values, d.CustomValues)
+	j, _ := json.Marshal(sortedKeyValues(values)) //nolint:errchkjson
+	return string(j)
+}
+
+func sortedKeyValues(myMap map[string]string) []string {
+	keys := maps.Keys(myMap)
+	sort.Strings(keys)
+	var sortedValues []string
+	for _, k := range keys {
+		sortedValues = append(sortedValues, k+":"+myMap[k])
+	}
+	return sortedValues
 }
 
 func createDeleteEntry(c config.Config, apis api.APIs, project project.Project) (persistence.DeleteEntry, error) {
