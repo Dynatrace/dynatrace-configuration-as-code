@@ -19,13 +19,13 @@ import "fmt"
 // Coordinate struct used to specify the location of a certain configuration
 type Coordinate struct {
 	// Project specifies the id of a project
-	Project string
+	Project string `json:"project"`
 
 	// Type specifies the id of an api, or a schema id
-	Type string
+	Type string `json:"type"`
 
 	// ConfigId specifies the id of a monaco configuration definition
-	ConfigId string
+	ConfigId string `json:"configId"`
 }
 
 func (c Coordinate) String() string {

@@ -163,6 +163,49 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 	assert.Greater(t, len(newContent), 0, "expected pre-existing file to not be empty")
 }
 
+func TestGeneratesDOTFilesWithJSONIDs(t *testing.T) {
+
+	t.Setenv("TOKEN", "some-value")
+
+	expectedGraph := map[string][]string{
+		`{"project":"project","type":"reports","configId":"report"}`:                                                 {},
+		`{"project":"project","type":"alerting-profile","configId":"profile"}`:                                       {`{"project":"project","type":"notification","configId":"slack"}`, `{"project":"project","type":"notification","configId":"email"}`, `{"project":"project","type":"notification","configId":"email_single_receiver"}`, `{"project":"project","type":"notification","configId":"email_list_as_array"}`},
+		`{"project":"project","type":"dashboard","configId":"dashboard"}`:                                            {`{"project":"project","type":"reports","configId":"report"}`},
+		`{"project":"project","type":"dashboard","configId":"dashboard-with-settings-reference"}`:                    {},
+		`{"project":"project","type":"maintenance-window","configId":"maintenancewindow"}`:                           {},
+		`{"project":"project","type":"builtin:alerting.maintenance-window","configId":"maintenance-window-setting"}`: {},
+		`{"project":"project","type":"management-zone","configId":"zone"}`:                                           {`{"project":"project","type":"dashboard","configId":"dashboard"}`, `{"project":"project","type":"maintenance-window","configId":"maintenancewindow"}`},
+		`{"project":"project","type":"builtin:management-zones","configId":"management-zone-setting"}`:               {`{"project":"project","type":"dashboard","configId":"dashboard-with-settings-reference"}`, `{"project":"project","type":"builtin:alerting.maintenance-window","configId":"maintenance-window-setting"}`},
+		`{"project":"project","type":"notification","configId":"slack"}`:                                             {},
+		`{"project":"project","type":"notification","configId":"email"}`:                                             {},
+		`{"project":"project","type":"notification","configId":"email_single_receiver"}`:                             {},
+		`{"project":"project","type":"notification","configId":"email_list_as_array"}`:                               {},
+	}
+
+	fs := testutils.CreateTestFileSystem()
+
+	outputFolder := "output-folder"
+
+	cmd := dependencygraph.Command(fs)
+
+	cmd.SetArgs([]string{
+		"./test-resources/manifest.yaml",
+		"--json-ids",
+		"-o",
+		outputFolder,
+	})
+	err := cmd.Execute()
+	assert.NoError(t, err)
+
+	f1 := filepath.Join(outputFolder, "dependency_graph_env1.dot")
+	assertFileExists(t, fs, f1)
+	assertCreatedDOTGraph(t, fs, f1, expectedGraph)
+
+	f2 := filepath.Join(outputFolder, "dependency_graph_env2.dot")
+	assertFileExists(t, fs, f2)
+	assertCreatedDOTGraph(t, fs, f2, expectedGraph)
+}
+
 func assertFileExists(t *testing.T, fs afero.Fs, file string) {
 	path, err := filepath.Abs(file)
 	require.NoError(t, err)
