@@ -1,0 +1,12 @@
+manifestVersion: 1.0
+projects:
+- name: cycles
+environmentGroups:
+- name: default
+  environments:
+  - name: env1
+    url:
+      value: http://www.url.com
+    auth:
+      token:
+        name: TOKEN
