@@ -206,6 +206,38 @@ func TestGeneratesDOTFilesWithJSONIDs(t *testing.T) {
 	assertCreatedDOTGraph(t, fs, f2, expectedGraph)
 }
 
+// Visualizing where cyclic dependencies are in a configuration project is a key requirement of DOT files used by other Dynatrace projects
+func TestGeneratesDOTFileForProjectsWithCyclicDependencies(t *testing.T) {
+
+	t.Setenv("TOKEN", "some-value")
+
+	expectedGraph := map[string][]string{
+		"cycles:reports:report":       {"cycles:management-zone:zone"},
+		"cycles:reports:report-1":     {"cycles:reports:report-2"},
+		"cycles:reports:report-2":     {"cycles:reports:report-1"},
+		"cycles:dashboard:dashboard":  {"cycles:reports:report"},
+		"cycles:management-zone:zone": {"cycles:dashboard:dashboard"},
+	}
+
+	fs := testutils.CreateTestFileSystem()
+
+	outputFolder := "output-folder"
+
+	cmd := dependencygraph.Command(fs)
+
+	cmd.SetArgs([]string{
+		"./test-resources/manifest_with_cycle.yaml",
+		"-o",
+		outputFolder,
+	})
+	err := cmd.Execute()
+	assert.NoError(t, err)
+
+	f1 := filepath.Join(outputFolder, "dependency_graph_env1.dot")
+	assertFileExists(t, fs, f1)
+	assertCreatedDOTGraph(t, fs, f1, expectedGraph)
+}
+
 func assertFileExists(t *testing.T, fs afero.Fs, file string) {
 	path, err := filepath.Abs(file)
 	require.NoError(t, err)

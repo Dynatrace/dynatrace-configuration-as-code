@@ -1,0 +1,14 @@
+configs:
+- id: dashboard
+  type:
+    api: dashboard
+  config:
+    name: Alpha Quadrant
+    parameters:
+      mzID:
+        configType: management-zone
+        configId: zone
+        property: id
+        type: reference
+    template: overview-dashboard.json
+    skip: false
