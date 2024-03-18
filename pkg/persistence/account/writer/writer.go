@@ -112,7 +112,7 @@ func toPersistencePolicies(policies map[string]account.Policy) []persistence.Pol
 		})
 	}
 	// sort policies by ID so that they are stable within a persisted file
-	slices.SortFunc(out, func(a, b persistence.Policy) bool {
+	slices.SortFunc(out, func(a, b persistence.Policy) int {
 		return caseInsensitiveLexicographicSmaller(a.ID, b.ID)
 	})
 	return out
@@ -121,7 +121,7 @@ func toPersistencePolicies(policies map[string]account.Policy) []persistence.Pol
 func transformRefs(in []account.Ref) []persistence.Reference {
 	var res []persistence.Reference
 	// sort refs by ID() so that they are stable for both full refs and strings within a persisted file
-	slices.SortFunc(in, func(a, b account.Ref) bool {
+	slices.SortFunc(in, func(a, b account.Ref) int {
 		return caseInsensitiveLexicographicSmaller(a.ID(), b.ID())
 	})
 	for _, el := range in {
@@ -159,7 +159,7 @@ func toPersistenceGroups(groups map[string]account.Group) []persistence.Group {
 			slices.SortFunc(envs[i].Permissions, caseInsensitiveLexicographicSmaller)
 		}
 		// sort envs by name so that they are stable within a persisted file
-		slices.SortFunc(envs, func(a, b persistence.Environment) bool {
+		slices.SortFunc(envs, func(a, b persistence.Environment) int {
 			return caseInsensitiveLexicographicSmaller(a.Name, b.Name)
 		})
 		mzs := make([]persistence.ManagementZone, len(v.ManagementZone))
@@ -173,8 +173,8 @@ func toPersistenceGroups(groups map[string]account.Group) []persistence.Group {
 			slices.SortFunc(mzs[i].Permissions, caseInsensitiveLexicographicSmaller)
 		}
 		// sort mzs by env and name so that they are stable within a persisted file
-		slices.SortFunc(mzs, func(a, b persistence.ManagementZone) bool {
-			return strings.ToLower(a.Environment) <= strings.ToLower(b.Environment) && caseInsensitiveLexicographicSmaller(a.ManagementZone, b.ManagementZone)
+		slices.SortFunc(mzs, func(a, b persistence.ManagementZone) int {
+			return caseInsensitiveLexicographicSmaller(a.Environment, b.Environment) + caseInsensitiveLexicographicSmaller(a.ManagementZone, b.ManagementZone)
 		})
 
 		out = append(out, persistence.Group{
@@ -188,14 +188,14 @@ func toPersistenceGroups(groups map[string]account.Group) []persistence.Group {
 		})
 	}
 	// sort groups by ID so that they are stable within a persisted file
-	slices.SortFunc(out, func(a, b persistence.Group) bool {
+	slices.SortFunc(out, func(a, b persistence.Group) int {
 		return caseInsensitiveLexicographicSmaller(a.ID, b.ID)
 	})
 	return out
 }
 
-func caseInsensitiveLexicographicSmaller(a, b string) bool {
-	return strings.ToLower(a) < strings.ToLower(b)
+func caseInsensitiveLexicographicSmaller(a, b string) int {
+	return strings.Compare(strings.ToLower(a), strings.ToLower(b))
 }
 
 func toPersistenceUsers(users map[string]account.User) []persistence.User {
@@ -207,7 +207,7 @@ func toPersistenceUsers(users map[string]account.User) []persistence.User {
 		})
 	}
 	// sort users by email so that they are stable within a persisted file
-	slices.SortFunc(out, func(a, b persistence.User) bool {
+	slices.SortFunc(out, func(a, b persistence.User) int {
 		return caseInsensitiveLexicographicSmaller(a.Email.Value(), b.Email.Value())
 	})
 	return out

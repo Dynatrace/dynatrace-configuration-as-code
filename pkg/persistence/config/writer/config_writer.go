@@ -18,7 +18,7 @@ package writer
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
+	mystrings "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configError "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
@@ -31,6 +31,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 type WriterContext struct {
@@ -132,7 +133,7 @@ func toTopLevelDefinitions(context *WriterContext, configs []config.Config) (map
 	var configTemplates []configTemplate
 
 	for coord, confs := range configsPerCoordinate {
-		sanitizedType := strings.Sanitize(coord.Type)
+		sanitizedType := mystrings.Sanitize(coord.Type)
 		configContext := &serializerContext{
 			WriterContext: context,
 			configFolder:  filepath.Join(context.ProjectFolder, sanitizedType),
@@ -176,8 +177,8 @@ func toTopLevelDefinitions(context *WriterContext, configs []config.Config) (map
 	return result, configTemplates, nil
 }
 
-func byConfigId(a, b persistence.TopLevelConfigDefinition) bool {
-	return a.Id < b.Id
+func byConfigId(a, b persistence.TopLevelConfigDefinition) int {
+	return strings.Compare(a.Id, b.Id)
 }
 
 func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinate, definition persistence.TopLevelDefinition) error {
@@ -189,7 +190,7 @@ func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinat
 		return newConfigWriterError(context, err)
 	}
 
-	sanitizedApi := strings.Sanitize(apiCoord.api)
+	sanitizedApi := mystrings.Sanitize(apiCoord.api)
 	targetConfigFile := filepath.Join(context.OutputFolder, context.ProjectFolder, sanitizedApi, "config.yaml")
 
 	err = context.Fs.MkdirAll(filepath.Dir(targetConfigFile), 0777)
@@ -603,7 +604,7 @@ func extractTemplate(context *detailedSerializerContext, cfg config.Config) (str
 			}
 			name = n
 		} else {
-			name = strings.Sanitize(t.ID()) + ".json"
+			name = mystrings.Sanitize(t.ID()) + ".json"
 			path = filepath.Join(context.configFolder, name)
 		}
 	default:
