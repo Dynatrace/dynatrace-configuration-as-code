@@ -280,7 +280,7 @@ func GetNameForConfig(c Config) (any, error) {
 func GetScopeParameterForConfig(c Config) (parameter.Parameter, error) {
 	scopeParameter, exist := c.Parameters[ScopeParameter]
 	if !exist {
-		return nil, fmt.Errorf("New error: configuration %s has no 'scope' parameter defined", c.Coordinate)
+		return nil, fmt.Errorf("configuration %s has no 'scope' parameter defined", c.Coordinate)
 	}
 
 	return scopeParameter, nil
