@@ -44,8 +44,9 @@ type ConfigGraph interface {
 
 // ConfigNode implements the gonum graph.Node interface and contains a pointer to its respective config.Config in addition to the unique ID required.
 type ConfigNode struct {
-	NodeID int64
-	Config *config.Config
+	NodeID      int64
+	Config      *config.Config
+	DOTEncoding string
 }
 
 // ID returns the node's integer ID by which it is referenced in the graph.
@@ -55,6 +56,9 @@ func (n ConfigNode) ID() int64 {
 
 // DOTID returns the node's identifier when printed to a DOT file. For readability of files this is the coordinate.Coordinate of the Config, instead of the node's ID integer.
 func (n ConfigNode) DOTID() string {
+	if n.DOTEncoding != "" {
+		return n.DOTEncoding
+	}
 	return n.Config.Coordinate.String()
 }
 
@@ -189,17 +193,19 @@ func buildUndirectedGraph(d *simple.DirectedGraph) *simple.UndirectedGraph {
 	return u
 }
 
+type NodeOption func(n *ConfigNode)
+
 // New creates a new ConfigGraphPerEnvironment based on the given projects and environments.
-func New(projects []project.Project, environments []string) ConfigGraphPerEnvironment {
+func New(projects []project.Project, environments []string, nodeOptions ...NodeOption) ConfigGraphPerEnvironment {
 	graphs := make(ConfigGraphPerEnvironment)
 	for _, environment := range environments {
-		cfgGraph := buildDependencyGraph(projects, environment)
+		cfgGraph := buildDependencyGraph(projects, environment, nodeOptions)
 		graphs[environment] = cfgGraph
 	}
 	return graphs
 }
 
-func buildDependencyGraph(projects []project.Project, environment string) *simple.DirectedGraph {
+func buildDependencyGraph(projects []project.Project, environment string, nodeOptions []NodeOption) *simple.DirectedGraph {
 	log.Debug("creating dependency graph for %s", environment)
 	g := simple.NewDirectedGraph()
 	coordinateToNodeIDs := make(coordinateToNodeIDMap)
@@ -219,6 +225,9 @@ func buildDependencyGraph(projects []project.Project, environment string) *simpl
 		n := ConfigNode{
 			NodeID: int64(i),
 			Config: &c,
+		}
+		for _, o := range nodeOptions {
+			o(&n)
 		}
 		g.AddNode(n)
 
