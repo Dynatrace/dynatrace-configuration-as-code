@@ -63,20 +63,10 @@ func (v *Validator) Validate(c config.Config) error {
 	for _, c2 := range v.uniqueNames[c.Environment][a.Api] {
 
 		// if the configs have a scope and they are different then the configs are unique
-		if theAPI.HasParent() {
-			s1, err := config.GetScopeParameterForConfig(c)
-			if err != nil {
-				return err
-			}
-
-			s2, err := config.GetScopeParameterForConfig(c2)
-			if err != nil {
-				return err
-			}
-
-			if !cmp.Equal(s1, s2) {
-				return nil
-			}
+		scope1 := c.Parameters[config.ScopeParameter]
+		scope2 := c2.Parameters[config.ScopeParameter]
+		if !cmp.Equal(scope1, scope2) {
+			return nil
 		}
 
 		n1, err := config.GetNameForConfig(c)
