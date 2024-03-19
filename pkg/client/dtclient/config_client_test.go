@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -455,6 +456,63 @@ func TestUpsertConfigByName(t *testing.T) {
 			dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG", nil)
 			dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG 2", nil)
 			assert.Equal(t, apiHits, tt.expectedAPIHits)
+		})
+	}
+}
+
+func TestUpsertConfig_CheckEqualityFunctionIsUsed(t *testing.T) {
+	tests := []struct {
+		name                     string
+		testApi                  api.API
+		fetchExistingAPIResponse string
+		createAPIResponse        string
+		updateAPIResponse        string
+		expectedDynatraceObject  DynatraceEntity
+		expectedAPIHits          int
+	}{
+		{
+			name:                     "existing object found with custom function - update",
+			testApi:                  api.API{ID: "test", URLPath: "/test/api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse, CheckEqualFunc: func(_ map[string]any, _ map[string]any) bool { return true }},
+			fetchExistingAPIResponse: `{ "values": [ { "id": "42", "name": "MY CONFIG" } ] }`,
+			updateAPIResponse:        `{ "id": "42", "name": "MY NEW CONFIG" }`,
+			expectedAPIHits:          2,
+			expectedDynatraceObject:  DynatraceEntity{Id: "42", Name: "MY CONFIG", Description: "Updated existing object"},
+		},
+		{
+			name:                     "no existing object found with custom function - create",
+			testApi:                  api.API{ID: "test", URLPath: "/test/api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse, CheckEqualFunc: func(_ map[string]any, _ map[string]any) bool { return false }},
+			fetchExistingAPIResponse: `{ "values": [ { "id": "42", "name": "MY CONFIG" } ] }`,
+			createAPIResponse:        `{ "id": "44", "name": "MY NEW CONFIG" }`,
+			expectedAPIHits:          2,
+			expectedDynatraceObject:  DynatraceEntity{Id: "44", Name: "MY NEW CONFIG"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			apiHits := 0
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				apiHits++
+				if req.Method == http.MethodGet {
+					rw.Write([]byte(tt.fetchExistingAPIResponse))
+					rw.WriteHeader(http.StatusOK)
+				}
+				if req.Method == http.MethodPost {
+					rw.Write([]byte(tt.createAPIResponse))
+					rw.WriteHeader(http.StatusOK)
+				}
+				if req.Method == http.MethodPut {
+					rw.Write([]byte(tt.updateAPIResponse))
+					rw.WriteHeader(http.StatusOK)
+				}
+
+			}))
+			defer server.Close()
+
+			dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
+			dtObj, err := dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG", []byte(`{}`))
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedAPIHits, 2)
+			assert.Equal(t, tt.expectedDynatraceObject, dtObj)
 		})
 	}
 }

@@ -464,6 +464,7 @@ func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName st
 		if err != nil {
 			return "", err
 		}
+		return objID, nil
 	}
 
 	// Single configuration APIs don't have an id which allows skipping this step
