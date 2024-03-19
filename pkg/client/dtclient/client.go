@@ -470,6 +470,12 @@ func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, n
 }
 
 func (d *DynatraceClient) configExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
+	if api.SingleConfiguration {
+		// check that a single configuration is there by actually reading it.
+		_, err := d.readConfigById(ctx, api, "")
+		return err == nil, "", nil
+	}
+
 	existingObjectId, err := d.getExistingObjectId(ctx, name, api, nil)
 	return existingObjectId != "", existingObjectId, err
 }
