@@ -19,7 +19,6 @@
 package v2
 
 import (
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/spf13/afero"
@@ -117,10 +116,10 @@ func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 	suffix := integrationtest.GenerateTestSuffix(t, generalSuffix)
 	transformers := []func(line string) string{
 		func(name string) string {
-			return integrationtest.ReplaceName(name, integrationtest.AddSuffix(suffix))
+			return integrationtest.ReplaceName(name, integrationtest.GetAddSuffixFunction(suffix))
 		},
 		func(id string) string {
-			return integrationtest.ReplaceId(id, integrationtest.AddSuffix(suffix))
+			return integrationtest.ReplaceId(id, integrationtest.GetAddSuffixFunction(suffix))
 		},
 	}
 
@@ -134,8 +133,8 @@ func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 }
 
 func setTestEnvVar(t *testing.T, key, value, testSuffix string) {
-	t.Setenv(key, value)                                   // expose directly
-	t.Setenv(fmt.Sprintf("%s_%s", key, testSuffix), value) // expose with suffix (env parameter "name" is subject to rewrite)
+	t.Setenv(key, value)                                        // expose directly
+	t.Setenv(integrationtest.AddSuffix(key, testSuffix), value) // expose with suffix (env parameter "name" is subject to rewrite)
 }
 
 func isHardeningEnvironment() bool {

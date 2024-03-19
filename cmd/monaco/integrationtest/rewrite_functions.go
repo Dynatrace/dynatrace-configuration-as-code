@@ -23,9 +23,13 @@ import (
 	"strings"
 )
 
-func AddSuffix(suffix string) func(line string) string {
+func AddSuffix(name string, suffix string) string {
+	return name + "_" + suffix
+}
+
+func GetAddSuffixFunction(suffix string) func(line string) string {
 	var f = func(name string) string {
-		return name + "_" + suffix
+		return AddSuffix(name, suffix)
 	}
 	return f
 }
