@@ -1,0 +1,13 @@
+{
+    "enabled": {{.shared}},
+    "permissions": [
+      {
+        "permission": "VIEW",
+        "type": "ALL"
+      }
+    ],
+    "preset": false,
+    "publicAccess": {
+      "managementZoneIds": []
+    }
+  }

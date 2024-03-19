@@ -29,10 +29,15 @@ import (
 
 func TestDeployScopedConfigurations(t *testing.T) {
 
+	dashboardSharedEnvName := "DASHBOARD_SHARED"
 	configFolder := "test-resources/scoped-configs/"
 	environment := "classic_env"
 	manifest := configFolder + "manifest.yaml"
-	envVars := map[string]string{featureflags.MRumProperties().EnvName(): "true"}
+	envVars := map[string]string{
+		featureflags.MRumProperties().EnvName():         "true",
+		featureflags.DashboardShareSettings().EnvName(): "true",
+		dashboardSharedEnvName:                          "false",
+	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, environment, "ScopedConfigs", envVars, func(fs afero.Fs, _ TestContext) {
 
