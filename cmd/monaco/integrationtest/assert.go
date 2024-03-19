@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -62,8 +63,13 @@ func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (entities.
 	return ent, f
 }
 
-// AssertAllConfigsAvailability checks all configurations of a given project with given availability
+// AssertAllConfigsAvailability checks all configurations of a given project with given availability.
 func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool) {
+	AssertAllConfigsAvailabilityAndHook(t, fs, manifestPath, specificProjects, specificEnvironment, available, nil)
+}
+
+// AssertAllConfigsAvailabilityAndHook checks all configurations of a given project with given availability and hook.
+func AssertAllConfigsAvailabilityAndHook(t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool, hook func(t *testing.T, clients *client.ClientSet, config config.Config, props parameter.Properties)) {
 	loadedManifest := LoadManifest(t, fs, manifestPath, specificEnvironment)
 
 	projects := LoadProjects(t, fs, manifestPath, loadedManifest)
@@ -171,6 +177,10 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 				if foundID != "" { // store found IDs of asserted configs to allow resolving references (e.g. to assert Settings or SubPath configs referencing other test configs as scope)
 					lookup[coord].Properties[config.IdParameter] = foundID
+				}
+
+				if hook != nil {
+					hook(t, clients, theConfig, properties)
 				}
 			}
 		}
