@@ -71,7 +71,9 @@ func TestInvalidCommandUsage(t *testing.T) {
 func TestGeneratesValidDeleteFile(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.MRumProperties().EnvName(), "1")
+	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -107,7 +109,9 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 
 func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.MRumProperties().EnvName(), "1")
+	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -143,7 +147,9 @@ func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
 func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.MRumProperties().EnvName(), "1")
+	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 	fs := testutils.CreateTestFileSystem()
 
 	outputFolder := "output-folder"
@@ -176,7 +182,9 @@ func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.MRumProperties().EnvName(), "1")
+	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 	outputFolder := "output-folder"
 
 	t.Run("env1 includes base notification name", func(t *testing.T) {
@@ -277,7 +285,9 @@ func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
 func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.MRumProperties().EnvName(), "1")
+	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -326,7 +336,9 @@ func assertDeleteEntries(t *testing.T, entries map[string][]pointer.DeletePointe
 func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.MRumProperties().EnvName(), "1")
+	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
+	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 
 	t.Run("default filename", func(t *testing.T) {
 		time := timeutils.TimeAnchor().Format("20060102-150405")
