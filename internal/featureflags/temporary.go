@@ -87,7 +87,7 @@ func GenerateJSONSchemas() FeatureFlag {
 func DashboardShareSettings() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_DASHBOARD_SHARE_SETTINGS",
-		defaultEnabled: false,
+		defaultEnabled: true,
 	}
 }
 
@@ -105,7 +105,7 @@ func KeyUserActionsWeb() FeatureFlag {
 func KeyUserActionsMobile() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_KUA_MOBILE",
-		defaultEnabled: false,
+		defaultEnabled: true,
 	}
 }
 
@@ -114,6 +114,6 @@ func KeyUserActionsMobile() FeatureFlag {
 func UserActionSessionPropertiesMobile() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_UASP_MOBILE",
-		defaultEnabled: false,
+		defaultEnabled: true,
 	}
 }
