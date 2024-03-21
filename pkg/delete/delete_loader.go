@@ -19,13 +19,14 @@ package delete
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/mitchellh/mapstructure"
-	"path/filepath"
-	"strings"
 
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -158,7 +159,7 @@ func parseFullEntry(ctx *loaderContext, entry interface{}) (pointer.DeletePointe
 	if a, known := ctx.knownApis[parsed.Type]; known {
 		p, err := parseAPIEntry(parsed, a)
 		if err != nil {
-			return pointer.DeletePointer{}, fmt.Errorf("failed to parse entry for API %q: %w", a.ID, err)
+			return pointer.DeletePointer{}, fmt.Errorf("failed to parse entry for API '%s': %w", a.ID, err)
 		}
 		return p, nil
 	}
@@ -172,7 +173,27 @@ func parseAPIEntry(parsed persistence.DeleteEntry, a api.API) (pointer.DeletePoi
 	}
 
 	if parsed.ConfigId != "" {
-		log.Warn("Delete entry %q of API type defines config 'id' - only 'name' will be used.")
+		log.Warn("Delete entry '%s' of API type defines config 'id' - only 'name' will be used.")
+	}
+
+	if a.ID == api.KeyUserActionsWeb {
+		if parsed.Scope == "" {
+			return pointer.DeletePointer{}, fmt.Errorf("API of type '%s' requires a '%s', but none was defined", a, "scope")
+		}
+		if v := parsed.CustomValues["actionType"]; v == "" {
+			return pointer.DeletePointer{}, fmt.Errorf("API of type '%s' requires a '%s', but none was defined", a, "actionType")
+		}
+		if v := parsed.CustomValues["domain"]; v == "" {
+			return pointer.DeletePointer{}, fmt.Errorf("API of type '%s' requires a '%s', but none was defined", a, "domain")
+		}
+
+		return pointer.DeletePointer{
+			Type:       parsed.Type,
+			Identifier: parsed.ConfigName,
+			Scope:      parsed.Scope,
+			ActionType: parsed.CustomValues["actionType"],
+			Domain:     parsed.CustomValues["domain"],
+		}, nil
 	}
 
 	// The scope is required for sub-path APIs.
