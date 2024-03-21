@@ -69,7 +69,7 @@ $(RELEASES):
 
 install:
 	@echo "Installing $(BINARY_NAME)..."
-	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
+	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version.MonitoringAsCode=$(VERSION) -w -extldflags "-static"' ./cmd/monaco
 
 clean:
 	@echo "Removing $(BINARY_NAME), bin/ and /build ..."
