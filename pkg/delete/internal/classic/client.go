@@ -24,28 +24,35 @@ import (
 
 func newCachedDTClient(client dtclient.Client) dtclient.Client {
 	return &cachedDTClient{
-		Client:    client,
-		listCache: make(map[urlPath]listResponse),
+		Client: client,
+		cache:  make(map[urlPath]listResponse),
 	}
 }
 
 type (
 	cachedDTClient struct {
 		dtclient.Client
-		listCache map[urlPath]listResponse
+		cache map[urlPath]listResponse
 	}
 	urlPath      = string
 	listResponse = []dtclient.Value
 )
 
-func (client *cachedDTClient) ListConfigs(ctx context.Context, api api.API) ([]dtclient.Value, error) {
-	if _, ok := client.listCache[api.URLPath]; !ok {
-		v, err := client.Client.ListConfigs(ctx, api)
+func (c *cachedDTClient) ListConfigs(ctx context.Context, a api.API) ([]dtclient.Value, error) {
+	if _, ok := c.cache[a.URLPath]; !ok {
+		v, err := c.Client.ListConfigs(ctx, a)
 		if err != nil {
 			return nil, err
 		} else {
-			client.listCache[api.URLPath] = v
+			c.cache[a.URLPath] = v
 		}
 	}
-	return client.listCache[api.URLPath], nil
+	return c.cache[a.URLPath], nil
+}
+
+func (c *cachedDTClient) DeleteConfigById(a api.API, id string) error {
+	if a.ID == api.ApplicationWeb {
+		delete(c.cache, a.URLPath)
+	}
+	return c.Client.DeleteConfigById(a, id)
 }
