@@ -19,7 +19,6 @@ package classic
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -35,6 +34,7 @@ import (
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/exp/maps"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -119,30 +119,31 @@ func downloadConfigs(client client.ConfigClient, api api.API, projectName string
 		go func() {
 			defer wg.Done()
 
-			downloadedJsons, err := downloadAndUnmarshalConfig(client, api, v)
+			dlData, err := download(client, api, v)
 			if err != nil {
-				log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Warn("Error fetching config '%v' in api '%v': %v", v.value.Id, api.ID, err)
+				log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Warn("Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
 				return
 			}
 
-			for _, downloadedJson := range downloadedJsons {
+			dlConfigs, err := extractConfigs(api, dlData)
+			if err != nil {
+				log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Warn("Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
+				return
+			}
+
+			for _, dlConfig := range dlConfigs {
 				if api.TweakResponseFunc != nil {
-					api.TweakResponseFunc(downloadedJson)
+					api.TweakResponseFunc(dlConfig)
 				}
 
-				c, err := createConfigForDownloadedJson(downloadedJson, api, v, projectName)
+				c, err := createConfigObject(dlConfig, api, v, projectName)
 				if err != nil {
-					log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Warn("Error creating config for %v in api %v: %v", v.value.Id, api.ID, err)
+					log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Warn("Error creating config for '%s' in api '%s': %v", v.value.Id, api.ID, err)
 					return
 				}
 
-				c1 := downloadedConfig{
-					Config: c,
-					value:  v.value,
-				}
-
 				mutex.Lock()
-				results = append(results, c1)
+				results = append(results, downloadedConfig{Config: c, value: v.value})
 				mutex.Unlock()
 			}
 		}()
@@ -262,7 +263,7 @@ func shouldFilter() bool {
 	return featureflags.DownloadFilter().Enabled() && featureflags.DownloadFilterClassicConfigs().Enabled()
 }
 
-func downloadAndUnmarshalConfig(client client.ConfigClient, theApi api.API, value value) ([]map[string]interface{}, error) {
+func download(client client.ConfigClient, theApi api.API, value value) (map[string]any, error) {
 	id := value.value.Id
 
 	// check if we should skip the id to enforce to read/download "all" configs instead of a single one
@@ -280,33 +281,33 @@ func downloadAndUnmarshalConfig(client client.ConfigClient, theApi api.API, valu
 	if err != nil {
 		return nil, err
 	}
-
-	values, found := data[theApi.PropertyNameOfGetAllResponse]
+	return data, nil
+}
+func extractConfigs(theApi api.API, data map[string]any) ([]map[string]interface{}, error) {
+	vals, found := data[theApi.PropertyNameOfGetAllResponse]
 	if !found {
 		return []map[string]any{data}, nil
 	}
 
 	var res []map[string]any
-	err = mapstructure.Decode(values, &res)
+	err := mapstructure.Decode(vals, &res)
 	if err != nil {
 		return []map[string]any{}, err
 	}
-	if theApi.ID == api.KeyUserActionsWeb { //clean unwanted configs
-		return filterResponses(res, value)
+
+	if theApi.CheckEqualFunc != nil {
+		res = slices.DeleteFunc(res, func(m map[string]any) bool {
+			var remove bool
+			for _, r := range res {
+				remove = !theApi.CheckEqualFunc(m, r)
+			}
+			return remove
+		})
 	}
 	return res, nil
 }
 
-func filterResponses(res []map[string]any, value value) ([]map[string]any, error) {
-	for _, v := range res {
-		if v["meIdentifier"] == value.value.Id {
-			return []map[string]any{v}, nil
-		}
-	}
-	return nil, fmt.Errorf("unable to find %q configuration with ID %q", api.KeyUserActionsWeb, value.value.Id)
-}
-
-func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.API, value value, projectId string) (config.Config, error) {
+func createConfigObject(mappedJson map[string]interface{}, theApi api.API, value value, projectId string) (config.Config, error) {
 	templ, err := createTemplate(mappedJson, value, theApi.ID)
 	if err != nil {
 		return config.Config{}, err
