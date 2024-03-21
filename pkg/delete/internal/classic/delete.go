@@ -39,7 +39,7 @@ func Delete(ctx context.Context, client dtclient.Client, theAPI api.API, dps []p
 		var id, parentID string
 		var e error
 		if theAPI.HasParent() {
-			parentID, e = resolveIdentifier(ctx, client, theAPI.Parent, dp.Scope)
+			parentID, e = resolveIdentifier(ctx, client, theAPI.Parent, toIdentifier(dp.Scope, "", ""))
 			if e != nil && !is404(e) {
 				log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w")
 				err = errors.Join(err, e)
@@ -51,7 +51,7 @@ func Delete(ctx context.Context, client dtclient.Client, theAPI api.API, dps []p
 		}
 
 		a := theAPI.ApplyParentObjectID(parentID)
-		id, e = resolveIdentifier(ctx, client, &a, dp.Identifier)
+		id, e = resolveIdentifier(ctx, client, &a, toIdentifier(dp.Identifier, dp.ActionType, dp.Domain))
 		if e != nil && !is404(e) {
 			log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w")
 			err = errors.Join(err, e)
@@ -70,6 +70,16 @@ func Delete(ctx context.Context, client dtclient.Client, theAPI api.API, dps []p
 	return err
 }
 
+type identifier map[string]any
+
+func toIdentifier(identifier, actionType, domain string) identifier {
+	return map[string]any{
+		"name":       identifier,
+		"actionType": actionType,
+		"domain":     domain,
+	}
+}
+
 func is404(err error) bool {
 	var v rest.RespError
 	if errors.As(err, &v) {
@@ -79,13 +89,13 @@ func is404(err error) bool {
 }
 
 // resolveIdentifier get the actual ID from DT and update entries with it
-func resolveIdentifier(ctx context.Context, client dtclient.Client, theAPI *api.API, identifier string) (string, error) {
+func resolveIdentifier(ctx context.Context, client dtclient.Client, theAPI *api.API, identifier identifier) (string, error) {
 	knownValues, err := client.ListConfigs(ctx, *theAPI)
 	if err != nil {
 		return "", err
 	}
 
-	id, err := findUniqueID(knownValues, identifier)
+	id, err := findUniqueID(knownValues, identifier, theAPI.CheckEqualFunc)
 	if err != nil {
 		return "", err
 	}
@@ -93,15 +103,19 @@ func resolveIdentifier(ctx context.Context, client dtclient.Client, theAPI *api.
 	return id, nil
 }
 
-func findUniqueID(knownValues []dtclient.Value, identifier string) (string, error) {
+func findUniqueID(knownValues []dtclient.Value, identifier identifier, checkEqualFn func(map[string]any, map[string]any) bool) (string, error) {
 	type resolvedID = string
 	var knownByName []resolvedID
 	var knownByID resolvedID
 
 	for i := range knownValues {
-		if identifier == knownValues[i].Name {
+		if checkEqualFn != nil {
+			if checkEqualFn(knownValues[i].CustomFields, identifier) {
+				knownByName = append(knownByName, knownValues[i].Id)
+			}
+		} else if identifier["name"] == knownValues[i].Name {
 			knownByName = append(knownByName, knownValues[i].Id)
-		} else if identifier == knownValues[i].Id {
+		} else if identifier["name"] == knownValues[i].Id {
 			knownByID = knownValues[i].Id
 		}
 	}

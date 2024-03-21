@@ -21,6 +21,12 @@ package delete_test
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
@@ -33,11 +39,6 @@ import (
 	monacoREST "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"strings"
-	"testing"
 )
 
 var automationTypes = map[string]config.AutomationResource{
@@ -627,7 +628,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 }
 
 func TestConfigsWithParent(t *testing.T) {
-	theAPI := api.NewAPIs()["key-user-actions-mobile"]
+	theAPI := api.NewAPIs()[api.KeyUserActionsMobile]
 
 	type (
 		listMock struct {
@@ -818,12 +819,6 @@ func TestConfigsWithParent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			client := dtclient.NewMockClient(gomock.NewController(t))
-			gomock.GotFormatterAdapter(
-				gomock.GotFormatterFunc(func(i any) string {
-					return fmt.Sprintf("%02d", i)
-				}),
-				gomock.Eq(15),
-			)
 			if tc.mock.parentList != nil {
 				client.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(tc.mock.parentList.api)).Return(tc.mock.parentList.response, tc.mock.parentList.err).Times(1)
 			}
@@ -842,4 +837,31 @@ func TestConfigsWithParent(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_KeyUserActionsWebUniqueness(t *testing.T) {
+	theAPI := api.NewAPIs()[api.KeyUserActionsWeb]
+	client := dtclient.NewMockClient(gomock.NewController(t))
+
+	client.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
+	client.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID"))).Return([]dtclient.Value{
+		{Id: "DT-id-of-app", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test.com", "actionType": "Load"}},
+		{Id: "DT-id-of-app2", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test2.com", "actionType": "Load"}},
+	}, nil).Times(1)
+	client.EXPECT().DeleteConfigById(matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+
+	de := delete.DeleteEntries{
+		"key-user-actions-web": {
+			{
+				Type:       "key-user-actions-web",
+				Identifier: "test",
+				Scope:      "application name",
+				ActionType: "Load",
+				Domain:     "test.com",
+			},
+		},
+	}
+
+	err := delete.Configs(context.TODO(), delete.ClientSet{Classic: client}, api.NewAPIs(), automationTypes, de)
+	assert.NoError(t, err)
 }
