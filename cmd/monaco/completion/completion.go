@@ -151,6 +151,10 @@ func ProjectsFromManifest(_ *cobra.Command, args []string, _ string) ([]string, 
 	return maps.Keys(mani.Projects), cobra.ShellCompDirectiveDefault
 }
 
+func DependencyGraphEncodingOptions(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	return []string{"default", "json"}, cobra.ShellCompDirectiveDefault
+}
+
 // YamlFile autocompletes any *yaml file, as well as directories
 func YamlFile(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 	return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt

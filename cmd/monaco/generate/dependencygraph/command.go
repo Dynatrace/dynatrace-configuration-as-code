@@ -27,11 +27,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const jsonEncoding = "json"
+
 func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 	var environments, groups []string
 	var outputFolder string
-	var jsonIDs bool
+	var idEncoding string
 
 	cmd = &cobra.Command{
 		Use:               "graph <manifest.yaml>",
@@ -49,7 +51,9 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 				return err
 			}
 
-			err := writeGraphFiles(fs, manifestName, environments, groups, outputFolder, jsonIDs)
+			writeJSONIDs := idEncoding == jsonEncoding
+
+			err := writeGraphFiles(fs, manifestName, environments, groups, outputFolder, writeJSONIDs)
 			if err != nil {
 				log.WithFields(field.Error(err), field.F("manifestFile", manifestName), field.F("outputFolder", outputFolder)).Error("Failed to create dependency graph files: %v", err)
 			}
@@ -72,9 +76,13 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "", "The folder generated dependency graph DOT files should be written to. If not set, files will be created in the current directory.")
 
-	cmd.Flags().BoolVar(&jsonIDs, "json-ids", false, "Set to generate a DOT file encoding each node's coordinate as JSON, instead of the default string representation. This can be useful when processing generated DOT files automatically.")
+	cmd.Flags().StringVar(&idEncoding, "id-encoding", "default", "Set to 'json' to generate a DOT file encoding each node's coordinate as JSON, instead of the 'default' string representation. JSON encoding can be useful when processing generated DOT files automatically.")
 
 	if err := cmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+
+	if err := cmd.RegisterFlagCompletionFunc("id-encoding", completion.DependencyGraphEncodingOptions); err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 

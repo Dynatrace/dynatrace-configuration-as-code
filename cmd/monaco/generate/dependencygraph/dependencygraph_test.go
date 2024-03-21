@@ -190,7 +190,7 @@ func TestGeneratesDOTFilesWithJSONIDs(t *testing.T) {
 
 	cmd.SetArgs([]string{
 		"./test-resources/manifest.yaml",
-		"--json-ids",
+		"--id-encoding", "json",
 		"-o",
 		outputFolder,
 	})

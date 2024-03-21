@@ -89,6 +89,7 @@ func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string
 
 	var opts []graph.NodeOption
 	if writeJSONIDs {
+		log.Debug("Encoding DOT Node IDs as JSON")
 		opts = append(opts, func(n *graph.ConfigNode) {
 			s, err := json.Marshal(n.Config.Coordinate)
 			if err == nil {
