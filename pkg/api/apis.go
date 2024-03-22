@@ -82,6 +82,11 @@ func RemoveDisabled(api API) bool {
 	return false
 }
 
+// RemoveNonDeletable filters every api for which configs are not deletable
+func RemoveNonDeletable(api API) bool {
+	return api.NonDeletable
+}
+
 // RetainByName creates a Filter that leaves the API in the map if API.ID is part of the provided list. If the provided list is empty, a no-op filter is returned.
 func RetainByName(apis []string) Filter {
 	if len(apis) == 0 {
