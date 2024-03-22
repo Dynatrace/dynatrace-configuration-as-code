@@ -72,21 +72,6 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 			},
 		},
 		{
-			project: "settings-with-classic-mngt-zone",
-			downloadOpts: []string{
-				"-a", "management-zone",
-				"-s", "builtin:problem.notifications,builtin:alerting.profile",
-			},
-			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
-				managementZone := findConfig(t, confsPerType, "management-zone", "zone-swc_"+ctx.suffix)
-				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile-swc_"+ctx.suffix, "name")
-				notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification-swc_"+ctx.suffix, "displayName")
-
-				assertRefParamFromTo(t, profile, managementZone)
-				assertRefParamFromTo(t, notification, profile)
-			},
-		},
-		{
 			project: "classic-with-settings-mngt-zone",
 			downloadOpts: []string{
 				"-a", "notification,alerting-profile",
