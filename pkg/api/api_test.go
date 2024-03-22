@@ -16,34 +16,27 @@
  * limitations under the License.
  */
 
-package api
+package api_test
 
 import (
 	"testing"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetUrl(t *testing.T) {
-	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/managementZones", (API{URLPath: "/api/config/v1/managementZones"}).CreateURL(testDevEnvironment.GetEnvironmentUrl()))
+	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/managementZones", (api.API{URLPath: "/api/config/v1/managementZones"}).CreateURL(testDevEnvironment.GetEnvironmentUrl()))
 }
 
 func Test_configEndpoints(t *testing.T) {
-	for _, v := range configEndpoints {
-		v.testConfiguredApi(t)
+	for _, v := range api.ConfigEndpoints {
+		v.TestConfiguredApi(t)
 	}
 }
 
 func Test_configEndpointsV1(t *testing.T) {
-	for _, v := range configEndpointsV1 {
-		v.testConfiguredApi(t)
-	}
-}
-
-func (a API) testConfiguredApi(t *testing.T) {
-	assert.NotEmptyf(t, a.ID, "endpoint %+v have empty ID!", a)
-	if a.SingleConfiguration == true {
-		assert.Emptyf(t, a.PropertyNameOfGetAllResponse, "endpoint %q have forbiden value combination - when \"SingleConfiguration\" is true, \"PropertyNameOfGetAllResponse\" must be empty! (actual values: %+v)", a.ID, a)
-		assert.Falsef(t, a.NonUniqueName, "endpoint %q have forbiden value combination - when \"SingleConfiguration\" is true, \"NonUniqueName\" must be false! (actual values: %+v)", a.ID, a)
+	for _, v := range api.ConfigEndpointsV1 {
+		v.TestConfiguredApi(t)
 	}
 }
