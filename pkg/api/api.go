@@ -69,6 +69,8 @@ type API struct {
 	RequireAllFF []featureflags.FeatureFlag
 	// PropertyNameOfIdentifier defines the id field if it's not called 'ID'
 	PropertyNameOfIdentifier string
+	// NonDeletable indicates that configs of that type cannot be deleted
+	NonDeletable bool
 }
 
 func (a API) CreateURL(environmentURL string) string {

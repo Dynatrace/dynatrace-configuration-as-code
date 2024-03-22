@@ -151,6 +151,7 @@ var configEndpoints = []API{
 		URLPath:             "/api/config/v1/dashboards/{SCOPE}/shareSettings",
 		Parent:              &dashboardAPI,
 		SingleConfiguration: true,
+		NonDeletable:        true,
 		TweakResponseFunc:   removeURLsFromPublicAccess,
 		RequireAllFF:        []featureflags.FeatureFlag{featureflags.DashboardShareSettings()},
 	},
