@@ -32,9 +32,9 @@ func NewV1APIs() APIs {
 	return newAPIs(configEndpointsV1)
 }
 
-func newAPIs(t []API) APIs {
-	apis := make(APIs, len(t))
-	for _, a := range t {
+func newAPIs(as []API) APIs {
+	apis := make(APIs, len(as))
+	for _, a := range as {
 		apis[a.ID] = a
 	}
 	return apis
