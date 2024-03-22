@@ -21,6 +21,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"regexp"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -29,10 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/exp/maps"
-	"net/http"
-	"net/url"
-	"regexp"
-	"strings"
 )
 
 func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
@@ -209,7 +210,7 @@ func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl st
 			return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body), resp).WithRequestInfo(http.MethodPost, fullUrl)
 		}
 	}
-	log.WithCtxFields(ctx).Debug("\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
+	log.WithCtxFields(ctx).Debug("\tCreated new object for '%s' (%s)", dtEntity.Name, dtEntity.Id)
 
 	return dtEntity, nil
 }
@@ -249,13 +250,13 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 	}
 
 	if !resp.IsSuccess() {
-		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to update Config object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, path)
+		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to update Config object '%s' (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, path)
 	}
 
 	if theApi.NonUniqueName {
-		log.WithCtxFields(ctx).Debug("Created/Updated object by ID for %s", getNameIDDescription(objectName, existingObjectId))
+		log.WithCtxFields(ctx).Debug("Created/Updated object by ID for '%s'", getNameIDDescription(objectName, existingObjectId))
 	} else {
-		log.WithCtxFields(ctx).Debug("Updated existing object for %s", getNameIDDescription(objectName, existingObjectId))
+		log.WithCtxFields(ctx).Debug("Updated existing object for '%s'", getNameIDDescription(objectName, existingObjectId))
 	}
 
 	return DynatraceEntity{
@@ -485,7 +486,8 @@ func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName st
 func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
-	if !theApi.NonUniqueName && !theApi.HasParent() {
+	if (!theApi.NonUniqueName && !theApi.HasParent()) && //there is potentially more than one config per api type/id to consider
+		(theApi.ID != api.ApplicationWeb && theApi.ID != api.ApplicationMobile) { //there is no refresh mechanism for delete; outdated values can cause decreasing performance during delete (unnecessary retrying)
 		if values, cached := d.classicConfigsCache.Get(theApi.ID); cached {
 			return values, nil
 		}

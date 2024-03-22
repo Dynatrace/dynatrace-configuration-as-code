@@ -17,8 +17,9 @@
 package api
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"strings"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 )
 
 const StandardApiPropertyNameOfGetAllResponse string = "values"
@@ -77,7 +78,7 @@ func (a API) CreateURL(environmentURL string) string {
 	return environmentURL + a.URLPath
 }
 
-// HasParent returns true if the API has a relation to another (parent) API.
+// HasParent returns true iff the API has a relation to another (parent) API.
 // This is typically the case for "Sub-path" APIs, e.g. Key User Actions for Mobile applications.
 // In this case "mobile-application" would be the parent API, which is also reflected in the URLs to be used to query
 // and create key user actions.

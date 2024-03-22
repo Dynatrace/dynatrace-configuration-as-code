@@ -19,6 +19,8 @@ package classic
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -26,7 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/net/context"
-	"net/http"
 )
 
 // Delete removes the given pointer.DeletePointer entries from the environment the supplied client dtclient.Client connects to
@@ -62,7 +63,7 @@ func Delete(ctx context.Context, client dtclient.Client, theAPI api.API, dps []p
 		}
 
 		if e := client.DeleteConfigById(a, id); e != nil && !is404(e) {
-			log.WithFields(field.Error(e)).Error("failed to delete config: %w")
+			log.WithFields(field.Error(e)).Error("failed to delete config: %w", e)
 			err = errors.Join(err, e)
 		}
 		log.Debug("successfully deleted")

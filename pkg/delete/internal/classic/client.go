@@ -18,6 +18,8 @@ package classic
 
 import (
 	"context"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 )
@@ -25,34 +27,27 @@ import (
 func newCachedDTClient(client dtclient.Client) dtclient.Client {
 	return &cachedDTClient{
 		Client: client,
-		cache:  make(map[urlPath]listResponse),
 	}
 }
 
 type (
 	cachedDTClient struct {
 		dtclient.Client
-		cache map[urlPath]listResponse
+		cache cache.DefaultCache[[]dtclient.Value]
 	}
-	urlPath      = string
-	listResponse = []dtclient.Value
 )
 
 func (c *cachedDTClient) ListConfigs(ctx context.Context, a api.API) ([]dtclient.Value, error) {
-	if _, ok := c.cache[a.URLPath]; !ok {
-		v, err := c.Client.ListConfigs(ctx, a)
-		if err != nil {
-			return nil, err
-		} else {
-			c.cache[a.URLPath] = v
-		}
+	if v, ok := c.cache.Get(a.URLPath); ok {
+		return v, nil
 	}
-	return c.cache[a.URLPath], nil
-}
 
-func (c *cachedDTClient) DeleteConfigById(a api.API, id string) error {
-	if a.ID == api.ApplicationWeb {
-		delete(c.cache, a.URLPath)
+	v, err := c.Client.ListConfigs(ctx, a)
+	if err != nil {
+		return nil, err
 	}
-	return c.Client.DeleteConfigById(a, id)
+
+	c.cache.Set(a.URLPath, v)
+
+	return v, nil
 }
