@@ -48,12 +48,12 @@ func TestDeployScopedConfigurations(t *testing.T) {
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, environment, "ScopedConfigs", envVars, func(fs afero.Fs, testContext TestContext) {
 
 		// deploy with sharing turned off and assert state
-		t.Setenv(integrationtest.AddSuffix(dashboardSharedEnvName, testContext.suffix), "false")
+		setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.suffix)
 		runDeployCommand(t, fs, manifest, environment)
 		integrationtest.AssertAllConfigsAvailabilityAndHook(t, fs, manifest, []string{}, environment, true, getAssertSharedStateHook(false))
 
 		// deploy with sharing turned on and assert state
-		t.Setenv(integrationtest.AddSuffix(dashboardSharedEnvName, testContext.suffix), "true")
+		setTestEnvVar(t, dashboardSharedEnvName, "true", testContext.suffix)
 		runDeployCommand(t, fs, manifest, environment)
 		integrationtest.AssertAllConfigsAvailabilityAndHook(t, fs, manifest, []string{}, environment, true, getAssertSharedStateHook(true))
 	})
