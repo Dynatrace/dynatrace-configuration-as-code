@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
@@ -48,22 +48,19 @@ func TestDeployScopedConfigurations(t *testing.T) {
 
 		// deploy with sharing turned off and assert state
 		setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.suffix)
-		runDeployCommand(t, fs, manifestPath, environment)
+		err := monaco.Runf("monaco deploy --verbose %s --environment %s", manifestPath, environment)
+		require.NoError(t, err)
+
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, nil, environment, true)
 		assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, false)
 
 		// deploy with sharing turned on and assert state
 		setTestEnvVar(t, dashboardSharedEnvName, "true", testContext.suffix)
-		runDeployCommand(t, fs, manifestPath, environment)
+		err = monaco.Runf("monaco deploy --verbose %s --environment %s", manifestPath, environment)
+		require.NoError(t, err)
+
 		assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, true)
 	})
-}
-
-func runDeployCommand(t *testing.T, fs afero.Fs, manifestPath string, specificEnvironment string) {
-	cmd := runner.BuildCli(fs)
-	cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
-	err := cmd.Execute()
-	require.NoError(t, err)
 }
 
 func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext TestContext, manifestPath string, environment string, expectShared bool) {
