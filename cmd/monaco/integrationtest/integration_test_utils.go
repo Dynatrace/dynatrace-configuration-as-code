@@ -29,6 +29,7 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"path/filepath"
 	"testing"
@@ -57,7 +58,7 @@ func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefini
 			CachingDisabled: true, // disabled to avoid wrong cache reads
 		})
 	}
-	assert.NoError(t, err, "failed to create test client")
+	require.NoError(t, err, "failed to create test client")
 	return clients
 }
 
