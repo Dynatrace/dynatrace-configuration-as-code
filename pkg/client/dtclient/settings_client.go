@@ -257,14 +257,6 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		obj.OriginObjectId = ""
 	}
 
-	// special handling of this Settings object.
-	// It is delete-protected BUT has a key property which is internally
-	// used to find the object to be updated
-	if obj.SchemaId == "builtin:oneagent.features" {
-		externalID = ""
-		obj.OriginObjectId = ""
-	}
-
 	payload, err := buildPostRequestPayload(ctx, obj, externalID)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
