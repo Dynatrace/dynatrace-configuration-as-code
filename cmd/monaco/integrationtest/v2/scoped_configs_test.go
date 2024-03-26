@@ -19,28 +19,100 @@
 package v2
 
 import (
+	"context"
+	"encoding/json"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDeployScopedConfigurations(t *testing.T) {
 
+	dashboardSharedEnvName := "DASHBOARD_SHARED"
 	configFolder := "test-resources/scoped-configs/"
 	environment := "classic_env"
-	manifest := configFolder + "manifest.yaml"
-	envVars := map[string]string{featureflags.MRumProperties().EnvName(): "true"}
+	manifestPath := configFolder + "manifest.yaml"
+	envVars := map[string]string{
+		featureflags.MRumProperties().EnvName():         "true",
+		featureflags.DashboardShareSettings().EnvName(): "true",
+	}
 
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, environment, "ScopedConfigs", envVars, func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifestPath, environment, "ScopedConfigs", envVars, func(fs afero.Fs, testContext TestContext) {
 
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", environment})
-		err := cmd.Execute()
+		// deploy with sharing turned off and assert state
+		setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.suffix)
+		err := monaco.Runf("monaco deploy --verbose %s --environment %s", manifestPath, environment)
+		require.NoError(t, err)
 
-		assert.NoError(t, err)
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, environment, true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, nil, environment, true)
+		assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, false)
+
+		// deploy with sharing turned on and assert state
+		setTestEnvVar(t, dashboardSharedEnvName, "true", testContext.suffix)
+		err = monaco.Runf("monaco deploy --verbose %s --environment %s", manifestPath, environment)
+		require.NoError(t, err)
+
+		assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, true)
 	})
+}
+
+func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext TestContext, manifestPath string, environment string, expectShared bool) {
+	man, errs := manifestloader.Load(&manifestloader.Context{
+		Fs:           fs,
+		ManifestPath: manifestPath,
+		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
+	})
+	assert.Empty(t, errs)
+
+	environmentDefinition := man.Environments[environment]
+	clientSet := integrationtest.CreateDynatraceClients(t, environmentDefinition)
+	apis := api.NewAPIs()
+
+	dashboardAPI := apis[api.Dashboard]
+	dashboardName := integrationtest.AddSuffix("Application monitoring", testContext.suffix)
+	exists, dashboardID, err := clientSet.Classic().ConfigExistsByName(context.TODO(), dashboardAPI, dashboardName)
+
+	require.NoError(t, err, "expect to be able to get dashboard by name")
+	require.True(t, exists, "dashboard must exist")
+
+	dashboardJSONBytes, err := clientSet.Classic().ReadConfigById(dashboardAPI, dashboardID)
+	require.NoError(t, err, "expect to be able to get dashboard by ID")
+	assertDashboardSharedState(t, dashboardJSONBytes, expectShared)
+
+	dashboardShareSettingsAPI := apis[api.DashboardShareSettings].ApplyParentObjectID(dashboardID)
+	dashboardShareSettingsJSONBytes, err := clientSet.Classic().ReadConfigById(dashboardShareSettingsAPI, "")
+	require.NoError(t, err, "expect to be able to get dashboard shared settings by ID")
+	assertDashboardShareSettingsEnabledState(t, dashboardShareSettingsJSONBytes, expectShared)
+}
+
+func assertDashboardSharedState(t *testing.T, jsonBytes []byte, expectShared bool) {
+	var resultMap map[string]interface{}
+	err := json.Unmarshal(jsonBytes, &resultMap)
+	require.NoError(t, err)
+
+	dashboardMetadata, ok := resultMap["dashboardMetadata"].(map[string]interface{})
+	require.True(t, ok, "expected to get dashboard metadata")
+
+	shared, ok := dashboardMetadata["shared"].(bool)
+	require.True(t, ok, "expected to get shared")
+
+	assert.EqualValues(t, expectShared, shared, "expected dashboard shared = %t", expectShared)
+}
+
+func assertDashboardShareSettingsEnabledState(t *testing.T, jsonBytes []byte, expectEnabled bool) {
+	var resultMap map[string]interface{}
+	err := json.Unmarshal(jsonBytes, &resultMap)
+	require.NoError(t, err)
+
+	enabled, ok := resultMap["enabled"].(bool)
+	require.True(t, ok, "expected to get enabled")
+
+	assert.EqualValues(t, expectEnabled, enabled, "expected dashboard-share-settings enabled = %t", expectEnabled)
 }

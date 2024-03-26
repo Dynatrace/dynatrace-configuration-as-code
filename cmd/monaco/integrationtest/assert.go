@@ -62,7 +62,7 @@ func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (entities.
 	return ent, f
 }
 
-// AssertAllConfigsAvailability checks all configurations of a given project with given availability
+// AssertAllConfigsAvailability checks all configurations of a given project with given availability.
 func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool) {
 	loadedManifest := LoadManifest(t, fs, manifestPath, specificEnvironment)
 

@@ -1,0 +1,33 @@
+{
+    "dashboardMetadata": {
+      "dashboardFilter": null,
+      "hasConsistentColors": false,
+      "name": "{{.name}}",
+      "owner": "nobody@dynatrace.com",
+      "shared": {{.shared}},
+      "tilesNameSize": null
+    },
+    "tiles": [
+      {
+        "assignedEntities": [
+          "{{ .applicationID }}"
+        ],
+        "bounds": {
+          "height": 304,
+          "left": 418,
+          "top": 76,
+          "width": 304
+        },
+        "configured": true,
+        "isAutoRefreshDisabled": false,
+        "metric": "APDEX",
+        "name": "World map",
+        "nameSize": null,
+        "tileFilter": {
+          "managementZone": null,
+          "timeframe": null
+        },
+        "tileType": "APPLICATION_WORLDMAP"
+      }
+    ]
+  }

@@ -1,0 +1,18 @@
+configs:
+- id: dashboard1
+  config:
+    name: Application monitoring
+    parameters:
+      shared:
+        type: environment
+        name: DASHBOARD_SHARED
+    template: dashboard1.json
+    skip: false
+  type:
+    api:
+      name: dashboard-share-settings #monaco-test:no-replace
+      scope:
+        configId: dashboard1
+        configType: dashboard
+        property: id
+        type: reference

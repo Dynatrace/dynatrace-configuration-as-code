@@ -1,0 +1,17 @@
+configs:
+- id: dashboard1
+  config:
+    name: Application monitoring
+    parameters:
+      applicationID:
+        configId: app1
+        configType: application-mobile
+        property: id
+        type: reference
+      shared:
+        type: environment
+        name: DASHBOARD_SHARED
+    template: dashboard1.json
+    skip: false
+  type:
+    api: dashboard  #monaco-test:no-replace
