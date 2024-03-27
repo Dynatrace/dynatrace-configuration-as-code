@@ -87,15 +87,33 @@ func GenerateJSONSchemas() FeatureFlag {
 func DashboardShareSettings() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_DASHBOARD_SHARE_SETTINGS",
+		defaultEnabled: true,
+	}
+}
+
+// KeyUserActionsWeb toggles whether the key user actions for web apps are downloaded and / or deployed.
+// Introduced: 2024-03-21; v2.12.0
+func KeyUserActionsWeb() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_KUA_WEB",
 		defaultEnabled: false,
 	}
 }
 
-// MRumProperties toggles whether the key user actions, user actions and session properties for mobile/web applications are downloaded and / or deployed.
-// Introduced: 2024-03-11; v2.12.0
-func MRumProperties() FeatureFlag {
+// KeyUserActionsMobile toggles whether the key user actions for mobile apps are downloaded and / or deployed.
+// Introduced: 2024-03-21; v2.12.0
+func KeyUserActionsMobile() FeatureFlag {
 	return FeatureFlag{
-		envName:        "MONACO_FEAT_MRUM_PROPERTIES",
-		defaultEnabled: false,
+		envName:        "MONACO_FEAT_KUA_MOBILE",
+		defaultEnabled: true,
+	}
+}
+
+// UserActionSessionPropertiesMobile toggles whether user actions and session properties for mobile apps are downloaded and / or deployed.
+// Introduced: 2024-03-21; v2.12.0
+func UserActionSessionPropertiesMobile() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_UASP_MOBILE",
+		defaultEnabled: true,
 	}
 }

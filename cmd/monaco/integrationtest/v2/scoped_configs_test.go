@@ -40,8 +40,10 @@ func TestDeployScopedConfigurations(t *testing.T) {
 	environment := "classic_env"
 	manifestPath := configFolder + "manifest.yaml"
 	envVars := map[string]string{
-		featureflags.MRumProperties().EnvName():         "true",
-		featureflags.DashboardShareSettings().EnvName(): "true",
+		featureflags.KeyUserActionsWeb().EnvName():                 "true",
+		featureflags.KeyUserActionsMobile().EnvName():              "true",
+		featureflags.UserActionSessionPropertiesMobile().EnvName(): "true",
+		featureflags.DashboardShareSettings().EnvName():            "true",
 	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifestPath, environment, "ScopedConfigs", envVars, func(fs afero.Fs, testContext TestContext) {

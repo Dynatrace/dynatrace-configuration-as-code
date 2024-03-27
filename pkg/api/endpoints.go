@@ -458,14 +458,14 @@ var configEndpoints = []API{
 		URLPath:                      "/api/config/v1/applications/mobile/{SCOPE}/keyUserActions",
 		PropertyNameOfGetAllResponse: "keyUserActions",
 		Parent:                       &applicationMobileAPI,
-		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.MRumProperties()},
+		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.KeyUserActionsMobile()},
 	},
 	{
 		ID:                           KeyUserActionsWeb,
 		URLPath:                      "/api/config/v1/applications/web/{SCOPE}/keyUserActions",
 		PropertyNameOfGetAllResponse: "keyUserActionList",
 		Parent:                       &applicationWebAPI,
-		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.MRumProperties()},
+		RequireAllFF:                 []featureflags.FeatureFlag{featureflags.KeyUserActionsWeb()},
 		TweakResponseFunc:            func(m map[string]any) { delete(m, "meIdentifier") },
 		CheckEqualFunc: func(existing map[string]any, current map[string]any) bool {
 			return existing["name"] == current["name"] &&
@@ -477,6 +477,6 @@ var configEndpoints = []API{
 		ID:           UserActionAndSessionPropertiesMobile,
 		URLPath:      "/api/config/v1/applications/mobile/{SCOPE}/userActionAndSessionProperties",
 		Parent:       &applicationMobileAPI,
-		RequireAllFF: []featureflags.FeatureFlag{featureflags.MRumProperties()},
+		RequireAllFF: []featureflags.FeatureFlag{featureflags.UserActionSessionPropertiesMobile()},
 	},
 }

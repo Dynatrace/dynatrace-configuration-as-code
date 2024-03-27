@@ -297,7 +297,9 @@ environmentGroups:
 }
 
 func TestDeleteSubPathAPIConfigurations(t *testing.T) {
-	t.Setenv(featureflags.MRumProperties().EnvName(), "true")
+	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "true")
+	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "true")
+	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "true")
 
 	configFolder := "test-resources/delete-test-configs/"
 	deployManifestPath := configFolder + "deploy-manifest.yaml"
