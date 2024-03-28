@@ -117,3 +117,12 @@ func UserActionSessionPropertiesMobile() FeatureFlag {
 		defaultEnabled: true,
 	}
 }
+
+// SkipRedundantAccountGroupUpdates toggles whether redundant account group updates (where the name and description are unchanged) are skipped or not.
+// Introduced: 2024-03-28; v2.13.0
+func SkipRedundantAccountGroupUpdates() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_ACCOUNT_MANAGEMENT_SKIP_REDUNDANT_GROUP_UPDATES",
+		defaultEnabled: false,
+	}
+}
