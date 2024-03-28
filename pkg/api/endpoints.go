@@ -16,7 +16,10 @@
 
 package api
 
-import "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"time"
+)
 
 const (
 	AlertingProfile                      = "alerting-profile"
@@ -472,6 +475,7 @@ var configEndpoints = []API{
 				existing["actionType"] == current["actionType"] &&
 				existing["domain"] == current["domain"]
 		},
+		DeployWaitDuration: 2 * time.Second,
 	},
 	{
 		ID:           UserActionAndSessionPropertiesMobile,
