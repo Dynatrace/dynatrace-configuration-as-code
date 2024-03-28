@@ -32,7 +32,6 @@ import (
 
 // Delete removes the given pointer.DeletePointer entries from the environment the supplied client dtclient.Client connects to
 func Delete(ctx context.Context, client dtclient.Client, theAPI api.API, dps []pointer.DeletePointer) error {
-	client = newCachedDTClient(client)
 	var err error
 
 	for _, dp := range dps {

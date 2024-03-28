@@ -611,7 +611,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 
 			c := dtclient.NewMockClient(gomock.NewController(t))
 			if len(tc.args.entries) > 0 {
-				c.EXPECT().ListConfigs(gomock.Any(), a).Return(tc.args.values, nil).Times(1)
+				c.EXPECT().ListConfigs(gomock.Any(), a).Return(tc.args.values, nil).Times(len(tc.args.entries))
 			}
 			for _, id := range tc.expect.ids {
 				c.EXPECT().DeleteConfigById(a, id).Times(1)
