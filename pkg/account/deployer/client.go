@@ -145,54 +145,84 @@ func (d *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 func (d *accountManagementClient) upsertGroup(ctx context.Context, groupId string, group Group) (remoteId, error) {
 	if groupId != "" {
 		logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update group with origin object ID (UUID) " + groupId)
-		resp, err := d.client.GroupManagementAPI.EditGroup(ctx, d.accountInfo.AccountUUID, groupId).PutGroupDto(group).Execute()
-		defer closeResponseBody(resp)
-
-		if err = d.handleClientResponseError(resp, err, "unable to update group with UUID: "+groupId); err != nil {
+		existingGroup, err := d.getGroupByID(ctx, groupId)
+		if err != nil {
 			return "", err
 		}
-		return groupId, nil
+
+		return d.updateExistingGroup(ctx, *existingGroup, group)
 	}
 
+	existingGroupsWithName, err := d.getGroupsByName(ctx, group.Name)
+	if err != nil {
+		return "", err
+	}
+
+	if len(existingGroupsWithName) == 0 {
+		return d.createGroup(ctx, group)
+	}
+
+	if len(existingGroupsWithName) > 1 { // shouldn't happen
+		logr.FromContextOrDiscard(ctx).V(-1).Info("Updating multiple policies with name " + group.Name + ". Updating group with UUID " + existingGroupsWithName[0].GetUuid())
+	}
+
+	return d.updateExistingGroup(ctx, existingGroupsWithName[0], group)
+}
+
+func (d *accountManagementClient) getGroupByID(ctx context.Context, groupID string) (*accountmanagement.GetGroupDto, error) {
 	result, resp, err := d.client.GroupManagementAPI.GetGroups(ctx, d.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to get group with name: "+group.Name); err != nil {
-		return "", err
+	if err = d.handleClientResponseError(resp, err, "unable to get group with ID: "+groupID); err != nil {
+		return nil, err
 	}
 
-	// find groups with matching name
-	var existingGroups []accountmanagement.GetGroupDto
 	for _, g := range result.GetItems() {
-		if g.GetName() == group.Name {
-			existingGroups = append(existingGroups, g)
+		if g.GetUuid() == groupID {
+			return &g, nil
 		}
 	}
 
-	if len(existingGroups) == 0 {
-		var createdGroups []accountmanagement.GetGroupDto
-		createdGroups, resp, err = d.client.GroupManagementAPI.CreateGroups(ctx, d.accountInfo.AccountUUID).PutGroupDto([]accountmanagement.PutGroupDto{group}).Execute()
-		defer closeResponseBody(resp)
-		if err = d.handleClientResponseError(resp, err, "unable to create group with name: "+group.Name); err != nil {
-			return "", err
-		}
-		if len(createdGroups) < 1 {
-			return "", fmt.Errorf("unable to get UUID of created group with name: %s", group.Name)
-		}
-		return createdGroups[0].GetUuid(), nil
-	}
+	return nil, fmt.Errorf("unable to get group with ID: %s", groupID)
+}
 
-	if len(existingGroups) > 1 { // shouldn't happen
-		logr.FromContextOrDiscard(ctx).V(-1).Info("Updating multiple policies with name " + group.Name + ". Updating group with UUID " + existingGroups[0].GetUuid())
-	}
-
-	groupToUpdate := existingGroups[0]
-
-	resp, err = d.client.GroupManagementAPI.EditGroup(ctx, d.accountInfo.AccountUUID, groupToUpdate.GetUuid()).PutGroupDto(group).Execute()
+func (d *accountManagementClient) getGroupsByName(ctx context.Context, name string) ([]accountmanagement.GetGroupDto, error) {
+	groupList, resp, err := d.client.GroupManagementAPI.GetGroups(ctx, d.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to update group with name: "+group.Name); err != nil {
+	if err = d.handleClientResponseError(resp, err, "unable to get group with name: "+name); err != nil {
+		return nil, err
+	}
+
+	var groupsMatchingName []accountmanagement.GetGroupDto
+	for _, g := range groupList.GetItems() {
+		if g.GetName() == name {
+			groupsMatchingName = append(groupsMatchingName, g)
+		}
+	}
+
+	return groupsMatchingName, nil
+}
+
+func (d *accountManagementClient) createGroup(ctx context.Context, group Group) (remoteId, error) {
+	var createdGroups []accountmanagement.GetGroupDto
+	createdGroups, resp, err := d.client.GroupManagementAPI.CreateGroups(ctx, d.accountInfo.AccountUUID).PutGroupDto([]accountmanagement.PutGroupDto{group}).Execute()
+	defer closeResponseBody(resp)
+	if err = d.handleClientResponseError(resp, err, "unable to create group with name: "+group.Name); err != nil {
 		return "", err
 	}
-	return groupToUpdate.GetUuid(), nil
+	if len(createdGroups) < 1 {
+		return "", fmt.Errorf("unable to get UUID of created group with name: %s", group.Name)
+	}
+	return createdGroups[0].GetUuid(), nil
+}
+
+func (d *accountManagementClient) updateExistingGroup(ctx context.Context, existingGroup accountmanagement.GetGroupDto, group Group) (remoteId, error) {
+	resp, err := d.client.GroupManagementAPI.EditGroup(ctx, d.accountInfo.AccountUUID, existingGroup.GetUuid()).PutGroupDto(group).Execute()
+	defer closeResponseBody(resp)
+
+	if err = d.handleClientResponseError(resp, err, "unable to update group with UUID: "+existingGroup.GetUuid()); err != nil {
+		return "", err
+	}
+	return existingGroup.GetUuid(), nil
 }
 
 func (d *accountManagementClient) upsertUser(ctx context.Context, userId string) (remoteId, error) {
