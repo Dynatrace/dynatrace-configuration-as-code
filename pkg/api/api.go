@@ -18,6 +18,7 @@ package api
 
 import (
 	"strings"
+	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 )
@@ -72,6 +73,9 @@ type API struct {
 	PropertyNameOfIdentifier string
 	// NonDeletable indicates that configs of that type cannot be deleted
 	NonDeletable bool
+	// DeployWaitDuration defines the amount of time that shall elapse between deploying configs of this type.
+	// Note, that this only applies to configs within the same independent graph component
+	DeployWaitDuration time.Duration
 }
 
 func (a API) CreateURL(environmentURL string) string {
