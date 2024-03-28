@@ -38,6 +38,7 @@ import (
 	gonum "gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"sync"
+	"time"
 )
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
@@ -164,9 +165,18 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 
 		for _, root := range roots {
 			node := root.(graph.ConfigNode)
-			go func(ctx context.Context, node graph.ConfigNode) {
-				errChan <- deployNode(ctx, node, configGraph, clients, resolvedEntities)
-			}(context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate), node)
+			switch deployStrategy := api.NewAPIs()[node.Config.Coordinate.Type].DeployStrategy.(type) {
+			case api.SeqDeployStrategy:
+				err := deployNode(ctx, node, configGraph, clients, resolvedEntities)
+				time.Sleep(deployStrategy.WaitDur)
+				go func(err error) {
+					errChan <- err
+				}(err)
+			default:
+				go func(ctx context.Context, node graph.ConfigNode) {
+					errChan <- deployNode(ctx, node, configGraph, clients, resolvedEntities)
+				}(context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate), node)
+			}
 		}
 
 		for range roots {

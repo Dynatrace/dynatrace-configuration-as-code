@@ -18,6 +18,7 @@ package api
 
 import (
 	"strings"
+	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 )
@@ -34,6 +35,15 @@ func (p Config) Type() string {
 }
 func (p Config) Id() string {
 	return p.configId
+}
+
+// SeqDeployStrategy defines that a config of an API shall be called sequentially.
+// Monaco has to make sure that these kind of API configs are in the same independent
+// graph component
+type SeqDeployStrategy struct {
+	// WaitDur defines the time that must elapse between two
+	// consecutive config deployments
+	WaitDur time.Duration
 }
 
 // API structure present definition of config endpoints
@@ -72,6 +82,8 @@ type API struct {
 	PropertyNameOfIdentifier string
 	// NonDeletable indicates that configs of that type cannot be deleted
 	NonDeletable bool
+	// DeployStrategy defines custom behavior that applies to this API during deployment
+	DeployStrategy any
 }
 
 func (a API) CreateURL(environmentURL string) string {
