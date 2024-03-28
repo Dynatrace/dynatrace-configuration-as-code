@@ -117,3 +117,12 @@ func UserActionSessionPropertiesMobile() FeatureFlag {
 		defaultEnabled: true,
 	}
 }
+
+// SkipReadOnlyAccountGroupUpdates toggles whether updates to read-only account groups are skipped or not.
+// Introduced: 2024-03-29; v2.13.0
+func SkipReadOnlyAccountGroupUpdates() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_SKIP_READ_ONLY_ACCOUNT_GROUP_UPDATES",
+		defaultEnabled: false,
+	}
+}
