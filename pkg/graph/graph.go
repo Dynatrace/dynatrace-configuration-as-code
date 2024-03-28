@@ -20,8 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/encoding/dot"
@@ -214,7 +216,15 @@ func buildDependencyGraph(projects []project.Project, environment string, nodeOp
 	var configs []config.Config
 
 	for _, p := range projects {
-		for _, cfgs := range p.Configs[environment] {
+		for ctype, cfgs := range p.Configs[environment] {
+			switch api.NewAPIs()[ctype].DeployStrategy.(type) {
+			case api.SeqDeployStrategy:
+				for i, c := range cfgs {
+					if i < len(cfgs)-1 {
+						c.Parameters["_MONACO_CUSTOM_DEP_"] = reference.NewWithCoordinate(cfgs[i+1].Coordinate, "id")
+					}
+				}
+			}
 			configs = append(configs, cfgs...)
 		}
 	}
