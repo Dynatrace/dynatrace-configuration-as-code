@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/go-logr/logr"
 	"io"
@@ -216,6 +217,11 @@ func (d *accountManagementClient) createGroup(ctx context.Context, group Group) 
 }
 
 func (d *accountManagementClient) updateExistingGroup(ctx context.Context, existingGroup accountmanagement.GetGroupDto, group Group) (remoteId, error) {
+	// Groups with owner "SCIM" or "ALL_USERS" cannot be modified and so updates should be skipped
+	if featureflags.SkipReadOnlyAccountGroupUpdates().Enabled() && ((existingGroup.Owner == "SCIM") || (existingGroup.Owner == "ALL_USERS")) {
+		return existingGroup.GetUuid(), nil
+	}
+
 	resp, err := d.client.GroupManagementAPI.EditGroup(ctx, d.accountInfo.AccountUUID, existingGroup.GetUuid()).PutGroupDto(group).Execute()
 	defer closeResponseBody(resp)
 
