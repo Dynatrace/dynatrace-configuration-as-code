@@ -307,8 +307,9 @@ func (d *AccountDeployer) upsertPolicy(ctx context.Context, policy account.Polic
 
 func (d *AccountDeployer) upsertGroup(ctx context.Context, group account.Group) (remoteId, error) {
 	data := accountmanagement.PutGroupDto{
-		Name:        group.Name,
-		Description: &group.Description,
+		Name:                     group.Name,
+		Description:              &group.Description,
+		FederatedAttributeValues: group.FederatedAttributeValues,
 	}
 	return d.accClient.upsertGroup(ctx, group.OriginObjectID, data)
 }
