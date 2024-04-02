@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	ref "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
@@ -189,6 +190,19 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 			errors = append(errors, newDuplicateConfigIdentifierError(c))
 		}
 	}
+
+	// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
+	// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
+	// sub graph (independent component) later on as
+	for _, c := range configs {
+		if c.Coordinate.Type == api.KeyUserActionsWeb {
+			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
+				errors = append(errors, fmt.Errorf("scope parameter of config of type '%s' with ID `%s` needs to be a reference "+
+					"parameter to another web-application config", api.KeyUserActionsWeb, c.Coordinate.ConfigId))
+			}
+		}
+	}
+
 	if errors != nil {
 		return Project{}, errors
 	}
