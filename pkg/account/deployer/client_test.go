@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,17 +36,17 @@ import (
 func TestClient_UpsertUser_UserAlreadyExists(t *testing.T) {
 
 	payload := `{
-  "count": 1,
-  "items": [
-    {
-      "uid": "3288032b-9bdc-4480-bb11-2ec0ad2610b2",
-      "email": "abcd@ef.com",
-      "emergencyContact": false,
-      "userStatus": "PENDING",
-      "type": "DEFAULT"
-    }
-  ]
-}`
+   "count": 1,
+   "items": [
+	 {
+	   "uid": "3288032b-9bdc-4480-bb11-2ec0ad2610b2",
+	   "email": "abcd@ef.com",
+	   "emergencyContact": false,
+	   "userStatus": "PENDING",
+	   "type": "DEFAULT"
+	 }
+   ]
+ }`
 
 	responses := []testutils.ResponseDef{
 		{
@@ -155,24 +156,21 @@ func TestClient_UpsertUser_CreatingNewFails(t *testing.T) {
 	assert.Equal(t, 2, server.Calls())
 }
 
-func TestClient_UpsertGroup_Update_Existing(t *testing.T) {
+const testAccountPutGroupResponseBody = `{
+	"uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
+	"name": "my-group",
+	"description": "group-description",
+	"federatedAttributeValues": [],
+	"owner": {}
+ }`
+
+func TestClient_UpsertGroup_UpdateExistingLocalGroupWorks(t *testing.T) {
 	responses := []testutils.ResponseDef{
 		{
 			GET: func(t *testing.T, request *http.Request) testutils.Response {
 				return testutils.Response{
 					ResponseCode: http.StatusOK,
-					ResponseBody: `{
-  "count": 1,
-  "items": [
-    {
-      "uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
-      "name": "my-group",
-      "description": "group-description",
-      "federatedAttributeValues": [],
-      "owner": "LOCAL"
-    }
-  ]
-}`,
+					ResponseBody: makeTestAccountGetGroupsResponseBody("LOCAL"),
 				}
 			},
 		},
@@ -180,13 +178,7 @@ func TestClient_UpsertGroup_Update_Existing(t *testing.T) {
 			PUT: func(t *testing.T, request *http.Request) testutils.Response {
 				return testutils.Response{
 					ResponseCode: http.StatusOK,
-					ResponseBody: `{
-  "uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
-  "name": "my-group",
-  "description": "group-description",
-  "federatedAttributeValues": [],
-  "owner": {}
-}`,
+					ResponseBody: testAccountPutGroupResponseBody,
 				}
 			},
 		},
@@ -201,6 +193,84 @@ func TestClient_UpsertGroup_Update_Existing(t *testing.T) {
 	assert.Equal(t, 2, server.Calls())
 	assert.Equal(t, "5d9ba2f2-a00c-433b-b5fa-589c5120244b", id)
 }
+
+func TestClient_UpsertGroup_UpdateExistingSCIMGroupSkipped(t *testing.T) {
+	t.Setenv(featureflags.SkipReadOnlyAccountGroupUpdates().EnvName(), "true") // turn on SkipReadOnlyAccountGroupUpdates for this test
+
+	responses := []testutils.ResponseDef{
+		{
+			GET: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: makeTestAccountGetGroupsResponseBody("SCIM"),
+				}
+			},
+		},
+		{
+			PUT: func(t *testing.T, request *http.Request) testutils.Response {
+				// this should not occur as SCIM groups should not be updated
+				assert.FailNow(t, "Unexpected PUT request for SCIM account group")
+				return testutils.Response{}
+			},
+		},
+	}
+
+	server := testutils.NewHTTPTestServer(t, responses)
+	defer server.Close()
+
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	id, err := instance.upsertGroup(context.TODO(), "", Group{Name: "my-group"})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, server.Calls())
+	assert.Equal(t, "5d9ba2f2-a00c-433b-b5fa-589c5120244b", id)
+}
+
+func TestClient_UpsertGroup_UpdateExistingAllUsersGroupSkipped(t *testing.T) {
+	t.Setenv(featureflags.SkipReadOnlyAccountGroupUpdates().EnvName(), "true") // turn on SkipReadOnlyAccountGroupUpdates for this test
+
+	responses := []testutils.ResponseDef{
+		{
+			GET: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: makeTestAccountGetGroupsResponseBody("ALL_USERS"),
+				}
+			},
+		},
+		{
+			PUT: func(t *testing.T, request *http.Request) testutils.Response {
+				// this should not occur as ALL_USERS groups should not be updated
+				assert.FailNow(t, "Unexpected PUT request for ALL_USERS account group")
+				return testutils.Response{}
+			},
+		},
+	}
+
+	server := testutils.NewHTTPTestServer(t, responses)
+	defer server.Close()
+
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())), []string{"tenant-viewer"})
+	id, err := instance.upsertGroup(context.TODO(), "", Group{Name: "my-group"})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, server.Calls())
+	assert.Equal(t, "5d9ba2f2-a00c-433b-b5fa-589c5120244b", id)
+}
+
+func makeTestAccountGetGroupsResponseBody(owner string) string {
+	return `{
+	"count": 1,
+	"items": [
+		 {
+		 "uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
+		 "name": "my-group",
+		 "description": "group-description",
+		 "federatedAttributeValues": [],
+		 "owner": "` + owner + `"
+		 }
+	 ]
+ }`
+}
+
 func TestClient_UpsertGroup_Update_Existing_Fails(t *testing.T) {
 	responses := []testutils.ResponseDef{
 		{
@@ -208,17 +278,17 @@ func TestClient_UpsertGroup_Update_Existing_Fails(t *testing.T) {
 				return testutils.Response{
 					ResponseCode: http.StatusOK,
 					ResponseBody: `{
-  "count": 1,
-  "items": [
-    {
-      "uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
-      "name": "my-group",
-      "description": "group-description",
-      "federatedAttributeValues": [],
-      "owner": "LOCAL"
-    }
-  ]
-}`,
+   "count": 1,
+   "items": [
+	 {
+	   "uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
+	   "name": "my-group",
+	   "description": "group-description",
+	   "federatedAttributeValues": [],
+	   "owner": "LOCAL"
+	 }
+   ]
+ }`,
 				}
 			},
 		},
@@ -277,14 +347,14 @@ func TestClient_UpsertGroup_Create_New(t *testing.T) {
 				return testutils.Response{
 					ResponseCode: http.StatusOK,
 					ResponseBody: `[
-  {
-    "uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
-    "name": "my-group",
-    "description": "This is my group",
-    "federatedAttributeValues": [],
-    "owner": {}
-  }
-]`,
+   {
+	 "uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
+	 "name": "my-group",
+	 "description": "This is my group",
+	 "federatedAttributeValues": [],
+	 "owner": {}
+   }
+ ]`,
 				}
 			},
 		},
@@ -725,14 +795,14 @@ func TestClient_UpsertPolicy_UpdateExisting(t *testing.T) {
 				return testutils.Response{
 					ResponseCode: http.StatusOK,
 					ResponseBody: `{
-  "policies": [
-    {
-      "uuid": "256d42d9-5a75-49d8-94cf-673c45b9410d",
-      "name": "my-policy",
-      "description": "This is my policy"
-    }
-  ]
-}`,
+   "policies": [
+	 {
+	   "uuid": "256d42d9-5a75-49d8-94cf-673c45b9410d",
+	   "name": "my-policy",
+	   "description": "This is my policy"
+	 }
+   ]
+ }`,
 				}
 			},
 			ValidateRequest: func(t *testing.T, request *http.Request) {
@@ -750,11 +820,11 @@ func TestClient_UpsertPolicy_UpdateExisting(t *testing.T) {
 				assert.Equal(t, "/iam/v1/repo/account/abcde/policies/256d42d9-5a75-49d8-94cf-673c45b9410d", request.URL.String())
 				body, _ := io.ReadAll(request.Body)
 				assert.JSONEq(t, `{
-  "description": "Just a monaco test policy",
-  "name": "Monaco Test Policy",
-  "statementQuery": "ALLOW automation:workflows:read;",
-  "tags": null
-}`, string(body))
+   "description": "Just a monaco test policy",
+   "name": "Monaco Test Policy",
+   "statementQuery": "ALLOW automation:workflows:read;",
+   "tags": null
+ }`, string(body))
 
 			},
 		},
@@ -779,14 +849,14 @@ func TestClient_UpsertPolicy_UpdateExisting_UpdateFails(t *testing.T) {
 				return testutils.Response{
 					ResponseCode: http.StatusOK,
 					ResponseBody: `{
-  "policies": [
-    {
-      "uuid": "256d42d9-5a75-49d8-94cf-673c45b9410d",
-      "name": "my-policy",
-      "description": "This is my policy"
-    }
-  ]
-}`,
+   "policies": [
+	 {
+	   "uuid": "256d42d9-5a75-49d8-94cf-673c45b9410d",
+	   "name": "my-policy",
+	   "description": "This is my policy"
+	 }
+   ]
+ }`,
 				}
 			},
 		},
@@ -837,11 +907,11 @@ func TestClient_UpsertPolicy_CreateNew(t *testing.T) {
 				assert.Equal(t, "/iam/v1/repo/account/abcde/policies", request.URL.String())
 				body, _ := io.ReadAll(request.Body)
 				assert.JSONEq(t, `{
-  "description": "Just a monaco test policy",
-  "name": "Monaco Test Policy",
-  "statementQuery": "ALLOW automation:workflows:read;",
-  "tags": null
-}`, string(body))
+   "description": "Just a monaco test policy",
+   "name": "Monaco Test Policy",
+   "statementQuery": "ALLOW automation:workflows:read;",
+   "tags": null
+ }`, string(body))
 			},
 		},
 	}
@@ -923,19 +993,19 @@ func TestClient_GetGlobalPolicies(t *testing.T) {
 				return testutils.Response{
 					ResponseCode: http.StatusOK,
 					ResponseBody: `{
-  "policies": [
-    {
-      "uuid": "8d68fb35-0fa9-499e-b924-55f1629dc71e",
-      "name": "Policy 1",
-      "description": "I am policy 1"
-    },
-    {
-      "uuid": "a6f0bf51-dc92-4712-8fe7-73dfff2c3898",
-      "name": "Policy 2",
-      "description": "I am policy 2"
-    }
-  ]
-}`,
+   "policies": [
+	 {
+	   "uuid": "8d68fb35-0fa9-499e-b924-55f1629dc71e",
+	   "name": "Policy 1",
+	   "description": "I am policy 1"
+	 },
+	 {
+	   "uuid": "a6f0bf51-dc92-4712-8fe7-73dfff2c3898",
+	   "name": "Policy 2",
+	   "description": "I am policy 2"
+	 }
+   ]
+ }`,
 				}
 			},
 			ValidateRequest: func(t *testing.T, request *http.Request) {
