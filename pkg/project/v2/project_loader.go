@@ -197,7 +197,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	for _, c := range configs {
 		if c.Coordinate.Type == api.KeyUserActionsWeb {
 			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
-				errors = append(errors, fmt.Errorf("scope parameter of config of type '%s' with ID `%s` needs to be a reference "+
+				errors = append(errors, fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
 					"parameter to another web-application config", api.KeyUserActionsWeb, c.Coordinate.ConfigId))
 			}
 		}
