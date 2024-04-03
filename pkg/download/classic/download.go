@@ -52,7 +52,21 @@ func Download(client client.ConfigClient, projectName string, apisToDownload api
 	for _, currentApi := range apisToDownload {
 		go func() {
 			defer wg.Done()
-			if configs := downloadConfigs(client, currentApi, projectName, filters); len(configs) > 0 {
+
+			foundValues, err := findConfigsToDownload(client, currentApi, filters)
+			if err != nil {
+				log.WithFields(field.Error(err), field.Type(currentApi.ID)).Error("Failed to fetch configs of type '%s', skipping download of this type. Reason: %v", currentApi.ID, err)
+				return
+			}
+
+			foundValues = filterConfigsToSkip(currentApi, foundValues, filters)
+			if len(foundValues) == 0 {
+				log.WithFields(field.Type(currentApi.ID)).Debug("No configs of type '%s' to download", currentApi.ID)
+				return
+			}
+
+			log.WithFields(field.Type(currentApi.ID)).Debug("Found %d configs of type '%s' to download", len(foundValues), currentApi.ID)
+			if configs := downloadConfigs(client, currentApi, foundValues, projectName, filters); len(configs) > 0 {
 				mutex.Lock()
 				results[currentApi.ID] = configs
 				mutex.Unlock()
@@ -66,27 +80,13 @@ func Download(client client.ConfigClient, projectName string, apisToDownload api
 	return results, nil
 }
 
-func downloadConfigs(client dtclient.Client, api api.API, projectName string, filters ContentFilters) []config.Config {
+func downloadConfigs(client client.ConfigClient, api api.API, configsToDownload values, projectName string, filters ContentFilters) []config.Config {
 	var results []config.Config
-	logger := log.WithFields(field.Type(api.ID))
-	foundValues, err := findConfigsToDownload(client, api, filters)
-	if err != nil {
-		logger.WithFields(field.Error(err)).Warn("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", api.ID, err)
-		return results
-	}
-
-	foundValues = filterConfigsToSkip(api, foundValues, filters)
-	if len(foundValues) == 0 {
-		logger.Debug("No configs of type '%v' to download", api.ID)
-		return results
-	}
-
-	logger.Debug("Found %d configs of type %q to download", len(foundValues), api.ID)
 
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	wg.Add(len(foundValues))
-	for _, v := range foundValues {
+	wg.Add(len(configsToDownload))
+	for _, v := range configsToDownload {
 		go func() {
 			defer wg.Done()
 
