@@ -40,11 +40,6 @@ import (
 	"time"
 )
 
-type downloadedConfig struct {
-	config.Config
-	value dtclient.Value
-}
-
 func Download(client client.ConfigClient, projectName string, apisToDownload api.APIs, filters ContentFilters) (projectv2.ConfigsPerType, error) {
 	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
 	results := make(projectv2.ConfigsPerType, len(apisToDownload))
@@ -57,46 +52,22 @@ func Download(client client.ConfigClient, projectName string, apisToDownload api
 	for _, currentApi := range apisToDownload {
 		go func() {
 			defer wg.Done()
-			lg := log.WithFields(field.Type(currentApi.ID))
-			downloadedConfigs := downloadConfigs(client, currentApi, projectName, filters)
-			var configsToPersist []downloadedConfig
-			for _, c := range downloadedConfigs {
-				content, err := c.Template.Content()
-				if err != nil {
-					return
-				}
-				if shouldPersist(currentApi, content, filters) {
-					configsToPersist = append(configsToPersist, c)
-				} else {
-					lg.Debug("\tSkipping persisting config %v (%v) in API %v", c.value.Id, c.value.Name, currentApi.ID)
-				}
-			}
-			if len(configsToPersist) > 0 {
+			if configs := downloadConfigs(client, currentApi, projectName, filters); len(configs) > 0 {
 				mutex.Lock()
-				results[currentApi.ID] = getConfigsFromCustomConfigs(configsToPersist)
+				results[currentApi.ID] = configs
 				mutex.Unlock()
 			}
 		}()
 	}
-	log.Debug("Started all downloads")
 	wg.Wait()
-
 	duration := time.Since(startTime).Truncate(1 * time.Second)
 	log.Debug("Finished fetching all configs in %v", duration)
 
 	return results, nil
 }
 
-func getConfigsFromCustomConfigs(customConfigs []downloadedConfig) []config.Config {
-	var finalConfigs []config.Config
-	for _, c := range customConfigs {
-		finalConfigs = append(finalConfigs, c.Config)
-	}
-	return finalConfigs
-}
-
-func downloadConfigs(client client.ConfigClient, api api.API, projectName string, filters ContentFilters) []downloadedConfig {
-	var results []downloadedConfig
+func downloadConfigs(client dtclient.Client, api api.API, projectName string, filters ContentFilters) []config.Config {
+	var results []config.Config
 	logger := log.WithFields(field.Type(api.ID))
 	foundValues, err := findConfigsToDownload(client, api, filters)
 	if err != nil {
@@ -142,8 +113,18 @@ func downloadConfigs(client client.ConfigClient, api api.API, projectName string
 					return
 				}
 
+				content, err := c.Template.Content()
+				if err != nil {
+					return
+				}
+
+				if !shouldPersist(api, content, filters) {
+					log.Debug("\tSkipping persisting config %v (%v) in API %v", v.value.Id, v.value.Name, api.ID)
+					continue
+				}
+
 				mutex.Lock()
-				results = append(results, downloadedConfig{Config: c, value: v.value})
+				results = append(results, c)
 				mutex.Unlock()
 			}
 		}()
