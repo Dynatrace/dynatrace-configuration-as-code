@@ -17,6 +17,7 @@
 package api
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"time"
 )
@@ -475,7 +476,7 @@ var configEndpoints = []API{
 				existing["actionType"] == current["actionType"] &&
 				existing["domain"] == current["domain"]
 		},
-		DeployWaitDuration: 2 * time.Second,
+		DeployWaitDuration: time.Duration(environment.GetEnvValueIntLog(environment.KeyUserActionWebWaitSecondsEnvKey)) * time.Second,
 	},
 	{
 		ID:           UserActionAndSessionPropertiesMobile,
