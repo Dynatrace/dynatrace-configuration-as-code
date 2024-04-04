@@ -96,7 +96,7 @@ func DashboardShareSettings() FeatureFlag {
 func KeyUserActionsWeb() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_KUA_WEB",
-		defaultEnabled: false,
+		defaultEnabled: true,
 	}
 }
 
