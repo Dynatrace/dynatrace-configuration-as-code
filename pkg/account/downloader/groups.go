@@ -100,13 +100,14 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		}
 
 		g.group = &account.Group{
-			ID:             stringutils.Sanitize(g.dto.Name),
-			Name:           g.dto.Name,
-			Description:    g.dto.GetDescription(),
-			Account:        effectiveAccount(acc),
-			Environment:    effectiveEnvironments(envs),
-			ManagementZone: mzs,
-			OriginObjectID: *g.dto.Uuid,
+			ID:                       stringutils.Sanitize(g.dto.Name),
+			Name:                     g.dto.Name,
+			Description:              g.dto.GetDescription(),
+			FederatedAttributeValues: g.dto.FederatedAttributeValues,
+			Account:                  effectiveAccount(acc),
+			Environment:              effectiveEnvironments(envs),
+			ManagementZone:           mzs,
+			OriginObjectID:           *g.dto.Uuid,
 		}
 
 		groups = append(groups, g)

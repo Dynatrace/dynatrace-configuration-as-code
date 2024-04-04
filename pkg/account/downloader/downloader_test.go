@@ -216,6 +216,28 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 			},
 		},
 		{
+			name: "group with federated attribute values",
+			given: mockData{
+				groups: []accountmanagement.GetGroupDto{{
+					Uuid:                     &uuidVar,
+					Name:                     "test group",
+					FederatedAttributeValues: []string{"firstName", "lastName", "memberOf"},
+				}},
+			},
+			expected: account.Resources{
+				Policies: map[account.PolicyId]account.Policy{},
+				Groups: map[account.GroupId]account.Group{
+					toID("test group"): {
+						ID:                       toID("test group"),
+						Name:                     "test group",
+						FederatedAttributeValues: []string{"firstName", "lastName", "memberOf"},
+						OriginObjectID:           uuidVar,
+					},
+				},
+				Users: map[account.UserId]account.User{},
+			},
+		},
+		{
 			name: "groups with policies (account and environment)",
 			given: mockData{
 				ai:   &account.AccountInfo{AccountUUID: "e34fa4d6-b53a-43e0-9be0-cccca1a4da44"},

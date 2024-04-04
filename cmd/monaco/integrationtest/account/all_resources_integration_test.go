@@ -44,6 +44,8 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		accountUUID := o.accountUUID
 		myEmail := "monaco+%RAND%@dynatrace.com"
 		myGroup := "My Group%RAND%"
+		mySAMLGroup := "My SAML Group%RAND%"
+		myLocalGroup := "My LOCAL Group%RAND%"
 		myPolicy := "My Policy%RAND%"
 		myPolicy2 := "My Policy 2%RAND%"
 		envVkb := "vkb66581"
@@ -76,6 +78,14 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PolicyAvailable(t, "account", accountUUID, myPolicy)
 		check.PolicyAvailable(t, "environment", envVkb, myPolicy2)
 		check.GroupAvailable(t, accountUUID, myGroup)
+
+		// Group created with federatedAttributeValues should be a group with SAML owner
+		samlGroup := check.GetGroupByName(t, accountUUID, mySAMLGroup)
+		require.EqualValues(t, "SAML", samlGroup.Owner)
+
+		// Group created without federatedAttributeValues should be a group with LOCAL owner
+		localGroup := check.GetGroupByName(t, accountUUID, myLocalGroup)
+		require.EqualValues(t, "LOCAL", localGroup.Owner)
 
 		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 2)
 		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, myPolicy2, envVkb)
@@ -199,12 +209,17 @@ func (a AccountResourceChecker) UserNotAvailable(t *testing.T, accountUUID, emai
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
 
-func (a AccountResourceChecker) GroupAvailable(t *testing.T, accountUUID, groupName string) {
+func (a AccountResourceChecker) GetGroupByName(t *testing.T, accountUUID, groupName string) *accountmanagement.GetGroupDto {
 	expectedGroupName := a.randomize(groupName)
 	all, _, err := a.Client.GroupManagementAPI.GetGroups(context.TODO(), accountUUID).Execute()
 	require.NotNil(t, all)
 	require.NoError(t, err)
-	assertElementInSlice(t, all.GetItems(), func(el accountmanagement.GetGroupDto) bool { return el.Name == expectedGroupName })
+	group, _ := assertElementInSlice(t, all.GetItems(), func(el accountmanagement.GetGroupDto) bool { return el.Name == expectedGroupName })
+	return group
+}
+
+func (a AccountResourceChecker) GroupAvailable(t *testing.T, accountUUID, groupName string) {
+	_ = a.GetGroupByName(t, accountUUID, groupName)
 }
 
 func (a AccountResourceChecker) PolicyAvailable(t *testing.T, levelType, levelId, policyName string) {

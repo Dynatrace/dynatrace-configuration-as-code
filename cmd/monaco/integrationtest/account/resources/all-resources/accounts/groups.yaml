@@ -27,3 +27,15 @@ groups:
         permissions:
           - tenant-viewer
           - tenant-logviewer
+
+  - name: My SAML Group%RAND%
+    id: my-saml-group
+    description: This is my SAML group from all-resources e2e test
+    federatedAttributeValues:
+      - firstName
+      - lastName
+      - memberOf
+
+  - name: My LOCAL Group%RAND%
+    id: my-local-group
+    description: This is my LOCAL group from all-resources e2e test
