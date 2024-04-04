@@ -24,22 +24,26 @@ import (
 )
 
 const (
-	ConcurrentRequestsEnvKey = "MONACO_CONCURRENT_REQUESTS"
-	defaultValueKey          = "DEFAULT"
+	ConcurrentRequestsEnvKey          = "MONACO_CONCURRENT_REQUESTS"
+	defaultValueKey                   = "DEFAULT"
+	KeyUserActionWebWaitSecondsEnvKey = "MONACO_KUA_WEB_WAIT_SECONDS"
 )
 
 var defaultValuesInt = map[string]int{
-	ConcurrentRequestsEnvKey: 5,
-	defaultValueKey:          0,
+	ConcurrentRequestsEnvKey:          5,
+	defaultValueKey:                   0,
+	KeyUserActionWebWaitSecondsEnvKey: 1,
 }
 
 var logStringInt = map[string]string{
-	ConcurrentRequestsEnvKey: "Concurrent Request Limit: %d, from '%s' environment variable",
-	defaultValueKey:          "Environment variable %s: %d",
+	ConcurrentRequestsEnvKey:          "Concurrent Request Limit: %d, from '%s' environment variable",
+	defaultValueKey:                   "Environment variable %s: %d",
+	KeyUserActionWebWaitSecondsEnvKey: "Key User Action Web wait seconds: %d, from '%s' environment variable",
 }
 var logStringIntDefault = map[string]string{
-	ConcurrentRequestsEnvKey: "Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value",
-	defaultValueKey:          "Environment variable %s: %d, variable is NOT set, using default value",
+	ConcurrentRequestsEnvKey:          "Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value",
+	defaultValueKey:                   "Environment variable %s: %d, variable is NOT set, using default value",
+	KeyUserActionWebWaitSecondsEnvKey: "Key User Action Web wait seconds: %d, from '%s' environment variable is NOT set, using default value",
 }
 
 func getDefaultInt(env string) int {

@@ -617,8 +617,36 @@ func Test_loadProject_returnsErrorIfProjectPathDoesNotExist(t *testing.T) {
 	assert.ErrorContains(t, gotErrs[0], "filepath `this/does/not/exist` does not exist")
 }
 
+func Test_loadProject_returnsErrorIfScopeForWebKUAhasWrongTypeOfParameter(t *testing.T) {
+	testFs := testutils.TempFs(t)
+	context := getFullProjectLoaderContext(
+		[]string{"key-user-actions-web"},
+		[]string{"project"},
+		[]string{"env"})
+	definition := manifest.ProjectDefinition{
+		Name: "project",
+		Path: "project",
+	}
+	require.NoError(t, testFs.MkdirAll("project/kua-web", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/kua-web/kua-web.yaml",
+		[]byte(`configs:
+- id: kua-web-1
+  config:
+    name: Loading of page /example
+    template: kua-web.json
+    skip: false
+  type:
+    api:
+      name: key-user-actions-web
+      scope: APPLICATION-3F2C9E73509D15B6`), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/kua-web/kua-web.json", []byte("{}"), 0644))
+	_, gotErrs := loadProject(testFs, context, definition, []manifest.EnvironmentDefinition{{Name: "env"}})
+	assert.Len(t, gotErrs, 1)
+	assert.ErrorContains(t, gotErrs[0], "scope parameter of config of type 'key-user-actions-web' with ID 'kua-web-1' needs to be a reference parameter to another web-application config")
+}
+
 func getSimpleProjectLoaderContext(projects []string) ProjectLoaderContext {
-	return getTestProjectLoaderContext([]string{"alerting-profile", "dashboard"}, projects)
+	return getTestProjectLoaderContext([]string{"alerting-profile", "dashboard", "key-user-actions-web"}, projects)
 }
 
 func getTestProjectLoaderContext(apis []string, projects []string) ProjectLoaderContext {
