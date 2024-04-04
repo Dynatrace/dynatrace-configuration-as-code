@@ -205,13 +205,14 @@ func transform(resources *persistence.Resources) *account.Resources {
 			}
 		}
 		inMemResources.Groups[id] = account.Group{
-			ID:             v.ID,
-			Name:           v.Name,
-			Description:    v.Description,
-			Account:        acc,
-			Environment:    env,
-			ManagementZone: mz,
-			OriginObjectID: v.OriginObjectID,
+			ID:                       v.ID,
+			Name:                     v.Name,
+			Description:              v.Description,
+			FederatedAttributeValues: v.FederatedAttributeValues,
+			Account:                  acc,
+			Environment:              env,
+			ManagementZone:           mz,
+			OriginObjectID:           v.OriginObjectID,
 		}
 	}
 	for id, v := range resources.Users {

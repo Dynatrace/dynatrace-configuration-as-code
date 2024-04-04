@@ -178,13 +178,14 @@ func toPersistenceGroups(groups map[string]account.Group) []persistence.Group {
 		})
 
 		out = append(out, persistence.Group{
-			ID:             v.ID,
-			Name:           v.Name,
-			Description:    v.Description,
-			Account:        a,
-			Environment:    envs,
-			ManagementZone: mzs,
-			OriginObjectID: v.OriginObjectID,
+			ID:                       v.ID,
+			Name:                     v.Name,
+			Description:              v.Description,
+			FederatedAttributeValues: v.FederatedAttributeValues,
+			Account:                  a,
+			Environment:              envs,
+			ManagementZone:           mzs,
+			OriginObjectID:           v.OriginObjectID,
 		})
 	}
 	// sort groups by ID so that they are stable within a persisted file

@@ -55,13 +55,14 @@ type (
 	}
 
 	Group struct {
-		ID             string
-		Name           string
-		Description    string
-		Account        *Account
-		Environment    []Environment
-		ManagementZone []ManagementZone
-		OriginObjectID string
+		ID                       string
+		Name                     string
+		Description              string
+		FederatedAttributeValues []string
+		Account                  *Account
+		Environment              []Environment
+		ManagementZone           []ManagementZone
+		OriginObjectID           string
 	}
 	Account struct {
 		Permissions []string

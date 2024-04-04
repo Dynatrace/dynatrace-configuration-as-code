@@ -54,9 +54,10 @@ type (
 		Environment string `yaml:"environment,omitempty" json:"environment,omitempty" jsonschema:"The ID of the environment this policy applies to. Required if type is 'environment'."`
 	}
 	Group struct {
-		ID          string `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this group configuration - this can be freely defined, used by monaco."`
-		Name        string `yaml:"name" json:"name" jsonschema:"required,description=The name of this group."`
-		Description string `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"A description of this policy."`
+		ID                       string   `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this group configuration - this can be freely defined, used by monaco."`
+		Name                     string   `yaml:"name" json:"name" jsonschema:"required,description=The name of this group."`
+		Description              string   `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"A description of this group."`
+		FederatedAttributeValues []string `yaml:"federatedAttributeValues,omitempty" json:"federatedAttributeValues,omitempty" jsonschema:"Federated attribute values of this group."`
 		// Account level permissions and policies that apply to users in this group
 		Account *Account `yaml:"account,omitempty" json:"account,omitempty" jsonschema:"description=Account level permissions and policies that apply to users in this group."`
 		// Environment level permissions and policies that apply to users in this group
