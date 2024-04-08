@@ -39,6 +39,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/events"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
@@ -80,7 +81,8 @@ var (
 	skipError = errors.New("skip error")
 )
 
-func Deploy(projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
+func Deploy(projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions, eventQueue events.EventSystem) error {
+
 	g := graph.New(projects, environmentClients.Names())
 	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
 
@@ -114,7 +116,7 @@ func Deploy(projects []project.Project, environmentClients dynatrace.Environment
 			}
 		}
 
-		if err = deployComponents(ctx, sortedConfigs, clientSet); err != nil {
+		if err = deployComponents(events.NewContext(ctx, eventQueue), sortedConfigs, clientSet); err != nil {
 			log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Error("Deployment failed for environment %q: %v", env.Name, err)
 			deploymentErrors = deploymentErrors.Append(env.Name, err)
 			if !opts.ContinueOnErr && !opts.DryRun {
@@ -251,6 +253,12 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 			l.Warn("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
 		}
 
+		events.NewFromContextOrDiscard(ctx).Send(events.ConfigDeploymentFinishedEvent{
+			InternalEvent: events.NewInternalEventNow(childCfg.Coordinate.String()),
+			Config:        childCfg.Coordinate,
+			State:         events.State_DEPL_SKIPPED,
+		})
+
 		removeChildren(ctx, child, root, configGraph, failed)
 
 		configGraph.RemoveNode(child.ID())
@@ -260,6 +268,11 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
+		events.NewFromContextOrDiscard(ctx).Send(events.ConfigDeploymentFinishedEvent{
+			InternalEvent: events.NewInternalEventNow(c.Coordinate.String()),
+			Config:        c.Coordinate,
+			State:         events.State_DEPL_EXCLUDED,
+		})
 		return entities.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
 	}
 
@@ -321,9 +334,26 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 			return entities.ResolvedEntity{}, responseErr
 		}
 
+		var configDeplError deployErrors.ConfigDeployErr
+		if errors.As(err, &configDeplError) {
+			events.NewFromContextOrDiscard(ctx).Send(events.ConfigDeploymentFinishedEvent{
+				InternalEvent: events.NewInternalEventNow(c.Coordinate.String()),
+				Config:        c.Coordinate,
+				State:         events.State_DEPL_ERR,
+				Error:         err,
+			})
+		}
+
 		log.WithCtxFields(ctx).WithFields(field.Error(deployErr)).Error("Deployment failed - Monaco Error: %v", deployErr)
 		return entities.ResolvedEntity{}, deployErr
 	}
+
+	events.NewFromContextOrDiscard(ctx).Send(events.ConfigDeploymentFinishedEvent{
+		InternalEvent: events.NewInternalEventNow(c.Coordinate.String()),
+		Config:        c.Coordinate,
+		State:         events.State_DEPL_SUCCESS,
+		Error:         err,
+	})
 	return resolvedEntity, nil
 }
 
