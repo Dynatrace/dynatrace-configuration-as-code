@@ -38,6 +38,8 @@ const (
 	// from the dependency graph created by Monaco. These configs are not only skipped during deployment but also
 	// not validated prior to deployment. Further, other configs cannot reference properties of this config anymore.
 	IgnoreSkippedConfigs TemporaryFlag = "MONACO_FEAT_IGNORE_SKIPPED_CONFIGS"
+
+	EventQueue TemporaryFlag = "MONACO_FEAT_EVENTQUEUE"
 )
 
 // Temporary FeatureFlags - for features that are hidden during development or have some uncertainty.
@@ -65,6 +67,10 @@ var Temporary = map[TemporaryFlag]FeatureFlag{
 	},
 	IgnoreSkippedConfigs: {
 		envName:        string(IgnoreSkippedConfigs),
+		defaultEnabled: false,
+	},
+	EventQueue: {
+		envName:        string(EventQueue),
 		defaultEnabled: false,
 	},
 }
