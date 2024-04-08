@@ -29,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/events"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"time"
 )
@@ -64,6 +65,11 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		name = configName
 	} else {
 		log.WithCtxFields(ctx).Debug("failed to extract name for Settings 2.0 object %q - ID will be used", dtEntity.Id)
+		events.NewFromContextOrDiscard(ctx).Send(events.ConfigDeploymentLogEvent{
+			InternalEvent: events.NewInternalEventNow(c.Coordinate.String()),
+			Type:          "WARN",
+			Message:       fmt.Sprintf("failed to extract name for Settings 2.0 object %q - ID will be used", dtEntity.Id),
+		})
 	}
 
 	properties[config.IdParameter], err = getEntityID(c, dtEntity)

@@ -145,6 +145,14 @@ func DeleteDocuments() FeatureFlag {
 	}
 }
 
+// EventQueue toggles whether the event reporting feature of monato is enabled or not
+func EventQueue() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_EVENTQUEUE",
+		defaultEnabled: false,
+	}
+}
+
 // Documents toggles whether insertAfter config parameter is persisted for ordered settings.
 // Introduced: 2024-05-15; v2.14.0
 func PersistSettingsOrder() FeatureFlag {

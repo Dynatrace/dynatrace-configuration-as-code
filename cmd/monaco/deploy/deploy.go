@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/events"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -33,9 +34,13 @@ import (
 	"github.com/spf13/afero"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
-func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
+func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool, eventQueue events.EventSystem) error {
+	//eventQueue.AddEvent(events.DeploymentStartedEvent{StartTime: time.Now()})
+	eventQueue.Send(events.DeploymentStartedEvent{StartTime: time.Now()})
+
 	absManifestPath, err := absPath(manifestPath)
 	if err != nil {
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
@@ -67,12 +72,14 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return fmt.Errorf("failed to create API clients: %w", err)
 	}
 
-	err = deploy.Deploy(loadedProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun})
+	err = deploy.Deploy(loadedProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun}, eventQueue)
 	if err != nil {
 		return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
 	}
 
 	log.Info("%s finished without errors", logging.GetOperationNounForLogging(dryRun))
+	//eventQueue.AddEvent(events.DeploymentEndedEvent{EndTime: time.Now()})
+	eventQueue.Send(events.DeploymentEndedEvent{EndTime: time.Now()})
 	return nil
 }
 
