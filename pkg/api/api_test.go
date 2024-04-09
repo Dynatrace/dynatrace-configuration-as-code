@@ -30,13 +30,13 @@ func TestGetUrl(t *testing.T) {
 }
 
 func Test_configEndpoints(t *testing.T) {
-	for _, v := range api.ConfigEndpoints {
+	for _, v := range api.NewAPIs() {
 		v.TestConfiguredApi(t)
 	}
 }
 
 func Test_configEndpointsV1(t *testing.T) {
-	for _, v := range api.ConfigEndpointsV1 {
+	for _, v := range api.NewV1APIs() {
 		v.TestConfiguredApi(t)
 	}
 }

@@ -21,17 +21,6 @@ import "golang.org/x/exp/maps"
 // APIs is a collection of API
 type APIs map[string]API
 
-// NewAPIs returns collection of predefined API to work with Dynatrace
-func NewAPIs() APIs {
-	return newAPIs(configEndpoints)
-}
-
-// NewV1APIs returns collection of predefined API to work with Dynatrace
-// Deprecated: Please use NewAPIs. This one is legacy and is used only to convert old to new stype of
-func NewV1APIs() APIs {
-	return newAPIs(configEndpointsV1)
-}
-
 func newAPIs(as []API) APIs {
 	apis := make(APIs, len(as))
 	for _, a := range as {

@@ -32,8 +32,6 @@ type Validator struct {
 	uniqueNames map[environmentName]map[classicEndpoint][]config.Config
 }
 
-var apis = api.NewAPIs()
-
 // Validate checks that for each classic config API type, only one config exists with any given name.
 // As classic configs are identified by name, ValidateUniqueConfigNames returns errors if a name is used more than once for the same type.
 func (v *Validator) Validate(c config.Config) error {
@@ -46,7 +44,7 @@ func (v *Validator) Validate(c config.Config) error {
 		return nil
 	}
 
-	theAPI := apis[a.Api]
+	theAPI := api.NewAPIs()[a.Api]
 	if theAPI.NonUniqueName {
 		return nil
 	}
