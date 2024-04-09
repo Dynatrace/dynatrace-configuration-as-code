@@ -124,7 +124,12 @@ func PrepareLogging(fs afero.Fs, verbose bool, loggerSpy io.Writer) {
 		loglevel = loggers.LevelDebug
 	}
 
-	logFile, errFile, err := prepareLogFiles(fs)
+	var logFile, errFile afero.File
+	var err error
+	if fs != nil {
+		logFile, errFile, err = prepareLogFiles(fs)
+	}
+
 	logFormat := loggers.ParseLogFormat(os.Getenv(loggers.EnvVarLogFormat))
 	logTime := loggers.ParseLogTimeMode(os.Getenv(loggers.EnvVarLogTime))
 
