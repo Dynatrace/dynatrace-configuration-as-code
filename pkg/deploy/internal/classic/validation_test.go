@@ -31,7 +31,7 @@ import (
 )
 
 func TestValidate_NoErrorForNonClassicAPIs(t *testing.T) {
-	validator := &Validator{}
+	validator := NewValidator()
 	err := validator.Validate(
 		newTestConfigForValidation(t,
 			coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "abcde"},
@@ -42,7 +42,7 @@ func TestValidate_NoErrorForNonClassicAPIs(t *testing.T) {
 }
 
 func TestValidate_NoErrorForNonUniqueNames(t *testing.T) {
-	validator := &Validator{}
+	validator := NewValidator()
 	err := validator.Validate(
 		newTestConfigForValidation(t,
 			coordinate.Coordinate{
@@ -61,7 +61,7 @@ func TestValidate_NoValidationPerformedForKeyUserActionsWeb(t *testing.T) {
 		config.NameParameter:  value.New("name"),
 		config.ScopeParameter: value.New("scope")}
 
-	validator := &Validator{}
+	validator := NewValidator()
 
 	err1 := validator.Validate(newTestClassicConfigForValidation(t, "config1", api.KeyUserActionsWeb, parameters))
 	assert.NoError(t, err1)
@@ -71,7 +71,7 @@ func TestValidate_NoValidationPerformedForKeyUserActionsWeb(t *testing.T) {
 }
 
 func TestValidate_NoErrorForConfigsWithDifferentNames(t *testing.T) {
-	validator := &Validator{}
+	validator := NewValidator()
 
 	err1 := validator.Validate(newTestClassicConfigForValidation(t, "config1", api.ApplicationMobile, map[string]parameter.Parameter{
 		config.NameParameter: value.New("name1")}))
@@ -83,7 +83,7 @@ func TestValidate_NoErrorForConfigsWithDifferentNames(t *testing.T) {
 }
 
 func TestValidate_ErrorForConfigWithSameName(t *testing.T) {
-	validator := &Validator{}
+	validator := NewValidator()
 
 	err1 := validator.Validate(newTestClassicConfigForValidation(t, "config1", api.ApplicationMobile, map[string]parameter.Parameter{
 		config.NameParameter: value.New("name")}))
@@ -95,7 +95,7 @@ func TestValidate_ErrorForConfigWithSameName(t *testing.T) {
 }
 
 func TestValidate_NoErrorForSameNameInDifferentScopes(t *testing.T) {
-	validator := &Validator{}
+	validator := NewValidator()
 
 	err1 := validator.Validate(newTestClassicConfigForValidation(t, "config1", api.KeyUserActionsMobile, map[string]parameter.Parameter{
 		config.NameParameter:  value.New("name"),
@@ -109,7 +109,7 @@ func TestValidate_NoErrorForSameNameInDifferentScopes(t *testing.T) {
 }
 
 func TestValidate_NoErrorForDifferentNamesInDifferentScopes(t *testing.T) {
-	validator := &Validator{}
+	validator := NewValidator()
 
 	err1 := validator.Validate(newTestClassicConfigForValidation(t, "config1", api.KeyUserActionsMobile, map[string]parameter.Parameter{
 		config.NameParameter:  value.New("name1"),
@@ -123,7 +123,7 @@ func TestValidate_NoErrorForDifferentNamesInDifferentScopes(t *testing.T) {
 }
 
 func TestValidate_ErrorForSameNameAndScope(t *testing.T) {
-	validator := &Validator{}
+	validator := NewValidator()
 
 	err1 := validator.Validate(newTestClassicConfigForValidation(t, "config1", api.KeyUserActionsMobile, map[string]parameter.Parameter{
 		config.NameParameter:  value.New("name"),

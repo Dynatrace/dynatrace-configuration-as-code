@@ -22,11 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	ConfigEndpoints   = configEndpoints
-	ConfigEndpointsV1 = configEndpointsV1
-)
-
 func (a API) TestConfiguredApi(t *testing.T) {
 	assert.NotEmptyf(t, a.ID, "endpoint %+v have empty ID!", a)
 	if a.SingleConfiguration == true {

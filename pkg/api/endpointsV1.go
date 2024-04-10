@@ -336,6 +336,12 @@ var configEndpointsV1 = []API{
 	},
 }
 
+// NewV1APIs returns collection of predefined API to work with Dynatrace
+// Deprecated: Please use NewAPIs. This one is legacy and is used only to convert old to new types of APIs
+func NewV1APIs() APIs {
+	return newAPIs(configEndpointsV1)
+}
+
 // GetV2ID returns the ID of APIs in v2 - replacing deprecated APIs with their new version and dropping the -v2 marker
 // from APIs introducing the breaking change of handling non-unique-names. This is used in v1 -> v2 conversion
 func GetV2ID(forV1Api API) string {

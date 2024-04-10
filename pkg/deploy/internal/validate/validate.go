@@ -30,7 +30,7 @@ type Validator interface {
 
 func Validate(projects []project.Project) error {
 	defaultValidators := []Validator{
-		&classic.Validator{},
+		classic.NewValidator(),
 		&setting.Validator{},
 	}
 	return validate(projects, defaultValidators)
