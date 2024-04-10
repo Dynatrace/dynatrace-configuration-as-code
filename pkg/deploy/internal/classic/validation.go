@@ -29,7 +29,14 @@ type (
 )
 
 type Validator struct {
+	apis        api.APIs
 	uniqueNames map[environmentName]map[classicEndpoint][]config.Config
+}
+
+func NewValidator() *Validator {
+	return &Validator{
+		apis: api.NewAPIs(),
+	}
 }
 
 // Validate checks that for each classic config API type, only one config exists with any given name.
@@ -44,7 +51,7 @@ func (v *Validator) Validate(c config.Config) error {
 		return nil
 	}
 
-	theAPI := api.NewAPIs()[a.Api]
+	theAPI := v.apis[a.Api]
 	if theAPI.NonUniqueName {
 		return nil
 	}
