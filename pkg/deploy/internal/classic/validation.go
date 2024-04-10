@@ -28,11 +28,13 @@ type (
 	classicEndpoint = string
 )
 
+// Validator should be created via NewValidator().
 type Validator struct {
 	apis        api.APIs
 	uniqueNames map[environmentName]map[classicEndpoint][]config.Config
 }
 
+// NewValidator creates a new Validator.
 func NewValidator() *Validator {
 	return &Validator{
 		apis: api.NewAPIs(),
