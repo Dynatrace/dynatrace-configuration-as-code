@@ -19,6 +19,7 @@ package api
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"sync"
 	"time"
 )
 
@@ -96,12 +97,12 @@ func removeURLsFromPublicAccess(m map[string]any) {
 }
 
 var configEndpoints []API = nil
+var configEndpointsOnce sync.Once
 
 // NewAPIs returns collection of predefined API to work with Dynatrace
 func NewAPIs() APIs {
 
-	if configEndpoints == nil {
-
+	configEndpointsOnce.Do(func() {
 		// Dashboard has DashboardShareSettings as child API and so is defined here explicitly
 		var dashboardAPI = API{
 			ID:                           Dashboard,
@@ -492,7 +493,7 @@ func NewAPIs() APIs {
 				RequireAllFF: []featureflags.FeatureFlag{featureflags.UserActionSessionPropertiesMobile()},
 			},
 		}
-	}
+	})
 
 	return newAPIs(configEndpoints)
 }
