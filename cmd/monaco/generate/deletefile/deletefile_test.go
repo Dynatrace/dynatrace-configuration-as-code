@@ -20,6 +20,9 @@ package deletefile_test
 
 import (
 	"fmt"
+	"path/filepath"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/deletefile"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
@@ -31,8 +34,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
-	"path/filepath"
-	"testing"
 )
 
 func TestInvalidCommandUsage(t *testing.T) {
@@ -92,7 +93,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
 	assertFileExists(t, fs, expectedFile)
 
-	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+	entries, errs := delete.LoadEntriesFromFile(fs, expectedFile)
 	assert.NoError(t, errs)
 
 	assertDeleteEntries(t, entries, "alerting-profile", "Star Trek Service", "Star Wars Service", "Star Gate Service", "Lord of the Rings Service", "A Song of Ice and Fire Service")
@@ -171,7 +172,7 @@ func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
 	assertFileExists(t, fs, expectedFile)
 
-	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+	entries, errs := delete.LoadEntriesFromFile(fs, expectedFile)
 	assert.NoError(t, errs)
 
 	assertDeleteEntries(t, entries, "builtin:management-zones", "management-zone-setting")
@@ -203,7 +204,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 		expectedFile := filepath.Join(outputFolder, "delete.yaml")
 		assertFileExists(t, fs, expectedFile)
 
-		entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+		entries, errs := delete.LoadEntriesFromFile(fs, expectedFile)
 		assert.NoError(t, errs)
 
 		assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "Captain's Log")
@@ -225,7 +226,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 		expectedFile := filepath.Join(outputFolder, "delete.yaml")
 		assertFileExists(t, fs, expectedFile)
 
-		entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+		entries, errs := delete.LoadEntriesFromFile(fs, expectedFile)
 		assert.NoError(t, errs)
 
 		assertDeleteEntries(t, entries, "notification", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
@@ -245,7 +246,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 		expectedFile := filepath.Join(outputFolder, "delete.yaml")
 		assertFileExists(t, fs, expectedFile)
 
-		entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+		entries, errs := delete.LoadEntriesFromFile(fs, expectedFile)
 		assert.NoError(t, errs)
 
 		assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
@@ -276,7 +277,7 @@ func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
 	assertFileExists(t, fs, expectedFile)
 
-	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+	entries, errs := delete.LoadEntriesFromFile(fs, expectedFile)
 	assert.NoError(t, errs)
 
 	assertDeleteEntries(t, entries, "alerting-profile", "Lord of the Rings Service", "A Song of Ice and Fire Service")
@@ -306,7 +307,7 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
 	assertFileExists(t, fs, expectedFile)
 
-	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+	entries, errs := delete.LoadEntriesFromFile(fs, expectedFile)
 	assert.NoError(t, errs)
 
 	assertDeleteEntries(t, entries, "alerting-profile", "Star Trek Service", "Star Wars Service", "Star Gate Service", "Lord of the Rings Service", "A Song of Ice and Fire Service")
