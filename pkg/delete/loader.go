@@ -68,7 +68,7 @@ func (p parseErrors) Error() string {
 	return sb.String()
 }
 
-func LoadEntriesToDelete(fs afero.Fs, deleteFile string) (DeleteEntries, error) {
+func LoadEntriesFromFile(fs afero.Fs, deleteFile string) (DeleteEntries, error) {
 	context := &loaderContext{
 		fs:         fs,
 		deleteFile: filepath.Clean(deleteFile),

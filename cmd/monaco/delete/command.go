@@ -19,6 +19,8 @@ package delete
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
@@ -28,7 +30,6 @@ import (
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"path/filepath"
 )
 
 func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
@@ -74,7 +75,7 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 			}
 
 			// Try to load delete entries from delete file
-			entriesToDelete, err := delete.LoadEntriesToDelete(fs, deleteFile)
+			entriesToDelete, err := delete.LoadEntriesFromFile(fs, deleteFile)
 			if err != nil {
 				return fmt.Errorf("encountered errors while parsing %s: %w", deleteFile, err)
 			}
