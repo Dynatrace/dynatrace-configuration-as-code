@@ -20,7 +20,11 @@ package writer
 
 import (
 	"errors"
+	"path/filepath"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -30,8 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
-	"path/filepath"
-	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
@@ -727,6 +729,7 @@ func TestWriteConfigs(t *testing.T) {
 		expectedConfigs       map[string]persistence.TopLevelDefinition
 		expectedTemplatePaths []string
 		expectedErrs          []string
+		envVars               map[string]string
 	}{
 		{
 			name: "Simple classic API write",
@@ -1164,10 +1167,100 @@ func TestWriteConfigs(t *testing.T) {
 				"general/alerting-profile/a.json",
 			},
 		},
+		{
+			name: "Documents",
+			configs: []config.Config{
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/dashboard/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "dashboard",
+						ConfigId: "configId1",
+					},
+					Type: config.DocumentType{
+						Type: config.DashboardType,
+					},
+					OriginObjectId: "ext-ID-123",
+					Parameters: map[string]parameter.Parameter{
+						config.NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					Skip: true,
+				},
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/notebook/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "notebook",
+						ConfigId: "configId2",
+					},
+					Type: config.DocumentType{
+						Type: config.NotebookType,
+					},
+					OriginObjectId: "ext-ID-123",
+					Parameters: map[string]parameter.Parameter{
+						config.NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					Skip: true,
+				},
+			},
+			expectedConfigs: map[string]persistence.TopLevelDefinition{
+				"dashboard": {
+					Configs: []persistence.TopLevelConfigDefinition{
+						{
+							Id: "configId1",
+							Config: persistence.ConfigDefinition{
+								Name:           "name",
+								Parameters:     nil,
+								Template:       "a.json",
+								OriginObjectId: "ext-ID-123",
+								Skip:           true,
+							},
+							Type: persistence.TypeDefinition{
+								Type: config.DocumentType{
+									Type: "dashboard",
+								},
+							},
+						},
+					},
+				},
+				"notebook": {
+					Configs: []persistence.TopLevelConfigDefinition{
+						{
+							Id: "configId2",
+							Config: persistence.ConfigDefinition{
+								Name:           "name",
+								Parameters:     nil,
+								Template:       "a.json",
+								OriginObjectId: "ext-ID-123",
+								Skip:           true,
+							},
+							Type: persistence.TypeDefinition{
+								Type: config.DocumentType{
+									Type: "notebook",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/dashboard/a.json",
+				"project/notebook/a.json",
+			},
+			envVars: map[string]string{
+				featureflags.Documents().EnvName(): "true",
+			},
+		},
 	}
+
+	t.Setenv(featureflags.Documents().EnvName(), "true")
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+
+			for k, v := range tc.envVars {
+				t.Setenv(k, v)
+			}
 
 			fs := testutils.TempFs(t)
 

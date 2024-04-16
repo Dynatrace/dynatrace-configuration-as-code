@@ -19,6 +19,7 @@ package persistence
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/exp/maps"
@@ -44,6 +45,10 @@ type SettingsDefinition struct {
 
 type AutomationDefinition struct {
 	Resource config.AutomationResource `yaml:"resource" json:"resource" jsonschema:"required,enum=workflow,enum=business-calendar,enum=scheduling-rule,description=This defines which automation resource this config is for."`
+}
+
+type DocumentDefinition struct {
+	Type config.DocumentTypeType `yaml:"type" json:"type" jsonschema:"required,enum=dashboard,enum=notebook,description=This defines which document type this config is for."`
 }
 
 // UnmarshalYAML Custom unmarshaler that knows how to handle TypeDefinition.
@@ -87,6 +92,10 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		"api":        c.parseApiType,
 		"settings":   c.parseSettingsType,
 		"automation": c.parseAutomation,
+	}
+
+	if featureflags.Documents().Enabled() {
+		unmarshalers["document"] = c.parseDocumentType
 	}
 
 	if unm, f := unmarshalers[ttype]; !f {
@@ -142,6 +151,18 @@ func (c *TypeDefinition) parseAutomation(a any) error {
 	return nil
 }
 
+func (c *TypeDefinition) parseDocumentType(a any) error {
+	var r DocumentDefinition
+	err := mapstructure.Decode(a, &r)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal automation-type: %w", err)
+	}
+
+	c.Type = config.DocumentType{Type: r.Type}
+
+	return nil
+}
+
 // Validate verifies whether the given type definition is valid (correct APIs, fields set, etc)
 func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 	switch t := c.Type.(type) {
@@ -170,6 +191,18 @@ func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 		default:
 			return fmt.Errorf("unknown automation resource %q", t.Resource)
 		}
+
+	case config.DocumentType:
+		switch t.Type {
+		case "":
+			return errors.New("missing document type property")
+
+		case config.DashboardType, config.NotebookType:
+			return nil
+
+		default:
+			return fmt.Errorf("unknown document type %q", t.Type)
+		}
 	}
 
 	return nil
@@ -185,6 +218,8 @@ func (c *TypeDefinition) GetApiType() string {
 		return string(t.Resource)
 	case config.BucketType:
 		return string(t.ID())
+	case config.DocumentType:
+		return string(t.Type)
 	}
 
 	return ""
@@ -227,7 +262,15 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 	case config.BucketType:
 		return BucketType, nil
 
-	default:
-		return nil, fmt.Errorf("unkown type: %T", c.Type)
+	case config.DocumentType:
+		if featureflags.Documents().Enabled() {
+			return map[string]any{
+				"document": DocumentDefinition{
+					Type: t.Type,
+				},
+			}, nil
+		}
 	}
+
+	return nil, fmt.Errorf("unkown type: %T", c.Type)
 }
