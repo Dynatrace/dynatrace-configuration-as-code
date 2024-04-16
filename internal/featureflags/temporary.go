@@ -132,6 +132,6 @@ func SkipReadOnlyAccountGroupUpdates() FeatureFlag {
 func Documents() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_DOCUMENTS",
-		defaultEnabled: true,
+		defaultEnabled: false,
 	}
 }
