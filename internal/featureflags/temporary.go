@@ -126,3 +126,12 @@ func SkipReadOnlyAccountGroupUpdates() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+// Documents toggles whether documents are downloaded and / or deployed.
+// Introduced: 2024-04-16; v2.14.0
+func Documents() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_DOCUMENTS",
+		defaultEnabled: false,
+	}
+}
