@@ -23,11 +23,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/purge"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/version"
+	versionCommand "github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/memory"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"io"
@@ -64,6 +65,14 @@ Examples:
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			log.PrepareLogging(fs, verbose, logSpy)
+
+			s := cmd.Name()
+			_ = s
+			// log the version except for running the main command, help command and version command
+			if (cmd.Name() != "monaco") && (cmd.Name() != "help") && (cmd.Name() != "version") {
+				version.LogVersionAsInfo()
+			}
+
 			memory.SetDefaultLimit()
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -90,7 +99,7 @@ Examples:
 	rootCmd.AddCommand(convert.GetConvertCommand(fs))
 	rootCmd.AddCommand(deploy.GetDeployCommand(fs))
 	rootCmd.AddCommand(delete.GetDeleteCommand(fs))
-	rootCmd.AddCommand(version.GetVersionCommand())
+	rootCmd.AddCommand(versionCommand.GetVersionCommand())
 	rootCmd.AddCommand(generate.Command(fs))
 
 	if featureflags.AccountManagement().Enabled() {
