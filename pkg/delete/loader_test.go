@@ -16,160 +16,117 @@
  * limitations under the License.
  */
 
-package delete
+package delete_test
 
 import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 )
 
 func TestParseDeleteEntry(t *testing.T) {
-	apiID := "auto-tag"
-	name := "test entity"
+	fileContent := []byte(`
+delete:
+- auto-tag/test entity
+`)
 
-	ctx := loaderContext{
-		knownApis: map[string]api.API{
-			"management-zone": {},
-			"auto-tag":        {},
-		},
-	}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 
-	entry, err := parseDeleteEntry(&ctx, apiID+deleteDelimiter+name)
-
-	assert.NoError(t, err)
-	assert.Equal(t, apiID, entry.Type)
-	assert.Equal(t, name, entry.Identifier)
+	require.NoError(t, err)
+	require.Len(t, actual, 1)
+	require.Contains(t, actual, "auto-tag")
+	require.Len(t, actual["auto-tag"], 1)
+	require.Equal(t, "test entity", actual["auto-tag"][0].Identifier)
+	require.Equal(t, "auto-tag", actual["auto-tag"][0].Type)
 }
 
 func TestParseSettingsDeleteEntry(t *testing.T) {
-	cfgType := "builtin:tagging.auto"
-	name := "test entity"
+	fileContent := []byte(`
+delete:
+- builtin:tagging.auto/test entity
+`)
 
-	ctx := loaderContext{
-		knownApis: map[string]api.API{
-			"management-zone": {},
-			"auto-tag":        {},
-		},
-	}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 
-	entry, err := parseDeleteEntry(&ctx, cfgType+deleteDelimiter+name)
-
-	assert.NoError(t, err)
-	assert.Equal(t, cfgType, entry.Type)
-	assert.Equal(t, name, entry.Identifier)
+	require.NoError(t, err)
+	require.Len(t, actual, 1)
+	require.Contains(t, actual, "builtin:tagging.auto")
+	require.Len(t, actual["builtin:tagging.auto"], 1)
+	require.Equal(t, "test entity", actual["builtin:tagging.auto"][0].Identifier)
+	require.Equal(t, "builtin:tagging.auto", actual["builtin:tagging.auto"][0].Type)
 }
 
 func TestParseDeleteEntryWithMultipleSlashesShouldWork(t *testing.T) {
-	apiID := "auto-tag"
-	name := "test entity/entry"
+	fileContent := []byte(`
+delete:
+- auto-tag/test entity/entry
+`)
 
-	ctx := loaderContext{
-		knownApis: map[string]api.API{
-			"management-zone": {},
-			"auto-tag":        {},
-		},
-	}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 
-	entry, err := parseDeleteEntry(&ctx, apiID+deleteDelimiter+name)
+	require.NoError(t, err)
+	require.Len(t, actual, 1)
+	require.Contains(t, actual, "auto-tag")
+	require.Len(t, actual["auto-tag"], 1)
+	require.Equal(t, "test entity/entry", actual["auto-tag"][0].Identifier)
+	require.Equal(t, "auto-tag", actual["auto-tag"][0].Type)
 
-	assert.NoError(t, err)
-	assert.Equal(t, apiID, entry.Type)
-	assert.Equal(t, name, entry.Identifier)
 }
 
 func TestParseDeleteEntryInvalidEntryWithoutDelimiterShouldFail(t *testing.T) {
-	value := "auto-tag"
+	fileContent := []byte(`
+delete:
+- auto-tag
+`)
 
-	ctx := loaderContext{
-		knownApis: map[string]api.API{
-			"management-zone": {},
-			"auto-tag":        {},
-		},
-	}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	require.Error(t, err, "value `%s` should return error", "auto-tag")
+	require.Empty(t, actual, "expected 0 results")
 
-	_, err := parseDeleteEntry(&ctx, value)
-
-	assert.Error(t, err, "value `%s` should return error", value)
 }
 
 func TestParseDeleteFileDefinitions(t *testing.T) {
-	apiID := "auto-tag"
-	name := "test entity/entry"
-	entity := apiID + deleteDelimiter + name
+	fileContent := []byte(`
+delete:
+- auto-tag/test entity/entry
+- management-zone/test entity/entry
+`)
 
-	api2 := "management-zone"
-	name2 := "test entity/entry"
-	entity2 := api2 + deleteDelimiter + name2
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 
-	ctx := loaderContext{
-		knownApis: map[string]api.API{
-			"management-zone": {},
-			"auto-tag":        {},
-		},
-	}
+	require.NoError(t, err)
+	require.Len(t, actual, 2)
 
-	result, err := parseDeleteFileDefinition(&ctx, persistence.FileDefinition{
-		DeleteEntries: []interface{}{
-			entity,
-			entity2,
-		},
-	})
+	require.Contains(t, actual, "auto-tag")
+	require.Len(t, actual["auto-tag"], 1)
+	require.Equal(t, "test entity/entry", actual["auto-tag"][0].Identifier)
+	require.Equal(t, "auto-tag", actual["auto-tag"][0].Type)
 
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(result))
-
-	apiEntities := result[apiID]
-
-	assert.Equal(t, 1, len(apiEntities))
-	assert.Equal(t, pointer.DeletePointer{
-		Type:       apiID,
-		Identifier: name,
-	}, apiEntities[0])
-
-	api2Entities := result[api2]
-
-	assert.Equal(t, 1, len(api2Entities))
-	assert.Equal(t, pointer.DeletePointer{
-		Type:       api2,
-		Identifier: name2,
-	}, api2Entities[0])
+	require.Contains(t, actual, "management-zone")
+	require.Len(t, actual["management-zone"], 1)
+	require.Equal(t, "test entity/entry", actual["management-zone"][0].Identifier)
+	require.Equal(t, "management-zone", actual["management-zone"][0].Type)
 }
 
 func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
-	apiID := "auto-tag"
-	name := "test entity/entry"
-	entity := apiID + deleteDelimiter + name
+	fileContent := []byte(`
+delete:
+- auto-tag/test entity/entry
+- management-zone/test entity/entry
+- invalid-definition
+`)
 
-	api2 := "management-zone"
-	name2 := "test entity/entry"
-	entity2 := api2 + deleteDelimiter + name2
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 
-	ctx := loaderContext{
-		knownApis: map[string]api.API{
-			"management-zone": {},
-			"auto-tag":        {},
-		},
-	}
-
-	result, err := parseDeleteFileDefinition(&ctx, persistence.FileDefinition{
-		DeleteEntries: []interface{}{
-			entity,
-			entity2,
-			"invalid-definition",
-		},
-	})
-
-	var e parseErrors
-	assert.ErrorAs(t, err, &e)
+	var e delete.ParseErrors
+	require.ErrorAs(t, err, &e)
 	assert.Equal(t, 1, len(e), "expected 1 error")
-	assert.Empty(t, result, "expected 0 results")
+	require.Empty(t, actual, "expected 0 results")
 }
 
 func TestLoadEntriesToDelete(t *testing.T) {
@@ -177,7 +134,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 	tests := []struct {
 		name             string
 		givenFileContent string
-		want             DeleteEntries
+		want             delete.DeleteEntries
 	}{
 		{
 			"Loads simple file",
@@ -185,7 +142,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 - management-zone/test entity/entities
 - auto-tag/random tag
 `,
-			DeleteEntries{
+			delete.DeleteEntries{
 				"auto-tag": {
 					{
 						Type:       "auto-tag",
@@ -206,7 +163,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 - management-zone/test entity/entities
 - builtin:auto.tagging/random tag
 `,
-			DeleteEntries{
+			delete.DeleteEntries{
 				"builtin:auto.tagging": {
 					{
 						Type:       "builtin:auto.tagging",
@@ -231,7 +188,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
   type: builtin:auto.tagging
   id: my-tag
 `,
-			DeleteEntries{
+			delete.DeleteEntries{
 				"builtin:auto.tagging": {
 					{
 						Project:    "some-project",
@@ -255,7 +212,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
   type: builtin:auto.tagging
   id: my-tag
 `,
-			DeleteEntries{
+			delete.DeleteEntries{
 				"builtin:auto.tagging": {
 					{
 						Project:    "some-project",
@@ -279,7 +236,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
   scope: APPLICATION-MOBILE-1234
   name: my-action
 `,
-			DeleteEntries{
+			delete.DeleteEntries{
 				"key-user-actions-mobile": {
 					{
 						Type:       "key-user-actions-mobile",
@@ -293,16 +250,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			deleteFile, err := filepath.Abs("delete.yaml")
-			assert.NoError(t, err)
-
-			fs := afero.NewMemMapFs()
-
-			err = afero.WriteFile(fs, deleteFile, []byte(tt.givenFileContent), 0666)
-			assert.NoError(t, err)
-
-			result, err := LoadEntriesFromFile(fs, deleteFile)
+			result, err := delete.LoadEntriesFromFile(createDeleteFile(t, []byte(tt.givenFileContent)))
 
 			assert.NoError(t, err)
 			assert.Equal(t, len(tt.want), len(result))
@@ -312,86 +260,52 @@ func TestLoadEntriesToDelete(t *testing.T) {
 }
 
 func TestLoadEntriesToDeleteFailsIfScopeIsUndefinedForSubPathAPI(t *testing.T) {
-	fileContent := `delete:
+	fileContent := []byte(`delete:
 - project: some-project
   type: key-user-actions-mobile
   name: my-action
-` // scope should be defined
+`) // scope should be defined
 
-	workingDir := t.TempDir()
-	deleteFileName := "delete.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 
-	fs := afero.NewMemMapFs()
-	err := fs.MkdirAll(workingDir, 0777)
-
-	assert.NoError(t, err)
-
-	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
-	assert.NoError(t, err)
-
-	result, err := LoadEntriesFromFile(fs, deleteFilePath)
-
-	var e parseErrors
+	var e delete.ParseErrors
 	assert.ErrorAs(t, err, &e)
 	assert.Equal(t, 1, len(e), "expected 1 error")
 	assert.Empty(t, result, "expected 0 results")
 }
+
 func TestLoadEntriesToDeleteFailsIfScopeIsDefinedForNonSubPathAPI(t *testing.T) {
-	fileContent := `delete:
+	fileContent := []byte(`delete:
 - project: some-project
   type: alerting-profile
   name: my-action
   scope: my-scope # scope should NOT be defined
-`
-	workingDir := t.TempDir()
-	deleteFileName := "delete.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+`)
 
-	fs := afero.NewMemMapFs()
-	err := fs.MkdirAll(workingDir, 0777)
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 
-	assert.NoError(t, err)
-
-	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
-	assert.NoError(t, err)
-
-	result, err := LoadEntriesFromFile(fs, deleteFilePath)
-
-	var e parseErrors
+	var e delete.ParseErrors
 	assert.ErrorAs(t, err, &e)
 	assert.Equal(t, 1, len(e), "expected 1 error")
 	assert.Empty(t, result, "expected 0 results")
 }
 
 func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
-	fileContent := `delete:
+	fileContent := []byte(`delete:
 - management-zone/test entity/entities
 - auto-invalid
-`
+`)
 
-	workingDir := t.TempDir()
-	deleteFileName := "delete.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 
-	fs := afero.NewMemMapFs()
-	err := fs.MkdirAll(workingDir, 0777)
-
-	assert.NoError(t, err)
-
-	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
-	assert.NoError(t, err)
-
-	result, err := LoadEntriesFromFile(fs, deleteFilePath)
-
-	var e parseErrors
+	var e delete.ParseErrors
 	assert.ErrorAs(t, err, &e)
 	assert.Equal(t, 1, len(e), "expected 1 error")
 	assert.Empty(t, result, "expected 0 results")
 }
 
 func TestLoadEntriesToDeleteWithMultipleInvalidEntries(t *testing.T) {
-	fileContent := `
+	fileContent := []byte(`
 delete:
 - management-zone/test entity/entities
 - auto-invalid
@@ -404,59 +318,29 @@ delete:
 - type: key-user-actions-mobile
   name: test
   scope: ''
-`
+`)
 
-	workingDir := t.TempDir()
-	deleteFileName := "delete.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 
-	fs := afero.NewMemMapFs()
-	err := fs.MkdirAll(workingDir, 0777)
-
-	assert.NoError(t, err)
-
-	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
-	assert.NoError(t, err)
-
-	result, err := LoadEntriesFromFile(fs, deleteFilePath)
-
-	var e parseErrors
+	var e delete.ParseErrors
 	assert.ErrorAs(t, err, &e)
 	assert.Equal(t, 5, len(e), "expected 5 errors")
 	assert.Empty(t, result, "expected 0 results")
 }
 
 func TestLoadEntriesToDeleteNonExistingFile(t *testing.T) {
-	workingDir := t.TempDir()
-
-	fs := afero.NewMemMapFs()
-	err := fs.MkdirAll(workingDir, 0777)
-
-	assert.NoError(t, err)
-
-	result, err := LoadEntriesFromFile(fs, filepath.Join(t.TempDir(), "delete.yaml"))
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, nil))
 
 	assert.Error(t, err)
 	assert.Empty(t, result, "expected 0 results")
 }
 
 func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
-	fileContent := `deleting:
+	fileContent := []byte(`deleting:
 - auto-invalid
-`
+`)
 
-	workingDir := t.TempDir()
-	deleteFileName := "delete.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
-
-	fs := afero.NewMemMapFs()
-	err := fs.MkdirAll(workingDir, 0777)
-	assert.NoError(t, err)
-
-	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
-	assert.NoError(t, err)
-
-	result, err := LoadEntriesFromFile(fs, deleteFilePath)
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 
 	var typeError *yaml.TypeError
 	assert.ErrorAs(t, err, &typeError)
@@ -464,20 +348,27 @@ func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
 }
 
 func TestLoadEntriesToDeleteWithEmptyFile(t *testing.T) {
-	workingDir := t.TempDir()
-	deleteFileName := "empty_delete_file.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
-
-	fs := afero.NewMemMapFs()
-	err := fs.MkdirAll(workingDir, 0777)
-
-	assert.NoError(t, err)
-
-	err = afero.WriteFile(fs, deleteFilePath, []byte{}, 0666)
-	assert.NoError(t, err)
-
-	result, err := LoadEntriesFromFile(fs, deleteFilePath)
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, []byte("")))
 
 	assert.ErrorContains(t, err, "is empty")
 	assert.Empty(t, result, "expected 0 results")
+}
+
+func createDeleteFile(t testing.TB, content []byte) (afero.Fs, string) {
+	t.Helper()
+
+	workingDir := t.TempDir()
+	deleteFileName := "delete.yaml"
+	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+	fs := afero.NewMemMapFs()
+
+	err := fs.MkdirAll(workingDir, 0777)
+	assert.NoError(t, err)
+
+	if content != nil {
+		err = afero.WriteFile(fs, deleteFilePath, content, 0666)
+		assert.NoError(t, err)
+	}
+
+	return fs, deleteFilePath
 }
