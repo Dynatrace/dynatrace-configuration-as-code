@@ -15,6 +15,9 @@
 package runner
 
 import (
+	"io"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/convert"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/delete"
@@ -31,7 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"io"
 )
 
 func Run() int {
@@ -65,7 +67,12 @@ Examples:
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			log.PrepareLogging(fs, verbose, logSpy)
-			version.LogVersionAsInfo()
+
+			// log the version except for running the main command, help command and version command
+			if !strings.HasPrefix(cmd.Use, "monaco") && !strings.HasPrefix(cmd.Use, "help") && !strings.HasPrefix(cmd.Use, "version") {
+				version.LogVersionAsInfo()
+			}
+
 			memory.SetDefaultLimit()
 		},
 		Run: func(cmd *cobra.Command, args []string) {

@@ -26,15 +26,75 @@ import (
 	"testing"
 )
 
-func TestMonacoVersionLoggedOnStartup(t *testing.T) {
-	fs := testutils.CreateTestFileSystem()
-	logOutput := strings.Builder{}
+func TestMonacoVersionLogging(t *testing.T) {
+	tests := []struct {
+		name             string
+		args             []string
+		shouldLogVersion bool
+	}{
+		{
+			name:             "With no args no version should be logged",
+			args:             []string{},
+			shouldLogVersion: false,
+		},
+		{
+			name:             "Help should not log version",
+			args:             []string{"help"},
+			shouldLogVersion: false,
+		},
+		{
+			name:             "Version should not log version",
+			args:             []string{"version"},
+			shouldLogVersion: false,
+		},
+		{
+			name:             "Download should log version",
+			args:             []string{"download", "--manifest", "non_existing_manifest.yaml", "--environment", "non_existing_env"},
+			shouldLogVersion: true,
+		},
+		{
+			name:             "Incomplete deploy should not log version",
+			args:             []string{"deploy"},
+			shouldLogVersion: false,
+		},
+		{
+			name:             "Deploy should log version",
+			args:             []string{"deploy", "non_existing_manifest.yaml"},
+			shouldLogVersion: true,
+		},
+		{
+			name:             "Incomplete account should not log version",
+			args:             []string{"account"},
+			shouldLogVersion: false,
+		},
+		{
+			name:             "Account download should log version",
+			args:             []string{"account", "download"},
+			shouldLogVersion: true,
+		},
+		{
+			name:             "Account deploy should log version",
+			args:             []string{"account", "deploy"},
+			shouldLogVersion: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	cmd := runner.BuildCliWithLogSpy(fs, &logOutput)
-	cmd.SetArgs([]string{})
-	err := cmd.Execute()
-	assert.NoError(t, err, "expect no error as usage to be displayed")
+			fs := testutils.CreateTestFileSystem()
+			logOutput := strings.Builder{}
 
-	runLog := logOutput.String()
-	assert.Contains(t, runLog, "Monaco version")
+			cmd := runner.BuildCliWithLogSpy(fs, &logOutput)
+			cmd.SetArgs(tt.args)
+			_ = cmd.Execute()
+
+			runLog := logOutput.String()
+			const versionLogMessage = "Monaco version"
+			if tt.shouldLogVersion {
+				assert.Contains(t, runLog, versionLogMessage)
+			} else {
+				assert.NotContains(t, runLog, versionLogMessage)
+			}
+		})
+	}
 }
