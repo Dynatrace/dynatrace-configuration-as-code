@@ -34,12 +34,6 @@ import (
 
 const deleteDelimiter = "/"
 
-type loaderContext struct {
-	fs         afero.Fs
-	deleteFile string
-	knownApis  api.APIs
-}
-
 // entryParserError is an error that occurred while parsing a delete file entry
 type entryParserError struct {
 	// Value of the DeleteEntry that failed to be parsed
@@ -69,28 +63,22 @@ func (p parseErrors) Error() string {
 }
 
 func LoadEntriesFromFile(fs afero.Fs, deleteFile string) (DeleteEntries, error) {
-	context := &loaderContext{
-		fs:         fs,
-		deleteFile: filepath.Clean(deleteFile),
-		knownApis:  api.NewAPIs(),
-	}
-
-	definition, err := readDeleteFile(context)
+	definition, err := readDeleteFile(fs, deleteFile)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return parseDeleteFileDefinition(context, definition)
+	return parseDeleteFileDefinition(definition)
 }
 
-func readDeleteFile(context *loaderContext) (persistence.FileDefinition, error) {
-	targetFile, err := filepath.Abs(context.deleteFile)
+func readDeleteFile(fs afero.Fs, deleteFile string) (persistence.FileDefinition, error) {
+	targetFile, err := filepath.Abs(deleteFile)
 	if err != nil {
-		return persistence.FileDefinition{}, fmt.Errorf("could not parse absoulte path to file `%s`: %w", context.deleteFile, err)
+		return persistence.FileDefinition{}, fmt.Errorf("could not parse absoulte path to file `%s`: %w", deleteFile, err)
 	}
 
-	data, err := afero.ReadFile(context.fs, targetFile)
+	data, err := afero.ReadFile(fs, targetFile)
 
 	if err != nil {
 		return persistence.FileDefinition{}, err
@@ -111,12 +99,12 @@ func readDeleteFile(context *loaderContext) (persistence.FileDefinition, error) 
 	return result, nil
 }
 
-func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDefinition) (DeleteEntries, error) {
+func parseDeleteFileDefinition(definition persistence.FileDefinition) (DeleteEntries, error) {
 	result := DeleteEntries{}
 	var errs parseErrors
 
 	for i, e := range definition.DeleteEntries {
-		entry, err := parseDeleteEntry(ctx, e)
+		entry, err := parseDeleteEntry(e)
 
 		if err != nil {
 			errs = append(errs, entryParserError{
@@ -137,9 +125,9 @@ func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDe
 	return result, nil
 }
 
-func parseDeleteEntry(ctx *loaderContext, entry any) (pointer.DeletePointer, error) {
+func parseDeleteEntry(entry any) (pointer.DeletePointer, error) {
 
-	ptr, err := parseFullEntry(ctx, entry)
+	ptr, err := parseFullEntry(entry)
 
 	if str, ok := entry.(string); ok && err != nil {
 		return parseSimpleEntry(str)
@@ -148,7 +136,7 @@ func parseDeleteEntry(ctx *loaderContext, entry any) (pointer.DeletePointer, err
 	return ptr, err
 }
 
-func parseFullEntry(ctx *loaderContext, entry interface{}) (pointer.DeletePointer, error) {
+func parseFullEntry(entry interface{}) (pointer.DeletePointer, error) {
 
 	var parsed persistence.DeleteEntry
 	err := mapstructure.Decode(entry, &parsed)
@@ -156,7 +144,7 @@ func parseFullEntry(ctx *loaderContext, entry interface{}) (pointer.DeletePointe
 		return pointer.DeletePointer{}, err
 	}
 
-	if a, known := ctx.knownApis[parsed.Type]; known {
+	if a, known := api.NewAPIs()[parsed.Type]; known {
 		p, err := parseAPIEntry(parsed, a)
 		if err != nil {
 			return pointer.DeletePointer{}, fmt.Errorf("failed to parse entry for API '%s': %w", a.ID, err)
