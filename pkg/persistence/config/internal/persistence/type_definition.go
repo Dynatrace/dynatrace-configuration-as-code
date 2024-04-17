@@ -48,7 +48,7 @@ type AutomationDefinition struct {
 }
 
 type DocumentDefinition struct {
-	Type config.DocumentType `yaml:"type" json:"type" jsonschema:"required,enum=dashboard,enum=notebook,description=This defines which document type this config is for."`
+	Type config.DocumentType `yaml:"type" json:"type" jsonschema:"required,enum=dashboard,enum=notebook,description=This defines which document type this config is for." mapstructure:"type"`
 }
 
 // UnmarshalYAML Custom unmarshaler that knows how to handle TypeDefinition.
