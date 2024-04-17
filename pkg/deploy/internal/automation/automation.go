@@ -75,9 +75,6 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	if err != nil {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
 	}
-	if err, isErr := resp.AsAPIError(); isErr {
-		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
-	}
 
 	obj, err := automationutils.DecodeResponse(resp)
 	if err != nil {

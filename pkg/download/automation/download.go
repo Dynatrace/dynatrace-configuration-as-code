@@ -71,10 +71,6 @@ func Download(cl client.AutomationClient, projectName string, automationTypes ..
 			lg.WithFields(field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
-		if err, isAPIErr := response.AsAPIError(); isAPIErr {
-			lg.WithFields(field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
-			continue
-		}
 
 		objects, err := automationutils.DecodeListResponse(response)
 		if err != nil {

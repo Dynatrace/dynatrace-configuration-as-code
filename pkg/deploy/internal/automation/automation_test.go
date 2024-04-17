@@ -58,7 +58,6 @@ func TestDeployAutomation_UnknownResourceType(t *testing.T) {
 }
 
 func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
-
 	t.Run("TestDeployAutomation - Workflow Upsert fails", func(t *testing.T) {
 		client := NewMockClient(gomock.NewController(t))
 		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{}, errors.New("UPSERT_FAIL"))
@@ -70,7 +69,8 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := Deploy(context.TODO(), client, nil, "", conf)
+		resp, err := Deploy(context.TODO(), client, nil, "", conf)
+		assert.Zero(t, resp)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - Workflow Upsert fails - HTTP Err", func(t *testing.T) {

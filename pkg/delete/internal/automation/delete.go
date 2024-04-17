@@ -17,7 +17,9 @@
 package automation
 
 import (
+	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
@@ -56,13 +58,18 @@ func Delete(ctx context.Context, c Client, automationResource config.AutomationR
 			deleteErrs++
 		}
 
-		resp, err := c.Delete(ctx, resourceType, id)
+		_, err = c.Delete(ctx, resourceType, id)
 		if err != nil {
-			logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - network error: %v", automationResource, id, err)
-			deleteErrs++
-		} else if err, isErr := resp.AsAPIError(); isErr && resp.StatusCode != http.StatusNotFound { // 404 means it's gone already anyway
-			logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - rejected by API: %v", automationResource, id, err)
-			deleteErrs++
+			var apiErr api.APIError
+			if errors.As(err, &apiErr) {
+				if apiErr.StatusCode != http.StatusNotFound {
+					logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - rejected by API: %v", automationResource, id, err)
+					deleteErrs++
+				}
+			} else {
+				logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - network error: %v", automationResource, id, err)
+				deleteErrs++
+			}
 		}
 	}
 
@@ -98,13 +105,16 @@ func DeleteAll(ctx context.Context, c Client) error {
 		logger.Info("Collecting Automation objects of type %q...", resource)
 		resp, err := c.List(ctx, t)
 		if err != nil {
-			logger.Error("Failed to collect Automation objects of type %q - network error: %v", resource, err)
-			errs++
-			continue
-		} else if err, isErr := resp.AsAPIError(); isErr {
-			logger.WithFields(field.Error(err)).Error("ailed to collect Automation objects of type %q - rejected by API: %v", resource, err)
-			errs++
-			continue
+			var apiErr api.APIError
+			if errors.As(err, &apiErr) {
+				logger.WithFields(field.Error(err)).Error("Failed to collect Automation objects of type %q - rejected by API: %v", resource, err)
+				errs++
+				continue
+			} else {
+				logger.Error("Failed to collect Automation objects of type %q - network error: %v", resource, err)
+				errs++
+				continue
+			}
 		}
 
 		objects, err := automationutils.DecodeListResponse(resp)
@@ -118,13 +128,18 @@ func DeleteAll(ctx context.Context, c Client) error {
 		for _, o := range objects {
 			logger := logger.WithFields(field.F("object", o))
 			logger.Debug("Deleting Automation object with id %q...", o.ID)
-			resp, err := c.Delete(ctx, t, o.ID)
+			_, err := c.Delete(ctx, t, o.ID)
 			if err != nil {
-				logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - network error: %v", resource, o.ID, err)
-				errs++
-			} else if err, isErr := resp.AsAPIError(); isErr && resp.StatusCode != http.StatusNotFound { // 404 means it's gone already anyway
-				logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - rejected by API: %v", resource, o.ID, err)
-				errs++
+				var apiErr api.APIError
+				if errors.As(err, &apiErr) {
+					if apiErr.StatusCode != http.StatusNotFound {
+						logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - rejected by API: %v", resource, o.ID, err)
+						errs++
+					}
+				} else {
+					logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - network error: %v", resource, o.ID, err)
+					errs++
+				}
 			}
 		}
 	}
