@@ -272,5 +272,5 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("unkown type: %T", c.Type)
+	return nil, fmt.Errorf("unknown type: %T", c.Type)
 }
