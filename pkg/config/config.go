@@ -66,6 +66,7 @@ const (
 	EntityTypeId     TypeId = "entity"
 	AutomationTypeId TypeId = "automation"
 	BucketTypeId     TypeId = "bucket"
+	DocumentTypeId   TypeId = "document"
 )
 
 type Type interface {
@@ -121,6 +122,19 @@ type BucketType struct{}
 
 func (BucketType) ID() TypeId {
 	return BucketTypeId
+}
+
+const (
+	DashboardType DocumentType = "dashboard"
+	NotebookType  DocumentType = "notebook"
+)
+
+// DocumentType identifies which document type is used in the config.
+// Currently, it can be a dashboard or a notebook.
+type DocumentType string
+
+func (DocumentType) ID() TypeId {
+	return DocumentTypeId
 }
 
 // Config struct defining a configuration which can be deployed.

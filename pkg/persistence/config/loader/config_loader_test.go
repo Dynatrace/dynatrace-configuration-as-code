@@ -20,6 +20,7 @@ package loader
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -1322,6 +1323,117 @@ configs:
         type: value
         wrong-field: var`,
 			wantErrorsContain: []string{"missing property"},
+		},
+		{
+			name: "Document dashboard config with FF on",
+			envVars: map[string]string{
+				featureflags.Documents().EnvName(): "true",
+			},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: dashboard-id
+  config:
+    name: Test dashboard
+    originObjectId: ext-ID-123
+    template: 'profile.json'
+  type:
+    document:
+      type: dashboard`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "dashboard",
+						ConfigId: "dashboard-id",
+					},
+					OriginObjectId: "ext-ID-123",
+					Type:           config.DashboardType,
+					Template:       template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter: &value.ValueParameter{Value: "Test dashboard"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
+			name: "Document notebook config with FF on",
+			envVars: map[string]string{
+				featureflags.Documents().EnvName(): "true",
+			},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: notebook-id
+  config:
+    name: Test notebook
+    originObjectId: ext-ID-123
+    template: 'profile.json'
+  type:
+    document:
+      type: notebook`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "notebook",
+						ConfigId: "notebook-id",
+					},
+					OriginObjectId: "ext-ID-123",
+					Type:           config.NotebookType,
+					Template:       template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter: &value.ValueParameter{Value: "Test notebook"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
+			name: "Document config with invalid type with FF on",
+			envVars: map[string]string{
+				featureflags.Documents().EnvName(): "true",
+			},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: dashboard-id
+  config:
+    name: Test document
+    originObjectId: ext-ID-123
+    template: 'profile.json'
+  type:
+    document:
+      type: other`,
+			wantErrorsContain: []string{
+				"unknown document type \"other\"",
+			},
+		},
+		{
+			name:             "Document config with FF off",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: dashboard-id
+  config:
+    name: Test dashboard
+    originObjectId: ext-ID-123
+    template: 'profile.json'
+  type:
+    document:
+      type: dashboard`,
+			wantErrorsContain: []string{
+				"unknown config-type \"document\"",
+			},
 		},
 	}
 	for _, tt := range tests {
