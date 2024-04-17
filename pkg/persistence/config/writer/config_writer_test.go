@@ -1253,8 +1253,6 @@ func TestWriteConfigs(t *testing.T) {
 		},
 	}
 
-	t.Setenv(featureflags.Documents().EnvName(), "true")
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
