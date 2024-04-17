@@ -1349,7 +1349,7 @@ configs:
 						ConfigId: "dashboard-id",
 					},
 					OriginObjectId: "ext-ID-123",
-					Type:           config.DocumentType{Type: config.DashboardType},
+					Type:           config.DashboardType,
 					Template:       template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter: &value.ValueParameter{Value: "Test dashboard"},
@@ -1385,7 +1385,7 @@ configs:
 						ConfigId: "notebook-id",
 					},
 					OriginObjectId: "ext-ID-123",
-					Type:           config.DocumentType{Type: config.NotebookType},
+					Type:           config.NotebookType,
 					Template:       template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter: &value.ValueParameter{Value: "Test notebook"},

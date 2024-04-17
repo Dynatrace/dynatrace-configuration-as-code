@@ -124,18 +124,14 @@ func (BucketType) ID() TypeId {
 	return BucketTypeId
 }
 
-type DocumentTypeType string
-
 const (
-	DashboardType DocumentTypeType = "dashboard"
-	NotebookType  DocumentTypeType = "notebook"
+	DashboardType DocumentType = "dashboard"
+	NotebookType  DocumentType = "notebook"
 )
 
-type DocumentType struct {
-	// Type identifies which Document type is used in the config.
-	// Currently, it can be a dashboard or a notebook.
-	Type DocumentTypeType
-}
+// DocumentType identifies which document type is used in the config.
+// Currently, it can be a dashboard or a notebook.
+type DocumentType string
 
 func (DocumentType) ID() TypeId {
 	return DocumentTypeId

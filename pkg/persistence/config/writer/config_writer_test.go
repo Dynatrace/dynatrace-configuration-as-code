@@ -1177,9 +1177,7 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "dashboard",
 						ConfigId: "configId1",
 					},
-					Type: config.DocumentType{
-						Type: config.DashboardType,
-					},
+					Type:           config.DashboardType,
 					OriginObjectId: "ext-ID-123",
 					Parameters: map[string]parameter.Parameter{
 						config.NameParameter: &value.ValueParameter{Value: "name"},
@@ -1193,9 +1191,7 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "notebook",
 						ConfigId: "configId2",
 					},
-					Type: config.DocumentType{
-						Type: config.NotebookType,
-					},
+					Type:           config.NotebookType,
 					OriginObjectId: "ext-ID-123",
 					Parameters: map[string]parameter.Parameter{
 						config.NameParameter: &value.ValueParameter{Value: "name"},
@@ -1216,9 +1212,7 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:           true,
 							},
 							Type: persistence.TypeDefinition{
-								Type: config.DocumentType{
-									Type: "dashboard",
-								},
+								Type: config.DashboardType,
 							},
 						},
 					},
@@ -1235,9 +1229,7 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:           true,
 							},
 							Type: persistence.TypeDefinition{
-								Type: config.DocumentType{
-									Type: "notebook",
-								},
+								Type: config.NotebookType,
 							},
 						},
 					},
