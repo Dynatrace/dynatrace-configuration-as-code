@@ -155,7 +155,7 @@ func (c *TypeDefinition) parseDocumentType(a any) error {
 	var r DocumentDefinition
 	err := mapstructure.Decode(a, &r)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal automation-type: %w", err)
+		return fmt.Errorf("failed to unmarshal document-type: %w", err)
 	}
 
 	c.Type = config.DocumentType{Type: r.Type}
