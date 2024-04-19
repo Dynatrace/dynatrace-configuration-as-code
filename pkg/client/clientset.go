@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	automationApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
@@ -36,6 +37,24 @@ import (
 	"time"
 )
 
+type AutomationClient interface {
+	Get(ctx context.Context, resourceType automationApi.ResourceType, id string) (automation.Response, error)
+	Create(ctx context.Context, resourceType automationApi.ResourceType, data []byte) (result automation.Response, err error)
+	Update(ctx context.Context, resourceType automationApi.ResourceType, id string, data []byte) (automation.Response, error)
+	List(ctx context.Context, resourceType automationApi.ResourceType) (automation.ListResponse, error)
+	Upsert(ctx context.Context, resourceType automationApi.ResourceType, id string, data []byte) (result automation.Response, err error)
+	Delete(ctx context.Context, resourceType automationApi.ResourceType, id string) (automation.Response, error)
+}
+
+type BucketClient interface {
+	Get(ctx context.Context, bucketName string) (buckets.Response, error)
+	List(ctx context.Context) (buckets.ListResponse, error)
+	Create(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
+	Update(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
+	Upsert(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
+	Delete(ctx context.Context, bucketName string) (buckets.Response, error)
+}
+
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
@@ -45,9 +64,9 @@ type ClientSet struct {
 	// dtClient is the client capable of updating or creating settings and classic configs
 	DTClient dtclient.Client
 	// autClient is the client capable of updating or creating automation API configs
-	AutClient *automation.Client
+	AutClient AutomationClient
 	// bucketClient is the client capable of updating or creating Grail Bucket configs
-	BucketClient *buckets.Client
+	BucketClient BucketClient
 }
 
 func (s ClientSet) Classic() dtclient.Client {
@@ -58,11 +77,11 @@ func (s ClientSet) Settings() dtclient.Client {
 	return s.DTClient
 }
 
-func (s ClientSet) Automation() *automation.Client {
+func (s ClientSet) Automation() AutomationClient {
 	return s.AutClient
 }
 
-func (s ClientSet) Bucket() *buckets.Client {
+func (s ClientSet) Bucket() BucketClient {
 	return s.BucketClient
 }
 
