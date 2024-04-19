@@ -84,7 +84,7 @@ func Delete(ctx context.Context, c Client, automationResource config.AutomationR
 func DeleteAll(ctx context.Context, c Client) error {
 	errs := 0
 
-	resources := []config.AutomationResource{config.Workflow, config.BusinessCalendar, config.SchedulingRule}
+	resources := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
 	for _, resource := range resources {
 		logger := log.WithCtxFields(ctx).WithFields(field.Type(string(resource)))
 
