@@ -49,20 +49,20 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 	var deleteErrors int
 
 	// Delete automation resources (in the specified order
-	automationTypeOrder := []string{"workflow", "scheduling-rule", "business-calendar"}
+	automationTypeOrder := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
 	for _, key := range automationTypeOrder {
-		entries := entriesToDelete[key]
+		entries := entriesToDelete[string(key)]
 		if clients.Automation == nil {
 			log.WithCtxFields(ctx).WithFields(field.Type(key)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
-			delete(entriesToDelete, key)
+			delete(entriesToDelete, string(key))
 			continue
 		}
-		err := automation.Delete(ctx, clients.Automation, automationResources[key], entries)
+		err := automation.Delete(ctx, clients.Automation, automationResources[string(key)], entries)
 		if err != nil {
 			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
 			deleteErrors += 1
 		}
-		delete(entriesToDelete, key)
+		delete(entriesToDelete, string(key))
 	}
 
 	// Delete bucket resources
