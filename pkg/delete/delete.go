@@ -52,7 +52,7 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 	automationTypeOrder := []string{"workflow", "scheduling-rule", "business-calendar"}
 	for _, key := range automationTypeOrder {
 		entries := entriesToDelete[key]
-		if reflect.ValueOf(clients.Automation).IsNil() {
+		if clients.Automation == nil {
 			log.WithCtxFields(ctx).WithFields(field.Type(key)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
 			delete(entriesToDelete, key)
 			continue
@@ -66,7 +66,7 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 	}
 
 	// Delete bucket resources
-	if reflect.ValueOf(clients.Buckets).IsNil() {
+	if clients.Buckets == nil {
 		log.WithCtxFields(ctx).WithFields(field.Type("bucket")).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entriesToDelete["bucket"]))
 	} else {
 		if err := bucket.Delete(ctx, clients.Buckets, entriesToDelete["bucket"]); err != nil {
@@ -123,14 +123,14 @@ func All(ctx context.Context, clients ClientSet, apis api.APIs) error {
 		errs++
 	}
 
-	if reflect.ValueOf(clients.Automation).IsNil() {
+	if clients.Automation == nil {
 		log.Warn("Skipped deletion of Automation configurations as API client was unavailable.")
 	} else if err := automation.DeleteAll(ctx, clients.Automation); err != nil {
 		log.Error("Failed to delete all Automation configurations: %v", err)
 		errs++
 	}
 
-	if reflect.ValueOf(clients.Buckets).IsNil() {
+	if clients.Buckets == nil {
 		log.Warn("Skipped deletion of Grail Bucket configurations as API client was unavailable.")
 	} else if err := bucket.DeleteAll(ctx, clients.Buckets); err != nil {
 		log.Error("Failed to delete all Grail Bucket configurations: %v", err)
