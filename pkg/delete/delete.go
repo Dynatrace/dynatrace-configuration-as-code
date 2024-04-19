@@ -48,7 +48,7 @@ type DeleteEntries = map[configurationType][]pointer.DeletePointer
 func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) error {
 	var deleteErrors int
 
-	// Delete automation resources (in the specified order
+	// Delete automation resources (in the specified order)
 	automationTypeOrder := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
 	for _, key := range automationTypeOrder {
 		entries := entriesToDelete[string(key)]
@@ -65,37 +65,32 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 		delete(entriesToDelete, string(key))
 	}
 
-	// Delete bucket resources
-	if clients.Buckets == nil {
-		log.WithCtxFields(ctx).WithFields(field.Type("bucket")).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entriesToDelete["bucket"]))
-	} else {
-		if err := bucket.Delete(ctx, clients.Buckets, entriesToDelete["bucket"]); err != nil {
-			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
-			deleteErrors += 1
-		}
-		delete(entriesToDelete, "bucket")
-	}
-
-	// Dashboard share settings cannot be deleted
+	//  Dashboard share settings cannot be deleted
 	if _, ok := entriesToDelete[api.DashboardShareSettings]; ok {
 		log.Warn("Classic config of type %s cannot be deleted. Note, that they can be removed by deleting the associated dashboard.", api.DashboardShareSettings)
 		delete(entriesToDelete, api.DashboardShareSettings)
 
 	}
 
-	// Delete classic configs and settings
+	// Delete rest of config types
 	for entryType, entries := range entriesToDelete {
 		var err error
 		if theAPI, isClassicAPI := apis[entryType]; isClassicAPI {
 			err = classic.Delete(ctx, clients.Classic, theAPI, entries)
+		} else if entryType == "bucket" {
+			if clients.Buckets == nil {
+				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
+				continue
+			}
+			err = bucket.Delete(ctx, clients.Buckets, entries)
 		} else { // assume it's a Settings Schema
 			err = setting.Delete(ctx, clients.Settings, entries)
 		}
+
 		if err != nil {
 			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
 			deleteErrors += 1
 		}
-		delete(entriesToDelete, entryType)
 	}
 
 	if deleteErrors > 0 {
