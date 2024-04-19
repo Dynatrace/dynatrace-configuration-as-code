@@ -17,8 +17,6 @@ package download
 import (
 	"errors"
 	"fmt"
-	automationClient "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
-	bucketClient "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
@@ -222,8 +220,8 @@ func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, apisToDownload 
 type downloadFn struct {
 	classicDownload    func(dtclient.Client, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
 	settingsDownload   func(dtclient.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
-	automationDownload func(*automationClient.Client, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
-	bucketDownload     func(*bucketClient.Client, string) (projectv2.ConfigsPerType, error)
+	automationDownload func(client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
+	bucketDownload     func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{

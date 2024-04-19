@@ -278,7 +278,7 @@ environmentGroups:
 	})
 
 	// check the workflow still exists after deletion was skipped without error
-	integrationtest.AssertAutomation(t, *clientSet.Automation(), env, true, config.Workflow, config.Config{
+	integrationtest.AssertAutomation(t, clientSet.Automation(), env, true, config.Workflow, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "workflow",
@@ -287,7 +287,7 @@ environmentGroups:
 	})
 
 	// check the bucket still exists after deletion was skipped without error
-	integrationtest.AssertBucket(t, *clientSet.Bucket(), env, true, config.Config{
+	integrationtest.AssertBucket(t, clientSet.Bucket(), env, true, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "bucket",

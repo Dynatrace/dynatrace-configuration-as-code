@@ -22,11 +22,12 @@ import (
 	"encoding/json"
 	"fmt"
 	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
-	client "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -46,7 +47,7 @@ var automationTypesToResources = map[config.AutomationType]automationAPI.Resourc
 
 // Download downloads all automation resources for a given project
 // If automationTypes is given it will just download those types of automation resources
-func Download(cl *client.Client, projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
+func Download(cl client.AutomationClient, projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
 	if len(automationTypes) == 0 {
 		automationTypes = maps.Keys(automationTypesToResources)
 	}
@@ -60,7 +61,7 @@ func Download(cl *client.Client, projectName string, automationTypes ...config.A
 			lg.Warn("No resource mapping for automation type %s found", at.Resource)
 			continue
 		}
-		response, err := func() (client.ListResponse, error) {
+		response, err := func() (automation.ListResponse, error) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
 			return cl.List(ctx, resource)
