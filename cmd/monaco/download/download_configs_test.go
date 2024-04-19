@@ -20,8 +20,6 @@ package download
 
 import (
 	"errors"
-	automation0 "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -235,13 +233,13 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return nil, nil
 				},
-				automationDownload: func(a *automation0.Client, s string, automationType ...config.AutomationType) (projectv2.ConfigsPerType, error) {
+				automationDownload: func(a client.AutomationClient, s string, automationType ...config.AutomationType) (projectv2.ConfigsPerType, error) {
 					if !tt.want.automation {
 						t.Fatalf("automation download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				bucketDownload: func(b *buckets.Client, s string) (projectv2.ConfigsPerType, error) {
+				bucketDownload: func(b client.BucketClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.bucket {
 						t.Fatalf("automation download was not meant to be called but was")
 					}

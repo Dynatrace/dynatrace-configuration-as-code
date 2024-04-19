@@ -23,9 +23,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -158,13 +158,13 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
 						return
 					}
-					foundID = AssertAutomation(t, *clients.Automation(), env, available, typ.Resource, theConfig)
+					foundID = AssertAutomation(t, clients.Automation(), env, available, typ.Resource, theConfig)
 				case config.BucketType:
 					if clients.Bucket() == nil {
 						t.Errorf("can not assert existience of Bucket config %q) because no BucketClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
 						return
 					}
-					foundID = AssertBucket(t, *clients.Bucket(), env, available, theConfig)
+					foundID = AssertBucket(t, clients.Bucket(), env, available, theConfig)
 				default:
 					t.Errorf("Can not assert config of unknown type %q", theConfig.Coordinate.Type)
 				}
@@ -242,7 +242,7 @@ func AssertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient,
 
 }
 
-func AssertAutomation(t *testing.T, c automation.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) (id string) {
+func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) (id string) {
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(resource)
 	assert.NoError(t, err, "failed to get resource type for: %s", cfg.Coordinate)
 
@@ -271,7 +271,7 @@ func AssertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 	return expectedId
 }
 
-func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentDefinition, available bool, cfg config.Config) (id string) {
+func AssertBucket(t *testing.T, client client.BucketClient, env manifest.EnvironmentDefinition, available bool, cfg config.Config) (id string) {
 
 	var expectedId string
 	if cfg.OriginObjectId != "" {
@@ -308,7 +308,7 @@ func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentD
 	return expectedId
 }
 
-func getBucketWithRetry(client buckets.Client, bucketName string, try, maxTries int) (buckets.Response, error) {
+func getBucketWithRetry(client client.BucketClient, bucketName string, try, maxTries int) (buckets.Response, error) {
 	resp, err := client.Get(context.TODO(), bucketName)
 	if try < maxTries && resp.StatusCode == http.StatusNotFound {
 		try++
