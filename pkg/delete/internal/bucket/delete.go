@@ -111,12 +111,17 @@ func DeleteAll(ctx context.Context, c Client) error {
 		if err != nil {
 			var apiErr api.APIError
 			if errors.As(err, &apiErr) {
-				logger.Error("Failed to delete bucket %q - rejected by API: %v", bucketName.BucketName, err)
+				if apiErr.StatusCode != http.StatusNotFound {
+					logger.Error("Failed to delete bucket %q - rejected by API: %v", bucketName.BucketName, err)
+					errs++
+					continue
+				}
 			} else {
 				logger.Error("Failed to delete bucket %q - network error: %v", bucketName.BucketName, err)
+				errs++
+				continue
 			}
-			errs++
-			continue
+
 		}
 	}
 
