@@ -165,11 +165,11 @@ type ClientSet struct {
 	BucketClient BucketClient
 }
 
-func (s ClientSet) Classic() DynatraceClient {
+func (s ClientSet) Classic() ConfigClient {
 	return s.DTClient
 }
 
-func (s ClientSet) Settings() DynatraceClient {
+func (s ClientSet) Settings() SettingsClient {
 	return s.DTClient
 }
 
