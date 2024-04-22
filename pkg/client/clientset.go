@@ -39,10 +39,10 @@ import (
 )
 
 var (
-	_ SettingsClient = (*dtclient.DynatraceClient)(nil)
-	_ ConfigClient   = (*dtclient.DynatraceClient)(nil)
-	_ Client         = (*dtclient.DynatraceClient)(nil)
-	_ Client         = (*dtclient.DummyClient)(nil)
+	_ SettingsClient  = (*dtclient.DynatraceClient)(nil)
+	_ ConfigClient    = (*dtclient.DynatraceClient)(nil)
+	_ DynatraceClient = (*dtclient.DynatraceClient)(nil)
+	_ DynatraceClient = (*dtclient.DummyClient)(nil)
 )
 
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
@@ -120,7 +120,7 @@ type SettingsClient interface {
 
 //go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client DynatraceClient
 
-// Client provides the functionality for performing basic CRUD operations on any Dynatrace API
+// DynatraceClient provides the functionality for performing basic CRUD operations on any Dynatrace API
 // supported by monaco.
 // It encapsulates the configuration-specific inconsistencies of certain APIs in one place to provide
 // a common interface to work with. After all: A user of Client shouldn't care about the
@@ -128,7 +128,7 @@ type SettingsClient interface {
 // Its design is intentionally not dependent on the Config and Environment interfaces included in monaco.
 // This makes sure, that Client can be used as a base for future tooling, which relies on
 // a standardized way to access Dynatrace APIs.
-type Client interface {
+type DynatraceClient interface {
 	ConfigClient
 	SettingsClient
 }
@@ -158,18 +158,18 @@ var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.Monitorin
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
 type ClientSet struct {
 	// dtClient is the client capable of updating or creating settings and classic configs
-	DTClient Client
+	DTClient DynatraceClient
 	// autClient is the client capable of updating or creating automation API configs
 	AutClient AutomationClient
 	// bucketClient is the client capable of updating or creating Grail Bucket configs
 	BucketClient BucketClient
 }
 
-func (s ClientSet) Classic() Client {
+func (s ClientSet) Classic() DynatraceClient {
 	return s.DTClient
 }
 
-func (s ClientSet) Settings() Client {
+func (s ClientSet) Settings() DynatraceClient {
 	return s.DTClient
 }
 

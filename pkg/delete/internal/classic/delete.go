@@ -32,7 +32,7 @@ import (
 )
 
 // Delete removes the given pointer.DeletePointer entries from the environment the supplied client dtclient.Client connects to
-func Delete(ctx context.Context, client client.Client, theAPI api.API, dps []pointer.DeletePointer) error {
+func Delete(ctx context.Context, client client.DynatraceClient, theAPI api.API, dps []pointer.DeletePointer) error {
 	var err error
 
 	for _, dp := range dps {
@@ -90,7 +90,7 @@ func is404(err error) bool {
 }
 
 // resolveIdentifier get the actual ID from DT and update entries with it
-func resolveIdentifier(ctx context.Context, client client.Client, theAPI *api.API, identifier identifier) (string, error) {
+func resolveIdentifier(ctx context.Context, client client.DynatraceClient, theAPI *api.API, identifier identifier) (string, error) {
 	knownValues, err := client.ListConfigs(ctx, *theAPI)
 	if err != nil {
 		return "", err
