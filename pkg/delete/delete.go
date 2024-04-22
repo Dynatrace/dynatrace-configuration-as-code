@@ -32,8 +32,8 @@ import (
 )
 
 type ClientSet struct {
-	Classic    client.Client
-	Settings   client.Client
+	Classic    client.DynatraceClient
+	Settings   client.DynatraceClient
 	Automation client.AutomationClient
 	Buckets    client.BucketClient
 }

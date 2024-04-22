@@ -85,7 +85,7 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 }
 
 func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
+	c := client.NewMockDynatraceClient(gomock.NewController(t))
 	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
 		Name: "mzname"}, nil)
@@ -110,7 +110,7 @@ func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
 }
 
 func TestDeploySetting_ManagementZone_NameGetsExtracted_ifPresent(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
+	c := client.NewMockDynatraceClient(gomock.NewController(t))
 	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "abcdefghijk",
 		Name: "mzname"}, nil)
@@ -135,7 +135,7 @@ func TestDeploySetting_ManagementZone_NameGetsExtracted_ifPresent(t *testing.T) 
 }
 
 func TestDeploySetting_ManagementZone_FailToDecodeMZoneID(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
+	c := client.NewMockDynatraceClient(gomock.NewController(t))
 	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "INVALID MANAGEMENT ZONE ID",
 		Name: "mzanme"}, nil)

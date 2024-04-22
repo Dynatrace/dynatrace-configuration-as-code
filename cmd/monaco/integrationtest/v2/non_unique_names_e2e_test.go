@@ -174,7 +174,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 4, "Expected three configs of name %q but found %d", name, len(existing))
 }
 
-func getConfigsOfName(t *testing.T, c client.Client, a api.API, name string) []dtclient.Value {
+func getConfigsOfName(t *testing.T, c client.DynatraceClient, a api.API, name string) []dtclient.Value {
 	var existingEntities []dtclient.Value
 	entities, err := c.ListConfigs(context.TODO(), a)
 	assert.NoError(t, err)

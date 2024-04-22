@@ -217,7 +217,7 @@ func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, apisToDownload 
 }
 
 type downloadFn struct {
-	classicDownload    func(client.Client, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
+	classicDownload    func(client.DynatraceClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
 	settingsDownload   func(client.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
 	automationDownload func(client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
 	bucketDownload     func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
