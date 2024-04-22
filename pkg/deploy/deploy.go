@@ -53,8 +53,8 @@ type DeployConfigsOptions struct {
 }
 
 type ClientSet struct {
-	Classic    client.DynatraceClient
-	Settings   client.DynatraceClient
+	Classic    client.ConfigClient
+	Settings   client.SettingsClient
 	Automation automation.Client
 	Bucket     bucket.Client
 }

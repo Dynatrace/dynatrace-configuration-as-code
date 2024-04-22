@@ -221,7 +221,7 @@ func TestDownload_Options(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fn := downloadFn{
-				classicDownload: func(client.DynatraceClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
+				classicDownload: func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
 					if !tt.want.config {
 						t.Fatalf("classic config download was not meant to be called but was")
 					}

@@ -27,7 +27,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func Delete(ctx context.Context, c client.DynatraceClient, entries []pointer.DeletePointer) error {
+func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.DeletePointer) error {
 
 	if len(entries) == 0 {
 		return nil
