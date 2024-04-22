@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -44,7 +45,7 @@ type downloadedConfig struct {
 	value dtclient.Value
 }
 
-func Download(client dtclient.Client, projectName string, apisToDownload api.APIs, filters ContentFilters) (projectv2.ConfigsPerType, error) {
+func Download(client client.Client, projectName string, apisToDownload api.APIs, filters ContentFilters) (projectv2.ConfigsPerType, error) {
 	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
 	results := make(projectv2.ConfigsPerType, len(apisToDownload))
 	mutex := sync.Mutex{}
@@ -94,7 +95,7 @@ func getConfigsFromCustomConfigs(customConfigs []downloadedConfig) []config.Conf
 	return finalConfigs
 }
 
-func downloadConfigs(client dtclient.Client, api api.API, projectName string, filters ContentFilters) []downloadedConfig {
+func downloadConfigs(client client.Client, api api.API, projectName string, filters ContentFilters) []downloadedConfig {
 	var results []downloadedConfig
 	logger := log.WithFields(field.Type(api.ID))
 	foundValues, err := findConfigsToDownload(client, api, filters)
@@ -172,7 +173,7 @@ func (v value) id() string {
 
 // findConfigsToDownload tries to identify all values that should be downloaded from a Dynatrace environment for
 // the given API
-func findConfigsToDownload(client dtclient.Client, apiToDownload api.API, filters ContentFilters) (values, error) {
+func findConfigsToDownload(client client.Client, apiToDownload api.API, filters ContentFilters) (values, error) {
 	if apiToDownload.SingleConfiguration && !apiToDownload.HasParent() {
 		log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching singleton-configuration '%v'", apiToDownload.ID)
 
@@ -261,7 +262,7 @@ func shouldFilter() bool {
 	return featureflags.DownloadFilter().Enabled() && featureflags.DownloadFilterClassicConfigs().Enabled()
 }
 
-func downloadAndUnmarshalConfig(client dtclient.Client, theApi api.API, value value) ([]map[string]interface{}, error) {
+func downloadAndUnmarshalConfig(client client.Client, theApi api.API, value value) ([]map[string]interface{}, error) {
 	id := value.value.Id
 
 	// check if we should skip the id to enforce to read/download "all" configs instead of a single one

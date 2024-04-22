@@ -23,7 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/spf13/afero"
@@ -100,7 +100,7 @@ func TestSkip(t *testing.T) {
 	}
 
 	loadedManifest := integrationtest.LoadManifest(t, afero.OsFs{}, manifest, "")
-	clients := make(map[string]dtclient.SettingsClient)
+	clients := make(map[string]client.SettingsClient)
 
 	for name, def := range loadedManifest.Environments {
 		set := integrationtest.CreateDynatraceClients(t, def)
@@ -139,7 +139,7 @@ func TestSkip(t *testing.T) {
 	}
 }
 
-func assertTestConfig(t *testing.T, tc TestContext, client dtclient.SettingsClient, envName string, configID string, shouldExist bool) {
+func assertTestConfig(t *testing.T, tc TestContext, client client.SettingsClient, envName string, configID string, shouldExist bool) {
 	configID = fmt.Sprintf("%s_%s", configID, tc.suffix)
 
 	integrationtest.AssertSetting(t, context.TODO(), client, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, shouldExist, config.Config{

@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	uuid2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
@@ -173,7 +174,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 4, "Expected three configs of name %q but found %d", name, len(existing))
 }
 
-func getConfigsOfName(t *testing.T, c dtclient.Client, a api.API, name string) []dtclient.Value {
+func getConfigsOfName(t *testing.T, c client.Client, a api.API, name string) []dtclient.Value {
 	var existingEntities []dtclient.Value
 	entities, err := c.ListConfigs(context.TODO(), a)
 	assert.NoError(t, err)
