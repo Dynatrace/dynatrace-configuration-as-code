@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"strings"
@@ -39,7 +40,7 @@ import (
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-func Download(client dtclient.SettingsClient, projectName string, filters Filters, schemaIDs ...config.SettingsType) (v2.ConfigsPerType, error) {
+func Download(client client.SettingsClient, projectName string, filters Filters, schemaIDs ...config.SettingsType) (v2.ConfigsPerType, error) {
 	if len(schemaIDs) == 0 {
 		return downloadAll(client, projectName, filters)
 	}
@@ -50,7 +51,7 @@ func Download(client dtclient.SettingsClient, projectName string, filters Filter
 	return downloadSpecific(client, projectName, schemas, filters)
 }
 
-func downloadAll(client dtclient.SettingsClient, projectName string, filters Filters) (v2.ConfigsPerType, error) {
+func downloadAll(client client.SettingsClient, projectName string, filters Filters) (v2.ConfigsPerType, error) {
 	log.Debug("Fetching all schemas to download")
 
 	// get ALL schemas
@@ -69,7 +70,7 @@ func downloadAll(client dtclient.SettingsClient, projectName string, filters Fil
 	return result, nil
 }
 
-func downloadSpecific(client dtclient.SettingsClient, projectName string, schemaIDs []string, filters Filters) (v2.ConfigsPerType, error) {
+func downloadSpecific(client client.SettingsClient, projectName string, schemaIDs []string, filters Filters) (v2.ConfigsPerType, error) {
 	if ok, unknownSchemas := validateSpecificSchemas(client, schemaIDs); !ok {
 		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
 		log.WithFields(field.F("unknownSchemas", unknownSchemas), field.Error(err)).Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
@@ -80,7 +81,7 @@ func downloadSpecific(client dtclient.SettingsClient, projectName string, schema
 	return result, nil
 }
 
-func download(client dtclient.SettingsClient, schemas []string, projectName string, filters Filters) v2.ConfigsPerType {
+func download(client client.SettingsClient, schemas []string, projectName string, filters Filters) v2.ConfigsPerType {
 	results := make(v2.ConfigsPerType, len(schemas))
 	downloadMutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
@@ -180,7 +181,7 @@ func shouldFilterUnmodifiableSettings() bool {
 	return shouldFilterSettings() && featureflags.DownloadFilterSettingsUnmodifiable().Enabled()
 }
 
-func validateSpecificSchemas(c dtclient.SettingsClient, schemas []string) (valid bool, unknownSchemas []string) {
+func validateSpecificSchemas(c client.SettingsClient, schemas []string) (valid bool, unknownSchemas []string) {
 	if len(schemas) == 0 {
 		return true, nil
 	}

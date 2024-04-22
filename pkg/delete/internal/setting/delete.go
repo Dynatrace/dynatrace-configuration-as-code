@@ -21,12 +21,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"golang.org/x/net/context"
 )
 
-func Delete(ctx context.Context, c dtclient.Client, entries []pointer.DeletePointer) error {
+func Delete(ctx context.Context, c client.Client, entries []pointer.DeletePointer) error {
 
 	if len(entries) == 0 {
 		return nil
@@ -94,7 +95,7 @@ func Delete(ctx context.Context, c dtclient.Client, entries []pointer.DeletePoin
 //
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
-func DeleteAll(ctx context.Context, c dtclient.SettingsClient) error {
+func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 	errs := 0
 
 	schemas, err := c.ListSchemas()

@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/bucket"
@@ -33,8 +32,8 @@ import (
 )
 
 type ClientSet struct {
-	Classic    dtclient.Client
-	Settings   dtclient.Client
+	Classic    client.Client
+	Settings   client.Client
 	Automation client.AutomationClient
 	Buckets    client.BucketClient
 }

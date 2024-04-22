@@ -47,10 +47,6 @@ type DummyClient struct {
 	RequestOutputDir string
 }
 
-var (
-	_ Client = (*DummyClient)(nil)
-)
-
 func (c *DummyClient) GetEntries(a api.API) ([]DataEntry, bool) {
 	c.entriesLock.RLock()
 	defer c.entriesLock.RUnlock()

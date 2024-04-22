@@ -177,7 +177,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
-func AssertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) (id string) {
+func AssertConfig(t *testing.T, ctx context.Context, client client.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) (id string) {
 
 	configType := config.Coordinate.Type
 
@@ -207,7 +207,7 @@ func AssertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClien
 	return id
 }
 
-func AssertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config) (id string) {
+func AssertSetting(t *testing.T, ctx context.Context, c client.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config) (id string) {
 	expectedExtId, err := idutils.GenerateExternalID(config.Coordinate)
 	if err != nil {
 		t.Errorf("Unable to generate external id: %v", err)
