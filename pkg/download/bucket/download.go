@@ -50,11 +50,6 @@ func Download(client client.BucketClient, projectName string) (v2.ConfigsPerType
 		return nil, nil
 	}
 
-	if apiErr, isErr := response.AsAPIError(); isErr {
-		log.WithFields(field.Type("bucket"), field.Error(apiErr)).Error("Failed to fetch all bucket definitions: %v", apiErr)
-		return nil, nil
-	}
-
 	configs := convertAllObjects(projectName, response.All())
 	result["bucket"] = configs
 	return result, nil

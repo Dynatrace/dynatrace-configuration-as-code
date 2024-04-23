@@ -21,6 +21,9 @@ package bucket_test
 import (
 	"context"
 	"errors"
+	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -29,7 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type assertAndRespond func(t *testing.T, bucketName string, data []byte) (buckets.Response, error)
@@ -135,10 +137,10 @@ func TestDeploy(t *testing.T) {
 				Skip:       false,
 			},
 			func(t *testing.T, bucketName string, data []byte) (buckets.Response, error) {
-				return buckets.Response{
+				return buckets.Response{}, &api.APIError{
 					StatusCode: 400,
-					Data:       []byte("Your request is bad and you should feel bad"),
-				}, nil
+					Body:       []byte("Your request is bad and you should feel bad"),
+				}
 			},
 			entities.ResolvedEntity{},
 			true,

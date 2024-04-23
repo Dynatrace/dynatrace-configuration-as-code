@@ -18,7 +18,9 @@ package bucket
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -47,13 +49,18 @@ func Delete(ctx context.Context, c Client, entries []pointer.DeletePointer) erro
 		bucketName := idutils.GenerateBucketName(e.AsCoordinate())
 
 		logger.Debug("Deleting bucket: %s.", e, bucketName)
-		resp, err := c.Delete(ctx, bucketName)
+		_, err := c.Delete(ctx, bucketName)
 		if err != nil {
-			logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration - network error: %v", e, bucketName, err)
-			deleteErrs++
-		} else if err, ok := resp.AsAPIError(); ok && err.StatusCode != http.StatusNotFound {
-			logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration - rejected by API: %v", e, bucketName, err)
-			deleteErrs++
+			var apiErr api.APIError
+			if errors.As(err, &apiErr) {
+				if apiErr.StatusCode != http.StatusNotFound {
+					logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration - rejected by API: %v", e, bucketName, err)
+					deleteErrs++
+				}
+			} else {
+				logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration - network error: %v", e, bucketName, err)
+				deleteErrs++
+			}
 		}
 	}
 
@@ -82,11 +89,6 @@ func DeleteAll(ctx context.Context, c Client) error {
 		return err
 	}
 
-	if err, ok := response.AsAPIError(); ok {
-		logger.Error("Failed to collect Grail Bucket configurations: %v", err)
-		return err
-	}
-
 	logger.Info("Deleting %d objects of type %q...", len(response.All()), "bucket")
 	errs := 0
 	for _, obj := range response.All() {
@@ -105,15 +107,21 @@ func DeleteAll(ctx context.Context, c Client) error {
 			continue
 		}
 
-		result, err := c.Delete(ctx, bucketName.BucketName)
+		_, err := c.Delete(ctx, bucketName.BucketName)
 		if err != nil {
-			logger.Error("Failed to delete bucket %q - network error: %v", bucketName.BucketName, err)
-			errs++
-			continue
-		} else if err, ok := result.AsAPIError(); ok {
-			logger.Error("Failed to delete bucket %q - rejected by API: %v", bucketName.BucketName, err)
-			errs++
-			continue
+			var apiErr api.APIError
+			if errors.As(err, &apiErr) {
+				if apiErr.StatusCode != http.StatusNotFound {
+					logger.Error("Failed to delete bucket %q - rejected by API: %v", bucketName.BucketName, err)
+					errs++
+					continue
+				}
+			} else {
+				logger.Error("Failed to delete bucket %q - network error: %v", bucketName.BucketName, err)
+				errs++
+				continue
+			}
+
 		}
 	}
 
