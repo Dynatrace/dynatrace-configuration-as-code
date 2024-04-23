@@ -30,6 +30,7 @@ type downloadConfigsOptions struct {
 	onlyAPIs        bool
 	onlySettings    bool
 	onlyAutomation  bool
+	onlyDocuments   bool
 }
 
 func (opts downloadConfigsOptions) valid() []error {
@@ -47,6 +48,8 @@ func (opts downloadConfigsOptions) valid() []error {
 func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
 	apis = apis.Filter(api.RemoveDisabled)
 	switch {
+	case opts.onlyDocuments:
+		return nil
 	case opts.onlyAutomation:
 		return nil
 	case opts.onlySettings:
