@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	tmpl "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/spf13/afero"
 	"path/filepath"
 )
@@ -33,9 +34,10 @@ var FileParameterSerde = parameter.ParameterSerDe{
 }
 
 type FileParameter struct {
-	WorkingDir string
-	Folder     string
-	Path       string
+	WorkingDir           string
+	Folder               string
+	Path                 string
+	referencedParameters []parameter.ParameterReference
 }
 
 func (f *FileParameter) GetType() string {
@@ -43,24 +45,49 @@ func (f *FileParameter) GetType() string {
 }
 
 func (f *FileParameter) GetReferences() []parameter.ParameterReference {
-	// file parameters cannot have references
-	return []parameter.ParameterReference{}
+	if f.referencedParameters == nil {
+		return []parameter.ParameterReference{}
+	}
+	return f.referencedParameters
 }
 
 func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interface{}, error) {
-	content, err := afero.ReadFile(afero.NewOsFs(), filepath.Join(f.WorkingDir, f.Folder, f.Path))
+	parameterTmpl, err := tmpl.NewFileTemplate(afero.NewOsFs(), filepath.Join(f.WorkingDir, f.Folder, f.Path))
 	if err != nil {
-		return nil, parameter.NewParameterResolveValueError(context, fmt.Sprintf("unable to read from file %s: %v", f.Path, err))
+		return nil, parameter.NewParameterResolveValueError(context, err.Error())
 	}
-	return template.EscapeSpecialCharactersInValue(string(content), template.FullStringEscapeFunction)
 
+	strContent, err := tmpl.Render(parameterTmpl, context.ResolvedParameterValues)
+	if err != nil {
+		return nil, parameter.NewParameterResolveValueError(context, err.Error())
+	}
+
+	return template.EscapeSpecialCharactersInValue(strContent, template.FullStringEscapeFunction)
 }
 
 func parseFileValueParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
-	if path, ok := context.Value["path"]; ok {
+	path, ok := context.Value["path"]
+	if !ok {
+		return nil, parameter.NewParameterParserError(context, "missing property `path`")
+	}
+
+	references, ok := context.Value["references"]
+	if !ok {
 		return &FileParameter{WorkingDir: context.WorkingDir, Folder: context.Folder, Path: strings.ToString((path))}, nil
 	}
-	return nil, parameter.NewParameterParserError(context, "missing property `path`")
+
+	referencedParameterSlice, ok := references.([]interface{})
+	if !ok {
+		return nil, parameter.NewParameterParserError(context, "malformed value `references`")
+	}
+
+	referencedParameters, err := parameter.ToParameterReferences(referencedParameterSlice, context.Coordinate)
+	if err != nil {
+		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("invalid parameter references: %v", err))
+	}
+
+	return &FileParameter{WorkingDir: context.WorkingDir, Folder: context.Folder, Path: strings.ToString((path)), referencedParameters: referencedParameters}, nil
+
 }
 
 func writeFileValueParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
