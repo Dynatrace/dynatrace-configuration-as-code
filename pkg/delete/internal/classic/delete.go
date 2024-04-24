@@ -19,8 +19,9 @@ package classic
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"net/http"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -37,7 +38,7 @@ func Delete(ctx context.Context, client client.ConfigClient, theAPI api.API, dps
 
 	for _, dp := range dps {
 		log := log.WithCtxFields(ctx).WithFields(field.Coordinate(dp.AsCoordinate()))
-		var id, parentID string
+		var parentID string
 		var e error
 		if theAPI.HasParent() {
 			parentID, e = resolveIdentifier(ctx, client, theAPI.Parent, toIdentifier(dp.Scope, "", ""))
@@ -52,14 +53,17 @@ func Delete(ctx context.Context, client client.ConfigClient, theAPI api.API, dps
 		}
 
 		a := theAPI.ApplyParentObjectID(parentID)
-		id, e = resolveIdentifier(ctx, client, &a, toIdentifier(dp.Identifier, dp.ActionType, dp.Domain))
-		if e != nil && !is404(e) {
-			log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w")
-			err = errors.Join(err, e)
-			continue
-		} else if id == "" {
-			log.Debug("config doesn't exist - no need for action")
-			continue
+		id := dp.OriginObjectId
+		if id == "" {
+			id, e = resolveIdentifier(ctx, client, &a, toIdentifier(dp.Identifier, dp.ActionType, dp.Domain))
+			if e != nil && !is404(e) {
+				log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w")
+				err = errors.Join(err, e)
+				continue
+			} else if id == "" {
+				log.Debug("config doesn't exist - no need for action")
+				continue
+			}
 		}
 
 		if e := client.DeleteConfigById(a, id); e != nil && !is404(e) {

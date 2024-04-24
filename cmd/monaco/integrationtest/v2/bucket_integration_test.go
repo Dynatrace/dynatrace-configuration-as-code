@@ -30,7 +30,6 @@ import (
 
 // Tests a dry run (validation)
 func TestIntegrationBucketValidation(t *testing.T) {
-
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
 
 	configFolder := "test-resources/integration-bucket/"
@@ -57,7 +56,7 @@ func TestIntegrationBucket(t *testing.T) {
 	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "Buckets", func(fs afero.Fs, _ TestContext) {
 
 		// Create the buckets
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --project=project, --verbose", manifest)
+		err := monaco.RunWithFsf(fs, "monaco deploy %s --project=project --verbose", manifest)
 		assert.NoError(t, err)
 
 		// Update the buckets

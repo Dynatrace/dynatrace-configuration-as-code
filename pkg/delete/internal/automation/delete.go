@@ -19,6 +19,8 @@ package automation
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
@@ -29,7 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"golang.org/x/net/context"
-	"net/http"
 )
 
 type Client interface {
@@ -48,7 +49,10 @@ func Delete(ctx context.Context, c Client, automationResource config.AutomationR
 
 		logger := logger.WithFields(field.Coordinate(e.AsCoordinate()))
 
-		id := idutils.GenerateUUIDFromCoordinate(e.AsCoordinate())
+		id := e.OriginObjectId
+		if id == "" {
+			id = idutils.GenerateUUIDFromCoordinate(e.AsCoordinate())
+		}
 
 		logger.Debug("Deleting %v with id %q.", automationResource, id)
 

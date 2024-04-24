@@ -34,6 +34,7 @@ import (
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
 )
 
@@ -332,11 +333,8 @@ configs:
 	assert.NoError(t, err)
 
 	// DEPLOY Config
-	cmd := runner.BuildCli(fs)
-	cmd.SetArgs([]string{"deploy", "--verbose", deployManifestPath})
-	err = cmd.Execute()
-
-	assert.NoError(t, err)
+	err = monaco.RunWithFsf(fs, "monaco deploy %s --verbose", deployManifestPath)
+	require.NoError(t, err)
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
 	man, errs := manifestloader.Load(&manifestloader.Context{
@@ -368,8 +366,7 @@ configs:
 
 	// Only DELETE key-user action config, as deleting the application would auto-remove it
 	subPathOnlyDeleteTemplate := `delete:
-  - project: "project"
-    type: "key-user-actions-mobile"
+  - type: "key-user-actions-mobile"
     scope: "%s"
     name: "%s"`
 
@@ -379,10 +376,8 @@ configs:
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
 	assert.NoError(t, err)
 
-	cmd = runner.BuildCli(fs)
-	cmd.SetArgs([]string{"delete", "--verbose", "--manifest", deployManifestPath})
-	err = cmd.Execute()
-	assert.NoError(t, err)
+	err = monaco.RunWithFsf(fs, "monaco delete --manifest %s --verbose", deployManifestPath)
+	require.NoError(t, err)
 
 	//Assert key-user-action is deleted
 	integrationtest.AssertConfig(t, context.TODO(), clientSet.Classic(), apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
@@ -396,8 +391,7 @@ configs:
 	fullDeleteTemplate := `delete:
   - type: "application-mobile"
     name: "%s"
-  - project: "project"
-    type: "key-user-actions-mobile"
+  - type: "key-user-actions-mobile"
     scope: "%s"
     name: "%s"`
 
@@ -407,10 +401,8 @@ configs:
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
 	assert.NoError(t, err)
 
-	cmd = runner.BuildCli(fs)
-	cmd.SetArgs([]string{"delete", "--verbose", "--manifest", deployManifestPath})
-	err = cmd.Execute()
-	assert.NoError(t, err)
+	err = monaco.RunWithFsf(fs, "monaco delete --manifest %s --verbose", deployManifestPath)
+	require.NoError(t, err)
 
 	// Assert expected deletions
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", false)
