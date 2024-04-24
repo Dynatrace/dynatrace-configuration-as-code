@@ -16,6 +16,7 @@ package parameter
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 )
@@ -221,3 +222,18 @@ var (
 	_ errors.DetailedConfigError = (*ParameterWriterError)(nil)
 	_ errors.DetailedConfigError = (*ParameterResolveValueError)(nil)
 )
+
+func ToParameterReferences(params []interface{}, coord coordinate.Coordinate) (paramRefs []ParameterReference, err error) {
+	for _, param := range params {
+		switch param.(type) {
+		case []interface{}, map[interface{}]interface{}:
+			return nil, fmt.Errorf("error creating parameter reference: %v is not a string", param)
+		}
+
+		paramRefs = append(paramRefs, ParameterReference{
+			Config:   coord,
+			Property: strings.ToString(param),
+		})
+	}
+	return paramRefs, nil
+}

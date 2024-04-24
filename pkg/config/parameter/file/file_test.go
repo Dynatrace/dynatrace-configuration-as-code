@@ -91,9 +91,57 @@ func TestResolveValue(t *testing.T) {
 		Value:      map[string]any{"path": fileName},
 	})
 
+	assert.Len(t, param.GetReferences(), 0)
+
 	result, err := param.ResolveValue(parameter.ResolveContext{})
 	require.NoError(t, err)
 	assert.Equal(t, "test-content", result)
+}
+
+func TestResolveValueWithRefernces(t *testing.T) {
+	dir, _ := os.MkdirTemp("", "")
+	file, _ := os.CreateTemp(dir, "")
+	file.Write([]byte("test-content {{ .ref1 }} - {{ .ref2 }}"))
+	workingDir, fileName := filepath.Dir(file.Name()), filepath.Base(file.Name())
+
+	param, _ := parseFileValueParameter(parameter.ParameterParserContext{
+		WorkingDir: workingDir,
+		Value:      map[string]any{"path": fileName, "references": []any{"ref1", "ref2"}},
+	})
+
+	assert.Len(t, param.GetReferences(), 2)
+
+	result, err := param.ResolveValue(parameter.ResolveContext{
+		ResolvedParameterValues: map[string]interface{}{
+			"ref1": "ref1-resolved",
+			"ref2": "ref2-resolved",
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "test-content ref1-resolved - ref2-resolved", result)
+}
+
+func TestResolveValueWithRefernces_RefMissing(t *testing.T) {
+	dir, _ := os.MkdirTemp("", "")
+	file, _ := os.CreateTemp(dir, "")
+	file.Write([]byte("test-content {{ .ref1 }} - {{ .ref2 }}"))
+	workingDir, fileName := filepath.Dir(file.Name()), filepath.Base(file.Name())
+
+	param, _ := parseFileValueParameter(parameter.ParameterParserContext{
+		WorkingDir: workingDir,
+		Value:      map[string]any{"path": fileName, "references": []any{"ref1", "ref2"}},
+	})
+
+	assert.Len(t, param.GetReferences(), 2)
+
+	result, err := param.ResolveValue(parameter.ResolveContext{
+		ResolvedParameterValues: map[string]interface{}{
+			"ref1": "ref1-resolved",
+		},
+	})
+	assert.Nil(t, result)
+	assert.Error(t, err)
+
 }
 
 func TestResolveValue_FileNotFound(t *testing.T) {
@@ -105,9 +153,4 @@ func TestResolveValue_FileNotFound(t *testing.T) {
 	result, err := param.ResolveValue(parameter.ResolveContext{})
 	assert.Nil(t, result)
 	assert.IsType(t, parameter.ParameterResolveValueError{}, err)
-}
-
-func TestGetReferences(t *testing.T) {
-	param := FileParameter{}
-	assert.Len(t, param.GetReferences(), 0)
 }

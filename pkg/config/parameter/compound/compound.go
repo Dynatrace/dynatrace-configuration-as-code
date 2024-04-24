@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	templ "text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 )
@@ -109,7 +108,7 @@ func parseCompoundParameter(context parameter.ParameterParserContext) (parameter
 		return nil, parameter.NewParameterParserError(context, "malformed value `references`")
 	}
 
-	referencedParameters, err := toParameterReferences(referencedParameterSlice, context.Coordinate)
+	referencedParameters, err := parameter.ToParameterReferences(referencedParameterSlice, context.Coordinate)
 	if err != nil {
 		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("invalid parameter references: %v", err))
 	}
@@ -142,19 +141,4 @@ func writeCompoundParameter(context parameter.ParameterWriterContext) (map[strin
 	result["references"] = references
 
 	return result, nil
-}
-
-func toParameterReferences(params []interface{}, coord coordinate.Coordinate) (paramRefs []parameter.ParameterReference, err error) {
-	for _, param := range params {
-		switch param.(type) {
-		case []interface{}, map[interface{}]interface{}:
-			return nil, fmt.Errorf("error creating parameter reference: %v is not a string", param)
-		}
-
-		paramRefs = append(paramRefs, parameter.ParameterReference{
-			Config:   coord,
-			Property: strings.ToString(param),
-		})
-	}
-	return paramRefs, nil
 }
