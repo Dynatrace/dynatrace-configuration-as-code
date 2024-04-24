@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
@@ -64,7 +63,6 @@ func (p parseErrors) Error() string {
 
 func LoadEntriesFromFile(fs afero.Fs, deleteFile string) (DeleteEntries, error) {
 	definition, err := readDeleteFile(fs, deleteFile)
-
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +77,6 @@ func readDeleteFile(fs afero.Fs, deleteFile string) (persistence.FileDefinition,
 	}
 
 	data, err := afero.ReadFile(fs, targetFile)
-
 	if err != nil {
 		return persistence.FileDefinition{}, err
 	}
@@ -91,7 +88,6 @@ func readDeleteFile(fs afero.Fs, deleteFile string) (persistence.FileDefinition,
 	var result persistence.FileDefinition
 
 	err = yaml.UnmarshalStrict(data, &result)
-
 	if err != nil {
 		return persistence.FileDefinition{}, err
 	}
@@ -104,8 +100,7 @@ func parseDeleteFileDefinition(definition persistence.FileDefinition) (DeleteEnt
 	var errs parseErrors
 
 	for i, e := range definition.DeleteEntries {
-		entry, err := parseDeleteEntry(e)
-
+		entry, err := convertToDeletePointer(e)
 		if err != nil {
 			errs = append(errs, entryParserError{
 				Value:  fmt.Sprintf("%v", e),
@@ -125,99 +120,104 @@ func parseDeleteFileDefinition(definition persistence.FileDefinition) (DeleteEnt
 	return result, nil
 }
 
-func parseDeleteEntry(entry any) (pointer.DeletePointer, error) {
-
-	ptr, err := parseFullEntry(entry)
-
-	if str, ok := entry.(string); ok && err != nil {
-		return parseSimpleEntry(str)
+func convertToDeletePointer(entry any) (pointer.DeletePointer, error) {
+	if str, ok := entry.(string); ok {
+		return convertLegacy(str)
 	}
-
-	return ptr, err
+	return convert(entry)
 }
 
-func parseFullEntry(entry interface{}) (pointer.DeletePointer, error) {
-
+func convert(entry interface{}) (pointer.DeletePointer, error) {
 	var parsed persistence.DeleteEntry
-	err := mapstructure.Decode(entry, &parsed)
-	if err != nil {
+	if err := mapstructure.Decode(entry, &parsed); err != nil {
 		return pointer.DeletePointer{}, err
 	}
 
+	if parsed.Type == "" {
+		return pointer.DeletePointer{}, errors.New("'type' is not supported for this API")
+	}
 	if a, known := api.NewAPIs()[parsed.Type]; known {
-		p, err := parseAPIEntry(parsed, a)
-		if err != nil {
+		if err := verifyAPIEntry(parsed, a); err != nil {
 			return pointer.DeletePointer{}, fmt.Errorf("failed to parse entry for API '%s': %w", a.ID, err)
 		}
-		return p, nil
+	} else {
+		if err := verifyCoordinateEntry(parsed); err != nil {
+			return pointer.DeletePointer{}, err
+		}
 	}
 
-	return parseCoordinateEntry(parsed)
+	dp := pointer.DeletePointer{
+		Project:        parsed.Project,
+		Type:           parsed.Type,
+		Scope:          parsed.Scope,
+		ActionType:     parsed.CustomValues["actionType"],
+		Domain:         parsed.CustomValues["domain"],
+		OriginObjectId: parsed.ObjectId,
+	}
+	if _, known := api.NewAPIs()[parsed.Type]; known {
+		dp.Identifier = parsed.ConfigName
+	} else {
+		dp.Identifier = parsed.ConfigId
+	}
+
+	return dp, nil
 }
 
-func parseAPIEntry(parsed persistence.DeleteEntry, a api.API) (pointer.DeletePointer, error) {
-	if parsed.ConfigName == "" {
-		return pointer.DeletePointer{}, fmt.Errorf("delete entry of API type requiress config 'name' to be defined")
-	}
-
+func verifyAPIEntry(parsed persistence.DeleteEntry, a api.API) error {
 	if parsed.ConfigId != "" {
-		log.Warn("Delete entry '%s' of API type defines config 'id' - only 'name' will be used.")
+		return errors.New("'id' is not supported for this API")
 	}
-
-	if a.ID == api.KeyUserActionsWeb {
-		if parsed.Scope == "" {
-			return pointer.DeletePointer{}, fmt.Errorf("API of type '%s' requires a '%s', but none was defined", a, "scope")
-		}
-		if v := parsed.CustomValues["actionType"]; v == "" {
-			return pointer.DeletePointer{}, fmt.Errorf("API of type '%s' requires a '%s', but none was defined", a, "actionType")
-		}
-		if v := parsed.CustomValues["domain"]; v == "" {
-			return pointer.DeletePointer{}, fmt.Errorf("API of type '%s' requires a '%s', but none was defined", a, "domain")
-		}
-
-		return pointer.DeletePointer{
-			Type:       parsed.Type,
-			Identifier: parsed.ConfigName,
-			Scope:      parsed.Scope,
-			ActionType: parsed.CustomValues["actionType"],
-			Domain:     parsed.CustomValues["domain"],
-		}, nil
+	if parsed.Project != "" {
+		return errors.New("'project' is not supported for this API")
 	}
-
+	if parsed.ConfigName != "" && parsed.ObjectId != "" {
+		return errors.New("'name' and 'objectId' can't be used together to define an entry")
+	}
+	if parsed.ConfigName == "" && parsed.ObjectId == "" {
+		return errors.New("a 'name' or a 'objectId' is required, but none was defined")
+	}
 	// The scope is required for sub-path APIs.
 	if a.HasParent() && parsed.Scope == "" {
-		return pointer.DeletePointer{}, errors.New("API requires a scope, but non was defined")
+		return errors.New("API requires a 'scope', but none was defined")
 	}
 	// Non sub-path APIs must not define the scope
 	if !a.HasParent() && parsed.Scope != "" {
-		return pointer.DeletePointer{}, errors.New("API does not allow a scope, but a scope was defined")
+		return errors.New("API does not allow 'scope', but it was defined")
 	}
 
-	return pointer.DeletePointer{
-		Type:       parsed.Type,
-		Identifier: parsed.ConfigName,
-		Scope:      parsed.Scope,
-	}, nil
+	if a.ID == api.KeyUserActionsWeb {
+		if v := parsed.CustomValues["actionType"]; v == "" {
+			return fmt.Errorf("API of type '%s' requires a '%s', but none was defined", a, "actionType")
+		}
+		if v := parsed.CustomValues["domain"]; v == "" {
+			return fmt.Errorf("API of type '%s' requires a '%s', but none was defined", a, "domain")
+		}
+	}
+	return nil
 }
 
-func parseCoordinateEntry(parsed persistence.DeleteEntry) (pointer.DeletePointer, error) {
-	if parsed.ConfigId == "" {
-		return pointer.DeletePointer{}, fmt.Errorf("delete entry requires config 'id' to be defined")
-	}
-	if parsed.Project == "" {
-		return pointer.DeletePointer{}, fmt.Errorf("delete entry requires 'project' to be defined")
-	}
+func verifyCoordinateEntry(parsed persistence.DeleteEntry) error {
 	if parsed.ConfigName != "" {
-		log.Warn("Delete entry defines config 'name' - only 'id' will be used.")
+		return errors.New("'name' is not supported for this API")
 	}
-	return pointer.DeletePointer{
-		Project:    parsed.Project,
-		Type:       parsed.Type,
-		Identifier: parsed.ConfigId,
-	}, nil
+	if parsed.ObjectId == "" && (parsed.ConfigId == "" && parsed.Project == "") {
+		return errors.New("either an 'objectId' or a pair 'id'-'project' is required")
+	} else if parsed.ObjectId != "" {
+		if parsed.ConfigId != "" || parsed.Project != "" {
+			return errors.New("the pair 'id'-'project' and 'objectId' can't be used together to define an entry")
+		}
+	} else {
+		if parsed.ConfigId == "" {
+			return fmt.Errorf("delete entry requires config 'id' to be defined")
+		}
+		if parsed.Project == "" {
+			return fmt.Errorf("delete entry requires 'project' to be defined")
+		}
+	}
+	return nil
 }
 
-func parseSimpleEntry(entry string) (pointer.DeletePointer, error) {
+func convertLegacy(entry string) (pointer.DeletePointer, error) {
 	if !strings.Contains(entry, deleteDelimiter) {
 		return pointer.DeletePointer{}, fmt.Errorf("invalid format. doesn't contain `%s`", deleteDelimiter)
 	}

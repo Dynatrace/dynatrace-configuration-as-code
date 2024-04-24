@@ -18,6 +18,7 @@ package pointer
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -36,6 +37,9 @@ type DeletePointer struct {
 
 	// ActionType and Domain are used when deleting key-user-actions-web entities
 	ActionType, Domain string
+
+	//OriginObjectId is DT ID of the configuration. Mutually exclusive with Identifier.
+	OriginObjectId string
 }
 
 func (d DeletePointer) AsCoordinate() coordinate.Coordinate {

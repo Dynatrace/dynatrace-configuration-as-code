@@ -32,8 +32,7 @@ import (
 // This test should contain all possible entry types (except the legacy one)
 func TestMixOfClassicAndSettingsEntry(t *testing.T) {
 	fileContent := []byte(`delete:
-- project: "myProject"
-  type: management-zone
+- type: management-zone
   name: test entity/entities
 - project: some-project
   type: builtin:auto.tagging
@@ -67,6 +66,45 @@ func TestClassicEntry(t *testing.T) {
 	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
 	require.NoError(t, err)
 	require.Equal(t, want, actual)
+}
+
+func TestClassicEntryWithOriginID(t *testing.T) {
+	fileContent := []byte(`delete:
+- type: management-zone
+  objectId: origin-object-ID
+`)
+	want := delete.DeleteEntries{
+		"management-zone": {{
+			Type:           "management-zone",
+			OriginObjectId: "origin-object-ID",
+		}}}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	require.NoError(t, err)
+	require.Equal(t, want, actual)
+}
+
+func TestClassicEntryFailsIfNameAndOriginIdCoexists(t *testing.T) {
+	fileContent := []byte(`delete:
+- type: management-zone
+  name: config-name
+  objectId: origin-object-ID
+`)
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e))
+	assert.Empty(t, actual)
+}
+
+func TestClassicEntryFailsWithoutNameOrOriginId(t *testing.T) {
+	fileContent := []byte(`delete:
+- type: management-zone
+`)
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e))
+	assert.Empty(t, actual)
 }
 
 func TestClassicKUAMobileEntry(t *testing.T) {
@@ -130,6 +168,57 @@ func TestSettingsEntry(t *testing.T) {
 	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
 	require.NoError(t, err)
 	require.Equal(t, want, actual)
+}
+
+func TestSettingsEntryWithOriginID(t *testing.T) {
+	fileContent := []byte(`delete:
+- type: builtin:auto.tagging
+  objectId: origin-object-ID
+`)
+	want := delete.DeleteEntries{
+		"builtin:auto.tagging": {{
+			Type:           "builtin:auto.tagging",
+			OriginObjectId: "origin-object-ID",
+		}}}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	require.NoError(t, err)
+	require.Equal(t, want, actual)
+}
+
+func TestSettingsEntryFailsIfIdAndOriginIdCoexists(t *testing.T) {
+	given := []byte(`delete:
+- type: builtin:auto.tagging
+  id: my-tag
+  objectId: origin-object-ID
+`)
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e))
+	assert.Empty(t, actual)
+}
+func TestSettingsEntryFailsIfProjectAndOriginIdCoexists(t *testing.T) {
+	given := []byte(`delete:
+- type: builtin:auto.tagging
+  project: some-project
+  objectId: origin-object-ID
+`)
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e))
+	assert.Empty(t, actual)
+}
+
+func TestSettingsEntryFailsIfNotValid(t *testing.T) {
+	given := []byte(`delete:
+- type: builtin:auto.tagging
+`)
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e))
+	assert.Empty(t, actual)
 }
 
 func TestLegacy(t *testing.T) {
@@ -273,8 +362,8 @@ delete:
 
 	var e delete.ParseErrors
 	assert.ErrorAs(t, err, &e)
-	assert.Equal(t, 3, len(e), "expected 4 errors")
-	assert.Empty(t, result, "expected 0 results")
+	assert.Equal(t, 3, len(e))
+	assert.Empty(t, result)
 }
 
 func TestLoadMalformedFile(t *testing.T) {
@@ -286,21 +375,21 @@ func TestLoadMalformedFile(t *testing.T) {
 
 	var typeError *yaml.TypeError
 	assert.ErrorAs(t, err, &typeError)
-	assert.Empty(t, result, "expected 0 results")
+	assert.Empty(t, result)
 }
 
 func TestLoadNonExistingFile(t *testing.T) {
 	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, nil))
 
 	assert.Error(t, err)
-	assert.Empty(t, result, "expected 0 results")
+	assert.Empty(t, result)
 }
 
 func TestEmptyFileFails(t *testing.T) {
 	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, []byte("")))
 
 	assert.ErrorContains(t, err, "is empty")
-	assert.Empty(t, result, "expected 0 results")
+	assert.Empty(t, result)
 }
 
 func createDeleteFile(t testing.TB, content []byte) (afero.Fs, string) {

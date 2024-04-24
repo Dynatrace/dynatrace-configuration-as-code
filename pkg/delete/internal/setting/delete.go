@@ -18,6 +18,7 @@ package setting
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -42,18 +43,21 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 
 		logger := logger.WithFields(field.Coordinate(e.AsCoordinate()))
 
-		if e.Project == "" {
-			logger.Warn("Generating legacy externalID - this will fail to identify a newer Settings object. Consider defining a 'project' for this delete entry.")
+		var filterFn dtclient.ListSettingsFilter
+		if e.OriginObjectId != "" { //delete by riginObjectId
+			filterFn = func(o dtclient.DownloadSettingsObject) bool { return o.ObjectId == e.OriginObjectId }
+		} else {
+			externalID, err := idutils.GenerateExternalID(e.AsCoordinate())
+			if err != nil {
+				logger.Error("unable to generate externalID, Setting will not be deleted: %v", err)
+				deleteErrs++
+				continue
+			}
+			filterFn = func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }
 		}
-		externalID, err := idutils.GenerateExternalID(e.AsCoordinate())
 
-		if err != nil {
-			logger.Error("Unable to generate externalID, Setting will not be deleted: %v", err)
-			deleteErrs++
-			continue
-		}
 		// get settings objects with matching external ID
-		objects, err := c.ListSettings(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
+		objects, err := c.ListSettings(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFn})
 		if err != nil {
 			logger.Error("Could not fetch settings object: %v", err)
 			deleteErrs++
