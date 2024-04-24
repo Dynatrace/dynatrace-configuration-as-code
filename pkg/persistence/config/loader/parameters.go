@@ -130,6 +130,8 @@ func parseParameter(context *singleConfigEntryLoadContext, environment manifest.
 				ConfigId: configId,
 			},
 			ParameterName: name,
+			WorkingDir:    context.WorkingDir,
+			Folder:        context.Folder,
 			Value:         maps.ToStringMap(val),
 		})
 	}

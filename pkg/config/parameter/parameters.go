@@ -79,14 +79,13 @@ func (p ParameterReference) String() string {
 }
 
 type ParameterParserContext struct {
-	// coordinates of the current config to parse
-	Coordinate  coordinate.Coordinate
-	Group       string
-	Environment string
-	// name of the current parameter to parse
+	Coordinate    coordinate.Coordinate
+	Group         string
+	Environment   string
 	ParameterName string
-	// current value to parse
-	Value map[string]interface{}
+	WorkingDir    string
+	Folder        string
+	Value         map[string]interface{}
 }
 
 type ParameterParserError struct {
