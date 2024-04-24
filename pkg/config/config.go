@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	compoundParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
+	fileParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/file"
 	listParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/list"
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
@@ -216,6 +217,7 @@ var DefaultParameterParsers = map[string]parameter.ParameterSerDe{
 	envParam.EnvironmentVariableParameterType: envParam.EnvironmentVariableParameterSerde,
 	compoundParam.CompoundParameterType:       compoundParam.CompoundParameterSerde,
 	listParam.ListParameterType:               listParam.ListParameterSerde,
+	fileParam.FileParameterType:               fileParam.FileParameterSerde,
 }
 
 func (c *Config) References() []coordinate.Coordinate {

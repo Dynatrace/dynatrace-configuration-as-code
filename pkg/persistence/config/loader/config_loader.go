@@ -32,6 +32,7 @@ import (
 
 type LoaderContext struct {
 	ProjectId       string
+	WorkingDir      string
 	Path            string
 	Environments    []manifest.EnvironmentDefinition
 	KnownApis       map[string]struct{}
@@ -41,8 +42,9 @@ type LoaderContext struct {
 // configFileLoaderContext is a context for each config-file
 type configFileLoaderContext struct {
 	*LoaderContext
-	Folder string
-	Path   string
+	WorkingDir string
+	Folder     string
+	Path       string
 }
 
 // singleConfigEntryLoadContext is a context for each config-entry within a config-file
@@ -89,6 +91,7 @@ func LoadConfigFile(fs afero.Fs, context *LoaderContext, filePath string) ([]con
 
 	configLoaderContext := &configFileLoaderContext{
 		LoaderContext: context,
+		WorkingDir:    context.WorkingDir,
 		Folder:        filepath.Dir(filePath),
 		Path:          filePath,
 	}
