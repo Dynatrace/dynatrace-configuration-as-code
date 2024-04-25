@@ -28,6 +28,7 @@ import (
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
+	"github.com/spf13/afero"
 )
 
 var allowedScopeParameterTypes = []string{
@@ -51,7 +52,7 @@ func isSupportedParamTypeForSkip(p parameter.Parameter) bool {
 // References holds coordinate-string -> coordinate
 type References map[string]coordinate.Coordinate
 
-func parseParametersAndReferences(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
+func parseParametersAndReferences(fs afero.Fs, context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
 	configId string, parameterMap map[string]persistence.ConfigParameter) (config.Parameters, []error) {
 
 	parameters := make(map[string]parameter.Parameter)
@@ -69,7 +70,7 @@ func parseParametersAndReferences(context *singleConfigEntryLoadContext, environ
 			continue
 		}
 
-		result, err := parseParameter(context, environment, configId, name, param)
+		result, err := parseParameter(fs, context, environment, configId, name, param)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -103,7 +104,7 @@ func validateParameterName(context *singleConfigEntryLoadContext, environment ma
 	return nil
 }
 
-func parseParameter(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
+func parseParameter(fs afero.Fs, context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
 	configId string, name string, param interface{}) (parameter.Parameter, error) {
 
 	if val, ok := param.([]interface{}); ok {
@@ -129,9 +130,8 @@ func parseParameter(context *singleConfigEntryLoadContext, environment manifest.
 				Type:     context.Type,
 				ConfigId: configId,
 			},
+			Fs:            afero.NewBasePathFs(fs, context.Folder),
 			ParameterName: name,
-			WorkingDir:    context.WorkingDir,
-			Folder:        context.Folder,
 			Value:         maps.ToStringMap(val),
 		})
 	}

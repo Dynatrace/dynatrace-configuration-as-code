@@ -173,7 +173,7 @@ func getConfigFromDefinition(
 		errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, fmt.Sprintf("error while loading template: `%s`", err)))
 	}
 
-	parameters, parameterErrors := parseParametersAndReferences(context, environment, configId,
+	parameters, parameterErrors := parseParametersAndReferences(fs, context, environment, configId,
 		definition.Parameters)
 
 	if parameterErrors != nil {
@@ -184,7 +184,7 @@ func getConfigFromDefinition(
 	skipConfig := false
 
 	if definition.Skip != nil {
-		skip, err := parseSkip(context, environment, configId, definition.Skip)
+		skip, err := parseSkip(fs, context, environment, configId, definition.Skip)
 		if err == nil {
 			skipConfig = skip
 		} else {
@@ -197,7 +197,7 @@ func getConfigFromDefinition(
 	}
 
 	if definition.Name != nil {
-		name, err := parseParameter(context, environment, configId, config.NameParameter, definition.Name)
+		name, err := parseParameter(fs, context, environment, configId, config.NameParameter, definition.Name)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -214,7 +214,7 @@ func getConfigFromDefinition(
 
 	// if we have a scope, we should parse it
 	if configType.Scope != nil {
-		scopeParam, err := parseParameter(context, environment, configId, config.ScopeParameter, configType.Scope)
+		scopeParam, err := parseParameter(fs, context, environment, configId, config.ScopeParameter, configType.Scope)
 		if err != nil {
 			return config.Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
 		}
@@ -242,13 +242,13 @@ func getConfigFromDefinition(
 	}, nil
 }
 
-func parseSkip(
+func parseSkip(fs afero.Fs,
 	context *singleConfigEntryLoadContext,
 	environmentDefinition manifest.EnvironmentDefinition,
 	configId string,
 	param interface{},
 ) (bool, error) {
-	parsed, err := parseParameter(context, environmentDefinition, configId, config.SkipParameter, param)
+	parsed, err := parseParameter(fs, context, environmentDefinition, configId, config.SkipParameter, param)
 	if err != nil {
 		return false, err
 	}
