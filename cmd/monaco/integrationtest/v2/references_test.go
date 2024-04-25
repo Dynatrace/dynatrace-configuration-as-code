@@ -29,6 +29,7 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/maps"
 	"strings"
 	"testing"
@@ -105,7 +106,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 					cmd := runner.BuildCli(fs)
 					cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
 					err := cmd.Execute()
-					assert.Nil(t, err, "create: did not expect error")
+					require.NoError(t, err, "create: did not expect error")
 
 					// download
 					cmd = runner.BuildCli(fs)
@@ -120,7 +121,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 						},
 						tt.downloadOpts...))
 					err = cmd.Execute()
-					assert.Nil(t, err, "download: did not expect error")
+					require.NoError(t, err, "download: did not expect error")
 
 					// assert
 					mani, errs := manifestloader.Load(&manifestloader.Context{
