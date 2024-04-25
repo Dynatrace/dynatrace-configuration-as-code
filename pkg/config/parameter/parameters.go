@@ -19,6 +19,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
+	"github.com/spf13/afero"
 )
 
 // Properties defines a map representing resolved parameters
@@ -84,9 +85,9 @@ type ParameterParserContext struct {
 	Group         string
 	Environment   string
 	ParameterName string
-	WorkingDir    string
-	Folder        string
-	Value         map[string]interface{}
+	Fs            afero.Fs
+	Value         map[string]interface {
+	}
 }
 
 type ParameterParserError struct {

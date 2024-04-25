@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	tmpl "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/spf13/afero"
-	"path/filepath"
 )
 
 const FileParameterType = "file"
@@ -34,8 +33,7 @@ var FileParameterSerde = parameter.ParameterSerDe{
 }
 
 type FileParameter struct {
-	WorkingDir           string
-	Folder               string
+	Fs                   afero.Fs
 	Path                 string
 	referencedParameters []parameter.ParameterReference
 }
@@ -52,7 +50,7 @@ func (f *FileParameter) GetReferences() []parameter.ParameterReference {
 }
 
 func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interface{}, error) {
-	parameterTmpl, err := tmpl.NewFileTemplate(afero.NewOsFs(), filepath.Join(f.WorkingDir, f.Folder, f.Path))
+	parameterTmpl, err := tmpl.NewFileTemplate(f.Fs, f.Path)
 	if err != nil {
 		return nil, parameter.NewParameterResolveValueError(context, err.Error())
 	}
@@ -66,6 +64,10 @@ func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interfac
 }
 
 func parseFileValueParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
+	if context.Fs == nil {
+		return nil, parameter.NewParameterParserError(context, "missing filesystem handle to load parameter")
+	}
+
 	path, ok := context.Value["path"]
 	if !ok {
 		return nil, parameter.NewParameterParserError(context, "missing property `path`")
@@ -73,7 +75,7 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 
 	references, ok := context.Value["references"]
 	if !ok {
-		return &FileParameter{WorkingDir: context.WorkingDir, Folder: context.Folder, Path: strings.ToString((path))}, nil
+		return &FileParameter{Fs: context.Fs, Path: strings.ToString((path))}, nil
 	}
 
 	referencedParameterSlice, ok := references.([]interface{})
@@ -86,7 +88,7 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("invalid parameter references: %v", err))
 	}
 
-	return &FileParameter{WorkingDir: context.WorkingDir, Folder: context.Folder, Path: strings.ToString((path)), referencedParameters: referencedParameters}, nil
+	return &FileParameter{Fs: context.Fs, Path: strings.ToString((path)), referencedParameters: referencedParameters}, nil
 
 }
 

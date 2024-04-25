@@ -19,26 +19,22 @@ package file
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"path/filepath"
 	"testing"
 )
 
 func TestParseFileValueParameter(t *testing.T) {
-
 	param, err := parseFileValueParameter(parameter.ParameterParserContext{
-		WorkingDir: "something",
-		Value:      map[string]any{"path": "something.txt"},
+		Fs:    afero.NewMemMapFs(),
+		Value: map[string]any{"path": "something.txt"},
 	})
 
 	fileParam := param.(*FileParameter)
 	require.NoError(t, err)
 	assert.Equal(t, "file", param.GetType())
 	assert.Equal(t, "something.txt", fileParam.Path)
-	assert.Equal(t, "", fileParam.Folder)
-	assert.Equal(t, "something", fileParam.WorkingDir)
 }
 
 func TestWriteFileValueParameter(t *testing.T) {
@@ -81,16 +77,14 @@ func TestParseFileValueParameter_MissingPath(t *testing.T) {
 }
 
 func TestResolveValue(t *testing.T) {
-	dir, _ := os.MkdirTemp("", "")
-	file, _ := os.CreateTemp(dir, "")
-	file.Write([]byte("test-content"))
-	workingDir, fileName := filepath.Dir(file.Name()), filepath.Base(file.Name())
+	fs := afero.NewMemMapFs()
+	afero.WriteFile(fs, "test-content", []byte("test-content"), 0644)
 
-	param, _ := parseFileValueParameter(parameter.ParameterParserContext{
-		WorkingDir: workingDir,
-		Value:      map[string]any{"path": fileName},
+	param, err := parseFileValueParameter(parameter.ParameterParserContext{
+		Fs:    fs,
+		Value: map[string]any{"path": "test-content"},
 	})
-
+	assert.NoError(t, err)
 	assert.Len(t, param.GetReferences(), 0)
 
 	result, err := param.ResolveValue(parameter.ResolveContext{})
@@ -99,14 +93,12 @@ func TestResolveValue(t *testing.T) {
 }
 
 func TestResolveValueWithRefernces(t *testing.T) {
-	dir, _ := os.MkdirTemp("", "")
-	file, _ := os.CreateTemp(dir, "")
-	file.Write([]byte("test-content {{ .ref1 }} - {{ .ref2 }}"))
-	workingDir, fileName := filepath.Dir(file.Name()), filepath.Base(file.Name())
+	fs := afero.NewMemMapFs()
+	afero.WriteFile(fs, "test-content", []byte("test-content {{ .ref1 }} - {{ .ref2 }}"), 0644)
 
 	param, _ := parseFileValueParameter(parameter.ParameterParserContext{
-		WorkingDir: workingDir,
-		Value:      map[string]any{"path": fileName, "references": []any{"ref1", "ref2"}},
+		Fs:    fs,
+		Value: map[string]any{"path": "test-content", "references": []any{"ref1", "ref2"}},
 	})
 
 	assert.Len(t, param.GetReferences(), 2)
@@ -122,14 +114,12 @@ func TestResolveValueWithRefernces(t *testing.T) {
 }
 
 func TestResolveValueWithRefernces_RefMissing(t *testing.T) {
-	dir, _ := os.MkdirTemp("", "")
-	file, _ := os.CreateTemp(dir, "")
-	file.Write([]byte("test-content {{ .ref1 }} - {{ .ref2 }}"))
-	workingDir, fileName := filepath.Dir(file.Name()), filepath.Base(file.Name())
+	fs := afero.NewMemMapFs()
+	afero.WriteFile(fs, "test-content", []byte("test-content {{ .ref1 }} - {{ .ref2 }}"), 0644)
 
 	param, _ := parseFileValueParameter(parameter.ParameterParserContext{
-		WorkingDir: workingDir,
-		Value:      map[string]any{"path": fileName, "references": []any{"ref1", "ref2"}},
+		Fs:    fs,
+		Value: map[string]any{"path": "test-content", "references": []any{"ref1", "ref2"}},
 	})
 
 	assert.Len(t, param.GetReferences(), 2)
@@ -145,9 +135,10 @@ func TestResolveValueWithRefernces_RefMissing(t *testing.T) {
 }
 
 func TestResolveValue_FileNotFound(t *testing.T) {
+	fs := afero.NewMemMapFs()
 	param, _ := parseFileValueParameter(parameter.ParameterParserContext{
-		WorkingDir: "something",
-		Value:      map[string]any{"path": "something"},
+		Fs:    fs,
+		Value: map[string]any{"path": "something"},
 	})
 
 	result, err := param.ResolveValue(parameter.ResolveContext{})
