@@ -185,7 +185,7 @@
             },
             "description": "Build a custom task running js Code",
             "input": {
-                "script": "// optional import of sdk modules\nimport { coreClient } from '@dynatrace-sdk/client-core';\n\nexport default async function ({ execution_id }) {\n  const ex = await fetch(`/platform/automation/v1/executions/${execution_id}/tasks/jira_jql_cap_ca/result`);\n  const body = await ex.json();\n  console.log(body);\n  \n  return {\n    ok: body.length === 0,\n    issues: body\n      .map((issue) =\u003e \n        `${new Date(issue.fields.created).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}};\n}"
+                "script": "{{ .jiraJs }}"
             },
             "name": "run_javascript_1",
             "position": {
