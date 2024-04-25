@@ -7,6 +7,12 @@ configs:
     name: '[CA] Notify Capability about new Jira Issues'
     template: jira-issue-workflow.json
     parameters:
+      comment: "// optional import of sdk modules"
+      jiraJs:
+        type: file
+        path: "jiraJs.txt"
+        references:
+          - comment
       actor:
         type: environment
         name: WORKFLOW_ACTOR
