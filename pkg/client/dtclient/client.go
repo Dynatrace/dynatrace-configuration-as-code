@@ -61,6 +61,7 @@ var ErrSettingNotFound = errors.New("settings object not found")
 
 type UpsertSettingsOptions struct {
 	OverrideRetry *rest.RetrySetting
+	InsertAfter   string
 }
 
 // defaultListSettingsFields  are the fields we are interested in when getting setting objects
