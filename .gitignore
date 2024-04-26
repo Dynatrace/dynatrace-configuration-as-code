@@ -16,6 +16,7 @@ bin/
 
 # Download files
 download_*
+!download_test.go
 
 # Generated JSON schema files
 schemas/

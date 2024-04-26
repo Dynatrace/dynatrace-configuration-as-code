@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -151,6 +152,15 @@ type BucketClient interface {
 	Delete(ctx context.Context, bucketName string) (buckets.Response, error)
 }
 
+type DocumentClient interface {
+	Get(ctx context.Context, id string) (documents.Response, error)
+	List(ctx context.Context, filter string) (documents.ListResponse, error)
+	Create(ctx context.Context, name string, data []byte, documentType documents.DocumentType) (documents.Response, error)
+	Update(ctx context.Context, id string, name string, data []byte, documentType documents.DocumentType) (documents.Response, error)
+	Upsert(ctx context.Context, id string, name string, data []byte, documentType documents.DocumentType) (documents.Response, error)
+	Delete(ctx context.Context, id string) (documents.Response, error)
+}
+
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
@@ -163,6 +173,8 @@ type ClientSet struct {
 	AutClient AutomationClient
 	// bucketClient is the client capable of updating or creating Grail Bucket configs
 	BucketClient BucketClient
+	// DocumentClient is a client capable of manipulating documents
+	DocumentClient DocumentClient
 }
 
 func (s ClientSet) Classic() ConfigClient {
@@ -179,6 +191,10 @@ func (s ClientSet) Automation() AutomationClient {
 
 func (s ClientSet) Bucket() BucketClient {
 	return s.BucketClient
+}
+
+func (s ClientSet) Document() DocumentClient {
+	return s.DocumentClient
 }
 
 type ClientOptions struct {
@@ -290,9 +306,15 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 		return nil, err
 	}
 
+	documentClient, err := clientFactory.DocumentClient()
+	if err != nil {
+		return nil, err
+	}
+
 	return &ClientSet{
-		DTClient:     dtClient,
-		AutClient:    autClient,
-		BucketClient: bucketClient,
+		DTClient:       dtClient,
+		AutClient:      autClient,
+		BucketClient:   bucketClient,
+		DocumentClient: documentClient,
 	}, nil
 }

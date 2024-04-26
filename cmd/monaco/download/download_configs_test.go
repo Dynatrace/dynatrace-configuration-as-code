@@ -160,7 +160,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 func TestDownload_Options(t *testing.T) {
 	type wantDownload struct {
-		config, settings, bucket, automation bool
+		config, settings, bucket, automation, document bool
 	}
 	tests := []struct {
 		name  string
@@ -179,6 +179,7 @@ func TestDownload_Options(t *testing.T) {
 				settings:   true,
 				bucket:     true,
 				automation: true,
+				document:   true,
 			},
 		},
 		{
@@ -242,6 +243,12 @@ func TestDownload_Options(t *testing.T) {
 				bucketDownload: func(b client.BucketClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.bucket {
 						t.Fatalf("automation download was not meant to be called but was")
+					}
+					return nil, nil
+				},
+				documentDownload: func(b client.DocumentClient, s string) (projectv2.ConfigsPerType, error) {
+					if !tt.want.document {
+						t.Fatalf("document download was not meant to be called but was")
 					}
 					return nil, nil
 				},
