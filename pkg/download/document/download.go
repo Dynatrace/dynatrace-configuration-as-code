@@ -18,6 +18,7 @@ package document
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -69,12 +70,18 @@ func convertDocumentResponse(client client.DocumentClient, projectName string, r
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to get document: %w", err)
 	}
+
 	params := map[string]parameter.Parameter{
 		config.NameParameter: &value.ValueParameter{Value: documentResponse.Name},
 	}
 
+	template, err := createTemplateFromResponse(documentResponse)
+	if err != nil {
+		return config.Config{}, fmt.Errorf("failed to create template: %w", err)
+	}
+
 	return config.Config{
-		Template: template.NewInMemoryTemplate(documentResponse.ID, string(documentResponse.Data)),
+		Template: template,
 		Coordinate: coordinate.Coordinate{
 			Project:  projectName,
 			Type:     string(documentType),
@@ -84,6 +91,21 @@ func convertDocumentResponse(client client.DocumentClient, projectName string, r
 		Parameters:     params,
 		OriginObjectId: documentResponse.ID,
 	}, nil
+}
+
+func createTemplateFromResponse(response documents.Response) (template.Template, error) {
+	var data map[string]interface{}
+	err := json.Unmarshal(response.Data, &data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	bytes, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+
+	return template.NewInMemoryTemplate(response.ID, string(bytes)), nil
 }
 
 func validateDocumentType(documentType string) (config.DocumentType, error) {
