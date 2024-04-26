@@ -118,7 +118,7 @@ var (
 	std loggers.Logger = console.Instance
 )
 
-func PrepareLogging(fs afero.Fs, verbose bool, loggerSpy io.Writer) {
+func PrepareLogging(fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging bool) {
 	loglevel := loggers.LevelInfo
 	if verbose {
 		loglevel = loggers.LevelDebug
@@ -126,7 +126,7 @@ func PrepareLogging(fs afero.Fs, verbose bool, loggerSpy io.Writer) {
 
 	var logFile, errFile afero.File
 	var err error
-	if fs != nil {
+	if fileLogging && fs != nil {
 		logFile, errFile, err = prepareLogFiles(fs)
 	}
 

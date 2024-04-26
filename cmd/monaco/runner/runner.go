@@ -64,7 +64,7 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			log.PrepareLogging(fs, verbose, logSpy)
+			log.PrepareLogging(fs, verbose, logSpy, featureflags.LogToFile().Enabled() || support.SupportArchive)
 
 			s := cmd.Name()
 			_ = s
