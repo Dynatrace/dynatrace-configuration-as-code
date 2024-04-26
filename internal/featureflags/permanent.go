@@ -97,3 +97,11 @@ func BuildSimpleClassicURL() FeatureFlag {
 		defaultEnabled: true,
 	}
 }
+
+// LogToFile returns the feature flag to control whether log files shall be created or not
+func LogToFile() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_LOG_FILE_ENABLED",
+		defaultEnabled: true,
+	}
+}
