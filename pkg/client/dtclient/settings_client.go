@@ -54,6 +54,7 @@ type (
 
 	SchemaConstraints struct {
 		SchemaId         string
+		Ordered          bool
 		UniqueProperties [][]string
 	}
 
@@ -162,6 +163,8 @@ func (d *DynatraceClient) fetchSchemasConstraints(ctx context.Context, schemaID 
 			ret.UniqueProperties = append(ret.UniqueProperties, sc.UniqueProperties)
 		}
 	}
+	ret.Ordered = sd.Ordered
+
 	d.schemaConstraintsCache.Set(schemaID, ret)
 	return ret, nil
 }
@@ -257,7 +260,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		obj.OriginObjectId = ""
 	}
 
-	payload, err := buildPostRequestPayload(ctx, obj, externalID)
+	payload, err := buildPostRequestPayload(ctx, obj, externalID, options.InsertAfter)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
 	}
@@ -403,7 +406,7 @@ func isSameValueForKey(key string, c1 []byte, c2 []byte) (same bool, matchingVal
 // To do this, we have to wrap the template in another object and send this object to the server.
 // Currently, we only encode one object into an array of objects, but we can optimize it to contain multiple elements to update.
 // Note payload limitations: https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit#payload-limit
-func buildPostRequestPayload(ctx context.Context, obj SettingsObject, externalID string) ([]byte, error) {
+func buildPostRequestPayload(ctx context.Context, obj SettingsObject, externalID string, insertAfter string) ([]byte, error) {
 	var value any
 	if err := json.Unmarshal(obj.Content, &value); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal rendered config: %w", err)
@@ -416,6 +419,7 @@ func buildPostRequestPayload(ctx context.Context, obj SettingsObject, externalID
 		Value:         value,
 		SchemaVersion: obj.SchemaVersion,
 		ObjectId:      obj.OriginObjectId,
+		InsertAfter:   insertAfter,
 	}
 
 	// Create json obj. We currently marshal everything into an array, but we can optimize it to include multiple objects in the

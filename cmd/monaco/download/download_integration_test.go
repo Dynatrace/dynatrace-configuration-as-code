@@ -1013,8 +1013,9 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 		"/fake-api":      "fake-api/__LIST.json",
 		"/fake-api/id-1": "fake-api/id-1.json",
 		"/fake-api/id-2": "fake-api/id-2.json",
-		"/platform/classic/environment-api/v2/settings/schemas": "settings/__SCHEMAS.json",
-		"/platform/classic/environment-api/v2/settings/objects": "settings/objects.json",
+		"/platform/classic/environment-api/v2/settings/schemas":                 "settings/__SCHEMAS.json",
+		"/platform/classic/environment-api/v2/settings/objects":                 "settings/objects.json",
+		"/platform/classic/environment-api/v2/settings/schemas/settings-schema": "schemas/schema.json",
 	}
 
 	// Server
@@ -1124,8 +1125,9 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	responses := map[string]string{
-		"/platform/classic/environment-api/v2/settings/schemas": "settings/__SCHEMAS.json",
-		"/platform/classic/environment-api/v2/settings/objects": "settings/objects.json",
+		"/platform/classic/environment-api/v2/settings/schemas":                 "settings/__SCHEMAS.json",
+		"/platform/classic/environment-api/v2/settings/objects":                 "settings/objects.json",
+		"/platform/classic/environment-api/v2/settings/schemas/settings-schema": "schemas/schema.json",
 	}
 
 	// GIVEN Server
@@ -1178,8 +1180,9 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	const testBasePath = "test-resources/" + projectName
 
 	responses := map[string]string{
-		"/platform/classic/environment-api/v2/settings/schemas": "settings/__SCHEMAS.json",
-		"/platform/classic/environment-api/v2/settings/objects": "settings/objects.json",
+		"/platform/classic/environment-api/v2/settings/schemas":                 "settings/__SCHEMAS.json",
+		"/platform/classic/environment-api/v2/settings/objects":                 "settings/objects.json",
+		"/platform/classic/environment-api/v2/settings/schemas/settings-schema": "schemas/schema.json",
 	}
 
 	// GIVEN Server
