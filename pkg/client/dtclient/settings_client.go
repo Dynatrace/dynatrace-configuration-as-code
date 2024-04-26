@@ -79,6 +79,7 @@ type (
 		Value         any    `json:"value"`
 		SchemaVersion string `json:"schemaVersion,omitempty"`
 		ObjectId      string `json:"objectId,omitempty"`
+		InsertAfter   string `json:"insertAfter,omitempty"`
 	}
 
 	schemaConstraint struct {
@@ -89,6 +90,7 @@ type (
 	// schemaDetailsResponse is the response type returned by the fetchSchemasConstraints operation
 	schemaDetailsResponse struct {
 		SchemaId          string             `json:"schemaId"`
+		Ordered           bool               `json:"ordered"`
 		SchemaConstraints []schemaConstraint `json:"schemaConstraints"`
 	}
 )

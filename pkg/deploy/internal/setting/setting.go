@@ -33,7 +33,7 @@ import (
 	"time"
 )
 
-func Deploy(ctx context.Context, settingsClient client.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
+func Deploy(ctx context.Context, settingsClient client.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config, insertAfter string) (entities.ResolvedEntity, error) {
 	t, ok := c.Type.(config.SettingsType)
 	if !ok {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID()))
@@ -52,7 +52,7 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		Content:        []byte(renderedConfig),
 		OriginObjectId: c.OriginObjectId,
 	}
-	upsertOptions := makeUpsertOptions(c)
+	upsertOptions := makeUpsertOptions(c, insertAfter)
 
 	dtEntity, err := settingsClient.UpsertSettings(ctx, settingsObj, upsertOptions)
 	if err != nil {
@@ -82,7 +82,7 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 
 }
 
-func makeUpsertOptions(c *config.Config) dtclient.UpsertSettingsOptions {
+func makeUpsertOptions(c *config.Config, insertAfter string) dtclient.UpsertSettingsOptions {
 	// SPECIAL HANDLING: if settings config to be deployed has a reference to a "bucket" definition
 	// we need to drastically increase the retry settings for the upsert operation, as it could take
 	// up to 1 minute until the operation succeeds in case a bucket was just created before
@@ -93,7 +93,9 @@ func makeUpsertOptions(c *config.Config) dtclient.UpsertSettingsOptions {
 			hasRefToBucket = true
 		}
 	}
-	var upsertOpts dtclient.UpsertSettingsOptions
+	upsertOpts := dtclient.UpsertSettingsOptions{
+		InsertAfter: insertAfter,
+	}
 	if hasRefToBucket {
 		upsertOpts.OverrideRetry = &rest.RetrySetting{
 			WaitTime:   10 * time.Second,
