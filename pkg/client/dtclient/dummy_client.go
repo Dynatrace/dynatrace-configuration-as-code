@@ -271,8 +271,8 @@ func (c *DummyClient) ListSchemas() (SchemaList, error) {
 	return make(SchemaList, 0), nil
 }
 
-func (c *DummyClient) FetchSchemasConstraints(_ string) (constraints SchemaConstraints, err error) {
-	return SchemaConstraints{}, nil
+func (c *DummyClient) GetSchemaById(_ string) (schema Schema, err error) {
+	return Schema{}, nil
 }
 
 func (c *DummyClient) GetSettingById(_ string) (*DownloadSettingsObject, error) {

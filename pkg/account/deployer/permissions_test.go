@@ -27,7 +27,7 @@ import (
 	"testing"
 )
 
-func TestFetchSchema(t *testing.T) {
+func TestGetSchema(t *testing.T) {
 	t.Run("Successful request", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("{}"))
@@ -36,14 +36,14 @@ func TestFetchSchema(t *testing.T) {
 
 		client := server.Client()
 
-		schema, err := fetchSchema(context.TODO(), client, server.URL)
+		schema, err := getSchema(context.TODO(), client, server.URL)
 		require.NoError(t, err)
 		require.Equal(t, []byte("{}"), schema)
 	})
 
 	t.Run("Error on client.Get", func(t *testing.T) {
 		client := &http.Client{}
-		schema, err := fetchSchema(context.TODO(), client, "invalid-url")
+		schema, err := getSchema(context.TODO(), client, "invalid-url")
 		require.Error(t, err)
 		require.Empty(t, schema)
 	})

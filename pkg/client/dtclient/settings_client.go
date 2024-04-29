@@ -52,7 +52,7 @@ type (
 		OriginObjectId string
 	}
 
-	SchemaConstraints struct {
+	Schema struct {
 		SchemaId         string
 		Ordered          bool
 		UniqueProperties [][]string
@@ -87,7 +87,7 @@ type (
 		UniqueProperties []string `json:"uniqueProperties"`
 	}
 
-	// schemaDetailsResponse is the response type returned by the fetchSchemasConstraints operation
+	// schemaDetailsResponse is the response type returned by the getSchema operation
 	schemaDetailsResponse struct {
 		SchemaId          string             `json:"schemaId"`
 		Ordered           bool               `json:"ordered"`
@@ -131,33 +131,33 @@ func (d *DynatraceClient) listSchemas(ctx context.Context) (SchemaList, error) {
 	return result.Items, nil
 }
 
-func (d *DynatraceClient) FetchSchemasConstraints(schemaID string) (constraints SchemaConstraints, err error) {
+func (d *DynatraceClient) GetSchemaById(schemaID string) (constraints Schema, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		constraints, err = d.fetchSchemasConstraints(context.TODO(), schemaID)
+		constraints, err = d.getSchema(context.TODO(), schemaID)
 	})
 	return
 }
 
-func (d *DynatraceClient) fetchSchemasConstraints(ctx context.Context, schemaID string) (SchemaConstraints, error) {
-	if ret, cached := d.schemaConstraintsCache.Get(schemaID); cached {
+func (d *DynatraceClient) getSchema(ctx context.Context, schemaID string) (Schema, error) {
+	if ret, cached := d.schemaCache.Get(schemaID); cached {
 		return ret, nil
 	}
 
-	ret := SchemaConstraints{SchemaId: schemaID}
+	ret := Schema{SchemaId: schemaID}
 	u, err := url.JoinPath(d.environmentURL, d.settingsSchemaAPIPath, schemaID)
 	if err != nil {
-		return SchemaConstraints{}, fmt.Errorf("failed to parse url: %w", err)
+		return Schema{}, fmt.Errorf("failed to parse url: %w", err)
 	}
 
 	r, err := d.platformClient.Get(ctx, u)
 	if err != nil {
-		return SchemaConstraints{}, fmt.Errorf("failed to GET schema details for %q: %w", schemaID, err)
+		return Schema{}, fmt.Errorf("failed to GET schema details for %q: %w", schemaID, err)
 	}
 
 	var sd schemaDetailsResponse
 	err = json.Unmarshal(r.Body, &sd)
 	if err != nil {
-		return SchemaConstraints{}, rest.NewRespErr("failed to unmarshal response", r).WithRequestInfo(http.MethodGet, u).WithErr(err)
+		return Schema{}, rest.NewRespErr("failed to unmarshal response", r).WithRequestInfo(http.MethodGet, u).WithErr(err)
 	}
 
 	for _, sc := range sd.SchemaConstraints {
@@ -167,7 +167,7 @@ func (d *DynatraceClient) fetchSchemasConstraints(ctx context.Context, schemaID 
 	}
 	ret.Ordered = sd.Ordered
 
-	d.schemaConstraintsCache.Set(schemaID, ret)
+	d.schemaCache.Set(schemaID, ret)
 	return ret, nil
 }
 
@@ -301,7 +301,7 @@ type match struct {
 }
 
 func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (match, bool, error) {
-	constraints, err := d.fetchSchemasConstraints(ctx, source.SchemaId)
+	constraints, err := d.getSchema(ctx, source.SchemaId)
 	if err != nil {
 		return match{}, false, fmt.Errorf("unable to get details for schema %q: %w", source.SchemaId, err)
 	}
@@ -322,7 +322,7 @@ func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context,
 	return target, found, nil
 }
 
-func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (match, bool, error) {
+func findObjectWithSameConstraints(schema Schema, source SettingsObject, objects []DownloadSettingsObject) (match, bool, error) {
 	candidates := make(map[int]constraintMatch)
 
 	for _, uniqueKeys := range schema.UniqueProperties {

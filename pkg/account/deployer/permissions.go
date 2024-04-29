@@ -25,7 +25,7 @@ import (
 )
 
 func FetchAvailablePermissionIDs(ctx context.Context, client *http.Client, url string) ([]string, error) {
-	schema, err := fetchSchema(ctx, client, url)
+	schema, err := getSchema(ctx, client, url)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func FetchAvailablePermissionIDs(ctx context.Context, client *http.Client, url s
 	return ids, err
 }
 
-func fetchSchema(ctx context.Context, client *http.Client, schemaURL string) ([]byte, error) {
+func getSchema(ctx context.Context, client *http.Client, schemaURL string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaURL, nil)
 	if err != nil {
 		return nil, err

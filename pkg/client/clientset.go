@@ -107,7 +107,8 @@ type SettingsClient interface {
 	// ListSchemas returns all schemas that the Dynatrace environment reports
 	ListSchemas() (dtclient.SchemaList, error)
 
-	FetchSchemasConstraints(schemaID string) (dtclient.SchemaConstraints, error)
+	// GetSchemaById returns the settings schema with the given schema ID
+	GetSchemaById(string) (dtclient.Schema, error)
 
 	// ListSettings returns all settings objects for a given schema.
 	ListSettings(context.Context, string, dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)

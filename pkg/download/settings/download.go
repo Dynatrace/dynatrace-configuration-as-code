@@ -67,7 +67,7 @@ func downloadAll(client client.SettingsClient, projectName string, filters Filte
 
 	var schemas []schema
 	for _, s := range schemaList {
-		if sc, err := client.FetchSchemasConstraints(s.SchemaId); err != nil {
+		if sc, err := client.GetSchemaById(s.SchemaId); err != nil {
 			return v2.ConfigsPerType{}, err
 		} else {
 			schemas = append(schemas, schema{id: sc.SchemaId, ordered: sc.Ordered})
@@ -87,7 +87,7 @@ func downloadSpecific(client client.SettingsClient, projectName string, schemaID
 
 	var schemas []schema
 	for _, s := range schemaIDs {
-		if schemaContent, err := client.FetchSchemasConstraints(s); err != nil {
+		if schemaContent, err := client.GetSchemaById(s); err != nil {
 			return v2.ConfigsPerType{}, err
 		} else {
 			schemas = append(schemas, schema{id: schemaContent.SchemaId, ordered: schemaContent.Ordered})

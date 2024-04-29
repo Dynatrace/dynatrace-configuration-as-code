@@ -122,8 +122,8 @@ type DynatraceClient struct {
 	// settingsCache caches settings objects
 	settingsCache cache.Cache[[]DownloadSettingsObject]
 
-	// schemaConstraintsCache caches schema constraints
-	schemaConstraintsCache cache.Cache[SchemaConstraints]
+	// schemaCache caches schema constraints
+	schemaCache cache.Cache[Schema]
 
 	// classicConfigsCache caches classic settings values
 	classicConfigsCache cache.Cache[[]Value]
@@ -187,7 +187,7 @@ func WithCachingDisabled(disabled bool) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
 		if disabled {
 			d.classicConfigsCache = &cache.NoopCache[[]Value]{}
-			d.schemaConstraintsCache = &cache.NoopCache[SchemaConstraints]{}
+			d.schemaCache = &cache.NoopCache[Schema]{}
 			d.settingsCache = &cache.NoopCache[[]DownloadSettingsObject]{}
 		}
 	}
@@ -226,19 +226,19 @@ func NewPlatformClient(dtURL string, classicURL string, client *rest.Client, cla
 	}
 
 	d := &DynatraceClient{
-		serverVersion:          version.Version{},
-		environmentURL:         dtURL,
-		environmentURLClassic:  classicURL,
-		platformClient:         client,
-		classicClient:          classicClient,
-		retrySettings:          rest.DefaultRetrySettings,
-		settingsSchemaAPIPath:  settingsSchemaAPIPathPlatform,
-		settingsObjectAPIPath:  settingsObjectAPIPathPlatform,
-		limiter:                concurrency.NewLimiter(5),
-		generateExternalID:     idutils.GenerateExternalID,
-		settingsCache:          &cache.DefaultCache[[]DownloadSettingsObject]{},
-		classicConfigsCache:    &cache.DefaultCache[[]Value]{},
-		schemaConstraintsCache: &cache.DefaultCache[SchemaConstraints]{},
+		serverVersion:         version.Version{},
+		environmentURL:        dtURL,
+		environmentURLClassic: classicURL,
+		platformClient:        client,
+		classicClient:         classicClient,
+		retrySettings:         rest.DefaultRetrySettings,
+		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
+		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
+		limiter:               concurrency.NewLimiter(5),
+		generateExternalID:    idutils.GenerateExternalID,
+		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
+		classicConfigsCache:   &cache.DefaultCache[[]Value]{},
+		schemaCache:           &cache.DefaultCache[Schema]{},
 	}
 
 	for _, o := range opts {
@@ -256,19 +256,19 @@ func NewClassicClient(dtURL string, client *rest.Client, opts ...func(dynatraceC
 		return nil, err
 	}
 	d := &DynatraceClient{
-		serverVersion:          version.Version{},
-		environmentURL:         dtURL,
-		environmentURLClassic:  dtURL,
-		platformClient:         client,
-		classicClient:          client,
-		retrySettings:          rest.DefaultRetrySettings,
-		settingsSchemaAPIPath:  settingsSchemaAPIPathClassic,
-		settingsObjectAPIPath:  settingsObjectAPIPathClassic,
-		limiter:                concurrency.NewLimiter(5),
-		generateExternalID:     idutils.GenerateExternalID,
-		settingsCache:          &cache.DefaultCache[[]DownloadSettingsObject]{},
-		classicConfigsCache:    &cache.DefaultCache[[]Value]{},
-		schemaConstraintsCache: &cache.DefaultCache[SchemaConstraints]{},
+		serverVersion:         version.Version{},
+		environmentURL:        dtURL,
+		environmentURLClassic: dtURL,
+		platformClient:        client,
+		classicClient:         client,
+		retrySettings:         rest.DefaultRetrySettings,
+		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
+		settingsObjectAPIPath: settingsObjectAPIPathClassic,
+		limiter:               concurrency.NewLimiter(5),
+		generateExternalID:    idutils.GenerateExternalID,
+		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
+		classicConfigsCache:   &cache.DefaultCache[[]Value]{},
+		schemaCache:           &cache.DefaultCache[Schema]{},
 	}
 
 	for _, o := range opts {
