@@ -18,7 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/mutlierror"
@@ -31,6 +35,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
@@ -38,8 +43,6 @@ import (
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	gonum "gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
-	"sync"
-	"time"
 )
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
@@ -57,6 +60,7 @@ type ClientSet struct {
 	Settings   client.SettingsClient
 	Automation automation.Client
 	Bucket     bucket.Client
+	Document   document.Client
 }
 
 var DummyClientSet = ClientSet{
@@ -64,6 +68,7 @@ var DummyClientSet = ClientSet{
 	Settings:   &dtclient.DummyClient{},
 	Automation: &automation.DummyClient{},
 	Bucket:     &bucket.DummyClient{},
+	Document:   &document.DummyClient{},
 }
 
 var (
@@ -101,6 +106,7 @@ func Deploy(projects []project.Project, environmentClients dynatrace.Environment
 				Settings:   clients.DTClient,
 				Automation: clients.AutClient,
 				Bucket:     clients.BucketClient,
+				Document:   clients.DocumentClient,
 			}
 		}
 
@@ -281,6 +287,13 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 
 	case config.BucketType:
 		resolvedEntity, deployErr = bucket.Deploy(ctx, clients.Bucket, properties, renderedConfig, c)
+
+	case config.DocumentType:
+		if featureflags.Documents().Enabled() {
+			resolvedEntity, deployErr = document.Deploy(ctx, clients.Document, properties, renderedConfig, c)
+		} else {
+			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
+		}
 
 	default:
 		deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
