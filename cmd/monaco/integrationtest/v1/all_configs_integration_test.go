@@ -19,11 +19,12 @@
 package v1
 
 import (
-	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/spf13/afero"
 )
 
@@ -34,23 +35,11 @@ func TestIntegrationAllConfigs(t *testing.T) {
 
 	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
 		// This causes a POST for all configs:
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-		})
-		err := cmd.Execute()
+		err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 
 		// This causes a PUT for all configs:
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-		})
-		err = cmd.Execute()
+		err = monaco.RunWithFsf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }

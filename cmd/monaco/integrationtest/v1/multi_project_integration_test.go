@@ -23,9 +23,9 @@ import (
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
 )
 
@@ -36,14 +36,7 @@ var multiProjectEnvironmentsFile = filepath.Join(multiProjectFolder, "environmen
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(fs afero.Fs, manifest string) {
-
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-		})
-		err := cmd.Execute()
+		err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
@@ -53,15 +46,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProject(t *testing.T) {
 	RunLegacyIntegrationWithoutCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "validMultiProj", func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-			"--dry-run",
-		})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose --dry-run", manifest)
 		assert.NoError(t, err)
 	})
 }
@@ -69,15 +54,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T) {
 	RunLegacyIntegrationWithoutCleanup(t, multiProjectFolderWithoutSlash, multiProjectEnvironmentsFile, "validMultiProj", func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-			"--dry-run",
-		})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose --dry-run", manifest)
 		assert.NoError(t, err)
 	})
 
@@ -85,18 +62,8 @@ func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T)
 
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
-
 	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.Fs, manifestFile string) {
-
-		cmd := runner.BuildCli(fs)
-
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifestFile,
-			"-p", "star-trek",
-		})
-		err := cmd.Execute()
+		err := monaco.RunWithFsf(fs, "monaco deploy %s --project=star-trek --verbose", manifestFile)
 		assert.NoError(t, err)
 
 		t.Log("Asserting available configs")

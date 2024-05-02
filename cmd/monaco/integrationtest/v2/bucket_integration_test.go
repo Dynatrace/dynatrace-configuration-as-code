@@ -19,12 +19,12 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/spf13/afero"
 )
 
@@ -37,21 +37,13 @@ func TestIntegrationBucketValidation(t *testing.T) {
 
 	t.Run("project is valid", func(t *testing.T) {
 		manifest := configFolder + "manifest.yaml"
-
-		cmd := runner.BuildCli(testutils.CreateTestFileSystem())
-		cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
-		err := cmd.Execute()
-
+		err := monaco.Runf("monaco deploy %s --verbose --dry-run", manifest)
 		assert.NoError(t, err)
 	})
 
 	t.Run("broken project is invalid", func(t *testing.T) {
 		manifest := configFolder + "invalid-manifest.yaml"
-
-		cmd := runner.BuildCli(testutils.CreateTestFileSystem())
-		cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
-		err := cmd.Execute()
-
+		err := monaco.Runf("monaco deploy %s --verbose --dry-run", manifest)
 		assert.Error(t, err)
 	})
 }
@@ -65,15 +57,11 @@ func TestIntegrationBucket(t *testing.T) {
 	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "Buckets", func(fs afero.Fs, _ TestContext) {
 
 		// Create the buckets
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "-p", "project"})
-		err := cmd.Execute()
+		err := monaco.RunWithFsf(fs, "monaco deploy %s --project=project, --verbose", manifest)
 		assert.NoError(t, err)
 
 		// Update the buckets
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "-p", "project"})
-		err = cmd.Execute()
+		err = monaco.RunWithFsf(fs, "monaco deploy %s --project=project --verbose", manifest)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"project"}, "", true)
@@ -89,15 +77,11 @@ func TestIntegrationComplexBucket(t *testing.T) {
 	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "ComplexBuckets", func(fs afero.Fs, _ TestContext) {
 
 		// Create the buckets
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "-p", "complex-bucket"})
-		err := cmd.Execute()
+		err := monaco.RunWithFsf(fs, "monaco deploy %s --project=complex-bucket --verbose", manifest)
 		assert.NoError(t, err)
 
 		// Update the buckets
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "-p", "complex-bucket"})
-		err = cmd.Execute()
+		err = monaco.RunWithFsf(fs, "monaco deploy %s --project=complex-bucket --verbose", manifest)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"complex-bucket"}, "", true)
