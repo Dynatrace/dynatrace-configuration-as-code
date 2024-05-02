@@ -17,7 +17,10 @@ package download
 import (
 	"context"
 	"errors"
+	"net/http"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
@@ -27,7 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"net/http"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
@@ -80,11 +82,16 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&f.onlyAPIs, "only-apis", false, "Download only classic configuration APIs. Deprecated configuration APIs will not be included.")
 	cmd.Flags().BoolVar(&f.onlySettings, "only-settings", false, "Download only settings 2.0 objects")
 	cmd.Flags().BoolVar(&f.onlyAutomation, "only-automation", false, "Only download automation objects, skip all other configuration types")
-	cmd.Flags().BoolVar(&f.onlyDocuments, "only-documents", false, "Only download documents, skip all other configuration types")
 
 	// combinations
-	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation", "only-documents")
-	cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation", "only-documents")
+	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation")
+	cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation")
+
+	if featureflags.Documents().Enabled() {
+		cmd.Flags().BoolVar(&f.onlyDocuments, "only-documents", false, "Only download documents, skip all other configuration types")
+		cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation", "only-documents")
+		cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation", "only-documents")
+	}
 
 	err := errors.Join(
 		cmd.RegisterFlagCompletionFunc("token", completion.EnvVarName),

@@ -17,7 +17,10 @@ package download
 import (
 	"errors"
 	"fmt"
+	"os"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -35,7 +38,6 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
-	"os"
 )
 
 type downloadCmdOptions struct {
@@ -278,16 +280,18 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		copyConfigs(configs, bucketCfgs)
 	}
 
-	if shouldDownloadDocuments(opts) {
-		if opts.auth.OAuth != nil {
-			log.Info("Downloading documents")
-			documentCfgs, err := fn.documentDownload(clientSet.Document(), opts.projectName)
-			if err != nil {
-				return nil, err
+	if featureflags.Documents().Enabled() {
+		if shouldDownloadDocuments(opts) {
+			if opts.auth.OAuth != nil {
+				log.Info("Downloading documents")
+				documentCfgs, err := fn.documentDownload(clientSet.Document(), opts.projectName)
+				if err != nil {
+					return nil, err
+				}
+				copyConfigs(configs, documentCfgs)
+			} else if opts.onlyDocuments {
+				return nil, errors.New("can't download documents: no OAuth credentials configured")
 			}
-			copyConfigs(configs, documentCfgs)
-		} else if opts.onlyDocuments {
-			return nil, errors.New("can't download documents: no OAuth credentials configured")
 		}
 	}
 

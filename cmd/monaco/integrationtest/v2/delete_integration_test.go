@@ -20,7 +20,11 @@ package v2
 
 import (
 	"fmt"
+	"path/filepath"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
@@ -31,8 +35,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
-	"path/filepath"
-	"testing"
 )
 
 func TestDelete(t *testing.T) {
@@ -49,66 +51,63 @@ func TestDelete(t *testing.T) {
 		configTemplate        string
 		deleteFile            string
 		deleteContentTemplate string
-		cmdFlags              []string
+		cmdFlag               string
 	}{
 		{
-			"Default values",
-			"manifest.yaml",
-			configTemplate,
-			"delete.yaml",
-			deleteContentTemplate,
-			[]string{},
+			name:                  "Default values",
+			manifest:              "manifest.yaml",
+			configTemplate:        configTemplate,
+			deleteFile:            "delete.yaml",
+			deleteContentTemplate: deleteContentTemplate,
 		},
 		{
-			"Default values - legacy delete",
-			"manifest.yaml",
-			"configs:\n- id: %s\n  type:\n    api: auto-tag\n  config:\n    name: %s\n    template: auto-tag.json\n",
-			"delete.yaml",
-			"delete:\n  - \"auto-tag/%s\"",
-			[]string{},
+			name:                  "Default values - legacy delete",
+			manifest:              "manifest.yaml",
+			configTemplate:        "configs:\n- id: %s\n  type:\n    api: auto-tag\n  config:\n    name: %s\n    template: auto-tag.json\n",
+			deleteFile:            "delete.yaml",
+			deleteContentTemplate: "delete:\n  - \"auto-tag/%s\"",
 		},
 		{
-			"Default values - Automation",
-			"manifest.yaml",
-			"configs:\n- id: %s\n  type:\n    automation:\n      resource: workflow\n  config:\n    name: %s\n    template: workflow.json\n",
-			"delete.yaml",
-			`delete:
+			name:           "Default values - Automation",
+			manifest:       "manifest.yaml",
+			configTemplate: "configs:\n- id: %s\n  type:\n    automation:\n      resource: workflow\n  config:\n    name: %s\n    template: workflow.json\n",
+			deleteFile:     "delete.yaml",
+			deleteContentTemplate: `delete:
 - project: "project"
   type: "workflow"
   id: "%s"`,
-			[]string{},
 		},
 		{
-			"Specific manifest",
-			"my_special_manifest.yaml",
-			configTemplate,
-			"delete.yaml",
-			deleteContentTemplate,
-			[]string{"--manifest", "my_special_manifest.yaml"},
+			name:                  "Specific manifest",
+			manifest:              "my_special_manifest.yaml",
+			configTemplate:        configTemplate,
+			deleteFile:            "delete.yaml",
+			deleteContentTemplate: deleteContentTemplate,
+			cmdFlag:               "--manifest=my_special_manifest.yaml",
 		},
 		{
-			"Specific manifest (shorthand)",
-			"my_special_manifest.yaml",
-			configTemplate,
-			"delete.yaml",
-			deleteContentTemplate,
-			[]string{"-m", "my_special_manifest.yaml"},
+			name:                  "Specific manifest (shorthand)",
+			manifest:              "my_special_manifest.yaml",
+			configTemplate:        configTemplate,
+			deleteFile:            "delete.yaml",
+			deleteContentTemplate: deleteContentTemplate,
+			cmdFlag:               "--manifest=my_special_manifest.yaml",
 		},
 		{
-			"Specific delete file",
-			"manifest.yaml",
-			configTemplate,
-			"super-special-removal-file.yaml",
-			deleteContentTemplate,
-			[]string{"--file", "super-special-removal-file.yaml"},
+			name:                  "Specific delete file",
+			manifest:              "manifest.yaml",
+			configTemplate:        configTemplate,
+			deleteFile:            "super-special-removal-file.yaml",
+			deleteContentTemplate: deleteContentTemplate,
+			cmdFlag:               "--file=super-special-removal-file.yaml",
 		},
 		{
-			"Specific manifest and delete file",
-			"my_special_manifest.yaml",
-			configTemplate,
-			"super-special-removal-file.yaml",
-			deleteContentTemplate,
-			[]string{"--manifest", "my_special_manifest.yaml", "--file", "super-special-removal-file.yaml"},
+			name:                  "Specific manifest and delete file",
+			manifest:              "my_special_manifest.yaml",
+			configTemplate:        configTemplate,
+			deleteFile:            "super-special-removal-file.yaml",
+			deleteContentTemplate: deleteContentTemplate,
+			cmdFlag:               "--manifest=my_special_manifest.yaml --file=super-special-removal-file.yaml",
 		},
 	}
 
@@ -143,17 +142,12 @@ func TestDelete(t *testing.T) {
 			assert.NoError(t1, err)
 
 			// DEPLOY Config
-			cmd := runner.BuildCli(fs)
-			cmd.SetArgs([]string{"deploy", "--verbose", deployManifestPath})
-			err = cmd.Execute()
+			err = monaco.RunWithFsf(fs, "monaco deploy %s --verbose", deployManifestPath)
 			assert.NoError(t1, err)
 			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", true)
 
 			// DELETE Config
-			cmd = runner.BuildCli(fs)
-			baseCmd := []string{"delete", "--verbose"}
-			cmd.SetArgs(append(baseCmd, tt.cmdFlags...))
-			err = cmd.Execute()
+			err = monaco.RunWithFsf(fs, "monaco delete %s --verbose", tt.cmdFlag)
 			assert.NoError(t1, err)
 			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", false)
 
