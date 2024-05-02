@@ -1,5 +1,4 @@
 //go:build integration_v1
-// +build integration_v1
 
 /**
  * @license
@@ -23,6 +22,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -36,10 +40,6 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"path"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 // AssertConfigAvailability checks specific configuration for availability
