@@ -110,7 +110,7 @@ func download(client client.SettingsClient, schemas []schema, projectName string
 
 			lg := log.WithFields(field.Type(s.id))
 
-			lg.Debug("Downloading all settings for schema %s", s)
+			lg.Debug("Downloading all settings for schema '%s'", s.id)
 			objects, err := client.ListSettings(context.TODO(), s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string
@@ -120,7 +120,7 @@ func download(client client.SettingsClient, schemas []schema, projectName string
 				} else {
 					errMsg = err.Error()
 				}
-				lg.WithFields(field.Error(err)).Error("Failed to fetch all settings for schema %q: %v", s, errMsg)
+				lg.WithFields(field.Error(err)).Error("Failed to fetch all settings for schema '%s': %v", s.id, errMsg)
 				return
 			}
 
@@ -132,11 +132,11 @@ func download(client client.SettingsClient, schemas []schema, projectName string
 			lg = lg.WithFields(field.F("configsDownloaded", len(cfgs)))
 			switch len(objects) {
 			case 0:
-				lg.Debug("Did not find any settings to download for schema %q", s)
+				lg.Debug("Did not find any settings to download for schema '%s'", s.id)
 			case len(cfgs):
-				lg.Info("Downloaded %d settings for schema %q.", len(cfgs), s)
+				lg.Info("Downloaded %d settings for schema '%s'", len(cfgs), s.id)
 			default:
-				lg.Info("Downloaded %d settings for schema %q. Skipped persisting %d unmodifiable setting(s).", len(cfgs), s, len(objects)-len(cfgs))
+				lg.Info("Downloaded %d settings for schema '%s'. Skipped persisting %d unmodifiable setting(s)", len(cfgs), s.id, len(objects)-len(cfgs))
 			}
 		}(sc)
 	}
