@@ -10,11 +10,6 @@ configs:
       scope: environment
 - id: c2314e1b-409c-3eaf-9efa-5dc593b14aff #monaco-test:no-replace
   config:
-    parameters:
-      insertAfter:
-        configId: 704aa921-9ff8-3f8e-bc6d-bedb63093ae9 #monaco-test:no-replace
-        property: id
-        type: reference
     template: c2314e1b-409c-3eaf-9efa-5dc593b14aff.json
     skip: false
   type:
@@ -22,3 +17,7 @@ configs:
       schema: builtin:container.monitoring-rule
       schemaVersion: 0.0.1
       scope: environment
+      insertAfter:
+        configId: 704aa921-9ff8-3f8e-bc6d-bedb63093ae9 #monaco-test:no-replace
+        property: id
+        type: reference

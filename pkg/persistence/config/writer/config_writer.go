@@ -284,8 +284,13 @@ func extractConfigType(context *serializerContext, cfg config.Config) (persisten
 		if err != nil {
 			return persistence.TypeDefinition{}, err
 		}
-
 		ttype.Scope = serializedScope
+
+		serializedInsertAfter, err := getInsertAfter(context, cfg)
+		if err != nil {
+			return persistence.TypeDefinition{}, err
+		}
+		ttype.InsertAfter = serializedInsertAfter
 
 	case config.ClassicApiType:
 		// TODO: Check if API is a subpath API and handle it accordingly.
@@ -312,6 +317,21 @@ func getScope(context *serializerContext, cfg config.Config) (persistence.Config
 		return nil, fmtDetailedConfigWriterError(context, "failed to serialize scope-parameter: %w", err)
 	}
 	return serializedScope, nil
+}
+
+func getInsertAfter(context *serializerContext, cfg config.Config) (persistence.ConfigParameter, error) {
+	insertAfterParam, found := cfg.Parameters[config.InsertAfterParameter]
+	if !found {
+		return nil, nil // not all settings have this parameter, so it is ok if it is not found
+	}
+
+	serializedInsertAfterParam, err := toParameterDefinition(&detailedSerializerContext{
+		serializerContext: context,
+	}, config.InsertAfterParameter, insertAfterParam)
+	if err != nil {
+		return nil, fmtDetailedConfigWriterError(context, "failed to serialize insertAfter-parameter: %w", err)
+	}
+	return serializedInsertAfterParam, nil
 }
 
 func groupByGroups(configs []extendedConfigDefinition) map[string][]extendedConfigDefinition {
@@ -628,7 +648,7 @@ func convertParameters(context *detailedSerializerContext, parameters config.Par
 
 	for name, param := range parameters {
 		// ignore NameParameter and ScopeParameter as it is handled in a special way
-		if name == config.NameParameter || name == config.ScopeParameter {
+		if name == config.NameParameter || name == config.ScopeParameter || name == config.InsertAfterParameter {
 			continue
 		}
 

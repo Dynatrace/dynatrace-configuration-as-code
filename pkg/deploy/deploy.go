@@ -272,7 +272,7 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 	switch c.Type.(type) {
 	case config.SettingsType:
 		var insertAfter string
-		if ia, ok := properties["insertAfter"]; ok {
+		if ia, ok := properties[config.InsertAfterParameter]; ok {
 			insertAfter = ia.(string)
 		}
 		resolvedEntity, deployErr = setting.Deploy(ctx, clients.Settings, properties, renderedConfig, c, insertAfter)

@@ -188,7 +188,7 @@ func convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName st
 		}
 
 		if ordered && i > 0 {
-			c.Parameters["insertAfter"] = reference.NewWithCoordinate(result[i-1].Coordinate, "id")
+			c.Parameters[config.InsertAfterParameter] = reference.NewWithCoordinate(result[i-1].Coordinate, "id")
 		}
 		result = append(result, c)
 
