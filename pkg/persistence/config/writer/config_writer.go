@@ -280,13 +280,13 @@ func extractConfigType(context *serializerContext, cfg config.Config) (persisten
 
 	switch cfg.Type.(type) {
 	case config.SettingsType:
-		serializedScope, err := getScope(context, cfg)
+		serializedScope, err := getSerializedParam(context, cfg, config.ScopeParameter, true)
 		if err != nil {
 			return persistence.TypeDefinition{}, err
 		}
 		ttype.Scope = serializedScope
 
-		serializedInsertAfter, err := getInsertAfter(context, cfg)
+		serializedInsertAfter, err := getSerializedParam(context, cfg, config.InsertAfterParameter, false)
 		if err != nil {
 			return persistence.TypeDefinition{}, err
 		}
@@ -296,7 +296,7 @@ func extractConfigType(context *serializerContext, cfg config.Config) (persisten
 		// TODO: Check if API is a subpath API and handle it accordingly.
 		// for now just check if we can exract a scope, and if we can, use it
 
-		serializedScope, err := getScope(context, cfg)
+		serializedScope, err := getSerializedParam(context, cfg, config.ScopeParameter, true)
 		if err == nil {
 			ttype.Scope = serializedScope
 		}
@@ -304,34 +304,22 @@ func extractConfigType(context *serializerContext, cfg config.Config) (persisten
 	return ttype, nil
 }
 
-func getScope(context *serializerContext, cfg config.Config) (persistence.ConfigParameter, error) {
-	scopeParam, found := cfg.Parameters[config.ScopeParameter]
+func getSerializedParam(context *serializerContext, cfg config.Config, paramName string, required bool) (persistence.ConfigParameter, error) {
+	param, found := cfg.Parameters[paramName]
 	if !found {
-		return nil, fmtDetailedConfigWriterError(context, "scope parameter not found. This is likely a bug")
+		if required {
+			return nil, fmtDetailedConfigWriterError(context, fmt.Sprintf("'%s' parameter not found. This is likely a bug", paramName))
+		}
+		return nil, nil
 	}
 
 	serializedScope, err := toParameterDefinition(&detailedSerializerContext{
 		serializerContext: context,
-	}, config.ScopeParameter, scopeParam)
+	}, paramName, param)
 	if err != nil {
-		return nil, fmtDetailedConfigWriterError(context, "failed to serialize scope-parameter: %w", err)
+		return nil, fmtDetailedConfigWriterError(context, "failed to serialize '%s' parameter: %w", paramName, err)
 	}
 	return serializedScope, nil
-}
-
-func getInsertAfter(context *serializerContext, cfg config.Config) (persistence.ConfigParameter, error) {
-	insertAfterParam, found := cfg.Parameters[config.InsertAfterParameter]
-	if !found {
-		return nil, nil // not all settings have this parameter, so it is ok if it is not found
-	}
-
-	serializedInsertAfterParam, err := toParameterDefinition(&detailedSerializerContext{
-		serializerContext: context,
-	}, config.InsertAfterParameter, insertAfterParam)
-	if err != nil {
-		return nil, fmtDetailedConfigWriterError(context, "failed to serialize insertAfter-parameter: %w", err)
-	}
-	return serializedInsertAfterParam, nil
 }
 
 func groupByGroups(configs []extendedConfigDefinition) map[string][]extendedConfigDefinition {
