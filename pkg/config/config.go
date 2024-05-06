@@ -45,6 +45,11 @@ const (
 	// It is only a parameter iff the config is a settings-config.
 	ScopeParameter = "scope"
 
+	// InsertAfterParameter is special. It points to another settings object and is used
+	// for establishing an ordering between different settings objects.
+	// It is only a parameter iff the config is a settings-config.
+	InsertAfterParameter = "insertAfter"
+
 	// SkipParameter is special in that config should be deployed or not
 	SkipParameter = "skip"
 

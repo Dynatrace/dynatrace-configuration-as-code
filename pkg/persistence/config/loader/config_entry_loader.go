@@ -212,7 +212,7 @@ func getConfigFromDefinition(
 		return config.Config{}, errs
 	}
 
-	// if we have a scope, we should parse it
+	// if we have a scope field, we should parse it
 	if configType.Scope != nil {
 		scopeParam, err := parseParameter(fs, context, environment, configId, config.ScopeParameter, configType.Scope)
 		if err != nil {
@@ -220,10 +220,23 @@ func getConfigFromDefinition(
 		}
 
 		if !slices.Contains(allowedScopeParameterTypes, scopeParam.GetType()) {
-			return config.Config{}, []error{fmt.Errorf("failed to parse scope: cannot use parameter-type %q within the scope. Allowed types: %v", scopeParam.GetType(), allowedScopeParameterTypes)}
+			return config.Config{}, []error{fmt.Errorf("failed to parse scope: cannot use parameter-type %q. Allowed types: %v", scopeParam.GetType(), allowedScopeParameterTypes)}
 		}
 
 		parameters[config.ScopeParameter] = scopeParam
+	}
+
+	// if we have an insertAfter field, we should parse it
+	if configType.InsertAfter != nil {
+		insertAfterParam, err := parseParameter(fs, context, environment, configId, config.InsertAfterParameter, configType.InsertAfter)
+		if err != nil {
+			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter: %w", err)}
+		}
+
+		if !slices.Contains(allowedInsertAfterParameterTypes, insertAfterParam.GetType()) {
+			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter: cannot use parameter-type %q. Allowed types: %v", insertAfterParam.GetType(), allowedInsertAfterParameterTypes)}
+		}
+		parameters[config.InsertAfterParameter] = insertAfterParam
 	}
 
 	return config.Config{
