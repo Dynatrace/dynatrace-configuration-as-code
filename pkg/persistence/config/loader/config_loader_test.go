@@ -486,6 +486,74 @@ configs:
 			},
 		},
 		{
+			name:             "loads settings 2.0 config with a reference as insertAfter",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'environment'
+      insertAfter:
+        type: reference
+        configId: configId
+        property: id
+        configType: something`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:profile.test",
+						ConfigId: "profile-id",
+					},
+					Type: config.SettingsType{
+						SchemaId:      "builtin:profile.test",
+						SchemaVersion: "1.0",
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter:        &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter:       &value.ValueParameter{Value: "environment"},
+						config.InsertAfterParameter: ref.New("project", "something", "configId", "id"),
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
+				},
+			},
+		},
+		{
+			name:             "loads settings 2.0 config with a reference as insertAfter but with wrong property",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'environment'
+      insertAfter:
+        type: reference
+        configId: configId
+        property: name
+        configType: something`,
+			wantErrorsContain: []string{`failed to parse insertAfter: property field of reference parameter "project:something:configId:name" must be "id"`},
+		},
+		{
 			name:             "loads settings 2.0 config with a shorthand reference as scope",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",

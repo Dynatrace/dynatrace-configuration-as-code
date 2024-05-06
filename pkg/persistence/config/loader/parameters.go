@@ -37,10 +37,6 @@ var allowedScopeParameterTypes = []string{
 	envParam.EnvironmentVariableParameterType,
 }
 
-var allowedInsertAfterParameterTypes = []string{
-	refParam.ReferenceParameterType,
-}
-
 // isSupportedParamTypeForSkip check is 'skip' section of configuration supports specified param type
 func isSupportedParamTypeForSkip(p parameter.Parameter) bool {
 	switch p.GetType() {

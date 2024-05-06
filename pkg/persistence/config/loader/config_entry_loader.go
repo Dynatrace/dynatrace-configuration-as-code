@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
@@ -233,9 +234,15 @@ func getConfigFromDefinition(
 			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter: %w", err)}
 		}
 
-		if !slices.Contains(allowedInsertAfterParameterTypes, insertAfterParam.GetType()) {
-			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter: cannot use parameter-type %q. Allowed types: %v", insertAfterParam.GetType(), allowedInsertAfterParameterTypes)}
+		r, isRef := insertAfterParam.(*reference.ReferenceParameter)
+		if !isRef {
+			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter: cannot use parameter-type %q. Allowed types: %v", insertAfterParam.GetType(), reference.ReferenceParameterType)}
 		}
+
+		if r.Property != "id" {
+			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter: property field of reference parameter %q must be %q", insertAfterParam, "id")}
+		}
+
 		parameters[config.InsertAfterParameter] = insertAfterParam
 	}
 
