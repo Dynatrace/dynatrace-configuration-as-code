@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package document
+package document_test
 
 import (
 	"context"
@@ -32,6 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,14 +50,14 @@ var documentConfigCoordinate = coordinate.Coordinate{
 }
 
 func TestDeployDocumentWrongType(t *testing.T) {
-	client := &DummyClient{}
+	client := &document.DummyClient{}
 
 	conf := &config.Config{
 		Type:     config.ClassicApiType{},
 		Template: testutils.GenerateFaultyTemplate(t),
 	}
 
-	_, errors := Deploy(context.TODO(), client, nil, "", conf)
+	_, errors := document.Deploy(context.TODO(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -212,9 +213,9 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 	})
 }
 
-func runDeployTest(t *testing.T, client Client, c *config.Config) (entities.ResolvedEntity, error) {
+func runDeployTest(t *testing.T, client document.Client, c *config.Config) (entities.ResolvedEntity, error) {
 	parameters, errs := c.ResolveParameterValues(entities.New())
 	require.Empty(t, errs)
 
-	return Deploy(context.TODO(), client, parameters, "", c)
+	return document.Deploy(context.TODO(), client, parameters, "", c)
 }
