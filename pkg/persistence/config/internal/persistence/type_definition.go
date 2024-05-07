@@ -28,8 +28,9 @@ import (
 const BucketType = "bucket"
 
 type TypeDefinition struct {
-	Type  config.Type
-	Scope ConfigParameter
+	Type        config.Type
+	Scope       ConfigParameter
+	InsertAfter ConfigParameter
 }
 
 type ComplexApiDefinition struct {
@@ -41,6 +42,7 @@ type SettingsDefinition struct {
 	Schema        string          `yaml:"schema,omitempty" json:"schema,omitempty" jsonschema:"required,description=The Settings 2.0 schema of this config."`
 	SchemaVersion string          `yaml:"schemaVersion,omitempty" json:"schemaVersion,omitempty" jsonschema:"description=This optionally informs the Settings API that a specific schema version was used for this config."`
 	Scope         ConfigParameter `yaml:"scope,omitempty" json:"scope,omitempty"  jsonschema:"required,description=This defines the scope in which this Setting applies."`
+	InsertAfter   ConfigParameter `yaml:"insertAfter,omitempty" json:"insertAfter,omitempty" jsonschema:"description=This optionally informs the settings API that this particular objects needs to be inserted after the referenced one."`
 }
 
 type AutomationDefinition struct {
@@ -136,6 +138,7 @@ func (c *TypeDefinition) parseSettingsType(a any) error {
 		SchemaVersion: r.SchemaVersion,
 	}
 	c.Scope = r.Scope
+	c.InsertAfter = r.InsertAfter
 	return nil
 }
 
@@ -249,6 +252,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 				Schema:        t.SchemaId,
 				SchemaVersion: t.SchemaVersion,
 				Scope:         c.Scope,
+				InsertAfter:   c.InsertAfter,
 			},
 		}, nil
 

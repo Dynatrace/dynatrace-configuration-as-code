@@ -46,6 +46,8 @@ func TestDownloadAll(t *testing.T) {
 		ListSchemasCalls  int
 		Settings          func() ([]dtclient.DownloadSettingsObject, error)
 		ListSettingsCalls int
+		GetSchema         func(schemaID string) (dtclient.Schema, error)
+		GetSchemaCalls    int
 	}
 	tests := []struct {
 		name       string
@@ -60,6 +62,9 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return nil, fmt.Errorf("oh no")
 				},
+				GetSchema:      func(schemaID string) (dtclient.Schema, error) { return dtclient.Schema{}, nil },
+				GetSchemaCalls: 0,
+
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return nil, nil
 				},
@@ -78,6 +83,10 @@ func TestDownloadAll(t *testing.T) {
 					return nil, rest.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
 				},
 				ListSettingsCalls: 2,
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{}, nil
+				},
+				GetSchemaCalls: 2,
 			},
 			want: v2.ConfigsPerType{},
 		},
@@ -88,6 +97,10 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "id1"}, nil
+				},
+				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
@@ -109,6 +122,10 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "id1"}, nil
+				},
+				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
@@ -152,6 +169,10 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "id1"}, nil
+				},
+				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
@@ -173,6 +194,10 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "id1"}, nil
+				},
+				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{
 						{
@@ -225,6 +250,10 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "id1"}, nil
+				},
+				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{
 						{
@@ -269,6 +298,7 @@ func TestDownloadAll(t *testing.T) {
 			c := client.NewMockDynatraceClient(gomock.NewController(t))
 			schemas, err := tt.mockValues.Schemas()
 			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
+			c.EXPECT().GetSchemaById(gomock.Any()).Times(tt.mockValues.GetSchemaCalls).Return(tt.mockValues.GetSchema(""))
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
 			res, _ := Download(c, "projectName", tt.filters)
@@ -281,10 +311,13 @@ func TestDownload(t *testing.T) {
 	uuid := idutils.GenerateUUIDFromString("oid1")
 
 	type mockValues struct {
-		Schemas           func() (dtclient.SchemaList, error)
-		Settings          func() ([]dtclient.DownloadSettingsObject, error)
+		Schemas        func() (dtclient.SchemaList, error)
+		Settings       func() ([]dtclient.DownloadSettingsObject, error)
+		FetchedSchemas func(schemaID string) (dtclient.Schema, error)
+
 		ListSchemasCalls  int
 		ListSettingsCalls int
+		GetSchemaCalls    int
 	}
 	tests := []struct {
 		name       string
@@ -296,10 +329,14 @@ func TestDownload(t *testing.T) {
 			name: "DownloadSettings - empty list of schemas",
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) { return dtclient.SchemaList{}, nil },
+				FetchedSchemas: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{}, nil
+				},
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{}, nil
 				},
 				ListSchemasCalls:  1,
+				GetSchemaCalls:    0,
 				ListSettingsCalls: 0,
 			},
 			want: v2.ConfigsPerType{},
@@ -311,6 +348,11 @@ func TestDownload(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "builtin:alerting-profile"}}, nil
 				},
+				FetchedSchemas: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "builtin:alerting-profile"}, nil
+				},
+				GetSchemaCalls: 1,
+
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
@@ -351,6 +393,7 @@ func TestDownload(t *testing.T) {
 			schemas, err1 := tt.mockValues.Schemas()
 			settings, err2 := tt.mockValues.Settings()
 			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err1)
+			c.EXPECT().GetSchemaById(gomock.Any()).Times(tt.mockValues.GetSchemaCalls).Return(tt.mockValues.FetchedSchemas(""))
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err2)
 			res, _ := Download(c, "projectName", DefaultSettingsFilters, tt.Schemas...)
 			assert.Equal(t, tt.want, res)

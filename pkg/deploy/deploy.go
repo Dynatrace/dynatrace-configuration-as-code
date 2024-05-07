@@ -277,7 +277,11 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 	var deployErr error
 	switch c.Type.(type) {
 	case config.SettingsType:
-		resolvedEntity, deployErr = setting.Deploy(ctx, clients.Settings, properties, renderedConfig, c)
+		var insertAfter string
+		if ia, ok := properties[config.InsertAfterParameter]; ok {
+			insertAfter = ia.(string)
+		}
+		resolvedEntity, deployErr = setting.Deploy(ctx, clients.Settings, properties, renderedConfig, c, insertAfter)
 
 	case config.ClassicApiType:
 		resolvedEntity, deployErr = classic.Deploy(ctx, clients.Classic, api.NewAPIs(), properties, renderedConfig, c)

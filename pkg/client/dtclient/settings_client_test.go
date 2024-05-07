@@ -79,16 +79,16 @@ func Test_schemaDetails(t *testing.T) {
 	d, _ := NewPlatformClient(server.URL, server.URL, restClient, restClient)
 
 	t.Run("unmarshall data", func(t *testing.T) {
-		expected := SchemaConstraints{SchemaId: "builtin:span-attribute", UniqueProperties: [][]string{{"key0", "key1"}, {"key2", "key3"}}}
+		expected := Schema{SchemaId: "builtin:span-attribute", UniqueProperties: [][]string{{"key0", "key1"}, {"key2", "key3"}}}
 
-		actual, err := d.fetchSchemasConstraints(context.TODO(), "builtin:span-attribute")
+		actual, err := d.getSchema(context.TODO(), "builtin:span-attribute")
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)
 	})
 }
 
-func Test_FetchSchemaConstraintsUsesCache(t *testing.T) {
+func Test_GetSchemaUsesCache(t *testing.T) {
 	apiHits := 0
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		apiHits++
@@ -102,13 +102,13 @@ func Test_FetchSchemaConstraintsUsesCache(t *testing.T) {
 	restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
 	d, _ := NewPlatformClient(server.URL, server.URL, restClient, restClient)
 
-	_, err := d.fetchSchemasConstraints(context.TODO(), "builtin:span-attribute")
+	_, err := d.getSchema(context.TODO(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, apiHits)
-	_, err = d.fetchSchemasConstraints(context.TODO(), "builtin:alerting.profile")
+	_, err = d.getSchema(context.TODO(), "builtin:alerting.profile")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
-	_, err = d.fetchSchemasConstraints(context.TODO(), "builtin:span-attribute")
+	_, err = d.getSchema(context.TODO(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
 }
@@ -116,7 +116,7 @@ func Test_FetchSchemaConstraintsUsesCache(t *testing.T) {
 func Test_findObjectWithSameConstraints(t *testing.T) {
 	type (
 		given struct {
-			schema  SchemaConstraints
+			schema  Schema
 			source  SettingsObject
 			objects []DownloadSettingsObject
 		}
@@ -131,7 +131,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "single constraint with boolean values- match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 						},
@@ -154,7 +154,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "single constraint with int values - no match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 						},
@@ -172,7 +172,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "single constraint - match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 						},
@@ -195,7 +195,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "single constraint - no match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 						},
@@ -213,7 +213,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "single complex object constraint - match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 						},
@@ -239,7 +239,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "single complex object constraint - no match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 						},
@@ -257,7 +257,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "single list value constraint - match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 						},
@@ -280,7 +280,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "single list value constraint - no match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 						},
@@ -298,7 +298,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "signe composite constraint - match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A", "B"},
 						},
@@ -322,7 +322,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "signe composite constraint - no match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A", "B"},
 						},
@@ -340,7 +340,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "multiple simple constraints - one perfect match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 							{"A", "B"},
@@ -365,7 +365,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "multiple simple constraints - one semi match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 							{"B"},
@@ -389,7 +389,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "multiple simple constraints - no match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 							{"B"},
@@ -430,7 +430,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			{
 				name: "multiple simple constraints - multiple match",
 				given: given{
-					schema: SchemaConstraints{
+					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 							{"B"},

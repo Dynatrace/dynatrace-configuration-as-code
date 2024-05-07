@@ -202,6 +202,53 @@ func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 	})
 }
 
+// TestOrderedSettings tries to deploy two setting objects A and B two times. The first time with A insert after B, the second time with B insert after A.
+// After each of the two deployment the actual order is asserted.
+func TestOrderedSettings(t *testing.T) {
+	configFolder := "test-resources/settings-ordered/order1"
+	manifestPath := configFolder + "/manifest.yaml"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project", manifestPath})
+		err := cmd.Execute()
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
+
+		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
+		environment := loadedManifest.Environments["platform_env"]
+		settingsClient := createSettingsClient(t, environment)
+		results, err := settingsClient.ListSettings(context.TODO(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		assert.NoError(t, err)
+
+		assert.Len(t, results, 2)
+		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkYzIzMTRlMWItNDA5Yy0zZWFmLTllZmEtNWRjNTkzYjE0YWZm", results[0].ExternalId)
+		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkNzA0YWE5MjEtOWZmOC0zZjhlLWJjNmQtYmVkYjYzMDkzYWU5", results[1].ExternalId)
+	})
+
+	configFolder = "test-resources/settings-ordered/order2"
+	manifestPath = configFolder + "/manifest.yaml"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project", manifestPath})
+		err := cmd.Execute()
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
+
+		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
+		environment := loadedManifest.Environments["platform_env"]
+		settingsClient := createSettingsClient(t, environment)
+		results, err := settingsClient.ListSettings(context.TODO(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		assert.NoError(t, err)
+
+		assert.Len(t, results, 2)
+		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkNzA0YWE5MjEtOWZmOC0zZjhlLWJjNmQtYmVkYjYzMDkzYWU5", results[0].ExternalId)
+		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkYzIzMTRlMWItNDA5Yy0zZWFmLTllZmEtNWRjNTkzYjE0YWZm", results[1].ExternalId)
+	})
+
+}
+
 func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.DynatraceClient)) client.SettingsClient {
 	oauthCredentials := auth.OauthCredentials{
 		ClientID:     env.Auth.OAuth.ClientID.Value.Value(),

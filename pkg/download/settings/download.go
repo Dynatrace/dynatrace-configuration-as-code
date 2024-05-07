@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"strings"
 	"sync"
@@ -40,6 +41,11 @@ import (
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
+type schema struct {
+	id      string
+	ordered bool
+}
+
 func Download(client client.SettingsClient, projectName string, filters Filters, schemaIDs ...config.SettingsType) (v2.ConfigsPerType, error) {
 	if len(schemaIDs) == 0 {
 		return downloadAll(client, projectName, filters)
@@ -53,20 +59,22 @@ func Download(client client.SettingsClient, projectName string, filters Filters,
 
 func downloadAll(client client.SettingsClient, projectName string, filters Filters) (v2.ConfigsPerType, error) {
 	log.Debug("Fetching all schemas to download")
-
-	// get ALL schemas
-	schemas, err := client.ListSchemas()
+	schemaList, err := client.ListSchemas()
 	if err != nil {
 		log.WithFields(field.Error(err)).Error("Failed to fetch all known schemas. Skipping settings download. Reason: %s", err)
 		return nil, err
 	}
-	// convert to list of IDs
-	var ids []string
-	for _, i := range schemas {
-		ids = append(ids, i.SchemaId)
+
+	var schemas []schema
+	for _, s := range schemaList {
+		if sc, err := client.GetSchemaById(s.SchemaId); err != nil {
+			return v2.ConfigsPerType{}, err
+		} else {
+			schemas = append(schemas, schema{id: sc.SchemaId, ordered: sc.Ordered})
+		}
 	}
 
-	result := download(client, ids, projectName, filters)
+	result := download(client, schemas, projectName, filters)
 	return result, nil
 }
 
@@ -76,24 +84,34 @@ func downloadSpecific(client client.SettingsClient, projectName string, schemaID
 		log.WithFields(field.F("unknownSchemas", unknownSchemas), field.Error(err)).Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
 		return nil, err
 	}
+
+	var schemas []schema
+	for _, s := range schemaIDs {
+		if schemaContent, err := client.GetSchemaById(s); err != nil {
+			return v2.ConfigsPerType{}, err
+		} else {
+			schemas = append(schemas, schema{id: schemaContent.SchemaId, ordered: schemaContent.Ordered})
+		}
+	}
+
 	log.Debug("Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
-	result := download(client, schemaIDs, projectName, filters)
+	result := download(client, schemas, projectName, filters)
 	return result, nil
 }
 
-func download(client client.SettingsClient, schemas []string, projectName string, filters Filters) v2.ConfigsPerType {
+func download(client client.SettingsClient, schemas []schema, projectName string, filters Filters) v2.ConfigsPerType {
 	results := make(v2.ConfigsPerType, len(schemas))
 	downloadMutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	wg.Add(len(schemas))
-	for _, schema := range schemas {
-		go func(s string) {
+	for _, sc := range schemas {
+		go func(s schema) {
 			defer wg.Done()
 
-			lg := log.WithFields(field.Type(s))
+			lg := log.WithFields(field.Type(s.id))
 
-			lg.Debug("Downloading all settings for schema %s", s)
-			objects, err := client.ListSettings(context.TODO(), s, dtclient.ListSettingsOptions{})
+			lg.Debug("Downloading all settings for schema '%s'", s.id)
+			objects, err := client.ListSettings(context.TODO(), s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string
 				var respErr clientErrors.RespError
@@ -102,34 +120,34 @@ func download(client client.SettingsClient, schemas []string, projectName string
 				} else {
 					errMsg = err.Error()
 				}
-				lg.WithFields(field.Error(err)).Error("Failed to fetch all settings for schema %q: %v", s, errMsg)
+				lg.WithFields(field.Error(err)).Error("Failed to fetch all settings for schema '%s': %v", s.id, errMsg)
 				return
 			}
 
-			cfgs := convertAllObjects(objects, projectName, filters)
+			cfgs := convertAllObjects(objects, projectName, sc.ordered, filters)
 			downloadMutex.Lock()
-			results[s] = cfgs
+			results[s.id] = cfgs
 			downloadMutex.Unlock()
 
 			lg = lg.WithFields(field.F("configsDownloaded", len(cfgs)))
 			switch len(objects) {
 			case 0:
-				lg.Debug("Did not find any settings to download for schema %q", s)
+				lg.Debug("Did not find any settings to download for schema '%s'", s.id)
 			case len(cfgs):
-				lg.Info("Downloaded %d settings for schema %q.", len(cfgs), s)
+				lg.Info("Downloaded %d settings for schema '%s'", len(cfgs), s.id)
 			default:
-				lg.Info("Downloaded %d settings for schema %q. Skipped persisting %d unmodifiable setting(s).", len(cfgs), s, len(objects)-len(cfgs))
+				lg.Info("Downloaded %d settings for schema '%s'. Skipped persisting %d unmodifiable setting(s)", len(cfgs), s.id, len(objects)-len(cfgs))
 			}
-		}(schema)
+		}(sc)
 	}
 	wg.Wait()
 
 	return results
 }
 
-func convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName string, filters Filters) []config.Config {
+func convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName string, ordered bool, filters Filters) []config.Config {
 	result := make([]config.Config, 0, len(objects))
-	for _, o := range objects {
+	for i, o := range objects {
 
 		if shouldFilterUnmodifiableSettings() && o.ModificationInfo != nil && !o.ModificationInfo.Modifiable && len(o.ModificationInfo.ModifiablePaths) == 0 {
 			log.WithFields(field.Type(o.SchemaId), field.F("object", o)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
@@ -168,7 +186,12 @@ func convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName st
 			Skip:           false,
 			OriginObjectId: o.ObjectId,
 		}
+
+		if ordered && i > 0 {
+			c.Parameters[config.InsertAfterParameter] = reference.NewWithCoordinate(result[i-1].Coordinate, "id")
+		}
 		result = append(result, c)
+
 	}
 	return result
 }
