@@ -262,6 +262,12 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		obj.OriginObjectId = ""
 	}
 
+	if schema, ok := d.schemaCache.Get(obj.SchemaId); ok {
+		if options.InsertAfter != "" && !schema.Ordered {
+			return DynatraceEntity{}, fmt.Errorf("'%s' is not an ordered setting, hence 'insertAfter' is not supported for this type of setting object", obj.SchemaId)
+		}
+	}
+
 	payload, err := buildPostRequestPayload(ctx, obj, externalID, options.InsertAfter)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
