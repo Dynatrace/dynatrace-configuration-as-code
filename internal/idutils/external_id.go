@@ -22,10 +22,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
-// GenerateExternalID generates a string that serves as an external ID for a Settings 2.0 object.
+// GenerateExternalIDForSettingsObject generates a string that serves as an external ID for a Settings 2.0 object.
 // It requires a [[coordinate.Coordinate]] as input and produces a string in the format "monaco:<BASE64_ENCODED_STR>"
 // If Type or ConfigId of the passed [[coordinate.Coordinate]] is empty, an error is returned
-func GenerateExternalID(c coordinate.Coordinate) (string, error) {
+func GenerateExternalIDForSettingsObject(c coordinate.Coordinate) (string, error) {
 	const prefix = "monaco:"
 	const externalIDMaxLength = 500
 

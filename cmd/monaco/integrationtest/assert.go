@@ -208,7 +208,7 @@ func AssertConfig(t *testing.T, ctx context.Context, client client.ConfigClient,
 }
 
 func AssertSetting(t *testing.T, ctx context.Context, c client.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config) (id string) {
-	expectedExtId, err := idutils.GenerateExternalID(config.Coordinate)
+	expectedExtId, err := idutils.GenerateExternalIDForSettingsObject(config.Coordinate)
 	if err != nil {
 		t.Errorf("Unable to generate external id: %v", err)
 		return

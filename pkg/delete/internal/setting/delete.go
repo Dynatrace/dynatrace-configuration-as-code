@@ -45,7 +45,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 		if e.Project == "" {
 			logger.Warn("Generating legacy externalID - this will fail to identify a newer Settings object. Consider defining a 'project' for this delete entry.")
 		}
-		externalID, err := idutils.GenerateExternalID(e.AsCoordinate())
+		externalID, err := idutils.GenerateExternalIDForSettingsObject(e.AsCoordinate())
 
 		if err != nil {
 			logger.Error("Unable to generate externalID, Setting will not be deleted: %v", err)

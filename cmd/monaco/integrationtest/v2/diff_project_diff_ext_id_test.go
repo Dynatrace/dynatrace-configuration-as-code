@@ -53,8 +53,8 @@ func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 		projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
 		sortedConfigs, _ := sort.ConfigsPerEnvironment(projects, []string{"platform_env"})
 
-		extIDProject1, _ := idutils.GenerateExternalID(sortedConfigs["platform_env"][0].Coordinate)
-		extIDProject2, _ := idutils.GenerateExternalID(sortedConfigs["platform_env"][1].Coordinate)
+		extIDProject1, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
+		extIDProject2, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][1].Coordinate)
 
 		clientSet, err := dynatrace.CreateClients(environment.URL.Value, environment.Auth)
 		assert.NoError(t, err)
