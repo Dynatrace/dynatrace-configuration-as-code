@@ -29,329 +29,367 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func TestParseDeleteEntry(t *testing.T) {
-	fileContent := []byte(`
+// This test should contain all possible entry types (except the legacy one)
+func TestMixOfClassicAndSettingsEntry(t *testing.T) {
+	fileContent := []byte(`delete:
+- type: management-zone
+  name: test entity/entities
+- project: some-project
+  type: builtin:auto.tagging
+  id: my-tag
+`)
+	want := delete.DeleteEntries{
+		"builtin:auto.tagging": {{
+			Project:    "some-project",
+			Type:       "builtin:auto.tagging",
+			Identifier: "my-tag",
+		}},
+		"management-zone": {{
+			Type:       "management-zone",
+			Identifier: "test entity/entities",
+		}}}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	require.NoError(t, err)
+	require.Equal(t, want, actual)
+}
+
+func TestClassicEntry(t *testing.T) {
+	fileContent := []byte(`delete:
+- type: management-zone
+  name: test entity/entities
+`)
+	want := delete.DeleteEntries{
+		"management-zone": {{
+			Type:       "management-zone",
+			Identifier: "test entity/entities",
+		}}}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	require.NoError(t, err)
+	require.Equal(t, want, actual)
+}
+
+func TestClassicEntryWithOriginID(t *testing.T) {
+	fileContent := []byte(`delete:
+- type: management-zone
+  objectId: origin-object-ID
+`)
+	want := delete.DeleteEntries{
+		"management-zone": {{
+			Type:           "management-zone",
+			OriginObjectId: "origin-object-ID",
+		}}}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	require.NoError(t, err)
+	require.Equal(t, want, actual)
+}
+
+func TestClassicEntryFailsIfNameAndOriginIdCoexists(t *testing.T) {
+	fileContent := []byte(`delete:
+- type: management-zone
+  name: config-name
+  objectId: origin-object-ID
+`)
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e))
+	assert.Empty(t, actual)
+}
+
+func TestClassicEntryFailsWithoutNameOrOriginId(t *testing.T) {
+	fileContent := []byte(`delete:
+- type: management-zone
+`)
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e))
+	assert.Empty(t, actual)
+}
+
+func TestClassicKUAMobileEntry(t *testing.T) {
+	given := []byte(`delete:
+- type: key-user-actions-mobile
+  name: my-action
+  scope: parent-name
+`)
+	want := delete.DeleteEntries{
+		"key-user-actions-mobile": {{
+			Type:       "key-user-actions-mobile",
+			Scope:      "parent-name",
+			Identifier: "my-action",
+		}}}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+	require.NoError(t, err)
+	require.Equal(t, want, actual)
+}
+
+func TestClassicKUAMobileEntryFailsIfScopeIsUndefined(t *testing.T) {
+	given := []byte(`delete:
+- type: key-user-actions-mobile
+  name: my-action
+`) // scope should be defined
+
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e), "expected 1 error")
+	assert.Empty(t, result, "expected 0 results")
+}
+
+func TestClassicEntries(t *testing.T) {
+	given := []byte(`delete:
+- type: alerting-profile
+  name: my-action
+  scope: my-scope # scope should NOT be defined
+`)
+
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e), "expected 1 error")
+	assert.Empty(t, result, "expected 0 results")
+}
+
+func TestSettingsEntry(t *testing.T) {
+	given := []byte(`delete:
+- project: some-project
+  type: builtin:auto.tagging
+  id: my-tag
+`)
+	want := delete.DeleteEntries{
+		"builtin:auto.tagging": {{
+			Project:    "some-project",
+			Type:       "builtin:auto.tagging",
+			Identifier: "my-tag",
+		}}}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+	require.NoError(t, err)
+	require.Equal(t, want, actual)
+}
+
+func TestSettingsEntryWithOriginID(t *testing.T) {
+	fileContent := []byte(`delete:
+- type: builtin:auto.tagging
+  objectId: origin-object-ID
+`)
+	want := delete.DeleteEntries{
+		"builtin:auto.tagging": {{
+			Type:           "builtin:auto.tagging",
+			OriginObjectId: "origin-object-ID",
+		}}}
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	require.NoError(t, err)
+	require.Equal(t, want, actual)
+}
+
+func TestSettingsEntryFailsIfIdAndOriginIdCoexists(t *testing.T) {
+	given := []byte(`delete:
+- type: builtin:auto.tagging
+  id: my-tag
+  objectId: origin-object-ID
+`)
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e))
+	assert.Empty(t, actual)
+}
+func TestSettingsEntryFailsIfProjectAndOriginIdCoexists(t *testing.T) {
+	given := []byte(`delete:
+- type: builtin:auto.tagging
+  project: some-project
+  objectId: origin-object-ID
+`)
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e))
+	assert.Empty(t, actual)
+}
+
+func TestSettingsEntryFailsIfNotValid(t *testing.T) {
+	given := []byte(`delete:
+- type: builtin:auto.tagging
+`)
+	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+	var e delete.ParseErrors
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, 1, len(e))
+	assert.Empty(t, actual)
+}
+
+func TestLegacy(t *testing.T) {
+	t.Run("all legacy entry types", func(t *testing.T) {
+		given := []byte(`delete:
+- management-zone/test entity/entities
+- builtin:auto.tagging/random tag
+`)
+		want := delete.DeleteEntries{
+			"builtin:auto.tagging": {{
+				Type:       "builtin:auto.tagging",
+				Identifier: "random tag",
+			}},
+			"management-zone": {{
+				Type:       "management-zone",
+				Identifier: "test entity/entities",
+			}}}
+
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+		require.NoError(t, err)
+		require.Equal(t, want, actual)
+	})
+
+	t.Run("legacy classic entry", func(t *testing.T) {
+		given := []byte(`
 delete:
 - auto-tag/test entity
 `)
+		want := delete.DeleteEntries{
+			"auto-tag": {
+				{
+					Type:       "auto-tag",
+					Identifier: "test entity",
+				}}}
 
-	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+		require.NoError(t, err)
+		require.Equal(t, want, actual)
+	})
 
-	require.NoError(t, err)
-	require.Len(t, actual, 1)
-	require.Contains(t, actual, "auto-tag")
-	require.Len(t, actual["auto-tag"], 1)
-	require.Equal(t, "test entity", actual["auto-tag"][0].Identifier)
-	require.Equal(t, "auto-tag", actual["auto-tag"][0].Type)
-}
-
-func TestParseSettingsDeleteEntry(t *testing.T) {
-	fileContent := []byte(`
-delete:
-- builtin:tagging.auto/test entity
-`)
-
-	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
-
-	require.NoError(t, err)
-	require.Len(t, actual, 1)
-	require.Contains(t, actual, "builtin:tagging.auto")
-	require.Len(t, actual["builtin:tagging.auto"], 1)
-	require.Equal(t, "test entity", actual["builtin:tagging.auto"][0].Identifier)
-	require.Equal(t, "builtin:tagging.auto", actual["builtin:tagging.auto"][0].Type)
-}
-
-func TestParseDeleteEntryWithMultipleSlashesShouldWork(t *testing.T) {
-	fileContent := []byte(`
-delete:
-- auto-tag/test entity/entry
-`)
-
-	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
-
-	require.NoError(t, err)
-	require.Len(t, actual, 1)
-	require.Contains(t, actual, "auto-tag")
-	require.Len(t, actual["auto-tag"], 1)
-	require.Equal(t, "test entity/entry", actual["auto-tag"][0].Identifier)
-	require.Equal(t, "auto-tag", actual["auto-tag"][0].Type)
-
-}
-
-func TestParseDeleteEntryInvalidEntryWithoutDelimiterShouldFail(t *testing.T) {
-	fileContent := []byte(`
-delete:
-- auto-tag
-`)
-
-	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
-	require.Error(t, err, "value `%s` should return error", "auto-tag")
-	require.Empty(t, actual, "expected 0 results")
-
-}
-
-func TestParseDeleteFileDefinitions(t *testing.T) {
-	fileContent := []byte(`
+	t.Run("legacy classic entry with multiple slashes", func(t *testing.T) {
+		given := []byte(`
 delete:
 - auto-tag/test entity/entry
 - management-zone/test entity/entry
 `)
+		want := delete.DeleteEntries{
+			"auto-tag": {{
+				Type:       "auto-tag",
+				Identifier: "test entity/entry",
+			}},
+			"management-zone": {{
+				Type:       "management-zone",
+				Identifier: "test entity/entry",
+			}}}
 
-	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+		require.NoError(t, err)
+		require.Equal(t, want, actual)
+	})
 
-	require.NoError(t, err)
-	require.Len(t, actual, 2)
+	t.Run("legacy settings entry", func(t *testing.T) {
+		given := []byte(`
+delete:
+- builtin:tagging.auto/test entity
+`)
+		want := delete.DeleteEntries{
+			"builtin:tagging.auto": {{
+				Type:       "builtin:tagging.auto",
+				Identifier: "test entity",
+			}}}
 
-	require.Contains(t, actual, "auto-tag")
-	require.Len(t, actual["auto-tag"], 1)
-	require.Equal(t, "test entity/entry", actual["auto-tag"][0].Identifier)
-	require.Equal(t, "auto-tag", actual["auto-tag"][0].Type)
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+		require.NoError(t, err)
+		require.Equal(t, want, actual)
+	})
 
-	require.Contains(t, actual, "management-zone")
-	require.Len(t, actual["management-zone"], 1)
-	require.Equal(t, "test entity/entry", actual["management-zone"][0].Identifier)
-	require.Equal(t, "management-zone", actual["management-zone"][0].Type)
-}
-
-func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
-	fileContent := []byte(`
+	t.Run("legacy entry with invalid definition", func(t *testing.T) {
+		given := []byte(`
 delete:
 - auto-tag/test entity/entry
 - management-zone/test entity/entry
 - invalid-definition
 `)
 
-	actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
 
-	var e delete.ParseErrors
-	require.ErrorAs(t, err, &e)
-	assert.Equal(t, 1, len(e), "expected 1 error")
-	require.Empty(t, actual, "expected 0 results")
-}
+		var e delete.ParseErrors
+		require.ErrorAs(t, err, &e)
+		assert.Equal(t, 1, len(e), "expected 1 error")
+		require.Empty(t, actual, "expected 0 results")
+	})
 
-func TestLoadEntriesToDelete(t *testing.T) {
-
-	tests := []struct {
-		name             string
-		givenFileContent string
-		want             delete.DeleteEntries
-	}{
-		{
-			"Loads simple file",
-			`delete:
-- management-zone/test entity/entities
-- auto-tag/random tag
-`,
-			delete.DeleteEntries{
-				"auto-tag": {
-					{
-						Type:       "auto-tag",
-						Identifier: "random tag",
-					},
-				},
-				"management-zone": {
-					{
-						Type:       "management-zone",
-						Identifier: "test entity/entities",
-					},
-				},
-			},
-		},
-		{
-			"Loads Settings",
-			`delete:
-- management-zone/test entity/entities
-- builtin:auto.tagging/random tag
-`,
-			delete.DeleteEntries{
-				"builtin:auto.tagging": {
-					{
-						Type:       "builtin:auto.tagging",
-						Identifier: "random tag",
-					},
-				},
-				"management-zone": {
-					{
-						Type:       "management-zone",
-						Identifier: "test entity/entities",
-					},
-				},
-			},
-		},
-		{
-			"Loads Full Format",
-			`delete:
-- project: "myProject"
-  type: management-zone
-  name: test entity/entities
-- project: some-project
-  type: builtin:auto.tagging
-  id: my-tag
-`,
-			delete.DeleteEntries{
-				"builtin:auto.tagging": {
-					{
-						Project:    "some-project",
-						Type:       "builtin:auto.tagging",
-						Identifier: "my-tag",
-					},
-				},
-				"management-zone": {
-					{
-						Type:       "management-zone",
-						Identifier: "test entity/entities",
-					},
-				},
-			},
-		},
-		{
-			"Loads Mixed Format",
-			`delete:
-- "management-zone/test entity/entities"
-- project: some-project
-  type: builtin:auto.tagging
-  id: my-tag
-`,
-			delete.DeleteEntries{
-				"builtin:auto.tagging": {
-					{
-						Project:    "some-project",
-						Type:       "builtin:auto.tagging",
-						Identifier: "my-tag",
-					},
-				},
-				"management-zone": {
-					{
-						Type:       "management-zone",
-						Identifier: "test entity/entities",
-					},
-				},
-			},
-		},
-		{
-			"Loads Subpath Entries",
-			`delete:
-- project: some-project
-  type: key-user-actions-mobile
-  scope: APPLICATION-MOBILE-1234
-  name: my-action
-`,
-			delete.DeleteEntries{
-				"key-user-actions-mobile": {
-					{
-						Type:       "key-user-actions-mobile",
-						Scope:      "APPLICATION-MOBILE-1234",
-						Identifier: "my-action",
-					},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := delete.LoadEntriesFromFile(createDeleteFile(t, []byte(tt.givenFileContent)))
-
-			assert.NoError(t, err)
-			assert.Equal(t, len(tt.want), len(result))
-			assert.Equal(t, tt.want, result)
-		})
-	}
-}
-
-func TestLoadEntriesToDeleteFailsIfScopeIsUndefinedForSubPathAPI(t *testing.T) {
-	fileContent := []byte(`delete:
-- project: some-project
-  type: key-user-actions-mobile
-  name: my-action
-`) // scope should be defined
-
-	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
-
-	var e delete.ParseErrors
-	assert.ErrorAs(t, err, &e)
-	assert.Equal(t, 1, len(e), "expected 1 error")
-	assert.Empty(t, result, "expected 0 results")
-}
-
-func TestLoadEntriesToDeleteFailsIfScopeIsDefinedForNonSubPathAPI(t *testing.T) {
-	fileContent := []byte(`delete:
-- project: some-project
-  type: alerting-profile
-  name: my-action
-  scope: my-scope # scope should NOT be defined
-`)
-
-	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
-
-	var e delete.ParseErrors
-	assert.ErrorAs(t, err, &e)
-	assert.Equal(t, 1, len(e), "expected 1 error")
-	assert.Empty(t, result, "expected 0 results")
-}
-
-func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
-	fileContent := []byte(`delete:
-- management-zone/test entity/entities
-- auto-invalid
-`)
-
-	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
-
-	var e delete.ParseErrors
-	assert.ErrorAs(t, err, &e)
-	assert.Equal(t, 1, len(e), "expected 1 error")
-	assert.Empty(t, result, "expected 0 results")
-}
-
-func TestLoadEntriesToDeleteWithMultipleInvalidEntries(t *testing.T) {
-	fileContent := []byte(`
+	t.Run("legacy entry without delimiter (slash) should fail", func(t *testing.T) {
+		given := []byte(`
 delete:
-- management-zone/test entity/entities
-- auto-invalid
-- type: unknown-api
+- auto-tag
+`)
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+		require.Error(t, err, "value `%s` should return error", "auto-tag")
+		require.Empty(t, actual, "expected 0 results")
+	})
+
+	t.Run("mix of legacy and new format", func(t *testing.T) {
+		given := []byte(`delete:
+- "management-zone/legacy entity/entities"
+- type: management-zone
+  name: actual_entry_definition
+`)
+		want := delete.DeleteEntries{
+			"management-zone": {
+				{
+					Type:       "management-zone",
+					Identifier: "legacy entity/entities",
+				},
+				{
+					Type:       "management-zone",
+					Identifier: "actual_entry_definition",
+				},
+			},
+		}
+
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
+		require.NoError(t, err)
+		require.Equal(t, want, actual)
+	})
+}
+
+func TestLoadMultipleInvalidEntries(t *testing.T) {
+	given := []byte(`
+delete:
+- type: invalid-api_1
   name: test
 - type: alerting-profile
 - type: alerting-profile
   name: my-name-2
   scope: no-scope-allowed
-- type: key-user-actions-mobile
-  name: test
-  scope: ''
 `)
 
-	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
 
 	var e delete.ParseErrors
 	assert.ErrorAs(t, err, &e)
-	assert.Equal(t, 5, len(e), "expected 5 errors")
-	assert.Empty(t, result, "expected 0 results")
+	assert.Equal(t, 3, len(e))
+	assert.Empty(t, result)
 }
 
-func TestLoadEntriesToDeleteNonExistingFile(t *testing.T) {
-	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, nil))
-
-	assert.Error(t, err)
-	assert.Empty(t, result, "expected 0 results")
-}
-
-func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
-	fileContent := []byte(`deleting:
+func TestLoadMalformedFile(t *testing.T) {
+	given := []byte(`wrong:
 - auto-invalid
 `)
 
-	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, given))
 
 	var typeError *yaml.TypeError
 	assert.ErrorAs(t, err, &typeError)
-	assert.Empty(t, result, "expected 0 results")
+	assert.Empty(t, result)
 }
 
-func TestLoadEntriesToDeleteWithEmptyFile(t *testing.T) {
+func TestLoadNonExistingFile(t *testing.T) {
+	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, nil))
+
+	assert.Error(t, err)
+	assert.Empty(t, result)
+}
+
+func TestEmptyFileFails(t *testing.T) {
 	result, err := delete.LoadEntriesFromFile(createDeleteFile(t, []byte("")))
 
 	assert.ErrorContains(t, err, "is empty")
-	assert.Empty(t, result, "expected 0 results")
+	assert.Empty(t, result)
 }
 
 func createDeleteFile(t testing.TB, content []byte) (afero.Fs, string) {

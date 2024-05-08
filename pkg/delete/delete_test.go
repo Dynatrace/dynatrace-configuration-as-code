@@ -21,7 +21,6 @@ package delete_test
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -33,12 +32,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	monacoREST "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -131,13 +132,12 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Error(t, err)
 	})
-
 }
 
 func TestDeleteSettings(t *testing.T) {
 	t.Run("TestDeleteSettings", func(t *testing.T) {
 		c := client.NewMockDynatraceClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Eq("builtin:alerting.profile"), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			expectedExtID := "monaco:cHJvamVjdCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQx"
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: expectedExtID}), "Expected request filtering for externalID %q", expectedExtID)
 			return []dtclient.DownloadSettingsObject{
@@ -258,6 +258,36 @@ func TestDeleteSettings(t *testing.T) {
 		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.NoError(t, err)
 	})
+
+	t.Run("identification via 'objectId'", func(t *testing.T) {
+		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Eq("builtin:alerting.profile"), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
+			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ObjectId: "DT-original-object-ID"}), "Expected request filtering for objectId %q", "DT-original-object-ID")
+			return []dtclient.DownloadSettingsObject{
+				{
+					ExternalId:    "externalID",
+					SchemaVersion: "v1",
+					SchemaId:      "builtin:alerting.profile",
+					ObjectId:      "DT-original-object-ID",
+					Scope:         "tenant",
+					Value:         nil,
+				},
+			}, nil
+
+		})
+		c.EXPECT().DeleteSettings(gomock.Eq("DT-original-object-ID")).Return(nil)
+		entriesToDelete := delete.DeleteEntries{
+			"builtin:alerting.profile": {
+				{
+					Type:           "builtin:alerting.profile",
+					OriginObjectId: "DT-original-object-ID",
+				},
+			},
+		}
+		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.NoError(t, err)
+	})
+
 }
 
 func TestDeleteAutomations(t *testing.T) {
@@ -403,6 +433,33 @@ func TestDeleteAutomations(t *testing.T) {
 		err = delete.Configs(context.TODO(), delete.ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Error(t, err)
 	})
+
+	t.Run("identification via 'objectId'", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "workflows") {
+				assert.True(t, strings.HasSuffix(req.URL.Path, "/DT-original-object-ID"))
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP call")
+		}))
+		defer server.Close()
+
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		c := automation.NewClient(rest.NewClient(serverURL, server.Client()))
+
+		entriesToDelete := delete.DeleteEntries{
+			"workflow": {
+				{
+					Type:           "workflow",
+					OriginObjectId: "DT-original-object-ID",
+				},
+			},
+		}
+		errs := delete.Configs(context.TODO(), delete.ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+	})
 }
 
 func TestDeleteBuckets(t *testing.T) {
@@ -505,6 +562,54 @@ func TestDeleteBuckets(t *testing.T) {
 		}
 		err := delete.Configs(context.TODO(), delete.ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Error(t, err, "there should be one delete error")
+	})
+
+	t.Run("identification via 'objectId'", func(t *testing.T) {
+		deletingBucketResponse := []byte(`{
+ "bucketName": "bucket name",
+ "table": "metrics",
+ "displayName": "Default metrics (15 months)",
+ "status": "deleting",
+ "retentionDays": 462,
+ "metricInterval": "PT1M",
+ "version": 1
+}`)
+
+		getCalls := 0
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "bucket-definitions") {
+				assert.True(t, strings.HasSuffix(req.URL.Path, "/origin_object_ID"))
+				rw.WriteHeader(http.StatusOK)
+				_, _ = rw.Write(deletingBucketResponse)
+				return
+			}
+			if req.Method == http.MethodGet && getCalls < 5 {
+				assert.True(t, strings.HasSuffix(req.URL.Path, "/origin_object_ID"))
+				rw.WriteHeader(http.StatusOK)
+				_, _ = rw.Write(deletingBucketResponse)
+				getCalls++
+				return
+			} else if req.Method == http.MethodGet {
+				rw.WriteHeader(http.StatusNotFound)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP call")
+		}))
+		defer server.Close()
+
+		u, _ := url.Parse(server.URL)
+		c := buckets.NewClient(rest.NewClient(u, server.Client()))
+
+		entriesToDelete := delete.DeleteEntries{
+			"bucket": {
+				{
+					Type:           "bucket",
+					OriginObjectId: "origin_object_ID",
+				},
+			},
+		}
+		errs := delete.Configs(context.TODO(), delete.ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
 	})
 
 }
@@ -840,29 +945,93 @@ func TestConfigsWithParent(t *testing.T) {
 	}
 }
 
-func Test_KeyUserActionsWebUniqueness(t *testing.T) {
-	theAPI := api.NewAPIs()[api.KeyUserActionsWeb]
-	client := client.NewMockDynatraceClient(gomock.NewController(t))
+func TestDeleteClassic(t *testing.T) {
+	t.Run("identification via 'name'", func(t *testing.T) {
+		client := client.NewMockDynatraceClient(gomock.NewController(t))
+		theAPI := api.NewAPIs()[api.ApplicationWeb]
+		client.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(theAPI)).Return([]dtclient.Value{{Id: "DT-id-of-app", Name: "application name"}}, nil).Times(1)
+		client.EXPECT().DeleteConfigById(matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
 
-	client.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
-	client.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID"))).Return([]dtclient.Value{
-		{Id: "DT-id-of-app", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test.com", "actionType": "Load"}},
-		{Id: "DT-id-of-app2", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test2.com", "actionType": "Load"}},
-	}, nil).Times(1)
-	client.EXPECT().DeleteConfigById(matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
-
-	de := delete.DeleteEntries{
-		"key-user-actions-web": {
-			{
-				Type:       "key-user-actions-web",
-				Identifier: "test",
-				Scope:      "application name",
-				ActionType: "Load",
-				Domain:     "test.com",
+		given := delete.DeleteEntries{
+			"application-web": {
+				{
+					Type:       "application-web",
+					Identifier: "application name",
+				},
 			},
-		},
-	}
+		}
 
-	err := delete.Configs(context.TODO(), delete.ClientSet{Classic: client}, api.NewAPIs(), automationTypes, de)
-	assert.NoError(t, err)
+		err := delete.Configs(context.TODO(), delete.ClientSet{Classic: client}, api.NewAPIs(), automationTypes, given)
+		require.NoError(t, err)
+	})
+
+	t.Run("identification via 'objectId'", func(t *testing.T) {
+		client := client.NewMockDynatraceClient(gomock.NewController(t))
+		client.EXPECT().DeleteConfigById(matcher.EqAPI(api.NewAPIs()["application-web"]), "DT-id-of-app").Return(nil).Times(1)
+
+		given := delete.DeleteEntries{
+			"application-web": {
+				{
+					Type:           "application-web",
+					OriginObjectId: "DT-id-of-app",
+				},
+			},
+		}
+
+		err := delete.Configs(context.TODO(), delete.ClientSet{Classic: client}, api.NewAPIs(), automationTypes, given)
+		require.NoError(t, err)
+	})
+}
+
+func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
+	t.Run("uniqueness", func(t *testing.T) {
+		theAPI := api.NewAPIs()[api.KeyUserActionsWeb]
+		client := client.NewMockDynatraceClient(gomock.NewController(t))
+
+		client.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
+		client.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID"))).Return([]dtclient.Value{
+			{Id: "DT-id-of-app", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test.com", "actionType": "Load"}},
+			{Id: "DT-id-of-app2", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test2.com", "actionType": "Load"}},
+		}, nil).Times(1)
+		client.EXPECT().DeleteConfigById(matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+
+		de := delete.DeleteEntries{
+			"key-user-actions-web": {
+				{
+					Type:       "key-user-actions-web",
+					Identifier: "test",
+					Scope:      "application name",
+					ActionType: "Load",
+					Domain:     "test.com",
+				},
+			},
+		}
+
+		err := delete.Configs(context.TODO(), delete.ClientSet{Classic: client}, api.NewAPIs(), automationTypes, de)
+		assert.NoError(t, err)
+	})
+
+	t.Run("identification via 'objectId'", func(t *testing.T) {
+		theAPI := api.NewAPIs()[api.KeyUserActionsWeb]
+		client := client.NewMockDynatraceClient(gomock.NewController(t))
+
+		client.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
+		client.EXPECT().DeleteConfigById(matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+
+		de := delete.DeleteEntries{
+			"key-user-actions-web": {
+				{
+					Type:           "key-user-actions-web",
+					OriginObjectId: "DT-id-of-app",
+					Scope:          "application name",
+					ActionType:     "Load",
+					Domain:         "test.com",
+				},
+			},
+		}
+
+		err := delete.Configs(context.TODO(), delete.ClientSet{Classic: client}, api.NewAPIs(), automationTypes, de)
+		assert.NoError(t, err)
+	})
+
 }

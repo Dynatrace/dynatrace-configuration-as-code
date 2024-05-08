@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
@@ -28,7 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"golang.org/x/net/context"
-	"net/http"
 )
 
 type Client interface {
@@ -46,7 +47,10 @@ func Delete(ctx context.Context, c Client, entries []pointer.DeletePointer) erro
 
 		logger := logger.WithFields(field.Coordinate(e.AsCoordinate()))
 
-		bucketName := idutils.GenerateBucketName(e.AsCoordinate())
+		bucketName := e.OriginObjectId
+		if e.OriginObjectId == "" {
+			bucketName = idutils.GenerateBucketName(e.AsCoordinate())
+		}
 
 		logger.Debug("Deleting bucket: %s.", e, bucketName)
 		_, err := c.Delete(ctx, bucketName)

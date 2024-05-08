@@ -44,10 +44,11 @@ type DeleteEntry struct {
 	// Type of the config to be deleted
 	Type string `yaml:"type" json:"type" mapstructure:"type" jsonschema:"required,description=The type of config to be deleted."`
 	// ConfigId is the monaco ID of the config to be deleted - required for configs with generated IDs (e.g. Settings 2.0, Automations, Grail Buckets)
-	ConfigId string `yaml:"id,omitempty" json:"id,omitempty" mapstructure:"id" jsonschema:"description=The monaco ID of the config to be deleted - required for configs with generated IDs (e.g. Settings 2.0, Automations, Grail Buckets)."`
+	ConfigId string `yaml:"id,omitempty" json:"id,omitempty" mapstructure:"id" jsonschema:"description=The monaco ID of the config to be deleted - required for configs with generated IDs (e.g. Settings 2.0, Automations, Grail Buckets). It can't be combined with 'objectId' or 'name'."`
 	// ConfigName is the name of the config to be deleted - required for configs deleted by name (classic Config API types)
-	ConfigName string `yaml:"name,omitempty" json:"name,omitempty" mapstructure:"name" jsonschema:"description=The name of the config to be deleted - required for configs deleted by name (classic Config API types)."`
-
+	ConfigName string `yaml:"name,omitempty" json:"name,omitempty" mapstructure:"name" jsonschema:"description=The name of the config to be deleted - required for configs deleted by name (classic Config API types). It can't be combined with 'objectId' or 'id'."`
+	//ObjectId is the dynatrace ID of the object
+	ObjectId string `yaml:"objectId,omitempty" json:"objectId,omitempty" mapstructure:"objectId" jsonschema:"ID of the configuration in the Dynatrace. It can't be combined with 'name' or 'id'."`
 	// Scope is the parent scope of a config. This field must be set if a classic config is used, and the classic config requires the scope to be set.
 	Scope string `yaml:"scope,omitempty" json:"scope,omitempty" mapstructure:"scope" jsonschema:"description=The scope of the config to be deleted - required for API configs that require a scope"`
 	// CustomValues holds special values that are not general enough to add as a field to a DeleteEntry but are still important for specific APIs
