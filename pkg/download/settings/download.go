@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"golang.org/x/sync/errgroup"
 	"strings"
 	"sync"
 
@@ -65,13 +66,14 @@ func downloadAll(client client.SettingsClient, projectName string, filters Filte
 		return nil, err
 	}
 
-	var schemas []schema
+	var schemaIds []string
 	for _, s := range schemaList {
-		if sc, err := client.GetSchemaById(s.SchemaId); err != nil {
-			return v2.ConfigsPerType{}, err
-		} else {
-			schemas = append(schemas, schema{id: sc.SchemaId, ordered: sc.Ordered})
-		}
+		schemaIds = append(schemaIds, s.SchemaId)
+	}
+
+	schemas, err := fetchSchemas(client, schemaIds)
+	if err != nil {
+		return v2.ConfigsPerType{}, err
 	}
 
 	result := download(client, schemas, projectName, filters)
@@ -85,18 +87,39 @@ func downloadSpecific(client client.SettingsClient, projectName string, schemaID
 		return nil, err
 	}
 
-	var schemas []schema
-	for _, s := range schemaIDs {
-		if schemaContent, err := client.GetSchemaById(s); err != nil {
-			return v2.ConfigsPerType{}, err
-		} else {
-			schemas = append(schemas, schema{id: schemaContent.SchemaId, ordered: schemaContent.Ordered})
-		}
+	schemas, err := fetchSchemas(client, schemaIDs)
+	if err != nil {
+		return v2.ConfigsPerType{}, err
 	}
 
 	log.Debug("Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
 	result := download(client, schemas, projectName, filters)
 	return result, nil
+}
+
+func fetchSchemas(cl client.SettingsClient, schemaIds []string) ([]schema, error) {
+	var mu sync.Mutex
+	var schemas []schema
+
+	g, _ := errgroup.WithContext(context.Background()) // ignore ctx, as settings client does not support it yet
+	for _, schemaId := range schemaIds {
+		g.Go(func() error {
+			sc, err := cl.GetSchemaById(schemaId)
+			if err != nil {
+				return err
+			}
+			mu.Lock()
+			schemas = append(schemas, schema{id: sc.SchemaId, ordered: sc.Ordered})
+			mu.Unlock()
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return schemas, nil
 }
 
 func download(client client.SettingsClient, schemas []schema, projectName string, filters Filters) v2.ConfigsPerType {
