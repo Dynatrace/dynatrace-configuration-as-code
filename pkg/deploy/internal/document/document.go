@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
@@ -81,24 +82,12 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 
 	// strategy 1: if an origin id is available, try to update that document
 	if c.OriginObjectId != "" {
-		_, err := client.Update(ctx, c.OriginObjectId, documentName, []byte(renderedConfig), documentType)
+		updateResponse, err := client.Update(ctx, c.OriginObjectId, documentName, []byte(renderedConfig), documentType)
 		if err == nil {
-			properties[config.IdParameter] = c.OriginObjectId
-
-			return entities.ResolvedEntity{
-				EntityName: documentName,
-				Coordinate: c.Coordinate,
-				Properties: properties,
-			}, nil
+			return createResolvedEntity(documentName, updateResponse.ID, c.Coordinate, properties), nil
 		}
 
-		// error status not found means other deployment strategies should be tried, all other errors should stop deployment
-		var apiErr api.APIError
-		if !errors.As(err, &apiErr) {
-			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", c.OriginObjectId)).WithError(err)
-		}
-
-		if apiErr.StatusCode != http.StatusNotFound {
+		if !isAPIErrorStatusNotFound(err) {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", c.OriginObjectId)).WithError(err)
 		}
 	}
@@ -109,31 +98,18 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error generating external id").WithError(err)
 	}
 
-	// look for a document with the external id
-	response, err := client.List(ctx, fmt.Sprintf("externalId=='%s'", externalId))
+	id, err := tryGetDocumentIDByExternalID(ctx, client, externalId)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("error listing documents with externalId='%s'", externalId)).WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("error finding document with externalId='%s'", externalId)).WithError(err)
 	}
 
-	//  it is an error if more than one document was found with the same external id (this should not happen as external id should be unique)
-	if len(response.Responses) > 1 {
-		return entities.ResolvedEntity{}, fmt.Errorf("multiple documents found with externalId='%s'", externalId)
-	}
-
-	// try to update the document if just one was found
-	if len(response.Responses) == 1 {
-		_, err := client.Update(ctx, response.Responses[0].ID, documentName, []byte(renderedConfig), documentType)
+	if id != "" {
+		updateResponse, err := client.Update(ctx, id, documentName, []byte(renderedConfig), documentType)
 		if err != nil {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", c.OriginObjectId)).WithError(err)
 		}
 
-		properties[config.IdParameter] = response.Responses[0].ID
-
-		return entities.ResolvedEntity{
-			EntityName: documentName,
-			Coordinate: c.Coordinate,
-			Properties: properties,
-		}, nil
+		return createResolvedEntity(documentName, updateResponse.ID, c.Coordinate, properties), nil
 	}
 
 	// strategy 3: try to create a new document
@@ -142,13 +118,44 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", documentName)).WithError(err)
 	}
 
-	properties[config.IdParameter] = createResponse.ID
+	return createResolvedEntity(documentName, createResponse.ID, c.Coordinate, properties), nil
+}
+
+func isAPIErrorStatusNotFound(err error) bool {
+	var apiErr api.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+
+	return apiErr.StatusCode == http.StatusNotFound
+}
+
+func tryGetDocumentIDByExternalID(ctx context.Context, client Client, externalId string) (string, error) {
+	listResponse, err := client.List(ctx, fmt.Sprintf("externalId=='%s'", externalId))
+	if err != nil {
+		return "", err
+	}
+
+	//  it is an error if more than one document was found with the same external id: it should be unique
+	if len(listResponse.Responses) > 1 {
+		return "", fmt.Errorf("multiple documents found with externalId='%s'", externalId)
+	}
+
+	if len(listResponse.Responses) == 0 {
+		return "", nil
+	}
+
+	return listResponse.Responses[0].ID, nil
+}
+
+func createResolvedEntity(documentName string, id string, coordinate coordinate.Coordinate, properties parameter.Properties) entities.ResolvedEntity {
+	properties[config.IdParameter] = id
 
 	return entities.ResolvedEntity{
 		EntityName: documentName,
-		Coordinate: c.Coordinate,
+		Coordinate: coordinate,
 		Properties: properties,
-	}, nil
+	}
 }
 
 func getDocumentTypeFromConfigType(t config.Type) (documents.DocumentType, error) {
