@@ -70,14 +70,14 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	// create new context to carry logger
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
 
-	documentName, ok := properties[config.NameParameter].(string)
-	if !ok {
-		return entities.ResolvedEntity{}, errors.New("missing name parameter")
-	}
-
 	documentType, err := getDocumentTypeFromConfigType(c.Type)
 	if err != nil {
 		return entities.ResolvedEntity{}, fmt.Errorf("cannot get document type for config: %w", err)
+	}
+
+	documentName, ok := properties[config.NameParameter].(string)
+	if !ok {
+		return entities.ResolvedEntity{}, errors.New("missing name parameter")
 	}
 
 	// strategy 1: if an origin id is available, try to update that document
