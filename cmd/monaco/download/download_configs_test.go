@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -449,5 +450,92 @@ func Test_downloadConfigsOptions_valid(t *testing.T) {
 
 		assert.Len(t, errs, 1)
 		assert.ErrorContains(t, errs[0], "unknown api")
+	})
+}
+
+func Test_copyConfigs(t *testing.T) {
+	t.Run("Copy configs to empty", func(t *testing.T) {
+		dest := projectv2.ConfigsPerType{}
+		copyConfigs(dest, projectv2.ConfigsPerType{
+			"dashboard": []config.Config{
+				{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}}},
+			"notebook": []config.Config{
+				{Coordinate: coordinate.Coordinate{ConfigId: "notebook-1"}}},
+		})
+
+		assert.Len(t, dest, 2)
+
+		assert.Contains(t, dest, "notebook")
+		assert.EqualValues(t, dest["notebook"], []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "notebook-1"}}})
+
+		assert.Contains(t, dest, "dashboard")
+		assert.EqualValues(t, dest["dashboard"], []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}}})
+	})
+
+	t.Run("Copying configs of same type should merge", func(t *testing.T) {
+		dest := projectv2.ConfigsPerType{"dashboard": []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}},
+		}}
+		copyConfigs(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-2"}},
+		}})
+
+		assert.Len(t, dest, 1)
+
+		assert.Contains(t, dest, "dashboard")
+		assert.EqualValues(t, dest["dashboard"], []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}},
+			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-2"}},
+		})
+	})
+
+	t.Run("Copy configs of different types", func(t *testing.T) {
+		dest := projectv2.ConfigsPerType{"notebook": []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "notebook-1"}},
+		}}
+		copyConfigs(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}}}})
+
+		assert.Len(t, dest, 2)
+
+		assert.Contains(t, dest, "notebook")
+		assert.EqualValues(t, dest["notebook"], []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "notebook-1"}},
+		})
+
+		assert.Contains(t, dest, "dashboard")
+		assert.EqualValues(t, dest["dashboard"], []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}},
+		})
+	})
+
+	t.Run("Merge configs of same and different types", func(t *testing.T) {
+		dest := projectv2.ConfigsPerType{
+			"notebook": []config.Config{
+				{Coordinate: coordinate.Coordinate{ConfigId: "notebook-1"}},
+			},
+			"dashboard": []config.Config{
+				{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}},
+			},
+		}
+
+		copyConfigs(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-2"}},
+		}})
+
+		assert.Len(t, dest, 2)
+
+		assert.Contains(t, dest, "notebook")
+		assert.EqualValues(t, dest["notebook"], []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "notebook-1"}},
+		})
+
+		assert.Contains(t, dest, "dashboard")
+		assert.EqualValues(t, dest["dashboard"], []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}},
+			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-2"}},
+		})
 	})
 }
