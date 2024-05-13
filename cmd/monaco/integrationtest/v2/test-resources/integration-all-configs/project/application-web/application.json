@@ -119,5 +119,13 @@
     "splitUserActionsByDomain": true
   },
   "metaDataCaptureSettings": [],
-  "conversionGoals": []
+  "conversionGoals": [
+      {
+          "name": "The Answer",
+          "type": "VisitDuration",
+          "visitDurationDetails": {
+              "durationInMillis": 16962000
+          }
+      }
+  ]
 }

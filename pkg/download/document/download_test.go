@@ -45,7 +45,7 @@ func TestDownloader_Download(t *testing.T) {
 	expectedDashboardConfig := config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
-			Type:     "dashboard",
+			Type:     "dashboard-document",
 			ConfigId: "12345678-1234-1234-1234-0123456789ab",
 		},
 		OriginObjectId: "12345678-1234-1234-1234-0123456789ab",
@@ -62,7 +62,7 @@ func TestDownloader_Download(t *testing.T) {
 	expectedNotebookConfig := config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
-			Type:     "notebook",
+			Type:     "notebook-document",
 			ConfigId: "23456781-1234-1234-1234-0123456789ab",
 		},
 		OriginObjectId: "23456781-1234-1234-1234-0123456789ab",
@@ -150,13 +150,13 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Len(t, result, 2)
 
 		// expect one dashboard
-		require.Len(t, result["dashboard"], 1)
-		dashboardConfig := result["dashboard"][0]
+		require.Len(t, result["dashboard-document"], 1)
+		dashboardConfig := result["dashboard-document"][0]
 		assert.Empty(t, cmp.Diff(expectedDashboardConfig, dashboardConfig, templateComparer))
 
 		// expect one notebook
-		require.Len(t, result["notebook"], 1)
-		notebookConfig := result["notebook"][0]
+		require.Len(t, result["notebook-document"], 1)
+		notebookConfig := result["notebook-document"][0]
 		assert.Empty(t, cmp.Diff(expectedNotebookConfig, notebookConfig, templateComparer))
 	})
 
@@ -170,10 +170,10 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Len(t, result, 2)
 
 		// expect no dashboards
-		require.Len(t, result["dashboard"], 0)
+		require.Len(t, result["dashboard-document"], 0)
 
-		// expect one notebook
-		require.Len(t, result["notebook"], 0)
+		// expect no notebook
+		require.Len(t, result["notebook-document"], 0)
 	})
 
 	t.Run("notebook download still works if dashboard download fails", func(t *testing.T) {
@@ -232,11 +232,11 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Len(t, result, 2)
 
 		// expect no dashboards
-		require.Len(t, result["dashboard"], 0)
+		require.Len(t, result["dashboard-document"], 0)
 
 		// expect one notebook
-		require.Len(t, result["notebook"], 1)
-		notebookConfig := result["notebook"][0]
+		require.Len(t, result["notebook-document"], 1)
+		notebookConfig := result["notebook-document"][0]
 		assert.Empty(t, cmp.Diff(expectedNotebookConfig, notebookConfig, templateComparer))
 	})
 

@@ -66,6 +66,7 @@ func removeIdentifyingProperties(dat map[string]interface{}, apiId string) map[s
 	dat = removeByPath(dat, []string{"identifier"})
 	dat = removeByPath(dat, []string{"rules", "id"})
 	dat = removeByPath(dat, []string{"rules", "methodRules", "id"})
+	dat = removeByPath(dat, []string{"conversionGoals", "id"})
 
 	// After manual inspection, it appears that only 'calculated-metrics-service' needs to still keep the entityId.
 	// The other APIs are self-referencing (e.g. HTTP-CHECK-0123 has entityId set to its own ID).

@@ -308,7 +308,7 @@ func makeSettingTypes(specificSchemas []string) []config.SettingsType {
 
 func copyConfigs(dest, src project.ConfigsPerType) {
 	for k, v := range src {
-		dest[k] = v
+		dest[k] = append(dest[k], v...)
 	}
 }
 

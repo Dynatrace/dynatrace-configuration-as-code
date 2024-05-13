@@ -202,6 +202,33 @@ func TestRemoveIdentifiers(t *testing.T) {
 			"calculated-metrics-service",
 			`{"entityId": "some-id"}`,
 		},
+		{
+			"conversion goal IDs are removed from application-web payloads",
+			`{
+					"conversionGoals": [
+						{
+							"id": "424242424242",
+							"name": "The Answer",
+							"type": "VisitDuration",
+							"visitDurationDetails": {
+								"durationInMillis": 16962000
+							}
+						}
+					],
+					"costControlUserSessionPercentage": 100 }`,
+			"application-web",
+			`{
+					"conversionGoals": [
+						{
+							"name": "The Answer",
+							"type": "VisitDuration",
+							"visitDurationDetails": {
+								"durationInMillis": 16962000
+							}
+						}
+					],
+					"costControlUserSessionPercentage": 100 }`,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

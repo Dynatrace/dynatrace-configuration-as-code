@@ -131,8 +131,8 @@ func (BucketType) ID() TypeId {
 }
 
 const (
-	DashboardType DocumentType = "dashboard"
-	NotebookType  DocumentType = "notebook"
+	DashboardType DocumentType = "dashboard-document"
+	NotebookType  DocumentType = "notebook-document"
 )
 
 // DocumentType identifies which document type is used in the config.
