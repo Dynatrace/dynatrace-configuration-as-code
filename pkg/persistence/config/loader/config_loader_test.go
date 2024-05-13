@@ -1408,12 +1408,12 @@ configs:
     template: 'profile.json'
   type:
     document:
-      type: dashboard`,
+      type: dashboard-document`,
 			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "dashboard",
+						Type:     "dashboard-document",
 						ConfigId: "dashboard-id",
 					},
 					OriginObjectId: "ext-ID-123",
@@ -1444,12 +1444,12 @@ configs:
     template: 'profile.json'
   type:
     document:
-      type: notebook`,
+      type: notebook-document`,
 			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "notebook",
+						Type:     "notebook-document",
 						ConfigId: "notebook-id",
 					},
 					OriginObjectId: "ext-ID-123",
@@ -1498,7 +1498,7 @@ configs:
     template: 'profile.json'
   type:
     document:
-      type: dashboard`,
+      type: dashboard-document`,
 			wantErrorsContain: []string{
 				"unknown config-type \"document\"",
 			},
