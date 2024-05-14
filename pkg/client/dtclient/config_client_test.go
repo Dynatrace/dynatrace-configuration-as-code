@@ -858,7 +858,7 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 		environmentURLClassic: testServer.URL,
 		classicClient:         rest.NewRestClient(testServer.Client(), trafficlogs.NewFileBased(), rest.CreateRateLimitStrategy()),
 		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalID,
+		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
 	}
 
 	_, err := client.ReadConfigById(mockAPI, "test")
@@ -874,7 +874,7 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 		environmentURLClassic: testServer.URL,
 		classicClient:         rest.NewRestClient(testServer.Client(), nil, rest.CreateRateLimitStrategy()),
 		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalID,
+		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
 	}
 	_, err := client.ReadConfigById(mockAPINotSingle, unescapedID)
 	assert.NoError(t, err)
@@ -892,7 +892,7 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 		environmentURLClassic: testServer.URL,
 		classicClient:         rest.NewRestClient(testServer.Client(), nil, rest.CreateRateLimitStrategy()),
 		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalID,
+		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
 	}
 
 	resp, err := client.ReadConfigById(mockAPI, "test")

@@ -29,12 +29,12 @@ import (
 func TestGenerateExternalIdIsStable(t *testing.T) {
 	schemaId, id := "a", "b"
 
-	output1, err := GenerateExternalID(coordinate.Coordinate{
+	output1, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{
 		Type:     schemaId,
 		ConfigId: id,
 	})
 	assert.NoError(t, err)
-	output2, err := GenerateExternalID(coordinate.Coordinate{
+	output2, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{
 		Type:     schemaId,
 		ConfigId: id,
 	})
@@ -43,11 +43,11 @@ func TestGenerateExternalIdIsStable(t *testing.T) {
 }
 
 func TestGenerateExternalIdGeneratesDifferentValuesForDifferentInput(t *testing.T) {
-	output1, err := GenerateExternalID(coordinate.Coordinate{Type: "a", ConfigId: "a"})
+	output1, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: "a", ConfigId: "a"})
 	assert.NoError(t, err)
-	output2, err := GenerateExternalID(coordinate.Coordinate{Type: "a", ConfigId: "b"})
+	output2, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: "a", ConfigId: "b"})
 	assert.NoError(t, err)
-	output3, err := GenerateExternalID(coordinate.Coordinate{Type: "b", ConfigId: "b"})
+	output3, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: "b", ConfigId: "b"})
 	assert.NoError(t, err)
 
 	assert.NotEqual(t, output1, output2)
@@ -56,24 +56,24 @@ func TestGenerateExternalIdGeneratesDifferentValuesForDifferentInput(t *testing.
 }
 
 func TestGenerateExternalIdWithOver500CharsCutsIt(t *testing.T) {
-	output1, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 501)})
+	output1, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: strings.Repeat("a", 501)})
 	assert.Zero(t, output1)
 	assert.Error(t, err)
-	output2, err := GenerateExternalID(coordinate.Coordinate{ConfigId: strings.Repeat("a", 501)})
+	output2, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{ConfigId: strings.Repeat("a", 501)})
 	assert.Zero(t, output2)
 	assert.Error(t, err)
-	output3, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
+	output3, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
 	assert.LessOrEqual(t, len(output3), 500)
 	assert.NoError(t, err)
 
 }
 
 func TestGenerateExternalIdWithOver500CharactersProducesUniqueIDs(t *testing.T) {
-	uniqueID1, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
+	uniqueID1, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
 	assert.NoError(t, err)
-	uniqueID2, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
+	uniqueID2, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
 	assert.NoError(t, err)
-	uniqueID3, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 300)})
+	uniqueID3, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 300)})
 	assert.NoError(t, err)
 
 	assert.Equal(t, uniqueID1, uniqueID2)
@@ -83,13 +83,13 @@ func TestGenerateExternalIdWithOver500CharactersProducesUniqueIDs(t *testing.T) 
 func TestGenerateExternalIdStartsWithKnownPrefix(t *testing.T) {
 	schemaId, id := "a", "b"
 
-	extId, err := GenerateExternalID(coordinate.Coordinate{Type: schemaId, ConfigId: id})
+	extId, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: schemaId, ConfigId: id})
 	assert.NoError(t, err)
 	assert.True(t, strings.HasPrefix(extId, "monaco:"))
 }
 
 func TestGenerateExternalIdWithOther500CharsStartsWithKnownPrefix(t *testing.T) {
-	extId, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
+	extId, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
 	assert.NoError(t, err)
 	assert.True(t, strings.HasPrefix(extId, "monaco:"))
 }
@@ -97,14 +97,14 @@ func TestGenerateExternalIdWithOther500CharsStartsWithKnownPrefix(t *testing.T) 
 func TestGenerateExternalIdConsidersProjectName(t *testing.T) {
 	expectIDWithoutProjectName := "monaco:c2NoZW1hLWlkJGNvbmZpZy1pZA=="
 	expectIDWithProjectName := "monaco:cHJvamVjdC1uYW1lJHNjaGVtYS1pZCRjb25maWctaWQ="
-	id1, err := GenerateExternalID(coordinate.Coordinate{
+	id1, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{
 		Project:  "",
 		Type:     "schema-id",
 		ConfigId: "config-id",
 	})
 	assert.Equal(t, expectIDWithoutProjectName, id1)
 	assert.NoError(t, err)
-	id2, err := GenerateExternalID(coordinate.Coordinate{
+	id2, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{
 		Project:  "project-name",
 		Type:     "schema-id",
 		ConfigId: "config-id",
@@ -115,18 +115,18 @@ func TestGenerateExternalIdConsidersProjectName(t *testing.T) {
 
 func TestGenerateExternalIdReturnsErrIfSchemaIDorConfigIDisMissing(t *testing.T) {
 
-	id, err := GenerateExternalID(coordinate.Coordinate{ConfigId: "config-id"})
+	id, err := GenerateExternalIDForSettingsObject(coordinate.Coordinate{ConfigId: "config-id"})
 	assert.Zero(t, id)
 	assert.Error(t, err)
 
-	id, err = GenerateExternalID(coordinate.Coordinate{Type: "schema-id"})
+	id, err = GenerateExternalIDForSettingsObject(coordinate.Coordinate{Type: "schema-id"})
 	assert.Zero(t, id)
 	assert.Error(t, err)
 
 }
 
 func TestGenerateExternalIdRawIdParts(t *testing.T) {
-	id, _ := GenerateExternalID(coordinate.Coordinate{Project: "project-name", Type: "schema-id", ConfigId: "config-id"})
+	id, _ := GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project-name", Type: "schema-id", ConfigId: "config-id"})
 	decoded, _ := base64.StdEncoding.DecodeString(strings.TrimPrefix(id, "monaco:"))
 	rawId := make([]byte, len(decoded))
 	copy(rawId, decoded)

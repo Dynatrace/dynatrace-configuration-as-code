@@ -47,7 +47,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 		if e.OriginObjectId != "" { //delete by riginObjectId
 			filterFn = func(o dtclient.DownloadSettingsObject) bool { return o.ObjectId == e.OriginObjectId }
 		} else {
-			externalID, err := idutils.GenerateExternalID(e.AsCoordinate())
+			externalID, err := idutils.GenerateExternalIDForSettingsObject(e.AsCoordinate())
 			if err != nil {
 				logger.Error("unable to generate externalID, Setting will not be deleted: %v", err)
 				deleteErrs++

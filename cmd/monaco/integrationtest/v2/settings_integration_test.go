@@ -104,7 +104,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	// first deploy with external id generate that does not consider the project name
 	c := createSettingsClient(t, environment, dtclient.WithExternalIDGenerator(func(input coordinate.Coordinate) (string, error) {
 		input.Project = ""
-		id, _ := idutils.GenerateExternalID(input)
+		id, _ := idutils.GenerateExternalIDForSettingsObject(input)
 		return id, nil
 	}))
 	content, err := configToDeploy.Template.Content()
@@ -124,7 +124,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	err = cmd.Execute()
 
 	assert.NoError(t, err)
-	extID, _ := idutils.GenerateExternalID(sortedConfigs["platform_env"][0].Coordinate)
+	extID, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
 
 	// Check if settings 2.0 object with "new" external ID exists
 	c = createSettingsClient(t, environment)
@@ -136,7 +136,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	// Check if no settings 2.0 object with "legacy" external ID exists
 	coord := sortedConfigs["platform_env"][0].Coordinate
 	coord.Project = ""
-	legacyExtID, _ := idutils.GenerateExternalID(coord)
+	legacyExtID, _ := idutils.GenerateExternalIDForSettingsObject(coord)
 	settings, _ = c.ListSettings(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == legacyExtID
 	}})

@@ -458,7 +458,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 
 func TestUpsertSettings(t *testing.T) {
 	coord := coordinate.Coordinate{Project: "my-project", ConfigId: "user-provided-id", Type: "builtin:alerting.profile"}
-	exId, err := idutils.GenerateExternalID(coord)
+	exId, err := idutils.GenerateExternalIDForSettingsObject(coord)
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -618,7 +618,7 @@ func TestUpsertSettings(t *testing.T) {
 				var expectedSettingsObject any
 				err := json.Unmarshal([]byte(test.expectSettingsRequestValue), &expectedSettingsObject)
 				assert.NoError(t, err)
-				extId, _ := idutils.GenerateExternalID(coordinate.Coordinate{
+				extId, _ := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{
 					Project:  "my-project",
 					Type:     "builtin:alerting.profile",
 					ConfigId: "user-provided-id",
@@ -651,7 +651,7 @@ func TestUpsertSettings(t *testing.T) {
 				WithServerVersion(test.serverVersion),
 				WithRetrySettings(testRetrySettings),
 				WithClientRequestLimiter(concurrency.NewLimiter(5)),
-				WithExternalIDGenerator(idutils.GenerateExternalID))
+				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 
 			resp, err := c.UpsertSettings(context.TODO(), SettingsObject{
 				OriginObjectId: "anObjectID",
@@ -690,7 +690,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 	client, _ := NewClassicClient(server.URL, restClient,
 		WithRetrySettings(testRetrySettings),
 		WithClientRequestLimiter(concurrency.NewLimiter(5)),
-		WithExternalIDGenerator(idutils.GenerateExternalID))
+		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 
 	_, err := client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
@@ -728,7 +728,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	client, _ := NewClassicClient(server.URL, restClient,
 		WithRetrySettings(testRetrySettings),
 		WithClientRequestLimiter(concurrency.NewLimiter(5)),
-		WithExternalIDGenerator(idutils.GenerateExternalID))
+		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 
 	_, err := client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
@@ -775,7 +775,7 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 	client, _ := NewClassicClient(server.URL, restClient,
 		WithRetrySettings(testRetrySettings),
 		WithClientRequestLimiter(concurrency.NewLimiter(5)),
-		WithExternalIDGenerator(idutils.GenerateExternalID))
+		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 
 	client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
@@ -1182,7 +1182,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 			c, _ := NewClassicClient(server.URL, restClient,
 				WithRetrySettings(testRetrySettings),
 				WithClientRequestLimiter(concurrency.NewLimiter(5)),
-				WithExternalIDGenerator(idutils.GenerateExternalID))
+				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 
 			_, err := c.UpsertSettings(context.TODO(), tt.given.settingsObject, UpsertSettingsOptions{})
 			if tt.want.error {
@@ -1464,7 +1464,7 @@ func TestListKnownSettings(t *testing.T) {
 			client, _ := NewClassicClient(server.URL, restClient,
 				WithRetrySettings(testRetrySettings),
 				WithClientRequestLimiter(concurrency.NewLimiter(5)),
-				WithExternalIDGenerator(idutils.GenerateExternalID))
+				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 
 			res, err1 := client.ListSettings(context.TODO(), tt.givenSchemaID, tt.givenListSettingsOpts)
 
@@ -1575,7 +1575,7 @@ func TestGetSettingById(t *testing.T) {
 			client, _ := NewClassicClient(envURL, restClient,
 				WithRetrySettings(tt.fields.retrySettings),
 				WithClientRequestLimiter(concurrency.NewLimiter(5)),
-				WithExternalIDGenerator(idutils.GenerateExternalID))
+				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 
 			settingsObj, err := client.GetSettingById(tt.args.objectID)
 			if tt.wantErr {
@@ -1669,7 +1669,7 @@ func TestDeleteSettings(t *testing.T) {
 			client, _ := NewClassicClient(envURL, restClient,
 				WithRetrySettings(tt.fields.retrySettings),
 				WithClientRequestLimiter(concurrency.NewLimiter(5)),
-				WithExternalIDGenerator(idutils.GenerateExternalID))
+				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 
 			if err := client.DeleteSettings(tt.args.objectID); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteSettings() error = %v, wantErr %v", err, tt.wantErr)

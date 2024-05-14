@@ -22,10 +22,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
-// GenerateExternalID generates a string that serves as an external ID for a Settings 2.0 object.
+// GenerateExternalIDForSettingsObject generates a string that serves as an external ID for a Settings 2.0 object.
 // It requires a [[coordinate.Coordinate]] as input and produces a string in the format "monaco:<BASE64_ENCODED_STR>"
 // If Type or ConfigId of the passed [[coordinate.Coordinate]] is empty, an error is returned
-func GenerateExternalID(c coordinate.Coordinate) (string, error) {
+func GenerateExternalIDForSettingsObject(c coordinate.Coordinate) (string, error) {
 	const prefix = "monaco:"
 	const externalIDMaxLength = 500
 
@@ -50,3 +50,23 @@ func GenerateExternalID(c coordinate.Coordinate) (string, error) {
 }
 
 type ExternalIDGenerator func(coordinate.Coordinate) (string, error)
+
+// GenerateExternalIDForDocument generates an external ID for a document configuration. It is under 50 characters long and uses at most only "a-z", "A-Z", "0-9" and "-".
+func GenerateExternalIDForDocument(c coordinate.Coordinate) (string, error) {
+	// external ID must be at most 50 characters
+	const maxLength = 50
+
+	// prefix should be 7 characters
+	const prefix = "monaco-"
+
+	// uuid should be 8 + 1 + 4 + 1 + 4 + 1 + 4 + 1 + 12 = 36 characters
+	uuid := GenerateUUIDFromCoordinate(c)
+
+	externalID := fmt.Sprintf("%s%s", prefix, uuid)
+
+	// this should not occur: 36 + 7 < 50
+	if len(externalID) > maxLength {
+		return "", fmt.Errorf("calculated external id '%s' is longer than the max length %d", externalID, maxLength)
+	}
+	return externalID, nil
+}
