@@ -1,0 +1,14 @@
+{{ .comment }}
+import { coreClient } from '@dynatrace-sdk/client-core';
+
+export default async function ({ execution_id }) {
+  const ex = await fetch(`/platform/automation/v1/executions/${execution_id}/tasks/jira_jql_cap_ca/result`);
+  const body = await ex.json();
+  console.log(body);
+
+  return {
+    ok: body.length === 0,
+    issues: body
+      .map((issue) =>
+        `${new Date(issue.fields.created).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}};
+}
