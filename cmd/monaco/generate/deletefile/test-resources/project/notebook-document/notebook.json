@@ -1,0 +1,13 @@
+{
+  "defaultTimeframe": {
+    "from": "now-2h",
+    "to": "now"
+  },
+  "sections": [
+    {
+      "markdown": "Hello World!",
+      "type": "markdown"
+    }
+  ],
+  "version": "5"
+}

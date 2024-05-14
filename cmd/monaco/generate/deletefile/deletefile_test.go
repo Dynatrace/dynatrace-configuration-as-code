@@ -75,6 +75,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
+	t.Setenv(featureflags.Documents().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -106,6 +107,12 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "application-web", "My first Web application")
 	assertDeleteEntries(t, entries, "key-user-actions-web", "first-kua:My first Web application")
 	assertDeleteEntries(t, entries, "user-action-and-session-properties-mobile", "property1:app-1", "property2:app-1", "property1:app-2")
+	assertDeleteEntries(t, entries, "business-calendar", "ca-business-calendar")
+	assertDeleteEntries(t, entries, "scheduling-rule", "ca-scheduling-rule")
+	assertDeleteEntries(t, entries, "workflow", "ca-jira-issue-workflow")
+	assertDeleteEntries(t, entries, "bucket", "my-bucket")
+	assertDeleteEntries(t, entries, "dashboard-document", "my-dashboard")
+	assertDeleteEntries(t, entries, "notebook-document", "my-notebook")
 }
 
 func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
@@ -113,6 +120,7 @@ func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
 	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
+	t.Setenv(featureflags.Documents().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -151,6 +159,8 @@ func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
+	t.Setenv(featureflags.Documents().EnvName(), "1")
+
 	fs := testutils.CreateTestFileSystem()
 
 	outputFolder := "output-folder"
@@ -186,6 +196,8 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
+	t.Setenv(featureflags.Documents().EnvName(), "1")
+
 	outputFolder := "output-folder"
 
 	t.Run("env1 includes base notification name", func(t *testing.T) {
@@ -289,6 +301,7 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
+	t.Setenv(featureflags.Documents().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -340,6 +353,7 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 	t.Setenv(featureflags.UserActionSessionPropertiesMobile().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
+	t.Setenv(featureflags.Documents().EnvName(), "1")
 
 	t.Run("default filename", func(t *testing.T) {
 		time := timeutils.TimeAnchor().Format("20060102-150405")

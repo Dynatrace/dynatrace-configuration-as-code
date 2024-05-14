@@ -1,0 +1,67 @@
+configs:
+- id: ca-jira-issue-workflow
+  type:
+    automation:
+      resource: workflow
+  config:
+    name: '[CA] Notify Capability about new Jira Issues'
+    template: jira-issue-workflow.json
+    parameters:
+      comment: "// optional import of sdk modules"
+      jiraJs:
+        type: file
+        path: "jiraJs.txt"
+        references:
+          - comment
+      actor:
+        type: environment
+        name: WORKFLOW_ACTOR
+        default: 05c22404-d9e7-4646-9741-fc8afc47e3f8
+      owner: ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d
+      channel: Test channel
+      jplFilter: 12345
+      connection: mock-connection
+      connectionId: mock-connection-id
+      schedulingRuleId:
+        configId: ca-scheduling-rule
+        configType: scheduling-rule
+        property: id
+        type: reference
+    skip: true # platform only config
+  environmentOverrides:
+    - environment: platform_env
+      override:
+        skip: false
+
+- id: ca-scheduling-rule
+  type:
+    automation:
+      resource: scheduling-rule
+  config:
+    name: Scheduling Rule for [CA]
+    parameters:
+      businessCalendarId:
+        configId: ca-business-calendar
+        configType: business-calendar
+        property: id
+        type: reference
+    template: scheduling-rule.json
+    skip: true # platform only config
+  environmentOverrides:
+    - environment: platform_env
+      override:
+        skip: false
+
+- id: ca-business-calendar
+  type:
+    automation:
+      resource: business-calendar
+  config:
+    name: Some [CA] business calendar
+    template: business-calendar.json
+    skip: true # platform only config
+  environmentOverrides:
+    - environment: platform_env
+      override:
+        skip: false
+
