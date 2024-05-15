@@ -33,11 +33,12 @@ import (
 )
 
 // Delete removes the given pointer.DeletePointer entries from the environment the supplied client dtclient.Client connects to
-func Delete(ctx context.Context, client client.ConfigClient, theAPI api.API, dps []pointer.DeletePointer) error {
+func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.DeletePointer) error {
 	var err error
 
 	for _, dp := range dps {
 		log := log.WithCtxFields(ctx).WithFields(field.Coordinate(dp.AsCoordinate()))
+		theAPI := api.NewAPIs()[dp.Type]
 		var parentID string
 		var e error
 		if theAPI.HasParent() {

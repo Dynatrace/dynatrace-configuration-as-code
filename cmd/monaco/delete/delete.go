@@ -17,13 +17,14 @@ package delete
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"strings"
 )
 
 // Delete removes configurations from multiple Dynatrace environments based on the specified deletion entries.
@@ -62,6 +63,7 @@ func Delete(environments manifest.Environments, entriesToDelete delete.DeleteEnt
 			Settings:   clientSet.Settings(),
 			Automation: clientSet.Automation(),
 			Buckets:    clientSet.Bucket(),
+			Documents:  clientSet.Document(),
 		}
 
 		if err := delete.Configs(ctx, deleteClients, classicAPIs, automationAPIs, entriesToDelete); err != nil {
