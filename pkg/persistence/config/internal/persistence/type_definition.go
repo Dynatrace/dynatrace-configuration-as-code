@@ -247,12 +247,17 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}, nil
 
 	case config.SettingsType:
+		var insertAfterValue ConfigParameter
+		if featureflags.PersistSettingsOrder().Enabled() {
+			insertAfterValue = c.InsertAfter
+		}
+
 		return map[string]any{
 			"settings": SettingsDefinition{
 				Schema:        t.SchemaId,
 				SchemaVersion: t.SchemaVersion,
 				Scope:         c.Scope,
-				InsertAfter:   c.InsertAfter,
+				InsertAfter:   insertAfterValue,
 			},
 		}, nil
 
