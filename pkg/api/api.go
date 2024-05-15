@@ -25,18 +25,6 @@ import (
 
 const StandardApiPropertyNameOfGetAllResponse string = "values"
 
-type Config struct {
-	configType string
-	configId   string
-}
-
-func (p Config) Type() string {
-	return p.configType
-}
-func (p Config) Id() string {
-	return p.configId
-}
-
 // API structure present definition of config endpoints
 type API struct {
 	ID string

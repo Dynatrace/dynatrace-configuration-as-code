@@ -136,7 +136,7 @@ func convert(entry interface{}) (pointer.DeletePointer, error) {
 	if parsed.Type == "" {
 		return pointer.DeletePointer{}, errors.New("'type' is not supported for this API")
 	}
-	if a, known := api.NewAPIs()[parsed.Type]; known {
+	if a, known := api.Get(parsed.Type); known {
 		if err := verifyAPIEntry(parsed, a); err != nil {
 			return pointer.DeletePointer{}, fmt.Errorf("failed to parse entry for API '%s': %w", a.ID, err)
 		}
@@ -154,7 +154,7 @@ func convert(entry interface{}) (pointer.DeletePointer, error) {
 		Domain:         parsed.CustomValues["domain"],
 		OriginObjectId: parsed.ObjectId,
 	}
-	if _, known := api.NewAPIs()[parsed.Type]; known {
+	if _, known := api.Get(parsed.Type); known {
 		dp.Identifier = parsed.ConfigName
 	} else {
 		dp.Identifier = parsed.ConfigId
