@@ -33,12 +33,12 @@ import (
 	"golang.org/x/net/context"
 )
 
-type Client interface {
+type client interface {
 	Delete(ctx context.Context, resourceType automationAPI.ResourceType, id string) (automation.Response, error)
 	List(ctx context.Context, resourceType automationAPI.ResourceType) (automation.ListResponse, error)
 }
 
-func Delete(ctx context.Context, c Client, automationResource config.AutomationResource, entries []pointer.DeletePointer) error {
+func Delete(ctx context.Context, c client, automationResource config.AutomationResource, entries []pointer.DeletePointer) error {
 
 	logger := log.WithCtxFields(ctx).WithFields(field.Type(string(automationResource)))
 	logger.Info("Deleting %d config(s) of type %q...", len(entries), automationResource)
@@ -92,7 +92,7 @@ func Delete(ctx context.Context, c Client, automationResource config.AutomationR
 //
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
-func DeleteAll(ctx context.Context, c Client) error {
+func DeleteAll(ctx context.Context, c client) error {
 	errs := 0
 
 	resources := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
