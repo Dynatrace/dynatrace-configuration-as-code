@@ -135,3 +135,12 @@ func Documents() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+// Documents toggles whether insertAfter config parameter is persisted for ordered settings.
+// Introduced: 2024-05-15; v2.14.0
+func PersistSettingsOrder() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_PERSIST_SETTINGS_ORDER",
+		defaultEnabled: false,
+	}
+}
