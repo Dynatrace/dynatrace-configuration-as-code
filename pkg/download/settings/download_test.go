@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -39,7 +40,8 @@ import (
 )
 
 func TestDownloadAll(t *testing.T) {
-	uuid := idutils.GenerateUUIDFromString("oid1")
+	uuid1 := idutils.GenerateUUIDFromString("oid1")
+	uuid3 := idutils.GenerateUUIDFromString("oid3")
 
 	type mockValues struct {
 		Schemas           func() (dtclient.SchemaList, error)
@@ -140,11 +142,11 @@ func TestDownloadAll(t *testing.T) {
 			},
 			want: v2.ConfigsPerType{"id1": {
 				{
-					Template: template.NewInMemoryTemplate(uuid, "{}"),
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "projectName",
 						Type:     "sid1",
-						ConfigId: uuid,
+						ConfigId: uuid1,
 					},
 					Type: config.SettingsType{
 						SchemaId:      "sid1",
@@ -225,11 +227,11 @@ func TestDownloadAll(t *testing.T) {
 			},
 			want: v2.ConfigsPerType{"id1": {
 				{
-					Template: template.NewInMemoryTemplate(uuid, "{}"),
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "projectName",
 						Type:     "sid1",
-						ConfigId: uuid,
+						ConfigId: uuid1,
 					},
 					Type: config.SettingsType{
 						SchemaId:      "sid1",
@@ -274,11 +276,11 @@ func TestDownloadAll(t *testing.T) {
 			},
 			want: v2.ConfigsPerType{"id1": {
 				{
-					Template: template.NewInMemoryTemplate(uuid, "{}"),
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "projectName",
 						Type:     "sid1",
-						ConfigId: uuid,
+						ConfigId: uuid1,
 					},
 					Type: config.SettingsType{
 						SchemaId:      "sid1",
@@ -289,6 +291,97 @@ func TestDownloadAll(t *testing.T) {
 					},
 					Skip:           false,
 					OriginObjectId: "oid1",
+				},
+			}},
+		},
+		{
+			name: "DownloadSettings - ordered settings with discard should not panic",
+			mockValues: mockValues{
+				ListSchemasCalls: 1,
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
+				},
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "id1", Ordered: true}, nil
+				},
+				GetSchemaCalls: 1,
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{
+						{
+							ExternalId:    "ex1",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid1",
+							Scope:         "tenant",
+							Value:         json.RawMessage("{}"),
+						},
+						{
+							ExternalId:    "ex2",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid2",
+							Scope:         "tenant",
+							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable: false,
+							},
+						},
+						{
+							ExternalId:    "ex3",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid3",
+							Scope:         "tenant",
+							Value:         json.RawMessage("{}"),
+						},
+					}, nil
+				},
+				ListSettingsCalls: 1,
+			},
+			want: v2.ConfigsPerType{"id1": {
+				{
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid1,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					},
+					Skip:           false,
+					OriginObjectId: "oid1",
+				},
+				{
+					Template: template.NewInMemoryTemplate(uuid3, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid3,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
+						config.InsertAfterParameter: &reference.ReferenceParameter{
+							ParameterReference: parameter.ParameterReference{
+								Config: coordinate.Coordinate{
+									Project:  "projectName",
+									Type:     "sid1",
+									ConfigId: uuid1,
+								},
+								Property: "id",
+							},
+						},
+					},
+					Skip:           false,
+					OriginObjectId: "oid3",
 				},
 			}},
 		},
