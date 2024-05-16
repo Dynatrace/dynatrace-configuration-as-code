@@ -170,7 +170,8 @@ func download(client client.SettingsClient, schemas []schema, projectName string
 
 func convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName string, ordered bool, filters Filters) []config.Config {
 	result := make([]config.Config, 0, len(objects))
-	for i, o := range objects {
+	var previousConfig *config.Config = nil
+	for _, o := range objects {
 
 		if shouldFilterUnmodifiableSettings() && o.ModificationInfo != nil && !o.ModificationInfo.Modifiable && len(o.ModificationInfo.ModifiablePaths) == 0 {
 			log.WithFields(field.Type(o.SchemaId), field.F("object", o)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
@@ -210,10 +211,11 @@ func convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName st
 			OriginObjectId: o.ObjectId,
 		}
 
-		if ordered && i > 0 {
-			c.Parameters[config.InsertAfterParameter] = reference.NewWithCoordinate(result[i-1].Coordinate, "id")
+		if ordered && (previousConfig != nil) {
+			c.Parameters[config.InsertAfterParameter] = reference.NewWithCoordinate(previousConfig.Coordinate, "id")
 		}
 		result = append(result, c)
+		previousConfig = &c
 
 	}
 	return result
