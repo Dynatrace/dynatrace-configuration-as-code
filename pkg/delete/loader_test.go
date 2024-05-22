@@ -395,13 +395,13 @@ func TestEmptyFileFails(t *testing.T) {
 func TestLoad_DocumentsEntry(t *testing.T) {
 	t.Run("identify via project-id pair'", func(t *testing.T) {
 		fileContent := []byte(`delete:
-- type: document:dashboard
+- type: document
   project: project
   id: monaco-config-id
 `)
 		want := delete.DeleteEntries{
-			"document:dashboard": {{
-				Type:       "document:dashboard",
+			"document": {{
+				Type:       "document",
 				Project:    "project",
 				Identifier: "monaco-config-id",
 			}}}
@@ -412,12 +412,12 @@ func TestLoad_DocumentsEntry(t *testing.T) {
 
 	t.Run("identify via 'objectId'", func(t *testing.T) {
 		fileContent := []byte(`delete:
-- type: dashboard-document
+- type: document
   objectId: origin-object-ID
 `)
 		want := delete.DeleteEntries{
-			"dashboard-document": {{
-				Type:           "dashboard-document",
+			"document": {{
+				Type:           "document",
 				OriginObjectId: "origin-object-ID",
 			}}}
 		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))

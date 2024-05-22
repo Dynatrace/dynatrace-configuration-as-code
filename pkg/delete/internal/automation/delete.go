@@ -39,49 +39,50 @@ type client interface {
 }
 
 func Delete(ctx context.Context, c client, automationResource config.AutomationResource, entries []pointer.DeletePointer) error {
-
 	logger := log.WithCtxFields(ctx).WithFields(field.Type(string(automationResource)))
 	logger.Info("Deleting %d config(s) of type %q...", len(entries), automationResource)
 
 	deleteErrs := 0
-
 	for _, e := range entries {
-
-		logger := logger.WithFields(field.Coordinate(e.AsCoordinate()))
-
-		id := e.OriginObjectId
-		if id == "" {
-			id = idutils.GenerateUUIDFromCoordinate(e.AsCoordinate())
-		}
-
-		logger.Debug("Deleting %v with id %q.", automationResource, id)
-
-		resourceType, err := automationutils.ClientResourceTypeFromConfigType(automationResource)
-		if err != nil {
-			logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q: %v", automationResource, id, err)
-			deleteErrs++
-		}
-
-		_, err = c.Delete(ctx, resourceType, id)
-		if err != nil {
-			var apiErr api.APIError
-			if errors.As(err, &apiErr) {
-				if apiErr.StatusCode != http.StatusNotFound {
-					logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - rejected by API: %v", automationResource, id, err)
-					deleteErrs++
-				}
-			} else {
-				logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - network error: %v", automationResource, id, err)
-				deleteErrs++
-			}
-		}
+		deleteErrs += deleteSingle(ctx, c, e)
 	}
 
 	if deleteErrs > 0 {
 		return fmt.Errorf("failed to delete %d Automation objects(s) of type %q", deleteErrs, automationResource)
 	}
-
 	return nil
+}
+
+func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
+	logger := log.WithCtxFields(ctx).WithFields(field.Type(dp.Type), field.Coordinate(dp.AsCoordinate()))
+
+	id := dp.OriginObjectId
+	if id == "" {
+		id = idutils.GenerateUUIDFromCoordinate(dp.AsCoordinate())
+	}
+
+	logger.Debug("Deleting %v with id %q.", dp.Type, id)
+
+	resourceType, err := automationutils.ClientResourceTypeFromConfigType(config.AutomationResource(dp.Type))
+	if err != nil {
+		logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q: %v", dp.Type, id, err)
+		return 1
+	}
+	_, err = c.Delete(ctx, resourceType, id)
+	if err != nil {
+		var apiErr api.APIError
+		if errors.As(err, &apiErr) {
+			if apiErr.StatusCode != http.StatusNotFound {
+				logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - rejected by API: %v", dp.Type, id, err)
+				return 1
+			}
+		} else {
+			logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - network error: %v", dp.Type, id, err)
+			return 1
+		}
+	}
+	logger.Debug("Automation object with id %q deleted", id)
+	return 0
 }
 
 // DeleteAll collects and deletes automations resources using the given automation client.
@@ -130,21 +131,7 @@ func DeleteAll(ctx context.Context, c client) error {
 
 		logger.Info("Deleting %d objects of type %q...", len(objects), resource)
 		for _, o := range objects {
-			logger := logger.WithFields(field.F("object", o))
-			logger.Debug("Deleting Automation object with id %q...", o.ID)
-			_, err := c.Delete(ctx, t, o.ID)
-			if err != nil {
-				var apiErr api.APIError
-				if errors.As(err, &apiErr) {
-					if apiErr.StatusCode != http.StatusNotFound {
-						logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - rejected by API: %v", resource, o.ID, err)
-						errs++
-					}
-				} else {
-					logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - network error: %v", resource, o.ID, err)
-					errs++
-				}
-			}
+			errs += deleteSingle(ctx, c, pointer.DeletePointer{Type: automationTypesToResources[t], OriginObjectId: o.ID})
 		}
 	}
 
@@ -153,4 +140,10 @@ func DeleteAll(ctx context.Context, c client) error {
 	}
 
 	return nil
+}
+
+var automationTypesToResources = map[automationAPI.ResourceType]string{
+	automationAPI.Workflows:         "workflow",
+	automationAPI.BusinessCalendars: "business-calendar",
+	automationAPI.SchedulingRules:   "scheduling-rule",
 }
