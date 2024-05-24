@@ -100,7 +100,7 @@ func downloadConfigs(client client.ConfigClient, api api.API, projectName string
 	logger := log.WithFields(field.Type(api.ID))
 	foundValues, err := findConfigsToDownload(client, api, filters)
 	if err != nil {
-		logger.WithFields(field.Error(err)).Error("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", api.ID, err)
+		logger.WithFields(field.Error(err)).Warn("Failed to fetch configs of type '%v', skipping download of this type. Reason: %v", api.ID, err)
 		return results
 	}
 
@@ -121,7 +121,7 @@ func downloadConfigs(client client.ConfigClient, api api.API, projectName string
 
 			downloadedJsons, err := downloadAndUnmarshalConfig(client, api, v)
 			if err != nil {
-				log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Error("Error fetching config '%v' in api '%v': %v", v.value.Id, api.ID, err)
+				log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Warn("Error fetching config '%v' in api '%v': %v", v.value.Id, api.ID, err)
 				return
 			}
 
@@ -132,7 +132,7 @@ func downloadConfigs(client client.ConfigClient, api api.API, projectName string
 
 				c, err := createConfigForDownloadedJson(downloadedJson, api, v, projectName)
 				if err != nil {
-					log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Error("Error creating config for %v in api %v: %v", v.value.Id, api.ID, err)
+					log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Warn("Error creating config for %v in api %v: %v", v.value.Id, api.ID, err)
 					return
 				}
 
