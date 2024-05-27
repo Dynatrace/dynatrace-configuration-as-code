@@ -35,7 +35,15 @@ import (
 )
 
 func Run() int {
-	rootCmd := BuildCli(afero.NewOsFs())
+	fs := afero.NewOsFs()
+	defer func() { // writing the support archive is a deferred function call in order to guarantee that a support archive is also written in case of a panic
+		if support.SupportArchive {
+			if err := support.Archive(fs); err != nil {
+				log.WithFields(field.Error(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
+			}
+		}
+	}()
+	rootCmd := BuildCli(fs)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.WithFields(field.Error(err)).Error("Error: %v", err)
@@ -80,15 +88,6 @@ Examples:
 		},
 		SilenceErrors: true, // we want to log returned errors on our own, instead of cobra presenting that via println
 	}
-
-	// define finalizer method(s) run after cobra commands ran
-	cobra.OnFinalize(func() {
-		if support.SupportArchive {
-			if err := support.Archive(fs); err != nil {
-				log.WithFields(field.Error(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
-			}
-		}
-	})
 
 	// global flags
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable debug logging")
