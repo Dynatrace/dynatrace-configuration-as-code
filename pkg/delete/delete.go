@@ -77,24 +77,7 @@ func Configs(ctx context.Context, clients ClientSet, _ api.APIs, automationResou
 
 	// Delete rest of config types
 	for entryType, entries := range entriesToDelete {
-		var err error
-		switch typeOf(entryType) {
-		case "classic":
-			err = classic.Delete(ctx, clients.Classic, entries)
-		case "bucket":
-			if clients.Buckets == nil {
-				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
-				continue
-			}
-			err = bucket.Delete(ctx, clients.Buckets, entries)
-		case "document":
-			if featureflags.Documents().Enabled() {
-				err = document.Delete(ctx, clients.Documents, entries)
-			}
-		case "setting":
-			err = setting.Delete(ctx, clients.Settings, entries)
-		}
-
+		err := deleteEntriesOfType(ctx, clients, entryType, entries)
 		if err != nil {
 			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
 			deleteErrors += 1
@@ -107,17 +90,29 @@ func Configs(ctx context.Context, clients ClientSet, _ api.APIs, automationResou
 	return nil
 }
 
-func typeOf(e configurationType) string {
-	if _, ok := api.NewAPIs()[e]; ok {
-		return "classic"
+func deleteEntriesOfType(ctx context.Context, clients ClientSet, entryType string, entries []pointer.DeletePointer) error {
+	if theAPI, isClassicAPI := api.NewAPIs()[entryType]; isClassicAPI {
+		return classic.Delete(ctx, clients.Classic, theAPI, entries)
 	}
-	if e == "bucket" {
-		return "bucket"
+
+	switch entryType {
+	case "bucket":
+		if clients.Buckets == nil {
+			log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
+			return nil
+		}
+		return bucket.Delete(ctx, clients.Buckets, entries)
+
+	case "document":
+		if !featureflags.Documents().Enabled() {
+			return nil
+		}
+		return document.Delete(ctx, clients.Documents, entries)
+
+	// otherwise assume it's a Settings Schema
+	default:
+		return setting.Delete(ctx, clients.Settings, entries)
 	}
-	if e == "document" {
-		return "document"
-	}
-	return "setting"
 }
 
 // All collects and deletes ALL configuration objects using the provided ClientSet.
