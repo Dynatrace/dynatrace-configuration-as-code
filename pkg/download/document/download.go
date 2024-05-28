@@ -34,8 +34,8 @@ import (
 
 func Download(client client.DocumentClient, projectName string) (v2.ConfigsPerType, error) {
 	result := make(v2.ConfigsPerType)
-	result[string(config.DashboardType)] = downloadDocumentsOfType(client, projectName, documents.Dashboard)
-	result[string(config.NotebookType)] = downloadDocumentsOfType(client, projectName, documents.Notebook)
+	result[string(config.DashboardKind)] = downloadDocumentsOfType(client, projectName, documents.Dashboard)
+	result[string(config.NotebookKind)] = downloadDocumentsOfType(client, projectName, documents.Notebook)
 	return result, nil
 }
 
@@ -66,6 +66,8 @@ func convertDocumentResponse(client client.DocumentClient, projectName string, r
 		return config.Config{}, err
 	}
 
+	documentType.Private = response.IsPrivate
+
 	documentResponse, err := client.Get(context.TODO(), response.ID)
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to get document: %w", err)
@@ -84,7 +86,7 @@ func convertDocumentResponse(client client.DocumentClient, projectName string, r
 		Template: template,
 		Coordinate: coordinate.Coordinate{
 			Project:  projectName,
-			Type:     string(documentType),
+			Type:     string(documentType.Kind),
 			ConfigId: documentResponse.ID,
 		},
 		Type:           documentType,
@@ -111,10 +113,10 @@ func createTemplateFromResponse(response documents.Response) (template.Template,
 func validateDocumentType(documentType string) (config.DocumentType, error) {
 	switch documentType {
 	case string(documents.Dashboard):
-		return config.DashboardType, nil
+		return config.DocumentType{Kind: config.DashboardKind}, nil
 	case string(documents.Notebook):
-		return config.NotebookType, nil
+		return config.DocumentType{Kind: config.NotebookKind}, nil
 	default:
-		return "", fmt.Errorf("unsupported document type: %s", documentType)
+		return config.DocumentType{}, fmt.Errorf("unsupported document type: %s", documentType)
 	}
 }

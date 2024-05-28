@@ -6,4 +6,4 @@ configs:
     skip: false
   type:
     document:
-      type: notebook-document
+      kind: notebook-document

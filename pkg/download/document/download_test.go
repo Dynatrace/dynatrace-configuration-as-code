@@ -49,7 +49,7 @@ func TestDownloader_Download(t *testing.T) {
 			ConfigId: "12345678-1234-1234-1234-0123456789ab",
 		},
 		OriginObjectId: "12345678-1234-1234-1234-0123456789ab",
-		Type:           config.DashboardType,
+		Type:           config.DocumentType{Kind: config.DashboardKind},
 		Template:       template.NewInMemoryTemplate("12345678-1234-1234-1234-0123456789ab", "{}"),
 		Parameters: config.Parameters{
 			config.NameParameter: &value.ValueParameter{Value: "Getting started"},
@@ -66,7 +66,7 @@ func TestDownloader_Download(t *testing.T) {
 			ConfigId: "23456781-1234-1234-1234-0123456789ab",
 		},
 		OriginObjectId: "23456781-1234-1234-1234-0123456789ab",
-		Type:           config.NotebookType,
+		Type:           config.DocumentType{Kind: config.NotebookKind, Private: true},
 		Template:       template.NewInMemoryTemplate("23456781-1234-1234-1234-0123456789ab", "{}"),
 		Parameters: config.Parameters{
 			config.NameParameter: &value.ValueParameter{Value: "Getting started"},

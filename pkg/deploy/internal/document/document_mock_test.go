@@ -41,18 +41,18 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockClient) Create(ctx context.Context, name, externalId string, data []byte, documentType documents.DocumentType) (documents.Response, error) {
+func (m *MockClient) Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (documents.Response, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, name, externalId, data, documentType)
+	ret := m.ctrl.Call(m, "Create", ctx, name, isPrivate, externalId, data, documentType)
 	ret0, _ := ret[0].(documents.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockClientMockRecorder) Create(ctx, name, externalId, data, documentType any) *gomock.Call {
+func (mr *MockClientMockRecorder) Create(ctx, name, isPrivate, externalId, data, documentType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockClient)(nil).Create), ctx, name, externalId, data, documentType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockClient)(nil).Create), ctx, name, isPrivate, externalId, data, documentType)
 }
 
 // Get mocks base method.
@@ -86,16 +86,16 @@ func (mr *MockClientMockRecorder) List(ctx, filter any) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockClient) Update(ctx context.Context, id, name string, data []byte, documentType documents.DocumentType) (documents.Response, error) {
+func (m *MockClient) Update(ctx context.Context, id, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (documents.Response, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, name, data, documentType)
+	ret := m.ctrl.Call(m, "Update", ctx, id, name, isPrivate, data, documentType)
 	ret0, _ := ret[0].(documents.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockClientMockRecorder) Update(ctx, id, name, data, documentType any) *gomock.Call {
+func (mr *MockClientMockRecorder) Update(ctx, id, name, isPrivate, data, documentType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockClient)(nil).Update), ctx, id, name, data, documentType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockClient)(nil).Update), ctx, id, name, isPrivate, data, documentType)
 }

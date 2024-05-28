@@ -130,14 +130,22 @@ func (BucketType) ID() TypeId {
 	return BucketTypeId
 }
 
+// DocumentKind defines the type of a document. Currently, it can be a dashboard or a notebook.
+type DocumentKind string
+
 const (
-	DashboardType DocumentType = "dashboard-document"
-	NotebookType  DocumentType = "notebook-document"
+	DashboardKind DocumentKind = "dashboard-document"
+	NotebookKind  DocumentKind = "notebook-document"
 )
 
-// DocumentType identifies which document type is used in the config.
-// Currently, it can be a dashboard or a notebook.
-type DocumentType string
+// DocumentType represents a Dynatrace platform document.
+type DocumentType struct {
+	// Kind indicates the type of document.
+	Kind DocumentKind
+
+	// Private indicates if a document is private, otherwise by default it is visible to other users.
+	Private bool
+}
 
 func (DocumentType) ID() TypeId {
 	return DocumentTypeId

@@ -50,7 +50,8 @@ type AutomationDefinition struct {
 }
 
 type DocumentDefinition struct {
-	Type config.DocumentType `yaml:"type" json:"type" jsonschema:"required,enum=dashboard-document,enum=notebook-document,description=This defines which document type this config is for." mapstructure:"type"`
+	Kind    config.DocumentKind `yaml:"kind" json:"kind" jsonschema:"required,enum=dashboard-document,enum=notebook-document,description=This defines which document type this config is for." mapstructure:"kind"`
+	Private bool                `yaml:"private,omitempty" json:"private,omitempty" jsonschema:"description=Set to true to make the document private"  mapstructure:"private"`
 }
 
 // UnmarshalYAML Custom unmarshaler that knows how to handle TypeDefinition.
@@ -161,7 +162,10 @@ func (c *TypeDefinition) parseDocumentType(a any) error {
 		return fmt.Errorf("failed to unmarshal document-type: %w", err)
 	}
 
-	c.Type = r.Type
+	c.Type = config.DocumentType{
+		Kind:    r.Kind,
+		Private: r.Private,
+	}
 
 	return nil
 }
@@ -196,15 +200,15 @@ func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 		}
 
 	case config.DocumentType:
-		switch t {
+		switch t.Kind {
 		case "":
 			return errors.New("missing document type property")
 
-		case config.DashboardType, config.NotebookType:
+		case config.DashboardKind, config.NotebookKind:
 			return nil
 
 		default:
-			return fmt.Errorf("unknown document type %q", t)
+			return fmt.Errorf("unknown document type %q", t.Kind)
 		}
 	}
 
@@ -222,7 +226,7 @@ func (c *TypeDefinition) GetApiType() string {
 	case config.BucketType:
 		return string(t.ID())
 	case config.DocumentType:
-		return string(t)
+		return string(t.Kind)
 	}
 
 	return ""
@@ -275,7 +279,8 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		if featureflags.Documents().Enabled() {
 			return map[string]any{
 				"document": DocumentDefinition{
-					Type: t,
+					Kind:    t.Kind,
+					Private: t.Private,
 				},
 			}, nil
 		}
