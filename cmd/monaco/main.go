@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
+	"github.com/spf13/afero"
 	"net/http"
 	"os"
 )
@@ -37,7 +38,9 @@ func main() {
 		go setVersionNotificationStr(&versionNotification)
 	}
 
-	statusCode := runner.Run()
+	fs := afero.NewOsFs()
+	rootCmd := runner.BuildCli(fs)
+	statusCode := runner.RunCmd(fs, rootCmd)
 	notifyUser(versionNotification)
 	os.Exit(statusCode)
 }

@@ -51,8 +51,8 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 			"valid_env",
 			manifest,
 		})
-		err := cmd.Execute()
-		assert.NoError(t, err)
+
+		runner.RunCmd(fs, cmd)
 
 		archive := "support-archive-" + fixedTime + ".zip"
 
@@ -121,7 +121,8 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 				tt.environment,
 				manifest,
 			})
-			_ = cmd.Execute()
+
+			runner.RunCmd(fs, cmd)
 
 			archive := "support-archive-" + fixedTime + ".zip"
 			expectedFiles := []string{fixedTime + ".log", fixedTime + "-errors.log"}

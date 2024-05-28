@@ -34,8 +34,7 @@ import (
 	"io"
 )
 
-func Run() int {
-	fs := afero.NewOsFs()
+func RunCmd(fs afero.Fs, command *cobra.Command) int {
 	defer func() { // writing the support archive is a deferred function call in order to guarantee that a support archive is also written in case of a panic
 		if support.SupportArchive {
 			if err := support.Archive(fs); err != nil {
@@ -43,9 +42,7 @@ func Run() int {
 			}
 		}
 	}()
-	rootCmd := BuildCli(fs)
-
-	if err := rootCmd.Execute(); err != nil {
+	if err := command.Execute(); err != nil {
 		log.WithFields(field.Error(err)).Error("Error: %v", err)
 		log.WithFields(field.F("errorLogFilePath", log.ErrorFilePath())).Error("error logs written to %s", log.ErrorFilePath())
 		return 1
