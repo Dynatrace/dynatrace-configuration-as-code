@@ -19,13 +19,12 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 const multiTypeProjectFolder = "test-resources/integration-multi-type-configs/"
@@ -34,11 +33,7 @@ const multiTypeManifest = multiTypeProjectFolder + "manifest.yaml"
 func TestMultiTypeConfigsDeployment(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, multiTypeProjectFolder, multiTypeManifest, "", "MultiType", func(fs afero.Fs, _ TestContext) {
-
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", multiTypeManifest})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", multiTypeManifest)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, multiTypeManifest, []string{}, "", true)
@@ -46,10 +41,6 @@ func TestMultiTypeConfigsDeployment(t *testing.T) {
 }
 
 func TestMultiTypeConfigsValidation(t *testing.T) {
-
-	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
-	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", multiTypeManifest})
-	err := cmd.Execute()
-
+	err := monaco.Runf("monaco deploy %s --dry-run --verbose", multiTypeManifest)
 	assert.NoError(t, err)
 }

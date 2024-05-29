@@ -34,7 +34,7 @@ var environmentsFile = filepath.Join(folder, "environments.yaml")
 // Tests all environments with all projects
 func TestIntegrationMultiEnvironment(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(fs afero.Fs, manifest string) {
-		err := monaco.RunWithFsf(fs, "monaco deploy --verbose %s", manifest)
+		err := monaco.RunWithFSf(fs, "monaco deploy --verbose %s", manifest)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
@@ -44,7 +44,7 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 	RunLegacyIntegrationWithoutCleanup(t, folder, environmentsFile, "validationMultiEnv", func(fs afero.Fs, manifest string) {
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose --dry-run", manifest)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose --dry-run", manifest)
 		assert.NoError(t, err)
 	})
 }
@@ -52,7 +52,7 @@ func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 // tests a single project
 func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(fs afero.Fs, manifestFile string) {
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose --project=cinema-infrastructure", manifestFile)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose --project=cinema-infrastructure", manifestFile)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{"cinema-infrastructure"}, "", true)
@@ -62,7 +62,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 // Tests a single project with dependency
 func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(fs afero.Fs, manifestFile string) {
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --project=star-trek --verbose", manifestFile)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=star-trek --verbose", manifestFile)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{"star-trek"}, "", true)
@@ -72,7 +72,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 // tests a single environment
 func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(fs afero.Fs, manifestFile string) {
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --environment=environment2 --verbose", manifestFile)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=environment2 --verbose", manifestFile)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{"star-trek"}, "environment2", true)

@@ -19,12 +19,11 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-
-	"testing"
 )
 
 func TestIntegrationScopeParameters(t *testing.T) {
@@ -37,18 +36,12 @@ func TestIntegrationScopeParameters(t *testing.T) {
 	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "ScopeParameters", envVars, func(fs afero.Fs, _ TestContext) {
-
 		// This causes Creation of all Settings
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 
 		// This causes an Update of all Settings
-		cmd = runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
-		err = cmd.Execute()
+		err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }
@@ -62,9 +55,6 @@ func TestIntegrationScopeParameterValidation(t *testing.T) {
 	envVar := "SCOPE_TEST_ENV_VAR"
 	t.Setenv(envVar, "environment")
 
-	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
-	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
-	err := cmd.Execute()
-
+	err := monaco.Runf("monaco deploy %s --dry-run --verbose", manifest)
 	assert.NoError(t, err)
 }

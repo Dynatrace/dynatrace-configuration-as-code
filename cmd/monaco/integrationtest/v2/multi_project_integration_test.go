@@ -19,13 +19,12 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 var multiProjectFolder = "test-resources/integration-multi-project/"
@@ -36,12 +35,8 @@ var multiProjectSpecificEnvironment = ""
 func TestIntegrationMultiProject(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectManifest, multiProjectSpecificEnvironment, "MultiProject", func(fs afero.Fs, _ TestContext) {
-
 		// This causes a POST for all configs:
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", multiProjectManifest})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", multiProjectManifest)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
@@ -50,11 +45,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProject(t *testing.T) {
-
-	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
-	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", multiProjectManifest})
-	err := cmd.Execute()
-
+	err := monaco.Runf("monaco deploy %s --dry-run --verbose", multiProjectManifest)
 	assert.NoError(t, err)
 }
 
@@ -62,14 +53,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectManifest, multiProjectSpecificEnvironment, "MultiProjectOnProject", func(fs afero.Fs, _ TestContext) {
-
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy",
-			"--verbose",
-			"-p", "star-trek",
-			multiProjectManifest})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=star-trek --verbose", multiProjectManifest)
 		assert.NoError(t, err)
 
 		// Validate Star Trek sub-projects were deployed
@@ -81,12 +65,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 }
 
 func TestIntegrationMultiProject_ReturnsErrorOnInvalidProjectDefinitions(t *testing.T) {
-
 	invalidManifest := multiProjectFolder + "invalid-manifest-with-duplicate-projects.yaml"
-
-	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
-	cmd.SetArgs([]string{"deploy", "--verbose", invalidManifest})
-	err := cmd.Execute()
-
+	err := monaco.Runf("monaco deploy %s --verbose", invalidManifest)
 	assert.Error(t, err)
 }

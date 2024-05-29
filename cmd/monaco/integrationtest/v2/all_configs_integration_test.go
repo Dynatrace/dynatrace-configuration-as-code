@@ -21,9 +21,8 @@ package v2
 import (
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,20 +50,12 @@ func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
-
 		// This causes a POST for all configs:
-
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment)
 		assert.NoError(t, err)
 
 		// This causes a PUT for all configs:
-
-		cmd = runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
-		err = cmd.Execute()
+		err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment)
 		assert.NoError(t, err)
 
 	})
@@ -76,12 +67,6 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "true")
 
-	configFolder := "test-resources/integration-all-configs/"
-	manifest := configFolder + "manifest.yaml"
-
-	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
-	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
-	err := cmd.Execute()
-
+	err := monaco.Runf("monaco deploy %s --dry-run --verbose", "test-resources/integration-all-configs/manifest.yaml")
 	assert.NoError(t, err)
 }

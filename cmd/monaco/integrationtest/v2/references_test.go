@@ -20,6 +20,10 @@ package v2
 
 import (
 	"encoding/json"
+	"strings"
+	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -31,8 +35,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/maps"
-	"strings"
-	"testing"
 )
 
 func TestReferencesAreResolvedOnDownload(t *testing.T) {
@@ -41,14 +43,12 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 
 	tests := []struct {
 		project      string
-		downloadOpts []string
+		downloadOpts string
 		validate     func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType)
 	}{
 		{
-			project: "classic-apis",
-			downloadOpts: []string{
-				"-a", "alerting-profile,notification,management-zone",
-			},
+			project:      "classic-apis",
+			downloadOpts: "--api=alerting-profile,notification,management-zone",
 			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
 				managementZone := findConfig(t, confsPerType, "management-zone", "zone-ca_"+ctx.suffix)
 				profile := findConfig(t, confsPerType, "alerting-profile", "profile-ca_"+ctx.suffix)
@@ -59,10 +59,8 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 			},
 		},
 		{
-			project: "settings",
-			downloadOpts: []string{
-				"-s", "builtin:problem.notifications,builtin:management-zones,builtin:alerting.profile",
-			},
+			project:      "settings",
+			downloadOpts: "--settings-schema=builtin:problem.notifications,builtin:management-zones,builtin:alerting.profile",
 			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
 				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.suffix, "name")
 				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.suffix, "name")
@@ -73,11 +71,8 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 			},
 		},
 		{
-			project: "classic-with-settings-mngt-zone",
-			downloadOpts: []string{
-				"-a", "notification,alerting-profile",
-				"-s", "builtin:management-zones",
-			},
+			project:      "classic-with-settings-mngt-zone",
+			downloadOpts: "--api=notification,alerting-profile --settings-schema=builtin:management-zones",
 			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
 				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone-cws_"+ctx.suffix, "name")
 				profile := findConfig(t, confsPerType, "alerting-profile", "profile-cws_"+ctx.suffix)
@@ -103,24 +98,11 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 				RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, testName, func(fs afero.Fs, ctx TestContext) {
 
 					// upsert
-					cmd := runner.BuildCmd(fs)
-					cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
-					err := cmd.Execute()
+					err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj)
 					require.NoError(t, err, "create: did not expect error")
 
 					// download
-					cmd = runner.BuildCmd(fs)
-					cmd.SetArgs(append(
-						[]string{
-							"download",
-							"-v",
-							"--manifest", manifestFile,
-							"--environment", env,
-							"--project", "proj",
-							"--output-folder", "download",
-						},
-						tt.downloadOpts...))
-					err = cmd.Execute()
+					err = monaco.RunWithFSf(fs, "monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, tt.downloadOpts)
 					require.NoError(t, err, "download: did not expect error")
 
 					// assert
@@ -154,12 +136,8 @@ func TestReferencesAreValid(t *testing.T) {
 	configFolder := "test-resources/references/"
 	manifestFile := configFolder + "manifest.yaml"
 
-	fs := testutils.CreateTestFileSystem()
-	cmd := runner.BuildCmd(fs)
-	cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", "platform_env", "--dry-run"})
-	err := cmd.Execute()
+	err := monaco.Runf("monaco deploy %s --environment=platform_env --dry-run --verbose", manifestFile)
 	assert.NoError(t, err, "expected configurations to be valid")
-
 }
 
 func TestReferencesFromClassicConfigsToSettingsResultInError(t *testing.T) {

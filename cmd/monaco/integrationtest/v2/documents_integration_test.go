@@ -51,7 +51,7 @@ func TestDocuments(t *testing.T) {
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifestPath, environment, "Documents", envVars, func(fs afero.Fs, testContext TestContext) {
 		// deploy
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --project=project --verbose", manifestPath)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=project --verbose", manifestPath)
 		assert.NoError(t, err)
 
 		man, errs := manifestloader.Load(&manifestloader.Context{
@@ -97,7 +97,7 @@ func TestDocuments(t *testing.T) {
 		assert.NoError(t, err)
 
 		// deploy again
-		err = monaco.RunWithFsf(fs, "monaco deploy %s --project=project --verbose", manifestPath)
+		err = monaco.RunWithFSf(fs, "monaco deploy %s --project=project --verbose", manifestPath)
 		assert.NoError(t, err)
 
 		// check if isPrivate was changed to true

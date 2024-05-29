@@ -20,7 +20,10 @@ package v2
 
 import (
 	"context"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -32,11 +35,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
-	"github.com/stretchr/testify/assert"
-	"testing"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 // tests all configs for a single environment
@@ -47,20 +47,13 @@ func TestIntegrationSettings(t *testing.T) {
 	specificEnvironment := ""
 
 	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "SettingsTwo", func(fs afero.Fs, _ TestContext) {
-
 		// This causes Creation of all Settings
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
 
 		// This causes an Update of all Settings
-		cmd = runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
-		err = cmd.Execute()
-
+		err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
 	})
@@ -74,10 +67,7 @@ func TestIntegrationValidationSettings(t *testing.T) {
 	configFolder := "test-resources/integration-settings/"
 	manifest := configFolder + "manifest.yaml"
 
-	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
-	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
-	err := cmd.Execute()
-
+	err := monaco.Runf("monaco deploy %s --verbose --dry-run", manifest)
 	assert.NoError(t, err)
 }
 
@@ -119,10 +109,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	}, dtclient.UpsertSettingsOptions{})
 	assert.NoError(t, err)
 
-	cmd := runner.BuildCmd(fs)
-	cmd.SetArgs([]string{"deploy", "--verbose", manifestPath})
-	err = cmd.Execute()
-
+	err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifestPath)
 	assert.NoError(t, err)
 	extID, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
 
@@ -155,15 +142,11 @@ func TestDeploySettingsWithUniqueProperties(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsUniqueProps", func(fs afero.Fs, _ TestContext) {
 		// create with project1 values
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project1", manifestPath})
-		err := cmd.Execute()
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project1", manifestPath)
 		assert.NoError(t, err)
 
 		// update based on unique properties with project2 values
-		cmd = runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project2", manifestPath})
-		err = cmd.Execute()
+		err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project2", manifestPath)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project1"}, "platform_env", false) // updated to project2 externalIds
@@ -186,15 +169,11 @@ func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsUniqueProps", func(fs afero.Fs, _ TestContext) {
 		// create with project3 values
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project3", manifestPath})
-		err := cmd.Execute()
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project3", manifestPath)
 		assert.NoError(t, err)
 
 		// update based on unique properties with project4 values and extend by one config
-		cmd = runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project4", manifestPath})
-		err = cmd.Execute()
+		err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project4", manifestPath)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project3"}, "platform_env", false) // updated to project3 externalId
@@ -209,9 +188,7 @@ func TestOrderedSettings(t *testing.T) {
 	manifestPath := configFolder + "/manifest.yaml"
 
 	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project", manifestPath})
-		err := cmd.Execute()
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project", manifestPath)
 		assert.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
@@ -230,9 +207,7 @@ func TestOrderedSettings(t *testing.T) {
 	manifestPath = configFolder + "/manifest.yaml"
 
 	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project", manifestPath})
-		err := cmd.Execute()
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project", manifestPath)
 		assert.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 

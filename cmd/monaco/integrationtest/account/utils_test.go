@@ -19,12 +19,13 @@ package account
 import (
 	"bytes"
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
-	"strings"
-	"testing"
 )
 
 func createMZone(t *testing.T) {

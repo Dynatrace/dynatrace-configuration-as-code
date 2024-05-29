@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -194,16 +194,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	manifestPath := path.Join(targetDir, "manifest.yaml")
 
 	t.Log("Converting monaco-v1 to monaco-v2")
-	cmd := runner.BuildCmd(fs)
-	cmd.SetArgs([]string{
-		"convert",
-		"--verbose",
-		envFile,
-		configFolder,
-		"-o",
-		targetDir,
-	})
-	err = cmd.Execute()
+	err = monaco.RunWithFSf(fs, "monaco convert %s %s --output-folder=%s --verbose", envFile, configFolder, targetDir)
 	assert.NoError(t, err, "Conversion should had happened without errors")
 
 	exists, err := afero.Exists(fs, manifestPath)

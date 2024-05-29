@@ -35,12 +35,12 @@ func Run(command string) error {
 }
 
 func Runf(command string, args ...any) error {
-	return RunWithFsf(newFs(), command, args...)
+	return RunWithFSf(newFs(), command, args...)
 }
 
 func newFs() afero.Fs { return afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()) }
 
-func RunWithFsf(fs afero.Fs, command string, args ...any) error {
+func RunWithFSf(fs afero.Fs, command string, args ...any) error {
 	return RunWithFs(fs, fmt.Sprintf(command, args...))
 }
 

@@ -35,11 +35,11 @@ func TestIntegrationAllConfigs(t *testing.T) {
 
 	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
 		// This causes a POST for all configs:
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose", manifest)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 
 		// This causes a PUT for all configs:
-		err = monaco.RunWithFsf(fs, "monaco deploy %s --verbose", manifest)
+		err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }

@@ -19,13 +19,14 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
 	"path"
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/spf13/afero"
 )
 
@@ -38,17 +39,7 @@ func setupConvertedConfig(t *testing.T) (testFs afero.Fs, convertedFolder string
 
 	fs := testutils.CreateTestFileSystem()
 
-	cmd := runner.BuildCmd(fs)
-	cmd.SetArgs(
-		[]string{
-			"convert",
-			env,
-			configV1Folder,
-			"--output-folder", convertedConfigV2Folder,
-		},
-	)
-	err = cmd.Execute()
-
+	err = monaco.RunWithFSf(fs, "monaco convert %s %s --output-folder=%s ", env, configV1Folder, convertedConfigV2Folder)
 	assert.NoError(t, err)
 
 	return fs, convertedConfigV2Folder
@@ -61,7 +52,7 @@ func TestV1ConfigurationCanBeConverted(t *testing.T) {
 	assertExpectedPathExists(t, fs, path.Join(convertedConfigV2Folder, "manifest.yaml"))
 	assertExpectedPathExists(t, fs, path.Join(convertedConfigV2Folder, "delete.yaml"))
 	assertExpectedPathExists(t, fs, path.Join(convertedConfigV2Folder, "project/"))
-	assertExpectedPathExists(t, fs, path.Join(convertedConfigV2Folder, "project/auto-tag/config.yaml")) //check one sample config
+	assertExpectedPathExists(t, fs, path.Join(convertedConfigV2Folder, "project/auto-tag/config.yaml")) // check one sample config
 }
 
 func assertExpectedPathExists(t *testing.T, fs afero.Fs, path string) {
@@ -79,12 +70,8 @@ func TestV1ConfigurationCanBeConvertedAndDeployedAfterConversion(t *testing.T) {
 	assertExpectedPathExists(t, fs, manifest)
 
 	RunIntegrationWithCleanupOnGivenFs(t, fs, convertedConfigV2Folder, manifest, "", "AllConfigs", func(fs afero.Fs, _ TestContext) {
-
 		// This causes a POST for all configs:
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }

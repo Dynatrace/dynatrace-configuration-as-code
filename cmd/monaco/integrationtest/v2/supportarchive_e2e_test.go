@@ -25,14 +25,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
@@ -43,17 +42,7 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 	RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "SupportArchive", func(fs afero.Fs, _ TestContext) {
 		cleanupLogsDir(t)
 
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			"--support-archive",
-			"-e",
-			"valid_env",
-			manifest,
-		})
-
-		runner.RunCmd(fs, cmd)
+		_ = monaco.RunWithFSf(fs, "monaco deploy %s --environment=valid_env --verbose --support-archive", manifest)
 
 		archive := "support-archive-" + fixedTime + ".zip"
 
@@ -107,24 +96,12 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cleanupLogsDir(t)
 
-			fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
-
 			fs := testutils.CreateTestFileSystem()
 
 			manifest := configFolder + tt.manifestFile
+			monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --support-archive", manifest, tt.environment)
 
-			cmd := runner.BuildCmd(fs)
-			cmd.SetArgs([]string{
-				"deploy",
-				"--verbose",
-				"--support-archive",
-				"-e",
-				tt.environment,
-				manifest,
-			})
-
-			runner.RunCmd(fs, cmd)
-
+			fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
 			archive := "support-archive-" + fixedTime + ".zip"
 			expectedFiles := []string{fixedTime + ".log", fixedTime + "-errors.log", fixedTime + "-featureflag_state.log"}
 			if tt.expectAllFiles {
