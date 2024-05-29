@@ -15,6 +15,8 @@
 package runner
 
 import (
+	"io"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/convert"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/delete"
@@ -31,10 +33,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"io"
 )
 
-func RunCmd(fs afero.Fs, command *cobra.Command) int {
+func RunCmd(fs afero.Fs, command *cobra.Command) error {
 	defer func() { // writing the support archive is a deferred function call in order to guarantee that a support archive is also written in case of a panic
 		if support.SupportArchive {
 			if err := support.Archive(fs); err != nil {
@@ -42,19 +43,19 @@ func RunCmd(fs afero.Fs, command *cobra.Command) int {
 			}
 		}
 	}()
-	if err := command.Execute(); err != nil {
+	err := command.Execute()
+	if err != nil {
 		log.WithFields(field.Error(err)).Error("Error: %v", err)
 		log.WithFields(field.F("errorLogFilePath", log.ErrorFilePath())).Error("error logs written to %s", log.ErrorFilePath())
-		return 1
 	}
-	return 0
+	return err
 }
 
-func BuildCli(fs afero.Fs) *cobra.Command {
-	return BuildCliWithLogSpy(fs, nil)
+func BuildCmd(fs afero.Fs) *cobra.Command {
+	return BuildCmdWithLogSpy(fs, nil)
 }
 
-func BuildCliWithLogSpy(fs afero.Fs, logSpy io.Writer) *cobra.Command {
+func BuildCmdWithLogSpy(fs afero.Fs, logSpy io.Writer) *cobra.Command {
 	var verbose bool
 
 	var rootCmd = &cobra.Command{

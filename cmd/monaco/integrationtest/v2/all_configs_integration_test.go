@@ -54,7 +54,7 @@ func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 
 		// This causes a POST for all configs:
 
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
 		err := cmd.Execute()
 
@@ -62,7 +62,7 @@ func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 
 		// This causes a PUT for all configs:
 
-		cmd = runner.BuildCli(fs)
+		cmd = runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
 		err = cmd.Execute()
 		assert.NoError(t, err)
@@ -79,7 +79,7 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
+	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 

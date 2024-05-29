@@ -65,7 +65,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		}
 		require.NotZero(t, mzoneID, "Could not get exact management zone id for assertions")
 
-		cli := runner.BuildCli(o.fs)
+		cli := runner.BuildCmd(o.fs)
 		// DEPLOY RESOURCES
 		cli.SetArgs([]string{"account", "deploy", "-m", "manifest-account.yaml"})
 		err = cli.Execute()

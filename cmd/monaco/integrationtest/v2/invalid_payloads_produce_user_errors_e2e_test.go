@@ -35,7 +35,7 @@ func TestAPIErrorsAreReported(t *testing.T) {
 	RunIntegrationWithCleanup(t, configFolder, manifest, "", "InvalidJSON", func(fs afero.Fs, _ TestContext) {
 
 		logOutput := strings.Builder{}
-		cmd := runner.BuildCliWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
+		cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--continue-on-error"})
 		err := cmd.Execute()
 

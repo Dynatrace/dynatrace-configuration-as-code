@@ -284,7 +284,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
 	})
 
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
@@ -327,7 +327,7 @@ func execution_downloadConfigsWithCLIParameters(
 		parameters = append(parameters, "--url", os.Getenv("URL_ENVIRONMENT_1"), "--token", "TOKEN_ENVIRONMENT_1")
 	}
 
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs(parameters)
 	err = cmd.Execute()
 	assert.NoError(t, err)
@@ -380,7 +380,7 @@ func execution_downloadConfigs(
 		}
 	}
 
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs(parameters)
 	err = cmd.Execute()
 	assert.NoError(t, err)
@@ -397,7 +397,7 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 		return nil
 	})
 
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",

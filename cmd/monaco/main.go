@@ -17,6 +17,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -24,8 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
-	"net/http"
-	"os"
 )
 
 func main() {
@@ -41,10 +42,14 @@ func main() {
 	}
 
 	fs := afero.NewOsFs()
-	rootCmd := runner.BuildCli(fs)
-	statusCode := runner.RunCmd(fs, rootCmd)
+	cmd := runner.BuildCmd(fs)
+	err := runner.RunCmd(fs, cmd)
 	notifyUser(versionNotification)
-	os.Exit(statusCode)
+
+	if err != nil {
+		os.Exit(1)
+	}
+	os.Exit(0)
 }
 
 func setVersionNotificationStr(msg *string) {

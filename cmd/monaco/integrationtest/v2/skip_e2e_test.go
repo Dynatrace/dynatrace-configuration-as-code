@@ -115,7 +115,7 @@ func TestSkip(t *testing.T) {
 				testCaseVar := "SKIPPED_VAR_" + tc.suffix
 				t.Setenv(testCaseVar, strconv.FormatBool(tt.given.skipVarValue))
 
-				cmd := runner.BuildCli(fs)
+				cmd := runner.BuildCmd(fs)
 				cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 				err := cmd.Execute()
 
