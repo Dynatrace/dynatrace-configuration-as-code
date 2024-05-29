@@ -38,7 +38,7 @@ func setupConvertedConfig(t *testing.T) (testFs afero.Fs, convertedFolder string
 
 	fs := testutils.CreateTestFileSystem()
 
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs(
 		[]string{
 			"convert",
@@ -81,7 +81,7 @@ func TestV1ConfigurationCanBeConvertedAndDeployedAfterConversion(t *testing.T) {
 	RunIntegrationWithCleanupOnGivenFs(t, fs, convertedConfigV2Folder, manifest, "", "AllConfigs", func(fs afero.Fs, _ TestContext) {
 
 		// This causes a POST for all configs:
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err := cmd.Execute()
 

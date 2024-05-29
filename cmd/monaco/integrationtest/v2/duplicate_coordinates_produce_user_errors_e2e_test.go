@@ -33,7 +33,7 @@ func TestAllDuplicateErrorsAreReported(t *testing.T) {
 	manifest := filepath.Join(configFolder, "manifest.yaml")
 
 	logOutput := strings.Builder{}
-	cmd := runner.BuildCliWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
+	cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 

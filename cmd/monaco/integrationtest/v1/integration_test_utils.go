@@ -194,7 +194,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	manifestPath := path.Join(targetDir, "manifest.yaml")
 
 	t.Log("Converting monaco-v1 to monaco-v2")
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs([]string{
 		"convert",
 		"--verbose",

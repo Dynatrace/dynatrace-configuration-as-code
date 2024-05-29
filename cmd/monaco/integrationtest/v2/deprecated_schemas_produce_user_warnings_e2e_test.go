@@ -35,7 +35,7 @@ func TestDeprecatedSettingsSchemasProduceWarnings(t *testing.T) {
 	RunIntegrationWithCleanup(t, configFolder, manifest, "", "DeprecatedSchema", func(fs afero.Fs, _ TestContext) {
 
 		logOutput := strings.Builder{}
-		cmd := runner.BuildCliWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
+		cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err := cmd.Execute()
 

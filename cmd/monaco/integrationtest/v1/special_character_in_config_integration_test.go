@@ -35,7 +35,7 @@ func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
 
 	RunLegacyIntegrationWithCleanup(t, specialCharConfigFolder, specialCharEnvironmentsFile, "SpecialCharacterInConfig", func(fs afero.Fs, manifest string) {
 
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",

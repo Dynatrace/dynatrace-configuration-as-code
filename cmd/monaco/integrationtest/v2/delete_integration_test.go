@@ -232,20 +232,20 @@ environmentGroups:
 	assert.NoError(t, err)
 
 	// DEPLOY Config
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs([]string{"deploy", "--verbose", deployManifestPath})
 	err = cmd.Execute()
 	assert.NoError(t, err)
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 	// ensure test resources are removed after test is done
 	t.Cleanup(func() {
-		cmd = runner.BuildCli(fs)
+		cmd = runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"delete", "--verbose", "--manifest", "test-resources/delete-test-configs/deploy-manifest.yaml"}) //full manifest with oAuth
 		err = cmd.Execute()
 	})
 
 	// DELETE Configs - with API Token only Manifest
-	cmd = runner.BuildCli(fs)
+	cmd = runner.BuildCmd(fs)
 	cmd.SetArgs([]string{"delete", "--verbose"})
 	err = cmd.Execute()
 	assert.NoError(t, err)

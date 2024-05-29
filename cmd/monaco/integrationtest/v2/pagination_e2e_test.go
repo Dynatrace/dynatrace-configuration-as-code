@@ -66,7 +66,7 @@ func testPagination(t *testing.T, specificEnvironment string) {
 
 		// Create/POST all 550 Settings
 		logOutput := strings.Builder{}
-		cmd := runner.BuildCliWithLogSpy(fs, &logOutput)
+		cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
 		err := cmd.Execute()
 		assert.NoError(t, err)
@@ -77,7 +77,7 @@ func testPagination(t *testing.T, specificEnvironment string) {
 		logOutput.Reset()
 
 		// Update/PUT all 550 Settings - means that all previously created ones were found, and more than one 500 element page retrieved
-		cmd = runner.BuildCliWithLogSpy(fs, &logOutput)
+		cmd = runner.BuildCmdWithLogSpy(fs, &logOutput)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
 		err = cmd.Execute()
 		assert.NoError(t, err)

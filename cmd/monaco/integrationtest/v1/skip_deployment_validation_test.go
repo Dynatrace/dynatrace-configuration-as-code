@@ -35,7 +35,7 @@ func TestValidationSkipDeployment(t *testing.T) {
 	t.Setenv("TEST_TOKEN", "mock test token")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
@@ -55,7 +55,7 @@ func TestValidationSkipDeploymentWithBrokenDependency_GraphBasedDoesNotReturnErr
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, "SkipDeployment", func(fs afero.Fs, manifest string) {
 
 		logOutput := strings.Builder{}
-		cmd := runner.BuildCliWithLogSpy(fs, &logOutput)
+		cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
@@ -75,7 +75,7 @@ func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 	t.Setenv("TEST_TOKEN", "mock test token")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
@@ -93,7 +93,7 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 	t.Setenv("TEST_TOKEN", "mock test token")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
@@ -112,7 +112,7 @@ func TestValidationSkipDeploymentInterProjectWithMissingDependency_GraphBasedDoe
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
 		logOutput := strings.Builder{}
-		cmd := runner.BuildCliWithLogSpy(fs, &logOutput)
+		cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",

@@ -35,7 +35,7 @@ func TestMultiTypeConfigsDeployment(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, multiTypeProjectFolder, multiTypeManifest, "", "MultiType", func(fs afero.Fs, _ TestContext) {
 
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", multiTypeManifest})
 		err := cmd.Execute()
 
@@ -47,7 +47,7 @@ func TestMultiTypeConfigsDeployment(t *testing.T) {
 
 func TestMultiTypeConfigsValidation(t *testing.T) {
 
-	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
+	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", multiTypeManifest})
 	err := cmd.Execute()
 

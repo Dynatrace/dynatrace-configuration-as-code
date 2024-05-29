@@ -49,7 +49,7 @@ func TestIntegrationSettings(t *testing.T) {
 	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "SettingsTwo", func(fs afero.Fs, _ TestContext) {
 
 		// This causes Creation of all Settings
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err := cmd.Execute()
 
@@ -57,7 +57,7 @@ func TestIntegrationSettings(t *testing.T) {
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
 
 		// This causes an Update of all Settings
-		cmd = runner.BuildCli(fs)
+		cmd = runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err = cmd.Execute()
 
@@ -74,7 +74,7 @@ func TestIntegrationValidationSettings(t *testing.T) {
 	configFolder := "test-resources/integration-settings/"
 	manifest := configFolder + "manifest.yaml"
 
-	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
+	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 
@@ -119,7 +119,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	}, dtclient.UpsertSettingsOptions{})
 	assert.NoError(t, err)
 
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs([]string{"deploy", "--verbose", manifestPath})
 	err = cmd.Execute()
 
@@ -155,13 +155,13 @@ func TestDeploySettingsWithUniqueProperties(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsUniqueProps", func(fs afero.Fs, _ TestContext) {
 		// create with project1 values
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project1", manifestPath})
 		err := cmd.Execute()
 		assert.NoError(t, err)
 
 		// update based on unique properties with project2 values
-		cmd = runner.BuildCli(fs)
+		cmd = runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project2", manifestPath})
 		err = cmd.Execute()
 		assert.NoError(t, err)
@@ -186,13 +186,13 @@ func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsUniqueProps", func(fs afero.Fs, _ TestContext) {
 		// create with project3 values
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project3", manifestPath})
 		err := cmd.Execute()
 		assert.NoError(t, err)
 
 		// update based on unique properties with project4 values and extend by one config
-		cmd = runner.BuildCli(fs)
+		cmd = runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project4", manifestPath})
 		err = cmd.Execute()
 		assert.NoError(t, err)
@@ -209,7 +209,7 @@ func TestOrderedSettings(t *testing.T) {
 	manifestPath := configFolder + "/manifest.yaml"
 
 	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project", manifestPath})
 		err := cmd.Execute()
 		assert.NoError(t, err)
@@ -230,7 +230,7 @@ func TestOrderedSettings(t *testing.T) {
 	manifestPath = configFolder + "/manifest.yaml"
 
 	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project", manifestPath})
 		err := cmd.Execute()
 		assert.NoError(t, err)
