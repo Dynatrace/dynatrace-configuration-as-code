@@ -19,13 +19,13 @@
 package v1
 
 import (
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-
 	"strings"
 	"testing"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 var skipDeploymentFolder = AbsOrPanicFromSlash("test-resources/skip-deployment-project/")
@@ -35,15 +35,7 @@ func TestValidationSkipDeployment(t *testing.T) {
 	t.Setenv("TEST_TOKEN", "mock test token")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			"--dry-run",
-			manifest,
-			"--project", "projectA",
-		})
-		err := cmd.Execute()
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=projectA --dry-run --verbose", manifest)
 		assert.NoError(t, err)
 	})
 
@@ -75,16 +67,7 @@ func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 	t.Setenv("TEST_TOKEN", "mock test token")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-			"--dry-run",
-			"--project", "projectC",
-		})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=projectC --dry-run --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }
@@ -93,16 +76,7 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 	t.Setenv("TEST_TOKEN", "mock test token")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-			"--dry-run",
-			"--project", "projectE",
-		})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=projectE --dry-run --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }

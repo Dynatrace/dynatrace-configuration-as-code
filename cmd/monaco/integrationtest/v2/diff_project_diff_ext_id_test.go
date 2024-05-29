@@ -20,15 +20,16 @@ package v2
 
 import (
 	"context"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var diffProjectDiffExtIDFolder = "test-resources/integration-different-projects-different-extid/"
@@ -40,11 +41,7 @@ var diffProjectDiffExtIDFolderManifest = diffProjectDiffExtIDFolder + "manifest.
 func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, diffProjectDiffExtIDFolder, diffProjectDiffExtIDFolderManifest, "", "DifferentProjectsGetDifferentExternalID", func(fs afero.Fs, _ TestContext) {
-
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", diffProjectDiffExtIDFolderManifest})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", diffProjectDiffExtIDFolderManifest)
 		assert.NoError(t, err)
 
 		var manifestPath = diffProjectDiffExtIDFolderManifest

@@ -25,7 +25,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -118,7 +117,7 @@ func TestDelete(t *testing.T) {
 
 			fs := testutils.CreateTestFileSystem()
 
-			//create config yaml
+			// create config yaml
 			cfgId := fmt.Sprintf("deleteSample_%s", integrationtest.GenerateTestSuffix(t, tt.name))
 			configContent := fmt.Sprintf(tt.configTemplate, cfgId, cfgId)
 
@@ -127,14 +126,14 @@ func TestDelete(t *testing.T) {
 			err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
 			assert.NoError(t1, err)
 
-			//create delete yaml
+			// create delete yaml
 			deleteContent := fmt.Sprintf(tt.deleteContentTemplate, cfgId)
 			deleteYamlPath, err := filepath.Abs(tt.deleteFile)
 			assert.NoError(t1, err)
 			err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
 			assert.NoError(t1, err)
 
-			//create manifest file
+			// create manifest file
 			manifestContent, err := afero.ReadFile(fs, deployManifestPath)
 			assert.NoError(t1, err)
 			manifestPath, err := filepath.Abs(tt.manifest)
@@ -142,12 +141,12 @@ func TestDelete(t *testing.T) {
 			assert.NoError(t1, err)
 
 			// DEPLOY Config
-			err = monaco.RunWithFsf(fs, "monaco deploy %s --verbose", deployManifestPath)
+			err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
 			assert.NoError(t1, err)
 			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", true)
 
 			// DELETE Config
-			err = monaco.RunWithFsf(fs, "monaco delete %s --verbose", tt.cmdFlag)
+			err = monaco.RunWithFSf(fs, "monaco delete %s --verbose", tt.cmdFlag)
 			assert.NoError(t1, err)
 			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", false)
 
@@ -162,7 +161,7 @@ func TestDeleteSkipsPlatformTypesWhenDeletingFromClassicEnv(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 
-	//create config yaml
+	// create config yaml
 	configTemplate := `
 configs:
 - id: %s
@@ -194,7 +193,7 @@ configs:
 	err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
 	assert.NoError(t, err)
 
-	//create delete yaml
+	// create delete yaml
 	deleteTemplate := `delete:
   - project: "project"
     type: "workflow"
@@ -212,7 +211,7 @@ configs:
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
 	assert.NoError(t, err)
 
-	//create manifest file without oAuth
+	// create manifest file without oAuth
 	manifestContent := `manifestVersion: 1.0
 projects:
 - name: project
@@ -232,28 +231,22 @@ environmentGroups:
 	assert.NoError(t, err)
 
 	// DEPLOY Config
-	cmd := runner.BuildCmd(fs)
-	cmd.SetArgs([]string{"deploy", "--verbose", deployManifestPath})
-	err = cmd.Execute()
+	err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
 	assert.NoError(t, err)
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 	// ensure test resources are removed after test is done
 	t.Cleanup(func() {
-		cmd = runner.BuildCmd(fs)
-		cmd.SetArgs([]string{"delete", "--verbose", "--manifest", "test-resources/delete-test-configs/deploy-manifest.yaml"}) //full manifest with oAuth
-		err = cmd.Execute()
+		monaco.RunWithFs(fs, "monaco delete --manifest=test-resources/delete-test-configs/deploy-manifest.yaml --verbose")
 	})
 
 	// DELETE Configs - with API Token only Manifest
-	cmd = runner.BuildCmd(fs)
-	cmd.SetArgs([]string{"delete", "--verbose"})
-	err = cmd.Execute()
+	err = monaco.RunWithFs(fs, "monaco delete --verbose")
 	assert.NoError(t, err)
 
 	// Assert expected deletions
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
-		ManifestPath: "test-resources/delete-test-configs/deploy-manifest.yaml", //full manifest with oAuth
+		ManifestPath: "test-resources/delete-test-configs/deploy-manifest.yaml", // full manifest with oAuth
 		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 	})
 	assert.Empty(t, errs)
@@ -296,7 +289,7 @@ func TestDeleteSubPathAPIConfigurations(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 
-	//create config yaml
+	// create config yaml
 	configTemplate := `
 configs:
 - id: app
@@ -328,7 +321,7 @@ configs:
 	assert.NoError(t, err)
 
 	// DEPLOY Config
-	err = monaco.RunWithFsf(fs, "monaco deploy %s --verbose", deployManifestPath)
+	err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
 	require.NoError(t, err)
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
@@ -371,10 +364,10 @@ configs:
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
 	assert.NoError(t, err)
 
-	err = monaco.RunWithFsf(fs, "monaco delete --manifest %s --verbose", deployManifestPath)
+	err = monaco.RunWithFSf(fs, "monaco delete --manifest %s --verbose", deployManifestPath)
 	require.NoError(t, err)
 
-	//Assert key-user-action is deleted
+	// Assert key-user-action is deleted
 	integrationtest.AssertConfig(t, context.TODO(), clientSet.Classic(), apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
@@ -382,7 +375,7 @@ configs:
 			ConfigId: "action",
 		}}, actionName)
 
-	//DELETE all
+	// DELETE all
 	fullDeleteTemplate := `delete:
   - type: "application-mobile"
     name: "%s"
@@ -396,7 +389,7 @@ configs:
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
 	assert.NoError(t, err)
 
-	err = monaco.RunWithFsf(fs, "monaco delete --manifest %s --verbose", deployManifestPath)
+	err = monaco.RunWithFSf(fs, "monaco delete --manifest %s --verbose", deployManifestPath)
 	require.NoError(t, err)
 
 	// Assert expected deletions

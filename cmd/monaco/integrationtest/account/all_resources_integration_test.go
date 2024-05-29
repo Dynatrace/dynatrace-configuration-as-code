@@ -20,6 +20,10 @@ package account
 
 import (
 	"context"
+	"net/http"
+	"slices"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
@@ -28,9 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"slices"
-	"testing"
 )
 
 func TestDeployAndDelete_AllResources(t *testing.T) {

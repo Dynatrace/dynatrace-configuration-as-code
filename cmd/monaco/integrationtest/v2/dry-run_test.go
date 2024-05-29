@@ -39,11 +39,11 @@ func TestDryRun(t *testing.T) {
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
 		// This causes a POST for all configs:
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
 		assert.NoError(t, err)
 
 		// This causes a PUT for all configs:
-		err = monaco.RunWithFsf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
+		err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
 		assert.NoError(t, err)
 	})
 }

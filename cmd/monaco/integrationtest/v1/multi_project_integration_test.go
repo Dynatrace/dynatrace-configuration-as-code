@@ -36,7 +36,7 @@ var multiProjectEnvironmentsFile = filepath.Join(multiProjectFolder, "environmen
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(fs afero.Fs, manifest string) {
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose", manifest)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
@@ -46,7 +46,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProject(t *testing.T) {
 	RunLegacyIntegrationWithoutCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "validMultiProj", func(fs afero.Fs, manifest string) {
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose --dry-run", manifest)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose --dry-run", manifest)
 		assert.NoError(t, err)
 	})
 }
@@ -54,7 +54,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T) {
 	RunLegacyIntegrationWithoutCleanup(t, multiProjectFolderWithoutSlash, multiProjectEnvironmentsFile, "validMultiProj", func(fs afero.Fs, manifest string) {
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose --dry-run", manifest)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose --dry-run", manifest)
 		assert.NoError(t, err)
 	})
 
@@ -63,7 +63,7 @@ func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T)
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.Fs, manifestFile string) {
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --project=star-trek --verbose", manifestFile)
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=star-trek --verbose", manifestFile)
 		assert.NoError(t, err)
 
 		t.Log("Asserting available configs")

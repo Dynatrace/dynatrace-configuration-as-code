@@ -19,13 +19,13 @@
 package v1
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"path/filepath"
+	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-
-	"path/filepath"
-	"testing"
 )
 
 // tests all configs for a single environment
@@ -35,14 +35,7 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 	allConfigsEnvironmentsFile := filepath.Join(allConfigsFolder, "environments.yaml")
 
 	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCmd(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-			"--continue-on-error",
-		})
-		err := cmd.Execute()
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose --continue-on-error", manifest)
 		// deployment should fail
 		assert.Error(t, err, "deployment should fail")
 

@@ -20,29 +20,29 @@ package v2
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 type downloadFunction func(*testing.T, afero.Fs, string, string, string, string, bool) error
 
-//TestRestoreConfigs validates if the configurations can be restore from the downloaded version after being deleted
-//It has 5 stages:
-//Preparation: Uploads a set of configurations and return the virtual filesystem
-//Execution: Download the configurations to the virtual filesystem
-//Cleanup: Deletes the configurations that were uploaded during validation
-//Validation: Uploads the downloaded configs and checks for status code 0 as result
-//Cleanup: Deletes the configurations that were uploaded during validation
+// TestRestoreConfigs validates if the configurations can be restore from the downloaded version after being deleted
+// It has 5 stages:
+// Preparation: Uploads a set of configurations and return the virtual filesystem
+// Execution: Download the configurations to the virtual filesystem
+// Cleanup: Deletes the configurations that were uploaded during validation
+// Validation: Uploads the downloaded configs and checks for status code 0 as result
+// Cleanup: Deletes the configurations that were uploaded during validation
 
 // TestRestoreConfigs_FromDownloadWithManifestFile deploys, download and re-deploys from download the download-configs test-resources
 // As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
@@ -208,7 +208,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			RunIntegrationWithCleanup(t, configsFolder, configsFolderManifest, "", "", func(fs afero.Fs, _ TestContext) {
-				err := monaco.RunWithFsf(fs, "monaco deploy %s", configsFolderManifest)
+				err := monaco.RunWithFSf(fs, "monaco deploy %s", configsFolderManifest)
 				require.NoError(t, err)
 
 				t.Log("Downloading configs")
@@ -235,7 +235,7 @@ func TestRestoreConfigsFull(t *testing.T) {
 	initialConfigsFolder := "test-resources/integration-all-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
 	downloadFolder := "test-resources/download"
-	subsetOfConfigsToDownload := "all" //value only for testing
+	subsetOfConfigsToDownload := "all" // value only for testing
 	suffixTest := "_download_all"
 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
@@ -284,13 +284,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
 	})
 
-	cmd := runner.BuildCmd(fs)
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		manifestFile,
-	})
-	err = cmd.Execute()
+	err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifestFile)
 	assert.NoError(t, err)
 
 	return suffix, nil
@@ -301,8 +295,8 @@ func execution_downloadConfigsWithCLIParameters(
 	fs afero.Fs,
 	downloadFolder string,
 	_ string,
-	apisToDownload string,
-	settingsToDownload string,
+	apiToDownload string,
+	settingToDownload string,
 	oauth bool,
 ) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
@@ -312,24 +306,27 @@ func execution_downloadConfigsWithCLIParameters(
 		return err
 	}
 	parameters := []string{"download", "--verbose", "--output-folder", downloadFolder}
-	if apisToDownload != "all" {
-		if apisToDownload != "" {
-			parameters = append(parameters, "--api", apisToDownload)
+	command := fmt.Sprintf("monaco download --verbose --output-folder=%s", downloadFolder)
+	if apiToDownload != "all" {
+		if apiToDownload != "" {
+			parameters = append(parameters, "--api", apiToDownload)
+			command += " --api=" + apiToDownload
 		}
-		if settingsToDownload != "" {
-			parameters = append(parameters, "--settings-schema", settingsToDownload)
+		if settingToDownload != "" {
+			parameters = append(parameters, "--settings-schema", settingToDownload)
+			command += " --settings-schema=" + settingToDownload
 		}
 	}
 
 	if oauth {
 		parameters = append(parameters, "--url", os.Getenv("PLATFORM_URL_ENVIRONMENT_1"), "--token", "TOKEN_ENVIRONMENT_1", "--oauth-client-id", "OAUTH_CLIENT_ID", "--oauth-client-secret", "OAUTH_CLIENT_SECRET")
+		command += fmt.Sprintf(" --url=%s --token=%s --oauth-client-id=%s --oauth-client-secret=%s", os.Getenv("PLATFORM_URL_ENVIRONMENT_1"), "TOKEN_ENVIRONMENT_1", "OAUTH_CLIENT_ID", "OAUTH_CLIENT_SECRET")
 	} else {
 		parameters = append(parameters, "--url", os.Getenv("URL_ENVIRONMENT_1"), "--token", "TOKEN_ENVIRONMENT_1")
+		command += fmt.Sprintf(" --url=%s --token=%s", os.Getenv("URL_ENVIRONMENT_1"), "TOKEN_ENVIRONMENT_1")
 	}
 
-	cmd := runner.BuildCmd(fs)
-	cmd.SetArgs(parameters)
-	err = cmd.Execute()
+	err = monaco.RunWithFSf(fs, command)
 	assert.NoError(t, err)
 	return nil
 }
@@ -349,40 +346,21 @@ func execution_downloadConfigs(
 	if err != nil {
 		return err
 	}
-	parameters := []string{}
+	var command string
 
 	if apisToDownload == "all" {
-		parameters = []string{
-			"download",
-			"--manifest",
-			manifestFile,
-			"--environment",
-			"environment1",
-			"--verbose",
-			"--output-folder", downloadFolder,
-		}
+		command = fmt.Sprintf("monaco download --manifest=%s --environment=environment1 --verbose --output-folder=%s", manifestFile, downloadFolder)
 	} else {
-		parameters = []string{
-			"download",
-			"--manifest",
-			manifestFile,
-			"--environment",
-			"environment1",
-			"--verbose",
-			"--output-folder", downloadFolder,
-		}
-
+		command = fmt.Sprintf("monaco download --manifest=%s --output-folder=%s --environment=environment1 --verbose", manifestFile, downloadFolder)
 		if apisToDownload != "" {
-			parameters = append(parameters, "--api", apisToDownload)
+			command += fmt.Sprintf(" --api=%s", apisToDownload)
 		}
 		if settingsToDownload != "" {
-			parameters = append(parameters, "--settings-schema", settingsToDownload)
+			command += fmt.Sprintf(" --settings-schema=%s", settingsToDownload)
 		}
 	}
 
-	cmd := runner.BuildCmd(fs)
-	cmd.SetArgs(parameters)
-	err = cmd.Execute()
+	err = monaco.RunWithFs(fs, command)
 	assert.NoError(t, err)
 	return nil
 }
@@ -390,19 +368,13 @@ func execution_downloadConfigs(
 func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 	manifestFile string) {
 	log.Info("BEGIN VALIDATION PROCESS")
-	//Shows you the downloaded files list in the command line
+	// Shows you the downloaded files list in the command line
 	_ = afero.Walk(fs, downloadFolder+"/", func(path string, info os.FileInfo, err error) error {
 		fpath, err := filepath.Abs(path)
 		log.Info("file " + fpath)
 		return nil
 	})
 
-	cmd := runner.BuildCmd(fs)
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		manifestFile,
-	})
-	err := cmd.Execute()
+	err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifestFile)
 	assert.NoError(t, err)
 }
