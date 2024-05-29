@@ -103,13 +103,13 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 				RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, testName, func(fs afero.Fs, ctx TestContext) {
 
 					// upsert
-					cmd := runner.BuildCli(fs)
+					cmd := runner.BuildCmd(fs)
 					cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
 					err := cmd.Execute()
 					require.NoError(t, err, "create: did not expect error")
 
 					// download
-					cmd = runner.BuildCli(fs)
+					cmd = runner.BuildCmd(fs)
 					cmd.SetArgs(append(
 						[]string{
 							"download",
@@ -155,7 +155,7 @@ func TestReferencesAreValid(t *testing.T) {
 	manifestFile := configFolder + "manifest.yaml"
 
 	fs := testutils.CreateTestFileSystem()
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", "platform_env", "--dry-run"})
 	err := cmd.Execute()
 	assert.NoError(t, err, "expected configurations to be valid")
@@ -169,7 +169,7 @@ func TestReferencesFromClassicConfigsToSettingsResultInError(t *testing.T) {
 	fs := testutils.CreateTestFileSystem()
 	logOutput := strings.Builder{}
 
-	cmd := runner.BuildCliWithLogSpy(fs, &logOutput)
+	cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
 	cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", "platform_env", "--dry-run"})
 	err := cmd.Execute()
 	assert.Error(t, err, "expected invalid configurations to result in user error")

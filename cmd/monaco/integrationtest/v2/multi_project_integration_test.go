@@ -38,7 +38,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectManifest, multiProjectSpecificEnvironment, "MultiProject", func(fs afero.Fs, _ TestContext) {
 
 		// This causes a POST for all configs:
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", multiProjectManifest})
 		err := cmd.Execute()
 
@@ -51,7 +51,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProject(t *testing.T) {
 
-	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
+	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", multiProjectManifest})
 	err := cmd.Execute()
 
@@ -63,7 +63,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectManifest, multiProjectSpecificEnvironment, "MultiProjectOnProject", func(fs afero.Fs, _ TestContext) {
 
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy",
 			"--verbose",
 			"-p", "star-trek",
@@ -84,7 +84,7 @@ func TestIntegrationMultiProject_ReturnsErrorOnInvalidProjectDefinitions(t *test
 
 	invalidManifest := multiProjectFolder + "invalid-manifest-with-duplicate-projects.yaml"
 
-	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
+	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", invalidManifest})
 	err := cmd.Execute()
 

@@ -39,14 +39,14 @@ func TestIntegrationScopeParameters(t *testing.T) {
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "ScopeParameters", envVars, func(fs afero.Fs, _ TestContext) {
 
 		// This causes Creation of all Settings
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err := cmd.Execute()
 
 		assert.NoError(t, err)
 
 		// This causes an Update of all Settings
-		cmd = runner.BuildCli(fs)
+		cmd = runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err = cmd.Execute()
 		assert.NoError(t, err)
@@ -62,7 +62,7 @@ func TestIntegrationScopeParameterValidation(t *testing.T) {
 	envVar := "SCOPE_TEST_ENV_VAR"
 	t.Setenv(envVar, "environment")
 
-	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
+	cmd := runner.BuildCmd(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 

@@ -33,7 +33,7 @@ func TestManifestErrorsAreWrittenToFile(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 	assert.Error(t, err)
@@ -59,7 +59,7 @@ func TestConfigErrorsAreWrittenToFile(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 
-	cmd := runner.BuildCli(fs)
+	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 	assert.Error(t, err)

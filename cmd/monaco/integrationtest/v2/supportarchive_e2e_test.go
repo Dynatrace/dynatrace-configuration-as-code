@@ -21,14 +21,15 @@ package v2
 import (
 	"archive/zip"
 	"bytes"
+	"io"
+	"path/filepath"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"path/filepath"
-	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
@@ -42,7 +43,7 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 	RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "SupportArchive", func(fs afero.Fs, _ TestContext) {
 		cleanupLogsDir(t)
 
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
@@ -112,7 +113,7 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 
 			manifest := configFolder + tt.manifestFile
 
-			cmd := runner.BuildCli(fs)
+			cmd := runner.BuildCmd(fs)
 			cmd.SetArgs([]string{
 				"deploy",
 				"--verbose",

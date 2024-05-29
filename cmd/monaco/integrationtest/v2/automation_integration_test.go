@@ -43,13 +43,13 @@ func TestIntegrationAutomation(t *testing.T) {
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "Automation", envs, func(fs afero.Fs, _ TestContext) {
 
 		// This causes Creation of all automation objects
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err := cmd.Execute()
 		assert.NoError(t, err)
 
 		// This causes an Update of all automation objects
-		cmd = runner.BuildCli(fs)
+		cmd = runner.BuildCmd(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err = cmd.Execute()
 		assert.NoError(t, err)

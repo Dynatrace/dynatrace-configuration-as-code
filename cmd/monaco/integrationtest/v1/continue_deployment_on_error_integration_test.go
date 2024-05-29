@@ -35,7 +35,7 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 	allConfigsEnvironmentsFile := filepath.Join(allConfigsFolder, "environments.yaml")
 
 	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCli(fs)
+		cmd := runner.BuildCmd(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
