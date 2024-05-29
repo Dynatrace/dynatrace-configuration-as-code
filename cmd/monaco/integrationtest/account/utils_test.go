@@ -18,28 +18,17 @@ package account
 
 import (
 	"bytes"
-	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
-	"strings"
-	"testing"
 )
 
 func createMZone(t *testing.T) {
-	command := "deploy resources/mzones/manifest.yaml"
-	printCommand(command)
-
-	cli := runner.BuildCmd(afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()))
-	cli.SetArgs(strings.Split(command, " "))
-	err := cli.Execute()
+	err := monaco.Run("monaco deploy resources/mzones/manifest.yaml")
 	require.NoError(t, err)
-
-}
-
-func printCommand(c string) {
-	fmt.Printf("%s %s\n", "monaco", c)
 }
 
 func randomizeConfiguration(t *testing.T, fs afero.Fs, path string, randomStr string) {
