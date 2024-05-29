@@ -75,11 +75,11 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 
 	_, err := c.Delete(ctx, id)
 	if err != nil && !isAPIErrorStatusNotFound(err) {
-		logger.Error("failed to delete entry with id '%s' - %v", id, err)
+		logger.Error("Failed to delete entry with id '%s' - %v", id, err)
 		return err
 	}
 
-	logger.Debug("config with ID doesn't exists - no action needed", id)
+	logger.Debug("Config with ID '%s' successfully deleted", id)
 	return nil
 }
 

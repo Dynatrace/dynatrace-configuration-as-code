@@ -1060,6 +1060,7 @@ func TestDelete_Documents(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "document",
 			Identifier: "monaco_identifier",
+			Project:    "project",
 		}
 
 		externalID, _ := idutils.GenerateExternalIDForDocument(given.AsCoordinate())
@@ -1138,11 +1139,10 @@ func TestDelete_Documents(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("error during delete - abort the process", func(t *testing.T) {
+	t.Run("error during delete - skip the entry", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:           "document",
-			OriginObjectId: "originObjectID",
-		}
+			OriginObjectId: "originObjectID"}
 
 		c := client.NewMockDocumentClient(gomock.NewController(t))
 		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1).Return(documents.Response{}, coreapi.APIError{StatusCode: http.StatusInternalServerError}) //the error can be any kind except 404
