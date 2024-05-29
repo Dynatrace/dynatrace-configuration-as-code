@@ -1079,6 +1079,7 @@ func TestDelete_Documents(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "document",
 			Identifier: "monaco_identifier",
+			Project:    "project",
 		}
 
 		externalID, _ := idutils.GenerateExternalIDForDocument(given.AsCoordinate())
@@ -1096,6 +1097,7 @@ func TestDelete_Documents(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "document",
 			Identifier: "monaco_identifier",
+			Project:    "project",
 		}
 
 		externalID, _ := idutils.GenerateExternalIDForDocument(given.AsCoordinate())

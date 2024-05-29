@@ -36,16 +36,16 @@ type client interface {
 }
 
 func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
-	errNo := 0
+	errCount := 0
 	for _, dp := range dps {
 		err := deleteSingle(ctx, c, dp)
 		if err != nil {
 			log.WithCtxFields(ctx).WithFields(field.Type(dp.Type), field.Coordinate(dp.AsCoordinate())).Error("Failed to delete entry: %v", err)
-			errNo++
+			errCount++
 		}
 	}
-	if errNo > 0 {
-		return fmt.Errorf("failed to delete %d document objects(s)", errNo)
+	if errCount > 0 {
+		return fmt.Errorf("failed to delete %d document objects(s)", errCount)
 	}
 	return nil
 }
