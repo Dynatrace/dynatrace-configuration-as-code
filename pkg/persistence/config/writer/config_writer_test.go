@@ -1177,7 +1177,21 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "dashboard-document",
 						ConfigId: "configId1",
 					},
-					Type:           config.DashboardType,
+					Type:           config.DocumentType{Kind: config.DashboardKind},
+					OriginObjectId: "ext-ID-123",
+					Parameters: map[string]parameter.Parameter{
+						config.NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					Skip: true,
+				},
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/dashboard-document/b.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "dashboard-document",
+						ConfigId: "configId2",
+					},
+					Type:           config.DocumentType{Kind: config.DashboardKind, Private: true},
 					OriginObjectId: "ext-ID-123",
 					Parameters: map[string]parameter.Parameter{
 						config.NameParameter: &value.ValueParameter{Value: "name"},
@@ -1189,9 +1203,9 @@ func TestWriteConfigs(t *testing.T) {
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "notebook-document",
-						ConfigId: "configId2",
+						ConfigId: "configId3",
 					},
-					Type:           config.NotebookType,
+					Type:           config.DocumentType{Kind: config.NotebookKind},
 					OriginObjectId: "ext-ID-123",
 					Parameters: map[string]parameter.Parameter{
 						config.NameParameter: &value.ValueParameter{Value: "name"},
@@ -1212,7 +1226,20 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:           true,
 							},
 							Type: persistence.TypeDefinition{
-								Type: config.DashboardType,
+								Type: config.DocumentType{Kind: config.DashboardKind},
+							},
+						},
+						{
+							Id: "configId2",
+							Config: persistence.ConfigDefinition{
+								Name:           "name",
+								Parameters:     nil,
+								Template:       "b.json",
+								OriginObjectId: "ext-ID-123",
+								Skip:           true,
+							},
+							Type: persistence.TypeDefinition{
+								Type: config.DocumentType{Kind: config.DashboardKind, Private: true},
 							},
 						},
 					},
@@ -1220,7 +1247,7 @@ func TestWriteConfigs(t *testing.T) {
 				"notebook-document": {
 					Configs: []persistence.TopLevelConfigDefinition{
 						{
-							Id: "configId2",
+							Id: "configId3",
 							Config: persistence.ConfigDefinition{
 								Name:           "name",
 								Parameters:     nil,
@@ -1229,7 +1256,7 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:           true,
 							},
 							Type: persistence.TypeDefinition{
-								Type: config.NotebookType,
+								Type: config.DocumentType{Kind: config.NotebookKind},
 							},
 						},
 					},
@@ -1237,6 +1264,7 @@ func TestWriteConfigs(t *testing.T) {
 			},
 			expectedTemplatePaths: []string{
 				"project/dashboard-document/a.json",
+				"project/dashboard-document/b.json",
 				"project/notebook-document/a.json",
 			},
 			envVars: map[string]string{

@@ -1408,7 +1408,7 @@ configs:
     template: 'profile.json'
   type:
     document:
-      type: dashboard-document`,
+      kind: dashboard-document`,
 			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
@@ -1417,7 +1417,44 @@ configs:
 						ConfigId: "dashboard-id",
 					},
 					OriginObjectId: "ext-ID-123",
-					Type:           config.DashboardType,
+					Type:           config.DocumentType{Kind: config.DashboardKind, Private: false},
+					Template:       template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter: &value.ValueParameter{Value: "Test dashboard"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
+			name: "Document private dashboard config with FF on",
+			envVars: map[string]string{
+				featureflags.Documents().EnvName(): "true",
+			},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: dashboard-id
+  config:
+    name: Test dashboard
+    originObjectId: ext-ID-123
+    template: 'profile.json'
+  type:
+    document:
+      kind: dashboard-document
+      private: true`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "dashboard-document",
+						ConfigId: "dashboard-id",
+					},
+					OriginObjectId: "ext-ID-123",
+					Type:           config.DocumentType{Kind: config.DashboardKind, Private: true},
 					Template:       template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter: &value.ValueParameter{Value: "Test dashboard"},
@@ -1444,7 +1481,7 @@ configs:
     template: 'profile.json'
   type:
     document:
-      type: notebook-document`,
+      kind: notebook-document`,
 			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
@@ -1453,7 +1490,7 @@ configs:
 						ConfigId: "notebook-id",
 					},
 					OriginObjectId: "ext-ID-123",
-					Type:           config.NotebookType,
+					Type:           config.DocumentType{Kind: config.NotebookKind},
 					Template:       template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter: &value.ValueParameter{Value: "Test notebook"},
@@ -1480,7 +1517,7 @@ configs:
     template: 'profile.json'
   type:
     document:
-      type: other`,
+      kind: other`,
 			wantErrorsContain: []string{
 				"unknown document type \"other\"",
 			},
@@ -1498,7 +1535,7 @@ configs:
     template: 'profile.json'
   type:
     document:
-      type: dashboard-document`,
+      kind: dashboard-document`,
 			wantErrorsContain: []string{
 				"unknown config-type \"document\"",
 			},

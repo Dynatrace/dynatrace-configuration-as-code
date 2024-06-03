@@ -34,12 +34,12 @@ import (
 	"github.com/go-logr/logr"
 )
 
-//go:generate mockgen -source=document.go -destination=document_mock_test.go -package=document_test documentClient
+//go:generate mockgen -source=document.go -destination=document_mock.go -package=document documentClient
 type Client interface {
 	Get(ctx context.Context, id string) (documents.Response, error)
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
-	Create(ctx context.Context, name string, externalId string, data []byte, documentType documents.DocumentType) (documents.Response, error)
-	Update(ctx context.Context, id string, name string, data []byte, documentType documents.DocumentType) (documents.Response, error)
+	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (documents.Response, error)
+	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (documents.Response, error)
 }
 
 var _ Client = (*DummyClient)(nil)
@@ -47,7 +47,7 @@ var _ Client = (*DummyClient)(nil)
 type DummyClient struct{}
 
 // Create implements Client.
-func (c DummyClient) Create(ctx context.Context, name string, externalId string, data []byte, documentType documents.DocumentType) (documents.Response, error) {
+func (c DummyClient) Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (documents.Response, error) {
 	return documents.Response{}, nil
 }
 
@@ -62,7 +62,7 @@ func (c *DummyClient) List(ctx context.Context, filter string) (documents.ListRe
 }
 
 // Update implements Client.
-func (c *DummyClient) Update(ctx context.Context, id string, name string, data []byte, documentType documents.DocumentType) (documents.Response, error) {
+func (c *DummyClient) Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (documents.Response, error) {
 	return documents.Response{}, nil
 }
 
@@ -70,7 +70,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	// create new context to carry logger
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
 
-	documentType, err := getDocumentTypeFromConfigType(c.Type)
+	documentType, isPrivate, err := getDocumentAttributesFromConfigType(c.Type)
 	if err != nil {
 		return entities.ResolvedEntity{}, fmt.Errorf("cannot get document type for config: %w", err)
 	}
@@ -82,7 +82,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 
 	// strategy 1: if an origin id is available, try to update that document
 	if c.OriginObjectId != "" {
-		updateResponse, err := client.Update(ctx, c.OriginObjectId, documentName, []byte(renderedConfig), documentType)
+		updateResponse, err := client.Update(ctx, c.OriginObjectId, documentName, isPrivate, []byte(renderedConfig), documentType)
 		if err == nil {
 			return createResolvedEntity(documentName, updateResponse.ID, c.Coordinate, properties), nil
 		}
@@ -104,7 +104,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	}
 
 	if id != "" {
-		updateResponse, err := client.Update(ctx, id, documentName, []byte(renderedConfig), documentType)
+		updateResponse, err := client.Update(ctx, id, documentName, isPrivate, []byte(renderedConfig), documentType)
 		if err != nil {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", c.OriginObjectId)).WithError(err)
 		}
@@ -113,7 +113,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	}
 
 	// strategy 3: try to create a new document
-	createResponse, err := client.Create(ctx, documentName, externalId, []byte(renderedConfig), documentType)
+	createResponse, err := client.Create(ctx, documentName, isPrivate, externalId, []byte(renderedConfig), documentType)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", documentName)).WithError(err)
 	}
@@ -158,17 +158,17 @@ func createResolvedEntity(documentName string, id string, coordinate coordinate.
 	}
 }
 
-func getDocumentTypeFromConfigType(t config.Type) (documents.DocumentType, error) {
+func getDocumentAttributesFromConfigType(t config.Type) (documents.DocumentType, bool, error) {
 	documentType, ok := t.(config.DocumentType)
 	if !ok {
-		return "", fmt.Errorf("expected document config type but found %v", t)
+		return "", false, fmt.Errorf("expected document config type but found %v", t)
 	}
-	switch documentType {
-	case config.DashboardType:
-		return documents.Dashboard, nil
-	case config.NotebookType:
-		return documents.Notebook, nil
+	switch documentType.Kind {
+	case config.DashboardKind:
+		return documents.Dashboard, documentType.Private, nil
+	case config.NotebookKind:
+		return documents.Notebook, documentType.Private, nil
 	}
 
-	return "", nil
+	return "", false, nil
 }
