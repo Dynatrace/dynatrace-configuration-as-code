@@ -32,13 +32,12 @@ import (
 	"golang.org/x/net/context"
 )
 
-type Client interface {
+type client interface {
 	Delete(ctx context.Context, id string) (buckets.Response, error)
 	List(ctx context.Context) (buckets.ListResponse, error)
 }
 
-func Delete(ctx context.Context, c Client, entries []pointer.DeletePointer) error {
-
+func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) error {
 	logger := log.WithCtxFields(ctx).WithFields(field.Type("bucket"))
 	logger.Info(`Deleting %d config(s) of type "bucket"...`, len(entries))
 
@@ -83,7 +82,7 @@ func Delete(ctx context.Context, c Client, entries []pointer.DeletePointer) erro
 //
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
-func DeleteAll(ctx context.Context, c Client) error {
+func DeleteAll(ctx context.Context, c client) error {
 	logger := log.WithCtxFields(ctx).WithFields(field.Type("bucket"))
 	logger.Info("Collecting Grail Bucket configurations...")
 

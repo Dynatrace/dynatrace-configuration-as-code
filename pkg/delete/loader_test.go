@@ -392,6 +392,40 @@ func TestEmptyFileFails(t *testing.T) {
 	assert.Empty(t, result)
 }
 
+func TestLoad_DocumentsEntry(t *testing.T) {
+	t.Run("identify via project-id pair'", func(t *testing.T) {
+		fileContent := []byte(`delete:
+- type: document
+  project: project
+  id: monaco-config-id
+`)
+		want := delete.DeleteEntries{
+			"document": {{
+				Type:       "document",
+				Project:    "project",
+				Identifier: "monaco-config-id",
+			}}}
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+		require.NoError(t, err)
+		require.Equal(t, want, actual)
+	})
+
+	t.Run("identify via 'objectId'", func(t *testing.T) {
+		fileContent := []byte(`delete:
+- type: document
+  objectId: origin-object-ID
+`)
+		want := delete.DeleteEntries{
+			"document": {{
+				Type:           "document",
+				OriginObjectId: "origin-object-ID",
+			}}}
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+		require.NoError(t, err)
+		require.Equal(t, want, actual)
+	})
+}
+
 func createDeleteFile(t testing.TB, content []byte) (afero.Fs, string) {
 	t.Helper()
 
