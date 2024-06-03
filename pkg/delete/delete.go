@@ -19,6 +19,8 @@ package delete
 import (
 	"context"
 	"fmt"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -27,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
@@ -36,6 +39,7 @@ type ClientSet struct {
 	Settings   client.SettingsClient
 	Automation client.AutomationClient
 	Buckets    client.BucketClient
+	Documents  client.DocumentClient
 }
 
 type configurationType = string
@@ -44,7 +48,7 @@ type configurationType = string
 type DeleteEntries = map[configurationType][]pointer.DeletePointer
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
-func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) error {
+func Configs(ctx context.Context, clients ClientSet, _ api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) error {
 	var deleteErrors int
 
 	// Delete automation resources (in the specified order)
@@ -72,17 +76,25 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 	}
 
 	// Delete rest of config types
-	for entryType, entries := range entriesToDelete {
+	for t, entries := range entriesToDelete {
 		var err error
-		if theAPI, isClassicAPI := apis[entryType]; isClassicAPI {
-			err = classic.Delete(ctx, clients.Classic, theAPI, entries)
-		} else if entryType == "bucket" {
+		if _, ok := api.NewAPIs()[t]; ok {
+			err = classic.Delete(ctx, clients.Classic, entries)
+		} else if t == "bucket" {
 			if clients.Buckets == nil {
-				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
+				log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
 				continue
 			}
 			err = bucket.Delete(ctx, clients.Buckets, entries)
-		} else { // assume it's a Settings Schema
+		} else if t == "document" {
+			if featureflags.Documents().Enabled() {
+				if clients.Documents == nil {
+					log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
+					continue
+				}
+				err = document.Delete(ctx, clients.Documents, entries)
+			}
+		} else {
 			err = setting.Delete(ctx, clients.Settings, entries)
 		}
 
