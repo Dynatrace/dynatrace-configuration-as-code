@@ -23,7 +23,6 @@ schemas/
 
 # Mock files
 **/*_mock.go
-**/*_mock_test.go
 cmd/monaco/test-resources/download/
 
 # Dependencies

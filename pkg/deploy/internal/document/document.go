@@ -34,7 +34,7 @@ import (
 	"github.com/go-logr/logr"
 )
 
-//go:generate mockgen -source=document.go -destination=document_mock_test.go -package=document_test documentClient
+//go:generate mockgen -source=document.go -destination=document_mock.go -package=document documentClient
 type Client interface {
 	Get(ctx context.Context, id string) (documents.Response, error)
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
