@@ -227,7 +227,7 @@ func TestDownloader_Download(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
-		// expect one notebook (and no dashsboard)
+		// expect one notebook (and no dashboard)
 		require.Len(t, result["document"], 1)
 		notebookConfig := result["document"][0]
 		assert.Empty(t, cmp.Diff(expectedNotebookConfig, notebookConfig, templateComparer))
