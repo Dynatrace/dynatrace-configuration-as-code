@@ -1171,10 +1171,10 @@ func TestWriteConfigs(t *testing.T) {
 			name: "Documents",
 			configs: []config.Config{
 				{
-					Template: template.NewInMemoryTemplateWithPath("project/dashboard-document/a.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/document/a.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "dashboard-document",
+						Type:     "document",
 						ConfigId: "configId1",
 					},
 					Type:           config.DocumentType{Kind: config.DashboardKind},
@@ -1185,10 +1185,10 @@ func TestWriteConfigs(t *testing.T) {
 					Skip: true,
 				},
 				{
-					Template: template.NewInMemoryTemplateWithPath("project/dashboard-document/b.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/document/b.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "dashboard-document",
+						Type:     "document",
 						ConfigId: "configId2",
 					},
 					Type:           config.DocumentType{Kind: config.DashboardKind, Private: true},
@@ -1199,10 +1199,10 @@ func TestWriteConfigs(t *testing.T) {
 					Skip: true,
 				},
 				{
-					Template: template.NewInMemoryTemplateWithPath("project/notebook-document/a.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/document/a.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "notebook-document",
+						Type:     "document",
 						ConfigId: "configId3",
 					},
 					Type:           config.DocumentType{Kind: config.NotebookKind},
@@ -1214,7 +1214,7 @@ func TestWriteConfigs(t *testing.T) {
 				},
 			},
 			expectedConfigs: map[string]persistence.TopLevelDefinition{
-				"dashboard-document": {
+				"document": {
 					Configs: []persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId1",
@@ -1242,10 +1242,6 @@ func TestWriteConfigs(t *testing.T) {
 								Type: config.DocumentType{Kind: config.DashboardKind, Private: true},
 							},
 						},
-					},
-				},
-				"notebook-document": {
-					Configs: []persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId3",
 							Config: persistence.ConfigDefinition{
@@ -1263,9 +1259,9 @@ func TestWriteConfigs(t *testing.T) {
 				},
 			},
 			expectedTemplatePaths: []string{
-				"project/dashboard-document/a.json",
-				"project/dashboard-document/b.json",
-				"project/notebook-document/a.json",
+				"project/document/a.json",
+				"project/document/b.json",
+				"project/document/a.json",
 			},
 			envVars: map[string]string{
 				featureflags.Documents().EnvName(): "true",
