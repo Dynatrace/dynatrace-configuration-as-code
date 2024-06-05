@@ -133,11 +133,11 @@ func toTopLevelDefinitions(context *WriterContext, configs []config.Config) (map
 	var configTemplates []configTemplate
 
 	for coord, confs := range configsPerCoordinate {
-		sanitizedType := mystrings.Sanitize(coord.Type)
+		sanitizedType := mystrings.Sanitize(coord.extendedType)
 		configContext := &serializerContext{
 			WriterContext: context,
 			configFolder:  filepath.Join(context.ProjectFolder, sanitizedType),
-			config:        coord,
+			config:        coord.Coordinate,
 		}
 
 		definition, templates, convertErrs := toTopLevelConfigDefinition(configContext, confs)
@@ -149,7 +149,7 @@ func toTopLevelDefinitions(context *WriterContext, configs []config.Config) (map
 
 		apiCoord := apiCoordinate{
 			project: coord.Project,
-			api:     coord.Type,
+			api:     coord.extendedType,
 		}
 
 		configsPerApi[apiCoord] = append(configsPerApi[apiCoord], definition)
@@ -725,11 +725,33 @@ func toValueShorthandDefinition(context *detailedSerializerContext, parameterNam
 	return nil, fmtDetailedConfigWriterError(context.serializerContext, "%s:%s: unknown special type `%s`", context.config, parameterName, param.GetType())
 }
 
-func groupConfigs(configs []config.Config) map[coordinate.Coordinate][]config.Config {
-	result := make(map[coordinate.Coordinate][]config.Config)
+type extendedCoordinate struct {
+	coordinate.Coordinate
+	extendedType string
+}
+
+func newExtendedCoordinateFromConfig(c config.Config) extendedCoordinate {
+	switch t := c.Type.(type) {
+	case config.DocumentType:
+		return extendedCoordinate{
+			Coordinate:   c.Coordinate,
+			extendedType: fmt.Sprintf("%s-%s", c.Coordinate.Type, string(t.Kind)),
+		}
+
+	default:
+		return extendedCoordinate{
+			Coordinate:   c.Coordinate,
+			extendedType: c.Coordinate.Type,
+		}
+	}
+}
+
+func groupConfigs(configs []config.Config) map[extendedCoordinate][]config.Config {
+	result := make(map[extendedCoordinate][]config.Config)
 
 	for _, c := range configs {
-		result[c.Coordinate] = append(result[c.Coordinate], c)
+		eCoord := newExtendedCoordinateFromConfig(c)
+		result[eCoord] = append(result[eCoord], c)
 	}
 
 	return result
