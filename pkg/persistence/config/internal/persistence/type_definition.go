@@ -202,13 +202,13 @@ func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 	case config.DocumentType:
 		switch t.Kind {
 		case "":
-			return errors.New("missing document type property")
+			return errors.New("missing document kind property")
 
 		case config.DashboardKind, config.NotebookKind:
 			return nil
 
 		default:
-			return fmt.Errorf("unknown document type %q", t.Kind)
+			return fmt.Errorf("unknown document kind %q", t.Kind)
 		}
 	}
 
@@ -226,7 +226,7 @@ func (c *TypeDefinition) GetApiType() string {
 	case config.BucketType:
 		return string(t.ID())
 	case config.DocumentType:
-		return string(t.Kind)
+		return string(t.ID())
 	}
 
 	return ""

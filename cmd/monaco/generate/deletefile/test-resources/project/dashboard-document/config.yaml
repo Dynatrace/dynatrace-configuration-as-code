@@ -1,9 +1,0 @@
-configs:
-- id: my-dashboard
-  config:
-    name: My dashboard
-    template: dashboard.json
-    skip: false
-  type:
-    document:
-      kind: dashboard-document

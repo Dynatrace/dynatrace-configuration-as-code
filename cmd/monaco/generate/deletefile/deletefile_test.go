@@ -111,8 +111,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "scheduling-rule", "ca-scheduling-rule")
 	assertDeleteEntries(t, entries, "workflow", "ca-jira-issue-workflow")
 	assertDeleteEntries(t, entries, "bucket", "my-bucket")
-	assertDeleteEntries(t, entries, "dashboard-document", "my-dashboard")
-	assertDeleteEntries(t, entries, "notebook-document", "my-notebook")
+	assertDeleteEntries(t, entries, "document", "my-dashboard", "my-notebook")
 }
 
 func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {

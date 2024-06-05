@@ -1,0 +1,18 @@
+configs:
+- id: my-dashboard
+  config:
+    name: My dashboard
+    template: dashboard.json
+    skip: false
+  type:
+    document:
+      kind: dashboard
+- id: my-notebook
+  config:
+    name: My notebook
+    template: notebook.json
+    skip: false
+  type:
+    document:
+      kind: notebook
+

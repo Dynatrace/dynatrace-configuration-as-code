@@ -134,8 +134,8 @@ func (BucketType) ID() TypeId {
 type DocumentKind string
 
 const (
-	DashboardKind DocumentKind = "dashboard-document"
-	NotebookKind  DocumentKind = "notebook-document"
+	DashboardKind DocumentKind = "dashboard"
+	NotebookKind  DocumentKind = "notebook"
 )
 
 // DocumentType represents a Dynatrace platform document.

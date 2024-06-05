@@ -34,8 +34,11 @@ import (
 
 func Download(client client.DocumentClient, projectName string) (v2.ConfigsPerType, error) {
 	result := make(v2.ConfigsPerType)
-	result[string(config.DashboardKind)] = downloadDocumentsOfType(client, projectName, documents.Dashboard)
-	result[string(config.NotebookKind)] = downloadDocumentsOfType(client, projectName, documents.Notebook)
+
+	dashboards := downloadDocumentsOfType(client, projectName, documents.Dashboard)
+	notebooks := downloadDocumentsOfType(client, projectName, documents.Notebook)
+	result[string(config.DocumentTypeId)] = append(result[string(config.DocumentTypeId)], dashboards...)
+	result[string(config.DocumentTypeId)] = append(result[string(config.DocumentTypeId)], notebooks...)
 	return result, nil
 }
 
@@ -86,7 +89,7 @@ func convertDocumentResponse(client client.DocumentClient, projectName string, r
 		Template: template,
 		Coordinate: coordinate.Coordinate{
 			Project:  projectName,
-			Type:     string(documentType.Kind),
+			Type:     string(config.DocumentTypeId),
 			ConfigId: documentResponse.ID,
 		},
 		Type:           documentType,

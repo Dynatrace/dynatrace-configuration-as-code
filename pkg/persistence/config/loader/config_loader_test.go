@@ -1408,12 +1408,12 @@ configs:
     template: 'profile.json'
   type:
     document:
-      kind: dashboard-document`,
+      kind: dashboard`,
 			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "dashboard-document",
+						Type:     "document",
 						ConfigId: "dashboard-id",
 					},
 					OriginObjectId: "ext-ID-123",
@@ -1444,13 +1444,13 @@ configs:
     template: 'profile.json'
   type:
     document:
-      kind: dashboard-document
+      kind: dashboard
       private: true`,
 			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "dashboard-document",
+						Type:     "document",
 						ConfigId: "dashboard-id",
 					},
 					OriginObjectId: "ext-ID-123",
@@ -1481,12 +1481,12 @@ configs:
     template: 'profile.json'
   type:
     document:
-      kind: notebook-document`,
+      kind: notebook`,
 			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "notebook-document",
+						Type:     "document",
 						ConfigId: "notebook-id",
 					},
 					OriginObjectId: "ext-ID-123",
@@ -1519,7 +1519,7 @@ configs:
     document:
       kind: other`,
 			wantErrorsContain: []string{
-				"unknown document type \"other\"",
+				"unknown document kind \"other\"",
 			},
 		},
 		{
@@ -1535,7 +1535,7 @@ configs:
     template: 'profile.json'
   type:
     document:
-      kind: dashboard-document`,
+      kind: dashboard`,
 			wantErrorsContain: []string{
 				"unknown config-type \"document\"",
 			},
