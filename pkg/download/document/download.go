@@ -35,7 +35,10 @@ import (
 func Download(client client.DocumentClient, projectName string) (v2.ConfigsPerType, error) {
 	result := make(v2.ConfigsPerType)
 
-	result[string(config.DocumentTypeId)] = append(downloadDocumentsOfType(client, projectName, documents.Dashboard), downloadDocumentsOfType(client, projectName, documents.Notebook)...)
+	dashboards := downloadDocumentsOfType(client, projectName, documents.Dashboard)
+	notebooks := downloadDocumentsOfType(client, projectName, documents.Notebook)
+	result[string(config.DocumentTypeId)] = append(result[string(config.DocumentTypeId)], dashboards...)
+	result[string(config.DocumentTypeId)] = append(result[string(config.DocumentTypeId)], notebooks...)
 	return result, nil
 }
 
