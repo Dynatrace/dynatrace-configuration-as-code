@@ -7,12 +7,3 @@ configs:
   type:
     document:
       kind: dashboard
-- id: my-notebook
-  config:
-    name: My notebook
-    template: notebook.json
-    skip: false
-  type:
-    document:
-      kind: notebook
-

@@ -1171,7 +1171,7 @@ func TestWriteConfigs(t *testing.T) {
 			name: "Documents",
 			configs: []config.Config{
 				{
-					Template: template.NewInMemoryTemplateWithPath("project/document/a.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/document-dashboard/a.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "document",
@@ -1185,7 +1185,7 @@ func TestWriteConfigs(t *testing.T) {
 					Skip: true,
 				},
 				{
-					Template: template.NewInMemoryTemplateWithPath("project/document/b.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/document-dashboard/b.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "document",
@@ -1199,7 +1199,7 @@ func TestWriteConfigs(t *testing.T) {
 					Skip: true,
 				},
 				{
-					Template: template.NewInMemoryTemplateWithPath("project/document/a.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/document-notebook/a.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "document",
@@ -1214,7 +1214,7 @@ func TestWriteConfigs(t *testing.T) {
 				},
 			},
 			expectedConfigs: map[string]persistence.TopLevelDefinition{
-				"document": {
+				"document-dashboard": {
 					Configs: []persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId1",
@@ -1242,6 +1242,10 @@ func TestWriteConfigs(t *testing.T) {
 								Type: config.DocumentType{Kind: config.DashboardKind, Private: true},
 							},
 						},
+					},
+				},
+				"document-notebook": {
+					Configs: []persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId3",
 							Config: persistence.ConfigDefinition{
@@ -1259,9 +1263,9 @@ func TestWriteConfigs(t *testing.T) {
 				},
 			},
 			expectedTemplatePaths: []string{
-				"project/document/a.json",
-				"project/document/b.json",
-				"project/document/a.json",
+				"project/document-dashboard/a.json",
+				"project/document-dashboard/b.json",
+				"project/document-notebook/a.json",
 			},
 			envVars: map[string]string{
 				featureflags.Documents().EnvName(): "true",
