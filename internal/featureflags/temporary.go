@@ -136,6 +136,15 @@ func Documents() FeatureFlag {
 	}
 }
 
+// DeleteDocuments toggles whether documents are deleted
+// Introduced: 2024-04-16; v2.14.2
+func DeleteDocuments() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_DELETE_DOCUMENTS",
+		defaultEnabled: false,
+	}
+}
+
 // Documents toggles whether insertAfter config parameter is persisted for ordered settings.
 // Introduced: 2024-05-15; v2.14.0
 func PersistSettingsOrder() FeatureFlag {

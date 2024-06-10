@@ -44,7 +44,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 		if theAPI.HasParent() {
 			parentID, e = resolveIdentifier(ctx, client, theAPI.Parent, toIdentifier(dp.Scope, "", ""))
 			if e != nil && !is404(e) {
-				log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w")
+				log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w", e)
 				err = errors.Join(err, e)
 				continue
 			} else if parentID == "" {
@@ -58,7 +58,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 		if id == "" {
 			id, e = resolveIdentifier(ctx, client, &a, toIdentifier(dp.Identifier, dp.ActionType, dp.Domain))
 			if e != nil && !is404(e) {
-				log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w")
+				log.WithFields(field.Error(e)).Error("unable to resolve config ID: %w", e)
 				err = errors.Join(err, e)
 				continue
 			} else if id == "" {
