@@ -153,3 +153,12 @@ func PersistSettingsOrder() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+// OpenPipeline toggles whether openpipeline configurations are downloaded and / or deployed.
+// Introduced: 2024-06-10; v2.15.0
+func OpenPipeline() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_OPEN_PIPELINE",
+		defaultEnabled: false,
+	}
+}
