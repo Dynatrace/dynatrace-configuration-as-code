@@ -426,6 +426,86 @@ func TestLoad_DocumentsEntry(t *testing.T) {
 	})
 }
 
+func TestLoad_Automation(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "declare via coordinate",
+			given: []byte(`delete:
+- type:    workflow
+  project: my-project
+  id:      my-workflow
+- type:    scheduling-rule
+  project: my-project
+  id:      my-rule
+- type:    business-calendar
+  project: my-project
+  id:      my-calendar
+`),
+			want: delete.DeleteEntries{
+				"workflow": {{
+					Project:    "my-project",
+					Type:       "workflow",
+					Identifier: "my-workflow",
+				}},
+				"scheduling-rule": {{
+					Project:    "my-project",
+					Type:       "scheduling-rule",
+					Identifier: "my-rule",
+				}},
+				"business-calendar": {{
+					Project:    "my-project",
+					Type:       "business-calendar",
+					Identifier: "my-calendar",
+				}},
+			},
+		},
+		{
+			name: "declare via originId",
+			given: []byte(`delete:
+- type:     workflow
+  objectId: workflow-id
+- type:     scheduling-rule
+  objectId: rule-id
+- type:     business-calendar
+  objectId: calendar-id
+`),
+			want: delete.DeleteEntries{
+				"workflow": {{
+					OriginObjectId: "workflow-id",
+					Type:           "workflow",
+				}},
+				"scheduling-rule": {{
+					OriginObjectId: "rule-id",
+					Type:           "scheduling-rule",
+				}},
+				"business-calendar": {{
+					OriginObjectId: "calendar-id",
+					Type:           "business-calendar",
+				}},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, tc.given))
+			if tc.want != nil {
+				require.NoError(t, err)
+				require.Equal(t, tc.want, actual)
+			} else {
+				require.Error(t, err)
+				assert.Empty(t, actual)
+			}
+		})
+	}
+}
+
+type testCase struct {
+	name  string
+	given []byte
+	want  delete.DeleteEntries
+}
+
 func createDeleteFile(t testing.TB, content []byte) (afero.Fs, string) {
 	t.Helper()
 

@@ -147,7 +147,7 @@ func All(ctx context.Context, clients ClientSet, apis api.APIs) error {
 		if clients.Documents == nil {
 			log.Warn("Skipped deletion of Documents configurations as appropriate client was unavailable.")
 		} else if err := document.DeleteAll(ctx, clients.Documents); err != nil {
-			log.Error("Failed to delete all Document configurations")
+			log.Error("Failed to delete all Document configurations: %v", err)
 			errs++
 		}
 	}
