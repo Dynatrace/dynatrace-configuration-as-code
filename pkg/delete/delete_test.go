@@ -294,7 +294,7 @@ func TestDeleteSettings(t *testing.T) {
 
 }
 
-func TestDeleteAutomations(t *testing.T) {
+func TestDelete_Automations(t *testing.T) {
 	t.Run("TestDeleteAutomations", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "workflows") {
@@ -1056,6 +1056,7 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 
 func TestDelete_Documents(t *testing.T) {
 	t.Setenv(featureflags.Documents().EnvName(), "true")
+	t.Setenv(featureflags.DeleteDocuments().EnvName(), "true")
 	t.Run("delete via coordinate", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "document",

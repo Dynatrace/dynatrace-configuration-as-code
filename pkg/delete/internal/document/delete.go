@@ -75,8 +75,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 
 	_, err := c.Delete(ctx, id)
 	if err != nil && !isAPIErrorStatusNotFound(err) {
-		logger.Error("Failed to delete entry with id '%s' - %v", id, err)
-		return err
+		return fmt.Errorf("failed to delete entry with id '%s' - %w", id, err)
 	}
 
 	logger.Debug("Config with ID '%s' successfully deleted", id)
@@ -107,4 +106,20 @@ func isAPIErrorStatusNotFound(err error) bool {
 	}
 
 	return apiErr.StatusCode == http.StatusNotFound
+}
+
+func DeleteAll(ctx context.Context, c client) error {
+	listResponse, err := c.List(ctx, fmt.Sprintf("type='%s' or type='%s'", documents.Dashboard, documents.Notebook))
+	if err != nil {
+		return err
+	}
+
+	var retErr error
+	for _, x := range listResponse.Responses {
+		err := deleteSingle(ctx, c, pointer.DeletePointer{Type: x.Type, OriginObjectId: x.ID})
+		if err != nil {
+			retErr = errors.Join(retErr, err)
+		}
+	}
+	return retErr
 }

@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -29,7 +31,6 @@ import (
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
 	"golang.org/x/exp/maps"
-	"path/filepath"
 )
 
 func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string, apiNames []string) error {
@@ -98,5 +99,6 @@ func getClientSet(env manifest.EnvironmentDefinition) (delete.ClientSet, error) 
 		Settings:   clients.Settings(),
 		Automation: clients.Automation(),
 		Buckets:    clients.Bucket(),
+		Documents:  clients.Document(),
 	}, nil
 }
