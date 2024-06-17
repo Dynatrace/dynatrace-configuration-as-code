@@ -54,6 +54,10 @@ type DocumentDefinition struct {
 	Private bool                `yaml:"private,omitempty" json:"private,omitempty" jsonschema:"description=Set to true to make the document private"  mapstructure:"private"`
 }
 
+type OpenPipelineDefinition struct {
+	Kind string `yaml:"kind" json:"kind" jsonschema:"required,description=This defines the kind of OpenPipeline this config is for." mapstructure:"kind"`
+}
+
 // UnmarshalYAML Custom unmarshaler that knows how to handle TypeDefinition.
 // 'type' section can come as string or as struct as it is defind in `TypeDefinition`
 // function parameter more than once if necessary.
@@ -99,6 +103,10 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 
 	if featureflags.Documents().Enabled() {
 		unmarshalers["document"] = c.parseDocumentType
+	}
+
+	if featureflags.OpenPipeline().Enabled() {
+		unmarshalers["openpipeline"] = c.parseOpenPipelineType
 	}
 
 	if unm, f := unmarshalers[ttype]; !f {
@@ -170,6 +178,20 @@ func (c *TypeDefinition) parseDocumentType(a any) error {
 	return nil
 }
 
+func (c *TypeDefinition) parseOpenPipelineType(a any) error {
+	var r OpenPipelineDefinition
+	err := mapstructure.Decode(a, &r)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal openpipeline-type: %w", err)
+	}
+
+	c.Type = config.OpenPipelineType{
+		Kind: r.Kind,
+	}
+
+	return nil
+}
+
 // Validate verifies whether the given type definition is valid (correct APIs, fields set, etc)
 func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 	switch t := c.Type.(type) {
@@ -210,6 +232,11 @@ func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 		default:
 			return fmt.Errorf("unknown document kind %q", t.Kind)
 		}
+
+	case config.OpenPipelineType:
+		if t.Kind == "" {
+			return errors.New("missing openpipeline kind property")
+		}
 	}
 
 	return nil
@@ -226,6 +253,8 @@ func (c *TypeDefinition) GetApiType() string {
 	case config.BucketType:
 		return string(t.ID())
 	case config.DocumentType:
+		return string(t.ID())
+	case config.OpenPipelineType:
 		return string(t.ID())
 	}
 
@@ -281,6 +310,15 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 				"document": DocumentDefinition{
 					Kind:    t.Kind,
 					Private: t.Private,
+				},
+			}, nil
+		}
+
+	case config.OpenPipelineType:
+		if featureflags.OpenPipeline().Enabled() {
+			return map[string]any{
+				"openpipeline": OpenPipelineDefinition{
+					Kind: t.Kind,
 				},
 			}, nil
 		}
