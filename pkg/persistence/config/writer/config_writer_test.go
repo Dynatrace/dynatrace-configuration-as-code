@@ -1312,7 +1312,7 @@ func TestWriteConfigs(t *testing.T) {
 				"project/openpipeline/a.json",
 			},
 			envVars: map[string]string{
-				featureflags.Documents().EnvName(): "true",
+				featureflags.OpenPipeline().EnvName(): "true",
 			},
 		},
 	}
