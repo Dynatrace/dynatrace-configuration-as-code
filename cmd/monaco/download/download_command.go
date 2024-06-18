@@ -93,6 +93,10 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 		cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation", "only-documents")
 	}
 
+	if featureflags.OpenPipeline().Enabled() {
+		cmd.Flags().BoolVar(&f.onlyOpenPipeline, "only-openpipeline", false, "Only download openpipeline configurations, skip all other configuration types")
+	}
+
 	err := errors.Join(
 		cmd.RegisterFlagCompletionFunc("token", completion.EnvVarName),
 		cmd.RegisterFlagCompletionFunc("oauth-client-id", completion.EnvVarName),

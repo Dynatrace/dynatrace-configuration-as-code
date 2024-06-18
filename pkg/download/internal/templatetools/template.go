@@ -55,13 +55,17 @@ func (o JSONObject) ParameterizeAttributeWith(keyOfJSONAttribute string, nameOfP
 }
 
 // ToJSON converts JSONObject to its []byte representation.
-func (o JSONObject) ToJSON() ([]byte, error) {
-	modified, err := json.Marshal(o)
-	if err != nil {
-		return []byte{}, err
+// If pretty is true then the JSON is formatted with indentation and new lines
+func (o JSONObject) ToJSON(pretty bool) ([]byte, error) {
+	var bytes []byte
+	var err error
+	if pretty {
+		bytes, err = json.MarshalIndent(o, "", "  ")
+	} else {
+		bytes, err = json.Marshal(o)
 	}
+	return bytes, err
 
-	return modified, nil
 }
 
 // Delete removes a key-value pair for the specified key from JSONObject.

@@ -1,0 +1,10 @@
+[
+    {
+        "id": "logs",
+        "editable": true
+    },
+    {
+        "id": "events",
+        "editable": true
+    }
+]

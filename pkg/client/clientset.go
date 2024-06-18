@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -161,6 +162,10 @@ type DocumentClient interface {
 	Delete(ctx context.Context, id string) (documents.Response, error)
 }
 
+type OpenPipelineClient interface {
+	GetAll(ctx context.Context, options openpipeline.GetAllOptions) ([]openpipeline.Response, error)
+}
+
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
@@ -175,6 +180,8 @@ type ClientSet struct {
 	BucketClient BucketClient
 	// DocumentClient is a client capable of manipulating documents
 	DocumentClient DocumentClient
+	//OpenPipelineClient is a client capable of manipulating openPipeline configs
+	OpenPipelineClient OpenPipelineClient
 }
 
 func (s ClientSet) Classic() ConfigClient {
@@ -195,6 +202,10 @@ func (s ClientSet) Bucket() BucketClient {
 
 func (s ClientSet) Document() DocumentClient {
 	return s.DocumentClient
+}
+
+func (s ClientSet) OpenPipeline() OpenPipelineClient {
+	return s.OpenPipelineClient
 }
 
 type ClientOptions struct {
@@ -311,10 +322,16 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 		return nil, err
 	}
 
+	openPipelineClient, err := clientFactory.OpenPipelineClient()
+	if err != nil {
+		return nil, err
+	}
+
 	return &ClientSet{
-		DTClient:       dtClient,
-		AutClient:      autClient,
-		BucketClient:   bucketClient,
-		DocumentClient: documentClient,
+		DTClient:           dtClient,
+		AutClient:          autClient,
+		BucketClient:       bucketClient,
+		DocumentClient:     documentClient,
+		OpenPipelineClient: openPipelineClient,
 	}, nil
 }
