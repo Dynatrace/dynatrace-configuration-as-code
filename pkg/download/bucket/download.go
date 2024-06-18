@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
-	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -144,7 +143,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 		parameters[displayName] = p
 	}
 
-	t, err := r.ToJSON()
+	t, err := r.ToJSON(true)
 	if err != nil {
 		return config.Config{}, err
 	}
@@ -157,7 +156,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 		},
 		OriginObjectId: b.Name,
 		Type:           config.BucketType{},
-		Template:       template.NewInMemoryTemplate(b.Name, string(jsonutils.MarshalIndent(t))),
+		Template:       template.NewInMemoryTemplate(b.Name, string(t)),
 		Parameters:     parameters,
 	}
 

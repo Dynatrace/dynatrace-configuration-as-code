@@ -212,7 +212,7 @@ func TestJSONObject_ToJSON(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, _ := tc.given.ToJSON()
+			actual, _ := tc.given.ToJSON(false)
 
 			assert.Equal(t, string(tc.want), string(actual))
 		})

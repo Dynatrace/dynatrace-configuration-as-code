@@ -25,12 +25,13 @@ import (
 
 type downloadConfigsOptions struct {
 	downloadOptionsShared
-	specificAPIs    []string
-	specificSchemas []string
-	onlyAPIs        bool
-	onlySettings    bool
-	onlyAutomation  bool
-	onlyDocuments   bool
+	specificAPIs     []string
+	specificSchemas  []string
+	onlyAPIs         bool
+	onlySettings     bool
+	onlyAutomation   bool
+	onlyDocuments    bool
+	onlyOpenPipeline bool
 }
 
 func (opts downloadConfigsOptions) valid() []error {
@@ -48,6 +49,8 @@ func (opts downloadConfigsOptions) valid() []error {
 func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
 	apis = apis.Filter(api.RemoveDisabled)
 	switch {
+	case opts.onlyOpenPipeline:
+		return nil
 	case opts.onlyDocuments:
 		return nil
 	case opts.onlyAutomation:

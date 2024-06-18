@@ -36,6 +36,14 @@ func Test_prepareAPIs(t *testing.T) {
 				given: downloadConfigsOptions{onlySettings: true},
 			},
 			{
+				name:  "onlyDocuments",
+				given: downloadConfigsOptions{onlyDocuments: true},
+			},
+			{
+				name:  "onlyOpenpipeline",
+				given: downloadConfigsOptions{onlyOpenPipeline: true},
+			},
+			{
 				name:  "onlyAutomation",
 				given: downloadConfigsOptions{onlyAutomation: true},
 			},
@@ -65,6 +73,14 @@ func Test_prepareAPIs(t *testing.T) {
 			{
 				name:  "onlySettings",
 				given: downloadConfigsOptions{onlySettings: true},
+			},
+			{
+				name:  "onlyDocuments",
+				given: downloadConfigsOptions{onlyDocuments: true},
+			},
+			{
+				name:  "onlyOpenpipeline",
+				given: downloadConfigsOptions{onlyOpenPipeline: true},
 			},
 			{
 				name:  "onlyAPIs",
@@ -237,6 +253,14 @@ func Test_prepareAPIs(t *testing.T) {
 				name:       "onlySettings",
 				given:      downloadConfigsOptions{onlySettings: true},
 				deprecated: false,
+			},
+			{
+				name:  "onlyDocuments",
+				given: downloadConfigsOptions{onlyDocuments: true},
+			},
+			{
+				name:  "onlyOpenpipeline",
+				given: downloadConfigsOptions{onlyOpenPipeline: true},
 			},
 			{
 				name:       "onlyAPIs",

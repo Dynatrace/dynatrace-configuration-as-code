@@ -163,7 +163,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 func TestDownload_Options(t *testing.T) {
 	type wantDownload struct {
-		config, settings, bucket, automation, document bool
+		config, settings, bucket, automation, document, openpipeline bool
 	}
 	tests := []struct {
 		name  string
@@ -178,11 +178,12 @@ func TestDownload_Options(t *testing.T) {
 				},
 			},
 			wantDownload{
-				config:     true,
-				settings:   true,
-				bucket:     true,
-				automation: true,
-				document:   true,
+				config:       true,
+				settings:     true,
+				bucket:       true,
+				automation:   true,
+				document:     true,
+				openpipeline: true,
 			},
 		},
 		{
@@ -194,6 +195,16 @@ func TestDownload_Options(t *testing.T) {
 			"specific settings requested",
 			downloadConfigsOptions{specificSchemas: []string{"some:schema"}},
 			wantDownload{settings: true},
+		},
+		{
+			"only documents requested",
+			downloadConfigsOptions{onlyDocuments: true},
+			wantDownload{config: true},
+		},
+		{
+			"only openpipeline requested",
+			downloadConfigsOptions{onlyOpenPipeline: true},
+			wantDownload{config: true},
 		},
 		{
 			"only apis requested",
@@ -252,6 +263,12 @@ func TestDownload_Options(t *testing.T) {
 				documentDownload: func(b client.DocumentClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.document {
 						t.Fatalf("document download was not meant to be called but was")
+					}
+					return nil, nil
+				},
+				openPipelineDownload: func(b client.OpenPipelineClient, s string) (projectv2.ConfigsPerType, error) {
+					if !tt.want.openpipeline {
+						t.Fatalf("openpipeline download was not meant to be called but was")
 					}
 					return nil, nil
 				},

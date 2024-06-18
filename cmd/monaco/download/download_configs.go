@@ -17,6 +17,7 @@ package download
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/openpipeline"
 	"os"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
@@ -52,6 +53,7 @@ type downloadCmdOptions struct {
 	onlySettings            bool
 	onlyAutomation          bool
 	onlyDocuments           bool
+	onlyOpenPipeline        bool
 }
 
 type auth struct {
@@ -131,12 +133,13 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 			projectName:            cmdOptions.projectName,
 			forceOverwriteManifest: cmdOptions.forceOverwrite,
 		},
-		specificAPIs:    cmdOptions.specificAPIs,
-		specificSchemas: cmdOptions.specificSchemas,
-		onlyAPIs:        cmdOptions.onlyAPIs,
-		onlySettings:    cmdOptions.onlySettings,
-		onlyAutomation:  cmdOptions.onlyAutomation,
-		onlyDocuments:   cmdOptions.onlyDocuments,
+		specificAPIs:     cmdOptions.specificAPIs,
+		specificSchemas:  cmdOptions.specificSchemas,
+		onlyAPIs:         cmdOptions.onlyAPIs,
+		onlySettings:     cmdOptions.onlySettings,
+		onlyAutomation:   cmdOptions.onlyAutomation,
+		onlyDocuments:    cmdOptions.onlyDocuments,
+		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
 	}
 
 	if errs := options.valid(); len(errs) != 0 {
@@ -168,12 +171,13 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 			projectName:            cmdOptions.projectName,
 			forceOverwriteManifest: cmdOptions.forceOverwrite,
 		},
-		specificAPIs:    cmdOptions.specificAPIs,
-		specificSchemas: cmdOptions.specificSchemas,
-		onlyAPIs:        cmdOptions.onlyAPIs,
-		onlySettings:    cmdOptions.onlySettings,
-		onlyAutomation:  cmdOptions.onlyAutomation,
-		onlyDocuments:   cmdOptions.onlyDocuments,
+		specificAPIs:     cmdOptions.specificAPIs,
+		specificSchemas:  cmdOptions.specificSchemas,
+		onlyAPIs:         cmdOptions.onlyAPIs,
+		onlySettings:     cmdOptions.onlySettings,
+		onlyAutomation:   cmdOptions.onlyAutomation,
+		onlyDocuments:    cmdOptions.onlyDocuments,
+		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
 	}
 
 	if errs := options.valid(); len(errs) != 0 {
@@ -223,19 +227,21 @@ func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, apisToDownload 
 }
 
 type downloadFn struct {
-	classicDownload    func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
-	settingsDownload   func(client.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
-	automationDownload func(client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
-	bucketDownload     func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
-	documentDownload   func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
+	classicDownload      func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
+	settingsDownload     func(client.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
+	automationDownload   func(client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
+	bucketDownload       func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
+	documentDownload     func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
+	openPipelineDownload func(client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
-	classicDownload:    classic.Download,
-	settingsDownload:   settings.Download,
-	automationDownload: automation.Download,
-	bucketDownload:     bucket.Download,
-	documentDownload:   document.Download,
+	classicDownload:      classic.Download,
+	settingsDownload:     settings.Download,
+	automationDownload:   automation.Download,
+	bucketDownload:       bucket.Download,
+	documentDownload:     document.Download,
+	openPipelineDownload: openpipeline.Download,
 }
 
 func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
@@ -295,6 +301,20 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		}
 	}
 
+	if featureflags.OpenPipeline().Enabled() {
+		if shouldDownloadOpenPipeline(opts) {
+			if opts.auth.OAuth != nil {
+				openPipelineCfgs, err := fn.openPipelineDownload(clientSet.OpenPipelineClient, opts.projectName)
+				if err != nil {
+					return nil, err
+				}
+				copyConfigs(configs, openPipelineCfgs)
+			} else if opts.onlyOpenPipeline {
+				return nil, errors.New("can't download openpipeline resources: no OAuth credentials configured")
+			}
+		}
+	}
+
 	return configs, nil
 }
 
@@ -314,18 +334,18 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 
 // shouldDownloadConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
 func shouldDownloadConfigs(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) && !opts.onlyDocuments
+	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline
 }
 
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
 func shouldDownloadSettings(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0) && !opts.onlyDocuments
+	return !opts.onlyAutomation && !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline
 }
 
 // shouldDownloadAutomationResources returns true unless download is limited to settings or config API types
 func shouldDownloadAutomationResources(opts downloadConfigsOptions) bool {
 	return !opts.onlySettings && len(opts.specificSchemas) == 0 &&
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && !opts.onlyDocuments
+		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && !opts.onlyDocuments && !opts.onlyOpenPipeline
 }
 
 // shouldDownloadBuckets returns true if download is not limited to another specific type
@@ -333,11 +353,18 @@ func shouldDownloadBuckets(opts downloadConfigsOptions) bool {
 	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
 		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
 		!opts.onlyAutomation &&
-		!opts.onlyDocuments
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline
 }
 
 func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
 	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
 		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlyAutomation
+		!opts.onlyAutomation && !opts.onlyOpenPipeline
+}
+
+func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
+	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
+		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
+		!opts.onlyDocuments
 }
