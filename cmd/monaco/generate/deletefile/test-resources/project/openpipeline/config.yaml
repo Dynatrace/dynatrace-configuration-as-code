@@ -1,0 +1,8 @@
+configs:
+- id: bizevents
+  config:
+    template: bizevents.json
+    skip: false
+  type:
+    openpipeline:
+      kind: bizevents

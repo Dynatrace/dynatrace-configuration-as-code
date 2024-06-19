@@ -27,6 +27,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
@@ -76,6 +78,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 	t.Setenv(featureflags.Documents().EnvName(), "1")
+	t.Setenv(featureflags.OpenPipeline().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -112,6 +115,9 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "workflow", "ca-jira-issue-workflow")
 	assertDeleteEntries(t, entries, "bucket", "my-bucket")
 	assertDeleteEntries(t, entries, "document", "my-dashboard", "my-notebook")
+
+	assert.Empty(t, entries[api.DashboardShareSettings])
+	assert.Empty(t, entries[string(config.OpenPipelineTypeId)])
 }
 
 func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
@@ -120,6 +126,7 @@ func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 	t.Setenv(featureflags.Documents().EnvName(), "1")
+	t.Setenv(featureflags.OpenPipeline().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -159,6 +166,7 @@ func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 	t.Setenv(featureflags.Documents().EnvName(), "1")
+	t.Setenv(featureflags.OpenPipeline().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -196,6 +204,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 	t.Setenv(featureflags.Documents().EnvName(), "1")
+	t.Setenv(featureflags.OpenPipeline().EnvName(), "1")
 
 	outputFolder := "output-folder"
 
@@ -301,6 +310,7 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 	t.Setenv(featureflags.Documents().EnvName(), "1")
+	t.Setenv(featureflags.OpenPipeline().EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -353,6 +363,7 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "1")
 	t.Setenv(featureflags.KeyUserActionsMobile().EnvName(), "1")
 	t.Setenv(featureflags.Documents().EnvName(), "1")
+	t.Setenv(featureflags.OpenPipeline().EnvName(), "1")
 
 	t.Run("default filename", func(t *testing.T) {
 		time := timeutils.TimeAnchor().Format("20060102-150405")

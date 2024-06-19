@@ -1,0 +1,14 @@
+configs:
+- id: dashboard-share-settings
+  config:
+    name: Alpha Quadrant
+    template: overview-dashboard-share-settings.json
+    skip: false
+  type:
+    api:
+      name: dashboard-share-settings
+      scope:
+        configId: dashboard
+        configType: dashboard
+        property: id
+        type: reference
