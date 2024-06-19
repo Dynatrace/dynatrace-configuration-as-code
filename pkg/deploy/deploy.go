@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/openpipeline"
 	"sync"
 	"time"
 
@@ -56,19 +57,21 @@ type DeployConfigsOptions struct {
 }
 
 type ClientSet struct {
-	Classic    client.ConfigClient
-	Settings   client.SettingsClient
-	Automation automation.Client
-	Bucket     bucket.Client
-	Document   document.Client
+	Classic      client.ConfigClient
+	Settings     client.SettingsClient
+	Automation   automation.Client
+	Bucket       bucket.Client
+	Document     document.Client
+	OpenPipeline openpipeline.Client
 }
 
 var DummyClientSet = ClientSet{
-	Classic:    &dtclient.DummyClient{},
-	Settings:   &dtclient.DummyClient{},
-	Automation: &automation.DummyClient{},
-	Bucket:     &bucket.DummyClient{},
-	Document:   &document.DummyClient{},
+	Classic:      &dtclient.DummyClient{},
+	Settings:     &dtclient.DummyClient{},
+	Automation:   &automation.DummyClient{},
+	Bucket:       &bucket.DummyClient{},
+	Document:     &document.DummyClient{},
+	OpenPipeline: &openpipeline.DummyClient{},
 }
 
 var (
@@ -102,11 +105,12 @@ func Deploy(projects []project.Project, environmentClients dynatrace.Environment
 			clientSet = DummyClientSet
 		} else {
 			clientSet = ClientSet{
-				Classic:    clients.DTClient,
-				Settings:   clients.DTClient,
-				Automation: clients.AutClient,
-				Bucket:     clients.BucketClient,
-				Document:   clients.DocumentClient,
+				Classic:      clients.DTClient,
+				Settings:     clients.DTClient,
+				Automation:   clients.AutClient,
+				Bucket:       clients.BucketClient,
+				Document:     clients.DocumentClient,
+				OpenPipeline: clients.OpenPipelineClient,
 			}
 		}
 
@@ -295,6 +299,13 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 	case config.DocumentType:
 		if featureflags.Documents().Enabled() {
 			resolvedEntity, deployErr = document.Deploy(ctx, clients.Document, properties, renderedConfig, c)
+		} else {
+			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
+		}
+
+	case config.OpenPipelineType:
+		if featureflags.OpenPipeline().Enabled() {
+			resolvedEntity, deployErr = openpipeline.Deploy(ctx, clients.OpenPipeline, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
