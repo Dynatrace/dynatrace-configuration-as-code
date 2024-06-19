@@ -22,15 +22,17 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
-	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"path/filepath"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
+	"path/filepath"
+	"strings"
 )
 
 func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
@@ -124,26 +126,80 @@ func loadProjects(fs afero.Fs, manifestPath string, man *manifest.Manifest, spec
 }
 
 func checkEnvironments(projects []project.Project, envs manifest.Environments) error {
+	errs := []error{}
+	openPipelineKindCoordinatesPerEnvironment := map[string]map[string][]coordinate.Coordinate{}
 	for _, p := range projects {
 		for envName, cfgPerType := range p.Configs {
-			if _, found := envs[envName]; !found {
-				return fmt.Errorf("cannot find environment `%s`", envName)
+			env, found := envs[envName]
+			if !found {
+				errs = append(errs, fmt.Errorf("undefined environment %q", envName))
+				continue
 			}
-			for _, cfgs := range cfgPerType {
-				if err := checkConfigsForEnvironment(envs[envName], cfgs); err != nil {
-					return err
+
+			openPipelineKindCoordinates := openPipelineKindCoordinatesPerEnvironment[envName]
+			if openPipelineKindCoordinates == nil {
+				openPipelineKindCoordinates = make(map[string][]coordinate.Coordinate)
+			}
+			cfgPerType.ForEveryConfigDo(func(cfg config.Config) {
+				if cfg.Skip {
+					return
 				}
+
+				if openPipelineType, ok := cfg.Type.(config.OpenPipelineType); ok {
+					coordinates := openPipelineKindCoordinates[openPipelineType.Kind]
+					coordinates = append(coordinates, cfg.Coordinate)
+					openPipelineKindCoordinates[openPipelineType.Kind] = coordinates
+				}
+			})
+			openPipelineKindCoordinatesPerEnvironment[envName] = openPipelineKindCoordinates
+
+			if err := checkIfConfigsForEnvironmentRequireUnavailablePlatform(env, cfgPerType); err != nil {
+				errs = append(errs, err)
 			}
 		}
 	}
-	return nil
+
+	for envName, openPipelineKindCoordinates := range openPipelineKindCoordinatesPerEnvironment {
+		for kind, coordinates := range openPipelineKindCoordinates {
+			if len(coordinates) > 1 {
+				errs = append(errs, fmt.Errorf("environment %q has multiple OpenPipeline configurations of kind %q: %s", envName, kind, coordinateSliceAsString(coordinates)))
+			}
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
-func checkConfigsForEnvironment(env manifest.EnvironmentDefinition, cfgs []config.Config) error {
-	for i := range cfgs {
-		if !cfgs[i].Skip && onlyAvailableOnPlatform(&cfgs[i]) && !platformEnvironment(env) {
-			return fmt.Errorf("enviroment %q is not specified as platform, but at least one of configurations (e.g. %q) is platform exclusive", env.Name, cfgs[i].Coordinate)
+func coordinateSliceAsString(coordinates []coordinate.Coordinate) string {
+	coordinateStrings := make([]string, 0, len(coordinates))
+	for _, c := range coordinates {
+		coordinateStrings = append(coordinateStrings, c.String())
+
+	}
+	return strings.Join(coordinateStrings, ", ")
+}
+
+// checkIfConfigsForEnvironmentRequireUnavailablePlatform returns an error if a config requires platform and it is not configured in the environment.
+func checkIfConfigsForEnvironmentRequireUnavailablePlatform(env manifest.EnvironmentDefinition, cfgPerType v2.ConfigsPerType) error {
+	if platformEnvironment(env) {
+		return nil
+	}
+
+	requiresPlatform := false
+	var exampleCoordinate coordinate.Coordinate
+	cfgPerType.ForEveryConfigDo(func(cfg config.Config) {
+		if cfg.Skip || requiresPlatform {
+			return
 		}
+
+		if configRequiresPlatform(cfg) {
+			exampleCoordinate = cfg.Coordinate
+			requiresPlatform = true
+		}
+	})
+
+	if requiresPlatform {
+		return fmt.Errorf("environment %q is not configured to access platform, but at least one configuration (e.g. %q) requires it", env.Name, exampleCoordinate)
 	}
 	return nil
 }
@@ -152,10 +208,11 @@ func platformEnvironment(e manifest.EnvironmentDefinition) bool {
 	return e.Auth.OAuth != nil
 }
 
-func onlyAvailableOnPlatform(c *config.Config) bool {
-	if _, ok := c.Type.(config.AutomationType); ok {
+func configRequiresPlatform(c config.Config) bool {
+	switch c.Type.(type) {
+	case config.AutomationType, config.BucketType, config.DocumentType, config.OpenPipelineType:
 		return true
+	default:
+		return false
 	}
-	_, ok := c.Type.(config.BucketType)
-	return ok
 }
