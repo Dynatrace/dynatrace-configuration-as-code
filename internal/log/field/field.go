@@ -18,6 +18,7 @@ package field
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -73,16 +74,16 @@ func Environment(environment, group string) Field {
 
 // Error builds a Field containing error information for structured logging
 func Error(err error) Field {
-	return Field{"error",
-		struct {
+	return Field{
+		Key: "error",
+		Value: struct {
 			Type    string `json:"type"`
-			Details error  `json:"details"`
+			Details string `json:"details"`
 		}{
-			fmt.Sprintf("%T", err),
-			err,
+			Type:    fmt.Sprintf("%T", err),
+			Details: err.Error(),
 		}}
 }
-
 func StatusDeploying() Field {
 	return statusField("deploying")
 }
