@@ -55,7 +55,7 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return err
 	}
 
-	if err := checkEnvironments(loadedProjects, loadedManifest.Environments); err != nil {
+	if err := validateProjectsWithEnvironments(loadedProjects, loadedManifest.Environments); err != nil {
 		return err
 	}
 
@@ -125,87 +125,63 @@ func loadProjects(fs afero.Fs, manifestPath string, man *manifest.Manifest, spec
 	return projects, nil
 }
 
-func checkEnvironments(projects []project.Project, envs manifest.Environments) error {
-	errs := []error{}
-	openPipelineKindCoordinatesPerEnvironment := map[string]map[string][]coordinate.Coordinate{}
+type KindCoordinates map[string][]coordinate.Coordinate
+type KindCoordinatesPerEnvironment map[string]KindCoordinates
+type CoordinatesPerEnvironment map[string][]coordinate.Coordinate
+
+func validateProjectsWithEnvironments(projects []project.Project, envs manifest.Environments) error {
+	undefinedEnvironments := map[string]struct{}{}
+	openPipelineKindCoordinatesPerEnvironment := KindCoordinatesPerEnvironment{}
+	platformCoordinatesPerEnvironment := CoordinatesPerEnvironment{}
 	for _, p := range projects {
 		for envName, cfgPerType := range p.Configs {
-			env, found := envs[envName]
+			_, found := envs[envName]
 			if !found {
-				errs = append(errs, fmt.Errorf("undefined environment %q", envName))
+				undefinedEnvironments[envName] = struct{}{}
 				continue
 			}
 
-			openPipelineKindCoordinates := openPipelineKindCoordinatesPerEnvironment[envName]
-			if openPipelineKindCoordinates == nil {
-				openPipelineKindCoordinates = make(map[string][]coordinate.Coordinate)
+			openPipelineKindCoordinates, found := openPipelineKindCoordinatesPerEnvironment[envName]
+			if !found {
+				openPipelineKindCoordinates = KindCoordinates{}
+				openPipelineKindCoordinatesPerEnvironment[envName] = openPipelineKindCoordinates
 			}
-			cfgPerType.ForEveryConfigDo(func(cfg config.Config) {
-				if cfg.Skip {
-					return
-				}
+			collectOpenPipelineCoordinatesByKind(cfgPerType, openPipelineKindCoordinates)
 
-				if openPipelineType, ok := cfg.Type.(config.OpenPipelineType); ok {
-					coordinates := openPipelineKindCoordinates[openPipelineType.Kind]
-					coordinates = append(coordinates, cfg.Coordinate)
-					openPipelineKindCoordinates[openPipelineType.Kind] = coordinates
-				}
-			})
-			openPipelineKindCoordinatesPerEnvironment[envName] = openPipelineKindCoordinates
-
-			if err := checkIfConfigsForEnvironmentRequireUnavailablePlatform(env, cfgPerType); err != nil {
-				errs = append(errs, err)
-			}
+			platformCoordinatesPerEnvironment[envName] = append(platformCoordinatesPerEnvironment[envName], collectPlatformCoordinates(cfgPerType)...)
 		}
 	}
 
-	for envName, openPipelineKindCoordinates := range openPipelineKindCoordinatesPerEnvironment {
-		for kind, coordinates := range openPipelineKindCoordinates {
-			if len(coordinates) > 1 {
-				errs = append(errs, fmt.Errorf("environment %q has multiple OpenPipeline configurations of kind %q: %s", envName, kind, coordinateSliceAsString(coordinates)))
-			}
-		}
-	}
-
+	errs := collectUndefinedEnvironmentErrors(undefinedEnvironments)
+	errs = append(errs, collectRequiresPlatformErrors(platformCoordinatesPerEnvironment, envs)...)
+	errs = append(errs, collectOpenPipelineCoordinateErrors(openPipelineKindCoordinatesPerEnvironment)...)
 	return errors.Join(errs...)
 }
 
-func coordinateSliceAsString(coordinates []coordinate.Coordinate) string {
-	coordinateStrings := make([]string, 0, len(coordinates))
-	for _, c := range coordinates {
-		coordinateStrings = append(coordinateStrings, c.String())
+func collectOpenPipelineCoordinatesByKind(cfgPerType v2.ConfigsPerType, dest KindCoordinates) {
+	cfgPerType.ForEveryConfigDo(func(cfg config.Config) {
+		if cfg.Skip {
+			return
+		}
 
-	}
-	return strings.Join(coordinateStrings, ", ")
+		if openPipelineType, ok := cfg.Type.(config.OpenPipelineType); ok {
+			dest[openPipelineType.Kind] = append(dest[openPipelineType.Kind], cfg.Coordinate)
+		}
+	})
 }
 
-// checkIfConfigsForEnvironmentRequireUnavailablePlatform returns an error if a config requires platform and it is not configured in the environment.
-func checkIfConfigsForEnvironmentRequireUnavailablePlatform(env manifest.EnvironmentDefinition, cfgPerType v2.ConfigsPerType) error {
-	if platformEnvironment(env) {
-		return nil
-	}
-
-	requiresPlatform := false
-	var exampleCoordinate coordinate.Coordinate
+func collectPlatformCoordinates(cfgPerType v2.ConfigsPerType) []coordinate.Coordinate {
+	plaformCoordinates := []coordinate.Coordinate{}
 	cfgPerType.ForEveryConfigDo(func(cfg config.Config) {
-		if cfg.Skip || requiresPlatform {
+		if cfg.Skip {
 			return
 		}
 
 		if configRequiresPlatform(cfg) {
-			exampleCoordinate = cfg.Coordinate
-			requiresPlatform = true
+			plaformCoordinates = append(plaformCoordinates, cfg.Coordinate)
 		}
 	})
-
-	if requiresPlatform {
-		return fmt.Errorf("environment %q is not configured to access platform, but at least one configuration (e.g. %q) requires it", env.Name, exampleCoordinate)
-	}
-	return nil
-}
-
-func platformEnvironment(e manifest.EnvironmentDefinition) bool {
-	return e.Auth.OAuth != nil
+	return plaformCoordinates
 }
 
 func configRequiresPlatform(c config.Config) bool {
@@ -215,4 +191,52 @@ func configRequiresPlatform(c config.Config) bool {
 	default:
 		return false
 	}
+}
+
+func collectUndefinedEnvironmentErrors(undefinedEnvironments map[string]struct{}) []error {
+	errs := []error{}
+	for envName, _ := range undefinedEnvironments {
+		errs = append(errs, fmt.Errorf("undefined environment %q", envName))
+	}
+	return errs
+}
+
+func collectOpenPipelineCoordinateErrors(openPipelineKindCoordinatesPerEnvironment KindCoordinatesPerEnvironment) []error {
+	errs := []error{}
+	for envName, openPipelineKindCoordinates := range openPipelineKindCoordinatesPerEnvironment {
+		for kind, coordinates := range openPipelineKindCoordinates {
+			if len(coordinates) > 1 {
+				errs = append(errs, fmt.Errorf("environment %q has multiple OpenPipeline configurations of kind %q: %s", envName, kind, coordinateSliceAsString(coordinates)))
+			}
+		}
+	}
+	return errs
+}
+
+func coordinateSliceAsString(coordinates []coordinate.Coordinate) string {
+	coordinateStrings := make([]string, 0, len(coordinates))
+	for _, c := range coordinates {
+		coordinateStrings = append(coordinateStrings, c.String())
+	}
+	return strings.Join(coordinateStrings, ", ")
+}
+
+func collectRequiresPlatformErrors(platformCoordinatesPerEnvironment CoordinatesPerEnvironment, envs manifest.Environments) []error {
+	errs := []error{}
+	for envName, coordinates := range platformCoordinatesPerEnvironment {
+		env, found := envs[envName]
+		if !found || platformEnvironment(env) {
+			continue
+		}
+
+		if len(coordinates) > 0 {
+			exampleCoordinate := coordinates[0]
+			errs = append(errs, fmt.Errorf("environment %q is not configured to access platform, but at least one configuration (e.g. %q) requires it", envName, exampleCoordinate))
+		}
+	}
+	return errs
+}
+
+func platformEnvironment(e manifest.EnvironmentDefinition) bool {
+	return e.Auth.OAuth != nil
 }
