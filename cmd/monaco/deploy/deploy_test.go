@@ -333,7 +333,7 @@ func Test_checkEnvironments(t *testing.T) {
 				env1Id: env1Definition,
 				env2Id: env2Definition,
 			})
-		assert.ErrorContains(t, err, "has multiple OpenPipeline configurations of kind")
+		assert.ErrorContains(t, err, "has multiple openpipeline configurations of kind")
 	})
 
 	t.Run("two identical openpipeline configs in different projects and same environments fail", func(t *testing.T) {
@@ -363,7 +363,7 @@ func Test_checkEnvironments(t *testing.T) {
 			manifest.Environments{
 				env1Id: env1Definition,
 			})
-		assert.ErrorContains(t, err, "has multiple OpenPipeline configurations of kind")
+		assert.ErrorContains(t, err, "has multiple openpipeline configurations of kind")
 	})
 
 }

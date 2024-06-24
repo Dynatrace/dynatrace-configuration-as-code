@@ -206,7 +206,7 @@ func collectOpenPipelineCoordinateErrors(openPipelineKindCoordinatesPerEnvironme
 	for envName, openPipelineKindCoordinates := range openPipelineKindCoordinatesPerEnvironment {
 		for kind, coordinates := range openPipelineKindCoordinates {
 			if len(coordinates) > 1 {
-				errs = append(errs, fmt.Errorf("environment %q has multiple OpenPipeline configurations of kind %q: %s", envName, kind, coordinateSliceAsString(coordinates)))
+				errs = append(errs, fmt.Errorf("environment %q has multiple openpipeline configurations of kind %q: %s", envName, kind, coordinateSliceAsString(coordinates)))
 			}
 		}
 	}
