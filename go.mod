@@ -2,7 +2,7 @@ module github.com/dynatrace/dynatrace-configuration-as-code/v2
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/dynatrace/dynatrace-configuration-as-code-core v0.5.2-0.20240611073814-4f8015ac4fc8
+	github.com/dynatrace/dynatrace-configuration-as-code-core v0.5.2-0.20240624093035-f52d30e477c8
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/go-cmp v0.6.0

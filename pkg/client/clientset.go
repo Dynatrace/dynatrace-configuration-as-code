@@ -163,9 +163,9 @@ type DocumentClient interface {
 }
 
 type OpenPipelineClient interface {
-	GetAll(ctx context.Context, options openpipeline.GetAllOptions) ([]openpipeline.Response, error)
+	GetAll(ctx context.Context) ([]openpipeline.Response, error)
 
-	Update(ctx context.Context, id string, data []byte, _ openpipeline.UpdateOptions) (openpipeline.Response, error)
+	Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error)
 }
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)

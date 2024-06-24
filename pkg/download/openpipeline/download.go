@@ -34,7 +34,7 @@ func Download(client client.OpenPipelineClient, projectName string) (v2.ConfigsP
 
 	result := v2.ConfigsPerType{string(config.OpenPipelineTypeId): nil}
 
-	all, err := client.GetAll(context.TODO(), openpipeline.GetAllOptions{Editable: true})
+	all, err := client.GetAll(context.TODO())
 	if err != nil {
 		log.WithFields(field.Type(config.OpenPipelineTypeId), field.Error(err)).Error("Failed to get all configs of type '%s': %v", config.OpenPipelineTypeId, err)
 		return result, nil

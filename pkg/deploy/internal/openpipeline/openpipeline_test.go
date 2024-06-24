@@ -49,7 +49,7 @@ func TestDeployOpenPipelineConfig(t *testing.T) {
 
 	t.Run("Update succeeds", func(t *testing.T) {
 		client := NewMockClient(gomock.NewController(t))
-		client.EXPECT().Update(gomock.Any(), gomock.Eq("logs"), gomock.Eq([]byte("{}")), gomock.Eq(openpipeline.UpdateOptions{})).Times(1).Return(openpipeline.Response{}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Eq("logs"), gomock.Eq([]byte("{}"))).Times(1).Return(openpipeline.Response{}, nil)
 
 		result, err := runDeployTest(t, client, opConfig)
 		assert.NoError(t, err)
@@ -58,7 +58,7 @@ func TestDeployOpenPipelineConfig(t *testing.T) {
 
 	t.Run("Update fails", func(t *testing.T) {
 		client := NewMockClient(gomock.NewController(t))
-		client.EXPECT().Update(gomock.Any(), gomock.Eq("logs"), gomock.Eq([]byte("{}")), gomock.Eq(openpipeline.UpdateOptions{})).Times(1).Return(openpipeline.Response{}, errors.New("connection error"))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq("logs"), gomock.Eq([]byte("{}"))).Times(1).Return(openpipeline.Response{}, errors.New("connection error"))
 		_, err := runDeployTest(t, client, opConfig)
 		assert.Error(t, err)
 	})
