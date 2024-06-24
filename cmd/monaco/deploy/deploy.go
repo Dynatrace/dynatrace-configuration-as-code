@@ -204,6 +204,8 @@ func collectUndefinedEnvironmentErrors(undefinedEnvironments map[string]struct{}
 func collectOpenPipelineCoordinateErrors(openPipelineKindCoordinatesPerEnvironment KindCoordinatesPerEnvironment) []error {
 	errs := []error{}
 	for envName, openPipelineKindCoordinates := range openPipelineKindCoordinatesPerEnvironment {
+
+		// check for duplicate configurations for the same kind of openpipeline.
 		for kind, coordinates := range openPipelineKindCoordinates {
 			if len(coordinates) > 1 {
 				errs = append(errs, fmt.Errorf("environment %q has multiple openpipeline configurations of kind %q: %s", envName, kind, coordinateSliceAsString(coordinates)))
