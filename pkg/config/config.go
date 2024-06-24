@@ -67,12 +67,13 @@ type Parameters map[string]parameter.Parameter
 type TypeId string
 
 const (
-	SettingsTypeId   TypeId = "settings"
-	ClassicApiTypeId TypeId = "classic"
-	EntityTypeId     TypeId = "entity"
-	AutomationTypeId TypeId = "automation"
-	BucketTypeId     TypeId = "bucket"
-	DocumentTypeId   TypeId = "document"
+	SettingsTypeId     TypeId = "settings"
+	ClassicApiTypeId   TypeId = "classic"
+	EntityTypeId       TypeId = "entity"
+	AutomationTypeId   TypeId = "automation"
+	BucketTypeId       TypeId = "bucket"
+	DocumentTypeId     TypeId = "document"
+	OpenPipelineTypeId TypeId = "openpipeline"
 )
 
 type Type interface {
@@ -149,6 +150,16 @@ type DocumentType struct {
 
 func (DocumentType) ID() TypeId {
 	return DocumentTypeId
+}
+
+// OpenPipelineType represents an OpenPipeline configuration.
+type OpenPipelineType struct {
+	// Kind indicates the type of OpenPipeline.
+	Kind string
+}
+
+func (OpenPipelineType) ID() TypeId {
+	return OpenPipelineTypeId
 }
 
 // Config struct defining a configuration which can be deployed.

@@ -1540,6 +1540,76 @@ configs:
 				"unknown config-type \"document\"",
 			},
 		},
+		{
+			name:             "OpenPipeline config with FF off",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: openpipeline-id
+  config:
+    name: Test Pipeline
+    template: 'profile.json'
+  type:
+    openpipeline:
+      kind: bizevents`,
+			wantErrorsContain: []string{
+				"unknown config-type \"openpipeline\"",
+			},
+		},
+		{
+			name: "OpenPipeline config with FF on",
+			envVars: map[string]string{
+				featureflags.OpenPipeline().EnvName(): "true",
+			},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: bizevents-openpipeline-id
+  config:
+    name: Test Bizevents OpenPipeline
+    template: 'profile.json'
+  type:
+    openpipeline:
+      kind: bizevents`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "openpipeline",
+						ConfigId: "bizevents-openpipeline-id",
+					},
+					Type:     config.OpenPipelineType{Kind: "bizevents"},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter: &value.ValueParameter{Value: "Test Bizevents OpenPipeline"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
+			name: "OpenPipeline config with FF on and missing kind",
+			envVars: map[string]string{
+				featureflags.OpenPipeline().EnvName(): "true",
+			},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: bizevents-openpipeline-id
+  config:
+    name: Test Bizevents OpenPipeline
+    template: 'profile.json'
+  type:
+    openpipeline:`,
+			wantErrorsContain: []string{
+				"missing openpipeline kind property",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

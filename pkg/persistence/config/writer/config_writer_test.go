@@ -1271,6 +1271,50 @@ func TestWriteConfigs(t *testing.T) {
 				featureflags.Documents().EnvName(): "true",
 			},
 		},
+		{
+			name: "OpenPipeline",
+			configs: []config.Config{
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/openpipeline/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "openpipeline",
+						ConfigId: "bizevents-openpipeline-id",
+					},
+					Type:           config.OpenPipelineType{Kind: "bizevents"},
+					OriginObjectId: "ext-ID-123",
+					Parameters: map[string]parameter.Parameter{
+						config.NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					Skip: false,
+				},
+			},
+			expectedConfigs: map[string]persistence.TopLevelDefinition{
+				"openpipeline": {
+					Configs: []persistence.TopLevelConfigDefinition{
+						{
+							Id: "bizevents-openpipeline-id",
+							Config: persistence.ConfigDefinition{
+								Name:           "name",
+								Parameters:     nil,
+								Template:       "a.json",
+								OriginObjectId: "ext-ID-123",
+								Skip:           false,
+							},
+							Type: persistence.TypeDefinition{
+								Type: config.OpenPipelineType{Kind: "bizevents"},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/openpipeline/a.json",
+			},
+			envVars: map[string]string{
+				featureflags.OpenPipeline().EnvName(): "true",
+			},
+		},
 	}
 
 	for _, tc := range tests {

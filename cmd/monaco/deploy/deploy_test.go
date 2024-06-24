@@ -17,6 +17,11 @@
 package deploy
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
@@ -111,4 +116,266 @@ environmentGroups:
 		assert.NoError(t, err)
 	})
 
+}
+
+func Test_checkEnvironments(t *testing.T) {
+
+	env1Id := "env1"
+	env1Definition :=
+		manifest.EnvironmentDefinition{
+			Name: env1Id,
+			Auth: manifest.Auth{OAuth: &manifest.OAuth{ClientID: manifest.AuthSecret{Name: "id", Value: "value"}, ClientSecret: manifest.AuthSecret{Name: "id", Value: "value"}}},
+		}
+
+	env1DefinitionWithoutPlatform :=
+		manifest.EnvironmentDefinition{
+			Name: env1Id,
+		}
+
+	env2Id := "env2"
+	env2Definition :=
+		manifest.EnvironmentDefinition{
+			Name: env2Id,
+			Auth: manifest.Auth{OAuth: &manifest.OAuth{ClientID: manifest.AuthSecret{Name: "id", Value: "value"}, ClientSecret: manifest.AuthSecret{Name: "id", Value: "value"}}},
+		}
+
+	project1Id := "project1"
+	project2Id := "project2"
+
+	t.Run("defined environment in project succeeds", func(t *testing.T) {
+		err := validateProjectsWithEnvironments(
+			[]project.Project{
+				{
+					Id: project1Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{},
+					},
+				},
+			},
+			manifest.Environments{
+				env1Id: env1Definition,
+			})
+		assert.NoError(t, err)
+	})
+
+	t.Run("undefined environment in project fails", func(t *testing.T) {
+		err := validateProjectsWithEnvironments(
+			[]project.Project{
+				{
+					Id: project1Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"unknown_env": project.ConfigsPerType{},
+					},
+				},
+			},
+			manifest.Environments{
+				env1Id: env1Definition,
+			})
+		assert.ErrorContains(t, err, "undefined environment")
+	})
+
+	t.Run("platform config with platform environment succeeds", func(t *testing.T) {
+		err := validateProjectsWithEnvironments(
+			[]project.Project{
+				{
+					Id: project1Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id)},
+						},
+					},
+				},
+			},
+			manifest.Environments{
+				env1Id: env1Definition,
+			})
+		assert.NoError(t, err)
+	})
+
+	t.Run("platform config without platform environment fails", func(t *testing.T) {
+		err := validateProjectsWithEnvironments(
+			[]project.Project{
+				{
+					Id: project1Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id)},
+						},
+					},
+				},
+			},
+			manifest.Environments{
+				env1Id: env1DefinitionWithoutPlatform,
+			})
+		assert.ErrorContains(t, err, "environment \"env1\" is not configured to access platform")
+	})
+
+	t.Run("two different openpipeline configs in same project succceed", func(t *testing.T) {
+		err := validateProjectsWithEnvironments(
+			[]project.Project{
+				{
+					Id: project1Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{
+								createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id),
+								createOpenPipelineConfigForTest("events-openpipeline-id", "events", project1Id),
+							},
+						},
+					},
+				},
+			},
+			manifest.Environments{env1Id: env1Definition})
+		assert.NoError(t, err)
+	})
+
+	t.Run("two different openpipeline configs in different projects succceed", func(t *testing.T) {
+		err := validateProjectsWithEnvironments(
+			[]project.Project{
+				{
+					Id: project1Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{
+								createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id),
+							},
+						},
+					},
+				},
+				{
+					Id: project2Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{
+								createOpenPipelineConfigForTest("events-openpipeline-id", "events", project2Id),
+							},
+						},
+					},
+				},
+			},
+			manifest.Environments{env1Id: env1Definition})
+		assert.NoError(t, err)
+	})
+
+	t.Run("two identical openpipeline configs in same project but different environments succceed", func(t *testing.T) {
+		err := validateProjectsWithEnvironments(
+			[]project.Project{
+				{
+					Id: project1Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{
+								createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
+							},
+						},
+						env2Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{
+								createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project1Id),
+							},
+						},
+					},
+				},
+			},
+			manifest.Environments{
+				env1Id: env1Definition,
+				env2Id: env2Definition,
+			})
+		assert.NoError(t, err)
+	})
+
+	t.Run("two identical openpipeline configs in different projects and environments succceed", func(t *testing.T) {
+		err := validateProjectsWithEnvironments(
+			[]project.Project{
+				{
+					Id: project1Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{
+								createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
+							},
+						},
+					},
+				},
+				{
+					Id: project2Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env2Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{
+								createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project2Id),
+							},
+						},
+					},
+				},
+			},
+			manifest.Environments{
+				env1Id: env1Definition,
+				env2Id: env2Definition,
+			})
+		assert.NoError(t, err)
+	})
+
+	t.Run("two identical openpipeline configs in same project and environments fail", func(t *testing.T) {
+		err := validateProjectsWithEnvironments(
+			[]project.Project{
+				{
+					Id: project1Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{
+								createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
+								createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project1Id),
+							},
+						},
+					},
+				},
+			},
+			manifest.Environments{
+				env1Id: env1Definition,
+				env2Id: env2Definition,
+			})
+		assert.ErrorContains(t, err, "has multiple openpipeline configurations of kind")
+	})
+
+	t.Run("two identical openpipeline configs in different projects and same environments fail", func(t *testing.T) {
+		err := validateProjectsWithEnvironments(
+			[]project.Project{
+				{
+					Id: project1Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{
+								createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
+							},
+						},
+					},
+				},
+				{
+					Id: project2Id,
+					Configs: project.ConfigsPerTypePerEnvironments{
+						env1Id: project.ConfigsPerType{
+							"openpipeline": []config.Config{
+								createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project2Id),
+							},
+						},
+					},
+				},
+			},
+			manifest.Environments{
+				env1Id: env1Definition,
+			})
+		assert.ErrorContains(t, err, "has multiple openpipeline configurations of kind")
+	})
+
+}
+
+func createOpenPipelineConfigForTest(configId string, kind string, project string) config.Config {
+	return config.Config{
+		Template: template.NewInMemoryTemplateWithPath("a.json", ""),
+		Coordinate: coordinate.Coordinate{
+			Project:  project,
+			Type:     "openpipeline",
+			ConfigId: configId,
+		},
+		Type: config.OpenPipelineType{Kind: kind},
+	}
 }
