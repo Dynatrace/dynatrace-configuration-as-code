@@ -1,0 +1,100 @@
+{
+  "customBasePath": "/platform/ingest/custom/bizevents",
+  "editable": true,
+  "endpoints": [
+    {
+      "basePath": "-",
+      "builtin": true,
+      "defaultBucket": null,
+      "displayName": "OneAgent",
+      "editable": false,
+      "enabled": true,
+      "processors": [],
+      "routing": {
+        "type": "dynamic"
+      },
+      "segment": ""
+    },
+    {
+      "basePath": "-",
+      "builtin": true,
+      "defaultBucket": null,
+      "displayName": "RUM Agent",
+      "editable": false,
+      "enabled": true,
+      "processors": [],
+      "routing": {
+        "type": "dynamic"
+      },
+      "segment": ""
+    },
+    {
+      "basePath": "/api/v2/bizevents/ingest",
+      "builtin": true,
+      "defaultBucket": null,
+      "displayName": "Business Events API",
+      "editable": false,
+      "enabled": true,
+      "processors": [],
+      "routing": {
+        "type": "dynamic"
+      },
+      "segment": ""
+    },
+    {
+      "basePath": "-",
+      "builtin": true,
+      "defaultBucket": null,
+      "displayName": "Data Extraction",
+      "editable": false,
+      "enabled": true,
+      "processors": [],
+      "routing": {
+        "type": "dynamic"
+      },
+      "segment": ""
+    }
+  ],
+  "id": "bizevents",
+  "pipelines": [
+    {
+      "builtin": true,
+      "dataExtraction": {
+        "editable": false,
+        "processors": []
+      },
+      "displayName": "default",
+      "editable": false,
+      "enabled": true,
+      "id": "default",
+      "metricExtraction": {
+        "editable": false,
+        "processors": []
+      },
+      "processing": {
+        "editable": false,
+        "processors": []
+      },
+      "securityContext": {
+        "editable": false,
+        "processors": []
+      },
+      "settingsSchema": "builtin:bizevents-processing-pipelines.rule",
+      "storage": {
+        "catchAllBucketName": null,
+        "editable": false,
+        "processors": []
+      },
+      "type": "classic"
+    }
+  ],
+  "routing": {
+    "catchAllPipeline": {
+      "editable": false,
+      "pipelineId": "default"
+    },
+    "editable": true,
+    "entries": []
+  },
+  "version": "classic"
+}

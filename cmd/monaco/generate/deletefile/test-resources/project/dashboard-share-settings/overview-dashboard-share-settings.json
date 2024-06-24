@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "permissions": [],
+  "preset": false,
+  "publicAccess": {
+    "managementZoneIds": []
+  }
+}
