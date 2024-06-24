@@ -35,12 +35,12 @@ var _ Client = (*DummyClient)(nil)
 type DummyClient struct{}
 
 //go:generate mockgen -source=openpipeline.go -destination=openpipeline_mock.go -package=openpipeline openpipelineClient
-func (c *DummyClient) Update(_ context.Context, _ string, _ []byte, _ openpipeline.UpdateOptions) (openpipeline.Response, error) {
+func (c *DummyClient) Update(_ context.Context, _ string, _ []byte) (openpipeline.Response, error) {
 	return openpipeline.Response{}, nil
 }
 
 type Client interface {
-	Update(ctx context.Context, id string, data []byte, _ openpipeline.UpdateOptions) (openpipeline.Response, error)
+	Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error)
 }
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
@@ -54,7 +54,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 		return entities.ResolvedEntity{}, fmt.Errorf("expected openpipeline config type but found %v", t)
 	}
 
-	_, err := client.Update(ctx, t.Kind, []byte(renderedConfig), openpipeline.UpdateOptions{})
+	_, err := client.Update(ctx, t.Kind, []byte(renderedConfig))
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update openpipeline object with id '%s'", t.Kind)).WithError(err)
 	}
