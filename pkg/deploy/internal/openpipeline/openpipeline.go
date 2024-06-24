@@ -56,7 +56,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 
 	_, err := client.Update(ctx, t.Kind, []byte(renderedConfig))
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update openpipeline object with id '%s'", t.Kind)).WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update openpipeline object of kind '%s'", t.Kind)).WithError(err)
 	}
 
 	return createResolvedEntity(t.Kind, c.Coordinate, properties), nil
