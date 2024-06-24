@@ -128,6 +128,9 @@ func generateDeleteEntries(apis api.APIs, projects []project.Project, options cr
 		log.Info("Adding delete entries for project %q...", p.Id)
 		p.ForEveryConfigDo(func(c config.Config) {
 			if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
+				if c.Coordinate.Type == string(config.OpenPipelineTypeId) {
+					log.Info("Skipped creating delete entry for %q as openpipeline configurations cannot be deleted", c.Coordinate)
+				}
 				return
 			}
 
@@ -154,6 +157,9 @@ func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Proj
 			log.Info("Adding delete entries for project %q and environment %q...", p.Id, env)
 			p.ForEveryConfigInEnvironmentDo(env, func(c config.Config) {
 				if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
+					if c.Coordinate.Type == string(config.OpenPipelineTypeId) {
+						log.Info("Skipped creating delete entry for %q as openpipeline configurations cannot be deleted", c.Coordinate)
+					}
 					return
 				}
 				entry, err := createDeleteEntry(c, apis, p)
