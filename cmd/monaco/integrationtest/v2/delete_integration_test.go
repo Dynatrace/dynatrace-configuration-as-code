@@ -25,7 +25,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -233,22 +232,16 @@ environmentGroups:
 	assert.NoError(t, err)
 
 	// DEPLOY Config
-	cmd := runner.BuildCli(fs)
-	cmd.SetArgs([]string{"deploy", "--verbose", deployManifestPath})
-	err = cmd.Execute()
+	err = monaco.RunWithFsf(fs, "monaco deploy %s --verbose", deployManifestPath)
 	assert.NoError(t, err)
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 	// ensure test resources are removed after test is done
 	t.Cleanup(func() {
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"delete", "--verbose", "--manifest", "test-resources/delete-test-configs/deploy-manifest.yaml"}) //full manifest with oAuth
-		err = cmd.Execute()
+		monaco.RunWithFs(fs, "monaco delete --manifest=test-resources/delete-test-configs/deploy-manifest.yaml --verbose")
 	})
 
 	// DELETE Configs - with API Token only Manifest
-	cmd = runner.BuildCli(fs)
-	cmd.SetArgs([]string{"delete", "--verbose"})
-	err = cmd.Execute()
+	err = monaco.RunWithFs(fs, "monaco delete --verbose")
 	assert.NoError(t, err)
 
 	// Assert expected deletions

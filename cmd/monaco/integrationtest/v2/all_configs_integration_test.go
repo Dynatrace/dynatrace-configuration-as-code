@@ -19,13 +19,12 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 // tests all configs for a single environment
@@ -52,20 +51,12 @@ func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 		featureflags.DashboardShareSettings().EnvName():            "true"}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
-
 		// This causes a POST for all configs:
-
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
-		err := cmd.Execute()
-
+		err := monaco.RunWithFsf(fs, "monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment)
 		assert.NoError(t, err)
 
 		// This causes a PUT for all configs:
-
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
-		err = cmd.Execute()
+		err = monaco.RunWithFsf(fs, "monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment)
 		assert.NoError(t, err)
 
 	})
@@ -80,12 +71,6 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 	t.Setenv(featureflags.KeyUserActionsWeb().EnvName(), "true")
 	t.Setenv(featureflags.DashboardShareSettings().EnvName(), "true")
 
-	configFolder := "test-resources/integration-all-configs/"
-	manifest := configFolder + "manifest.yaml"
-
-	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
-	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
-	err := cmd.Execute()
-
+	err := monaco.Runf("monaco deploy %s --dry-run --verbose", "test-resources/integration-all-configs/manifest.yaml")
 	assert.NoError(t, err)
 }

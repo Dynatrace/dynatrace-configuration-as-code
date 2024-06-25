@@ -20,18 +20,18 @@ package v2
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 type downloadFunction func(*testing.T, afero.Fs, string, string, string, string, bool) error
@@ -284,13 +284,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
 	})
 
-	cmd := runner.BuildCli(fs)
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		manifestFile,
-	})
-	err = cmd.Execute()
+	err = monaco.RunWithFsf(fs, "monaco deploy %s --verbose", manifestFile)
 	assert.NoError(t, err)
 
 	return suffix, nil
@@ -301,8 +295,8 @@ func execution_downloadConfigsWithCLIParameters(
 	fs afero.Fs,
 	downloadFolder string,
 	_ string,
-	apisToDownload string,
-	settingsToDownload string,
+	apiToDownload string,
+	settingToDownload string,
 	oauth bool,
 ) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
@@ -312,24 +306,27 @@ func execution_downloadConfigsWithCLIParameters(
 		return err
 	}
 	parameters := []string{"download", "--verbose", "--output-folder", downloadFolder}
-	if apisToDownload != "all" {
-		if apisToDownload != "" {
-			parameters = append(parameters, "--api", apisToDownload)
+	command := fmt.Sprintf("monaco download --verbose --output-folder=%s", downloadFolder)
+	if apiToDownload != "all" {
+		if apiToDownload != "" {
+			parameters = append(parameters, "--api", apiToDownload)
+			command += " --api=" + apiToDownload
 		}
-		if settingsToDownload != "" {
-			parameters = append(parameters, "--settings-schema", settingsToDownload)
+		if settingToDownload != "" {
+			parameters = append(parameters, "--settings-schema", settingToDownload)
+			command += " --settings-schema=" + settingToDownload
 		}
 	}
 
 	if oauth {
 		parameters = append(parameters, "--url", os.Getenv("PLATFORM_URL_ENVIRONMENT_1"), "--token", "TOKEN_ENVIRONMENT_1", "--oauth-client-id", "OAUTH_CLIENT_ID", "--oauth-client-secret", "OAUTH_CLIENT_SECRET")
+		command += fmt.Sprintf(" --url=%s --token=%s --oauth-client-id=%s --oauth-client-secret=%s", os.Getenv("PLATFORM_URL_ENVIRONMENT_1"), "TOKEN_ENVIRONMENT_1", "OAUTH_CLIENT_ID", "OAUTH_CLIENT_SECRET")
 	} else {
 		parameters = append(parameters, "--url", os.Getenv("URL_ENVIRONMENT_1"), "--token", "TOKEN_ENVIRONMENT_1")
+		command += fmt.Sprintf(" --url=%s --token=%s", os.Getenv("URL_ENVIRONMENT_1"), "TOKEN_ENVIRONMENT_1")
 	}
 
-	cmd := runner.BuildCli(fs)
-	cmd.SetArgs(parameters)
-	err = cmd.Execute()
+	err = monaco.RunWithFsf(fs, command)
 	assert.NoError(t, err)
 	return nil
 }
@@ -349,40 +346,21 @@ func execution_downloadConfigs(
 	if err != nil {
 		return err
 	}
-	parameters := []string{}
+	var command string
 
 	if apisToDownload == "all" {
-		parameters = []string{
-			"download",
-			"--manifest",
-			manifestFile,
-			"--environment",
-			"environment1",
-			"--verbose",
-			"--output-folder", downloadFolder,
-		}
+		command = fmt.Sprintf("monaco download --manifest=%s --environment=environment1 --verbose --output-folder=%s", manifestFile, downloadFolder)
 	} else {
-		parameters = []string{
-			"download",
-			"--manifest",
-			manifestFile,
-			"--environment",
-			"environment1",
-			"--verbose",
-			"--output-folder", downloadFolder,
-		}
-
+		command = fmt.Sprintf("monaco download --manifest=%s --output-folder=%s --environment=environment1 --verbose", manifestFile, downloadFolder)
 		if apisToDownload != "" {
-			parameters = append(parameters, "--api", apisToDownload)
+			command += fmt.Sprintf(" --api=%s", apisToDownload)
 		}
 		if settingsToDownload != "" {
-			parameters = append(parameters, "--settings-schema", settingsToDownload)
+			command += fmt.Sprintf(" --settings-schema=%s", settingsToDownload)
 		}
 	}
 
-	cmd := runner.BuildCli(fs)
-	cmd.SetArgs(parameters)
-	err = cmd.Execute()
+	err = monaco.RunWithFs(fs, command)
 	assert.NoError(t, err)
 	return nil
 }
@@ -397,12 +375,6 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 		return nil
 	})
 
-	cmd := runner.BuildCli(fs)
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		manifestFile,
-	})
-	err := cmd.Execute()
+	err := monaco.RunWithFsf(fs, "monaco deploy %s --verbose", manifestFile)
 	assert.NoError(t, err)
 }

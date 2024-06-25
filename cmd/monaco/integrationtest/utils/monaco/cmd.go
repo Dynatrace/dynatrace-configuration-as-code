@@ -18,10 +18,11 @@ package monaco
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/spf13/afero"
 	"regexp"
 	"strings"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/spf13/afero"
 )
 
 // The Monaco is the entry point for integration tests. It accepts a command in a way it would be called via a CLI. `monaco` keyword can be omitted from the command.
@@ -56,8 +57,7 @@ func RunWithFs(fs afero.Fs, command string) error {
 
 	args := strings.Split(c, " ")
 
-	cli := runner.BuildCli(fs)
-	cli.SetArgs(args)
-
-	return cli.Execute()
+	cmd := runner.BuildCmd(fs)
+	cmd.SetArgs(args)
+	return runner.RunCmd(fs, cmd)
 }

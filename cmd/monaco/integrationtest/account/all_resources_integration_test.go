@@ -20,18 +20,19 @@ package account
 
 import (
 	"context"
+	"net/http"
+	"slices"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"slices"
-	"testing"
 )
 
 func TestDeployAndDelete_AllResources(t *testing.T) {
@@ -67,10 +68,8 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		}
 		require.NotZero(t, mzoneID, "Could not get exact management zone id for assertions")
 
-		cli := runner.BuildCli(o.fs)
 		// DEPLOY RESOURCES
-		cli.SetArgs([]string{"account", "deploy", "-m", "manifest-account.yaml"})
-		err = cli.Execute()
+		err = monaco.RunWithFsf(o.fs, "monaco account deploy --manifest=manifest-account.yaml")
 		require.NoError(t, err)
 
 		// CHECK IF RESOURCES ARE INDEED DEPLOYED
@@ -124,7 +123,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		require.NoError(t, err)
 
 		// DEPLOY
-		err = cli.Execute()
+		err = monaco.RunWithFsf(o.fs, "monaco account deploy --manifest=manifest-account.yaml")
 		require.NoError(t, err)
 
 		// CHECK BINDINGS ARE REMOVED
@@ -144,7 +143,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		require.NoError(t, err)
 
 		// DEPLOY
-		err = cli.Execute()
+		err = monaco.RunWithFsf(o.fs, "monaco account deploy --manifest=manifest-account.yaml")
 		require.NoError(t, err)
 
 		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 0)
@@ -152,8 +151,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 0)
 
 		// DELETE RESOURCES
-		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "delete.yaml", "--account", accountName})
-		err = cli.Execute()
+		err = monaco.RunWithFsf(o.fs, "monaco account delete --manifest=manifest-account.yaml --file=delete.yaml --account=%s", accountName)
 		require.NoError(t, err)
 
 		// CHECK IF RESOURCES ARE DELETED
