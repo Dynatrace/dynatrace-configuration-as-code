@@ -117,7 +117,7 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	}
 
 	// check if we are dealing with a duplicate non-unique name configuration, if not, go ahead and update the known entity
-	if featureflags.UpdateNonUniqueByNameIfSingleOneExists().Enabled() && len(entitiesWithSameName) == 1 && !duplicate {
+	if featureflags.Permanent[featureflags.UpdateNonUniqueByNameIfSingleOneExists].Enabled() && len(entitiesWithSameName) == 1 && !duplicate {
 		existingUuid := entitiesWithSameName[0].Id
 		entity, err := d.updateDynatraceObject(ctx, fullUrl, objectName, existingUuid, theApi, body)
 		return entity, err

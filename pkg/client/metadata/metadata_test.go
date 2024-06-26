@@ -137,14 +137,14 @@ func classicEnvDomainAPICall(serverResponseStatus int, serverResponse string) re
 }
 
 func TestGetDynatraceClassicURL_DoesNotBuildSimpleURLIfFeatureFlagIsOff(t *testing.T) {
-	t.Setenv(featureflags.BuildSimpleClassicURL().EnvName(), "false")
+	t.Setenv(featureflags.Permanent[featureflags.BuildSimpleClassicURL].EnvName(), "false")
 
 	platformURL := "https://id.apps.env.com"
 
 	c := &testClient{
 		getResp: func(ctx context.Context, url string) (rest.Response, error) {
 			if url == "https://id.live.env.com" {
-				t.Fatalf("unexpected call to validate auto-generated Classic URL - should not happen with %q flag off", featureflags.BuildSimpleClassicURL().EnvName())
+				t.Fatalf("unexpected call to validate auto-generated Classic URL - should not happen with %q flag off", featureflags.Permanent[featureflags.BuildSimpleClassicURL].EnvName())
 			}
 
 			if url == "https://id.apps.env.com"+ClassicEnvironmentDomainPath {

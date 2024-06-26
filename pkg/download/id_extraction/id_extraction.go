@@ -64,7 +64,7 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) (project.ConfigsP
 				content = strings.ReplaceAll(content, id, paramID)
 			}
 
-			if featureflags.ExtractScopeAsParameter().Enabled() {
+			if featureflags.Permanent[featureflags.ExtractScopeAsParameter].Enabled() {
 				scopeParam := c.Parameters[config.ScopeParameter]
 				if scopeParam != nil && scopeParam.GetType() == value.ValueParameterType {
 					scopeParamResolved, err := scopeParam.ResolveValue(parameter.ResolveContext{})

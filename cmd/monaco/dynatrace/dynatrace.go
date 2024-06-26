@@ -41,7 +41,7 @@ import (
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
 // using the configured credentials
 func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
-	if !featureflags.VerifyEnvironmentType().Enabled() {
+	if !featureflags.Permanent[featureflags.VerifyEnvironmentType].Enabled() {
 		return true
 	}
 	for _, env := range envs {

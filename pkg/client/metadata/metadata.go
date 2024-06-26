@@ -52,7 +52,7 @@ type client interface {
 // environment
 func GetDynatraceClassicURL(ctx context.Context, client client, environmentURL string) (string, error) {
 
-	if featureflags.BuildSimpleClassicURL().Enabled() {
+	if featureflags.Permanent[featureflags.BuildSimpleClassicURL].Enabled() {
 		if classicURL, ok := findSimpleClassicURL(ctx, client, environmentURL); ok {
 			log.Debug("Found classic environment URL based on Platform URL: %s", classicURL)
 			return classicURL, nil

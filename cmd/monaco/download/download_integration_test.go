@@ -601,7 +601,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 	fs := afero.NewMemMapFs()
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
-	t.Setenv(featureflags.DownloadFilterClassicConfigs().EnvName(), "false")
+	t.Setenv(featureflags.Permanent[featureflags.DownloadFilterClassicConfigs].EnvName(), "false")
 
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
@@ -1197,7 +1197,7 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// GIVEN filter feature flag is turned OFF
-	t.Setenv(featureflags.DownloadFilterSettingsUnmodifiable().EnvName(), "false")
+	t.Setenv(featureflags.Permanent[featureflags.DownloadFilterSettingsUnmodifiable].EnvName(), "false")
 
 	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, opts)
 

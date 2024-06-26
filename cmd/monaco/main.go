@@ -34,7 +34,7 @@ func main() {
 	log.PrepareLogging(nil, true, nil, false)
 
 	var versionNotification string
-	if !featureflags.SkipVersionCheck().Enabled() {
+	if !featureflags.Permanent[featureflags.SkipVersionCheck].Enabled() {
 		go setVersionNotificationStr(&versionNotification)
 	}
 
