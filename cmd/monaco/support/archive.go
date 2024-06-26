@@ -17,13 +17,14 @@
 package support
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/zip"
 	"github.com/spf13/afero"
 	"os"
-	"path"
+	"path/filepath"
 )
 
 var SupportArchive bool
@@ -31,17 +32,32 @@ var SupportArchive bool
 func Archive(fs afero.Fs) error {
 	timeAnchorStr := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat)
 	zipFileName := "support-archive-" + timeAnchorStr + ".zip"
+	ffState, err := writeFeatureFlagStateFile(fs, timeAnchorStr)
+	if err != nil {
+		return err
+	}
 	files := []string{
 		trafficlogs.RequestFilePath(),
 		trafficlogs.ResponseFilePath(),
 		log.LogFilePath(),
-		log.ErrorFilePath()}
+		log.ErrorFilePath(),
+		ffState,
+	}
 
 	workingDir, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
-	log.Info("Saving support archive to " + path.Join(workingDir, zipFileName))
+	log.Info("Saving support archive to " + filepath.Join(workingDir, zipFileName))
 	return zip.Create(fs, zipFileName, files, false)
+}
+
+func writeFeatureFlagStateFile(fs afero.Fs, timeAnchor string) (filename string, err error) {
+	s := featureflags.StateInfo()
+	path := filepath.Join(log.LogDirectory, timeAnchor+"-featureflag_state.log")
+	if err := afero.WriteFile(fs, path, []byte(s), 0644); err != nil {
+		return "", err
+	}
+	return path, nil
 }

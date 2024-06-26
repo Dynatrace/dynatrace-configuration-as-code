@@ -78,6 +78,10 @@ Examples:
 				version.LogVersionAsInfo()
 			}
 
+			if featureflags.AnyModified() {
+				log.Warn("Feature Flags modified - Dynatrace Support might not be able to assist you with issues.")
+			}
+
 			memory.SetDefaultLimit()
 		},
 		Run: func(cmd *cobra.Command, args []string) {
