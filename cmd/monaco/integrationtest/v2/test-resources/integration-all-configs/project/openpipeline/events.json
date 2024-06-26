@@ -1,0 +1,88 @@
+{
+    "customBasePath": "/platform/ingest/custom/events",
+    "editable": true,
+    "endpoints": [
+        {
+            "basePath": "/platform/ingest/v1/events",
+            "builtin": true,
+            "defaultBucket": null,
+            "displayName": "Default API",
+            "editable": false,
+            "enabled": true,
+            "processors": [],
+            "routing": {
+                "type": "dynamic"
+            },
+            "segment": ""
+        }
+    ],
+    "id": "events",
+    "pipelines": [
+        {
+            "builtin": true,
+            "dataExtraction": {
+                "editable": false,
+                "processors": []
+            },
+            "displayName": "events",
+            "editable": false,
+            "enabled": true,
+            "id": "default",
+            "metricExtraction": {
+                "editable": false,
+                "processors": []
+            },
+            "processing": {
+                "editable": false,
+                "processors": []
+            },
+            "securityContext": {
+                "editable": false,
+                "processors": []
+            },
+            "storage": {
+                "catchAllBucketName": "default_events",
+                "editable": false,
+                "processors": []
+            },
+            "type": "default"
+        },
+        {
+            "type": "default",
+            "enabled": true,
+            "editable": false,
+            "id": "custom",
+            "displayName": "custom",
+            "storage": {
+                "editable": false,
+                "catchAllBucketName": "default_events",
+                "processors": []
+            },
+            "securityContext": {
+                "editable": false,
+                "processors": []
+            },
+            "metricExtraction": {
+                "editable": false,
+                "processors": []
+            },
+            "dataExtraction": {
+                "editable": false,
+                "processors": []
+            },
+            "processing": {
+                "editable": false,
+                "processors": []
+            },
+            "settingsSchema": ""
+        }
+    ],
+    "routing": {
+        "catchAllPipeline": {
+            "editable": false,
+            "pipelineId": "default"
+        },
+        "editable": true,
+        "entries": []
+    }
+}
