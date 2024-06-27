@@ -170,9 +170,7 @@ func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) 
 	return result
 }
 
-func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
-	environments []manifest.EnvironmentDefinition) (Project, []error) {
-
+func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
 	exists, err := afero.Exists(fs, projectDefinition.Path)
 	if err != nil {
 		return Project{}, []error{fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)}
@@ -191,10 +189,10 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 		}
 	}
 
-	// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
-	// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
-	// sub graph (independent component) later on as
 	for _, c := range configs {
+		// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
+		// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
+		// sub graph (independent component) later on as
 		if c.Coordinate.Type == api.KeyUserActionsWeb {
 			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
 				errors = append(errors, fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
@@ -202,9 +200,33 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 			}
 		}
 	}
-
 	if errors != nil {
 		return Project{}, errors
+	}
+
+	// Network zone API configs have a hard dependency on the "builtin:networkzones" setting 2.0 config
+	// i.e. if a network zone AND a "builtin:networkzones" config is going to be deployed, we need to make sure the
+	// "builtin:networkzones" config comes first, hence we insert a fixed parameter between the networkzones API configs and
+	// the single "builtin:networkzones" config
+	var networkZones []config.Config
+	var networkZoneEnabled config.Config
+	var networkZoneEnabledFound bool
+	for _, c := range configs {
+		if c.Coordinate.Type == api.NetworkZone {
+			networkZones = append(networkZones, c)
+		}
+		if c.Coordinate.Type == "builtin:networkzones" {
+			networkZoneEnabled = c
+			networkZoneEnabledFound = true
+		}
+	}
+	// if we've found "networkzones" and "builtin:networkzones" settings 2.0 objects, then insert a fixed parameter.
+	// Adding a parameter to an already existing parameter (e.g. created by the user) is redundant but does no harm
+	if len(networkZones) > 0 && networkZoneEnabledFound {
+		for _, nz := range networkZones {
+			nz.Parameters["__MONACO_NZONE_ENABLED__"] = &ref.ReferenceParameter{
+				ParameterReference: parameter.ParameterReference{Config: networkZoneEnabled.Coordinate, Property: "name"}}
+		}
 	}
 
 	// find and memorize (non-unique-name) configurations with identical names and set a special parameter on them
@@ -281,7 +303,6 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 		errs = append(errs, configErrs...)
 		configs = append(configs, loadedConfigs...)
 	}
-
 	return configs, errs
 }
 

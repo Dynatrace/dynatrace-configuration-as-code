@@ -1360,3 +1360,53 @@ func TestLoadProjects_CircularDependencies(t *testing.T) {
 	require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects")
 	requireProjectsWithNames(t, gotProjects, "b", "a")
 }
+
+func TestLoadProjects_NetworkZonesContainsParameterToSetting(t *testing.T) {
+
+	cfgYaml := `configs:
+- id: nz
+  config:
+    name: NZ
+    template: ajson.json
+  type:
+    api: network-zone
+- id: nz2
+  config:
+    name: NZ2
+    template: ajson.json
+  type:
+    api: network-zone
+- id: nz-enabled
+  config:
+    name: NZ Enabled
+    template: ajson.json
+  type:
+    settings:
+      schema: builtin:networkzones
+      schemaVersion: 1.0.2
+      scope: environment
+`
+
+	testFs := testutils.TempFs(t)
+	require.NoError(t, testFs.Mkdir("project", 0755))
+	require.NoError(t, afero.WriteFile(testFs, "project/config.yaml", []byte(cfgYaml), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "project/ajson.json", []byte("{}"), 0644))
+
+	context := getFullProjectLoaderContext(
+		[]string{"network-zone", "builtin:networkzones"},
+		[]string{"project"},
+		[]string{"env"})
+
+	projects, _ := LoadProjects(testFs, context, nil)
+	networkZone1 := findConfig(t, projects[0], "env", "network-zone", 0)
+	assert.Contains(t, networkZone1.Parameters, "__MONACO_NZONE_ENABLED__")
+
+	networkZone2 := findConfig(t, projects[0], "env", "network-zone", 1)
+	assert.Contains(t, networkZone2.Parameters, "__MONACO_NZONE_ENABLED__")
+}
+
+type propResolver func(coordinate.Coordinate, string) (any, bool)
+
+func (p propResolver) GetResolvedProperty(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
+	return p(coordinate, propertyName)
+}
