@@ -20,8 +20,12 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/events"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/subscribers"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -47,7 +51,23 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 				return err
 			}
 
-			return deployConfigs(fs, manifestName, groups, environment, project, continueOnError, dryRun)
+			var eventbus events.EventSystem
+
+			if featureflags.EventQueue().Enabled() {
+				var err error
+				eventbus, err = createDeployEventSystem(fs)
+				if err != nil {
+					return err
+				}
+			} else {
+				eventbus = events.Discard()
+			}
+
+			eventbus.Start()
+			defer eventbus.Terminate()
+
+			return deployConfigs(fs, manifestName, groups, environment, project, continueOnError, dryRun, eventbus)
+
 		},
 	}
 
@@ -77,4 +97,32 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd.MarkFlagsMutuallyExclusive("environment", "group")
 
 	return deployCmd
+}
+
+func createDeployEventSystem(fs afero.Fs) (events.EventSystem, error) {
+	ts := timeutils.TimeAnchor()
+
+	fileSink, err := events.NewFileSink(fs, fmt.Sprintf("events-%s.txt", ts.Format("20060102150405")))
+	if err != nil {
+		return nil, err
+	}
+
+	ss, err := subscribers.NewDeploySubscriber(fileSink)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create file collector for event queue: %w", err)
+	}
+
+	summaryFileSink, err := events.NewFileSink(fs, fmt.Sprintf("summary-%s.txt", ts.Format("20060102150405")))
+	if err != nil {
+		return nil, err
+	}
+	sc := &subscribers.SummarySubscriber{
+		Sink: summaryFileSink,
+	}
+
+	eventbus, err := events.New(100, events.WithSubscribers(sc), events.WithSubscribers(ss))
+	if err != nil {
+		return nil, err
+	}
+	return eventbus, nil
 }
