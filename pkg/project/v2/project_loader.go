@@ -182,28 +182,24 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
 	configs, errors := loadConfigsOfProject(fs, context, projectDefinition, environments)
+	errors = append(errors, findDuplicatedConfigIdentifiers(configs)...)
+	errors = append(errors, checkKeyUserActionScope(configs)...)
 
-	if d := findDuplicatedConfigIdentifiers(configs); d != nil {
-		for _, c := range d {
-			errors = append(errors, newDuplicateConfigIdentifierError(c))
-		}
-	}
-
-	for _, c := range configs {
-		// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
-		// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
-		// sub graph (independent component) later on as
-		if c.Coordinate.Type == api.KeyUserActionsWeb {
-			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
-				errors = append(errors, fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
-					"parameter to another web-application config", api.KeyUserActionsWeb, c.Coordinate.ConfigId))
-			}
-		}
-	}
-	if errors != nil {
+	if len(errors) > 0 {
 		return Project{}, errors
 	}
 
+	insertFixedParameters(configs)
+
+	return Project{
+		Id:           projectDefinition.Name,
+		GroupId:      projectDefinition.Group,
+		Configs:      toConfigMap(configs),
+		Dependencies: toDependenciesMap(projectDefinition.Name, configs),
+	}, nil
+}
+
+func insertFixedParameters(configs []config.Config) {
 	// Network zone API configs have a hard dependency on the "builtin:networkzones" setting 2.0 config
 	// i.e. if a network zone AND a "builtin:networkzones" config is going to be deployed, we need to make sure the
 	// "builtin:networkzones" config comes first, hence we insert a fixed parameter between the networkzones API configs and
@@ -228,7 +224,25 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 				ParameterReference: parameter.ParameterReference{Config: networkZoneEnabled.Coordinate, Property: "name"}}
 		}
 	}
+}
 
+func checkKeyUserActionScope(configs []config.Config) []error {
+	var errors []error
+	for _, c := range configs {
+		// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
+		// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
+		// sub graph (independent component) later on as
+		if c.Coordinate.Type == api.KeyUserActionsWeb {
+			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
+				errors = append(errors, fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
+					"parameter to another web-application config", api.KeyUserActionsWeb, c.Coordinate.ConfigId))
+			}
+		}
+	}
+	return errors
+}
+
+func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 	// find and memorize (non-unique-name) configurations with identical names and set a special parameter on them
 	// to be able to identify them later
 	// splitting is map[environment]map[name]count
@@ -268,13 +282,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 
 		configMap[conf.Environment][conf.Coordinate.Type] = append(configMap[conf.Environment][conf.Coordinate.Type], conf)
 	}
-
-	return Project{
-		Id:           projectDefinition.Name,
-		GroupId:      projectDefinition.Group,
-		Configs:      configMap,
-		Dependencies: toDependenciesMap(projectDefinition.Name, configs),
-	}, nil
+	return configMap
 }
 
 func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
@@ -306,18 +314,17 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 	return configs, errs
 }
 
-func findDuplicatedConfigIdentifiers(configs []config.Config) []config.Config {
-
+func findDuplicatedConfigIdentifiers(configs []config.Config) []error {
+	var errors []error
 	coordinates := make(map[string]struct{})
-	var duplicates []config.Config
 	for _, c := range configs {
 		id := toFullyQualifiedConfigIdentifier(c)
 		if _, found := coordinates[id]; found {
-			duplicates = append(duplicates, c)
+			errors = append(errors, newDuplicateConfigIdentifierError(c))
 		}
 		coordinates[id] = struct{}{}
 	}
-	return duplicates
+	return errors
 }
 
 // toFullyUniqueConfigIdentifier returns a configs coordinate as well as environment,

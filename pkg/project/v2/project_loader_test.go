@@ -39,7 +39,7 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 	tests := []struct {
 		name  string
 		input []config.Config
-		want  []config.Config
+		want  []error
 	}{
 		{
 			"nil input produces empty output",
@@ -82,7 +82,7 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}},
 				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"}},
 			},
-			[]config.Config{{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}}},
+			[]error{newDuplicateConfigIdentifierError(config.Config{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}})},
 		},
 		{
 			"finds each duplicate",
@@ -92,9 +92,9 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}},
 				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"}},
 			},
-			[]config.Config{
-				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}},
-				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}},
+			[]error{
+				newDuplicateConfigIdentifierError(config.Config{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}}),
+				newDuplicateConfigIdentifierError(config.Config{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}}),
 			},
 		},
 	}
