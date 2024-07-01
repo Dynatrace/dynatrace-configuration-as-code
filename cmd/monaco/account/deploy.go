@@ -17,7 +17,6 @@
 package account
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
@@ -33,7 +32,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
-	"net/http"
 	"path/filepath"
 )
 
@@ -125,16 +123,11 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 		return fmt.Errorf("failed to create account clients: %w", err)
 	}
 
-	supportedPermissions, err := deployer.FetchAvailablePermissionIDs(context.Background(), &http.Client{}, "https://api.dynatrace.com/spec-json")
-	if err != nil {
-		return fmt.Errorf("failed to fetch supportedPermissions: %w", err)
-	}
-
 	maxConcurrentDeploys := environment.GetEnvValueInt(environment.ConcurrentRequestsEnvKey)
 
 	for accInfo, accClient := range accountClients {
 		logger := log.WithFields(field.F("account", accInfo.Name))
-		accountDeployer := deployer.NewAccountDeployer(deployer.NewClient(accInfo, accClient, supportedPermissions), deployer.WithMaxConcurrentDeploys(maxConcurrentDeploys))
+		accountDeployer := deployer.NewAccountDeployer(deployer.NewClient(accInfo, accClient), deployer.WithMaxConcurrentDeploys(maxConcurrentDeploys))
 		logger.Info("Deploying configuration for account: %s", accInfo.Name)
 		logger.Info("Number of users to deploy: %d", len(resources.Users))
 		logger.Info("Number of groups to deploy: %d", len(resources.Groups))

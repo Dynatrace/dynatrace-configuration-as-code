@@ -27,7 +27,6 @@ import (
 	"github.com/go-logr/logr"
 	"io"
 	"net/http"
-	"slices"
 )
 
 type (
@@ -37,17 +36,15 @@ type (
 	ManagementZone = accountmanagement.ManagementZoneResourceDto
 
 	accountManagementClient struct {
-		accountInfo          account.AccountInfo
-		supportedPermissions []remoteId
-		client               *accounts.Client
+		accountInfo account.AccountInfo
+		client      *accounts.Client
 	}
 )
 
-func NewClient(info account.AccountInfo, client *accounts.Client, supportedPermissions []remoteId) *accountManagementClient {
+func NewClient(info account.AccountInfo, client *accounts.Client) *accountManagementClient {
 	return &accountManagementClient{
-		accountInfo:          info,
-		client:               client,
-		supportedPermissions: supportedPermissions,
+		accountInfo: info,
+		client:      client,
 	}
 }
 
@@ -260,11 +257,6 @@ func (d *accountManagementClient) updatePermissions(ctx context.Context, groupId
 		permissions = []accountmanagement.PermissionsDto{}
 	}
 
-	for _, p := range permissions {
-		if !slices.Contains(d.supportedPermissions, p.PermissionName) {
-			return fmt.Errorf("unsupported permission %s. Must be one of: %v", p.PermissionName, d.supportedPermissions)
-		}
-	}
 	resp, err := d.client.PermissionManagementAPI.OverwriteGroupPermissions(ctx, d.accountInfo.AccountUUID, groupId).PermissionsDto(permissions).Execute()
 	defer closeResponseBody(resp)
 	if err = d.handleClientResponseError(resp, err, "unable to update permissions of group with UUID "+groupId); err != nil {
