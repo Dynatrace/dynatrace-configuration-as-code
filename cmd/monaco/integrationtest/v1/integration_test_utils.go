@@ -107,7 +107,7 @@ func assertConfigAvailable(t *testing.T, ctx context.Context, client client.Conf
 	typ, ok := c.Type.(config.ClassicApiType)
 	assert.True(t, ok, "Config %s should be a ClassicApiType, but is a %q", c.Coordinate, c.Type.ID())
 
-	a, found := api.NewAPIs()[typ.Api]
+	a, found := api.Get(typ.Api)
 	assert.True(t, found, "Config %s should have a known api, but does not. Api %s does not exist", c.Coordinate, typ.Api)
 
 	if c.Skip {
