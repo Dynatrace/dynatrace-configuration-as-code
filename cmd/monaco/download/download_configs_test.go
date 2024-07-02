@@ -473,7 +473,7 @@ func Test_downloadConfigsOptions_valid(t *testing.T) {
 func Test_copyConfigs(t *testing.T) {
 	t.Run("Copy configs to empty", func(t *testing.T) {
 		dest := projectv2.ConfigsPerType{}
-		copyConfigs(dest, projectv2.ConfigsPerType{
+		copySanitized(dest, projectv2.ConfigsPerType{
 			"dashboard": []config.Config{
 				{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}}},
 			"notebook": []config.Config{
@@ -495,7 +495,7 @@ func Test_copyConfigs(t *testing.T) {
 		dest := projectv2.ConfigsPerType{"dashboard": []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}},
 		}}
-		copyConfigs(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
+		copySanitized(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-2"}},
 		}})
 
@@ -512,7 +512,7 @@ func Test_copyConfigs(t *testing.T) {
 		dest := projectv2.ConfigsPerType{"notebook": []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "notebook-1"}},
 		}}
-		copyConfigs(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
+		copySanitized(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}}}})
 
 		assert.Len(t, dest, 2)
@@ -538,7 +538,7 @@ func Test_copyConfigs(t *testing.T) {
 			},
 		}
 
-		copyConfigs(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
+		copySanitized(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-2"}},
 		}})
 
@@ -553,6 +553,23 @@ func Test_copyConfigs(t *testing.T) {
 		assert.EqualValues(t, dest["dashboard"], []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}},
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-2"}},
+		})
+	})
+	t.Run("Sanitize Config IDs", func(t *testing.T) {
+		dest := projectv2.ConfigsPerType{}
+		src := projectv2.ConfigsPerType{
+			"key-user-actions-mobile": []config.Config{
+				{Coordinate: coordinate.Coordinate{ConfigId: "This Is My Key User Action"}},
+			},
+		}
+
+		copySanitized(dest, src)
+
+		assert.Len(t, dest, 1)
+
+		assert.Contains(t, dest, "key-user-actions-mobile")
+		assert.EqualValues(t, dest["key-user-actions-mobile"], []config.Config{
+			{Coordinate: coordinate.Coordinate{ConfigId: "ThisIsMyKeyUserAction"}},
 		})
 	})
 }
