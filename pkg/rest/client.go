@@ -19,16 +19,18 @@ package rest
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 )
 
 type Client struct {
@@ -210,6 +212,27 @@ func (c Client) executeRequest(request *http.Request) (Response, error) {
 		return Response{}, err
 	}
 	return response, nil
+}
+
+func getPaginationValues(body []byte) (nextPageKey string, totalCount int, pageSize int) {
+	var jsonResponse map[string]interface{}
+	if err := json.Unmarshal(body, &jsonResponse); err != nil {
+		return
+	}
+
+	if jsonResponse["nextPageKey"] != nil {
+		nextPageKey = jsonResponse["nextPageKey"].(string)
+	}
+
+	if jsonResponse["totalCount"] != nil {
+		totalCount = int(jsonResponse["totalCount"].(float64))
+	}
+
+	if jsonResponse["pageSize"] != nil {
+		pageSize = int(jsonResponse["pageSize"].(float64))
+	}
+
+	return
 }
 
 func isConnectionResetErr(err error) bool {

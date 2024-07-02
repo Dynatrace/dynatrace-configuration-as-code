@@ -521,7 +521,7 @@ func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opt
 		return nil, fmt.Errorf("failed to create request for schema %q: %w", schemaId, err)
 	}
 
-	_, err = rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, schemaId, addToResult)
+	_, err = listPaginated(ctx, d.platformClient, d.retrySettings, u, schemaId, addToResult)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list settings of schema %q: %w", schemaId, err)
 	}

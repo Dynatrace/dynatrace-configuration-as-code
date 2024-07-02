@@ -14,39 +14,17 @@
  * limitations under the License.
  */
 
-package rest
+package dtclient
 
 import (
-	"encoding/json"
 	"net/url"
 	"strings"
 )
 
-func getPaginationValues(body []byte) (nextPageKey string, totalCount int, pageSize int) {
-	var jsonResponse map[string]interface{}
-	if err := json.Unmarshal(body, &jsonResponse); err != nil {
-		return
-	}
-
-	if jsonResponse["nextPageKey"] != nil {
-		nextPageKey = jsonResponse["nextPageKey"].(string)
-	}
-
-	if jsonResponse["totalCount"] != nil {
-		totalCount = int(jsonResponse["totalCount"].(float64))
-	}
-
-	if jsonResponse["pageSize"] != nil {
-		pageSize = int(jsonResponse["pageSize"].(float64))
-	}
-
-	return
-}
-
-// AddNextPageQueryParams handles both Dynatrace v1 and v2 pagination logic.
+// addNextPageQueryParams handles both Dynatrace v1 and v2 pagination logic.
 // For api/v2 URLs the given next page key will be the only query parameter of the modified URL
 // For any other ULRs the given next page key will be added to existing query parameters
-func AddNextPageQueryParams(u *url.URL, nextPage string) *url.URL {
+func addNextPageQueryParams(u *url.URL, nextPage string) *url.URL {
 	queryParams := u.Query()
 
 	if isApiV2Url(u) {

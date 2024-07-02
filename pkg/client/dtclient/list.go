@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package rest
+package dtclient
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/throttle"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/throttle"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 )
 
 const emptyResponseRetryMax = 10
@@ -38,10 +40,10 @@ const emptyResponseRetryMax = 10
 // as filtering might exclude some entries that where received from the API.
 type AddEntriesToResult func(body []byte) (receivedEntries int, err error)
 
-func ListPaginated(ctx context.Context, client *Client, retrySettings RetrySettings, url *url.URL, logLabel string,
-	addToResult AddEntriesToResult) (Response, error) {
+func listPaginated(ctx context.Context, client *rest.Client, retrySettings rest.RetrySettings, url *url.URL, logLabel string,
+	addToResult AddEntriesToResult) (rest.Response, error) {
 
-	var resp Response
+	var resp rest.Response
 	startTime := time.Now()
 	receivedCount := 0
 	totalReceivedCount := 0
@@ -62,7 +64,7 @@ func ListPaginated(ctx context.Context, client *Client, retrySettings RetrySetti
 		if nextPageKey != "" {
 			logLongRunningExtractionProgress(&lastLogTime, startTime, nbCalls, resp, logLabel)
 
-			url = AddNextPageQueryParams(url, nextPageKey)
+			url = addNextPageQueryParams(url, nextPageKey)
 
 			var isLastAvailablePage bool
 			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = runAndProcessResponse(ctx, client, retrySettings, true, url, addToResult, receivedCount, totalReceivedCount)
@@ -98,7 +100,7 @@ func ListPaginated(ctx context.Context, client *Client, retrySettings RetrySetti
 	return resp, nil
 }
 
-func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Time, nbCalls int, resp Response, logLabel string) {
+func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Time, nbCalls int, resp rest.Response, logLabel string) {
 	if time.Since(*lastLogTime).Minutes() >= 1 {
 		*lastLogTime = time.Now()
 		nbItemsMessage := ""
@@ -117,13 +119,13 @@ func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Tim
 	}
 }
 
-func validateWrongCountExtracted(resp Response, totalReceivedCount int, expectedTotalCount int, url *url.URL, logLabel string, nextPageKey string) {
+func validateWrongCountExtracted(resp rest.Response, totalReceivedCount int, expectedTotalCount int, url *url.URL, logLabel string, nextPageKey string) {
 	if resp.NextPageKey == "" && totalReceivedCount != expectedTotalCount {
 		log.Warn("Total count of items from api: %v for: %s does not match with count of actually downloaded items. Expected: %d Got: %d, last next page key received: %s \n   params: %v", url.Path, logLabel, expectedTotalCount, totalReceivedCount, nextPageKey, url.RawQuery)
 	}
 }
 
-func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp Response) (bool, int, error) {
+func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp rest.Response) (bool, int, error) {
 	if receivedCount == 0 {
 		if emptyResponseRetryCount < emptyResponseRetryMax {
 			emptyResponseRetryCount++
@@ -137,8 +139,8 @@ func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp
 	return false, emptyResponseRetryCount, nil
 }
 
-func runAndProcessResponse(ctx context.Context, client *Client, retrySettings RetrySettings, isNextCall bool, u *url.URL,
-	addToResult AddEntriesToResult, receivedCount int, totalReceivedCount int) (Response, int, int, bool, error) {
+func runAndProcessResponse(ctx context.Context, client *rest.Client, retrySettings rest.RetrySettings, isNextCall bool, u *url.URL,
+	addToResult AddEntriesToResult, receivedCount int, totalReceivedCount int) (rest.Response, int, int, bool, error) {
 	isLastAvailablePage := false
 
 	resp, err := client.GetWithRetry(ctx, u.String(), retrySettings.Normal)
@@ -153,7 +155,7 @@ func runAndProcessResponse(ctx context.Context, client *Client, retrySettings Re
 	return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err
 }
 
-func validateRespErrors(isNextCall bool, err error, resp Response, urlPath string) (bool, error) {
+func validateRespErrors(isNextCall bool, err error, resp rest.Response, urlPath string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
@@ -175,10 +177,10 @@ func validateRespErrors(isNextCall bool, err error, resp Response, urlPath strin
 
 }
 
-func buildResponseError(err error, resp Response, url *url.URL) (Response, error) {
-	var respErr RespError
+func buildResponseError(err error, resp rest.Response, url *url.URL) (rest.Response, error) {
+	var respErr rest.RespError
 	if errors.As(err, &respErr) {
 		return resp, fmt.Errorf("failed to process paginated API response: %w", respErr)
 	}
-	return resp, NewRespErr("failed to process paginated API response", resp).WithRequestInfo(http.MethodGet, url.String()).WithErr(err)
+	return resp, rest.NewRespErr("failed to process paginated API response", resp).WithRequestInfo(http.MethodGet, url.String()).WithErr(err)
 }

@@ -527,7 +527,7 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 		existingValues = append(existingValues, values...)
 
 		if resp.NextPageKey != "" {
-			parsedUrl = rest.AddNextPageQueryParams(parsedUrl, resp.NextPageKey)
+			parsedUrl = addNextPageQueryParams(parsedUrl, resp.NextPageKey)
 
 			resp, err = d.classicClient.GetWithRetry(ctx, parsedUrl.String(), d.retrySettings.Normal)
 
