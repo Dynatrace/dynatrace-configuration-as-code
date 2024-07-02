@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/openpipeline"
 	"os"
+	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
@@ -252,7 +253,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		if err != nil {
 			return nil, err
 		}
-		copyConfigs(configs, classicCfgs)
+		copySanitized(configs, classicCfgs)
 	}
 
 	if shouldDownloadSettings(opts) {
@@ -261,7 +262,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		if err != nil {
 			return nil, err
 		}
-		copyConfigs(configs, settingCfgs)
+		copySanitized(configs, settingCfgs)
 	}
 
 	if shouldDownloadAutomationResources(opts) {
@@ -271,7 +272,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 			if err != nil {
 				return nil, err
 			}
-			copyConfigs(configs, automationCfgs)
+			copySanitized(configs, automationCfgs)
 		} else if opts.onlyAutomation {
 			return nil, errors.New("can't download automation resources: no OAuth credentials configured")
 		}
@@ -283,7 +284,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		if err != nil {
 			return nil, err
 		}
-		copyConfigs(configs, bucketCfgs)
+		copySanitized(configs, bucketCfgs)
 	}
 
 	if featureflags.Documents().Enabled() {
@@ -294,7 +295,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 				if err != nil {
 					return nil, err
 				}
-				copyConfigs(configs, documentCfgs)
+				copySanitized(configs, documentCfgs)
 			} else if opts.onlyDocuments {
 				return nil, errors.New("can't download documents: no OAuth credentials configured")
 			}
@@ -308,7 +309,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 				if err != nil {
 					return nil, err
 				}
-				copyConfigs(configs, openPipelineCfgs)
+				copySanitized(configs, openPipelineCfgs)
 			} else if opts.onlyOpenPipeline {
 				return nil, errors.New("can't download openpipeline resources: no OAuth credentials configured")
 			}
@@ -326,9 +327,12 @@ func makeSettingTypes(specificSchemas []string) []config.SettingsType {
 	return settingTypes
 }
 
-func copyConfigs(dest, src project.ConfigsPerType) {
+func copySanitized(dest, src project.ConfigsPerType) {
 	for k, v := range src {
-		dest[k] = append(dest[k], v...)
+		for _, c := range v {
+			c.Coordinate.ConfigId = strings.ReplaceAll(c.Coordinate.ConfigId, " ", "") // sanitize config id
+			dest[k] = append(dest[k], c)
+		}
 	}
 }
 
