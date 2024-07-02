@@ -58,3 +58,8 @@ func (ff FeatureFlag) Enabled() bool {
 func (ff FeatureFlag) EnvName() string {
 	return ff.envName
 }
+
+// Value returns the current value and default value of a FeatureFlag
+func (ff FeatureFlag) Value() (enabled bool, defaultVal bool) {
+	return ff.Enabled(), ff.defaultEnabled
+}

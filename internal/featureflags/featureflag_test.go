@@ -39,7 +39,7 @@ func TestFeatureFlag(t *testing.T) {
 }
 
 func TestVerifyEnvType(t *testing.T) {
-	ff := featureflags.VerifyEnvironmentType()
+	ff := featureflags.Temporary[featureflags.VerifyEnvironmentType]
 	assert.True(t, ff.Enabled())
 	t.Setenv(ff.EnvName(), "0")
 	assert.False(t, ff.Enabled())

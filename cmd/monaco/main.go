@@ -33,6 +33,10 @@ func main() {
 	// furthermore it should honor the desired format, such as JSON
 	log.PrepareLogging(nil, true, nil, false)
 
+	if featureflags.AnyModified() {
+		log.Warn("Feature Flags modified - Dynatrace Support might not be able to assist you with issues.")
+	}
+
 	var versionNotification string
 	if !featureflags.SkipVersionCheck().Enabled() {
 		go setVersionNotificationStr(&versionNotification)
