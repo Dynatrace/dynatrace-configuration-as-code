@@ -25,7 +25,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
@@ -39,13 +38,8 @@ func TestDeployScopedConfigurations(t *testing.T) {
 	configFolder := "test-resources/scoped-configs/"
 	environment := "classic_env"
 	manifestPath := configFolder + "manifest.yaml"
-	envVars := map[string]string{
-		featureflags.KeyUserActionsWeb().EnvName():                 "true",
-		featureflags.KeyUserActionsMobile().EnvName():              "true",
-		featureflags.UserActionSessionPropertiesMobile().EnvName(): "true",
-	}
 
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifestPath, environment, "ScopedConfigs", envVars, func(fs afero.Fs, testContext TestContext) {
+	RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "ScopedConfigs", func(fs afero.Fs, testContext TestContext) {
 
 		// deploy with sharing turned off and assert state
 		setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.suffix)

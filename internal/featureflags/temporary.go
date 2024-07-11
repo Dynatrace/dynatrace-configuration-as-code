@@ -48,33 +48,6 @@ func UpdateNonUniqueByNameIfSingleOneExists() FeatureFlag {
 	}
 }
 
-// KeyUserActionsWeb toggles whether the key user actions for web apps are downloaded and / or deployed.
-// Introduced: 2024-03-21; v2.12.0
-func KeyUserActionsWeb() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_KUA_WEB",
-		defaultEnabled: true,
-	}
-}
-
-// KeyUserActionsMobile toggles whether the key user actions for mobile apps are downloaded and / or deployed.
-// Introduced: 2024-03-21; v2.12.0
-func KeyUserActionsMobile() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_KUA_MOBILE",
-		defaultEnabled: true,
-	}
-}
-
-// UserActionSessionPropertiesMobile toggles whether user actions and session properties for mobile apps are downloaded and / or deployed.
-// Introduced: 2024-03-21; v2.12.0
-func UserActionSessionPropertiesMobile() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_UASP_MOBILE",
-		defaultEnabled: true,
-	}
-}
-
 // SkipReadOnlyAccountGroupUpdates toggles whether updates to read-only account groups are skipped or not.
 // Introduced: 2024-03-29; v2.13.0
 func SkipReadOnlyAccountGroupUpdates() FeatureFlag {
