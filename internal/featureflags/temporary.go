@@ -16,38 +16,6 @@
 
 package featureflags
 
-// VerifyEnvironmentType returns the feature flag that tells whether the environment check
-// at the beginning of execution is enabled or not.
-// Introduced: before 2023-04-27; v2.0.0
-func VerifyEnvironmentType() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_VERIFY_ENV_TYPE",
-		defaultEnabled: true,
-	}
-}
-
-// ManagementZoneSettingsNumericIDs returns the feature flag that tells whether configs of settings type builtin:management-zones
-// are addressed directly via their object ID or their resolved numeric ID when they are referenced.
-// Introduced: 2023-04-18; v2.0.1
-func ManagementZoneSettingsNumericIDs() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_USE_MZ_NUMERIC_ID",
-		defaultEnabled: true,
-	}
-}
-
-// UpdateNonUniqueByNameIfSingleOneExists toggles whether we attempt update api.API configurations with NonUniqueName,
-// by name if only a single one is found on the environment. As this causes issues if a project defines more than one config
-// with the same name - they will overwrite each other, and keep a single on the environment - the feature flag is introduced
-// to turn it off until a generally better solution is available.
-// Introduced: 2023-09-01; v2.9.1
-func UpdateNonUniqueByNameIfSingleOneExists() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_UPDATE_SINGLE_NON_UNIQUE_BY_NAME",
-		defaultEnabled: true,
-	}
-}
-
 // SkipReadOnlyAccountGroupUpdates toggles whether updates to read-only account groups are skipped or not.
 // Introduced: 2024-03-29; v2.13.0
 func SkipReadOnlyAccountGroupUpdates() FeatureFlag {
