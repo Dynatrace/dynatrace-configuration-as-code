@@ -165,7 +165,6 @@ func NewAPIs() APIs {
 				SingleConfiguration: true,
 				NonDeletable:        true,
 				TweakResponseFunc:   removeURLsFromPublicAccess,
-				RequireAllFF:        []featureflags.FeatureFlag{featureflags.DashboardShareSettings()},
 			},
 			{
 				ID:                           Notification,
