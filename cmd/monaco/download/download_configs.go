@@ -286,7 +286,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		copyConfigs(configs, bucketCfgs)
 	}
 
-	if featureflags.Documents().Enabled() {
+	if featureflags.Temporary[featureflags.Documents].Enabled() {
 		if shouldDownloadDocuments(opts) {
 			if opts.auth.OAuth != nil {
 				log.Info("Downloading documents")
@@ -301,7 +301,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		}
 	}
 
-	if featureflags.OpenPipeline().Enabled() {
+	if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
 		if shouldDownloadOpenPipeline(opts) {
 			if opts.auth.OAuth != nil {
 				openPipelineCfgs, err := fn.openPipelineDownload(clientSet.OpenPipelineClient, opts.projectName)
