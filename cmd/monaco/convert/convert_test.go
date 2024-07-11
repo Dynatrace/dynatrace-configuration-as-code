@@ -20,7 +20,6 @@ package convert
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -103,8 +102,6 @@ profile:
 	_ = afero.WriteFile(testFs, "environments.yaml", []byte("env:\n  - name: \"My_Environment\"\n  - env-url: \"{{ .Env.ENV_URL }}\"\n  - env-token-name: \"ENV_TOKEN\""), 0644)
 	_ = afero.WriteFile(testFs, "delete.yaml", []byte("delete:\n-\"some/config\""), 0644)
 
-	t.Setenv(featureflags.UnescapeOnConvert().EnvName(), "true") // ensure unescape feature is ON for this test
-
 	err := convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
 	assert.NoError(t, err)
 
@@ -155,46 +152,6 @@ profile:
 	assert.Equal(t, `{ "name":  "Some test \"With Escaped Quotes\"." }`, render)
 	err = json.ValidateJson(render, json.Location{})
 	assert.NoError(t, err)
-}
-
-func TestConvert_LeavesEscapeCharsUntouchedIfFeatureIsInactive(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml",
-		[]byte(`config:
-  - profile: "profile.json"
-
-profile:
-  - name: "Some test \\\"With Escaped Quotes\\\"."
-`), 0644)
-	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte(`{ "name":  "{{.name}}" }`), 0644)
-	_ = afero.WriteFile(testFs, "environments.yaml", []byte("env:\n  - name: \"My_Environment\"\n  - env-url: \"{{ .Env.ENV_URL }}\"\n  - env-token-name: \"ENV_TOKEN\""), 0644)
-	_ = afero.WriteFile(testFs, "delete.yaml", []byte("delete:\n-\"some/config\""), 0644)
-
-	t.Setenv(featureflags.UnescapeOnConvert().EnvName(), "false") // ensure unescape feature is OFF for this test
-
-	err := convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
-	assert.NoError(t, err)
-
-	outputFolderExists, _ := afero.Exists(testFs, "converted/")
-	assert.True(t, outputFolderExists)
-
-	assertExpectedManifestCreated(t, testFs)
-	assertExpectedDeleteFileCreated(t, testFs)
-
-	outputConfigExists, _ := afero.Exists(testFs, "converted/project/alerting-profile/config.yaml")
-	assert.True(t, outputConfigExists)
-	configContent, err := afero.ReadFile(testFs, "converted/project/alerting-profile/config.yaml")
-	assert.NoError(t, err)
-	assert.Equal(t,
-		`configs:
-- id: profile
-  config:
-    name: Some test \"With Escaped Quotes\".
-    template: profile.json
-    skip: false
-  type:
-    api: alerting-profile
-`, string(configContent))
 }
 
 func TestCopyDeleteFileIfPresent(t *testing.T) {
