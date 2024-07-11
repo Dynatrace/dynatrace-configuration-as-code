@@ -19,7 +19,6 @@
 package writer
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
@@ -28,7 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"sort"
-	"strconv"
 	"testing"
 )
 
@@ -577,14 +575,12 @@ func Test_toWriteableAccounts(t *testing.T) {
 
 func TestWrite(t *testing.T) {
 	tests := []struct {
-		name                 string
-		accountFeatureActive bool
-		givenManifest        manifest.Manifest
-		wantJSON             string
+		name          string
+		givenManifest manifest.Manifest
+		wantJSON      string
 	}{
 		{
 			"writes manifest",
-			false,
 			manifest.Manifest{
 				Projects: manifest.ProjectDefinitionByProjectID{
 					"p1": {
@@ -625,7 +621,6 @@ environmentGroups:
 		},
 		{
 			"writes manifest with accounts if FF active",
-			true,
 			manifest.Manifest{
 				Projects: manifest.ProjectDefinitionByProjectID{
 					"p1": {
@@ -691,67 +686,9 @@ accounts:
       name: MY_CLIENT_SECRET
 `,
 		},
-		{
-			"writes manifest with NO accounts if FF inactive",
-			false,
-			manifest.Manifest{
-				Projects: manifest.ProjectDefinitionByProjectID{
-					"p1": {
-						Name: "p1",
-						Path: "projects/p1",
-					},
-				},
-				Environments: manifest.Environments{
-					"env1": {
-						Name: "env1",
-						URL: manifest.URLDefinition{
-							Value: "https://a.dynatrace.environment",
-						},
-						Group: "group1",
-						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
-								Name: "TOKEN_VAR",
-							},
-						},
-					},
-				},
-				Accounts: map[string]manifest.Account{
-					"account_1": {
-						Name:        "account_1",
-						AccountUUID: uuid.MustParse("95a97c92-7137-4f7a-94ff-f29b54b94a72"),
-						OAuth: manifest.OAuth{
-							ClientID: manifest.AuthSecret{
-								Name:  "MY_CLIENT_ID",
-								Value: "SECRET!",
-							},
-							ClientSecret: manifest.AuthSecret{
-								Name:  "MY_CLIENT_SECRET",
-								Value: "ALSO SECRET!!!",
-							},
-						},
-					},
-				},
-			},
-			`manifestVersion: "1.0"
-projects:
-- name: p1
-  path: projects/p1
-environmentGroups:
-- name: group1
-  environments:
-  - name: env1
-    url:
-      value: https://a.dynatrace.environment
-    auth:
-      token:
-        type: environment
-        name: TOKEN_VAR
-`,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(featureflags.AccountManagement().EnvName(), strconv.FormatBool(tt.accountFeatureActive))
 
 			c := Context{
 				Fs:           afero.NewMemMapFs(),

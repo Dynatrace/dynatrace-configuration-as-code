@@ -48,13 +48,6 @@ func UpdateNonUniqueByNameIfSingleOneExists() FeatureFlag {
 	}
 }
 
-func AccountManagement() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_ACCOUNT_MANAGEMENT",
-		defaultEnabled: true,
-	}
-}
-
 // GenerateJSONSchemas toggles whether the 'generate schema' command is available
 func GenerateJSONSchemas() FeatureFlag {
 	return FeatureFlag{

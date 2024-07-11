@@ -18,7 +18,6 @@ package writer
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
@@ -80,9 +79,7 @@ func Write(context *Context, manifestToWrite manifest.Manifest) error {
 		EnvironmentGroups: groups,
 	}
 
-	if featureflags.AccountManagement().Enabled() {
-		m.Accounts = toWriteableAccounts(manifestToWrite.Accounts)
-	}
+	m.Accounts = toWriteableAccounts(manifestToWrite.Accounts)
 
 	return persistManifestToDisk(context, m)
 }
