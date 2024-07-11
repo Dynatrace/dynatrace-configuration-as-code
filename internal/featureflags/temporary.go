@@ -48,14 +48,6 @@ func UpdateNonUniqueByNameIfSingleOneExists() FeatureFlag {
 	}
 }
 
-// GenerateJSONSchemas toggles whether the 'generate schema' command is available
-func GenerateJSONSchemas() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_JSON_SCHEMAS",
-		defaultEnabled: true,
-	}
-}
-
 // DashboardShareSettings toggles whether the dashboard share settings are downloaded and / or deployed.
 // Introduced: 2024-02-29; v2.12.0
 func DashboardShareSettings() FeatureFlag {
