@@ -36,16 +36,6 @@ func ManagementZoneSettingsNumericIDs() FeatureFlag {
 	}
 }
 
-// ConsistentUUIDGeneration returns the feature flag controlling whether generated UUIDs use consistent separator characters regardless of OS
-// This is default true and just exists to get old, technically buggy behavior on Windows again if needed.
-// Introduced: 2023-05-25; v2.2.0
-func ConsistentUUIDGeneration() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_CONSISTENT_UUID_GENERATION",
-		defaultEnabled: true,
-	}
-}
-
 // UnescapeOnConvert toggles whether converting will remove escape chars from v1 values.
 // Introduced: 2023-09-01; v2.8.0
 func UnescapeOnConvert() FeatureFlag {
