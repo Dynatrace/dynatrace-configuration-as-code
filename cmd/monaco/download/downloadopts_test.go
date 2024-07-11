@@ -108,9 +108,7 @@ func Test_prepareAPIs(t *testing.T) {
 	t.Run("require to set all of listed FF", func(t *testing.T) {
 		testApi := api.API{
 			ID: "test-endpoint",
-			RequireAllFF: []featureflags.FeatureFlag{featureflags.UserActionSessionPropertiesMobile(),
-				featureflags.KeyUserActionsWeb(),
-				featureflags.KeyUserActionsMobile(),
+			RequireAllFF: []featureflags.FeatureFlag{
 				featureflags.ExtractScopeAsParameter(),
 			},
 		}
@@ -128,9 +126,6 @@ func Test_prepareAPIs(t *testing.T) {
 				given: given{
 					apis: api.APIs{testApi.ID: testApi},
 					ff: []featureflags.FeatureFlag{
-						featureflags.UserActionSessionPropertiesMobile(),
-						featureflags.KeyUserActionsWeb(),
-						featureflags.KeyUserActionsMobile(),
 						featureflags.ExtractScopeAsParameter(),
 					},
 				},
@@ -140,17 +135,6 @@ func Test_prepareAPIs(t *testing.T) {
 				name: "without set FF",
 				given: given{
 					apis: api.APIs{testApi.ID: testApi},
-				},
-				expected: api.APIs{},
-			},
-			{
-				name: "with only one FF set",
-				given: given{
-					apis: api.APIs{testApi.ID: testApi},
-					ff: []featureflags.FeatureFlag{
-						featureflags.UserActionSessionPropertiesMobile(),
-						featureflags.KeyUserActionsWeb(),
-						featureflags.KeyUserActionsMobile()},
 				},
 				expected: api.APIs{},
 			},
