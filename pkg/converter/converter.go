@@ -49,8 +49,7 @@ const (
 type ConverterContext struct {
 	Fs afero.Fs
 
-	ResolveSkip    bool
-	UnescapeValues bool
+	ResolveSkip bool
 }
 
 type configConvertContext struct {
@@ -452,10 +451,7 @@ func convertParameters(context *configConvertContext, environment manifest.Envir
 				parameters[newName] = c
 			}
 		} else {
-			s := value
-			if context.UnescapeValues {
-				s = removeEscapeChars(s)
-			}
+			s := removeEscapeChars(value)
 
 			parameters[newName] = &valueParam.ValueParameter{Value: s}
 		}

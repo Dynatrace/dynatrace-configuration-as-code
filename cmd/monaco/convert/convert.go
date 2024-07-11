@@ -17,7 +17,6 @@ package convert
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/converter/v1environment"
@@ -107,8 +106,7 @@ func convertConfigs(fs afero.Fs, workingDir string, apis api.APIs,
 	}
 
 	return converter.Convert(converter.ConverterContext{
-		Fs:             workingDirFs,
-		UnescapeValues: featureflags.UnescapeOnConvert().Enabled(),
+		Fs: workingDirFs,
 	}, environments, projects)
 }
 
