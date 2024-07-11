@@ -48,15 +48,6 @@ func UpdateNonUniqueByNameIfSingleOneExists() FeatureFlag {
 	}
 }
 
-// DashboardShareSettings toggles whether the dashboard share settings are downloaded and / or deployed.
-// Introduced: 2024-02-29; v2.12.0
-func DashboardShareSettings() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_DASHBOARD_SHARE_SETTINGS",
-		defaultEnabled: true,
-	}
-}
-
 // KeyUserActionsWeb toggles whether the key user actions for web apps are downloaded and / or deployed.
 // Introduced: 2024-03-21; v2.12.0
 func KeyUserActionsWeb() FeatureFlag {

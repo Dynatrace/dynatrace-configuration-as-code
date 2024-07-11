@@ -43,7 +43,6 @@ func TestDeployScopedConfigurations(t *testing.T) {
 		featureflags.KeyUserActionsWeb().EnvName():                 "true",
 		featureflags.KeyUserActionsMobile().EnvName():              "true",
 		featureflags.UserActionSessionPropertiesMobile().EnvName(): "true",
-		featureflags.DashboardShareSettings().EnvName():            "true",
 	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifestPath, environment, "ScopedConfigs", envVars, func(fs afero.Fs, testContext TestContext) {
