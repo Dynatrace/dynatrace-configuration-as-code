@@ -189,7 +189,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 		return Project{}, errors
 	}
 
-	insertFixedParameters(configs)
+	insertNetworkZoneParameter(configs)
 
 	return Project{
 		Id:           projectDefinition.Name,
@@ -199,11 +199,13 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	}, nil
 }
 
-func insertFixedParameters(configs []config.Config) {
-	// Network zone API configs have a hard dependency on the "builtin:networkzones" setting 2.0 config
-	// i.e. if a network zone AND a "builtin:networkzones" config is going to be deployed, we need to make sure the
-	// "builtin:networkzones" config comes first, hence we insert a fixed parameter between the networkzones API configs and
-	// the single "builtin:networkzones" config
+// insertNetworkZoneParameter ensures that the “builtin:networkzone” settings 2.0 objects are deployed prior to any
+// “networkzone” configurations. This is crucial because “builtin:networkzone” is responsible for activating the network
+// zone features. If these are not deployed before any actual “networkzone” configuration, it could potentially lead to an error.
+// This function ensures that if “networkzones” and “builtin:networkzones” settings 2.0 objects are found, a dependency is
+// created in the form of a reference parameter that points to the “builtin:networkzone” configuration for each networkzone
+// configuration. This dependency ensures the correct order of deployment.
+func insertNetworkZoneParameter(configs []config.Config) {
 	var networkZones []config.Config
 	var networkZoneEnabled config.Config
 	var networkZoneEnabledFound bool
@@ -216,8 +218,7 @@ func insertFixedParameters(configs []config.Config) {
 			networkZoneEnabledFound = true
 		}
 	}
-	// if we've found "networkzones" and "builtin:networkzones" settings 2.0 objects, then insert a fixed parameter.
-	// Adding a parameter to an already existing parameter (e.g. created by the user) is redundant but does no harm
+	// Note: Adding a parameter to an already existing parameter (e.g. created by the user) is redundant but does no harm
 	if len(networkZones) > 0 && networkZoneEnabledFound {
 		for _, nz := range networkZones {
 			nz.Parameters["__MONACO_NZONE_ENABLED__"] = &ref.ReferenceParameter{
