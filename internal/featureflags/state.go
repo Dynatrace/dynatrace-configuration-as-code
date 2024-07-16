@@ -25,19 +25,17 @@ import (
 
 // AnyModified returns true if any Permanent or Temporary feature flag value is different to its default.
 func AnyModified() bool {
-	for _, v := range Permanent {
-		enabled, def := v.Value()
-		if enabled != def {
-			return true
-		}
-	}
-	for _, v := range Temporary {
-		enabled, def := v.Value()
-		if enabled != def {
-			return true
-		}
-	}
+	return anyFeatureFlagModified(Permanent) || anyFeatureFlagModified(Temporary)
+}
 
+// anyFeatureFlagModified returns true if any feature flag value is different to its default.
+func anyFeatureFlagModified[K TemporaryFlag | PermanentFlag](featureFlags map[K]FeatureFlag) bool {
+	for _, v := range featureFlags {
+		enabled, def := v.Value()
+		if enabled != def {
+			return true
+		}
+	}
 	return false
 }
 
@@ -50,11 +48,21 @@ func StateInfo() string {
 		s.WriteString("Lines starting with '!' indicate that a flag has been modified from its default value.\n\n")
 	}
 
-	_, _ = fmt.Fprintf(&s, "Feature Flags:\n\n")
-	permanentKeys := maps.Keys(Permanent)
-	slices.Sort(permanentKeys)
-	for _, k := range permanentKeys {
-		v := Permanent[k]
+	s.WriteString("Feature Flags:\n\n")
+	s.WriteString(makeFeatureFlagTableString(Permanent))
+
+	s.WriteString("\n\nDevelopment and Experimental Flags:\n\n")
+	s.WriteString(makeFeatureFlagTableString(Temporary))
+
+	return s.String()
+}
+
+func makeFeatureFlagTableString[K TemporaryFlag | PermanentFlag](featureFlags map[K]FeatureFlag) string {
+	s := strings.Builder{}
+	keys := maps.Keys(featureFlags)
+	slices.Sort(keys)
+	for _, k := range keys {
+		v := featureFlags[k]
 		enabled, def := v.Value()
 		modifiedStr := " "
 		if enabled != def {
@@ -62,19 +70,5 @@ func StateInfo() string {
 		}
 		_, _ = fmt.Fprintf(&s, "%v\t%v: %v (default:%v)\n", modifiedStr, v.envName, enabled, def)
 	}
-
-	_, _ = fmt.Fprintf(&s, "\n\nDevelopment and Experimental Flags:\n\n")
-	tempKeys := maps.Keys(Temporary)
-	slices.Sort(tempKeys)
-	for _, k := range tempKeys {
-		v := Temporary[k]
-		enabled, def := v.Value()
-		modifiedStr := " "
-		if enabled != def {
-			modifiedStr = "!"
-		}
-		_, _ = fmt.Fprintf(&s, "%v\t%v: %v (default:%v)\n", modifiedStr, v.envName, enabled, def)
-	}
-
 	return s.String()
 }
