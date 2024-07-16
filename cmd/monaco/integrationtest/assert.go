@@ -165,6 +165,11 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						return
 					}
 					foundID = AssertBucket(t, clients.Bucket(), env, available, theConfig)
+				case config.DocumentType:
+					if clients.Document() == nil {
+						t.Errorf("can not assert existience of Document config %q) because no DocumentClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
+						return
+					}
 				default:
 					t.Errorf("Can not assert config of unknown type %q", theConfig.Coordinate.Type)
 				}
