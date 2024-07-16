@@ -98,9 +98,7 @@ Examples:
 	rootCmd.AddCommand(versionCommand.GetVersionCommand())
 	rootCmd.AddCommand(generate.Command(fs))
 
-	if featureflags.AccountManagement().Enabled() {
-		rootCmd.AddCommand(account.Command(fs))
-	}
+	rootCmd.AddCommand(account.Command(fs))
 
 	if featureflags.DangerousCommands().Enabled() {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")

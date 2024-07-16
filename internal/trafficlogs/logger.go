@@ -17,10 +17,12 @@
 package trafficlogs
 
 import (
+	"bytes"
 	"fmt"
 	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
@@ -125,20 +127,25 @@ func (l *FileBasedLogger) logRequest(id string, request *http.Request, body io.R
 	}
 
 	// write dump
-	if _, err := l.requestLogFile.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
+	if _, err = l.requestLogFile.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
 		return err
 	}
 
 	// write body
 	if body != nil {
 		defer body.Close()
-		if _, err := io.Copy(l.requestLogFile, body); err != nil {
+		data, err := io.ReadAll(body)
+		if err != nil {
+			return err
+		}
+		maskedData := secret.Mask(data)
+		if _, err = io.Copy(l.requestLogFile, bytes.NewReader(maskedData)); err != nil {
 			return err
 		}
 	}
 
 	// write end indicator
-	if _, err := l.requestLogFile.WriteString("\n=========================\n\n"); err != nil {
+	if _, err = l.requestLogFile.WriteString("\n=========================\n\n"); err != nil {
 		return err
 	}
 	return l.requestLogFile.Sync()
@@ -163,20 +170,25 @@ func (l *FileBasedLogger) logResponse(id string, response *http.Response, body i
 	}
 
 	// write dump
-	if _, err := l.responseLogFile.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
+	if _, err = l.responseLogFile.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
 		return err
 	}
 
 	// write body
 	if body != nil {
 		defer body.Close()
-		if _, err := io.Copy(l.responseLogFile, body); err != nil {
+		data, err := io.ReadAll(body)
+		if err != nil {
+			return err
+		}
+		maskedData := secret.Mask(data)
+		if _, err = io.Copy(l.responseLogFile, bytes.NewReader(maskedData)); err != nil {
 			return err
 		}
 	}
 
 	// write end indicator
-	if _, err := l.responseLogFile.WriteString("\n=========================\n\n"); err != nil {
+	if _, err = l.responseLogFile.WriteString("\n=========================\n\n"); err != nil {
 		return err
 	}
 	return l.responseLogFile.Sync()

@@ -21,7 +21,6 @@ package account
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
@@ -57,7 +56,6 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	toID := stringutils.Sanitize
 	project := "add_user"
 
-	t.Setenv(featureflags.AccountManagement().EnvName(), "true")
 	createMZone(t)
 	baseFs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(afero.NewOsFs(), "resources/deploy-download"), afero.NewMemMapFs())
 

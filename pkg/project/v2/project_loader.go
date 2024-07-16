@@ -170,9 +170,7 @@ func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) 
 	return result
 }
 
-func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
-	environments []manifest.EnvironmentDefinition) (Project, []error) {
-
+func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
 	exists, err := afero.Exists(fs, projectDefinition.Path)
 	if err != nil {
 		return Project{}, []error{fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)}
@@ -184,17 +182,57 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
 	configs, errors := loadConfigsOfProject(fs, context, projectDefinition, environments)
+	errors = append(errors, findDuplicatedConfigIdentifiers(configs)...)
+	errors = append(errors, checkKeyUserActionScope(configs)...)
 
-	if d := findDuplicatedConfigIdentifiers(configs); d != nil {
-		for _, c := range d {
-			errors = append(errors, newDuplicateConfigIdentifierError(c))
-		}
+	if len(errors) > 0 {
+		return Project{}, errors
 	}
 
-	// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
-	// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
-	// sub graph (independent component) later on as
+	insertNetworkZoneParameter(configs)
+
+	return Project{
+		Id:           projectDefinition.Name,
+		GroupId:      projectDefinition.Group,
+		Configs:      toConfigMap(configs),
+		Dependencies: toDependenciesMap(projectDefinition.Name, configs),
+	}, nil
+}
+
+// insertNetworkZoneParameter ensures that the “builtin:networkzone” settings 2.0 objects are deployed prior to any
+// “networkzone” configurations. This is crucial because “builtin:networkzone” is responsible for activating the network
+// zone features. If these are not deployed before any actual “networkzone” configuration, it could potentially lead to an error.
+// This function ensures that if “networkzones” and “builtin:networkzones” settings 2.0 objects are found, a dependency is
+// created in the form of a reference parameter that points to the “builtin:networkzone” configuration for each networkzone
+// configuration. This dependency ensures the correct order of deployment.
+func insertNetworkZoneParameter(configs []config.Config) {
+	var networkZones []config.Config
+	var networkZoneEnabled config.Config
+	var networkZoneEnabledFound bool
 	for _, c := range configs {
+		if c.Coordinate.Type == api.NetworkZone {
+			networkZones = append(networkZones, c)
+		}
+		if c.Coordinate.Type == "builtin:networkzones" {
+			networkZoneEnabled = c
+			networkZoneEnabledFound = true
+		}
+	}
+	// Note: Adding a parameter to an already existing parameter (e.g. created by the user) is redundant but does no harm
+	if len(networkZones) > 0 && networkZoneEnabledFound {
+		for _, nz := range networkZones {
+			nz.Parameters["__MONACO_NZONE_ENABLED__"] = &ref.ReferenceParameter{
+				ParameterReference: parameter.ParameterReference{Config: networkZoneEnabled.Coordinate, Property: "name"}}
+		}
+	}
+}
+
+func checkKeyUserActionScope(configs []config.Config) []error {
+	var errors []error
+	for _, c := range configs {
+		// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
+		// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
+		// sub graph (independent component) later on as
 		if c.Coordinate.Type == api.KeyUserActionsWeb {
 			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
 				errors = append(errors, fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
@@ -202,11 +240,10 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 			}
 		}
 	}
+	return errors
+}
 
-	if errors != nil {
-		return Project{}, errors
-	}
-
+func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 	// find and memorize (non-unique-name) configurations with identical names and set a special parameter on them
 	// to be able to identify them later
 	// splitting is map[environment]map[name]count
@@ -246,13 +283,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 
 		configMap[conf.Environment][conf.Coordinate.Type] = append(configMap[conf.Environment][conf.Coordinate.Type], conf)
 	}
-
-	return Project{
-		Id:           projectDefinition.Name,
-		GroupId:      projectDefinition.Group,
-		Configs:      configMap,
-		Dependencies: toDependenciesMap(projectDefinition.Name, configs),
-	}, nil
+	return configMap
 }
 
 func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
@@ -281,22 +312,20 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 		errs = append(errs, configErrs...)
 		configs = append(configs, loadedConfigs...)
 	}
-
 	return configs, errs
 }
 
-func findDuplicatedConfigIdentifiers(configs []config.Config) []config.Config {
-
+func findDuplicatedConfigIdentifiers(configs []config.Config) []error {
+	var errors []error
 	coordinates := make(map[string]struct{})
-	var duplicates []config.Config
 	for _, c := range configs {
 		id := toFullyQualifiedConfigIdentifier(c)
 		if _, found := coordinates[id]; found {
-			duplicates = append(duplicates, c)
+			errors = append(errors, newDuplicateConfigIdentifierError(c))
 		}
 		coordinates[id] = struct{}{}
 	}
-	return duplicates
+	return errors
 }
 
 // toFullyUniqueConfigIdentifier returns a configs coordinate as well as environment,
