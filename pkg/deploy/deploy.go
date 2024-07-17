@@ -297,14 +297,14 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 		resolvedEntity, deployErr = bucket.Deploy(ctx, clients.Bucket, properties, renderedConfig, c)
 
 	case config.DocumentType:
-		if featureflags.Documents().Enabled() {
+		if featureflags.Temporary[featureflags.Documents].Enabled() {
 			resolvedEntity, deployErr = document.Deploy(ctx, clients.Document, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
 
 	case config.OpenPipelineType:
-		if featureflags.OpenPipeline().Enabled() {
+		if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
 			resolvedEntity, deployErr = openpipeline.Deploy(ctx, clients.OpenPipeline, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())

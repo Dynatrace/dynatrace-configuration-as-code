@@ -101,11 +101,11 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		"automation": c.parseAutomation,
 	}
 
-	if featureflags.Documents().Enabled() {
+	if featureflags.Temporary[featureflags.Documents].Enabled() {
 		unmarshalers["document"] = c.parseDocumentType
 	}
 
-	if featureflags.OpenPipeline().Enabled() {
+	if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
 		unmarshalers["openpipeline"] = c.parseOpenPipelineType
 	}
 
@@ -281,7 +281,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 
 	case config.SettingsType:
 		var insertAfterValue ConfigParameter
-		if featureflags.PersistSettingsOrder().Enabled() {
+		if featureflags.Temporary[featureflags.PersistSettingsOrder].Enabled() {
 			insertAfterValue = c.InsertAfter
 		}
 
@@ -305,7 +305,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		return BucketType, nil
 
 	case config.DocumentType:
-		if featureflags.Documents().Enabled() {
+		if featureflags.Temporary[featureflags.Documents].Enabled() {
 			return map[string]any{
 				"document": DocumentDefinition{
 					Kind:    t.Kind,
@@ -315,7 +315,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}
 
 	case config.OpenPipelineType:
-		if featureflags.OpenPipeline().Enabled() {
+		if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
 			return map[string]any{
 				"openpipeline": OpenPipelineDefinition{
 					Kind: t.Kind,

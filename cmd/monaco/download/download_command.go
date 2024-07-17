@@ -87,13 +87,13 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation")
 	cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation")
 
-	if featureflags.Documents().Enabled() {
+	if featureflags.Temporary[featureflags.Documents].Enabled() {
 		cmd.Flags().BoolVar(&f.onlyDocuments, "only-documents", false, "Only download documents, skip all other configuration types")
 		cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation", "only-documents")
 		cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation", "only-documents")
 	}
 
-	if featureflags.OpenPipeline().Enabled() {
+	if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
 		cmd.Flags().BoolVar(&f.onlyOpenPipeline, "only-openpipeline", false, "Only download openpipeline configurations, skip all other configuration types")
 	}
 

@@ -222,11 +222,11 @@ func convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName st
 }
 
 func shouldFilterSettings() bool {
-	return featureflags.DownloadFilter().Enabled() && featureflags.DownloadFilterSettings().Enabled()
+	return featureflags.Permanent[featureflags.DownloadFilter].Enabled() && featureflags.Permanent[featureflags.DownloadFilterSettings].Enabled()
 }
 
 func shouldFilterUnmodifiableSettings() bool {
-	return shouldFilterSettings() && featureflags.DownloadFilterSettingsUnmodifiable().Enabled()
+	return shouldFilterSettings() && featureflags.Permanent[featureflags.DownloadFilterSettingsUnmodifiable].Enabled()
 }
 
 func validateSpecificSchemas(c client.SettingsClient, schemas []string) (valid bool, unknownSchemas []string) {

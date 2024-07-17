@@ -295,7 +295,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 }
 
 func TestScopeParameterIsTreatedAsParameter(t *testing.T) {
-	t.Setenv(featureflags.ExtractScopeAsParameter().EnvName(), "1")
+	t.Setenv(featureflags.Permanent[featureflags.ExtractScopeAsParameter].EnvName(), "1")
 
 	tests := []struct {
 		name  string

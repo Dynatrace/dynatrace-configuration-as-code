@@ -686,7 +686,7 @@ func TestDependencyResolution(t *testing.T) {
 		})
 
 		t.Run(test.name+"_FastResolver", func(t *testing.T) {
-			t.Setenv(featureflags.FastDependencyResolver().EnvName(), "true")
+			t.Setenv(featureflags.Permanent[featureflags.FastDependencyResolver].EnvName(), "true")
 			result, err := ResolveDependencies(test.setup)
 			require.NoError(t, err)
 			assert.Equal(t, test.expected, result)

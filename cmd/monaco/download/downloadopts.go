@@ -79,7 +79,7 @@ func removeSkipDownload(api api.API) bool {
 }
 
 func shouldApplyFilter() bool {
-	return featureflags.DownloadFilter().Enabled() && featureflags.DownloadFilterClassicConfigs().Enabled()
+	return featureflags.Permanent[featureflags.DownloadFilter].Enabled() && featureflags.Permanent[featureflags.DownloadFilterClassicConfigs].Enabled()
 }
 
 func removeDeprecated(log ...func(api api.API)) api.Filter {

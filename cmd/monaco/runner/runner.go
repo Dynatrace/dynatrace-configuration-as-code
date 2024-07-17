@@ -69,13 +69,15 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			log.PrepareLogging(fs, verbose, logSpy, featureflags.LogToFile().Enabled() || support.SupportArchive)
+			log.PrepareLogging(fs, verbose, logSpy, featureflags.Permanent[featureflags.LogToFile].Enabled() || support.SupportArchive)
 
-			s := cmd.Name()
-			_ = s
 			// log the version except for running the main command, help command and version command
 			if (cmd.Name() != "monaco") && (cmd.Name() != "help") && (cmd.Name() != "version") {
 				version.LogVersionAsInfo()
+			}
+
+			if featureflags.AnyModified() {
+				log.Warn("Feature Flags modified - Dynatrace Support might not be able to assist you with issues.")
 			}
 
 			memory.SetDefaultLimit()
@@ -100,7 +102,7 @@ Examples:
 
 	rootCmd.AddCommand(account.Command(fs))
 
-	if featureflags.DangerousCommands().Enabled() {
+	if featureflags.Permanent[featureflags.DangerousCommands].Enabled() {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")
 		log.Warn("Use additional commands with care, they might have heavy impact on configurations or environments")
 

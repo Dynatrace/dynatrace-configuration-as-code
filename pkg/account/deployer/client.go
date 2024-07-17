@@ -215,7 +215,7 @@ func (d *accountManagementClient) createGroup(ctx context.Context, group Group) 
 
 func (d *accountManagementClient) updateExistingGroup(ctx context.Context, existingGroup accountmanagement.GetGroupDto, group Group) (remoteId, error) {
 	// Groups with owner "SCIM" or "ALL_USERS" cannot be modified and so updates should be skipped
-	if featureflags.SkipReadOnlyAccountGroupUpdates().Enabled() && ((existingGroup.Owner == "SCIM") || (existingGroup.Owner == "ALL_USERS")) {
+	if featureflags.Temporary[featureflags.SkipReadOnlyAccountGroupUpdates].Enabled() && ((existingGroup.Owner == "SCIM") || (existingGroup.Owner == "ALL_USERS")) {
 		return existingGroup.GetUuid(), nil
 	}
 

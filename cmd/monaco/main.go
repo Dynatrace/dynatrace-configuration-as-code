@@ -31,10 +31,12 @@ import (
 func main() {
 	// initial logging should be verbose even if it is too early for it to go to a file
 	// furthermore it should honor the desired format, such as JSON
+	// full logging is set up in PreRunE method of the root command, created with runner.BuildCli
+	// that is the earliest point calls to log will be also written into files and adhere to user controlled verbosity
 	log.PrepareLogging(nil, true, nil, false)
 
 	var versionNotification string
-	if !featureflags.SkipVersionCheck().Enabled() {
+	if !featureflags.Permanent[featureflags.SkipVersionCheck].Enabled() {
 		go setVersionNotificationStr(&versionNotification)
 	}
 

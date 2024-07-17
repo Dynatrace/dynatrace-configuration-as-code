@@ -641,9 +641,9 @@ func Test_shouldFilterUnmodifiableSettings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// GIVEN Feature Flags
-			t.Setenv(featureflags.DownloadFilter().EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
-			t.Setenv(featureflags.DownloadFilterSettings().EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsFF))
-			t.Setenv(featureflags.DownloadFilterSettingsUnmodifiable().EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsUnmodifiableFF))
+			t.Setenv(featureflags.Permanent[featureflags.DownloadFilter].EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
+			t.Setenv(featureflags.Permanent[featureflags.DownloadFilterSettings].EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsFF))
+			t.Setenv(featureflags.Permanent[featureflags.DownloadFilterSettingsUnmodifiable].EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsUnmodifiableFF))
 
 			assert.Equalf(t, tt.want, shouldFilterUnmodifiableSettings(), "shouldFilterUnmodifableSettings()")
 		})
@@ -688,8 +688,8 @@ func Test_shouldFilterSettings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// GIVEN Feature Flags
-			t.Setenv(featureflags.DownloadFilter().EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
-			t.Setenv(featureflags.DownloadFilterSettings().EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsFF))
+			t.Setenv(featureflags.Permanent[featureflags.DownloadFilter].EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
+			t.Setenv(featureflags.Permanent[featureflags.DownloadFilterSettings].EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsFF))
 
 			assert.Equalf(t, tt.want, shouldFilterSettings(), "shouldFilterSettings()")
 		})

@@ -1055,8 +1055,8 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 }
 
 func TestDelete_Documents(t *testing.T) {
-	t.Setenv(featureflags.Documents().EnvName(), "true")
-	t.Setenv(featureflags.DeleteDocuments().EnvName(), "true")
+	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "true")
+	t.Setenv(featureflags.Temporary[featureflags.DeleteDocuments].EnvName(), "true")
 	t.Run("delete via coordinate", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "document",
