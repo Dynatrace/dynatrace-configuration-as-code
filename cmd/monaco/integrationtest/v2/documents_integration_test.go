@@ -67,7 +67,7 @@ func TestPrivateDocuments(t *testing.T) {
 	manifestPath := configFolder + "manifest.yaml"
 	environment := "platform_env"
 
-	envVars := map[string]string{featureflags.Documents().EnvName(): "true"}
+	envVars := map[string]string{featureflags.Temporary[featureflags.Documents].EnvName(): "true"}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifestPath, environment, "Documents", envVars, func(fs afero.Fs, testContext TestContext) {
 		// deploy
