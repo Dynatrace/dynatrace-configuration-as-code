@@ -1,0 +1,10 @@
+configs:
+- id: a913d0e0-0349-4f00-8849-076305e31808
+  config:
+    name: my-dashboard
+    template: a913d0e0-0349-4f00-8849-076305e31808.json
+    skip: false
+  type:
+    document:
+      kind: dashboard
+      private: true
