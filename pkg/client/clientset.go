@@ -18,6 +18,10 @@ package client
 
 import (
 	"context"
+	"runtime"
+	"time"
+
+	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
@@ -36,8 +40,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"golang.org/x/oauth2/clientcredentials"
-	"runtime"
-	"time"
 )
 
 var (
@@ -157,9 +159,9 @@ type BucketClient interface {
 type DocumentClient interface {
 	Get(ctx context.Context, id string) (documents.Response, error)
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
-	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (documents.Response, error)
-	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (documents.Response, error)
-	Delete(ctx context.Context, id string) (documents.Response, error)
+	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
+	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
+	Delete(ctx context.Context, id string) (libAPI.Response, error)
 }
 
 type OpenPipelineClient interface {
@@ -182,7 +184,7 @@ type ClientSet struct {
 	BucketClient BucketClient
 	// DocumentClient is a client capable of manipulating documents
 	DocumentClient DocumentClient
-	//OpenPipelineClient is a client capable of manipulating openPipeline configs
+	// OpenPipelineClient is a client capable of manipulating openPipeline configs
 	OpenPipelineClient OpenPipelineClient
 }
 
