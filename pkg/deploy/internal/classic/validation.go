@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
+	compoundParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -68,7 +71,6 @@ func (v *validator) Validate(c config.Config) error {
 	}
 
 	for _, c2 := range v.uniqueNames[c.Environment][a.Api] {
-
 		// if the configs have a scope and they are different then the configs are unique
 		scope1 := c.Parameters[config.ScopeParameter]
 		scope2 := c2.Parameters[config.ScopeParameter]
@@ -76,22 +78,31 @@ func (v *validator) Validate(c config.Config) error {
 			return nil
 		}
 
-		n1, err := config.GetNameForConfig(c)
-		if err != nil {
-			return err
-		}
-		n2, err := config.GetNameForConfig(c2)
-		if err != nil {
-			return err
-		}
-
-		if cmp.Equal(n1, n2) {
-			var nameDetails string
-			if s, ok := n1.(string); ok {
-				nameDetails = fmt.Sprintf(": %s", s)
+		// if we are able to resolve the parameters, compare their value
+		cResolvedParams, errc := c.ResolveParameterValues(entities.New())
+		c2ResolvedParams, errc2 := c2.ResolveParameterValues(entities.New())
+		if len(errc) == 0 && len(errc2) == 0 {
+			if cmp.Equal(cResolvedParams[config.NameParameter], c2ResolvedParams[config.NameParameter]) {
+				return fmt.Errorf("duplicated config name found: configurations %s and %s define the same 'name' %q", c.Coordinate, c2.Coordinate, cResolvedParams[config.NameParameter])
 			}
+		}
 
-			return fmt.Errorf("duplicated config name found: configurations %s and %s define the same 'name' %q", c.Coordinate, c2.Coordinate, nameDetails)
+		// check if (unresolvable) reference parameters are equal
+		if r, ok := c.Parameters[config.NameParameter].(*reference.ReferenceParameter); ok {
+			if r2, ok := c2.Parameters[config.NameParameter].(*reference.ReferenceParameter); ok {
+				if r.Equal(r2) {
+					return fmt.Errorf("duplicated config name found: configurations %s and %s define the same 'name'", c.Coordinate, c2.Coordinate)
+				}
+			}
+		}
+
+		// check if (unresolvable) compound parameters are equal
+		if r, ok := c.Parameters[config.NameParameter].(*compoundParam.CompoundParameter); ok {
+			if r2, ok := c2.Parameters[config.NameParameter].(*compoundParam.CompoundParameter); ok {
+				if r.Equal(r2) {
+					return fmt.Errorf("duplicated config name found: configurations %s and %s define the same 'name'", c.Coordinate, c2.Coordinate)
+				}
+			}
 		}
 	}
 

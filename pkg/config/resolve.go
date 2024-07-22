@@ -23,11 +23,7 @@ import (
 )
 
 // resolveValues validates and resolves the given sorted parameters into actual values
-func resolveValues(
-	c *Config,
-	entities EntityLookup,
-	parameters []parameter.NamedParameter,
-) (parameter.Properties, []error) {
+func resolveValues(c *Config, entities EntityLookup, parameters []parameter.NamedParameter) (parameter.Properties, []error) {
 
 	var errors []error
 
