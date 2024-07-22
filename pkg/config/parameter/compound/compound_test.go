@@ -224,3 +224,20 @@ func TestWriteCompoundParameterErrorOnMissingReferences(t *testing.T) {
 	_, err = writeCompoundParameter(context)
 	require.Error(t, err, "expected an error writing missing references")
 }
+
+func TestCompoundParameter_Equal(t *testing.T) {
+	c1, _ := New("testName", "testFormat", nil)
+	c2, _ := New("testName", "testFormat", nil)
+	c3, _ := New("testName", "testFormat_DIFF", nil)
+	c4, _ := New("testName", "testFormat", []parameter.ParameterReference{{}})
+	c5, _ := New("testName", "testFormat", []parameter.ParameterReference{{}})
+	require.True(t, c1.Equal(c2))
+	require.True(t, c2.Equal(c1))
+	require.False(t, c1.Equal(c3))
+	require.False(t, c3.Equal(c1))
+	require.False(t, c1.Equal(c4))
+	require.False(t, c4.Equal(c1))
+	require.True(t, c5.Equal(c4))
+	require.True(t, c4.Equal(c5))
+
+}
