@@ -58,6 +58,10 @@ func (p *ReferenceParameter) GetType() string {
 	return ReferenceParameterType
 }
 
+func (p *ReferenceParameter) Equal(r *ReferenceParameter) bool {
+	return p.ParameterReference == r.ParameterReference
+}
+
 // UnresolvedReferenceError is indicating that the referenced parameter cannot be found and hence no value
 // for the parameter been resolved.
 type UnresolvedReferenceError struct {
