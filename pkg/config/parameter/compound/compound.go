@@ -85,7 +85,7 @@ func (p *CompoundParameter) ResolveValue(context parameter.ResolveContext) (inte
 
 // Equal is required to compare two CompoundParameter without opening all fields.
 func (p *CompoundParameter) Equal(o *CompoundParameter) bool {
-	return p.rawFormatString == o.rawFormatString && cmp.Equal(p.referencedParameters, p.referencedParameters)
+	return p.rawFormatString == o.rawFormatString && cmp.Equal(p.referencedParameters, o.referencedParameters)
 }
 
 // parseCompoundParameter parses a given context into an instance of CompoundParameter.
