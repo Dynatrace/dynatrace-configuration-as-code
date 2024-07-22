@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -38,8 +39,8 @@ import (
 type Client interface {
 	Get(ctx context.Context, id string) (documents.Response, error)
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
-	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (documents.Response, error)
-	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (documents.Response, error)
+	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
+	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
 }
 
 var _ Client = (*DummyClient)(nil)
@@ -47,8 +48,8 @@ var _ Client = (*DummyClient)(nil)
 type DummyClient struct{}
 
 // Create implements Client.
-func (c DummyClient) Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (documents.Response, error) {
-	return documents.Response{}, nil
+func (c *DummyClient) Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (libAPI.Response, error) {
+	return libAPI.Response{}, nil
 }
 
 // Get implements Client.
@@ -62,8 +63,8 @@ func (c *DummyClient) List(ctx context.Context, filter string) (documents.ListRe
 }
 
 // Update implements Client.
-func (c *DummyClient) Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (documents.Response, error) {
-	return documents.Response{}, nil
+func (c *DummyClient) Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (libAPI.Response, error) {
+	return libAPI.Response{}, nil
 }
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
@@ -84,7 +85,11 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	if c.OriginObjectId != "" {
 		updateResponse, err := client.Update(ctx, c.OriginObjectId, documentName, isPrivate, []byte(renderedConfig), documentType)
 		if err == nil {
-			return createResolvedEntity(documentName, updateResponse.ID, c.Coordinate, properties), nil
+			md, err := documents.UnmarshallMetadata(updateResponse.Data)
+			if err != nil {
+				return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
+			}
+			return createResolvedEntity(documentName, md.ID, c.Coordinate, properties), nil
 		}
 
 		if !isAPIErrorStatusNotFound(err) {
@@ -109,7 +114,11 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", c.OriginObjectId)).WithError(err)
 		}
 
-		return createResolvedEntity(documentName, updateResponse.ID, c.Coordinate, properties), nil
+		md, err := documents.UnmarshallMetadata(updateResponse.Data)
+		if err != nil {
+			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
+		}
+		return createResolvedEntity(documentName, md.ID, c.Coordinate, properties), nil
 	}
 
 	// strategy 3: try to create a new document
@@ -117,8 +126,12 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", documentName)).WithError(err)
 	}
+	md, err := documents.UnmarshallMetadata(createResponse.Data)
+	if err != nil {
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
+	}
 
-	return createResolvedEntity(documentName, createResponse.ID, c.Coordinate, properties), nil
+	return createResolvedEntity(documentName, md.ID, c.Coordinate, properties), nil
 }
 
 func isAPIErrorStatusNotFound(err error) bool {

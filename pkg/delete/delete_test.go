@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
@@ -1068,7 +1069,7 @@ func TestDelete_Documents(t *testing.T) {
 		c := client.NewMockDocumentClient(gomock.NewController(t))
 		c.EXPECT().List(gomock.Any(), gomock.Eq(fmt.Sprintf("externalId=='%s'", externalID))).
 			Times(1).
-			Return(documents.ListResponse{Responses: []documents.Response{{ID: "originObjectID"}}}, nil)
+			Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: "originObjectID"}}}}, nil)
 		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1)
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
@@ -1105,7 +1106,7 @@ func TestDelete_Documents(t *testing.T) {
 		c := client.NewMockDocumentClient(gomock.NewController(t))
 		c.EXPECT().List(gomock.Any(), gomock.Eq(fmt.Sprintf("externalId=='%s'", externalID))).
 			Times(1).
-			Return(documents.ListResponse{Responses: []documents.Response{{ID: "originObjectID_1"}, {ID: "originObjectID_2"}}}, nil)
+			Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: "originObjectID_1"}}, {Metadata: documents.Metadata{ID: "originObjectID_2"}}}}, nil)
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
 		err := delete.Configs(context.TODO(), delete.ClientSet{Documents: c}, api.NewAPIs(), automationTypes, entriesToDelete)
@@ -1135,7 +1136,7 @@ func TestDelete_Documents(t *testing.T) {
 		}
 
 		c := client.NewMockDocumentClient(gomock.NewController(t))
-		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1).Return(documents.Response{}, coreapi.APIError{StatusCode: http.StatusNotFound})
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1).Return(libAPI.Response{}, coreapi.APIError{StatusCode: http.StatusNotFound})
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
 		err := delete.Configs(context.TODO(), delete.ClientSet{Documents: c}, api.NewAPIs(), automationTypes, entriesToDelete)
@@ -1148,7 +1149,7 @@ func TestDelete_Documents(t *testing.T) {
 			OriginObjectId: "originObjectID"}
 
 		c := client.NewMockDocumentClient(gomock.NewController(t))
-		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1).Return(documents.Response{}, coreapi.APIError{StatusCode: http.StatusInternalServerError}) //the error can be any kind except 404
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1).Return(libAPI.Response{}, coreapi.APIError{StatusCode: http.StatusInternalServerError}) // the error can be any kind except 404
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
 		err := delete.Configs(context.TODO(), delete.ClientSet{Documents: c}, api.NewAPIs(), automationTypes, entriesToDelete)

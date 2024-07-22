@@ -25,6 +25,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
+replace github.com/dynatrace/dynatrace-configuration-as-code-core => /home/skelin/Code/dynatrace-configuration-as-code-core
+
 require (
 	github.com/anknown/darts v0.0.0-20151216065714-83ff685239e6 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
