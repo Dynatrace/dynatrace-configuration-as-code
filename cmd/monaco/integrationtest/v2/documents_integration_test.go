@@ -32,39 +32,13 @@ import (
 	"testing"
 )
 
-// TestDocuments just tries to deploy configurations containing documents and asserts whether they are indeed deployed
-func TestDocuments(t *testing.T) {
-
-	configFolder := "test-resources/integration-documents/"
-	manifest := configFolder + "manifest.yaml"
-	specificEnvironment := ""
-
-	envVars := map[string]string{
-		featureflags.Temporary[featureflags.Documents].EnvName():       "true",
-		featureflags.Temporary[featureflags.DeleteDocuments].EnvName(): "true",
-	}
-
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "Documents", envVars, func(fs afero.Fs, _ TestContext) {
-
-		// Create the documents
-		err := monaco.RunWithFsf(fs, "monaco deploy %s --project=project --verbose", manifest)
-		assert.NoError(t, err)
-
-		// Update the documents
-		err = monaco.RunWithFsf(fs, "monaco deploy %s --project=project --verbose", manifest)
-		assert.NoError(t, err)
-
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"project"}, "", true)
-	})
-}
-
-// TestPrivateDocuments verifies that the "private" field of a document config definition in the config.yaml file
+// TestDocuments verifies that the "private" field of a document config definition in the config.yaml file
 // has an effect and reaches the environment correctly.
 // 1. documents are deployed (with private = false)
 // 2. private is set to true for one of the documents
 // 3. documents are deployed again
 // 4. check whether the document is private
-func TestPrivateDocuments(t *testing.T) {
+func TestDocuments(t *testing.T) {
 
 	configFolder := "test-resources/integration-documents/"
 	manifestPath := configFolder + "manifest.yaml"
