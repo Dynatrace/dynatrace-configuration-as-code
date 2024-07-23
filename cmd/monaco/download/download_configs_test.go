@@ -198,13 +198,19 @@ func TestDownload_Options(t *testing.T) {
 		},
 		{
 			"only documents requested",
-			downloadConfigsOptions{onlyDocuments: true},
-			wantDownload{config: true},
+			downloadConfigsOptions{onlyDocuments: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
+				}},
+			wantDownload{document: true},
 		},
 		{
 			"only openpipeline requested",
-			downloadConfigsOptions{onlyOpenPipeline: true},
-			wantDownload{config: true},
+			downloadConfigsOptions{onlyOpenPipeline: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
+				}},
+			wantDownload{openpipeline: true},
 		},
 		{
 			"only apis requested",
@@ -220,7 +226,7 @@ func TestDownload_Options(t *testing.T) {
 			"only automations requested",
 			downloadConfigsOptions{
 				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{OAuth: &manifest.OAuth{}}, // OAuth required to be defined for platform types
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				},
 				onlyAutomation: true,
 			},

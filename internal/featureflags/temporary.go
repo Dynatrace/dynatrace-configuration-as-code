@@ -45,11 +45,11 @@ var Temporary = map[TemporaryFlag]FeatureFlag{
 	},
 	Documents: {
 		envName:        string(Documents),
-		defaultEnabled: false,
+		defaultEnabled: true,
 	},
 	DeleteDocuments: {
 		envName:        string(DeleteDocuments),
-		defaultEnabled: false,
+		defaultEnabled: true,
 	},
 	PersistSettingsOrder: {
 		envName:        string(PersistSettingsOrder),
@@ -57,6 +57,6 @@ var Temporary = map[TemporaryFlag]FeatureFlag{
 	},
 	OpenPipeline: {
 		envName:        string(OpenPipeline),
-		defaultEnabled: false,
+		defaultEnabled: true,
 	},
 }

@@ -366,5 +366,6 @@ func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
 func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
 	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
 		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlyDocuments
+		!opts.onlyDocuments &&
+		!opts.onlyAutomation
 }
