@@ -7,4 +7,4 @@ configs:
   type:
     document:
       kind: notebook
-      private: true
+      private: false
