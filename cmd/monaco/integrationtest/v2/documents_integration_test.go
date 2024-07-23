@@ -46,11 +46,11 @@ func TestDocuments(t *testing.T) {
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "Documents", envVars, func(fs afero.Fs, _ TestContext) {
 
-		// Create the buckets
+		// Create the documents
 		err := monaco.RunWithFsf(fs, "monaco deploy %s --project=project --verbose", manifest)
 		assert.NoError(t, err)
 
-		// Update the buckets
+		// Update the documents
 		err = monaco.RunWithFsf(fs, "monaco deploy %s --project=project --verbose", manifest)
 		assert.NoError(t, err)
 
@@ -60,10 +60,10 @@ func TestDocuments(t *testing.T) {
 
 // TestPrivateDocuments verifies that the "private" field of a document config definition in the config.yaml file
 // has an effect and reaches the environment correctly.
-// 1. documents are deployed (with private = true)
-// 2. private is set to false for one of the documents
+// 1. documents are deployed (with private = false)
+// 2. private is set to true for one of the documents
 // 3. documents are deployed again
-// 4. check whether the document is public
+// 4. check whether the document is private
 func TestPrivateDocuments(t *testing.T) {
 
 	configFolder := "test-resources/integration-documents/"
@@ -87,19 +87,36 @@ func TestPrivateDocuments(t *testing.T) {
 		})
 		assert.Empty(t, errs)
 
-		// check isPrivate = true for that document on environment
+		// check isPrivate == false
 		clientSet := integrationtest.CreateDynatraceClients(t, man.Environments[environment])
 		result, err := clientSet.Document().List(context.TODO(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
+		assert.False(t, result.Responses[0].IsPrivate)
+
+		// check isPrivate == true
+		result, err = clientSet.Document().List(context.TODO(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+		assert.NoError(t, err)
+		assert.Len(t, result.Responses, 1)
 		assert.True(t, result.Responses[0].IsPrivate)
 
-		// change private field to false
+		// change private field to true
 		abFilePath, err := filepath.Abs(configFolder + "/project/document-notebook/config.yaml") // in monaco we are expecting files in absolute coordinates
 		assert.NoError(t, err)
 		file, err := fs.Open(abFilePath)
 		assert.NoError(t, err)
 		content, err := afero.ReadFile(fs, file.Name())
+		assert.NoError(t, err)
+		content = []byte(strings.ReplaceAll(string(content), "private: false", "private: true"))
+		err = afero.WriteFile(fs, abFilePath, content, 0644)
+		assert.NoError(t, err)
+
+		// change private field to false
+		abFilePath, err = filepath.Abs(configFolder + "/project/document-dashboard/config.yaml") // in monaco we are expecting files in absolute coordinates
+		assert.NoError(t, err)
+		file, err = fs.Open(abFilePath)
+		assert.NoError(t, err)
+		content, err = afero.ReadFile(fs, file.Name())
 		assert.NoError(t, err)
 		content = []byte(strings.ReplaceAll(string(content), "private: true", "private: false"))
 		err = afero.WriteFile(fs, abFilePath, content, 0644)
@@ -109,8 +126,14 @@ func TestPrivateDocuments(t *testing.T) {
 		err = monaco.RunWithFsf(fs, "monaco deploy %s --project=project --verbose", manifestPath)
 		assert.NoError(t, err)
 
-		// check isPrivate = false for that document on environment
+		// check if isPrivate was changed to true
 		result, err = clientSet.Document().List(context.TODO(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+		assert.NoError(t, err)
+		assert.Len(t, result.Responses, 1)
+		assert.True(t, result.Responses[0].IsPrivate)
+
+		// check if isPrivate was changed to false
+		result, err = clientSet.Document().List(context.TODO(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.False(t, result.Responses[0].IsPrivate)
