@@ -1523,7 +1523,10 @@ configs:
 			},
 		},
 		{
-			name:             "Document config with FF off",
+			name: "Document config with FF off",
+			envVars: map[string]string{
+				featureflags.Temporary[featureflags.Documents].EnvName(): "false",
+			},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1541,7 +1544,10 @@ configs:
 			},
 		},
 		{
-			name:             "OpenPipeline config with FF off",
+			name: "OpenPipeline config with FF off",
+			envVars: map[string]string{
+				featureflags.Temporary[featureflags.OpenPipeline].EnvName(): "false",
+			},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
