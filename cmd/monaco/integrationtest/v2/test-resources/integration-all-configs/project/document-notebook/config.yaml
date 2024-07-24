@@ -1,0 +1,14 @@
+configs:
+- id: cb6f0c1b-90f0-4819-b822-ae1f2b10df40
+  config:
+    name: my-notebook
+    template: cb6f0c1b-90f0-4819-b822-ae1f2b10df40.json
+    skip: false
+  type:
+    document:
+      kind: notebook
+      private: false
+  environmentOverrides:
+    - environment: classic_env
+      override:
+        skip: true
