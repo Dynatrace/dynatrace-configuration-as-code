@@ -49,7 +49,7 @@ type DummyClient struct{}
 
 // Create implements Client.
 func (c *DummyClient) Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (libAPI.Response, error) {
-	return libAPI.Response{}, nil
+	return libAPI.Response{Data: []byte(`{}`)}, nil
 }
 
 // Get implements Client.
@@ -64,7 +64,7 @@ func (c *DummyClient) List(ctx context.Context, filter string) (documents.ListRe
 
 // Update implements Client.
 func (c *DummyClient) Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (libAPI.Response, error) {
-	return libAPI.Response{}, nil
+	return libAPI.Response{Data: []byte(`{}`)}, nil
 }
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
