@@ -21,11 +21,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -41,8 +43,7 @@ const (
 )
 
 func (d *DynatraceClient) uploadExtension(ctx context.Context, api api.API, extensionName string, payload []byte) (DynatraceEntity, error) {
-	fullURL := api.CreateURL(d.environmentURLClassic)
-	status, err := d.validateIfExtensionShouldBeUploaded(ctx, fullURL, extensionName, payload)
+	status, err := d.validateIfExtensionShouldBeUploaded(ctx, api.URLPath, extensionName, payload)
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -60,22 +61,15 @@ func (d *DynatraceClient) uploadExtension(ctx context.Context, api api.API, exte
 		}, err
 	}
 
-	resp, err := d.classicClient.PostMultiPartFile(ctx, fullURL, buffer, contentType)
-
+	_, err = coreapi.AsResponseOrError(d.classicClient.POST(ctx, api.URLPath, buffer, corerest.RequestOptions{ContentType: contentType}))
 	if err != nil {
-		return DynatraceEntity{}, err
+		return DynatraceEntity{}, fmt.Errorf("upload of %s failed: %w", extensionName, err)
 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		return DynatraceEntity{
-			Name: extensionName,
-		}, rest.NewRespErr(fmt.Sprintf("upload of %s failed with status %d! Response: %s", extensionName, resp.StatusCode, string(resp.Body)), resp)
-	} else {
-		log.WithCtxFields(ctx).Debug("Extension upload successful for %s", extensionName)
+	log.WithCtxFields(ctx).Debug("Extension upload successful for %s", extensionName)
 
-		// As other configs depend on metrics created by extensions, and metric creation seems to happen with delay...
-		time.Sleep(1 * time.Second)
-	}
+	// As other configs depend on metrics created by extensions, and metric creation seems to happen with delay...
+	time.Sleep(1 * time.Second)
 
 	return DynatraceEntity{
 		Name: extensionName,
@@ -88,15 +82,18 @@ type Properties struct {
 }
 
 func (d *DynatraceClient) validateIfExtensionShouldBeUploaded(ctx context.Context, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
-	response, err := d.classicClient.Get(ctx, apiPath+"/"+extensionName)
+	response, err := coreapi.AsResponseOrError(d.classicClient.GET(ctx, apiPath+"/"+extensionName, corerest.RequestOptions{}))
 	if err != nil {
+		apiError := coreapi.APIError{}
+		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+			return extensionNeedsUpdate, nil
+		}
+
 		return extensionValidationError, err
 	}
-	if response.StatusCode == http.StatusNotFound {
-		return extensionNeedsUpdate, nil
-	}
+
 	var extProperties Properties
-	if err := json.Unmarshal(response.Body, &extProperties); err != nil {
+	if err := json.Unmarshal(response.Data, &extProperties); err != nil {
 		return extensionValidationError, err
 	}
 

@@ -17,6 +17,7 @@
 package dtclient
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -26,13 +27,13 @@ import (
 	"regexp"
 	"strings"
 
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/exp/maps"
 )
 
@@ -69,9 +70,9 @@ func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.
 		// Single configuration APIs don't have a POST, but a PUT endpoint
 		// and therefore always require an update
 		if existingObjectID != "" || theApi.SingleConfiguration {
-			return d.updateDynatraceObject(ctx, theApi.CreateURL(d.environmentURLClassic), objectName, existingObjectID, theApi, payload)
+			return d.updateDynatraceObject(ctx, objectName, existingObjectID, theApi, payload)
 		} else {
-			return d.createDynatraceObject(ctx, theApi.CreateURL(d.environmentURLClassic), objectName, theApi, payload)
+			return d.createDynatraceObject(ctx, objectName, theApi, payload)
 		}
 	}
 
@@ -91,10 +92,9 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	payload []byte,
 	duplicate bool,
 ) (DynatraceEntity, error) {
-	fullUrl := theApi.CreateURL(d.environmentURLClassic)
 	body := payload
 
-	existingEntities, err := d.fetchExistingValues(ctx, theApi, fullUrl)
+	existingEntities, err := d.fetchExistingValues(ctx, theApi)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities: %w", err)
 	}
@@ -112,14 +112,14 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	}
 
 	if entityExists || len(entitiesWithSameName) == 0 { // create with fixed ID or update (if this moves to client logging can clearly state things)
-		entity, err := d.updateDynatraceObject(ctx, fullUrl, objectName, entityId, theApi, body)
+		entity, err := d.updateDynatraceObject(ctx, objectName, entityId, theApi, body)
 		return entity, err
 	}
 
 	// check if we are dealing with a duplicate non-unique name configuration, if not, go ahead and update the known entity
 	if featureflags.Permanent[featureflags.UpdateNonUniqueByNameIfSingleOneExists].Enabled() && len(entitiesWithSameName) == 1 && !duplicate {
 		existingUuid := entitiesWithSameName[0].Id
-		entity, err := d.updateDynatraceObject(ctx, fullUrl, objectName, existingUuid, theApi, body)
+		entity, err := d.updateDynatraceObject(ctx, objectName, existingUuid, theApi, body)
 		return entity, err
 	}
 
@@ -132,50 +132,38 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	}
 	log.WithCtxFields(ctx).Warn(msg.String(), len(entitiesWithSameName), theApi.ID, objectName, entityId, theApi.ID)
 
-	return d.updateDynatraceObject(ctx, fullUrl, objectName, entityId, theApi, body)
+	return d.updateDynatraceObject(ctx, objectName, entityId, theApi, body)
 }
 
-func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString string, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
-
+func (d *DynatraceClient) createDynatraceObject(ctx context.Context, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+	endpoint := theApi.URLPath
 	if theApi.ID == api.KeyUserActionsMobile {
-		urlString = joinUrl(urlString, objectName)
+		endpoint = joinUrl(endpoint, objectName)
 	}
 
-	parsedUrl, err := url.Parse(urlString)
-	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
-	}
 	body := payload
 
+	queryParams := url.Values{}
 	if theApi.ID == api.AppDetectionRule {
-		queryParams := parsedUrl.Query()
 		queryParams.Add("position", "PREPEND")
-		parsedUrl.RawQuery = queryParams.Encode()
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Post, parsedUrl.String(), body, theApi)
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.POST, endpoint, body, theApi, corerest.RequestOptions{QueryParams: queryParams})
 	if err != nil {
-		var respErr rest.RespError
-		if errors.As(err, &respErr) {
-			return DynatraceEntity{}, respErr.WithRequestInfo(http.MethodPost, parsedUrl.String())
-		}
 		return DynatraceEntity{}, err
 	}
-	if !resp.IsSuccess() {
-		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, parsedUrl.String())
-	}
 
-	return unmarshalCreateResponse(ctx, resp, urlString, theApi.ID, objectName)
+	return unmarshalCreateResponse(ctx, *resp, theApi.ID, objectName)
 }
 
-func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl string, configType string, objectName string) (DynatraceEntity, error) {
+func unmarshalCreateResponse(ctx context.Context, resp coreapi.Response, configType string, objectName string) (DynatraceEntity, error) {
 	var dtEntity DynatraceEntity
 
 	if configType == api.SyntheticMonitor || configType == api.SyntheticLocation {
 		var entity SyntheticEntity
-		err := json.Unmarshal(resp.Body, &entity)
+		err := json.Unmarshal(resp.Data, &entity)
 		if errutils.CheckError(err, "Failed to unmarshal Synthetic API response") {
-			return DynatraceEntity{}, rest.NewRespErr("Failed to unmarshal Synthetic API response", resp).WithRequestInfo(http.MethodPost, fullUrl).WithErr(err)
+			return DynatraceEntity{}, fmt.Errorf("failed to unmarshal Synthetic API response: %w", err)
 		}
 		dtEntity = translateSyntheticEntityResponse(entity, objectName)
 
@@ -186,13 +174,13 @@ func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl st
 		// ID of the config.
 
 		if len(locationSlice) == 0 {
-			return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("location response header was empty for API %s (name: %s)", configType, objectName), resp).WithRequestInfo(http.MethodPost, fullUrl)
+			return DynatraceEntity{}, fmt.Errorf("location response header was empty for API %s (name: %s): %s", configType, objectName, resp.Request.URL)
 		}
 
 		location := locationSlice[0]
 
 		// Some APIs prepend the environment URL. If available, trim it from the location
-		objectId := strings.TrimPrefix(location, fullUrl)
+		objectId := strings.TrimPrefix(location, resp.Request.URL)
 		objectId = strings.TrimPrefix(objectId, "/")
 
 		dtEntity = DynatraceEntity{
@@ -202,12 +190,12 @@ func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl st
 		}
 
 	} else {
-		err := json.Unmarshal(resp.Body, &dtEntity)
+		err := json.Unmarshal(resp.Data, &dtEntity)
 		if errutils.CheckError(err, "Failed to unmarshal API response") {
-			return DynatraceEntity{}, rest.NewRespErr("Failed to unmarshal API response", resp).WithRequestInfo(http.MethodPost, fullUrl).WithErr(err)
+			return DynatraceEntity{}, fmt.Errorf("failed to unmarshal API response: %w", err)
 		}
 		if dtEntity.Id == "" && dtEntity.Name == "" {
-			return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body), resp).WithRequestInfo(http.MethodPost, fullUrl)
+			return DynatraceEntity{}, fmt.Errorf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", string(resp.Data))
 		}
 	}
 	log.WithCtxFields(ctx).Debug("\tCreated new object for '%s' (%s)", dtEntity.Name, dtEntity.Id)
@@ -215,10 +203,10 @@ func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl st
 	return dtEntity, nil
 }
 
-func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl string, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
-	path := fullUrl
+func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+	endpoint := theApi.URLPath
 	if !theApi.SingleConfiguration {
-		path = joinUrl(fullUrl, existingObjectId)
+		endpoint = joinUrl(endpoint, existingObjectId)
 	}
 
 	// Updating a dashboard, reports or any service detection API requires the ID to be contained in the JSON, so we just add it...
@@ -239,18 +227,9 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 		}, nil
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Put, path, payload, theApi)
-
+	_, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.PUT, endpoint, payload, theApi, corerest.RequestOptions{})
 	if err != nil {
-		var respErr rest.RespError
-		if errors.As(err, &respErr) {
-			return DynatraceEntity{}, respErr.WithRequestInfo(http.MethodPut, path)
-		}
 		return DynatraceEntity{}, err
-	}
-
-	if !resp.IsSuccess() {
-		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to update Config object '%s' (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, path)
 	}
 
 	if theApi.NonUniqueName {
@@ -289,113 +268,118 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
-// retrying in case of know errors on upload.
-func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall rest.SendRequestWithBody, path string, body []byte, theApi api.API) (rest.Response, error) {
-	resp, err := restCall(ctx, path, body)
-	if err == nil && resp.IsSuccess() {
+// retrying in case of known errors on upload.
+func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall SendRequestWithBody, endpoint string, requestBody []byte, theApi api.API, options corerest.RequestOptions) (*coreapi.Response, error) {
+	resp, err := coreapi.AsResponseOrError(restCall(ctx, endpoint, bytes.NewReader(requestBody), options))
+	if err == nil {
 		return resp, nil
 	}
-	if err != nil {
-		log.WithCtxFields(ctx).WithFields(field.Error(err)).Warn("Failed to send HTTP request: %v", err)
-	} else {
 
-		log.WithCtxFields(ctx).WithFields(field.F("statusCode", resp.StatusCode)).Warn("Failed to send HTTP request: (HTTP %d)!\n    Response was: %s", resp.StatusCode, string(resp.Body))
+	apiError := coreapi.APIError{}
+	if !errors.As(err, &apiError) {
+		return nil, err
 	}
 
-	var setting rest.RetrySetting
+	var rs RetrySetting
 	// It can take longer until calculated service metrics are ready to be used in SLOs
-	if isCalculatedMetricNotReadyYet(resp) ||
+	if isCalculatedMetricNotReadyYet(apiError) ||
 		// It can take longer until management zones are ready to be used in SLOs
-		isManagementZoneNotReadyYet(resp) ||
+		isManagementZoneNotReadyYet(apiError) ||
 		// It can take longer until Credentials are ready to be used in Synthetic Monitors
-		isCredentialNotReadyYet(resp) ||
+		isCredentialNotReadyYet(apiError) ||
 		// It can take some time for configurations to propagate to all cluster nodes - indicated by an incorrect constraint violation error
-		isGeneralDependencyNotReadyYet(resp) ||
+		isGeneralDependencyNotReadyYet(apiError) ||
 		// Synthetic and related APIs sometimes run into issues of finding objects quickly after creation
-		isGeneralSyntheticAPIError(resp, theApi) ||
+		isGeneralSyntheticAPIError(apiError, theApi) ||
 		// Network zone deployments can fail due to fact that the feature not effectively enabled yet
-		isNetworkZoneFeatureNotEnabledYet(resp, theApi) {
+		isNetworkZoneFeatureNotEnabledYet(apiError, theApi) {
 
-		setting = d.retrySettings.Normal
+		rs = d.retrySettings.Normal
 	}
 
 	// It can take even longer until request attributes are ready to be used
-	if isRequestAttributeNotYetReady(resp) {
-		setting = d.retrySettings.Long
+	if isRequestAttributeNotYetReady(apiError) {
+		rs = d.retrySettings.Long
 	}
 
 	// It can take even longer until applications are ready to be used in synthetic tests and calculated metrics
-	if isApplicationNotReadyYet(resp, theApi) {
-		setting = d.retrySettings.VeryLong
+	if isApplicationNotReadyYet(apiError, theApi) {
+		rs = d.retrySettings.VeryLong
 	}
 
-	if setting.MaxRetries > 0 {
-		return rest.SendWithRetry(ctx, restCall, path, body, setting)
+	if rs.MaxRetries > 0 {
+		return SendWithRetry(ctx, restCall, endpoint, corerest.RequestOptions{}, requestBody, rs)
 	}
+
 	return resp, err
 }
 
-func isGeneralDependencyNotReadyYet(resp rest.Response) bool {
-	return strings.Contains(string(resp.Body), "must have a unique name")
+func isGeneralDependencyNotReadyYet(apiError coreapi.APIError) bool {
+	return strings.Contains(string(apiError.Body), "must have a unique name")
 }
 
-func isCalculatedMetricNotReadyYet(resp rest.Response) bool {
-	return strings.Contains(string(resp.Body), "Metric selector") &&
-		strings.Contains(string(resp.Body), "invalid")
+func isCalculatedMetricNotReadyYet(apiError coreapi.APIError) bool {
+	body := string(apiError.Body)
+	return strings.Contains(body, "Metric selector") &&
+		strings.Contains(body, "invalid")
 }
 
-func isRequestAttributeNotYetReady(resp rest.Response) bool {
-	return strings.Contains(string(resp.Body), "must specify a known request attribute")
+func isRequestAttributeNotYetReady(apiError coreapi.APIError) bool {
+	body := string(apiError.Body)
+	return strings.Contains(body, "must specify a known request attribute")
 }
 
-func isManagementZoneNotReadyYet(resp rest.Response) bool {
-	return strings.Contains(string(resp.Body), "Entity selector is invalid") ||
-		(strings.Contains(string(resp.Body), "SLO validation failed") &&
-			strings.Contains(string(resp.Body), "Management-Zone not found")) ||
-		strings.Contains(string(resp.Body), "Unknown management zone")
+func isManagementZoneNotReadyYet(apiError coreapi.APIError) bool {
+	body := string(apiError.Body)
+	return strings.Contains(body, "Entity selector is invalid") ||
+		(strings.Contains(body, "SLO validation failed") &&
+			strings.Contains(body, "Management-Zone not found")) ||
+		strings.Contains(body, "Unknown management zone")
 }
 
-func isApplicationNotReadyYet(resp rest.Response, theApi api.API) bool {
-	return isCalculatedMetricsError(resp, theApi) ||
-		isSyntheticMonitorServerError(resp, theApi) ||
-		isApplicationAPIError(resp, theApi) ||
-		isApplicationDetectionRuleException(resp, theApi) ||
+func isApplicationNotReadyYet(apiError coreapi.APIError, theApi api.API) bool {
+	body := string(apiError.Body)
+	return isCalculatedMetricsError(apiError, theApi) ||
+		isSyntheticMonitorServerError(apiError, theApi) ||
+		isApplicationAPIError(apiError, theApi) ||
+		isApplicationDetectionRuleException(apiError, theApi) ||
 		isKeyUserActionMobile(theApi) ||
 		isKeyUserActionWeb(theApi) ||
 		isUserSessionPropertiesMobile(theApi) ||
-		strings.Contains(string(resp.Body), "Unknown application(s)")
+		strings.Contains(body, "Unknown application(s)")
 }
-func isNetworkZoneFeatureNotEnabledYet(resp rest.Response, theApi api.API) bool {
-	return strings.HasPrefix(theApi.ID, "network-zone") && (resp.Is4xxError()) && strings.Contains(string(resp.Body), "network zones are disabled")
-}
-
-func isCalculatedMetricsError(resp rest.Response, theApi api.API) bool {
-	return strings.HasPrefix(theApi.ID, "calculated-metrics") && (resp.Is4xxError() || resp.Is5xxError())
-}
-func isSyntheticMonitorServerError(resp rest.Response, theApi api.API) bool {
-	return theApi.ID == api.SyntheticMonitor && resp.Is5xxError()
+func isNetworkZoneFeatureNotEnabledYet(apiError coreapi.APIError, theApi api.API) bool {
+	body := string(apiError.Body)
+	return strings.HasPrefix(theApi.ID, "network-zone") && (apiError.Is4xxError()) && strings.Contains(body, "network zones are disabled")
 }
 
-func isGeneralSyntheticAPIError(resp rest.Response, theApi api.API) bool {
-	return (strings.HasPrefix(theApi.ID, "synthetic-") || theApi.ID == api.CredentialVault) && (resp.StatusCode == http.StatusNotFound || resp.Is5xxError())
+func isCalculatedMetricsError(apiError coreapi.APIError, theApi api.API) bool {
+	return strings.HasPrefix(theApi.ID, "calculated-metrics") && (apiError.Is4xxError() || apiError.Is5xxError())
+}
+func isSyntheticMonitorServerError(apiError coreapi.APIError, theApi api.API) bool {
+	return theApi.ID == api.SyntheticMonitor && apiError.Is5xxError()
 }
 
-func isApplicationAPIError(resp rest.Response, theApi api.API) bool {
+func isGeneralSyntheticAPIError(apiError coreapi.APIError, theApi api.API) bool {
+	return (strings.HasPrefix(theApi.ID, "synthetic-") || theApi.ID == api.CredentialVault) && (apiError.StatusCode == http.StatusNotFound || apiError.Is5xxError())
+}
+
+func isApplicationAPIError(apiError coreapi.APIError, theApi api.API) bool {
 	return isAnyApplicationApi(theApi) &&
-		(resp.Is5xxError() || resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusNotFound)
+		(apiError.Is5xxError() || apiError.StatusCode == http.StatusConflict || apiError.StatusCode == http.StatusNotFound)
 }
 
 // Special case (workaround):
 // Sometimes, the API returns 500 Internal Server Error e.g. when an application referenced by
 // an application detection rule is not fully "ready" yet.
-func isApplicationDetectionRuleException(resp rest.Response, theApi api.API) bool {
-	return theApi.ID == api.AppDetectionRule && !resp.IsSuccess()
+func isApplicationDetectionRuleException(apiError coreapi.APIError, theApi api.API) bool {
+	return theApi.ID == api.AppDetectionRule && (apiError.Is4xxError() || apiError.Is5xxError())
 }
 
-func isCredentialNotReadyYet(resp rest.Response) bool {
-	s := string(resp.Body)
-	return strings.Contains(s, "credential-vault") &&
-		strings.Contains(s, "was not available")
+func isCredentialNotReadyYet(apiError coreapi.APIError) bool {
+	body := string(apiError.Body)
+	return strings.Contains(body, "credential-vault") &&
+		strings.Contains(body, "was not available")
 }
 
 func joinUrl(urlBase string, path string) string {
@@ -409,9 +393,10 @@ func joinUrl(urlBase string, path string) string {
 	return trimmedUrl + "/" + url.PathEscape(trimmedPath)
 }
 
-func getLocationFromHeader(resp rest.Response) ([]string, bool) {
-	if resp.Headers["Location"] != nil {
-		return resp.Headers["Location"], true
+func getLocationFromHeader(resp coreapi.Response) ([]string, bool) {
+	const locationHeader = "Location"
+	if resp.Header[locationHeader] != nil {
+		return resp.Header[locationHeader], true
 	}
 	return make([]string, 0), false
 }
@@ -457,7 +442,7 @@ func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName st
 	// if there is a custom equal function registered, use that instead of just the Object name
 	// in order to search for existing values
 	if theApi.CheckEqualFunc != nil {
-		values, err := d.fetchExistingValues(ctx, theApi, theApi.CreateURL(d.environmentURLClassic))
+		values, err := d.fetchExistingValues(ctx, theApi)
 		if err != nil {
 			return "", err
 		}
@@ -470,7 +455,7 @@ func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName st
 
 	// Single configuration APIs don't have an id which allows skipping this step
 	if !theApi.SingleConfiguration {
-		values, err := d.fetchExistingValues(ctx, theApi, theApi.CreateURL(d.environmentURLClassic))
+		values, err := d.fetchExistingValues(ctx, theApi)
 		if err != nil {
 			return "", err
 		}
@@ -483,7 +468,7 @@ func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName st
 	return objID, nil
 }
 
-func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
+func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.API) ([]Value, error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
 	if (!theApi.NonUniqueName && !theApi.HasParent()) && //there is potentially more than one config per api type/id to consider
@@ -492,58 +477,47 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 			return values, nil
 		}
 	}
-	parsedUrl, err := url.Parse(urlString)
-	if err != nil {
-		return nil, fmt.Errorf("invalid URL for getting existing Dynatrace configs: %w", err)
-	}
 
-	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
+	queryParams := getQueryParamsForNonStandardApis(theApi)
 
-	var resp rest.Response
 	// For any subpath API like e.g. Key user Actions, it can be that we need to do longer retries
 	// because the parent config (e.g. an application) is not ready yet
+	var retrySetting RetrySetting
 	if theApi.HasParent() {
-		resp, err = rest.SendWithRetryWithInitialTry(ctx, func(ctx context.Context, url string, _ []byte) (rest.Response, error) {
-			return d.classicClient.Get(ctx, url)
-		}, parsedUrl.String(), nil, rest.DefaultRetrySettings.Long)
+		retrySetting = d.retrySettings.Long
 	} else {
-		resp, err = d.classicClient.Get(ctx, parsedUrl.String())
+		retrySetting = d.retrySettings.Normal
 	}
 
+	resp, err := GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams}, retrySetting)
 	if err != nil {
 		return nil, err
 	}
 
-	if !resp.IsSuccess() {
-		return nil, rest.NewRespErr(fmt.Sprintf("Failed to get existing configs for API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodGet, parsedUrl.String())
-	}
-
 	var existingValues []Value
 	for {
-		values, err := unmarshalJson(ctx, theApi, resp)
+		values, err := unmarshalJson(ctx, theApi, resp.Data)
 		if err != nil {
 			return nil, err
 		}
+
 		existingValues = append(existingValues, values...)
 
-		if resp.NextPageKey != "" {
-			parsedUrl = addNextPageQueryParams(parsedUrl, resp.NextPageKey)
+		nextPageKey, _ := getPaginationValues(resp.Data)
+		if nextPageKey == "" {
+			break
+		}
 
-			resp, err = d.classicClient.GetWithRetry(ctx, parsedUrl.String(), d.retrySettings.Normal)
+		resp, err = GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey)}, retrySetting)
+		if err != nil {
 
-			if err != nil {
-				return nil, err
-			}
-
-			if !resp.IsSuccess() && resp.StatusCode != http.StatusBadRequest {
-				return nil, rest.NewRespErr(fmt.Sprintf("Failed to get further configs from paginated API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodGet, parsedUrl.String())
-			} else if resp.StatusCode == http.StatusBadRequest {
-				log.WithCtxFields(ctx).Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(resp.Body))
+			apiError := coreapi.APIError{}
+			if errors.As(err, &apiError) && apiError.StatusCode == http.StatusBadRequest {
+				log.WithCtxFields(ctx).Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(apiError.Body))
 				break
 			}
 
-		} else {
-			break
+			return nil, err
 		}
 	}
 	d.classicConfigsCache.Set(theApi.ID, existingValues)
@@ -605,20 +579,18 @@ func (d *DynatraceClient) findUnique(ctx context.Context, values []Value, payloa
 	return objectId, nil
 }
 
-func addQueryParamsForNonStandardApis(theApi api.API, url *url.URL) *url.URL {
-
-	queryParams := url.Query()
+func getQueryParamsForNonStandardApis(theApi api.API) url.Values {
+	queryParams := url.Values{}
 	if theApi.ID == api.AnomalyDetectionMetrics {
 		queryParams.Add("includeEntityFilterMetricEvents", "true")
 	}
 	if theApi.ID == api.Slo {
 		queryParams.Add("enabledSlos", "all")
 	}
-	url.RawQuery = queryParams.Encode()
-	return url
+	return queryParams
 }
 
-func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]Value, error) {
+func unmarshalJson(ctx context.Context, theApi api.API, body []byte) ([]Value, error) {
 
 	var values []Value
 	var objmap map[string]interface{}
@@ -626,28 +598,28 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 	// This API returns an untyped list as a response -> it needs a special handling
 	if theApi.ID == api.AwsCredentials {
 		var jsonResp []Value
-		err := json.Unmarshal(resp.Body, &jsonResp)
+		err := json.Unmarshal(body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
 			return values, err
 		}
 		values = jsonResp
 	} else if theApi.ID == api.SyntheticLocation {
 		var jsonResp SyntheticLocationResponse
-		err := json.Unmarshal(resp.Body, &jsonResp)
+		err := json.Unmarshal(body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 			return nil, err
 		}
 		values = translateSyntheticValues(jsonResp.Locations)
 	} else if theApi.ID == api.SyntheticMonitor {
 		var jsonResp SyntheticMonitorsResponse
-		err := json.Unmarshal(resp.Body, &jsonResp)
+		err := json.Unmarshal(body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 			return nil, err
 		}
 		values = translateSyntheticValues(jsonResp.Monitors)
 	} else if theApi.ID == api.KeyUserActionsMobile {
 		var jsonResp KeyUserActionsMobileResponse
-		err := json.Unmarshal(resp.Body, &jsonResp)
+		err := json.Unmarshal(body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
 			return nil, err
 		}
@@ -666,7 +638,7 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 				ActionType   string `json:"actionType"`
 			} `json:"keyUserActionList"`
 		}
-		err := json.Unmarshal(resp.Body, &jsonResp)
+		err := json.Unmarshal(body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
 			return nil, err
 		}
@@ -679,7 +651,7 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 		}
 	} else if theApi.ID == api.UserActionAndSessionPropertiesMobile {
 		var jsonResp UserActionAndSessionPropertyResponse
-		err := json.Unmarshal(resp.Body, &jsonResp)
+		err := json.Unmarshal(body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing key user action") {
 			return nil, err
 		}
@@ -695,7 +667,7 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 		values = maps.Values(entries)
 
 	} else if !theApi.IsStandardAPI() || isReportsApi(theApi) {
-		if err := json.Unmarshal(resp.Body, &objmap); err != nil {
+		if err := json.Unmarshal(body, &objmap); err != nil {
 			return nil, err
 		}
 
@@ -708,7 +680,7 @@ func unmarshalJson(ctx context.Context, theApi api.API, resp rest.Response) ([]V
 		}
 	} else {
 		var jsonResponse ValuesResponse
-		err := json.Unmarshal(resp.Body, &jsonResponse)
+		err := json.Unmarshal(body, &jsonResponse)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing objects") {
 			return nil, err
 		}

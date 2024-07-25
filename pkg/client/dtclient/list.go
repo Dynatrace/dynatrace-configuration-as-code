@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
 
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/throttle"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 )
 
 const emptyResponseRetryMax = 10
@@ -40,147 +40,62 @@ const emptyResponseRetryMax = 10
 // as filtering might exclude some entries that where received from the API.
 type AddEntriesToResult func(body []byte) (receivedEntries int, err error)
 
-func listPaginated(ctx context.Context, client *rest.Client, retrySettings rest.RetrySettings, url *url.URL, logLabel string,
-	addToResult AddEntriesToResult) (rest.Response, error) {
+func listPaginated(ctx context.Context, client *corerest.Client, retrySetting RetrySetting, endpoint string, queryParams url.Values, logLabel string,
+	addToResult AddEntriesToResult) error {
 
-	var resp rest.Response
-	startTime := time.Now()
-	receivedCount := 0
-	totalReceivedCount := 0
-
-	resp, receivedCount, totalReceivedCount, _, err := runAndProcessResponse(ctx, client, retrySettings, false, url, addToResult, receivedCount, totalReceivedCount)
+	body, totalReceivedCount, err := runAndProcessResponse(ctx, client, retrySetting, endpoint, corerest.RequestOptions{QueryParams: queryParams}, addToResult)
 	if err != nil {
-		return buildResponseError(err, resp, url)
+		return err
 	}
 
-	nbCalls := 1
-	lastLogTime := time.Now()
-	expectedTotalCount := resp.TotalCount
-	nextPageKey := resp.NextPageKey
+	nextPageKey, expectedTotalCount := getPaginationValues(body)
 	emptyResponseRetryCount := 0
-
 	for {
-
-		if nextPageKey != "" {
-			logLongRunningExtractionProgress(&lastLogTime, startTime, nbCalls, resp, logLabel)
-
-			url = addNextPageQueryParams(url, nextPageKey)
-
-			var isLastAvailablePage bool
-			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = runAndProcessResponse(ctx, client, retrySettings, true, url, addToResult, receivedCount, totalReceivedCount)
-			if err != nil {
-				return buildResponseError(err, resp, url)
-			}
-			if isLastAvailablePage {
-				break
-			}
-
-			retry := false
-			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
-			if err != nil {
-				return buildResponseError(err, resp, url)
-			}
-
-			if retry {
-				continue
-			} else {
-				validateWrongCountExtracted(resp, totalReceivedCount, expectedTotalCount, url, logLabel, nextPageKey)
-
-				nextPageKey = resp.NextPageKey
-				nbCalls++
-				emptyResponseRetryCount = 0
-			}
-
-		} else {
-
+		if nextPageKey == "" {
 			break
 		}
-	}
 
-	return resp, nil
-}
-
-func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Time, nbCalls int, resp rest.Response, logLabel string) {
-	if time.Since(*lastLogTime).Minutes() >= 1 {
-		*lastLogTime = time.Now()
-		nbItemsMessage := ""
-		ETAMessage := ""
-		runningMinutes := time.Since(startTime).Minutes()
-		nbCallsPerMinute := float64(nbCalls) / runningMinutes
-		if resp.PageSize > 0 && resp.TotalCount > 0 {
-			nbProcessed := nbCalls * resp.PageSize
-			nbLeft := resp.TotalCount - nbProcessed
-			ETAMinutes := float64(nbLeft) / (nbCallsPerMinute * float64(resp.PageSize))
-			nbItemsMessage = fmt.Sprintf(", processed %d of %d at %d items/call and", nbProcessed, resp.TotalCount, resp.PageSize)
-			ETAMessage = fmt.Sprintf("ETA: %.1f minutes", ETAMinutes)
+		body, receivedCount, err := runAndProcessResponse(ctx, client, retrySetting, endpoint, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(endpoint, queryParams, nextPageKey)}, addToResult)
+		if err != nil {
+			var apiErr coreapi.APIError
+			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusBadRequest {
+				log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", endpoint, string(body))
+				break
+			}
+			return err
 		}
 
-		log.Debug("Running extraction of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, nbItemsMessage, nbCallsPerMinute, ETAMessage)
-	}
-}
+		if receivedCount == 0 {
+			if emptyResponseRetryCount >= emptyResponseRetryMax {
+				return fmt.Errorf("received too many empty responses (=%d)", emptyResponseRetryCount)
+			}
 
-func validateWrongCountExtracted(resp rest.Response, totalReceivedCount int, expectedTotalCount int, url *url.URL, logLabel string, nextPageKey string) {
-	if resp.NextPageKey == "" && totalReceivedCount != expectedTotalCount {
-		log.Warn("Total count of items from api: %v for: %s does not match with count of actually downloaded items. Expected: %d Got: %d, last next page key received: %s \n   params: %v", url.Path, logLabel, expectedTotalCount, totalReceivedCount, nextPageKey, url.RawQuery)
-	}
-}
-
-func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp rest.Response) (bool, int, error) {
-	if receivedCount == 0 {
-		if emptyResponseRetryCount < emptyResponseRetryMax {
 			emptyResponseRetryCount++
-			throttle.ThrottleCallAfterError(emptyResponseRetryCount, "Received empty array response, retrying with same nextPageKey (HTTP: %d) ", resp.StatusCode)
-			return true, emptyResponseRetryCount, nil
-		} else {
-			return false, emptyResponseRetryCount, fmt.Errorf("received too many empty responses (=%d)", emptyResponseRetryCount)
+			throttle.ThrottleCallAfterError(emptyResponseRetryCount, "Received empty array response, retrying with same nextPageKey")
+			continue
+		}
+
+		emptyResponseRetryCount = 0
+		totalReceivedCount += receivedCount
+		nextPageKey, _ = getPaginationValues(body)
+		if nextPageKey == "" && totalReceivedCount != expectedTotalCount {
+			log.Warn("Total count of items from api: %v for: %s does not match with count of actually downloaded items. Expected: %d Got: %d, last next page key received: %s", endpoint, logLabel, expectedTotalCount, totalReceivedCount, nextPageKey)
 		}
 	}
 
-	return false, emptyResponseRetryCount, nil
+	return nil
 }
 
-func runAndProcessResponse(ctx context.Context, client *rest.Client, retrySettings rest.RetrySettings, isNextCall bool, u *url.URL,
-	addToResult AddEntriesToResult, receivedCount int, totalReceivedCount int) (rest.Response, int, int, bool, error) {
-	isLastAvailablePage := false
-
-	resp, err := client.GetWithRetry(ctx, u.String(), retrySettings.Normal)
-	isLastAvailablePage, err = validateRespErrors(isNextCall, err, resp, u.Path)
-	if err != nil || isLastAvailablePage {
-		return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err
-	}
-
-	receivedCount, err = addToResult(resp.Body)
-	totalReceivedCount += receivedCount
-
-	return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err
-}
-
-func validateRespErrors(isNextCall bool, err error, resp rest.Response, urlPath string) (bool, error) {
+func runAndProcessResponse(ctx context.Context, client *corerest.Client, retrySetting RetrySetting, endpoint string, requestOptions corerest.RequestOptions, addToResult AddEntriesToResult) ([]byte, int, error) {
+	resp, err := GetWithRetry(ctx, *client, endpoint, requestOptions, retrySetting)
 	if err != nil {
-		return false, err
-	}
-	isLastAvailablePage := false
-	if resp.IsSuccess() {
-		return false, nil
-
-	} else if isNextCall {
-		if resp.StatusCode == http.StatusBadRequest {
-			isLastAvailablePage = true
-			log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", urlPath, string(resp.Body))
-			return isLastAvailablePage, nil
-		} else {
-			return isLastAvailablePage, fmt.Errorf("failed to get further data from paginated API %s (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
-		}
-	} else {
-		return isLastAvailablePage, fmt.Errorf("failed to get data from paginated API %s (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
+		return nil, 0, err
 	}
 
-}
-
-func buildResponseError(err error, resp rest.Response, url *url.URL) (rest.Response, error) {
-	var respErr rest.RespError
-	if errors.As(err, &respErr) {
-		return resp, fmt.Errorf("failed to process paginated API response: %w", respErr)
+	receivedCount, err := addToResult(resp.Data)
+	if err != nil {
+		return nil, 0, err
 	}
-	return resp, rest.NewRespErr("failed to process paginated API response", resp).WithRequestInfo(http.MethodGet, url.String()).WithErr(err)
+
+	return resp.Data, receivedCount, nil
 }

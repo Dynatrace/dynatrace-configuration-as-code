@@ -17,26 +17,44 @@
 package dtclient
 
 import (
+	"encoding/json"
+	"maps"
 	"net/url"
 	"strings"
 )
 
-// addNextPageQueryParams handles both Dynatrace v1 and v2 pagination logic.
+// makeQueryParamsWithNextPageKey handles both Dynatrace v1 and v2 pagination logic.
 // For api/v2 URLs the given next page key will be the only query parameter of the modified URL
 // For any other ULRs the given next page key will be added to existing query parameters
-func addNextPageQueryParams(u *url.URL, nextPage string) *url.URL {
-	queryParams := u.Query()
+func makeQueryParamsWithNextPageKey(endpoint string, originalQueryParams url.Values, nextPageKey string) url.Values {
+	queryParams := url.Values{}
 
-	if isApiV2Url(u) {
-		// api/v2 requires all previously sent query params to be omitted when nextPageKey is set
-		queryParams = url.Values{}
+	// for non-api/v2 endpoints, we copy all original query params
+	if !isApiV2Endpoint(endpoint) {
+		maps.Copy(queryParams, originalQueryParams)
 	}
 
-	queryParams.Set("nextPageKey", nextPage)
-	u.RawQuery = queryParams.Encode()
-	return u
+	queryParams.Set("nextPageKey", nextPageKey)
+	return queryParams
 }
 
-func isApiV2Url(url *url.URL) bool {
-	return strings.Contains(url.Path, "api/v2")
+func isApiV2Endpoint(endpoint string) bool {
+	return strings.Contains(endpoint, "api/v2")
+}
+
+func getPaginationValues(body []byte) (nextPageKey string, totalCount int) {
+	var jsonResponse map[string]interface{}
+	if err := json.Unmarshal(body, &jsonResponse); err != nil {
+		return
+	}
+
+	if jsonResponse["nextPageKey"] != nil {
+		nextPageKey = jsonResponse["nextPageKey"].(string)
+	}
+
+	if jsonResponse["totalCount"] != nil {
+		totalCount = int(jsonResponse["totalCount"].(float64))
+	}
+
+	return
 }

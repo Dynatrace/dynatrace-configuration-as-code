@@ -19,11 +19,10 @@ package version
 import (
 	"encoding/json"
 	"fmt"
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/net/context"
-	"net/http"
-	"net/url"
 	"strings"
 )
 
@@ -34,31 +33,20 @@ type ApiVersionObject struct {
 const versionPathClassic = "/api/v1/config/clusterversion"
 
 // GetDynatraceVersion returns the version of an environment
-func GetDynatraceVersion(ctx context.Context, client *rest.Client, environmentURL string) (version.Version, error) {
-	versionURL, err := url.JoinPath(environmentURL, versionPathClassic)
-	if err != nil {
-		return version.Version{}, fmt.Errorf("failed to build URL for API %q on environment URL %q", versionPathClassic, environmentURL)
-	}
-
-	resp, err := client.Get(ctx, versionURL)
+func GetDynatraceVersion(ctx context.Context, client *corerest.Client) (version.Version, error) {
+	resp, err := coreapi.AsResponseOrError(client.GET(ctx, versionPathClassic, corerest.RequestOptions{}))
 	if err != nil {
 		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}
-	if !resp.IsSuccess() {
-		return version.Version{}, rest.NewRespErr(
-			fmt.Sprintf("failed to query version of Dynatrace environment: (HTTP %d) Response was: %s", resp.StatusCode, string(resp.Body)),
-			resp,
-		).WithRequestInfo(http.MethodGet, versionURL)
-	}
 
 	var jsonResp ApiVersionObject
-	if err := json.Unmarshal(resp.Body, &jsonResp); err != nil {
-		return version.Version{}, rest.NewRespErr(fmt.Sprintf("failed to parse Dynatrace version JSON: %v", err), resp).WithErr(err).WithRequestInfo(http.MethodGet, versionURL)
+	if err := json.Unmarshal(resp.Data, &jsonResp); err != nil {
+		return version.Version{}, fmt.Errorf("unable to unmarshal Dynatrace version: %w", err)
 	}
 
 	v, err := parseDynatraceClassicVersion(jsonResp.Version)
 	if err != nil {
-		return version.Version{}, rest.NewRespErr(fmt.Sprintf("failed to parse Dynatrace version JSON: %v", err), resp).WithErr(err).WithRequestInfo(http.MethodGet, versionURL)
+		return version.Version{}, fmt.Errorf("unable to parse Dynatrace version: %w", err)
 	}
 	return v, nil
 }

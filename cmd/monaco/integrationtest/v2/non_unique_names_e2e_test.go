@@ -19,20 +19,22 @@
 package v2
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	uuid2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-
+	"github.com/stretchr/testify/require"
 	"os"
 	"strings"
 	"testing"
@@ -52,8 +54,13 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	monacoGeneratedUUID := uuid2.GenerateUUIDFromConfigId("test_project", name)
 	secondExistingObjectUUID := getRandomUUID(t)
 
-	httpClient := rest.NewRestClient(auth.NewTokenAuthClient(token), nil, rest.CreateRateLimitStrategy())
-	c, err := dtclient.NewClassicClient(url, httpClient)
+	factory := clients.Factory().
+		WithAccessToken(token).WithClassicURL(url)
+
+	httpClient, err := factory.CreateClassicClient()
+	require.NoError(t, err)
+
+	c, err := dtclient.NewClassicClient(httpClient)
 	assert.NoError(t, err)
 
 	a := api.NewAPIs()["alerting-profile"]
@@ -61,7 +68,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, id := range []string{firstExistingObjectUUID, secondExistingObjectUUID, monacoGeneratedUUID} {
-			if err := c.DeleteConfigById(a, id); err != nil {
+			if err := c.DeleteConfigById(context.TODO(), a, id); err != nil {
 				t.Log("failed to cleanup test config with ID: ", id)
 			}
 		}
@@ -125,8 +132,10 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 	otherMonacoGeneratedUUID := uuid2.GenerateUUIDFromConfigId("test_project", "other-config_"+testSuffix)
 	secondExistingObjectUUID := getRandomUUID(t)
 
-	httpClient := rest.NewRestClient(auth.NewTokenAuthClient(token), nil, rest.CreateRateLimitStrategy())
-	c, err := dtclient.NewClassicClient(url, httpClient)
+	classicClient, err := clients.Factory().WithClassicURL(url).WithAccessToken(token).CreateClassicClient()
+	require.NoError(t, err)
+
+	c, err := dtclient.NewClassicClient(classicClient)
 	assert.NoError(t, err)
 
 	a := api.NewAPIs()["alerting-profile"]
@@ -134,7 +143,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, id := range []string{firstExistingObjectUUID, secondExistingObjectUUID, monacoGeneratedUUID, otherMonacoGeneratedUUID} {
-			if err := c.DeleteConfigById(a, id); err != nil {
+			if err := c.DeleteConfigById(context.TODO(), a, id); err != nil {
 				t.Log("failed to cleanup test config with ID: ", id)
 			}
 		}
@@ -147,7 +156,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 	assert.True(t, len(existing) == 0, "Test requires no pre-existing configs of name %q but found %d", name, len(existing))
 
 	// create initial object of unknown UUID via direct PUT
-	createObjectViaDirectPut(t, httpClient, url, a, firstExistingObjectUUID, payload)
+	createObjectViaDirectPut(t, classicClient, url, a, firstExistingObjectUUID, payload)
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 1. if only one config of non-unique-name exist an additional one is still create (update feature OFF)
@@ -163,7 +172,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// generate additional config
-	createObjectViaDirectPut(t, httpClient, url, a, secondExistingObjectUUID, payload)
+	createObjectViaDirectPut(t, classicClient, url, a, secondExistingObjectUUID, payload)
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 4, "Expected two configs of name %q but found %d", name, len(existing))
 
 	// 3. if several configs of non-unique-name exist and one with known monaco-controlled UUID is found that MUST be updated
@@ -192,14 +201,13 @@ func getRandomUUID(t *testing.T) string {
 	return id.String()
 }
 
-func createObjectViaDirectPut(t *testing.T, c *rest.Client, url string, a api.API, id string, payload []byte) {
+func createObjectViaDirectPut(t *testing.T, c *corerest.Client, url string, a api.API, id string, payload []byte) {
 	url = strings.TrimSuffix(url, "/")
-	res, err := c.Put(context.TODO(), a.CreateURL(url)+"/"+id, payload)
-	assert.NoError(t, err)
-	assert.True(t, res.StatusCode >= 200 && res.StatusCode < 300, "Expected status code to be within [200, 299], but was %d. Response-body: %v", res.StatusCode, string(res.Body))
+	res, err := coreapi.AsResponseOrError(c.PUT(context.TODO(), a.URLPath+"/"+id, bytes.NewReader(payload), corerest.RequestOptions{}))
+	require.NoError(t, err)
 
 	var dtEntity dtclient.DynatraceEntity
-	err = json.Unmarshal(res.Body, &dtEntity)
+	err = json.Unmarshal(res.Data, &dtEntity)
 	assert.NoError(t, err)
 
 	assert.Equal(t, dtEntity.Id, id)

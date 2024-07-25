@@ -12,6 +12,7 @@ linters:
     - deadcode # deprecated
     - scopelint # deprecated
     - structcheck # deprecated
+    - bodyclose
 
 linters-settings:
   gocognit:

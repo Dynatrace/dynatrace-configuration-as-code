@@ -20,23 +20,23 @@ package v2
 
 import (
 	"context"
-	"testing"
-
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2/clientcredentials"
+	"testing"
 )
 
 // tests all configs for a single environment
@@ -225,30 +225,33 @@ func TestOrderedSettings(t *testing.T) {
 }
 
 func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.DynatraceClient)) client.SettingsClient {
-	oauthCredentials := auth.OauthCredentials{
-		ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
-		ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
-		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
-	}
 
-	tokenClient := auth.NewTokenAuthClient(env.Auth.Token.Value.Value())
-	oauthClient := auth.NewOAuthClient(context.TODO(), oauthCredentials)
+	clientFactory := clients.Factory().
+		WithOAuthCredentials(clientcredentials.Config{
+			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
+			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
+		}).
+		//WithConcurrentRequestLimit(concurrentRequestLimit).
 
-	client := rest.NewRestClient(oauthClient, nil, rest.CreateRateLimitStrategy())
-	clientClassic := rest.NewRestClient(tokenClient, nil, rest.CreateRateLimitStrategy())
+		WithPlatformURL(env.URL.Value)
 
-	rest.NewRestClient(oauthClient, nil, rest.CreateRateLimitStrategy())
-	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), rest.NewRestClient(oauthClient, nil, rest.CreateRateLimitStrategy()), env.URL.Value)
-	assert.NoError(t, err)
+	client, err := clientFactory.CreatePlatformClient()
+	require.NoError(t, err)
 
-	c, err := dtclient.NewPlatformClient(
-		env.URL.Value, classicURL, client, clientClassic,
-	)
-	assert.NoError(t, err)
+	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), *client)
+	require.NoError(t, err)
+
+	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(env.Auth.Token.Value.Value())
+
+	classicClient, err := clientFactory.CreateClassicClient()
+	require.NoError(t, err)
+
+	dtClient, err := dtclient.NewPlatformClient(client, classicClient)
+	require.NoError(t, err)
 
 	for _, o := range opts {
-		o(c)
+		o(dtClient)
 	}
-
-	return c
+	return dtClient
 }

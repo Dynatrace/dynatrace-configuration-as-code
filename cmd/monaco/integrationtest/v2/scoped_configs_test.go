@@ -77,12 +77,12 @@ func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext Te
 	require.NoError(t, err, "expect to be able to get dashboard by name")
 	require.True(t, exists, "dashboard must exist")
 
-	dashboardJSONBytes, err := clientSet.Classic().ReadConfigById(dashboardAPI, dashboardID)
+	dashboardJSONBytes, err := clientSet.Classic().ReadConfigById(context.TODO(), dashboardAPI, dashboardID)
 	require.NoError(t, err, "expect to be able to get dashboard by ID")
 	assertDashboardSharedState(t, dashboardJSONBytes, expectShared)
 
 	dashboardShareSettingsAPI := apis[api.DashboardShareSettings].ApplyParentObjectID(dashboardID)
-	dashboardShareSettingsJSONBytes, err := clientSet.Classic().ReadConfigById(dashboardShareSettingsAPI, "")
+	dashboardShareSettingsJSONBytes, err := clientSet.Classic().ReadConfigById(context.TODO(), dashboardShareSettingsAPI, "")
 	require.NoError(t, err, "expect to be able to get dashboard shared settings by ID")
 	assertDashboardShareSettingsEnabledState(t, dashboardShareSettingsJSONBytes, expectShared)
 }

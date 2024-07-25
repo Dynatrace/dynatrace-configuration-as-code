@@ -22,19 +22,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_schemaDetails(t *testing.T) {
+
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
 		case settingsSchemaAPIPathPlatform + "/builtin:span-attribute":
@@ -74,14 +77,18 @@ func Test_schemaDetails(t *testing.T) {
 	}))
 	defer server.Close()
 
-	restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
 
-	d, _ := NewPlatformClient(server.URL, server.URL, restClient, restClient)
+	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter())
+
+	d, err := NewPlatformClient(restClient, restClient)
+	require.NoError(t, err)
 
 	t.Run("unmarshall data", func(t *testing.T) {
 		expected := Schema{SchemaId: "builtin:span-attribute", UniqueProperties: [][]string{{"key0", "key1"}, {"key2", "key3"}}}
 
-		actual, err := d.getSchema(context.TODO(), "builtin:span-attribute")
+		actual, err := d.GetSchemaById(context.TODO(), "builtin:span-attribute")
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)
@@ -99,16 +106,20 @@ func Test_GetSchemaUsesCache(t *testing.T) {
 	}))
 	defer server.Close()
 
-	restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
-	d, _ := NewPlatformClient(server.URL, server.URL, restClient, restClient)
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter())
 
-	_, err := d.getSchema(context.TODO(), "builtin:span-attribute")
+	d, err := NewPlatformClient(restClient, restClient)
+	require.NoError(t, err)
+
+	_, err = d.GetSchemaById(context.TODO(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, apiHits)
-	_, err = d.getSchema(context.TODO(), "builtin:alerting.profile")
+	_, err = d.GetSchemaById(context.TODO(), "builtin:alerting.profile")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
-	_, err = d.getSchema(context.TODO(), "builtin:span-attribute")
+	_, err = d.GetSchemaById(context.TODO(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
 }
@@ -646,12 +657,15 @@ func TestUpsertSettings(t *testing.T) {
 				}
 			}))
 
-			restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
-			c, _ := NewClassicClient(server.URL, restClient,
+			serverURL, err := url.Parse(server.URL)
+			require.NoError(t, err)
+			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
+
+			c, err := NewClassicClient(restClient,
 				WithServerVersion(test.serverVersion),
 				WithRetrySettings(testRetrySettings),
-				WithClientRequestLimiter(concurrency.NewLimiter(5)),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+			require.NoError(t, err)
 
 			resp, err := c.UpsertSettings(context.TODO(), SettingsObject{
 				OriginObjectId: "anObjectID",
@@ -686,13 +700,17 @@ func TestUpsertSettingsRetries(t *testing.T) {
 	}))
 	defer server.Close()
 
-	restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
-	client, _ := NewClassicClient(server.URL, restClient,
-		WithRetrySettings(testRetrySettings),
-		WithClientRequestLimiter(concurrency.NewLimiter(5)),
-		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
 
-	_, err := client.UpsertSettings(context.TODO(), SettingsObject{
+	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
+
+	client, err := NewClassicClient(restClient,
+		WithRetrySettings(testRetrySettings),
+		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+	require.NoError(t, err)
+
+	_, err = client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -724,13 +742,17 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	}))
 	defer server.Close()
 
-	restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
-	client, _ := NewClassicClient(server.URL, restClient,
-		WithRetrySettings(testRetrySettings),
-		WithClientRequestLimiter(concurrency.NewLimiter(5)),
-		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
 
-	_, err := client.UpsertSettings(context.TODO(), SettingsObject{
+	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
+
+	client, err := NewClassicClient(restClient,
+		WithRetrySettings(testRetrySettings),
+		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+	require.NoError(t, err)
+
+	_, err = client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -771,11 +793,15 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 	}))
 	defer server.Close()
 
-	restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
-	client, _ := NewClassicClient(server.URL, restClient,
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
+
+	client, err := NewClassicClient(restClient,
 		WithRetrySettings(testRetrySettings),
-		WithClientRequestLimiter(concurrency.NewLimiter(5)),
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+	require.NoError(t, err)
 
 	client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
@@ -830,7 +856,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 				},
 				listSettingsResponse: []DownloadSettingsObject{},
 				settingsObject: SettingsObject{
-					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:alerting.profile", ConfigId: "id"},
 					SchemaId:   "builtin:alerting.profile",
 					Content:    []byte(`{ "key_1": "a", "key_2": 42 }`),
 				},
@@ -874,7 +900,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 					},
 				},
 				settingsObject: SettingsObject{
-					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:alerting.profile", ConfigId: "id"},
 					SchemaId:   "builtin:alerting.profile",
 					Content:    []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
 				},
@@ -918,7 +944,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 					},
 				},
 				settingsObject: SettingsObject{
-					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:alerting.profile", ConfigId: "id"},
 					SchemaId:   "builtin:alerting.profile",
 					Content:    []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
 				},
@@ -963,7 +989,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 					},
 				},
 				settingsObject: SettingsObject{
-					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:alerting.profile", ConfigId: "id"},
 					SchemaId:   "builtin:alerting.profile",
 					Content:    []byte(`{ "key_1": { "a": [false,true,false], "b": 42.0, "c": { "cK": "cV" } }, "key_2": "new value" }`),
 				},
@@ -1014,7 +1040,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 					},
 				},
 				settingsObject: SettingsObject{
-					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:alerting.profile", ConfigId: "id"},
 					SchemaId:   "builtin:alerting.profile",
 					Content:    []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
 				},
@@ -1060,7 +1086,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 					},
 				},
 				settingsObject: SettingsObject{
-					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:alerting.profile", ConfigId: "id"},
 					SchemaId:   "builtin:alerting.profile",
 					Scope:      "HOST-1",
 					Content:    []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
@@ -1117,7 +1143,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 					},
 				},
 				settingsObject: SettingsObject{
-					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:alerting.profile", ConfigId: "id"},
 					SchemaId:   "builtin:alerting.profile",
 					Scope:      "HOST-1",
 					Content:    []byte(`{ "key_1": "a", "key_2": 42 }`),
@@ -1177,14 +1203,19 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 				writer.WriteHeader(200)
 				writer.Write([]byte(`[ { "objectId": "abcsd423==" } ]`))
 			}))
+			defer server.Close()
 
-			restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
-			c, _ := NewClassicClient(server.URL, restClient,
+			serverURL, err := url.Parse(server.URL)
+			require.NoError(t, err)
+
+			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
+
+			c, err := NewClassicClient(restClient,
 				WithRetrySettings(testRetrySettings),
-				WithClientRequestLimiter(concurrency.NewLimiter(5)),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+			require.NoError(t, err)
 
-			_, err := c.UpsertSettings(context.TODO(), tt.given.settingsObject, UpsertSettingsOptions{})
+			_, err = c.UpsertSettings(context.TODO(), tt.given.settingsObject, UpsertSettingsOptions{})
 			if tt.want.error {
 				assert.Error(t, err)
 			} else {
@@ -1460,11 +1491,15 @@ func TestListKnownSettings(t *testing.T) {
 			}))
 			defer server.Close()
 
-			restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
-			client, _ := NewClassicClient(server.URL, restClient,
+			serverURL, err := url.Parse(server.URL)
+			require.NoError(t, err)
+
+			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
+
+			client, err := NewClassicClient(restClient,
 				WithRetrySettings(testRetrySettings),
-				WithClientRequestLimiter(concurrency.NewLimiter(5)),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+			require.NoError(t, err)
 
 			res, err1 := client.ListSettings(context.TODO(), tt.givenSchemaID, tt.givenListSettingsOpts)
 
@@ -1484,7 +1519,7 @@ func TestListKnownSettings(t *testing.T) {
 func TestGetSettingById(t *testing.T) {
 	type fields struct {
 		environmentURL string
-		retrySettings  rest.RetrySettings
+		retrySettings  RetrySettings
 	}
 	type args struct {
 		objectID string
@@ -1564,20 +1599,24 @@ func TestGetSettingById(t *testing.T) {
 			}))
 			defer server.Close()
 
-			var envURL string
+			var serverURL *url.URL
+			var err error
 			if tt.fields.environmentURL != "" {
-				envURL = tt.fields.environmentURL
+				serverURL, err = url.Parse(tt.fields.environmentURL)
+				require.NoError(t, err)
 			} else {
-				envURL = server.URL
+				serverURL, err = url.Parse(server.URL)
+				require.NoError(t, err)
 			}
 
-			restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
-			client, _ := NewClassicClient(envURL, restClient,
-				WithRetrySettings(tt.fields.retrySettings),
-				WithClientRequestLimiter(concurrency.NewLimiter(5)),
-				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			settingsObj, err := client.GetSettingById(tt.args.objectID)
+			client, err := NewClassicClient(restClient,
+				WithRetrySettings(tt.fields.retrySettings),
+				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+			require.NoError(t, err)
+
+			settingsObj, err := client.GetSettingById(context.TODO(), tt.args.objectID)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -1593,7 +1632,7 @@ func TestGetSettingById(t *testing.T) {
 func TestDeleteSettings(t *testing.T) {
 	type fields struct {
 		environmentURL string
-		retrySettings  rest.RetrySettings
+		retrySettings  RetrySettings
 	}
 	type args struct {
 		objectID string
@@ -1658,20 +1697,24 @@ func TestDeleteSettings(t *testing.T) {
 			}))
 			defer server.Close()
 
-			var envURL string
+			var serverURL *url.URL
+			var err error
 			if tt.fields.environmentURL != "" {
-				envURL = tt.fields.environmentURL
+				serverURL, err = url.Parse(tt.fields.environmentURL)
+				require.NoError(t, err)
 			} else {
-				envURL = server.URL
+				serverURL, err = url.Parse(server.URL)
+				require.NoError(t, err)
 			}
 
-			restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
-			client, _ := NewClassicClient(envURL, restClient,
-				WithRetrySettings(tt.fields.retrySettings),
-				WithClientRequestLimiter(concurrency.NewLimiter(5)),
-				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			if err := client.DeleteSettings(tt.args.objectID); (err != nil) != tt.wantErr {
+			client, err := NewClassicClient(restClient,
+				WithRetrySettings(tt.fields.retrySettings),
+				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
+			require.NoError(t, err)
+
+			if err := client.DeleteSettings(context.TODO(), tt.args.objectID); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteSettings() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
