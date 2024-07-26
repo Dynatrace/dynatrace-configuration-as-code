@@ -22,7 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/mutlierror"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/multierror"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -67,7 +67,7 @@ func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string
 		return ExportError{
 			ManifestFile: manifestPath,
 			message:      fmt.Sprintf("failed to load manifest %q", manifestPath),
-			Reason:       mutlierror.New(errs...),
+			Reason:       multierror.New(errs...),
 		}
 	}
 
@@ -83,7 +83,7 @@ func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string
 		return ExportError{
 			ManifestFile: manifestPath,
 			message:      "failed to load projects",
-			Reason:       mutlierror.New(errs...),
+			Reason:       multierror.New(errs...),
 		}
 	}
 
@@ -108,7 +108,7 @@ func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string
 		return ExportError{
 			ManifestFile: manifestPath,
 			message:      fmt.Sprintf("failed to access output path %q", outputFolder),
-			Reason:       mutlierror.New(errs...),
+			Reason:       multierror.New(errs...),
 		}
 	}
 
