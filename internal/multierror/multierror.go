@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mutlierror
+package multierror
 
 import (
 	"errors"
