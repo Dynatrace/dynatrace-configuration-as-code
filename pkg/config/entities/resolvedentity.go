@@ -49,7 +49,7 @@ type ResolvedEntity struct {
 // If the key is found, the function returns the associated value and true. If the
 // key is not found, it returns nil and false.
 func ResolvePropValue(key string, props map[any]any) (any, bool) {
-	first, rest, _ := str.Cut(key, ".")
+	first, rest, _ := str.Cut(key, ".") // THIS makes it impossible to define global params as '.global.<key>' as they're treated as map separators.
 	if p, f := props[first]; f {
 		if rest == "" {
 			return p, true
