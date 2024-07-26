@@ -20,6 +20,7 @@ package manifest
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
@@ -137,4 +138,6 @@ type Manifest struct {
 
 	// Accounts holds all accounts defined in the manifest. Key is the user-defined account name.
 	Accounts map[string]Account
+
+	Parameters map[string]parameter.Parameter
 }

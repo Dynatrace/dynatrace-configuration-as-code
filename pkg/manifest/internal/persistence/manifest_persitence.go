@@ -118,6 +118,8 @@ type Manifest struct {
 	EnvironmentGroups []Group `yaml:"environmentGroups" json:"environmentGroups" jsonschema:"minItems=1,description=A list of environment groups that configs in the defined 'projects' will be deployed to. Required when deploying environment configurations."`
 	// Accounts is a list of accounts that account resources in Projects will be deployed to
 	Accounts []Account `yaml:"accounts,omitempty" json:"accounts" jsonschema:"minItems=1,description=A list of of accounts that account resources defined in 'projects' will be deployed to. Required when deploying account resources."`
+
+	Parameters map[string]interface{} `yaml:"parameters,omitempty" json:"parameters"`
 }
 
 type Account struct {
