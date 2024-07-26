@@ -320,6 +320,7 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 		for k, v := range loadingContext.Manifest.Parameters {
 			configs[i].Parameters["_global:"+k] = v
 		}
+		configs[i].Parameters["_global:environment"] = value.New(configs[i].Environment)
 	}
 
 	return configs, errs

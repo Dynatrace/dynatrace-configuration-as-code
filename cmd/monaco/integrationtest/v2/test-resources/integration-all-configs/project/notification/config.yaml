@@ -12,6 +12,9 @@ configs:
         type: reference
       environment:
         type: reference
+        property: _global:environment
+      owner:
+        type: reference
         property: _global:hansi
     template: subfolder/slack.json
     skip: false
