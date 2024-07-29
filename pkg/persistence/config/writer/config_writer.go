@@ -612,7 +612,7 @@ func extractTemplate(context *detailedSerializerContext, cfg config.Config) (str
 			}
 			name = n
 		} else {
-			name = mystrings.Sanitize(t.ID()) + ".json"
+			name = getUniqueFileName(mystrings.Sanitize(t.ID())) + ".json"
 			path = filepath.Join(context.configFolder, name)
 		}
 	default:
@@ -789,4 +789,15 @@ func fmtDetailedConfigWriterError(context *serializerContext, format string, arg
 		Location: context.config,
 		Err:      fmt.Errorf(format, args...),
 	}
+}
+
+var fileNameClashes = make(map[string]int)
+
+func getUniqueFileName(name string) string {
+	if _, ok := fileNameClashes[name]; ok {
+		fileNameClashes[name]++
+		return fmt.Sprintf("%s%d", name, fileNameClashes[name])
+	}
+	fileNameClashes[name] = 0
+	return name
 }
