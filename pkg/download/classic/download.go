@@ -278,6 +278,12 @@ func download(client client.ConfigClient, theApi api.API, value value) ([]map[st
 		})
 	}
 
+	if theApi.PropertyNameOfIdentifier != "" {
+		return slices.DeleteFunc(res, func(m map[string]interface{}) bool {
+			return m[theApi.PropertyNameOfIdentifier].(string) != value.value.Id
+		}), nil
+	}
+
 	return res, nil
 }
 
