@@ -467,6 +467,7 @@ func NewAPIs() APIs {
 				ID:                           KeyUserActionsMobile,
 				URLPath:                      "/api/config/v1/applications/mobile/{SCOPE}/keyUserActions",
 				PropertyNameOfGetAllResponse: "keyUserActions",
+				PropertyNameOfIdentifier:     "name",
 				Parent:                       &applicationMobileAPI,
 			},
 			{
