@@ -19,7 +19,7 @@ int createRelease(Map args = [version: null]) {
         withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
                                   secretValues: [[envVar: 'token', vaultKey: 'access_token', isRequired: true]]]]
         ) {
-            def jsonRes = sh(returnStdout: true, script: '''
+            def jsonRes = sh(returnStdout: true, label: "create release on GitHub", script: '''
                         curl --request POST https://api.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases
                              --header "Accept: application/vnd.github+json"
                              --header "Authorization: Bearer $token"
@@ -45,7 +45,7 @@ void pushFileToRelease(Map args = [rleaseName: null, source: null, releaseId: nu
         withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
                                   secretValues: [[envVar: 'token', vaultKey: 'access_token', isRequired: true]]]]
         ) {
-            sh '''
+            sh (label: "push to GitHub", script:  '''
                     curl --request POST https://uploads.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases/$releaseId/assets?name=$rleaseName
                          --header "Accept: application/vnd.github+json"
                          --header "Authorization: Bearer $token"
@@ -53,7 +53,7 @@ void pushFileToRelease(Map args = [rleaseName: null, source: null, releaseId: nu
                          --header "Content-Type: application/octet-stream"
                          --fail-with-body
                          --data-binary @"$source"
-                    '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
+                    '''.replaceAll("\n", " ").replaceAll(/ +/, " "))
         }
     }
 }
