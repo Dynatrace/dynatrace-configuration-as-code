@@ -48,6 +48,8 @@ pipeline {
                             tasks[r.binary.name()] = { releaseBinary(ctx, r) }
                         }
 
+                        tasks["Generate SBOM"] = { sbom(ctx) }
+
                         tasks["Docker container"] = { releaseDockerContainer(ctx) }
 
                         parallel tasks
@@ -169,7 +171,7 @@ void releaseBinary(Context ctx, Release release) {
 
         if (isRelease(ctx)) {
             stage("push to GitHub") {
-                ctx.githubRelease.addToRelease(ctx, release)
+                ctx.githubRelease.addToRelease(release)
             }
         }
     }
@@ -194,7 +196,6 @@ void releaseDockerContainer(Context ctx) {
             dockerTools.buildContainer(version: ctx.version, registrySecretsPath: "keptn-jenkins/monaco/dockerhub-deploy", latest: latest)
         }
     }
-
 }
 
 void signWinBinaries(Map args = [source: null, version: null, destDir: null, projectName: null]) {
@@ -224,7 +225,6 @@ void signWithSignService(Map args = [source: null, version: null, destDir: '.', 
                '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
         }
     }
-
 }
 
 void buildBinary(Map args = [makeCommand: null, version: null, dest: null]) {
@@ -249,13 +249,27 @@ def pushToDtRepository(Map args = [source: null, dest: null]) {
                                           [envVar: 'username', vaultKey: 'username', isRequired: true],
                                           [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
             ) {
-                sh '''
+                sh(label: "push to DT artifactory", script: '''
                     curl --request PUT $repo_path/$dest
                          --user "$username":"$password"
                          --fail-with-body
                          --upload-file $source
-                   '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
+                   '''.replaceAll("\n", " ").replaceAll(/ +/, " "))
             }
+        }
+    }
+}
+
+void sbom(Context ctx) {
+    stage("Generate SBOM") {
+        final String sbomName = "sbom.cdx.json"
+        def sbomTools = load(".ci/jenkins/tools/sbom.groovy")
+
+        sbomTools.install()
+        sbomTools.generate(sbomName)
+        pushToDtRepository(source: sbomName, dest: "monaco/${ctx.version}/${sbomName}")
+        if (isRelease(ctx)) {
+            ctx.githubRelease.addToRelease(source: sbomName, underName: sbomName)
         }
     }
 }
@@ -290,9 +304,13 @@ class GithubRelease {
         return this.releaseId
     }
 
-    void addToRelease(Context ctx, Release release) {
+    void addToRelease(Release release) {
         githubTools.pushFileToRelease(rleaseName: release.binary.name(), source: release.binary.localPath(), releaseId: this.releaseId)
         githubTools.pushFileToRelease(rleaseName: "${release.binary.shaName()}", source: release.binary.shaPath(), releaseId: this.releaseId)
+    }
+
+    void addToRelease(Map args = [source: null, underName: null]) {
+        githubTools.pushFileToRelease(rleaseName: args.underName, source: args.source, releaseId: this.releaseId)
     }
 }
 
