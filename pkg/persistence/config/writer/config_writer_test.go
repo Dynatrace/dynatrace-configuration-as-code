@@ -1364,6 +1364,48 @@ func TestWriteConfigs(t *testing.T) {
 	}
 }
 
+func TestNoDuplicateTemplates(t *testing.T) {
+	configs := []config.Config{
+		{
+			Template:   template.NewInMemoryTemplate("template-id ", ""),
+			Coordinate: coordinate.Coordinate{Project: "project", Type: "ctype", ConfigId: "cid0"},
+			Type:       config.ClassicApiType{},
+		},
+		{
+			Template:   template.NewInMemoryTemplate(" template-id", ""),
+			Coordinate: coordinate.Coordinate{Project: "project", Type: "ctype", ConfigId: "cid1"},
+			Type:       config.ClassicApiType{},
+		},
+		{
+			Template:   template.NewInMemoryTemplate("template-id", ""),
+			Coordinate: coordinate.Coordinate{Project: "project", Type: "ctype", ConfigId: "cid2"},
+			Type:       config.ClassicApiType{},
+		},
+	}
+	expectedTemplatePaths := []string{
+		"test/project/ctype/template-id.json",
+		"test/project/ctype/template-id1.json",
+		"test/project/ctype/template-id2.json",
+	}
+
+	fs := afero.NewMemMapFs()
+	errs := WriteConfigs(&WriterContext{
+		Fs:              fs,
+		OutputFolder:    "test",
+		ProjectFolder:   "project",
+		ParametersSerde: config.DefaultParameterParsers,
+	}, configs)
+
+	assert.Len(t, errs, 0)
+
+	// check that templates have been created
+	for _, path := range expectedTemplatePaths {
+		found, err := afero.Exists(fs, path)
+		assert.NoError(t, err)
+		assert.Equal(t, found, true, "could not find %q", path)
+	}
+}
+
 func TestOrderedConfigs(t *testing.T) {
 	configs := []config.Config{
 		{
