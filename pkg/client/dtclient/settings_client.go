@@ -60,6 +60,7 @@ type (
 
 	SchemaList []struct {
 		SchemaId string `json:"schemaId"`
+		Ordered  bool   `json:"ordered"`
 	}
 
 	// SchemaListResponse is the response type returned by the ListSchemas operation
@@ -107,6 +108,10 @@ func (d *DynatraceClient) listSchemas(ctx context.Context) (SchemaList, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse url: %w", err)
 	}
+
+	q := u.Query()
+	q.Add("fields", "ordered,schemaId")
+	u.RawQuery = q.Encode()
 
 	// getting all schemas does not have pagination
 	resp, err := d.platformClient.Get(ctx, u.String())
