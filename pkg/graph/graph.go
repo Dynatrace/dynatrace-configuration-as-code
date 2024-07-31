@@ -19,6 +19,7 @@ package graph
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -221,6 +222,10 @@ func buildDependencyGraph(projects []project.Project, environment string, nodeOp
 
 	log.Debug("adding %d Config nodes to graph...", len(configs))
 	for i, c := range configs {
+		if c.Skip && featureflags.Temporary[featureflags.IgnoreSkippedConfigs].Enabled() {
+			log.Debug("Excluding config %s from dependency graph", c.Coordinate)
+			continue
+		}
 		c := c
 		n := ConfigNode{
 			NodeID: int64(i),
