@@ -27,7 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
-	"golang.org/x/sync/errgroup"
 	"strings"
 	"sync"
 
@@ -60,36 +59,24 @@ func Download(client client.SettingsClient, projectName string, filters Filters,
 
 func downloadAll(client client.SettingsClient, projectName string, filters Filters) (v2.ConfigsPerType, error) {
 	log.Debug("Fetching all schemas to download")
-	schemaList, err := client.ListSchemas()
+	schemas, err := fetchAllSchemas(client)
 	if err != nil {
-		log.WithFields(field.Error(err)).Error("Failed to fetch all known schemas. Skipping settings download. Reason: %s", err)
 		return nil, err
 	}
 
-	var schemaIds []string
-	for _, s := range schemaList {
-		schemaIds = append(schemaIds, s.SchemaId)
-	}
-
-	schemas, err := fetchSchemas(client, schemaIds)
-	if err != nil {
-		return v2.ConfigsPerType{}, err
-	}
-
-	result := download(client, schemas, projectName, filters)
-	return result, nil
+	return download(client, schemas, projectName, filters), nil
 }
 
 func downloadSpecific(client client.SettingsClient, projectName string, schemaIDs []string, filters Filters) (v2.ConfigsPerType, error) {
-	if ok, unknownSchemas := validateSpecificSchemas(client, schemaIDs); !ok {
-		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
-		log.WithFields(field.F("unknownSchemas", unknownSchemas), field.Error(err)).Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
-		return nil, err
-	}
-
 	schemas, err := fetchSchemas(client, schemaIDs)
 	if err != nil {
 		return v2.ConfigsPerType{}, err
+	}
+
+	if ok, unknownSchemas := validateSpecificSchemas(schemas, schemaIDs); !ok {
+		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
+		log.WithFields(field.F("unknownSchemas", unknownSchemas), field.Error(err)).Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
+		return nil, err
 	}
 
 	log.Debug("Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
@@ -97,26 +84,42 @@ func downloadSpecific(client client.SettingsClient, projectName string, schemaID
 	return result, nil
 }
 
-func fetchSchemas(cl client.SettingsClient, schemaIds []string) ([]schema, error) {
-	var mu sync.Mutex
-	var schemas []schema
-
-	g, _ := errgroup.WithContext(context.Background()) // ignore ctx, as settings client does not support it yet
-	for _, schemaId := range schemaIds {
-		g.Go(func() error {
-			sc, err := cl.GetSchemaById(schemaId)
-			if err != nil {
-				return err
-			}
-			mu.Lock()
-			schemas = append(schemas, schema{id: sc.SchemaId, ordered: sc.Ordered})
-			mu.Unlock()
-			return nil
-		})
+func fetchAllSchemas(cl client.SettingsClient) ([]schema, error) {
+	dlSchemas, err := cl.ListSchemas()
+	if err != nil {
+		return nil, err
 	}
 
-	if err := g.Wait(); err != nil {
+	var schemas []schema
+	for _, s := range dlSchemas {
+		schemas = append(schemas, schema{
+			id:      s.SchemaId,
+			ordered: s.Ordered,
+		})
+
+	}
+	return schemas, nil
+}
+
+func fetchSchemas(cl client.SettingsClient, schemaIds []string) ([]schema, error) {
+	dlSchemas, err := cl.ListSchemas()
+	if err != nil {
 		return nil, err
+	}
+
+	schemaIdSet := make(map[string]struct{})
+	for _, id := range schemaIds {
+		schemaIdSet[id] = struct{}{}
+	}
+
+	var schemas []schema
+	for _, s := range dlSchemas {
+		if _, exists := schemaIdSet[s.SchemaId]; exists {
+			schemas = append(schemas, schema{
+				id:      s.SchemaId,
+				ordered: s.Ordered,
+			})
+		}
 	}
 
 	return schemas, nil
@@ -229,22 +232,17 @@ func shouldFilterUnmodifiableSettings() bool {
 	return shouldFilterSettings() && featureflags.Permanent[featureflags.DownloadFilterSettingsUnmodifiable].Enabled()
 }
 
-func validateSpecificSchemas(c client.SettingsClient, schemas []string) (valid bool, unknownSchemas []string) {
-	if len(schemas) == 0 {
+func validateSpecificSchemas(schemas []schema, schemaIDs []string) (valid bool, unknownSchemas []string) {
+	if len(schemaIDs) == 0 {
 		return true, nil
 	}
 
-	schemaList, err := c.ListSchemas()
-	if err != nil {
-		log.WithFields(field.Error(err)).Error("failed to query available Settings Schemas: %v", err)
-		return false, schemas
-	}
-	knownSchemas := make(map[string]struct{}, len(schemaList))
-	for _, s := range schemaList {
-		knownSchemas[s.SchemaId] = struct{}{}
+	knownSchemas := make(map[string]struct{}, len(schemas))
+	for _, s := range schemas {
+		knownSchemas[s.id] = struct{}{}
 	}
 
-	for _, s := range schemas {
+	for _, s := range schemaIDs {
 		if _, exists := knownSchemas[s]; !exists {
 			unknownSchemas = append(unknownSchemas, s)
 		}
