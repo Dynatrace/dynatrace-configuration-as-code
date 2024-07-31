@@ -386,7 +386,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 		},
 	}
 
-	c.EXPECT().ListSchemas().Return(dtclient.SchemaList{{"builtin:some.schema"}}, nil)
+	c.EXPECT().ListSchemas().Return(dtclient.SchemaList{{SchemaId: "builtin:some.schema"}}, nil)
 
 	err := doDownloadConfigs(afero.NewMemMapFs(), &client.ClientSet{DTClient: c}, nil, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
