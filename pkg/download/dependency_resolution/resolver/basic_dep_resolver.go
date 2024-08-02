@@ -18,6 +18,7 @@ package resolver
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"golang.org/x/exp/maps"
@@ -75,8 +76,12 @@ func basicFindAndReplaceIDs(apiName string, configToBeUpdated config.Config, con
 // in case two configs are actually the same, or if they are both dashboards no replacement will happen as in these
 // cases there is no real valid reference even if the key is found in the content.
 func shouldReplaceReference(configToBeUpdated config.Config, configToUpdateFrom config.Config, contentToBeUpdated, keyToReplace string) bool {
-	if configToBeUpdated.Coordinate.Type == "dashboard" && configToUpdateFrom.Coordinate.Type == "dashboard" {
+	if configToBeUpdated.Coordinate.Type == api.Dashboard && configToUpdateFrom.Coordinate.Type == api.Dashboard {
 		return false //dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
+	}
+
+	if configToBeUpdated.Coordinate.Type == api.NetworkZone && configToUpdateFrom.Coordinate.Type == api.NetworkZone {
+		return false
 	}
 
 	return configToUpdateFrom.Template.ID() != configToBeUpdated.Template.ID() && strings.Contains(contentToBeUpdated, keyToReplace)
