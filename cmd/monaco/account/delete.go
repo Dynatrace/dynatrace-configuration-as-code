@@ -158,7 +158,11 @@ func createAccountDeleteClient(a manifest.Account) (delete.Account, error) {
 		apiUrl = a.ApiUrl.Value
 	}
 
-	c, err := clients.Factory().WithOAuthCredentials(oauthCreds).WithUserAgent(client.DefaultMonacoUserAgent).AccountClient(apiUrl)
+	c, err := clients.Factory().
+		WithAccountURL(apiUrl).
+		WithOAuthCredentials(oauthCreds).
+		WithUserAgent(client.DefaultMonacoUserAgent).
+		AccountClient()
 	if err != nil {
 		return delete.Account{}, err
 	}

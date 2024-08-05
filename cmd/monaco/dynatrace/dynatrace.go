@@ -127,9 +127,10 @@ func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[acc
 
 		accClient, err := factory.
 			WithConcurrentRequestLimit(concurrentRequestLimit).
+			WithAccountURL(apiUrl).
 			WithOAuthCredentials(oauthCreds).
 			WithUserAgent(client.DefaultMonacoUserAgent).
-			AccountClient(apiUrl)
+			AccountClient()
 
 		if err != nil {
 			return accClients, err
