@@ -304,7 +304,7 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 			ClientSecret: auth.OauthClientSecret,
 			TokenURL:     auth.OauthTokenURL,
 		}).
-		WithEnvironmentURL(url).
+		WithPlatformURL(url).
 		WithUserAgent(opts.getUserAgentString())
 
 	if opts.SupportArchive {
