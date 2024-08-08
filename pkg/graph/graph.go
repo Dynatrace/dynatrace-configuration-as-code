@@ -19,6 +19,7 @@ package graph
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -206,7 +207,7 @@ func New(projects []project.Project, environments []string, nodeOptions ...NodeO
 }
 
 func buildDependencyGraph(projects []project.Project, environment string, nodeOptions []NodeOption) *simple.DirectedGraph {
-	log.Debug("creating dependency graph for %s", environment)
+	log.Debug("Creating dependency graph for %s", environment)
 	g := simple.NewDirectedGraph()
 	coordinateToNodeIDs := make(coordinateToNodeIDMap)
 	configReferences := make(referencesLookup)
@@ -219,8 +220,11 @@ func buildDependencyGraph(projects []project.Project, environment string, nodeOp
 		}
 	}
 
-	log.Debug("adding %d Config nodes to graph...", len(configs))
 	for i, c := range configs {
+		if c.Skip && featureflags.Temporary[featureflags.IgnoreSkippedConfigs].Enabled() {
+			log.Debug("Excluding config %s from dependency graph", c.Coordinate)
+			continue
+		}
 		c := c
 		n := ConfigNode{
 			NodeID: int64(i),
@@ -239,8 +243,8 @@ func buildDependencyGraph(projects []project.Project, environment string, nodeOp
 			configReferences[c.Coordinate][ref] = struct{}{}
 		}
 	}
-
-	log.Debug("adding edges between dependent Config nodes...")
+	log.Debug("Added %d config nodes to graph", g.Nodes().Len())
+	log.Debug("Adding edges between dependent config nodes...")
 	for c, refs := range configReferences {
 		for other, _ := range refs {
 			if c == other {
@@ -252,7 +256,7 @@ func buildDependencyGraph(projects []project.Project, environment string, nodeOp
 				g.SetEdge(g.NewEdge(g.Node(otherNode), g.Node(cNode)))
 			} else {
 				//TODO: to comply with the current 'continue-on-error' behaviour we can not recognize invalid references at this point but must return a dependency graph even if we know things will fail later on
-				log.Warn("configuration %q references unknown configuration %q", c, other)
+				log.Warn("Configuration %q references unknown configuration %q", c, other)
 			}
 
 		}

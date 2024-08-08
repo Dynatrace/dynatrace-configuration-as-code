@@ -34,6 +34,10 @@ const (
 	// OpenPipeline toggles whether openpipeline configurations are downloaded and / or deployed.
 	// Introduced: 2024-06-10; v2.15.0
 	OpenPipeline TemporaryFlag = "MONACO_FEAT_OPENPIPELINE"
+	// IgnoreSkippedConfigs toggles whether configurations that are marked to be skipped should also be excluded
+	// from the dependency graph created by Monaco. These configs are not only skipped during deployment but also
+	// not validated prior to deployment. Further, other configs cannot reference properties of this config anymore.
+	IgnoreSkippedConfigs TemporaryFlag = "MONACO_FEAT_IGNORE_SKIPPED_CONFIGS"
 )
 
 // Temporary FeatureFlags - for features that are hidden during development or have some uncertainty.
@@ -58,5 +62,9 @@ var Temporary = map[TemporaryFlag]FeatureFlag{
 	OpenPipeline: {
 		envName:        string(OpenPipeline),
 		defaultEnabled: true,
+	},
+	IgnoreSkippedConfigs: {
+		envName:        string(IgnoreSkippedConfigs),
+		defaultEnabled: false,
 	},
 }
