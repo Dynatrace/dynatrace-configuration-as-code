@@ -312,6 +312,17 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 		errs = append(errs, configErrs...)
 		configs = append(configs, loadedConfigs...)
 	}
+
+	// TODO ugly and produces memory overhead, but the easiest way to make global variables available is putting them right in the config
+	// where they can then be referenced via ref params to "property: "_global:<key>""
+	// Rather than magic strings, a proper implementation should IMO introduce a 'global' parameter type for configs and make access explicit
+	for i, _ := range configs {
+		for k, v := range loadingContext.Manifest.Parameters {
+			configs[i].Parameters["_global:"+k] = v
+		}
+		configs[i].Parameters["_global:environment"] = value.New(configs[i].Environment)
+	}
+
 	return configs, errs
 }
 
