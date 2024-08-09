@@ -246,7 +246,7 @@ func download(client client.ConfigClient, theApi api.API, value value) ([]map[st
 		id = ""
 	}
 
-	response, err := client.ReadConfigById(theApi.ApplyParentObjectID(value.parentConfigId), id)
+	response, err := client.ReadConfigById(context.TODO(), theApi.ApplyParentObjectID(value.parentConfigId), id)
 	if err != nil {
 		return nil, err
 	}

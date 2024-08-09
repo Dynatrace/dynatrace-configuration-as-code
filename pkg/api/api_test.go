@@ -22,12 +22,7 @@ import (
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/stretchr/testify/assert"
 )
-
-func TestGetUrl(t *testing.T) {
-	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/managementZones", (api.API{URLPath: "/api/config/v1/managementZones"}).CreateURL(testDevEnvironment.GetEnvironmentUrl()))
-}
 
 func Test_configEndpoints(t *testing.T) {
 	for _, v := range api.NewAPIs() {

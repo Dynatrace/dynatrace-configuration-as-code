@@ -22,17 +22,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/exp/maps"
-	"net/http"
-	"net/url"
-	"strings"
 )
 
 type (
@@ -96,37 +98,20 @@ type (
 	}
 )
 
-func (d *DynatraceClient) ListSchemas() (schemas SchemaList, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		schemas, err = d.listSchemas(context.TODO())
-	})
-	return
-}
-
-func (d *DynatraceClient) listSchemas(ctx context.Context) (SchemaList, error) {
-	u, err := url.Parse(d.environmentURL + d.settingsSchemaAPIPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse url: %w", err)
-	}
-
-	q := u.Query()
-	q.Add("fields", "ordered,schemaId")
-	u.RawQuery = q.Encode()
+func (d *DynatraceClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
+	queryParams := url.Values{}
+	queryParams.Add("fields", "ordered,schemaId")
 
 	// getting all schemas does not have pagination
-	resp, err := d.platformClient.Get(ctx, u.String())
+	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsSchemaAPIPath, corerest.RequestOptions{QueryParams: queryParams}))
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET schemas: %w", err)
 	}
 
-	if !resp.IsSuccess() {
-		return nil, rest.NewRespErr(fmt.Sprintf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodGet, u.String())
-	}
-
 	var result SchemaListResponse
-	err = json.Unmarshal(resp.Body, &result)
+	err = json.Unmarshal(resp.Data, &result)
 	if err != nil {
-		return nil, rest.NewRespErr("failed to unmarshal response", resp).WithRequestInfo(http.MethodGet, u.String()).WithErr(err)
+		return nil, fmt.Errorf("failed to unmarshal schema list: %w", err)
 	}
 
 	if result.TotalCount != len(result.Items) {
@@ -136,33 +121,22 @@ func (d *DynatraceClient) listSchemas(ctx context.Context) (SchemaList, error) {
 	return result.Items, nil
 }
 
-func (d *DynatraceClient) GetSchemaById(schemaID string) (constraints Schema, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		constraints, err = d.getSchema(context.TODO(), schemaID)
-	})
-	return
-}
-
-func (d *DynatraceClient) getSchema(ctx context.Context, schemaID string) (Schema, error) {
+func (d *DynatraceClient) GetSchemaById(ctx context.Context, schemaID string) (constraints Schema, err error) {
 	if ret, cached := d.schemaCache.Get(schemaID); cached {
 		return ret, nil
 	}
 
 	ret := Schema{SchemaId: schemaID}
-	u, err := url.JoinPath(d.environmentURL, d.settingsSchemaAPIPath, schemaID)
+	endpoint := d.settingsSchemaAPIPath + "/" + schemaID
+	r, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, endpoint, corerest.RequestOptions{}))
 	if err != nil {
-		return Schema{}, fmt.Errorf("failed to parse url: %w", err)
-	}
-
-	r, err := d.platformClient.Get(ctx, u)
-	if err != nil {
-		return Schema{}, fmt.Errorf("failed to GET schema details for %q: %w", schemaID, err)
+		return Schema{}, err
 	}
 
 	var sd schemaDetailsResponse
-	err = json.Unmarshal(r.Body, &sd)
+	err = json.Unmarshal(r.Data, &sd)
 	if err != nil {
-		return Schema{}, rest.NewRespErr("failed to unmarshal response", r).WithRequestInfo(http.MethodGet, u).WithErr(err)
+		return Schema{}, fmt.Errorf("failed to unmarshal schema %q: %w", schemaID, err)
 	}
 
 	for _, sc := range sd.SchemaConstraints {
@@ -177,22 +151,19 @@ func (d *DynatraceClient) getSchema(ctx context.Context, schemaID string) (Schem
 }
 
 func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject, options UpsertSettingsOptions) (result DynatraceEntity, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		result, err = d.upsertSettings(ctx, obj, options)
-	})
-	return
-}
-
-func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject, options UpsertSettingsOptions) (DynatraceEntity, error) {
 	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
 	// Tenants with versions < 1.262 are not able to handle updates of existing
 	// settings 2.0 objects that are non-deletable.
 	// So we check if the object with originObjectID already exists, if yes and the tenant is older than 1.262
 	// then we cannot perform the upsert operation
 	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
-		fetchedSettingObj, err := d.getSettingById(ctx, obj.OriginObjectId)
-		if err != nil && !errors.Is(err, ErrSettingNotFound) {
-			return DynatraceEntity{}, fmt.Errorf("unable to fetch settings object with object id %q: %w", obj.OriginObjectId, err)
+		fetchedSettingObj, err := d.GetSettingById(ctx, obj.OriginObjectId)
+		if err != nil {
+			apiErr := coreapi.APIError{}
+			// Settings API returns 400 StatusBadRequest for 404 StatusNotFound
+			if !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusBadRequest || apiErr.StatusCode == http.StatusNotFound {
+				return DynatraceEntity{}, fmt.Errorf("unable to fetch settings object with object id %q: %w", obj.OriginObjectId, err)
+			}
 		}
 		if fetchedSettingObj != nil {
 			log.WithCtxFields(ctx).Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace environment with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
@@ -225,7 +196,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
 	}
 
-	settingsWithExternalID, err := d.listSettings(ctx, obj.SchemaId, ListSettingsOptions{
+	settingsWithExternalID, err := d.ListSettings(ctx, obj.SchemaId, ListSettingsOptions{
 		Filter: func(object DownloadSettingsObject) bool { return object.ExternalId == legacyExternalID },
 	})
 	if err != nil {
@@ -245,7 +216,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	// it is not possible to update the setting using the externalId and origin-object-id on the same POST request,
 	// as two settings objects can be the target of the change. In this case, we remove the origin-object-id
 	// and only update the object using the externalId.
-	settings, err := d.listSettings(ctx, obj.SchemaId, ListSettingsOptions{
+	settings, err := d.ListSettings(ctx, obj.SchemaId, ListSettingsOptions{
 		Filter: func(object DownloadSettingsObject) bool {
 			return object.ObjectId == obj.OriginObjectId || object.ExternalId == externalID
 		},
@@ -278,28 +249,22 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
 	}
 
-	var retrySetting rest.RetrySetting
+	var retrySetting RetrySetting
 	if options.OverrideRetry != nil {
 		retrySetting = *options.OverrideRetry
 	} else {
 		retrySetting = d.retrySettings.Normal
 	}
 
-	requestUrl := d.environmentURL + d.settingsObjectAPIPath
-	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.platformClient.Post, requestUrl, payload, retrySetting)
+	resp, err := SendWithRetryWithInitialTry(ctx, d.platformClient.POST, d.settingsObjectAPIPath, corerest.RequestOptions{}, payload, retrySetting)
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
 	}
 
-	if !resp.IsSuccess() {
-		d.settingsCache.Delete(obj.SchemaId)
-		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("failed to create or update Settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, requestUrl)
-	}
-
-	entity, err := parsePostResponse(resp)
+	entity, err := parsePostResponse(resp.Data)
 	if err != nil {
-		return DynatraceEntity{}, rest.NewRespErr("failed to parse response", resp).WithRequestInfo(http.MethodPost, requestUrl).WithErr(err)
+		return DynatraceEntity{}, err
 	}
 
 	log.WithCtxFields(ctx).Debug("Created/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
@@ -312,7 +277,7 @@ type match struct {
 }
 
 func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (match, bool, error) {
-	constraints, err := d.getSchema(ctx, source.SchemaId)
+	constraints, err := d.GetSchemaById(ctx, source.SchemaId)
 	if err != nil {
 		return match{}, false, fmt.Errorf("unable to get details for schema %q: %w", source.SchemaId, err)
 	}
@@ -321,7 +286,7 @@ func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context,
 		return match{}, false, nil
 	}
 
-	objects, err := d.listSettings(ctx, source.SchemaId, ListSettingsOptions{})
+	objects, err := d.ListSettings(ctx, source.SchemaId, ListSettingsOptions{})
 	if err != nil {
 		return match{}, false, fmt.Errorf("unable to get existing settings objects for %q schema: %w", source.SchemaId, err)
 	}
@@ -455,19 +420,19 @@ func buildPostRequestPayload(ctx context.Context, obj SettingsObject, externalID
 // parsePostResponse unmarshalls and parses the settings response for the post request
 // The response is returned as an array for each element we send.
 // Since we only send one object at the moment, we simply use the first one.
-func parsePostResponse(resp rest.Response) (DynatraceEntity, error) {
+func parsePostResponse(body []byte) (DynatraceEntity, error) {
 
 	var parsed []postResponse
-	if err := json.Unmarshal(resp.Body, &parsed); err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to unmarshal response: %w. Response was: %s", err, string(resp.Body))
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return DynatraceEntity{}, fmt.Errorf("failed to unmarshal response: %w. Response was: %s", err, string(body))
 	}
 
 	if len(parsed) == 0 {
-		return DynatraceEntity{}, fmt.Errorf("response did not contain a single element")
+		return DynatraceEntity{}, fmt.Errorf("response does not contain a single element")
 	}
 
 	if len(parsed) > 1 {
-		return DynatraceEntity{}, fmt.Errorf("response did contain too many elements")
+		return DynatraceEntity{}, fmt.Errorf("response does contain too many elements")
 	}
 
 	return DynatraceEntity{
@@ -477,14 +442,6 @@ func parsePostResponse(resp rest.Response) (DynatraceEntity, error) {
 }
 
 func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listSettings(ctx, schemaId, opts)
-	})
-	return
-}
-
-func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
-
 	if settings, cached := d.settingsCache.Get(schemaId); cached {
 		log.WithCtxFields(ctx).Debug("Using cached settings for schema %s", schemaId)
 		return filter.FilterSlice(settings, opts.Filter), nil
@@ -516,12 +473,7 @@ func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opt
 		return len(parsed.Items), nil
 	}
 
-	u, err := buildUrl(d.environmentURL, d.settingsObjectAPIPath, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request for schema %q: %w", schemaId, err)
-	}
-
-	_, err = rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, schemaId, addToResult)
+	err = listPaginated(ctx, d.platformClient, d.retrySettings.Normal, d.settingsObjectAPIPath, params, schemaId, addToResult)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list settings of schema %q: %w", schemaId, err)
 	}

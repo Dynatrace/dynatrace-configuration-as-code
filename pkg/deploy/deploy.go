@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -41,7 +42,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	gonum "gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 )
@@ -315,7 +315,7 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 	}
 
 	if deployErr != nil {
-		var responseErr clientErrors.RespError
+		var responseErr coreapi.APIError
 		if errors.As(deployErr, &responseErr) {
 			logResponseError(ctx, responseErr)
 			return entities.ResolvedEntity{}, responseErr
@@ -328,7 +328,7 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 }
 
 // logResponseError prints user-friendly messages based on the response errors status
-func logResponseError(ctx context.Context, responseErr clientErrors.RespError) {
+func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	if responseErr.StatusCode >= 400 && responseErr.StatusCode <= 499 {
 		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
 		return

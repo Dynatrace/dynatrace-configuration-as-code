@@ -19,8 +19,11 @@ package dynatrace
 import (
 	"context"
 	"errors"
+	"strings"
+
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
-	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
@@ -30,11 +33,11 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/classicheartbeat"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+
 	"golang.org/x/oauth2/clientcredentials"
 )
 
@@ -45,17 +48,31 @@ func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
 		return true
 	}
 	for _, env := range envs {
-		if (env.Auth.OAuth == nil && !isClassicEnvironment(env)) || (env.Auth.OAuth != nil && !isPlatformEnvironment(env)) {
+		if !isValidEnvironment(env) {
 			return false
 		}
 	}
 	return true
 }
 
+func isValidEnvironment(env manifest.EnvironmentDefinition) bool {
+	if env.Auth.OAuth == nil {
+		return isClassicEnvironment(env)
+	}
+
+	return isPlatformEnvironment(env)
+}
+
 func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
-	if _, err := version.GetDynatraceVersion(context.TODO(), rest.NewRestClient(auth.NewTokenAuthClient(env.Auth.Token.Value.Value()), nil, rest.CreateRateLimitStrategy()), env.URL.Value); err != nil {
-		var respErr rest.RespError
-		if errors.As(err, &respErr) {
+	client, err := clients.Factory().WithAccessToken(env.Auth.Token.Value.Value()).WithClassicURL(env.URL.Value).CreateClassicClient()
+	if err != nil {
+		log.Error("Could not create client %q (%s): %v", env.Name, env.URL.Value, err)
+		return false
+	}
+
+	if _, err := version.GetDynatraceVersion(context.TODO(), client); err != nil {
+		var apiErr coreapi.APIError
+		if errors.As(err, &apiErr) {
 			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using token authorization: %v", env.Name, env.URL.Value, err)
 		} else {
 			log.WithFields(field.Error(err)).Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
@@ -67,14 +84,15 @@ func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
 }
 
 func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
-	oauthCredentials := auth.OauthCredentials{
+	oauthCreds := clientcredentials.Config{
 		ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
 		ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
 		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
-	if _, err := metadata.GetDynatraceClassicURL(context.TODO(), rest.NewRestClient(auth.NewOAuthClient(context.TODO(), oauthCredentials), nil, rest.CreateRateLimitStrategy()), env.URL.Value); err != nil {
-		var respErr rest.RespError
-		if errors.As(err, &respErr) {
+
+	if _, err := getDynatraceClassicURL(context.TODO(), env.URL.Value, oauthCreds); err != nil {
+		var apiError coreapi.APIError
+		if errors.As(err, &apiError) {
 			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using oAuth authorization: %v", env.Name, env.URL.Value, err)
 		} else {
 			log.WithFields(field.Error(err)).Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
@@ -113,34 +131,36 @@ func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[acc
 			TokenURL:     acc.OAuth.GetTokenEndpointValue(),
 		}
 
-		var apiUrl string
-		if acc.ApiUrl == nil || acc.ApiUrl.Value == "" {
-			apiUrl = "https://api.dynatrace.com"
-		} else {
-			apiUrl = acc.ApiUrl.Value
-		}
-
-		factory := clients.Factory()
-		if support.SupportArchive {
-			factory = factory.WithHTTPListener(&lib.HTTPListener{Callback: trafficlogs.NewFileBased().LogToFiles})
-		}
-
-		accClient, err := factory.
+		factory := clients.Factory().
 			WithConcurrentRequestLimit(concurrentRequestLimit).
-			WithAccountURL(apiUrl).
 			WithOAuthCredentials(oauthCreds).
 			WithUserAgent(client.DefaultMonacoUserAgent).
-			AccountClient()
+			WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl))
 
+		if support.SupportArchive {
+			factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.NewFileBased().LogToFiles})
+		}
+
+		accClient, err := factory.AccountClient()
 		if err != nil {
 			return accClients, err
 		}
+
 		accClients[account.AccountInfo{
 			Name:        acc.Name,
 			AccountUUID: acc.AccountUUID.String(),
 		}] = accClient
 	}
 	return accClients, nil
+}
+
+// accountApiUrlOrDefault returns the API URL if available or the default.
+func accountApiUrlOrDefault(apiUrl *manifest.URLDefinition) string {
+	if apiUrl == nil || apiUrl.Value == "" {
+		return "https://api.dynatrace.com"
+	}
+
+	return apiUrl.Value
 }
 
 type (
@@ -178,4 +198,39 @@ func CreateEnvironmentClients(environments manifest.Environments) (EnvironmentCl
 	}
 
 	return clients, nil
+}
+
+func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds clientcredentials.Config) (string, error) {
+	if featureflags.Permanent[featureflags.BuildSimpleClassicURL].Enabled() {
+		if classicURL, ok := findSimpleClassicURL(ctx, platformURL); ok {
+			return classicURL, nil
+		}
+	}
+
+	client, err := clients.Factory().WithPlatformURL(platformURL).WithOAuthCredentials(oauthCreds).CreatePlatformClient()
+	if err != nil {
+		return "", err
+	}
+	return metadata.GetDynatraceClassicURL(ctx, *client)
+}
+
+func findSimpleClassicURL(ctx context.Context, platformURL string) (classicUrl string, ok bool) {
+	if !strings.Contains(platformURL, ".apps.") {
+		log.Debug("Environment URL not matching expected Platform URL pattern, unable to build Classic environment URL directly.")
+		return "", false
+	}
+
+	classicUrl = strings.Replace(platformURL, ".apps.", ".live.", 1)
+
+	client, err := clients.Factory().WithClassicURL(classicUrl).CreateClassicClient()
+	if err != nil {
+		return "", false
+	}
+
+	if classicheartbeat.TestClassic(ctx, *client) {
+		log.Debug("Found classic environment URL based on Platform URL: %s", classicUrl)
+		return classicUrl, true
+	}
+
+	return "", false
 }

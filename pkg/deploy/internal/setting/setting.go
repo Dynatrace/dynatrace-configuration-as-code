@@ -29,7 +29,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"time"
 )
 
@@ -97,7 +96,7 @@ func makeUpsertOptions(c *config.Config, insertAfter string) dtclient.UpsertSett
 		InsertAfter: insertAfter,
 	}
 	if hasRefToBucket {
-		upsertOpts.OverrideRetry = &rest.RetrySetting{
+		upsertOpts.OverrideRetry = &dtclient.RetrySetting{
 			WaitTime:   10 * time.Second,
 			MaxRetries: 6,
 		}

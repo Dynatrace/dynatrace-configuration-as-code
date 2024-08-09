@@ -28,7 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/go-logr/logr"
 	"net/http"
 )
@@ -63,7 +62,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	if err != nil {
 		var apiErr api.APIError
 		if errors.As(err, &apiErr) {
-			return entities.ResolvedEntity{}, clientErrors.NewRespErr(fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName), clientErrors.Response{Body: apiErr.Body, StatusCode: apiErr.StatusCode})
+			return entities.ResolvedEntity{}, fmt.Errorf("failed to upsert bucket with bucketName %q: %w", bucketName, err)
 		}
 
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName)).WithError(err)

@@ -21,6 +21,10 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"testing"
+
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -32,11 +36,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"strconv"
-	"testing"
 )
 
 func TestDownloadAll(t *testing.T) {
@@ -82,7 +83,7 @@ func TestDownloadAll(t *testing.T) {
 					return dtclient.SchemaList{{SchemaId: "id1"}, {SchemaId: "id2"}}, nil
 				},
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
-					return nil, rest.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
+					return nil, coreapi.APIError{StatusCode: 0}
 				},
 				ListSettingsCalls: 2,
 				GetSchema: func(schemaID string) (dtclient.Schema, error) {
@@ -390,7 +391,7 @@ func TestDownloadAll(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := client.NewMockDynatraceClient(gomock.NewController(t))
 			schemas, err := tt.mockValues.Schemas()
-			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
+			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			//c.EXPECT().GetSchemaById(gomock.Any()).Times(tt.mockValues.GetSchemaCalls).Return(tt.mockValues.GetSchema(""))
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
@@ -485,7 +486,7 @@ func TestDownload(t *testing.T) {
 			c := client.NewMockDynatraceClient(gomock.NewController(t))
 			schemas, err1 := tt.mockValues.Schemas()
 			settings, err2 := tt.mockValues.Settings()
-			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err1)
+			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err1)
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err2)
 			res, _ := Download(c, "projectName", DefaultSettingsFilters, tt.Schemas...)
 			assert.Equal(t, tt.want, res)

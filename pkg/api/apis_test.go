@@ -32,7 +32,6 @@ func TestNewApis(t *testing.T) {
 	apis := api.NewAPIs()
 
 	assert.Contains(t, apis, "notification", "Expected `notification` key in KnownApis")
-	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/notifications", apis["notification"].CreateURL(testDevEnvironment.GetEnvironmentUrl()), "Expected to get `notification` API url")
 }
 
 func TestContains(t *testing.T) {

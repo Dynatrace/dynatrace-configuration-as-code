@@ -78,10 +78,6 @@ type API struct {
 	DeployWaitDuration time.Duration
 }
 
-func (a API) CreateURL(environmentURL string) string {
-	return environmentURL + a.URLPath
-}
-
 // HasParent returns true iff the API has a relation to another (parent) API.
 // This is typically the case for "Sub-path" APIs, e.g. Key User Actions for Mobile applications.
 // In this case "mobile-application" would be the parent API, which is also reflected in the URLs to be used to query

@@ -21,20 +21,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/useragent"
 	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
-	"golang.org/x/oauth2"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 // DownloadSettingsObject is the response type for the ListSettings operation
@@ -56,11 +53,8 @@ type SettingsModificationInfo struct {
 	NonModifiablePaths []interface{} `json:"nonModifiablePaths"`
 }
 
-// ErrSettingNotFound is returned when no settings 2.0 object could be found
-var ErrSettingNotFound = errors.New("settings object not found")
-
 type UpsertSettingsOptions struct {
-	OverrideRetry *rest.RetrySetting
+	OverrideRetry *RetrySetting
 	InsertAfter   string
 }
 
@@ -91,18 +85,12 @@ type DynatraceClient struct {
 	// serverVersion is the Dynatrace server version the
 	// client will be interacting with
 	serverVersion version.Version
-	// environmentURL is the base URL of the Dynatrace server the
-	// client will be interacting with
-	environmentURL string
-	// environmentURLClassic is the base URL of the classic generation
-	// Dynatrace tenant
-	environmentURLClassic string
 
 	// platformClient is a rest client used to target platform enabled environments
-	platformClient *rest.Client
+	platformClient *corerest.Client
 
 	// classicClient is a rest client used to target classic environments (e.g.,for downloading classic configs)
-	classicClient *rest.Client
+	classicClient *corerest.Client
 
 	// settingsSchemaAPIPath is the API path to use for accessing settings schemas
 	settingsSchemaAPIPath string
@@ -111,10 +99,7 @@ type DynatraceClient struct {
 	settingsObjectAPIPath string
 
 	// retrySettings are the settings to be used for retrying failed http requests
-	retrySettings rest.RetrySettings
-
-	// limiter is used to limit parallel http requests
-	limiter *concurrency.Limiter
+	retrySettings RetrySettings
 
 	// generateExternalID is used to generate an external id for settings 2.0 objects
 	generateExternalID idutils.ExternalIDGenerator
@@ -135,16 +120,8 @@ func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *Dynatra
 	}
 }
 
-// WithClientRequestLimiter specifies that a specifies the limiter to be used for
-// limiting parallel client requests
-func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
-		d.limiter = limiter
-	}
-}
-
 // WithRetrySettings sets the retry settings to be used by the DynatraceClient
-func WithRetrySettings(retrySettings rest.RetrySettings) func(*DynatraceClient) {
+func WithRetrySettings(retrySettings RetrySettings) func(*DynatraceClient) {
 	return func(d *DynatraceClient) {
 		d.retrySettings = retrySettings
 	}
@@ -164,19 +141,17 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 		var serverVersion version.Version
 		var err error
 
-		if _, ok := d.platformClient.Client().Transport.(*oauth2.Transport); ok {
-			// for platform enabled tenants there is no dedicated version endpoint
-			// so this call would need to be "redirected" to the second gen URL, which do not currently resolve
-			d.serverVersion = version.UnknownVersion
-		} else {
-			serverVersion, err = dtVersion.GetDynatraceVersion(context.TODO(), d.classicClient, d.environmentURLClassic) //this will send the default user-agent
+		d.serverVersion = version.UnknownVersion
+		if d.classicClient == nil {
+			return
 		}
+
+		serverVersion, err = dtVersion.GetDynatraceVersion(context.TODO(), d.classicClient) //this will send the default user-agent
 		if err != nil {
 			log.WithFields(field.Error(err)).Warn("Unable to determine Dynatrace server version: %v", err)
-			d.serverVersion = version.UnknownVersion
-		} else {
-			d.serverVersion = serverVersion
+			return
 		}
+		d.serverVersion = serverVersion
 	}
 }
 
@@ -193,19 +168,6 @@ func WithCachingDisabled(disabled bool) func(client *DynatraceClient) {
 	}
 }
 
-// WithCustomUserAgentString allows to configure a custom user-agent string that the Client will send with each HTTP request
-// If none is set, the default Monaco CLI specific user-agent is sent.
-func WithCustomUserAgentString(userAgent string) func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
-		if d.platformClient != nil && d.platformClient.Client() != nil {
-			d.platformClient.Client().Transport = useragent.NewCustomUserAgentTransport(d.platformClient.Client().Transport, userAgent)
-		}
-		if d.classicClient != nil && d.classicClient.Client() != nil {
-			d.classicClient.Client().Transport = useragent.NewCustomUserAgentTransport(d.classicClient.Client().Transport, userAgent)
-		}
-	}
-}
-
 const (
 	settingsSchemaAPIPathClassic  = "/api/v2/settings/schemas"
 	settingsSchemaAPIPathPlatform = "/platform/classic/environment-api/v2/settings/schemas"
@@ -214,27 +176,16 @@ const (
 )
 
 // NewPlatformClient creates a new dynatrace client to be used for platform enabled environments
-func NewPlatformClient(dtURL string, classicURL string, client *rest.Client, classicClient *rest.Client, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
-	dtURL = strings.TrimSuffix(dtURL, "/")
-	if err := validateURL(dtURL); err != nil {
-		return nil, err
-	}
-
-	classicURL = strings.TrimSuffix(classicURL, "/")
-	if err := validateURL(classicURL); err != nil {
-		return nil, err
-	}
-
+//
+//nolint:dupl
+func NewPlatformClient(client *corerest.Client, classicClient *corerest.Client, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	d := &DynatraceClient{
 		serverVersion:         version.Version{},
-		environmentURL:        dtURL,
-		environmentURLClassic: classicURL,
 		platformClient:        client,
 		classicClient:         classicClient,
-		retrySettings:         rest.DefaultRetrySettings,
+		retrySettings:         DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
 		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
-		limiter:               concurrency.NewLimiter(5),
 		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
 		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
 		classicConfigsCache:   &cache.DefaultCache[[]Value]{},
@@ -250,21 +201,16 @@ func NewPlatformClient(dtURL string, classicURL string, client *rest.Client, cla
 }
 
 // NewClassicClient creates a new dynatrace client to be used for classic environments
-func NewClassicClient(dtURL string, client *rest.Client, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
-	dtURL = strings.TrimSuffix(dtURL, "/")
-	if err := validateURL(dtURL); err != nil {
-		return nil, err
-	}
+//
+//nolint:dupl
+func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	d := &DynatraceClient{
 		serverVersion:         version.Version{},
-		environmentURL:        dtURL,
-		environmentURLClassic: dtURL,
 		platformClient:        client,
 		classicClient:         client,
-		retrySettings:         rest.DefaultRetrySettings,
+		retrySettings:         DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
 		settingsObjectAPIPath: settingsObjectAPIPathClassic,
-		limiter:               concurrency.NewLimiter(5),
 		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
 		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
 		classicConfigsCache:   &cache.DefaultCache[[]Value]{},
@@ -279,107 +225,48 @@ func NewClassicClient(dtURL string, client *rest.Client, opts ...func(dynatraceC
 	return d, nil
 }
 
-func validateURL(dtURL string) error {
-	parsedUrl, err := url.ParseRequestURI(dtURL)
-	if err != nil {
-		return fmt.Errorf("environment url %q was not valid: %w", dtURL, err)
-	}
-
-	if parsedUrl.Host == "" {
-		return fmt.Errorf("no host specified in the url %q", dtURL)
-	}
-
-	if parsedUrl.Scheme != "https" {
-		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
-	}
-	return nil
-}
-
 func (d *DynatraceClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		values, err = d.listConfigs(ctx, api)
-	})
-	return
-}
-func (d *DynatraceClient) listConfigs(ctx context.Context, api api.API) (values []Value, err error) {
-
-	fullUrl := api.CreateURL(d.environmentURLClassic)
-	values, err = d.fetchExistingValues(ctx, api, fullUrl)
-	return values, err
+	return d.fetchExistingValues(ctx, api)
 }
 
-func (d *DynatraceClient) ReadConfigById(api api.API, id string) (json []byte, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		json, err = d.readConfigById(context.TODO(), api, id)
-	})
-	return
-}
-
-func (d *DynatraceClient) readConfigById(ctx context.Context, api api.API, id string) (json []byte, err error) {
-	var dtUrl string
-	isSingleConfigurationApi := api.SingleConfiguration
-
-	if isSingleConfigurationApi {
-		dtUrl = api.CreateURL(d.environmentURLClassic)
-	} else {
-		dtUrl = api.CreateURL(d.environmentURLClassic) + "/" + url.PathEscape(id)
+func (d *DynatraceClient) ReadConfigById(ctx context.Context, api api.API, id string) (json []byte, err error) {
+	var dtUrl = api.URLPath
+	if !api.SingleConfiguration {
+		dtUrl = dtUrl + "/" + url.PathEscape(id)
 	}
 
-	response, err := d.classicClient.Get(ctx, dtUrl)
-
+	response, err := coreapi.AsResponseOrError(d.classicClient.GET(ctx, dtUrl, corerest.RequestOptions{}))
 	if err != nil {
 		return nil, err
 	}
 
-	if !response.IsSuccess() {
-		return nil, rest.NewRespErr(fmt.Sprintf("failed to get existing config for api %v (HTTP %v)!\n    Response was: %v", api.ID, response.StatusCode, string(response.Body)), response).WithRequestInfo(http.MethodGet, dtUrl)
-	}
-
-	return response.Body, nil
+	return response.Data, nil
 }
 
-func (d *DynatraceClient) DeleteConfigById(api api.API, id string) (err error) {
-	d.limiter.ExecuteBlocking(func() {
-		err = d.deleteConfigById(context.TODO(), api, id)
-	})
-	return
-}
-
-func (d *DynatraceClient) deleteConfigById(ctx context.Context, api api.API, id string) error {
-
-	u := api.CreateURL(d.environmentURLClassic)
-	parsedURL, err := url.Parse(u)
+func (d *DynatraceClient) DeleteConfigById(ctx context.Context, api api.API, id string) error {
+	parsedURL, err := url.Parse(api.URLPath)
 	if err != nil {
 		return err
 	}
 	parsedURL = parsedURL.JoinPath(id)
 
-	resp, err := d.classicClient.Delete(ctx, parsedURL.String())
+	_, err = coreapi.AsResponseOrError(d.classicClient.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{}))
 	if err != nil {
+		apiError := coreapi.APIError{}
+		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+			log.Debug("No config with id '%s' found to delete (HTTP 404 response)", id)
+			return nil
+		}
 		return err
 	}
-	if resp.StatusCode == http.StatusNotFound {
-		log.Debug("No config with id '%s' found to delete (HTTP 404 response)", id)
-		return nil
-	}
 
-	if !resp.IsSuccess() {
-		return rest.NewRespErr(fmt.Sprintf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", api.CreateURL(d.environmentURLClassic)+"/"+id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodDelete, u)
-	}
 	return nil
 }
 
 func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		exists, id, err = d.configExistsByName(ctx, api, name)
-	})
-	return
-}
-
-func (d *DynatraceClient) configExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
 	if api.SingleConfiguration {
 		// check that a single configuration is there by actually reading it.
-		_, err := d.readConfigById(ctx, api, "")
+		_, err := d.ReadConfigById(ctx, api, "")
 		return err == nil, "", nil
 	}
 
@@ -387,14 +274,7 @@ func (d *DynatraceClient) configExistsByName(ctx context.Context, api api.API, n
 	return existingObjectId != "", existingObjectId, err
 }
 
-func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		entity, err = d.upsertConfigByName(ctx, api, name, payload)
-	})
-	return
-}
-
-func (d *DynatraceClient) upsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 	if a.ID == api.Extension {
 		return d.uploadExtension(ctx, a, name, payload)
 	}
@@ -402,87 +282,33 @@ func (d *DynatraceClient) upsertConfigByName(ctx context.Context, a api.API, nam
 }
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		entity, err = d.upsertConfigByNonUniqueNameAndId(ctx, api, entityId, name, payload, duplicate)
-	})
-	return
-}
-
-func (d *DynatraceClient) upsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
 	return d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
 }
 
-func (d *DynatraceClient) GetSettingById(objectId string) (res *DownloadSettingsObject, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		res, err = d.getSettingById(context.TODO(), objectId)
-	})
-	return
-}
-
-func (d *DynatraceClient) getSettingById(ctx context.Context, objectId string) (*DownloadSettingsObject, error) {
-	u, err := url.Parse(d.environmentURL + d.settingsObjectAPIPath + "/" + objectId)
+func (d *DynatraceClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
+	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{}))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
-	}
-
-	resp, err := d.platformClient.Get(ctx, u.String())
-	if err != nil {
-		return nil, fmt.Errorf("failed to GET settings object with object id %q: %w", objectId, err)
-	}
-
-	if !resp.IsSuccess() {
-		// special case of settings API: If you give it any object ID for a setting object that does not exist, it will give back 400 BadRequest instead
-		// of 404 Not found. So we interpret both status codes, 400 and 404, as "not found"
-		if resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusNotFound {
-			return nil, rest.NewRespErr(ErrSettingNotFound.Error(), resp).WithRequestInfo(http.MethodGet, u.String()).WithErr(ErrSettingNotFound)
-		}
-		return nil, rest.NewRespErr(fmt.Sprintf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodGet, u.String())
+		return nil, err
 	}
 
 	var result DownloadSettingsObject
-	if err = json.Unmarshal(resp.Body, &result); err != nil {
-		return nil, rest.NewRespErr("failed to unmarshal response", resp).WithRequestInfo(http.MethodGet, u.String()).WithErr(err)
+	if err = json.Unmarshal(resp.Data, &result); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal settings object: %w", err)
 	}
 
 	return &result, nil
 }
 
-func (d *DynatraceClient) DeleteSettings(objectID string) (err error) {
-	d.limiter.ExecuteBlocking(func() {
-		err = d.deleteSettings(context.TODO(), objectID)
-	})
-	return
-}
-
-func (d *DynatraceClient) deleteSettings(ctx context.Context, objectID string) error {
-	u, err := url.Parse(d.environmentURL + d.settingsObjectAPIPath)
+func (d *DynatraceClient) DeleteSettings(ctx context.Context, objectID string) error {
+	_, err := coreapi.AsResponseOrError(d.platformClient.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{}))
 	if err != nil {
-		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
-	}
-
-	u = u.JoinPath(objectID)
-	resp, err := d.platformClient.Delete(ctx, u.String())
-	if err != nil {
+		apiError := coreapi.APIError{}
+		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+			log.Debug("No settings object with id '%s' found to delete (HTTP 404 response)", objectID)
+			return nil
+		}
 		return err
 	}
-	if resp.StatusCode == http.StatusNotFound {
-		log.Debug("No config with id '%s' found to delete (HTTP 404 response)", objectID)
-		return nil
-	}
 
-	if !resp.IsSuccess() {
-		return rest.NewRespErr(fmt.Sprintf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", u.String()+"/"+objectID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodDelete, u.String())
-	}
 	return nil
-}
-
-func buildUrl(environmentUrl, urlPath string, params url.Values) (*url.URL, error) {
-	u, err := url.Parse(environmentUrl + urlPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL '%s': %w", environmentUrl+urlPath, err)
-	}
-
-	u.RawQuery = params.Encode()
-
-	return u, nil
 }

@@ -19,13 +19,14 @@
 package version
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
 	"net/http"
-	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"testing"
 )
@@ -40,19 +41,19 @@ func TestGetDynatraceVersion(t *testing.T) {
 		{
 			"GetDynatraceVersion_AsExpected_1",
 			`{ "version": "1.236.0.20220203-192004" }`,
-			version.Version{1, 236, 0},
+			version.Version{Major: 1, Minor: 236, Patch: 0},
 			false,
 		},
 		{
 			"GetDynatraceVersion_AsExpected_2",
 			`{ "version": "1.236.5.20220203-192004" }`,
-			version.Version{1, 236, 5},
+			version.Version{Major: 1, Minor: 236, Patch: 5},
 			false,
 		},
 		{
 			"GetDynatraceVersion_AsExpected_3",
 			`{ "version": "2.234.0.20220203-192004" }`,
-			version.Version{2, 234, 0},
+			version.Version{Major: 2, Minor: 234, Patch: 0},
 			false,
 		},
 		{
@@ -70,7 +71,7 @@ func TestGetDynatraceVersion(t *testing.T) {
 		{
 			"GetDynatraceVersion_IgnoreUnknownJsonProperties",
 			`{ "version": "1.236.0.20220203-192004", "thing": "some" }`,
-			version.Version{1, 236, 0},
+			version.Version{Major: 1, Minor: 236, Patch: 0},
 			false,
 		},
 		{
@@ -94,17 +95,26 @@ func TestGetDynatraceVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				if req.URL.Path == versionPathClassic {
-					rw.WriteHeader(http.StatusOK)
-					_, _ = rw.Write([]byte(tt.serverResponse))
-				} else {
-					rw.WriteHeader(http.StatusNotFound)
-				}
-			}))
+
+			server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{
+				{
+					GET: func(t *testing.T, request *http.Request) testutils.Response {
+						if request.URL.Path == versionPathClassic {
+							return testutils.Response{
+								ResponseCode: http.StatusOK,
+								ResponseBody: tt.serverResponse,
+							}
+						}
+
+						return testutils.Response{
+							ResponseCode: http.StatusNotFound,
+						}
+					},
+				},
+			})
 			defer server.Close()
 
-			got, err := GetDynatraceVersion(context.TODO(), rest.NewRestClient(server.Client(), trafficlogs.NewFileBased(), rest.CreateRateLimitStrategy()), server.URL)
+			got, err := GetDynatraceVersion(context.TODO(), corerest.NewClient(server.URL(), server.Client()))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetDynatraceVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -117,18 +127,29 @@ func TestGetDynatraceVersion(t *testing.T) {
 }
 
 func TestGetDynatraceVersionWorksWithTrailingSlash(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == versionPathClassic {
-			rw.WriteHeader(http.StatusOK)
-			_, _ = rw.Write([]byte(`{ "version": "1.236.5.20220203-192004" }`))
-		} else {
-			rw.WriteHeader(http.StatusNotFound)
-		}
-	}))
+	server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{
+		{
+			GET: func(t *testing.T, request *http.Request) testutils.Response {
+				if request.URL.Path == versionPathClassic {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{ "version": "1.236.5.20220203-192004" }`,
+					}
+				}
+
+				return testutils.Response{
+					ResponseCode: http.StatusNotFound,
+				}
+			},
+		},
+	})
 	defer server.Close()
 
-	got, err := GetDynatraceVersion(context.TODO(), rest.NewRestClient(&http.Client{}, trafficlogs.NewFileBased(), rest.CreateRateLimitStrategy()), server.URL+"/")
-	assert.Equal(t, version.Version{1, 236, 5}, got)
+	urlWithSlash, err := url.Parse(server.URL().String() + "/")
+	require.NoError(t, err)
+
+	got, err := GetDynatraceVersion(context.TODO(), corerest.NewClient(urlWithSlash, server.Client()))
+	assert.Equal(t, version.Version{Major: 1, Minor: 236, Patch: 5}, got)
 	assert.NoError(t, err)
 }
 
@@ -140,27 +161,27 @@ func Test_parseDynatraceVersion(t *testing.T) {
 	}{
 		{
 			"1.236.0.20220203-192004",
-			version.Version{1, 236, 0},
+			version.Version{Major: 1, Minor: 236, Patch: 0},
 			false,
 		},
 		{
 			"1.236.5.20220203-192004",
-			version.Version{1, 236, 5},
+			version.Version{Major: 1, Minor: 236, Patch: 5},
 			false,
 		},
 		{
 			"2.234.0.20220203-192004",
-			version.Version{2, 234, 0},
+			version.Version{Major: 2, Minor: 234, Patch: 0},
 			false,
 		},
 		{
 			"1.234.0.20220203-192004",
-			version.Version{1, 234, 0},
+			version.Version{Major: 1, Minor: 234, Patch: 0},
 			false,
 		},
 		{
 			"2.241345.353.20220203-192004",
-			version.Version{2, 241345, 353},
+			version.Version{Major: 2, Minor: 241345, Patch: 353},
 			false,
 		},
 		{

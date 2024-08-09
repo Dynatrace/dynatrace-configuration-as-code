@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"net/http"
 
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -28,7 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/net/context"
 )
 
@@ -67,7 +68,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 			}
 		}
 
-		if e := client.DeleteConfigById(a, id); e != nil && !is404(e) {
+		if e := client.DeleteConfigById(ctx, a, id); e != nil && !is404(e) {
 			log.WithFields(field.Error(e)).Error("failed to delete config: %v", e)
 			err = errors.Join(err, e)
 		}
@@ -87,11 +88,8 @@ func toIdentifier(identifier, actionType, domain string) identifier {
 }
 
 func is404(err error) bool {
-	var v rest.RespError
-	if errors.As(err, &v) {
-		return v.StatusCode == http.StatusNotFound
-	}
-	return false
+	var v coreapi.APIError
+	return errors.As(err, &v) && v.StatusCode == http.StatusNotFound
 }
 
 // resolveIdentifier get the actual ID from DT and update entries with it
@@ -166,7 +164,7 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 		for _, v := range values {
 			logger := logger.WithFields(field.F("value", v))
 			logger.Debug("Deleting config %s:%s...", a.ID, v.Id)
-			err := client.DeleteConfigById(a, v.Id)
+			err := client.DeleteConfigById(ctx, a, v.Id)
 
 			if err != nil {
 				logger.WithFields(field.Error(err)).Error("Failed to delete %s with ID %s: %v", a.ID, v.Id, err)
