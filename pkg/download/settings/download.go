@@ -140,9 +140,9 @@ func download(client client.SettingsClient, schemas []schema, projectName string
 			objects, err := client.ListSettings(context.TODO(), s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string
-				var respErr coreapi.APIError
-				if errors.As(err, &respErr) {
-					errMsg = asConcurrentError(respErr)
+				var apiErr coreapi.APIError
+				if errors.As(err, &apiErr) {
+					errMsg = asConcurrentErrMsg(apiErr)
 				} else {
 					errMsg = err.Error()
 				}
@@ -171,7 +171,7 @@ func download(client client.SettingsClient, schemas []schema, projectName string
 	return results
 }
 
-func asConcurrentError(err coreapi.APIError) string {
+func asConcurrentErrMsg(err coreapi.APIError) string {
 	if err.StatusCode != 403 {
 		return err.Error()
 	}

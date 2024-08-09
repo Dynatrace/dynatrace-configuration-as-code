@@ -235,7 +235,8 @@ func CreateClassicClientSet(url string, token string, opts ClientOptions) (*Clie
 		WithConcurrentRequestLimit(concurrentRequestLimit).
 		WithAccessToken(token).
 		WithClassicURL(url).
-		WithUserAgent(opts.getUserAgentString())
+		WithUserAgent(opts.getUserAgentString()).
+		WithRateLimiter(true)
 
 	var trafficLogger *trafficlogs.FileBasedLogger
 	if opts.SupportArchive {
@@ -282,7 +283,8 @@ func CreatePlatformClientSet(platformURL string, auth PlatformAuth, opts ClientO
 		}).
 		WithConcurrentRequestLimit(concurrentRequestLimit).
 		WithPlatformURL(platformURL).
-		WithUserAgent(opts.getUserAgentString())
+		WithUserAgent(opts.getUserAgentString()).
+		WithRateLimiter(true)
 
 	if opts.SupportArchive {
 		trafficLogger := trafficlogs.NewFileBased()
