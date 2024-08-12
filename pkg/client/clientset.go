@@ -236,6 +236,7 @@ func CreateClassicClientSet(url string, token string, opts ClientOptions) (*Clie
 		WithAccessToken(token).
 		WithClassicURL(url).
 		WithUserAgent(opts.getUserAgentString()).
+		WithRequestRetrier(&corerest.RequestRetrier{MaxRetries: 10, ShouldRetryFunc: corerest.RetryIfNotSuccess}).
 		WithRateLimiter(true)
 
 	var trafficLogger *trafficlogs.FileBasedLogger
@@ -284,6 +285,7 @@ func CreatePlatformClientSet(platformURL string, auth PlatformAuth, opts ClientO
 		WithConcurrentRequestLimit(concurrentRequestLimit).
 		WithPlatformURL(platformURL).
 		WithUserAgent(opts.getUserAgentString()).
+		WithRequestRetrier(&corerest.RequestRetrier{MaxRetries: 10, ShouldRetryFunc: corerest.RetryIfNotSuccess}).
 		WithRateLimiter(true)
 
 	if opts.SupportArchive {
