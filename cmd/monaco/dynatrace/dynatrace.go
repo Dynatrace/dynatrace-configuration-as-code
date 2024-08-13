@@ -64,7 +64,12 @@ func isValidEnvironment(env manifest.EnvironmentDefinition) bool {
 }
 
 func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
-	client, err := clients.Factory().WithAccessToken(env.Auth.Token.Value.Value()).WithClassicURL(env.URL.Value).CreateClassicClient()
+	client, err := clients.Factory().
+		WithClassicURL(env.URL.Value).
+		WithAccessToken(env.Auth.Token.Value.Value()).
+		WithRateLimiter(true).
+		WithRequestRetrier(&client.DefaultRequestRetrier).
+		CreateClassicClient()
 	if err != nil {
 		log.Error("Could not create client %q (%s): %v", env.Name, env.URL.Value, err)
 		return false

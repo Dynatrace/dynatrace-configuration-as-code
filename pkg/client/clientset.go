@@ -171,6 +171,8 @@ type OpenPipelineClient interface {
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
+var DefaultRequestRetrier = corerest.RequestRetrier{MaxRetries: 10, ShouldRetryFunc: corerest.RetryIfNotSuccess}
+
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
@@ -285,7 +287,7 @@ func CreatePlatformClientSet(platformURL string, auth PlatformAuth, opts ClientO
 		WithConcurrentRequestLimit(concurrentRequestLimit).
 		WithPlatformURL(platformURL).
 		WithUserAgent(opts.getUserAgentString()).
-		WithRequestRetrier(&corerest.RequestRetrier{MaxRetries: 10, ShouldRetryFunc: corerest.RetryIfNotSuccess}).
+		WithRequestRetrier(&DefaultRequestRetrier).
 		WithRateLimiter(true)
 
 	if opts.SupportArchive {

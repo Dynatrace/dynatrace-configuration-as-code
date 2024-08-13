@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	versionClient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -178,7 +179,8 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 		log.Error("Invalid environment URL: %s", err)
 		return
 	}
-	serverVersion, err = versionClient.GetDynatraceVersion(context.TODO(), corerest.NewClient(url, httpClient, corerest.WithRateLimiter()))
+
+	serverVersion, err = versionClient.GetDynatraceVersion(context.TODO(), corerest.NewClient(url, httpClient, corerest.WithRateLimiter(), corerest.WithRequestRetrier(&client.DefaultRequestRetrier)))
 	if err != nil {
 		log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Warn("Unable to determine server version %q: %v", env.URL.Value, err)
 		return
