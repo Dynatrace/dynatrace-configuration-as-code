@@ -42,48 +42,6 @@ func TestNewClassicClient(t *testing.T) {
 		assert.Equal(t, settingsSchemaAPIPathClassic, client.settingsSchemaAPIPath)
 		assert.Equal(t, settingsObjectAPIPathClassic, client.settingsObjectAPIPath)
 	})
-
-	/*
-		t.Run("URL suffix is trimmed", func(t *testing.T) {
-			client, err := NewClassicClient("http://some-url.com/", nil)
-			assert.NoError(t, err)
-			assert.Equal(t, "http://some-url.com", client.environmentURL)
-			assert.Equal(t, "http://some-url.com", client.environmentURLClassic)
-		})
-
-		t.Run("URL with leading space - should return an error", func(t *testing.T) {
-			_, err := NewClassicClient(" https://my-environment.live.dynatrace.com/", nil)
-			assert.Error(t, err)
-
-		})
-
-		t.Run("URL starts with http", func(t *testing.T) {
-			client, err := NewClassicClient("http://some-url.com", nil)
-			assert.NoError(t, err)
-			assert.Equal(t, "http://some-url.com", client.environmentURL)
-			assert.Equal(t, "http://some-url.com", client.environmentURLClassic)
-
-		})
-
-		t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
-			_, err := NewClassicClient("some-url.com", nil)
-			assert.ErrorContains(t, err, "not valid")
-
-		})
-
-		t.Run("URL is without valid local path - should return an error", func(t *testing.T) {
-			_, err := NewClassicClient("/my-environment/live/dynatrace.com/", nil)
-			assert.ErrorContains(t, err, "no host specified")
-
-		})
-
-		t.Run("without valid protocol - should return an error", func(t *testing.T) {
-			var err error
-
-			_, err = NewClassicClient("https//my-environment.live.dynatrace.com/", nil)
-			assert.ErrorContains(t, err, "not valid")
-		})
-	*/
 }
 
 func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
