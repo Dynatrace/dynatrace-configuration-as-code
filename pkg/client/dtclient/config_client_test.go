@@ -181,50 +181,6 @@ func TestIsApiDashboard(t *testing.T) {
 	assert.Equal(t, false, isFalse)
 }
 
-// func Test_success(t *testing.T) {
-// 	tests := []struct {
-// 		name string
-// 		resp coreapi.Response
-// 		want bool
-// 	}{
-// 		{
-// 			"200 is success",
-// 			coreapi.Response{
-// 				StatusCode: 200,
-// 			},
-// 			true,
-// 		},
-// 		{
-// 			"201 is success",
-// 			coreapi.Response{
-// 				StatusCode: 201,
-// 			},
-// 			true,
-// 		},
-// 		{
-// 			"401 is NOT success",
-// 			coreapi.Response{
-// 				StatusCode: 401,
-// 			},
-// 			false,
-// 		},
-// 		{
-// 			"503 is NOT success",
-// 			coreapi.Response{
-// 				StatusCode: 503,
-// 			},
-// 			false,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			if got := tt.resp.IsSuccess(); got != tt.want {
-// 				t.Errorf("success() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
-
 func Test_isApplicationNotReadyYet(t *testing.T) {
 	type args struct {
 		resp   coreapi.APIError

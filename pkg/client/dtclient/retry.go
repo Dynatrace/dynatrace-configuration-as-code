@@ -57,8 +57,6 @@ var DefaultRetrySettings = RetrySettings{
 }
 
 // SendRequestWithBody is a function doing a PUT or POST HTTP request
-//type SendRequestWithBody func(ctx context.Context, endpoint string, data []byte) (*http.Response, error)
-
 type SendRequestWithBody func(ctx context.Context, endpoint string, body io.Reader, options corerest.RequestOptions) (*http.Response, error)
 
 // SendWithRetry will retry to call sendWithBody for a given number of times, waiting a give duration between calls
