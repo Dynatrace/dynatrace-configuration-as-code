@@ -238,7 +238,7 @@ func CreateClassicClientSet(url string, token string, opts ClientOptions) (*Clie
 		WithAccessToken(token).
 		WithClassicURL(url).
 		WithUserAgent(opts.getUserAgentString()).
-		WithRequestRetrier(&corerest.RequestRetrier{MaxRetries: 10, ShouldRetryFunc: corerest.RetryIfNotSuccess}).
+		WithRequestRetrier(&DefaultRequestRetrier).
 		WithRateLimiter(true)
 
 	var trafficLogger *trafficlogs.FileBasedLogger
