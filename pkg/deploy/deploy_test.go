@@ -137,6 +137,7 @@ func TestDeployConfigGraph_SettingShouldFailUpsert(t *testing.T) {
 	}
 
 	c := client.NewMockDynatraceClient(gomock.NewController(t))
+	c.EXPECT().CacheSettings(gomock.Any(), gomock.Eq("builtin:test")).Times(1)
 	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := config.Config{
@@ -266,6 +267,7 @@ func TestDeployConfigGraph_DeploysSetting(t *testing.T) {
 			},
 		},
 	}
+	c.EXPECT().CacheSettings(gomock.Any(), gomock.Eq("builtin:test")).Times(1)
 	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
@@ -294,9 +296,10 @@ func TestDeployConfigGraph_DeploysSetting(t *testing.T) {
 
 func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	theConfigName := "theConfigName"
-	theApiName := "management-zone"
+	theApi := api.NewAPIs()["management-zone"]
 
 	cl := client.NewMockDynatraceClient(gomock.NewController(t))
+	cl.EXPECT().CacheConfigs(gomock.Any(), gomock.Eq(theApi)).Times(1)
 	cl.EXPECT().UpsertConfigByName(gomock.Any(), gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
 	parameters := []parameter.NamedParameter{
@@ -310,10 +313,10 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	configs := []config.Config{
 		{
 			Parameters: testutils.ToParameterMap(parameters),
-			Coordinate: coordinate.Coordinate{Type: theApiName},
+			Coordinate: coordinate.Coordinate{Type: theApi.ID},
 			Template:   testutils.GenerateDummyTemplate(t),
 			Type: config.ClassicApiType{
-				Api: theApiName,
+				Api: theApi.ID,
 			},
 		},
 	}
@@ -323,7 +326,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 			Id: "proj",
 			Configs: project.ConfigsPerTypePerEnvironments{
 				"env": project.ConfigsPerType{
-					theApiName: configs,
+					theApi.ID: configs,
 				},
 			},
 		},
@@ -343,6 +346,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	theApiName := "alerting-profile"
 
 	cl := client.NewMockDynatraceClient(gomock.NewController(t))
+	cl.EXPECT().CacheConfigs(gomock.Any(), gomock.Eq(api.NewAPIs()[theApiName])).Times(1)
 	cl.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), gomock.Any(), theConfigName, gomock.Any(), false)
 
 	parameters := []parameter.NamedParameter{
@@ -385,7 +389,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 }
 
 func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
-	theApiName := "management-zone"
+	theApi := api.NewAPIs()["management-zone"]
 	env := "test-environment"
 
 	configs := []config.Config{
@@ -394,10 +398,10 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 				{"name", value.New("something")},
 				{"invalid-ref", reference.New("proj", "non-existing-type", "id", "prop")}, // non-existing reference leads to deployment failure
 			}),
-			Coordinate: coordinate.Coordinate{Type: theApiName, ConfigId: "config_1"},
+			Coordinate: coordinate.Coordinate{Type: theApi.ID, ConfigId: "config_1"},
 			Template:   testutils.GenerateDummyTemplate(t),
 			Type: config.ClassicApiType{
-				Api: theApiName,
+				Api: theApi.ID,
 			},
 			Environment: env,
 		},
@@ -406,10 +410,10 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 				{"name", value.New("something else")},
 				{"invalid-ref", reference.New("proj", "non-existing-type", "id", "prop")}, // non-existing reference leads to deployment failure
 			}),
-			Coordinate: coordinate.Coordinate{Type: theApiName, ConfigId: "config_2"},
+			Coordinate: coordinate.Coordinate{Type: theApi.ID, ConfigId: "config_2"},
 			Template:   testutils.GenerateDummyTemplate(t),
 			Type: config.ClassicApiType{
-				Api: theApiName,
+				Api: theApi.ID,
 			},
 			Environment: env,
 		},
@@ -420,7 +424,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 			Id: "proj",
 			Configs: project.ConfigsPerTypePerEnvironments{
 				env: project.ConfigsPerType{
-					theApiName: configs,
+					theApi.ID: configs,
 				},
 			},
 		},

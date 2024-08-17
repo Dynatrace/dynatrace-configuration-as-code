@@ -98,6 +98,14 @@ type (
 	}
 )
 
+func (d *DynatraceClient) CacheSettings(ctx context.Context, schemaID string) error {
+	if !d.settingsCache.IsActive() {
+		return nil
+	}
+	_, err := d.ListSettings(ctx, schemaID, ListSettingsOptions{})
+	return err
+}
+
 func (d *DynatraceClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
 	queryParams := url.Values{}
 	queryParams.Add("fields", "ordered,schemaId")
@@ -439,6 +447,10 @@ func parsePostResponse(body []byte) (DynatraceEntity, error) {
 		Id:   parsed[0].ObjectId,
 		Name: parsed[0].ObjectId,
 	}, nil
+}
+
+func (d *DynatraceClient) AreSettingsCached() bool {
+	return d.settingsCache.IsActive()
 }
 
 func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {

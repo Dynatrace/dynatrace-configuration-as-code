@@ -51,6 +51,9 @@ var (
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
 // Each config endpoint is described by an [API] object to describe endpoints, structure, and behavior.
 type ConfigClient interface {
+	// CacheConfigs caches all config values for a given API.
+	CacheConfigs(ctx context.Context, a api.API) error
+
 	// ListConfigs lists the available configs for an API.
 	// It calls the underlying GET endpoint of the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
@@ -101,6 +104,9 @@ type ConfigClient interface {
 //
 // [settings api]: https://www.dynatrace.com/support/help/dynatrace-api/environment-api/settings
 type SettingsClient interface {
+	// CacheSettings caches all settings objects for a given schema.
+	CacheSettings(context.Context, string) error
+
 	// UpsertSettings either creates the supplied object, or updates an existing one.
 	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
 	// update the object.
