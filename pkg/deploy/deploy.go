@@ -18,10 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/multierror"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/openpipeline"
 	"sync"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/multierror"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/openpipeline"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
@@ -81,6 +82,7 @@ var (
 )
 
 func Deploy(projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
+	preloadSettings(projects, environmentClients)
 	g := graph.New(projects, environmentClients.Names())
 	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
 
@@ -130,6 +132,77 @@ func Deploy(projects []project.Project, environmentClients dynatrace.Environment
 	}
 
 	return nil
+}
+
+type preloadSchemaClientSet struct {
+	schemaId  string
+	clientSet *client.ClientSet
+}
+
+func preloadSettings(projects []project.Project, environmentClients dynatrace.EnvironmentClients) {
+
+	preloads := []preloadSchemaClientSet{}
+
+	for _, project := range projects {
+		for env, configsPerType := range project.Configs {
+
+			// find client set for environment
+			var clientSetForEnvironment *client.ClientSet
+			for envInfo, clientSet := range environmentClients {
+				if envInfo.Name == env {
+					clientSetForEnvironment = clientSet
+					break
+				}
+			}
+
+			// if we couldn't find a client set for this environment, skip it
+			if clientSetForEnvironment == nil {
+				continue
+			}
+
+			// if clientset doesnt use caching, skip it
+			if !clientSetForEnvironment.DTClient.AreSettingsCached() {
+				continue
+			}
+
+			// configs are already sorted,
+			for configType, configs := range configsPerType {
+				fmt.Printf("%s: %s ->\n", env, configType)
+
+				if len(configs) == 0 {
+					continue
+
+				}
+
+				firstConfig := configs[0]
+
+				switch t := firstConfig.Type.(type) {
+				case config.SettingsType:
+					preloads = append(preloads, preloadSchemaClientSet{schemaId: t.SchemaId, clientSet: clientSetForEnvironment})
+				}
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+
+	for _, p := range preloads {
+		wg.Add(1)
+		go func(p preloadSchemaClientSet) {
+			defer wg.Done()
+			_, err := p.clientSet.DTClient.ListSettings(context.TODO(), p.schemaId, dtclient.ListSettingsOptions{})
+
+			if err != nil {
+				log.Warn("Could not cache settings values for schema %s", p.schemaId)
+				return
+			}
+
+			log.Info("Cached settings values for schema %s", p.schemaId)
+		}(p)
+	}
+
+	wg.Wait() // Wait for all goroutines to finish
+
 }
 
 func deployComponents(ctx context.Context, components []graph.SortedComponent, clients ClientSet) error {

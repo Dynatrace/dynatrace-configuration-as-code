@@ -476,6 +476,10 @@ func parsePostResponse(resp rest.Response) (DynatraceEntity, error) {
 	}, nil
 }
 
+func (d *DynatraceClient) AreSettingsCached() bool {
+	return d.settingsCache.IsActive()
+}
+
 func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
 	d.limiter.ExecuteBlocking(func() {
 		res, err = d.listSettings(ctx, schemaId, opts)

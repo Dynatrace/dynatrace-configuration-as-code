@@ -22,6 +22,7 @@ type Cache[T any] interface {
 	Get(key string) (T, bool)
 	Set(key string, entries T)
 	Delete(key string)
+	IsActive() bool
 }
 
 type NoopCache[T interface{}] struct{}
@@ -37,6 +38,10 @@ func (n NoopCache[T]) Set(_ string, _ T) {
 
 func (n NoopCache[T]) Delete(_ string) {
 	// no-op
+}
+
+func (n NoopCache[T]) IsActive() bool {
+	return false
 }
 
 type DefaultCache[T any] struct {
@@ -74,4 +79,8 @@ func (s *DefaultCache[T]) Delete(key string) {
 	defer s.mutex.Unlock()
 
 	delete(s.entries, key)
+}
+
+func (s *DefaultCache[T]) IsActive() bool {
+	return true
 }

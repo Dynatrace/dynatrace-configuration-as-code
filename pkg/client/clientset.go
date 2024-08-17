@@ -102,6 +102,8 @@ type ConfigClient interface {
 //
 // [settings api]: https://www.dynatrace.com/support/help/dynatrace-api/environment-api/settings
 type SettingsClient interface {
+	AreSettingsCached() bool
+
 	// UpsertSettings either creates the supplied object, or updates an existing one.
 	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
 	// update the object.
