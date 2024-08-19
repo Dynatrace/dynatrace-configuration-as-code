@@ -19,30 +19,31 @@
 package dtclient
 
 import (
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/exp/maps"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 )
 
-var testRetrySettings = rest.RetrySettings{
-	Normal: rest.RetrySetting{
+var testRetrySettings = RetrySettings{
+	Normal: RetrySetting{
 		WaitTime:   0,
-		MaxRetries: rest.DefaultRetrySettings.Normal.MaxRetries,
+		MaxRetries: DefaultRetrySettings.Normal.MaxRetries,
 	},
-	Long: rest.RetrySetting{
+	Long: RetrySetting{
 		WaitTime:   0,
-		MaxRetries: rest.DefaultRetrySettings.Long.MaxRetries,
+		MaxRetries: DefaultRetrySettings.Long.MaxRetries,
 	},
-	VeryLong: rest.RetrySetting{
+	VeryLong: RetrySetting{
 		WaitTime:   0,
-		MaxRetries: rest.DefaultRetrySettings.VeryLong.MaxRetries,
+		MaxRetries: DefaultRetrySettings.VeryLong.MaxRetries,
 	},
 }
 
@@ -140,16 +141,13 @@ func NewIntegrationTestServer(t *testing.T, basePath string, mappings map[string
 }
 
 func NewDynatraceClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *DynatraceClient)) (*DynatraceClient, error) {
-
-	restClient := rest.NewRestClient(client, nil, rest.CreateRateLimitStrategy())
-	c, err := NewPlatformClient(
-		environmentUrl,
-		environmentUrl,
-		restClient, restClient,
-		opts...)
+	u, err := url.Parse(environmentUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	return c, nil
+	restClient := corerest.NewClient(u, client, corerest.WithRateLimiter())
+	return NewPlatformClient(
+		restClient, restClient,
+		opts...)
 }

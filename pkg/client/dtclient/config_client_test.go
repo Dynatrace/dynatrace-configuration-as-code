@@ -21,15 +21,15 @@ package dtclient
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -181,53 +181,9 @@ func TestIsApiDashboard(t *testing.T) {
 	assert.Equal(t, false, isFalse)
 }
 
-func Test_success(t *testing.T) {
-	tests := []struct {
-		name string
-		resp rest.Response
-		want bool
-	}{
-		{
-			"200 is success",
-			rest.Response{
-				StatusCode: 200,
-			},
-			true,
-		},
-		{
-			"201 is success",
-			rest.Response{
-				StatusCode: 201,
-			},
-			true,
-		},
-		{
-			"401 is NOT success",
-			rest.Response{
-				StatusCode: 401,
-			},
-			false,
-		},
-		{
-			"503 is NOT success",
-			rest.Response{
-				StatusCode: 503,
-			},
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.resp.IsSuccess(); got != tt.want {
-				t.Errorf("success() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_isApplicationNotReadyYet(t *testing.T) {
 	type args struct {
-		resp   rest.Response
+		resp   coreapi.APIError
 		theApi api.API
 	}
 	tests := []struct {
@@ -238,10 +194,9 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 		{
 			"Server Error on synthetic counted as app not ready (issue in error reporting for unknown App IDs in some Dynatrace versions)",
 			args{
-				rest.Response{
+				coreapi.APIError{
 					StatusCode: 500,
 					Body:       nil,
-					Headers:    nil,
 				},
 				testSyntheticApi,
 			},
@@ -250,10 +205,9 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 		{
 			"Server Error on application API counts as not ready (can happen on update)",
 			args{
-				rest.Response{
+				coreapi.APIError{
 					StatusCode: 503,
 					Body:       nil,
-					Headers:    nil,
 				},
 				testMobileAppApi,
 			},
@@ -262,10 +216,9 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 		{
 			"Server Error on unexpected API not counted as App not ready",
 			args{
-				rest.Response{
+				coreapi.APIError{
 					StatusCode: 503,
 					Body:       nil,
-					Headers:    nil,
 				},
 				testDashboardApi,
 			},
@@ -274,10 +227,9 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 		{
 			"User error response of 'Unknown Application' counted as not ready (can happen if App was just created)",
 			args{
-				rest.Response{
+				coreapi.APIError{
 					StatusCode: 400,
 					Body:       []byte("Unknown application(s) APP-422142"),
-					Headers:    nil,
 				},
 				testMobileAppApi,
 			},
@@ -295,7 +247,7 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 
 func Test_isNetworkZoneFeatureNotEnabledYet(t *testing.T) {
 	type args struct {
-		resp   rest.Response
+		resp   coreapi.APIError
 		theApi api.API
 	}
 	tests := []struct {
@@ -306,10 +258,9 @@ func Test_isNetworkZoneFeatureNotEnabledYet(t *testing.T) {
 		{
 			"HTTP 400: Network zone feature disabled",
 			args{
-				rest.Response{
+				coreapi.APIError{
 					StatusCode: 400,
 					Body:       []byte("Not allowed because network zones are disabled"),
-					Headers:    nil,
 				},
 				testNetworkZoneApi,
 			},
@@ -318,22 +269,9 @@ func Test_isNetworkZoneFeatureNotEnabledYet(t *testing.T) {
 		{
 			"HTTP 400: Another Error",
 			args{
-				rest.Response{
+				coreapi.APIError{
 					StatusCode: 400,
 					Body:       []byte("Something bad"),
-					Headers:    nil,
-				},
-				testNetworkZoneApi,
-			},
-			false,
-		},
-		{
-			"No error",
-			args{
-				rest.Response{
-					StatusCode: 201,
-					Body:       nil,
-					Headers:    nil,
 				},
 				testNetworkZoneApi,
 			},
@@ -409,7 +347,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			defer server.Close()
 
 			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), nil)
-			_, got, err := dtclient.configExistsByName(context.TODO(), testApi, tt.givenObjectName)
+			_, got, err := dtclient.ConfigExistsByName(context.TODO(), testApi, tt.givenObjectName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -550,8 +488,11 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 		{
 			name:                          "Returns error if HTTP error is encountered",
 			expectedQueryParamsPerApiCall: [][]testQueryParams{},
-			expectedApiCalls:              1,
+			expectedApiCalls:              4,
 			serverResponses: []testServerResponse{
+				{400, `epic fail`},
+				{400, `epic fail`},
+				{400, `epic fail`},
 				{400, `epic fail`},
 			},
 			apiKey:      "random-api", //not testing a real API, so this won't break if params are ever added to one
@@ -577,10 +518,10 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 			expectedApiCalls: 5,
 			serverResponses: []testServerResponse{
 				{200, `{ "nextPageKey": "page42", "values": [ {"id": "1", "name": "name1"} ] }`},
-				{400, `epic fail`}, // fail paginated request
-				{400, `epic fail`}, // still fail after retry
-				{400, `epic fail`}, // still fail after 2nd retry
-				{400, `epic fail`}, // still fail after 3rd retry
+				{http.StatusGone, `epic fail`}, // fail paginated request
+				{http.StatusGone, `epic fail`}, // still fail after retry
+				{http.StatusGone, `epic fail`}, // still fail after 2nd retry
+				{http.StatusGone, `epic fail`}, // still fail after 3rd retry
 			},
 			apiKey:      "slo",
 			expectError: true,
@@ -662,6 +603,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 	}
 
 	for _, tt := range tests {
+		fmt.Println(tt.name)
 		t.Run(tt.name, func(t *testing.T) {
 			apiCalls := 0
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -689,15 +631,15 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 			}))
 			defer server.Close()
 			testApi := api.API{ID: tt.apiKey}
-			s := rest.RetrySettings{
-				Normal: rest.RetrySetting{
+			s := RetrySettings{
+				Normal: RetrySetting{
 					WaitTime:   0,
 					MaxRetries: 3,
 				},
 			}
 			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(s))
 
-			_, _, err := dtclient.configExistsByName(context.TODO(), testApi, "")
+			_, _, err := dtclient.ConfigExistsByName(context.TODO(), testApi, "")
 			if tt.expectError {
 				assert.NotNil(t, err)
 			} else {
@@ -788,7 +730,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			testApi := api.API{ID: tt.apiKey}
 
 			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(testRetrySettings))
-			got, err := dtclient.createDynatraceObject(context.TODO(), server.URL, tt.objectName, testApi, []byte("{}"))
+			got, err := dtclient.createDynatraceObject(context.TODO(), tt.objectName, testApi, []byte("{}"))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -853,30 +795,34 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "", http.StatusForbidden)
 	}))
-	defer func() { testServer.Close() }()
+	defer testServer.Close()
+
+	serverURL, err := url.Parse(testServer.URL)
+	require.NoError(t, err)
+
 	client := DynatraceClient{
-		environmentURLClassic: testServer.URL,
-		classicClient:         rest.NewRestClient(testServer.Client(), trafficlogs.NewFileBased(), rest.CreateRateLimitStrategy()),
-		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
+		classicClient:      corerest.NewClient(serverURL, testServer.Client(), corerest.WithRateLimiter()),
+		generateExternalID: idutils.GenerateExternalIDForSettingsObject,
 	}
 
-	_, err := client.ReadConfigById(mockAPI, "test")
-	assert.ErrorContains(t, err, "Response was")
+	_, err = client.ReadConfigById(context.TODO(), mockAPI, "test")
+	assert.ErrorContains(t, err, "failed with status code")
 }
 
 func TestReadByIdEscapesTheId(t *testing.T) {
 	unescapedID := "ruxit.perfmon.dotnetV4:%TimeInGC:time_in_gc_alert_high_generic"
 
 	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
-	defer func() { testServer.Close() }()
+	defer testServer.Close()
+
+	serverURL, err := url.Parse(testServer.URL)
+	require.NoError(t, err)
+
 	client := DynatraceClient{
-		environmentURLClassic: testServer.URL,
-		classicClient:         rest.NewRestClient(testServer.Client(), nil, rest.CreateRateLimitStrategy()),
-		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
+		classicClient:      corerest.NewClient(serverURL, testServer.Client(), corerest.WithRateLimiter()),
+		generateExternalID: idutils.GenerateExternalIDForSettingsObject,
 	}
-	_, err := client.ReadConfigById(mockAPINotSingle, unescapedID)
+	_, err = client.ReadConfigById(context.TODO(), mockAPINotSingle, unescapedID)
 	assert.NoError(t, err)
 }
 
@@ -886,16 +832,17 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		_, _ = res.Write(body)
 	}))
-	defer func() { testServer.Close() }()
+	defer testServer.Close()
+
+	serverURL, err := url.Parse(testServer.URL)
+	require.NoError(t, err)
 
 	client := DynatraceClient{
-		environmentURLClassic: testServer.URL,
-		classicClient:         rest.NewRestClient(testServer.Client(), nil, rest.CreateRateLimitStrategy()),
-		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
+		classicClient:      corerest.NewClient(serverURL, testServer.Client(), corerest.WithRateLimiter()),
+		generateExternalID: idutils.GenerateExternalIDForSettingsObject,
 	}
 
-	resp, err := client.ReadConfigById(mockAPI, "test")
+	resp, err := client.ReadConfigById(context.TODO(), mockAPI, "test")
 	assert.NoError(t, err, "there should not be an error")
 	assert.Equal(t, body, resp)
 }

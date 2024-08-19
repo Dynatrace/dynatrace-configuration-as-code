@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2024 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,25 +14,16 @@
  * limitations under the License.
  */
 
-package rest
+package classicheartbeat
 
-type Response struct {
-	StatusCode  int
-	Body        []byte
-	Headers     map[string][]string
-	NextPageKey string
-	TotalCount  int
-	PageSize    int
-}
+import (
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"golang.org/x/net/context"
+)
 
-func (resp Response) IsSuccess() bool {
-	return resp.StatusCode >= 200 && resp.StatusCode <= 299
-}
-
-func (resp Response) Is5xxError() bool {
-	return resp.StatusCode >= 500 && resp.StatusCode <= 599
-}
-
-func (resp Response) Is4xxError() bool {
-	return resp.StatusCode >= 400 && resp.StatusCode <= 499
+// TestClassic tests if the provided classicClient can actually reach a classic environment.
+func TestClassic(ctx context.Context, classicClient corerest.Client) bool {
+	_, err := coreapi.AsResponseOrError(classicClient.GET(ctx, "", corerest.RequestOptions{}))
+	return err == nil
 }

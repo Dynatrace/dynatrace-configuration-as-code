@@ -21,24 +21,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
-	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
-	"strings"
-	"sync"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"strings"
+	"sync"
 )
 
 type schema struct {
@@ -85,7 +85,7 @@ func downloadSpecific(client client.SettingsClient, projectName string, schemaID
 }
 
 func fetchAllSchemas(cl client.SettingsClient) ([]schema, error) {
-	dlSchemas, err := cl.ListSchemas()
+	dlSchemas, err := cl.ListSchemas(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func fetchAllSchemas(cl client.SettingsClient) ([]schema, error) {
 }
 
 func fetchSchemas(cl client.SettingsClient, schemaIds []string) ([]schema, error) {
-	dlSchemas, err := cl.ListSchemas()
+	dlSchemas, err := cl.ListSchemas(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -140,9 +140,9 @@ func download(client client.SettingsClient, schemas []schema, projectName string
 			objects, err := client.ListSettings(context.TODO(), s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string
-				var respErr clientErrors.RespError
-				if errors.As(err, &respErr) {
-					errMsg = respErr.ConcurrentError()
+				var apiErr coreapi.APIError
+				if errors.As(err, &apiErr) {
+					errMsg = asConcurrentErrMsg(apiErr)
 				} else {
 					errMsg = err.Error()
 				}
@@ -169,6 +169,16 @@ func download(client client.SettingsClient, schemas []schema, projectName string
 	wg.Wait()
 
 	return results
+}
+
+func asConcurrentErrMsg(err coreapi.APIError) string {
+	if err.StatusCode != 403 {
+		return err.Error()
+	}
+
+	concurrentDownloadLimit := environment.GetEnvValueInt(environment.ConcurrentRequestsEnvKey)
+	additionalMessage := fmt.Sprintf("\n\n    A 403 error code probably means too many requests.\n    Reduce the number of concurrent requests by setting the %q environment variable (current value: %d). \n    Then wait a few minutes and retry ", environment.ConcurrentRequestsEnvKey, concurrentDownloadLimit)
+	return fmt.Sprintf("%s\n%s", err.Error(), additionalMessage)
 }
 
 func convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName string, ordered bool, filters Filters) []config.Config {

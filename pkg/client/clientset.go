@@ -18,26 +18,25 @@ package client
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"runtime"
 	"time"
 
-	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
-	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/useragent"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -61,7 +60,7 @@ type ConfigClient interface {
 	// ReadConfigById reads a Dynatrace config identified by id from the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles/<id> ... to get the alerting profile
-	ReadConfigById(a api.API, id string) (json []byte, err error)
+	ReadConfigById(ctx context.Context, a api.API, id string) (json []byte, err error)
 
 	// UpsertConfigByName creates a given Dynatrace config if it doesn't exist and updates it otherwise using its name.
 	// It calls the underlying GET, POST, and PUT endpoints for the API. E.g. for alerting profiles this would be:
@@ -82,7 +81,7 @@ type ConfigClient interface {
 	// DeleteConfigById removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
-	DeleteConfigById(a api.API, id string) error
+	DeleteConfigById(ctx context.Context, a api.API, id string) error
 
 	// ConfigExistsByName checks if a config with the given name exists for the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
@@ -108,19 +107,19 @@ type SettingsClient interface {
 	UpsertSettings(context.Context, dtclient.SettingsObject, dtclient.UpsertSettingsOptions) (dtclient.DynatraceEntity, error)
 
 	// ListSchemas returns all schemas that the Dynatrace environment reports
-	ListSchemas() (dtclient.SchemaList, error)
+	ListSchemas(context.Context) (dtclient.SchemaList, error)
 
 	// GetSchemaById returns the settings schema with the given schema ID
-	GetSchemaById(string) (dtclient.Schema, error)
+	GetSchemaById(context.Context, string) (dtclient.Schema, error)
 
 	// ListSettings returns all settings objects for a given schema.
 	ListSettings(context.Context, string, dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
 
 	// GetSettingById returns the setting with the given object ID
-	GetSettingById(string) (*dtclient.DownloadSettingsObject, error)
+	GetSettingById(context.Context, string) (*dtclient.DownloadSettingsObject, error)
 
 	// DeleteSettings deletes a settings object giving its object ID
-	DeleteSettings(string) error
+	DeleteSettings(context.Context, string) error
 }
 
 //go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client DynatraceClient
@@ -159,9 +158,9 @@ type BucketClient interface {
 type DocumentClient interface {
 	Get(ctx context.Context, id string) (documents.Response, error)
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
-	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
-	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
-	Delete(ctx context.Context, id string) (libAPI.Response, error)
+	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (coreapi.Response, error)
+	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (coreapi.Response, error)
+	Delete(ctx context.Context, id string) (coreapi.Response, error)
 }
 
 type OpenPipelineClient interface {
@@ -171,6 +170,8 @@ type OpenPipelineClient interface {
 }
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
+
+var DefaultRequestRetrier = corerest.RequestRetrier{MaxRetries: 10, ShouldRetryFunc: corerest.RetryIfNotSuccess}
 
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
@@ -228,20 +229,33 @@ func (o ClientOptions) getUserAgentString() string {
 func CreateClassicClientSet(url string, token string, opts ClientOptions) (*ClientSet, error) {
 	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 
-	tokenClient := clientAuth.NewTokenAuthClient(token)
+	if err := validateURL(url); err != nil {
+		return nil, err
+	}
+
+	clientFactory := clients.Factory().
+		WithConcurrentRequestLimit(concurrentRequestLimit).
+		WithAccessToken(token).
+		WithClassicURL(url).
+		WithUserAgent(opts.getUserAgentString()).
+		WithRequestRetrier(&DefaultRequestRetrier).
+		WithRateLimiter(true)
+
 	var trafficLogger *trafficlogs.FileBasedLogger
 	if opts.SupportArchive {
 		trafficLogger = trafficlogs.NewFileBased()
+		clientFactory = clientFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficLogger.LogToFiles})
 	}
 
-	restClient := rest.NewRestClient(tokenClient, trafficLogger, rest.CreateRateLimitStrategy())
+	classicClient, err := clientFactory.CreateClassicClient()
+	if err != nil {
+		return nil, err
+	}
+
 	dtClient, err := dtclient.NewClassicClient(
-		url,
-		restClient,
+		classicClient,
 		dtclient.WithCachingDisabled(opts.CachingDisabled),
 		dtclient.WithAutoServerVersion(),
-		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
-		dtclient.WithCustomUserAgentString(opts.getUserAgentString()),
 	)
 	if err != nil {
 		return nil, err
@@ -257,44 +271,10 @@ type PlatformAuth struct {
 	Token                                           string
 }
 
-func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) (*ClientSet, error) {
+func CreatePlatformClientSet(platformURL string, auth PlatformAuth, opts ClientOptions) (*ClientSet, error) {
 	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 
-	oauthCredentials := clientAuth.OauthCredentials{
-		ClientID:     auth.OauthClientID,
-		ClientSecret: auth.OauthClientSecret,
-		TokenURL:     auth.OauthTokenURL,
-	}
-
-	tokenClient := clientAuth.NewTokenAuthClient(auth.Token)
-	oauthClient := clientAuth.NewOAuthClient(context.TODO(), oauthCredentials)
-
-	var trafficLogger *trafficlogs.FileBasedLogger
-	if opts.SupportArchive {
-		trafficLogger = trafficlogs.NewFileBased()
-	}
-
-	classicUrlClient := rest.NewRestClient(oauthClient, trafficLogger, rest.CreateRateLimitStrategy())
-	classicUrlClient.Client().Transport = useragent.NewCustomUserAgentTransport(classicUrlClient.Client().Transport, opts.getUserAgentString())
-	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), classicUrlClient, url)
-	if err != nil {
-		return nil, err
-	}
-
-	client := rest.NewRestClient(oauthClient, trafficLogger, rest.CreateRateLimitStrategy())
-	clientClassic := rest.NewRestClient(tokenClient, trafficLogger, rest.CreateRateLimitStrategy())
-
-	dtClient, err := dtclient.NewPlatformClient(
-		url,
-		classicURL,
-		client,
-		clientClassic,
-		dtclient.WithCachingDisabled(opts.CachingDisabled),
-		dtclient.WithAutoServerVersion(),
-		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
-		dtclient.WithCustomUserAgentString(opts.getUserAgentString()),
-	)
-	if err != nil {
+	if err := validateURL(platformURL); err != nil {
 		return nil, err
 	}
 
@@ -304,11 +284,42 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 			ClientSecret: auth.OauthClientSecret,
 			TokenURL:     auth.OauthTokenURL,
 		}).
-		WithPlatformURL(url).
-		WithUserAgent(opts.getUserAgentString())
+		WithConcurrentRequestLimit(concurrentRequestLimit).
+		WithPlatformURL(platformURL).
+		WithUserAgent(opts.getUserAgentString()).
+		WithRequestRetrier(&DefaultRequestRetrier).
+		WithRateLimiter(true)
 
 	if opts.SupportArchive {
-		clientFactory = clientFactory.WithHTTPListener(&lib.HTTPListener{Callback: trafficLogger.LogToFiles})
+		trafficLogger := trafficlogs.NewFileBased()
+		clientFactory = clientFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficLogger.LogToFiles})
+	}
+
+	client, err := clientFactory.CreatePlatformClient()
+	if err != nil {
+		return nil, err
+	}
+
+	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), *client)
+	if err != nil {
+		return nil, err
+	}
+
+	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(auth.Token)
+
+	classicClient, err := clientFactory.CreateClassicClient()
+	if err != nil {
+		return nil, err
+	}
+
+	dtClient, err := dtclient.NewPlatformClient(
+		client,
+		classicClient,
+		dtclient.WithCachingDisabled(opts.CachingDisabled),
+		dtclient.WithAutoServerVersion(),
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	bucketClient, err := clientFactory.BucketClientWithRetrySettings(15, time.Second, 5*time.Minute)
@@ -338,4 +349,20 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 		DocumentClient:     documentClient,
 		OpenPipelineClient: openPipelineClient,
 	}, nil
+}
+
+func validateURL(dtURL string) error {
+	parsedUrl, err := url.ParseRequestURI(dtURL)
+	if err != nil {
+		return fmt.Errorf("environment url %q was not valid: %w", dtURL, err)
+	}
+
+	if parsedUrl.Host == "" {
+		return fmt.Errorf("no host specified in the url %q", dtURL)
+	}
+
+	if parsedUrl.Scheme != "https" {
+		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
+	}
+	return nil
 }

@@ -106,7 +106,7 @@ func (c *DummyClient) ListConfigs(_ context.Context, a api.API) (values []Value,
 	return result, nil
 }
 
-func (c *DummyClient) ReadConfigById(a api.API, id string) ([]byte, error) {
+func (c *DummyClient) ReadConfigById(_ context.Context, a api.API, id string) ([]byte, error) {
 	entries, found := c.GetEntries(a)
 
 	if !found {
@@ -207,7 +207,7 @@ func (c *DummyClient) writeRequest(a api.API, name string, payload []byte) {
 	}
 }
 
-func (c *DummyClient) DeleteConfigById(a api.API, id string) error {
+func (c *DummyClient) DeleteConfigById(_ context.Context, a api.API, id string) error {
 
 	c.entriesLock.Lock()
 	defer c.entriesLock.Unlock()
@@ -267,21 +267,21 @@ func (c *DummyClient) UpsertSettings(_ context.Context, obj SettingsObject, _ Up
 	}, nil
 }
 
-func (c *DummyClient) ListSchemas() (SchemaList, error) {
+func (c *DummyClient) ListSchemas(_ context.Context) (SchemaList, error) {
 	return make(SchemaList, 0), nil
 }
 
-func (c *DummyClient) GetSchemaById(_ string) (schema Schema, err error) {
+func (c *DummyClient) GetSchemaById(_ context.Context, _ string) (schema Schema, err error) {
 	return Schema{}, nil
 }
 
-func (c *DummyClient) GetSettingById(_ string) (*DownloadSettingsObject, error) {
+func (c *DummyClient) GetSettingById(_ context.Context, _ string) (*DownloadSettingsObject, error) {
 	return &DownloadSettingsObject{}, nil
 }
 func (c *DummyClient) ListSettings(_ context.Context, _ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	return make([]DownloadSettingsObject, 0), nil
 }
 
-func (c *DummyClient) DeleteSettings(_ string) error {
+func (c *DummyClient) DeleteSettings(_ context.Context, _ string) error {
 	return nil
 }

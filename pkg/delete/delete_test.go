@@ -42,7 +42,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	monacoREST "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -70,7 +69,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			}, nil
 		})
-		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(nil)
+		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -85,7 +84,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings with external ID fails", func(t *testing.T) {
 		c := client.NewMockDynatraceClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, monacoREST.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, coreapi.APIError{StatusCode: 0})
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -125,7 +124,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				Value:         nil,
 			},
 		}, nil)
-		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
+		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -157,7 +156,7 @@ func TestDeleteSettings(t *testing.T) {
 			}, nil
 
 		})
-		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(nil)
+		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -173,7 +172,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
 		c := client.NewMockDynatraceClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, monacoREST.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, coreapi.APIError{StatusCode: 0})
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -215,7 +214,7 @@ func TestDeleteSettings(t *testing.T) {
 				Value:         nil,
 			},
 		}, nil)
-		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
+		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -250,7 +249,7 @@ func TestDeleteSettings(t *testing.T) {
 			}, nil
 
 		})
-		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Times(0) // deletion should not be attempted for non-deletable objects
+		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Times(0) // deletion should not be attempted for non-deletable objects
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -280,7 +279,7 @@ func TestDeleteSettings(t *testing.T) {
 			}, nil
 
 		})
-		c.EXPECT().DeleteSettings(gomock.Eq("DT-original-object-ID")).Return(nil)
+		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("DT-original-object-ID")).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -725,7 +724,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(a)).Return(tc.args.values, nil).Times(len(tc.args.entries))
 			}
 			for _, id := range tc.expect.ids {
-				c.EXPECT().DeleteConfigById(matcher.EqAPI(a), id).Times(1)
+				c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(a), id).Times(1)
 			}
 
 			err := delete.Configs(context.TODO(), delete.ClientSet{Classic: c}, apiMap, automationTypes, entriesToDelete)
@@ -799,7 +798,7 @@ func TestConfigsWithParent(t *testing.T) {
 				},
 				list: &listMock{
 					api: theAPI.ApplyParentObjectID("APP-ID"),
-					err: monacoREST.RespError{Err: fmt.Errorf("FAIL"), StatusCode: http.StatusBadRequest},
+					err: coreapi.APIError{StatusCode: http.StatusBadRequest},
 				}},
 			forDelete: delete.DeleteEntries{
 				"key-user-actions-mobile": {
@@ -817,7 +816,7 @@ func TestConfigsWithParent(t *testing.T) {
 			mock: mockData{
 				parentList: &listMock{
 					api: *theAPI.Parent,
-					err: monacoREST.RespError{Err: fmt.Errorf("FAIL"), StatusCode: http.StatusBadRequest},
+					err: coreapi.APIError{StatusCode: http.StatusBadRequest},
 				}},
 			forDelete: delete.DeleteEntries{
 				"key-user-actions-mobile": {
@@ -884,7 +883,7 @@ func TestConfigsWithParent(t *testing.T) {
 				del: &delMock{
 					api: theAPI.ApplyParentObjectID("APP-ID"),
 					id:  "DT-id-of-app",
-					err: monacoREST.RespError{Err: fmt.Errorf("GONE ALREADY"), StatusCode: http.StatusNotFound},
+					err: coreapi.APIError{StatusCode: http.StatusNotFound},
 				},
 			},
 			forDelete: delete.DeleteEntries{
@@ -937,7 +936,7 @@ func TestConfigsWithParent(t *testing.T) {
 				c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(tc.mock.list.api)).Return(tc.mock.list.response, tc.mock.list.err).Times(1)
 			}
 			if tc.mock.del != nil {
-				c.EXPECT().DeleteConfigById(matcher.EqAPI(tc.mock.del.api), tc.mock.del.id).Return(tc.mock.del.err).Times(1)
+				c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(tc.mock.del.api), tc.mock.del.id).Return(tc.mock.del.err).Times(1)
 			}
 
 			err := delete.Configs(context.TODO(), delete.ClientSet{Classic: c}, api.NewAPIs(), automationTypes, tc.forDelete)
@@ -955,7 +954,7 @@ func TestDelete_Classic(t *testing.T) {
 		c := client.NewMockDynatraceClient(gomock.NewController(t))
 		theAPI := api.NewAPIs()[api.ApplicationWeb]
 		c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(theAPI)).Return([]dtclient.Value{{Id: "DT-id-of-app", Name: "application name"}}, nil).Times(1)
-		c.EXPECT().DeleteConfigById(matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
 
 		given := delete.DeleteEntries{
 			"application-web": {
@@ -972,7 +971,7 @@ func TestDelete_Classic(t *testing.T) {
 
 	t.Run("identification via 'objectId'", func(t *testing.T) {
 		c := client.NewMockDynatraceClient(gomock.NewController(t))
-		c.EXPECT().DeleteConfigById(matcher.EqAPI(api.NewAPIs()["application-web"]), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(api.NewAPIs()["application-web"]), "DT-id-of-app").Return(nil).Times(1)
 
 		given := delete.DeleteEntries{
 			"application-web": {
@@ -1013,7 +1012,7 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 			{Id: "DT-id-of-app", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test.com", "actionType": "Load"}},
 			{Id: "DT-id-of-app2", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test2.com", "actionType": "Load"}},
 		}, nil).Times(1)
-		c.EXPECT().DeleteConfigById(matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
 
 		de := delete.DeleteEntries{
 			"key-user-actions-web": {
@@ -1036,7 +1035,7 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 		c := client.NewMockDynatraceClient(gomock.NewController(t))
 
 		c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
-		c.EXPECT().DeleteConfigById(matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
 
 		de := delete.DeleteEntries{
 			"key-user-actions-web": {

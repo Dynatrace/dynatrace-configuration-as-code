@@ -18,16 +18,18 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	versionClient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -172,7 +174,13 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 		httpClient = clientAuth.NewOAuthClient(context.TODO(), credentials)
 	}
 
-	serverVersion, err = versionClient.GetDynatraceVersion(context.TODO(), rest.NewRestClient(httpClient, nil, rest.CreateRateLimitStrategy()), env.URL.Value)
+	url, err := url.Parse(env.URL.Value)
+	if err != nil {
+		log.Error("Invalid environment URL: %s", err)
+		return
+	}
+
+	serverVersion, err = versionClient.GetDynatraceVersion(context.TODO(), corerest.NewClient(url, httpClient, corerest.WithRateLimiter(), corerest.WithRequestRetrier(&client.DefaultRequestRetrier)))
 	if err != nil {
 		log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Warn("Unable to determine server version %q: %v", env.URL.Value, err)
 		return

@@ -14,15 +14,35 @@
  * limitations under the License.
  */
 
-package rest
+package dtclient
 
 import (
 	"encoding/json"
+	"maps"
 	"net/url"
 	"strings"
 )
 
-func getPaginationValues(body []byte) (nextPageKey string, totalCount int, pageSize int) {
+// makeQueryParamsWithNextPageKey handles both Dynatrace v1 and v2 pagination logic.
+// For api/v2 URLs the given next page key will be the only query parameter of the modified URL
+// For any other ULRs the given next page key will be added to existing query parameters
+func makeQueryParamsWithNextPageKey(endpoint string, originalQueryParams url.Values, nextPageKey string) url.Values {
+	queryParams := url.Values{}
+
+	// for non-api/v2 endpoints, we copy all original query params
+	if !isApiV2Endpoint(endpoint) {
+		maps.Copy(queryParams, originalQueryParams)
+	}
+
+	queryParams.Set("nextPageKey", nextPageKey)
+	return queryParams
+}
+
+func isApiV2Endpoint(endpoint string) bool {
+	return strings.Contains(endpoint, "api/v2")
+}
+
+func getPaginationValues(body []byte) (nextPageKey string, totalCount int) {
 	var jsonResponse map[string]interface{}
 	if err := json.Unmarshal(body, &jsonResponse); err != nil {
 		return
@@ -36,29 +56,5 @@ func getPaginationValues(body []byte) (nextPageKey string, totalCount int, pageS
 		totalCount = int(jsonResponse["totalCount"].(float64))
 	}
 
-	if jsonResponse["pageSize"] != nil {
-		pageSize = int(jsonResponse["pageSize"].(float64))
-	}
-
 	return
-}
-
-// AddNextPageQueryParams handles both Dynatrace v1 and v2 pagination logic.
-// For api/v2 URLs the given next page key will be the only query parameter of the modified URL
-// For any other ULRs the given next page key will be added to existing query parameters
-func AddNextPageQueryParams(u *url.URL, nextPage string) *url.URL {
-	queryParams := u.Query()
-
-	if isApiV2Url(u) {
-		// api/v2 requires all previously sent query params to be omitted when nextPageKey is set
-		queryParams = url.Values{}
-	}
-
-	queryParams.Set("nextPageKey", nextPage)
-	u.RawQuery = queryParams.Encode()
-	return u
-}
-
-func isApiV2Url(url *url.URL) bool {
-	return strings.Contains(url.Path, "api/v2")
 }
