@@ -449,10 +449,6 @@ func parsePostResponse(body []byte) (DynatraceEntity, error) {
 	}, nil
 }
 
-func (d *DynatraceClient) AreSettingsCached() bool {
-	return d.settingsCache.IsActive()
-}
-
 func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
 	if settings, cached := d.settingsCache.Get(schemaId); cached {
 		log.WithCtxFields(ctx).Debug("Using cached settings for schema %s", schemaId)
