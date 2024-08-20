@@ -53,6 +53,9 @@ type SettingsModificationInfo struct {
 	NonModifiablePaths []interface{} `json:"nonModifiablePaths"`
 }
 
+var retryIfNotStatusNotFound = func(resp *http.Response) bool { return resp.StatusCode != http.StatusNotFound }
+var retryIfNotStatusBadRequest = func(resp *http.Response) bool { return resp.StatusCode != http.StatusBadRequest }
+
 type UpsertSettingsOptions struct {
 	OverrideRetry *RetrySetting
 	InsertAfter   string
