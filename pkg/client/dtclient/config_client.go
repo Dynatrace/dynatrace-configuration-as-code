@@ -489,7 +489,8 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 		retrySetting = d.retrySettings.Normal
 	}
 
-	resp, err := GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams}, retrySetting)
+	requestRetrier := corerest.RequestRetrier{ShouldRetryFunc: corerest.RetryIfNotSuccess, MaxRetries: retrySetting.MaxRetries, DelayAfterRetry: retrySetting.WaitTime}
+	resp, err := coreapi.AsResponseOrError(d.classicClient.GET(ctx, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomRetrier: &requestRetrier}))
 	if err != nil {
 		return nil, err
 	}
@@ -508,7 +509,8 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 			break
 		}
 
-		resp, err = GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey)}, retrySetting)
+		requestRetrier := corerest.RequestRetrier{ShouldRetryFunc: retryIfNotStatusBadRequest, MaxRetries: retrySetting.MaxRetries, DelayAfterRetry: retrySetting.WaitTime}
+		resp, err = coreapi.AsResponseOrError(d.classicClient.GET(ctx, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomRetrier: &requestRetrier}))
 		if err != nil {
 
 			apiError := coreapi.APIError{}

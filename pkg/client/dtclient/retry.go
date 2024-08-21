@@ -95,32 +95,3 @@ func SendWithRetryWithInitialTry(ctx context.Context, sendWithBody SendRequestWi
 
 	return SendWithRetry(ctx, sendWithBody, endpoint, requestOptions, body, setting)
 }
-
-func GetWithRetry(ctx context.Context, c corerest.Client, endpoint string, requestOptions corerest.RequestOptions, settings RetrySetting) (resp *coreapi.Response, err error) {
-	resp, err = coreapi.AsResponseOrError(c.GET(ctx, endpoint, requestOptions))
-	if err == nil {
-		return resp, nil
-	}
-
-	apierror := coreapi.APIError{}
-	if !errors.As(err, &apierror) {
-		return nil, err
-	}
-
-	url := c.BaseURL().JoinPath(endpoint).String()
-	for i := 0; i < settings.MaxRetries; i++ {
-		log.WithCtxFields(ctx).Warn("Retrying failed GET request %s (HTTP %d)", url, apierror.StatusCode)
-		time.Sleep(settings.WaitTime)
-
-		resp, err = coreapi.AsResponseOrError(c.GET(ctx, endpoint, requestOptions))
-		if err == nil {
-			return resp, nil
-		}
-
-		if !errors.As(err, &apierror) {
-			return nil, err
-		}
-	}
-
-	return resp, fmt.Errorf("GET request %s failed after %d retries: %w", url, settings.MaxRetries, err)
-}

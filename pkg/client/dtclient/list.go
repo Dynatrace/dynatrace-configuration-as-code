@@ -43,7 +43,8 @@ type AddEntriesToResult func(body []byte) (receivedEntries int, err error)
 func listPaginated(ctx context.Context, client *corerest.Client, retrySetting RetrySetting, endpoint string, queryParams url.Values, logLabel string,
 	addToResult AddEntriesToResult) error {
 
-	body, totalReceivedCount, err := runAndProcessResponse(ctx, client, retrySetting, endpoint, corerest.RequestOptions{QueryParams: queryParams}, addToResult)
+	requestRetrier := corerest.RequestRetrier{ShouldRetryFunc: corerest.RetryIfNotSuccess, MaxRetries: retrySetting.MaxRetries, DelayAfterRetry: retrySetting.WaitTime}
+	body, totalReceivedCount, err := runAndProcessResponse(ctx, client, retrySetting, endpoint, corerest.RequestOptions{QueryParams: queryParams, CustomRetrier: &requestRetrier}, addToResult)
 	if err != nil {
 		return err
 	}
@@ -55,7 +56,8 @@ func listPaginated(ctx context.Context, client *corerest.Client, retrySetting Re
 			break
 		}
 
-		body, receivedCount, err := runAndProcessResponse(ctx, client, retrySetting, endpoint, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(endpoint, queryParams, nextPageKey)}, addToResult)
+		requestRetrier := corerest.RequestRetrier{ShouldRetryFunc: retryIfNotStatusBadRequest, MaxRetries: retrySetting.MaxRetries, DelayAfterRetry: retrySetting.WaitTime}
+		body, receivedCount, err := runAndProcessResponse(ctx, client, retrySetting, endpoint, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(endpoint, queryParams, nextPageKey), CustomRetrier: &requestRetrier}, addToResult)
 		if err != nil {
 			var apiErr coreapi.APIError
 			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusBadRequest {
@@ -87,7 +89,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, retrySetting Re
 }
 
 func runAndProcessResponse(ctx context.Context, client *corerest.Client, retrySetting RetrySetting, endpoint string, requestOptions corerest.RequestOptions, addToResult AddEntriesToResult) ([]byte, int, error) {
-	resp, err := GetWithRetry(ctx, *client, endpoint, requestOptions, retrySetting)
+	resp, err := coreapi.AsResponseOrError(client.GET(ctx, endpoint, requestOptions))
 	if err != nil {
 		return nil, 0, err
 	}
