@@ -258,7 +258,13 @@ func (d *DynatraceClient) DeleteConfigById(ctx context.Context, api api.API, id 
 	}
 	parsedURL = parsedURL.JoinPath(id)
 
-	_, err = coreapi.AsResponseOrError(d.classicClient.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{}))
+	requestRetrier := corerest.RequestRetrier{
+		MaxRetries:      d.retrySettings.Normal.MaxRetries,
+		DelayAfterRetry: d.retrySettings.Normal.WaitTime,
+		ShouldRetryFunc: retryIfNotStatusNotFound,
+	}
+
+	_, err = coreapi.AsResponseOrError(d.classicClient.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{CustomRetrier: &requestRetrier}))
 	if err != nil {
 		apiError := coreapi.APIError{}
 		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {

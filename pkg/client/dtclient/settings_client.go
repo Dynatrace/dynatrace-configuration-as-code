@@ -503,7 +503,13 @@ func (d *DynatraceClient) GetSettingById(ctx context.Context, objectId string) (
 }
 
 func (d *DynatraceClient) DeleteSettings(ctx context.Context, objectID string) error {
-	_, err := coreapi.AsResponseOrError(d.platformClient.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{}))
+	requestRetrier := corerest.RequestRetrier{
+		MaxRetries:      d.retrySettings.Normal.MaxRetries,
+		DelayAfterRetry: d.retrySettings.Normal.WaitTime,
+		ShouldRetryFunc: retryIfNotStatusNotFound,
+	}
+
+	_, err := coreapi.AsResponseOrError(d.platformClient.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomRetrier: &requestRetrier}))
 	if err != nil {
 		apiError := coreapi.APIError{}
 		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
