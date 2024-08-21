@@ -349,31 +349,3 @@ func TestDownload_SkippedParentsSkipChildren(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, configurations, 0, "Expected no configurations as everything is skipped")
 }
-
-func TestDownload_SingleConfigurationChild(t *testing.T) {
-	parentAPI := api.API{
-		ID:            "PARENT_API_ID",
-		URLPath:       "PARENT_API_PATH",
-		NonUniqueName: true}
-
-	apiMap := api.APIs{
-		"PARENT_API_ID": parentAPI,
-		"CHILD_API_ID": api.API{ID: "CHILD_API_ID",
-			URLPath:             "CHILD_API_PATH",
-			NonUniqueName:       false,
-			Parent:              &parentAPI,
-			SingleConfiguration: true}}
-
-	contentFilters := map[string]classic.ContentFilter{}
-
-	c := client.NewMockDynatraceClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(parentAPI)).Return([]dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil).Times(2)
-	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
-
-	configurations, err := classic.Download(c, "project", apiMap, contentFilters)
-	require.NoError(t, err)
-	require.Len(t, configurations, 2, "Expected two configurations")
-	require.Len(t, configurations["PARENT_API_ID"], 1)
-	require.Len(t, configurations["CHILD_API_ID"], 1)
-	assert.Equal(t, configurations["PARENT_API_ID"][0].Coordinate.ConfigId, configurations["CHILD_API_ID"][0].Coordinate.ConfigId, "Single child config should have the same config ID as parent")
-}

@@ -141,9 +141,6 @@ type value struct {
 }
 
 func (v value) id() string {
-	if v.value.Id == v.parentConfigId {
-		return v.value.Id
-	}
 	return v.value.Id + v.parentConfigId
 }
 
