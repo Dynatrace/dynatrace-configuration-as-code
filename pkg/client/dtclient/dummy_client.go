@@ -85,6 +85,10 @@ func (c *DummyClient) CreatedObjects() int {
 	return objects
 }
 
+func (c *DummyClient) CacheConfigs(ctx context.Context, a api.API) error {
+	return nil
+}
+
 func (c *DummyClient) ListConfigs(_ context.Context, a api.API) (values []Value, err error) {
 	entries, found := c.GetEntries(a)
 
@@ -249,6 +253,10 @@ func (c *DummyClient) ConfigExistsByName(_ context.Context, a api.API, name stri
 	}
 
 	return false, "", nil
+}
+
+func (c *DummyClient) CacheSettings(context.Context, string) error {
+	return nil
 }
 
 func (c *DummyClient) UpsertSettings(_ context.Context, obj SettingsObject, _ UpsertSettingsOptions) (DynatraceEntity, error) {

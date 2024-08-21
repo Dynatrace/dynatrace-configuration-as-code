@@ -98,6 +98,11 @@ type (
 	}
 )
 
+func (d *DynatraceClient) CacheSettings(ctx context.Context, schemaID string) error {
+	_, err := d.ListSettings(ctx, schemaID, ListSettingsOptions{})
+	return err
+}
+
 func (d *DynatraceClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
 	queryParams := url.Values{}
 	queryParams.Add("fields", "ordered,schemaId")

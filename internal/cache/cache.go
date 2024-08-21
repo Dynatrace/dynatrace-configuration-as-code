@@ -24,6 +24,7 @@ type Cache[T any] interface {
 	Delete(key string)
 }
 
+// NoopCache is an implementation of Cache that doesn't actually do anything.
 type NoopCache[T interface{}] struct{}
 
 func (n NoopCache[T]) Get(_ string) (T, bool) {
@@ -39,6 +40,7 @@ func (n NoopCache[T]) Delete(_ string) {
 	// no-op
 }
 
+// DefaultCache is an implementation of Cache that stores all values in a map.
 type DefaultCache[T any] struct {
 	entries map[string]T
 	mutex   sync.RWMutex
