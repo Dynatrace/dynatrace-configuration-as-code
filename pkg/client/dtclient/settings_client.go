@@ -261,7 +261,13 @@ func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject
 		retrySetting = d.retrySettings.Normal
 	}
 
-	resp, err := SendWithRetryWithInitialTry(ctx, d.platformClient.POST, d.settingsObjectAPIPath, corerest.RequestOptions{}, payload, retrySetting)
+	requestRetrier := corerest.RequestRetrier{
+		MaxRetries:      retrySetting.MaxRetries,
+		DelayAfterRetry: retrySetting.WaitTime,
+		ShouldRetryFunc: corerest.RetryIfNotSuccess,
+	}
+
+	resp, err := coreapi.AsResponseOrError(d.platformClient.POST(ctx, d.settingsObjectAPIPath, bytes.NewReader(payload), corerest.RequestOptions{CustomRetrier: &requestRetrier}))
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
