@@ -226,10 +226,6 @@ func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *Dyn
 }
 
 func (d *DynatraceClient) CacheConfigs(ctx context.Context, api api.API) error {
-	if !d.classicConfigsCache.IsActive() {
-		return nil
-	}
-
 	_, err := d.fetchExistingValues(ctx, api)
 	return err
 }

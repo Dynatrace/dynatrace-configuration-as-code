@@ -99,9 +99,6 @@ type (
 )
 
 func (d *DynatraceClient) CacheSettings(ctx context.Context, schemaID string) error {
-	if !d.settingsCache.IsActive() {
-		return nil
-	}
 	_, err := d.ListSettings(ctx, schemaID, ListSettingsOptions{})
 	return err
 }

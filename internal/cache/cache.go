@@ -22,9 +22,6 @@ type Cache[T any] interface {
 	Get(key string) (T, bool)
 	Set(key string, entries T)
 	Delete(key string)
-
-	// IsActive returns true if the cache actually does something.
-	IsActive() bool
 }
 
 // NoopCache is an implementation of Cache that doesn't actually do anything.
@@ -41,10 +38,6 @@ func (n NoopCache[T]) Set(_ string, _ T) {
 
 func (n NoopCache[T]) Delete(_ string) {
 	// no-op
-}
-
-func (n NoopCache[T]) IsActive() bool {
-	return false
 }
 
 // DefaultCache is an implementation of Cache that stores all values in a map.
@@ -83,8 +76,4 @@ func (s *DefaultCache[T]) Delete(key string) {
 	defer s.mutex.Unlock()
 
 	delete(s.entries, key)
-}
-
-func (s *DefaultCache[T]) IsActive() bool {
-	return true
 }
