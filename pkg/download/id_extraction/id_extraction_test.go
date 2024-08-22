@@ -309,7 +309,7 @@ func TestScopeParameterIsTreatedAsParameter(t *testing.T) {
 					{
 						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
 						Parameters: config.Parameters{
-							"scope": value.New("HOST-123456789"),
+							"scope": value.New("HOST-123456789.9"),
 						},
 					},
 				},
@@ -319,9 +319,9 @@ func TestScopeParameterIsTreatedAsParameter(t *testing.T) {
 					{
 						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
 						Parameters: config.Parameters{
-							"scope": &ref.ReferenceParameter{ParameterReference: parameter.ParameterReference{Property: baseParamID + ".id_HOST_123456789"}},
+							"scope": &ref.ReferenceParameter{ParameterReference: parameter.ParameterReference{Property: baseParamID + ".id_HOST_123456789_9"}},
 							"extractedIDs": value.New(map[string]string{
-								"id_HOST_123456789": "HOST-123456789",
+								"id_HOST_123456789_9": "HOST-123456789.9",
 							}),
 						},
 					},
