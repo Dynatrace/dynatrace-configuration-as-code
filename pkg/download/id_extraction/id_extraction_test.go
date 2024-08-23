@@ -309,7 +309,7 @@ func TestScopeParameterIsTreatedAsParameter(t *testing.T) {
 					{
 						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
 						Parameters: config.Parameters{
-							"scope": value.New("HOST-123456789.9"),
+							"scope": value.New("HOST-123456789"),
 						},
 					},
 				},
@@ -319,9 +319,35 @@ func TestScopeParameterIsTreatedAsParameter(t *testing.T) {
 					{
 						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
 						Parameters: config.Parameters{
-							"scope": &ref.ReferenceParameter{ParameterReference: parameter.ParameterReference{Property: baseParamID + ".id_HOST_123456789_9"}},
+							"scope": &ref.ReferenceParameter{ParameterReference: parameter.ParameterReference{Property: baseParamID + ".id_HOST_123456789"}},
 							"extractedIDs": value.New(map[string]string{
-								"id_HOST_123456789_9": "HOST-123456789.9",
+								"id_HOST_123456789": "HOST-123456789",
+							}),
+						},
+					},
+				},
+			},
+		},
+		{
+			"invalid param key chars (dot,hyphen) are removed from scope parameters",
+			project.ConfigsPerType{
+				"test-type": []config.Config{
+					{
+						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
+						Parameters: config.Parameters{
+							"scope": value.New("my.magic.metric-key"),
+						},
+					},
+				},
+			},
+			project.ConfigsPerType{
+				"test-type": []config.Config{
+					{
+						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
+						Parameters: config.Parameters{
+							"scope": &ref.ReferenceParameter{ParameterReference: parameter.ParameterReference{Property: baseParamID + ".id_my_magic_metric_key"}},
+							"extractedIDs": value.New(map[string]string{
+								"id_my_magic_metric_key": "my.magic.metric-key",
 							}),
 						},
 					},
