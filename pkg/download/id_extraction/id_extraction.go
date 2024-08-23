@@ -102,6 +102,6 @@ func findAllIds(content string) []string {
 
 func createParameterKey(id string) string {
 	idKey := strings.ReplaceAll(id, "-", "_")   // golang template keys must not contain hyphens
-	idKey = strings.ReplaceAll(idKey, ".", "_") // replace any dots with "_" as well, to avoid nested parameter definitions
+	idKey = strings.ReplaceAll(idKey, ".", "_") // monaco templating would treat any dot as referencing a nested sub-key in value parameters, but we're just building simple key:val parameters
 	return fmt.Sprintf("id_%s", idKey)
 }
