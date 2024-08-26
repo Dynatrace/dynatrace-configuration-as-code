@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
@@ -52,6 +51,9 @@ type SettingsModificationInfo struct {
 	ModifiablePaths    []interface{} `json:"modifiablePaths"`
 	NonModifiablePaths []interface{} `json:"nonModifiablePaths"`
 }
+
+var retryIfNotStatusNotFound = func(resp *http.Response) bool { return resp.StatusCode != http.StatusNotFound }
+var retryIfNotStatusBadRequest = func(resp *http.Response) bool { return resp.StatusCode != http.StatusBadRequest }
 
 type UpsertSettingsOptions struct {
 	OverrideRetry *RetrySetting
@@ -255,7 +257,13 @@ func (d *DynatraceClient) DeleteConfigById(ctx context.Context, api api.API, id 
 	}
 	parsedURL = parsedURL.JoinPath(id)
 
-	_, err = coreapi.AsResponseOrError(d.classicClient.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{}))
+	requestRetrier := corerest.RequestRetrier{
+		MaxRetries:      d.retrySettings.Normal.MaxRetries,
+		DelayAfterRetry: d.retrySettings.Normal.WaitTime,
+		ShouldRetryFunc: retryIfNotStatusNotFound,
+	}
+
+	_, err = coreapi.AsResponseOrError(d.classicClient.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{CustomRetrier: &requestRetrier}))
 	if err != nil {
 		apiError := coreapi.APIError{}
 		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
@@ -288,32 +296,4 @@ func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, a api.API, nam
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
 	return d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
-}
-
-func (d *DynatraceClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
-	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{}))
-	if err != nil {
-		return nil, err
-	}
-
-	var result DownloadSettingsObject
-	if err = json.Unmarshal(resp.Data, &result); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal settings object: %w", err)
-	}
-
-	return &result, nil
-}
-
-func (d *DynatraceClient) DeleteSettings(ctx context.Context, objectID string) error {
-	_, err := coreapi.AsResponseOrError(d.platformClient.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{}))
-	if err != nil {
-		apiError := coreapi.APIError{}
-		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
-			log.Debug("No settings object with id '%s' found to delete (HTTP 404 response)", objectID)
-			return nil
-		}
-		return err
-	}
-
-	return nil
 }

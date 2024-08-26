@@ -11,6 +11,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dynatrace/dynatrace-configuration-as-code-core v0.6.2-0.20240820115241-2b9ea5a21a77 h1:pwLFQH4kPTWYFGXnaL8VkdD964i0lB4FFijNwOoTcIE=
 github.com/dynatrace/dynatrace-configuration-as-code-core v0.6.2-0.20240820115241-2b9ea5a21a77/go.mod h1:nuexOAyL5EXeNBnz+9Hnc3LzUKsdBZ3S5vzcw4ooMgI=
+github.com/dynatrace/dynatrace-configuration-as-code-core v0.6.2-0.20240820121750-30a40e13aac2 h1:vJX87/pynONaVw/AntXf8v1/rZdW2w7CAGuaqnkWwuo=
+github.com/dynatrace/dynatrace-configuration-as-code-core v0.6.2-0.20240820121750-30a40e13aac2/go.mod h1:nuexOAyL5EXeNBnz+9Hnc3LzUKsdBZ3S5vzcw4ooMgI=
 github.com/go-logr/logr v1.4.2 h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY=
 github.com/go-logr/logr v1.4.2/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/go-logr/zapr v1.3.0 h1:XGdV8XW8zdwFiwOA2Dryh1gj2KRQyOOoNmBy4EplIcQ=

@@ -261,7 +261,13 @@ func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject
 		retrySetting = d.retrySettings.Normal
 	}
 
-	resp, err := SendWithRetryWithInitialTry(ctx, d.platformClient.POST, d.settingsObjectAPIPath, corerest.RequestOptions{}, payload, retrySetting)
+	requestRetrier := corerest.RequestRetrier{
+		MaxRetries:      retrySetting.MaxRetries,
+		DelayAfterRetry: retrySetting.WaitTime,
+		ShouldRetryFunc: corerest.RetryIfNotSuccess,
+	}
+
+	resp, err := coreapi.AsResponseOrError(d.platformClient.POST(ctx, d.settingsObjectAPIPath, bytes.NewReader(payload), corerest.RequestOptions{CustomRetrier: &requestRetrier}))
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
@@ -486,4 +492,38 @@ func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opt
 	d.settingsCache.Set(schemaId, result)
 
 	return filter.FilterSlice(result, opts.Filter), nil
+}
+
+func (d *DynatraceClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
+	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{}))
+	if err != nil {
+		return nil, err
+	}
+
+	var result DownloadSettingsObject
+	if err = json.Unmarshal(resp.Data, &result); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal settings object: %w", err)
+	}
+
+	return &result, nil
+}
+
+func (d *DynatraceClient) DeleteSettings(ctx context.Context, objectID string) error {
+	requestRetrier := corerest.RequestRetrier{
+		MaxRetries:      d.retrySettings.Normal.MaxRetries,
+		DelayAfterRetry: d.retrySettings.Normal.WaitTime,
+		ShouldRetryFunc: retryIfNotStatusNotFound,
+	}
+
+	_, err := coreapi.AsResponseOrError(d.platformClient.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomRetrier: &requestRetrier}))
+	if err != nil {
+		apiError := coreapi.APIError{}
+		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+			log.Debug("No settings object with id '%s' found to delete (HTTP 404 response)", objectID)
+			return nil
+		}
+		return err
+	}
+
+	return nil
 }

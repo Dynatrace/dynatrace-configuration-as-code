@@ -275,43 +275,49 @@ func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, re
 		return resp, nil
 	}
 
-	apiError := coreapi.APIError{}
-	if !errors.As(err, &apiError) {
+	apiErr := coreapi.APIError{}
+	if !errors.As(err, &apiErr) {
 		return nil, err
 	}
 
-	var rs RetrySetting
-	// It can take longer until calculated service metrics are ready to be used in SLOs
-	if isCalculatedMetricNotReadyYet(apiError) ||
-		// It can take longer until management zones are ready to be used in SLOs
-		isManagementZoneNotReadyYet(apiError) ||
-		// It can take longer until Credentials are ready to be used in Synthetic Monitors
-		isCredentialNotReadyYet(apiError) ||
-		// It can take some time for configurations to propagate to all cluster nodes - indicated by an incorrect constraint violation error
-		isGeneralDependencyNotReadyYet(apiError) ||
-		// Synthetic and related APIs sometimes run into issues of finding objects quickly after creation
-		isGeneralSyntheticAPIError(apiError, theApi) ||
-		// Network zone deployments can fail due to fact that the feature not effectively enabled yet
-		isNetworkZoneFeatureNotEnabledYet(apiError, theApi) {
+	rs := selectRetrySettingByAPIAndAPIError(d.retrySettings, theApi, apiErr)
+	if rs.MaxRetries == 0 {
+		return resp, err
+	}
 
-		rs = d.retrySettings.Normal
+	return coreapi.AsResponseOrError(restCall(ctx, endpoint, bytes.NewReader(requestBody), corerest.RequestOptions{ /* WITH RETRY SETTINGS HERE */ }))
+}
+
+func selectRetrySettingByAPIAndAPIError(retrySettings RetrySettings, theAPI api.API, apiErr coreapi.APIError) RetrySetting {
+	rs := RetrySetting{}
+
+	// It can take longer until calculated service metrics are ready to be used in SLOs
+	if isCalculatedMetricNotReadyYet(apiErr) ||
+		// It can take longer until management zones are ready to be used in SLOs
+		isManagementZoneNotReadyYet(apiErr) ||
+		// It can take longer until Credentials are ready to be used in Synthetic Monitors
+		isCredentialNotReadyYet(apiErr) ||
+		// It can take some time for configurations to propagate to all cluster nodes - indicated by an incorrect constraint violation error
+		isGeneralDependencyNotReadyYet(apiErr) ||
+		// Synthetic and related APIs sometimes run into issues of finding objects quickly after creation
+		isGeneralSyntheticAPIError(apiErr, theAPI) ||
+		// Network zone deployments can fail due to fact that the feature not effectively enabled yet
+		isNetworkZoneFeatureNotEnabledYet(apiErr, theAPI) {
+
+		rs = retrySettings.Normal
 	}
 
 	// It can take even longer until request attributes are ready to be used
-	if isRequestAttributeNotYetReady(apiError) {
-		rs = d.retrySettings.Long
+	if isRequestAttributeNotYetReady(apiErr) {
+		rs = retrySettings.Long
 	}
 
 	// It can take even longer until applications are ready to be used in synthetic tests and calculated metrics
-	if isApplicationNotReadyYet(apiError, theApi) {
-		rs = d.retrySettings.VeryLong
+	if isApplicationNotReadyYet(apiErr, theAPI) {
+		rs = retrySettings.VeryLong
 	}
 
-	if rs.MaxRetries > 0 {
-		return SendWithRetry(ctx, restCall, endpoint, corerest.RequestOptions{}, requestBody, rs)
-	}
-
-	return resp, err
+	return rs
 }
 
 func isGeneralDependencyNotReadyYet(apiError coreapi.APIError) bool {
@@ -489,7 +495,8 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 		retrySetting = d.retrySettings.Normal
 	}
 
-	resp, err := GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams}, retrySetting)
+	requestRetrier := corerest.RequestRetrier{ShouldRetryFunc: corerest.RetryIfNotSuccess, MaxRetries: retrySetting.MaxRetries, DelayAfterRetry: retrySetting.WaitTime}
+	resp, err := coreapi.AsResponseOrError(d.classicClient.GET(ctx, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomRetrier: &requestRetrier}))
 	if err != nil {
 		return nil, err
 	}
@@ -508,7 +515,8 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 			break
 		}
 
-		resp, err = GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey)}, retrySetting)
+		requestRetrier := corerest.RequestRetrier{ShouldRetryFunc: retryIfNotStatusBadRequest, MaxRetries: retrySetting.MaxRetries, DelayAfterRetry: retrySetting.WaitTime}
+		resp, err = coreapi.AsResponseOrError(d.classicClient.GET(ctx, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomRetrier: &requestRetrier}))
 		if err != nil {
 
 			apiError := coreapi.APIError{}
