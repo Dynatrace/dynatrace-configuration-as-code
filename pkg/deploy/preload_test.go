@@ -17,6 +17,7 @@
 package deploy
 
 import (
+	"go.uber.org/mock/gomock"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
@@ -310,4 +311,48 @@ func Test_gatherPreloadConfigTypeEntries_NoEntryIfEnvironmentMissingClient(t *te
 	)
 
 	assert.Len(t, entries, 0)
+}
+
+func Test_ScopedConfigsAreNotCached(t *testing.T) {
+	dtClient := client.NewMockDynatraceClient(gomock.NewController(t)) //<- dont expect any call(s) on the mocked client
+	type args struct {
+		projects           []project.Project
+		environmentClients dynatrace.EnvironmentClients
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			args: args{
+				projects: []project.Project{
+					{
+						Id:      "projectID",
+						GroupId: "groupID",
+						Configs: project.ConfigsPerTypePerEnvironments{
+							"env1": project.ConfigsPerType{
+								"dashboard-share-settings": {
+									{
+										Coordinate: coordinate.Coordinate{
+											Project:  "projectID",
+											ConfigId: "dashboard-share-settings",
+											Type:     "dashboard-share-settings"},
+										Type: config.ClassicApiType{
+											Api: "dashboard-share-settings", //<- scoped config
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				environmentClients: dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: &client.ClientSet{DTClient: dtClient}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			preloadCaches(tt.args.projects, tt.args.environmentClients)
+		})
+	}
 }
