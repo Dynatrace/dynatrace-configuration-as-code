@@ -66,6 +66,9 @@ func preloadValuesForApi(client client.DynatraceClient, theApi string) {
 	if !ok {
 		return
 	}
+	if a.HasParent() {
+		return
+	}
 	err := client.CacheConfigs(context.TODO(), a)
 	if err != nil {
 		log.Warn("Could not cache values for API %s: %s", theApi, err)
