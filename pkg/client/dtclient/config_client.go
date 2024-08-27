@@ -148,7 +148,7 @@ func (d *DynatraceClient) createDynatraceObject(ctx context.Context, objectName 
 		queryParams.Add("position", "PREPEND")
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.POST, endpoint, body, theApi, corerest.RequestOptions{QueryParams: queryParams})
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.POST, endpoint, body, theApi, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -227,7 +227,7 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, objectName 
 		}, nil
 	}
 
-	_, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.PUT, endpoint, payload, theApi, corerest.RequestOptions{})
+	_, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.PUT, endpoint, payload, theApi, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -308,7 +308,7 @@ func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, re
 	}
 
 	if rs.MaxRetries > 0 {
-		return SendWithRetry(ctx, restCall, endpoint, corerest.RequestOptions{}, requestBody, rs)
+		return SendWithRetry(ctx, restCall, endpoint, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, requestBody, rs)
 	}
 
 	return resp, err
@@ -489,7 +489,7 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 		retrySetting = d.retrySettings.Normal
 	}
 
-	resp, err := GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams}, retrySetting)
+	resp, err := GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
 	if err != nil {
 		return nil, err
 	}
@@ -508,7 +508,7 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 			break
 		}
 
-		resp, err = GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey)}, retrySetting)
+		resp, err = GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
 		if err != nil {
 
 			apiError := coreapi.APIError{}

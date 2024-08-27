@@ -24,6 +24,6 @@ import (
 
 // TestClassic tests if the provided classicClient can actually reach a classic environment.
 func TestClassic(ctx context.Context, classicClient corerest.Client) bool {
-	_, err := coreapi.AsResponseOrError(classicClient.GET(ctx, "", corerest.RequestOptions{}))
+	_, err := coreapi.AsResponseOrError(classicClient.GET(ctx, "", corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	return err == nil
 }

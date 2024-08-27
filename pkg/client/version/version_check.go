@@ -34,7 +34,7 @@ const versionPathClassic = "/api/v1/config/clusterversion"
 
 // GetDynatraceVersion returns the version of an environment
 func GetDynatraceVersion(ctx context.Context, client *corerest.Client) (version.Version, error) {
-	resp, err := coreapi.AsResponseOrError(client.GET(ctx, versionPathClassic, corerest.RequestOptions{}))
+	resp, err := coreapi.AsResponseOrError(client.GET(ctx, versionPathClassic, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}

@@ -108,7 +108,7 @@ func (d *DynatraceClient) ListSchemas(ctx context.Context) (schemas SchemaList, 
 	queryParams.Add("fields", "ordered,schemaId")
 
 	// getting all schemas does not have pagination
-	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsSchemaAPIPath, corerest.RequestOptions{QueryParams: queryParams}))
+	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsSchemaAPIPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET schemas: %w", err)
 	}
@@ -133,7 +133,7 @@ func (d *DynatraceClient) GetSchemaById(ctx context.Context, schemaID string) (c
 
 	ret := Schema{SchemaId: schemaID}
 	endpoint := d.settingsSchemaAPIPath + "/" + schemaID
-	r, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, endpoint, corerest.RequestOptions{}))
+	r, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, endpoint, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return Schema{}, err
 	}
@@ -261,7 +261,7 @@ func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject
 		retrySetting = d.retrySettings.Normal
 	}
 
-	resp, err := SendWithRetryWithInitialTry(ctx, d.platformClient.POST, d.settingsObjectAPIPath, corerest.RequestOptions{}, payload, retrySetting)
+	resp, err := SendWithRetryWithInitialTry(ctx, d.platformClient.POST, d.settingsObjectAPIPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, payload, retrySetting)
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
