@@ -15,3 +15,18 @@ spec:
         requests:
           cpu: 2
           memory: 2Gi
+    - name: docker
+      image: docker-proxy.lab.dynatrace.org/library/docker:24.0.2-dind-rootless
+      imagePullPolicy: IfNotPresent
+      args:
+        - '--registry-mirror=https://docker-proxy.lab.dynatrace.org'
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          cpu: 1
+          memory: 512Mi
+  securityContext:
+    fsGroup: 1000
+    runAsGroup: 1000
+    runAsUser: 1000

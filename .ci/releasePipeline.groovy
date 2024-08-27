@@ -176,21 +176,23 @@ void releaseBinary(Context ctx, Release release) {
 
 void releaseDockerContainer(Context ctx) {
     stage("Build Docker") {
-        def dockerTools = load(".ci/jenkins/tools/docker.groovy")
+        container("docker") {
+            def dockerTools = load(".ci/jenkins/tools/docker.groovy")
 
-        dockerTools.installQemuEmulator()
-        dockerTools.installCosign()
-        dockerTools.createNewBuilder()
-        dockerTools.listDrivers()
+            dockerTools.installQemuEmulator()
+            dockerTools.installCosign()
+            dockerTools.createNewBuilder()
+            dockerTools.listDrivers()
 
-        boolean latest = false
-        if (isFinal(ctx)) {
-            latest = true
-        }
-        dockerTools.buildContainer(version: ctx.version, registrySecretsPath: "keptn-jenkins/monaco/registry-deploy", latest: latest)
+            boolean latest = false
+            if (isFinal(ctx)) {
+                latest = true
+            }
+            dockerTools.buildContainer(version: ctx.version, registrySecretsPath: "keptn-jenkins/monaco/registry-deploy", latest: latest)
 
-        if (isRelease(ctx)) {
-            dockerTools.buildContainer(version: ctx.version, registrySecretsPath: "keptn-jenkins/monaco/dockerhub-deploy", latest: latest)
+            if (isRelease(ctx)) {
+                dockerTools.buildContainer(version: ctx.version, registrySecretsPath: "keptn-jenkins/monaco/dockerhub-deploy", latest: latest)
+            }
         }
     }
 }
