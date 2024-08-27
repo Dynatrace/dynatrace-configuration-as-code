@@ -26,7 +26,3 @@ spec:
         requests:
           cpu: 1
           memory: 512Mi
-  securityContext:
-    fsGroup: 1000
-    runAsGroup: 1000
-    runAsUser: 1000
