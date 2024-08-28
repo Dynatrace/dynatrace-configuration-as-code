@@ -68,7 +68,7 @@ func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
 		WithClassicURL(env.URL.Value).
 		WithAccessToken(env.Auth.Token.Value.Value()).
 		WithRateLimiter(true).
-		WithRequestRetrier(&client.DefaultRequestRetrier).
+		WithRetryOptions(&client.DefaultRetryOptions).
 		CreateClassicClient()
 	if err != nil {
 		log.Error("Could not create client %q (%s): %v", env.Name, env.URL.Value, err)
