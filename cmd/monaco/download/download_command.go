@@ -180,7 +180,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 		return
 	}
 
-	serverVersion, err = versionClient.GetDynatraceVersion(context.TODO(), corerest.NewClient(url, httpClient, corerest.WithRateLimiter(), corerest.WithRequestRetrier(&client.DefaultRequestRetrier)))
+	serverVersion, err = versionClient.GetDynatraceVersion(context.TODO(), corerest.NewClient(url, httpClient, corerest.WithRateLimiter(), corerest.WithRetryOptions(&client.DefaultRetryOptions)))
 	if err != nil {
 		log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Warn("Unable to determine server version %q: %v", env.URL.Value, err)
 		return

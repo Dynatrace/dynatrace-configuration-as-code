@@ -203,7 +203,7 @@ func getRandomUUID(t *testing.T) string {
 
 func createObjectViaDirectPut(t *testing.T, c *corerest.Client, url string, a api.API, id string, payload []byte) {
 	url = strings.TrimSuffix(url, "/")
-	res, err := coreapi.AsResponseOrError(c.PUT(context.TODO(), a.URLPath+"/"+id, bytes.NewReader(payload), corerest.RequestOptions{}))
+	res, err := coreapi.AsResponseOrError(c.PUT(context.TODO(), a.URLPath+"/"+id, bytes.NewReader(payload), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	require.NoError(t, err)
 
 	var dtEntity dtclient.DynatraceEntity

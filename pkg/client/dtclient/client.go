@@ -240,7 +240,7 @@ func (d *DynatraceClient) ReadConfigById(ctx context.Context, api api.API, id st
 		dtUrl = dtUrl + "/" + url.PathEscape(id)
 	}
 
-	response, err := coreapi.AsResponseOrError(d.classicClient.GET(ctx, dtUrl, corerest.RequestOptions{}))
+	response, err := coreapi.AsResponseOrError(d.classicClient.GET(ctx, dtUrl, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func (d *DynatraceClient) DeleteConfigById(ctx context.Context, api api.API, id 
 	}
 	parsedURL = parsedURL.JoinPath(id)
 
-	_, err = coreapi.AsResponseOrError(d.classicClient.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{}))
+	_, err = coreapi.AsResponseOrError(d.classicClient.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		apiError := coreapi.APIError{}
 		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
@@ -291,7 +291,7 @@ func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, 
 }
 
 func (d *DynatraceClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
-	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{}))
+	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +305,7 @@ func (d *DynatraceClient) GetSettingById(ctx context.Context, objectId string) (
 }
 
 func (d *DynatraceClient) DeleteSettings(ctx context.Context, objectID string) error {
-	_, err := coreapi.AsResponseOrError(d.platformClient.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{}))
+	_, err := coreapi.AsResponseOrError(d.platformClient.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		apiError := coreapi.APIError{}
 		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
