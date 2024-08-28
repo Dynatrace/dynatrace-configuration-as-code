@@ -166,6 +166,7 @@ var configEndpointsV1 = []API{
 		ID:                           CalculatedMetricsLog,
 		URLPath:                      "/api/config/v1/calculatedMetrics/log",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
+		DeprecatedBy:                 "builtin:logmonitoring.schemaless-log-metric",
 	},
 	{
 		ID:                           CalculatedMetricsApplicationMobile,
