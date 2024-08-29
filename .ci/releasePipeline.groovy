@@ -178,10 +178,8 @@ void releaseDockerContainer(Context ctx) {
     stage("Build Docker") {
         def dockerTools = load(".ci/jenkins/tools/docker.groovy")
 
-        dockerTools.installQemuEmulator()
+        dockerTools.installKo()
         dockerTools.installCosign()
-        dockerTools.createNewBuilder()
-        dockerTools.listDrivers()
 
         boolean latest = false
         if (isFinal(ctx)) {
