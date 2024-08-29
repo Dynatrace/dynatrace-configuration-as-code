@@ -14,27 +14,12 @@
  * limitations under the License.
  */
 
-/**
- * installDockerQemuEmulator enables to run/build another architectures
- */
-void installQemuEmulator() {
-    sh "docker run --privileged --rm tonistiigi/binfmt --install all"
+void installKo() {
+ sh(label: "install ko build-tool", script: "go install github.com/google/ko@v0.16.0")
 }
 
-void createNewBuilder() {
-    try { //in case of a quick rerun of the process, a container already has this builder
-        sh "docker buildx use thebuilder"
-    } catch (def e) {
-        sh "docker buildx create --name thebuilder --bootstrap --use"
-    }
-}
-
-void installCosign(){
-    sh(label: "install cosign tool", script: "go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1")
-}
-
-void listDrivers() {
-    sh "docker buildx ls"
+void installCosign() {
+    sh(label: "install cosign signature-tool", script: "go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1")
 }
 
 void buildContainer(Map args = [version: null, registrySecretsPath: null, latest: false]) {
@@ -58,28 +43,18 @@ void buildContainer(Map args = [version: null, registrySecretsPath: null, latest
                 ]
             ]
         ]) {
-            try {
-                sh(label: "sign in to docker registry", script: 'docker login --username $username --password $password $registry')
+            sh(label: "sign in to container registry",
+                script: 'ko login --username $username --password $password $registry')
 
-                String command = '''\
-                    DOCKER_BUILDKIT=1
-                    docker buildx build .
-                      --progress=plain
-                      --platform=arm64,amd64
-                      --build-arg VERSION=$version
-                      --push
-                      --tag $registry/$repo/dynatrace-configuration-as-code:$version
-                  '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
-                if (args.latest) {
-                    command = "${command} --tag $registry/$repo/dynatrace-configuration-as-code:latest"
-                }
-                sh(label: "build container", script: command)
-
-                sh(label: "sing container",
-                    script: 'COSIGN_PASSWORD=$cosign_password cosign sign --key env://cosign_key $registry/$repo/dynatrace-configuration-as-code:$version -y --recursive')
-            } finally {
-                sh(label: "sign out from docker registry", script: 'docker logout $registry')
+            String tags = "$version"
+            if (args.latest) {
+                tags += ",latest"
             }
+            sh(label: "build and publish container",
+                script: "make docker-container REPO_PATH=$registry/$repo VERSION=$version TAGS=${tags}")
+
+            sh(label: "sign container",
+                script: 'COSIGN_PASSWORD=$cosign_password cosign sign --key env://cosign_key $registry/$repo/dynatrace-configuration-as-code:$version -y --recursive')
         }
     }
 }
