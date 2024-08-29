@@ -124,11 +124,14 @@ update-dependencies:
 
 
 #TAG - specify tag value. The main purpose is to define public tag during a release build.
-CONTAINER_NAME ?= $(BINARY_NAME)
+TAGS ?= $(VERSION)
+CONTAINER_NAME ?= dynatrace-configuration-as-code
+REPO_PATH ?= ko.local
+IMAGE_PATH ?= $(REPO_PATH)/$(CONTAINER_NAME)
 .PHONY: docker-container
 docker-container:
 	@echo Building docker container...
-	DOCKER_BUILDKIT=1 docker build --build-arg VERSION=$(VERSION) --tag $(CONTAINER_NAME):$(VERSION) .
+	KO_DOCKER_REPO=$(IMAGE_PATH) VERSION=$(VERSION) ko build --bare --sbom=none --tags=$(TAGS) ./cmd/monaco
 
 sign-verify-image:
 	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.2

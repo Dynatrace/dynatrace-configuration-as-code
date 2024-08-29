@@ -1,0 +1,15 @@
+defaultBaseImage: alpine:3.20
+defaultPlatforms:
+- linux/arm64
+- linux/amd64
+builds:
+- id: release
+  main: ./cmd/monaco
+  flags:
+  - -a
+  - -tags
+  - netgo
+  ldflags:
+  - -X github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version.MonitoringAsCode={{.Env.VERSION}}
+  - -w
+  - -extldflags '-static'
