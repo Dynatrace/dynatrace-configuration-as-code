@@ -178,7 +178,6 @@ void releaseDockerContainer(Context ctx) {
     stage("Build Docker") {
         def dockerTools = load(".ci/jenkins/tools/docker.groovy")
 
-        dockerTools.installKo()
         dockerTools.installCosign()
 
         boolean latest = false
