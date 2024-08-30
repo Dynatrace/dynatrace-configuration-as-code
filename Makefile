@@ -2,7 +2,7 @@ BINARY_NAME ?= monaco
 VERSION ?= 2.x
 RELEASES = $(BINARY_NAME)-windows-amd64.exe $(BINARY_NAME)-windows-386.exe $(BINARY_NAME)-linux-arm64 $(BINARY_NAME)-linux-amd64 $(BINARY_NAME)-linux-386 $(BINARY_NAME)-darwin-amd64 $(BINARY_NAME)-darwin-arm64
 
-.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers compile build-release $(RELEASES) docker-container sign-image
+.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers compile build-release $(RELEASES) docker-container sign-image install-ko
 
 default: build
 
@@ -123,14 +123,16 @@ update-dependencies:
 	@go mod tidy
 
 
+install-ko:
+	@go install github.com/unseenwizzard/ko@9dfd0d7d
+
 #TAG - specify tag value. The main purpose is to define public tag during a release build.
 TAGS ?= $(VERSION)
 CONTAINER_NAME ?= dynatrace-configuration-as-code
 REPO_PATH ?= ko.local
 IMAGE_PATH ?= $(REPO_PATH)/$(CONTAINER_NAME)
 .PHONY: docker-container
-docker-container:
-	@go install github.com/unseenwizzard/ko@9dfd0d7d
+docker-container: install-ko
 	@echo Building docker container...
 	KO_DOCKER_REPO=$(IMAGE_PATH) VERSION=$(VERSION) ko build --bare --sbom=none --tags=$(TAGS) ./cmd/monaco
 

@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+ void installKo() {
+  sh(label: "install ko build-tool", script: "make install-ko")
+ }
+
 void installCosign() {
     sh(label: "install cosign signature-tool", script: "go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1")
 }
