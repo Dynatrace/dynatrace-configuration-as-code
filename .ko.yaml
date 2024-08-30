@@ -2,6 +2,7 @@ defaultBaseImage: alpine:3.20
 defaultPlatforms:
 - linux/arm64
 - linux/amd64
+defaultAppDirectory: /usr/local/bin # NOT a default ko option! only available to forked suggestion of making dir overwritable
 builds:
 - id: release
   main: ./cmd/monaco
