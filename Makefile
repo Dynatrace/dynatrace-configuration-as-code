@@ -130,7 +130,7 @@ REPO_PATH ?= ko.local
 IMAGE_PATH ?= $(REPO_PATH)/$(CONTAINER_NAME)
 .PHONY: docker-container
 docker-container:
-	@go install github.com/google/ko@v0.16.0
+	@go install github.com/unseenwizzard/ko@9dfd0d7d
 	@echo Building docker container...
 	KO_DOCKER_REPO=$(IMAGE_PATH) VERSION=$(VERSION) ko build --bare --sbom=none --tags=$(TAGS) ./cmd/monaco
 
