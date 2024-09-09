@@ -40,24 +40,16 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 
 	deleteErrs := 0
 	for _, e := range entries {
-
 		logger := logger.WithFields(field.Coordinate(e.AsCoordinate()))
 
-		var filterFn dtclient.ListSettingsFilter
-		if e.OriginObjectId != "" { //delete by riginObjectId
-			filterFn = func(o dtclient.DownloadSettingsObject) bool { return o.ObjectId == e.OriginObjectId }
-		} else {
-			externalID, err := idutils.GenerateExternalIDForSettingsObject(e.AsCoordinate())
-			if err != nil {
-				logger.Error("unable to generate externalID, Setting will not be deleted: %v", err)
-				deleteErrs++
-				continue
-			}
-			filterFn = func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }
+		filterFunc, err := getFilter(e)
+		if err != nil {
+			logger.Error("unable to generate externalID, Setting will not be deleted: %v", err)
+			deleteErrs++
+			continue
 		}
 
-		// get settings objects with matching external ID
-		objects, err := c.ListSettings(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFn})
+		objects, err := c.ListSettings(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
 		if err != nil {
 			logger.Error("Could not fetch settings object: %v", err)
 			deleteErrs++
@@ -93,6 +85,19 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 	}
 
 	return nil
+}
+
+func getFilter(deletePointer pointer.DeletePointer) (dtclient.ListSettingsFilter, error) {
+	if deletePointer.OriginObjectId != "" {
+		return func(o dtclient.DownloadSettingsObject) bool { return o.ObjectId == deletePointer.OriginObjectId }, nil
+	}
+
+	externalID, err := idutils.GenerateExternalIDForSettingsObject(deletePointer.AsCoordinate())
+	if err != nil {
+		return nil, err
+	}
+	return func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }, nil
+
 }
 
 // DeleteAll collects and deletes settings objects using the provided SettingsClient.
