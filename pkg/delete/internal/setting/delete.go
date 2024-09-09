@@ -65,7 +65,11 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 		}
 
 		if len(objects) == 0 {
-			logger.Debug("No settings object found to delete")
+			if e.OriginObjectId != "" {
+				logger.Debug("No settings object found to delete. Could not find object with matching object id.")
+				continue
+			}
+			logger.Debug("No settings object found to delete. Could not find object with matching external id.")
 			continue
 		}
 
