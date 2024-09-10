@@ -44,7 +44,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 
 		filterFunc, err := getFilter(e)
 		if err != nil {
-			logger.Error("unable to generate externalID, Setting will not be deleted: %v", err)
+			logger.Error("Setting will not be deleted: %v", err)
 			deleteErrs++
 			continue
 		}
@@ -94,7 +94,7 @@ func getFilter(deletePointer pointer.DeletePointer) (dtclient.ListSettingsFilter
 
 	externalID, err := idutils.GenerateExternalIDForSettingsObject(deletePointer.AsCoordinate())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to generate external id: %w", err)
 	}
 	return func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }, nil
 
