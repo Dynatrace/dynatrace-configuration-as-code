@@ -20,19 +20,10 @@ import (
 	"regexp"
 )
 
-// matches any non-alphanumerical chars including -, _, .
+// namePattern matches any non-alphanumerical chars including -, _, .
 var namePattern = regexp.MustCompile(`[^a-zA-Z0-9-_.]+`)
-
-const MaxFilenameLengthWithoutFileExtension = 254
 
 // Sanitize removes special characters, limits to max 254 characters in name, no special characters except '-', '_', and '.'
 func Sanitize(name string) string {
-	processedString := namePattern.ReplaceAllString(name, "")
-
-	runes := []rune(processedString)
-	if len(runes) > MaxFilenameLengthWithoutFileExtension {
-		processedString = string(runes[:MaxFilenameLengthWithoutFileExtension])
-	}
-
-	return processedString
+	return namePattern.ReplaceAllString(name, "")
 }

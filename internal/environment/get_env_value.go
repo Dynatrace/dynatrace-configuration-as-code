@@ -27,12 +27,14 @@ const (
 	ConcurrentRequestsEnvKey          = "MONACO_CONCURRENT_REQUESTS"
 	defaultValueKey                   = "DEFAULT"
 	KeyUserActionWebWaitSecondsEnvKey = "MONACO_KUA_WEB_WAIT_SECONDS"
+	MaxFilenameLenKey                 = "MONACO_MAX_FILENAME_LEN"
 )
 
 var defaultValuesInt = map[string]int{
 	ConcurrentRequestsEnvKey:          5,
 	defaultValueKey:                   0,
 	KeyUserActionWebWaitSecondsEnvKey: 1,
+	MaxFilenameLenKey:                 254,
 }
 
 var logStringInt = map[string]string{
