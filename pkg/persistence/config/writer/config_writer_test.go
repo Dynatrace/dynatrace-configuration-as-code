@@ -20,6 +20,7 @@ package writer
 
 import (
 	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"path/filepath"
 	"testing"
 
@@ -782,7 +783,7 @@ func TestWriteConfigs(t *testing.T) {
 			name: "Settings 2.0 schema write sanitizes names",
 			configs: []config.Config{
 				{
-					Template: template.NewInMemoryTemplate("a", ""),
+					Template: template.NewInMemoryTemplate("somethingTooLongaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:alerting-profile",
@@ -806,7 +807,7 @@ func TestWriteConfigs(t *testing.T) {
 							Config: persistence.ConfigDefinition{
 								Name:       "name",
 								Parameters: nil,
-								Template:   "a.json",
+								Template:   "somethingTooLongaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json",
 								Skip:       "true",
 							},
 							Type: persistence.TypeDefinition{
@@ -821,7 +822,7 @@ func TestWriteConfigs(t *testing.T) {
 			},
 			expectedTemplatePaths: []string{
 				"project/builtinalerting-profile/config.yaml",
-				"project/builtinalerting-profile/a.json",
+				"project/builtinalerting-profile/somethingTooLongaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json",
 			},
 		},
 		{
@@ -1452,4 +1453,37 @@ func TestOrderedConfigs(t *testing.T) {
 		assert.Less(t, a, b, "not in order: %q should be < than %q", a, b)
 	}
 
+}
+
+func TestPrepareFileName(t *testing.T) {
+	t.Setenv(environment.MaxFilenameLenKey, "20")
+	tests := []struct {
+		name          string
+		fileExtension string
+		expected      string
+		expectPanic   bool
+	}{
+		{"shortname", ".txt", "shortname.txt", false},
+		{"verylongfilenameexceedingmaxlength", ".txt", "verylongfilena.txt", false},
+		{"special!#", ".txt", "special.txt", false},
+		{"namewithlongextension", ".longextension", "name.longextension", false},
+		{"namecausingpanic", ".thisextensioniswaytoolong", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.expectPanic {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("expected panic for input %s, %s", tt.name, tt.fileExtension)
+					}
+				}()
+			}
+
+			result := prepareFileName(tt.name, tt.fileExtension)
+			if result != tt.expected && !tt.expectPanic {
+				t.Errorf("expected %s, got %s", tt.expected, result)
+			}
+		})
+	}
 }

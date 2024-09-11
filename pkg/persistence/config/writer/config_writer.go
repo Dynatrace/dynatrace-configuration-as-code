@@ -18,6 +18,7 @@ package writer
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	mystrings "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -612,7 +613,7 @@ func extractTemplate(context *detailedSerializerContext, cfg config.Config) (str
 			}
 			name = n
 		} else {
-			name = getUniqueFileName(mystrings.Sanitize(t.ID())) + ".json"
+			name = prepareFileName(t.ID(), ".json")
 			path = filepath.Join(context.configFolder, name)
 		}
 	default:
@@ -789,6 +790,34 @@ func fmtDetailedConfigWriterError(context *serializerContext, format string, arg
 		Location: context.config,
 		Err:      fmt.Errorf(format, args...),
 	}
+}
+
+// prepareFileName makes sure that a given file name meets all requirements like no forbidden characters
+// and max file name length. It takes the name (without file extension) and the file extension (with the separating ".", e.g. ".json")
+// and returns the filename combined with the file extension
+func prepareFileName(name string, fileExtension string) string {
+
+	const reservedForUniqueCounter = 2
+	maxFileNameLen := environment.GetEnvValueInt(environment.MaxFilenameLenKey)
+	sanitizedName := mystrings.Sanitize(name)
+
+	maxLen := maxFileNameLen
+	if len(fileExtension)+reservedForUniqueCounter <= maxFileNameLen {
+		maxLen = maxFileNameLen - len(fileExtension) - reservedForUniqueCounter
+	}
+
+	runes := []rune(sanitizedName)
+	if len(runes) > maxLen {
+		sanitizedName = string(runes[:maxLen])
+	}
+
+	finishedName := getUniqueFileName(sanitizedName) + fileExtension
+
+	if len(finishedName) > maxFileNameLen {
+		panic("cannot use file name " + finishedName + " as it is too long")
+	}
+
+	return finishedName
 }
 
 var fileNameClashes = make(map[string]int)
