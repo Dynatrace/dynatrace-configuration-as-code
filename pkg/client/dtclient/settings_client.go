@@ -154,28 +154,33 @@ func (d *DynatraceClient) GetSchemaById(ctx context.Context, schemaID string) (c
 	return ret, nil
 }
 
+// handleUpsertUnsupportedVersion implements special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
+// Tenants with versions < 1.262 are not able to handle updates of existing
+// settings 2.0 objects that are non-deletable.
+// So we check if the object with originObjectID already exists, if yes and the tenant is older than 1.262
+// then we cannot perform the upsert operation
+func (d *DynatraceClient) handleUpsertUnsupportedVersion(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
+
+	fetchedSettingObj, err := d.GetSettingById(ctx, obj.OriginObjectId)
+	if err != nil {
+		apiErr := coreapi.APIError{}
+		// Settings API returns 400 StatusBadRequest for 404 StatusNotFound
+		if !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusBadRequest || apiErr.StatusCode == http.StatusNotFound {
+			return DynatraceEntity{}, fmt.Errorf("unable to fetch settings object with object id %q: %w", obj.OriginObjectId, err)
+		}
+	}
+
+	log.WithCtxFields(ctx).Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace environment with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
+	return DynatraceEntity{
+		Id:   fetchedSettingObj.ObjectId,
+		Name: fetchedSettingObj.ObjectId,
+	}, nil
+
+}
+
 func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
-	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
-	// Tenants with versions < 1.262 are not able to handle updates of existing
-	// settings 2.0 objects that are non-deletable.
-	// So we check if the object with originObjectID already exists, if yes and the tenant is older than 1.262
-	// then we cannot perform the upsert operation
 	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
-		fetchedSettingObj, err := d.GetSettingById(ctx, obj.OriginObjectId)
-		if err != nil {
-			apiErr := coreapi.APIError{}
-			// Settings API returns 400 StatusBadRequest for 404 StatusNotFound
-			if !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusBadRequest || apiErr.StatusCode == http.StatusNotFound {
-				return DynatraceEntity{}, fmt.Errorf("unable to fetch settings object with object id %q: %w", obj.OriginObjectId, err)
-			}
-		}
-		if fetchedSettingObj != nil {
-			log.WithCtxFields(ctx).Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace environment with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
-			return DynatraceEntity{
-				Id:   fetchedSettingObj.ObjectId,
-				Name: fetchedSettingObj.ObjectId,
-			}, nil
-		}
+		return d.handleUpsertUnsupportedVersion(ctx, obj)
 	}
 
 	if matchingObject, found, err := d.findObjectWithMatchingConstraints(ctx, obj); err != nil {
