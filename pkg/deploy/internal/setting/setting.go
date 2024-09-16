@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -51,9 +52,21 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		Content:        []byte(renderedConfig),
 		OriginObjectId: c.OriginObjectId,
 	}
-	upsertOptions := makeUpsertOptions(c, insertAfter)
 
-	dtEntity, err := settingsClient.UpsertSettings(ctx, settingsObj, upsertOptions)
+	insertOptions := dtclient.UpsertSettingsOptions{
+		OverrideRetry: nil,
+		InsertAfter:   insertAfter,
+	}
+
+	if c.HasRefTo(string(config.BucketTypeId)) {
+		insertOptions.OverrideRetry = &dtclient.RetrySetting{WaitTime: 10 * time.Second, MaxRetries: 6}
+	}
+
+	if c.HasRefTo(api.ApplicationWeb) {
+		insertOptions.OverrideRetry = &dtclient.DefaultRetrySettings.VeryLong
+	}
+
+	dtEntity, err := settingsClient.UpsertSettings(ctx, settingsObj, insertOptions)
 	if err != nil {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
 	}
@@ -79,29 +92,6 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		Skip:       false,
 	}, nil
 
-}
-
-func makeUpsertOptions(c *config.Config, insertAfter string) dtclient.UpsertSettingsOptions {
-	// SPECIAL HANDLING: if settings config to be deployed has a reference to a "bucket" definition
-	// we need to drastically increase the retry settings for the upsert operation, as it could take
-	// up to 1 minute until the operation succeeds in case a bucket was just created before
-	var hasRefToBucket bool
-	refs := c.References()
-	for _, r := range refs {
-		if r.Type == "bucket" {
-			hasRefToBucket = true
-		}
-	}
-	upsertOpts := dtclient.UpsertSettingsOptions{
-		InsertAfter: insertAfter,
-	}
-	if hasRefToBucket {
-		upsertOpts.OverrideRetry = &dtclient.RetrySetting{
-			WaitTime:   10 * time.Second,
-			MaxRetries: 6,
-		}
-	}
-	return upsertOpts
 }
 
 func getEntityID(c *config.Config, e dtclient.DynatraceEntity) (string, error) {

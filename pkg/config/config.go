@@ -265,6 +265,17 @@ func (c *Config) References() []coordinate.Coordinate {
 	return refs
 }
 
+// HasRefTo returns true if he config has a reference to another config of the given type
+func (c *Config) HasRefTo(configType string) bool {
+	refs := c.References()
+	for _, r := range refs {
+		if r.Type == configType {
+			return true
+		}
+	}
+	return false
+}
+
 // EntityLookup is used in parameter resolution to fetch the resolved entity of deployed configuration
 type EntityLookup interface {
 	parameter.PropertyResolver

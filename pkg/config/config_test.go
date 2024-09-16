@@ -20,6 +20,7 @@ package config
 
 import (
 	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -128,6 +129,24 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 	_, errs := conf.ResolveParameterValues(entityLookup{})
 
 	assert.NotEmpty(t, errs, "there should be errors (no errors: %d)", len(errs))
+}
+
+func TestConfigHasRefTo(t *testing.T) {
+
+	parameters := []parameter.NamedParameter{
+		{
+			Parameter: &parameter.DummyParameter{
+				References: []parameter.ParameterReference{
+					{Config: coordinate.Coordinate{Project: "p", Type: api.ManagementZone, ConfigId: "z"}},
+					{Config: coordinate.Coordinate{Project: "p", Type: api.ApplicationWeb, ConfigId: "y"}},
+				},
+			},
+		},
+	}
+	conf := Config{Parameters: toParameterMap(parameters)}
+	assert.True(t, conf.HasRefTo(api.ManagementZone))
+	assert.True(t, conf.HasRefTo(api.ApplicationWeb))
+	assert.False(t, conf.HasRefTo(api.Dashboard))
 }
 
 func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing.T) {

@@ -22,10 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
-
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
@@ -35,6 +31,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/exp/maps"
+	"net/http"
+	"net/url"
+	"strings"
 )
 
 type (
@@ -155,7 +154,7 @@ func (d *DynatraceClient) GetSchemaById(ctx context.Context, schemaID string) (c
 	return ret, nil
 }
 
-func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject, options UpsertSettingsOptions) (result DynatraceEntity, err error) {
+func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
 	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
 	// Tenants with versions < 1.262 are not able to handle updates of existing
 	// settings 2.0 objects that are non-deletable.
@@ -244,21 +243,19 @@ func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject
 	}
 
 	if schema, ok := d.schemaCache.Get(obj.SchemaId); ok {
-		if options.InsertAfter != "" && !schema.Ordered {
+		if upsertOptions.InsertAfter != "" && !schema.Ordered {
 			return DynatraceEntity{}, fmt.Errorf("'%s' is not an ordered setting, hence 'insertAfter' is not supported for this type of setting object", obj.SchemaId)
 		}
 	}
 
-	payload, err := buildPostRequestPayload(ctx, obj, externalID, options.InsertAfter)
+	payload, err := buildPostRequestPayload(ctx, obj, externalID, upsertOptions.InsertAfter)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
 	}
 
-	var retrySetting RetrySetting
-	if options.OverrideRetry != nil {
-		retrySetting = *options.OverrideRetry
-	} else {
-		retrySetting = d.retrySettings.Normal
+	retrySetting := d.retrySettings.Normal
+	if upsertOptions.OverrideRetry != nil {
+		retrySetting = *upsertOptions.OverrideRetry
 	}
 
 	resp, err := SendWithRetryWithInitialTry(ctx, d.platformClient.POST, d.settingsObjectAPIPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, payload, retrySetting)
