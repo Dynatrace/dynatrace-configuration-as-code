@@ -19,17 +19,26 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/memory"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
 )
 
 func main() {
+	go func() {
+		for {
+			time.Sleep(30 * time.Second)
+			memory.LogMemStats("HEARTBEAT")
+		}
+	}()
+
 	// initial logging should be verbose even if it is too early for it to go to a file
 	// furthermore it should honor the desired format, such as JSON
 	// full logging is set up in PreRunE method of the root command, created with runner.BuildCli

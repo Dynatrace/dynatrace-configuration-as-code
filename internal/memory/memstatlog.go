@@ -37,6 +37,7 @@ type extendedStats struct {
 	heapAllocMiB      float64
 	nextGCAtMiB       float64
 	lastGCTimeUTC     time.Time
+	goroutineCount    int
 }
 
 // LogMemStats creates a log line of memory stats which is useful for manually debugging/validating memory consumption.
@@ -62,6 +63,7 @@ func LogMemStats(location string) { // nolint:unused
 		heapAllocMiB:      float64(stats.HeapAlloc) / 1024 / 1024,
 		nextGCAtMiB:       float64(stats.NextGC) / 1024 / 1024,
 		lastGCTimeUTC:     time.Unix(0, int64(stats.LastGC)).UTC(),
+		goroutineCount:    runtime.NumGoroutine(),
 	}
 
 	writeLog(location, extended)
@@ -85,6 +87,7 @@ func writeLog(location string, stats extendedStats) { // nolint:unused
 		field.F("nextGCRunAtMiB", stats.nextGCAtMiB),
 		field.F("nextGCRunAtB", stats.NextGC),
 		field.F("totalGCPauseNs", stats.PauseTotalNs),
+		field.F("goroutineCount", stats.goroutineCount),
 	).Info("### MEMSTATS ### %s ###\n- totalAlloc: %s\n- heapAlloc: %s\n- heapObjects: %d\n- GC runs: %d\n- Next GC at heap size: %s\n- totalGCPauseTime: %d ns",
 		location,
 		stats.readableTotal,
@@ -98,11 +101,11 @@ func writeLog(location string, stats extendedStats) { // nolint:unused
 func writeCsv(location string, stats extendedStats) { // nolint:unused
 	if memstatFile == nil {
 		createFile("memstatlog.csv")
-		_, _ = memstatFile.WriteString("heapAlloc, heapAllocMiB, heapAllocByte, heapObjects, lastGCRun, location, nextGCAtHeap, nextGCAtHeapMiB, nextGCAtHeapByte, numGCRuns, totalAlloc, totalAllocMiB, totalAllocByte, totalGCPauseNs, ts\n")
+		_, _ = memstatFile.WriteString("heapAlloc, heapAllocMiB, heapAllocByte, heapObjects, lastGCRun, location, nextGCAtHeap, nextGCAtHeapMiB, nextGCAtHeapByte, numGCRuns, totalAlloc, totalAllocMiB, totalAllocByte, totalGCPauseNs,goroutineCount, ts\n")
 	}
 
-	//"heapAlloc, heapAllocMB, heapAllocByte, heapObjects, lastGCRun, "location", nextGCAtHeap, nextGCAtHeapMB, nextGCAtHeapByte, numGCRuns, totalAlloc, totalAllocMB, totalAllocByte, totalGCPauseNs, ts\n"
-	line := fmt.Sprintf("%v, %v, %v, %v, %v, %q, %v, %v, %v, %v, %v, %v, %v, %v, %q\n",
+	//"heapAlloc, heapAllocMB, heapAllocByte, heapObjects, lastGCRun, "location", nextGCAtHeap, nextGCAtHeapMB, nextGCAtHeapByte, numGCRuns, totalAlloc, totalAllocMB, totalAllocByte, totalGCPauseNs, goroutineCount, ts\n"
+	line := fmt.Sprintf("%v, %v, %v, %v, %v, %q, %v, %v, %v, %v, %v, %v, %v, %v, %v, %q\n",
 		stats.readableHeapAlloc, stats.heapAllocMiB, stats.HeapAlloc,
 		stats.HeapObjects,
 		stats.lastGCTimeUTC.String(),
@@ -111,6 +114,7 @@ func writeCsv(location string, stats extendedStats) { // nolint:unused
 		stats.NumGC, //numGCRuns
 		stats.readableTotal, stats.totalAllocMiB, stats.TotalAlloc,
 		stats.PauseTotalNs, //totalGCPauseNs
+		stats.goroutineCount,
 		time.Now().UTC().String(),
 	)
 

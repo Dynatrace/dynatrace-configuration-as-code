@@ -65,7 +65,7 @@ func SendWithRetry(ctx context.Context, sendWithBody SendRequestWithBody, endpoi
 	var resp *coreapi.Response
 
 	for i := 0; i < setting.MaxRetries; i++ {
-		log.WithCtxFields(ctx).Warn("Failed to send HTTP request. Waiting for %s before retrying...", setting.WaitTime)
+		log.WithCtxFields(ctx).Warn("Failed to send HTTP request. Waiting for %s before retrying. (%d of %d).", setting.WaitTime, i, setting.MaxRetries)
 		time.Sleep(setting.WaitTime)
 		resp, err = coreapi.AsResponseOrError(sendWithBody(ctx, endpoint, bytes.NewReader(body), requestOptions))
 		if err == nil {
