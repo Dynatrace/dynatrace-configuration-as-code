@@ -21,17 +21,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
-	"net/http"
-	"net/url"
 )
 
 // DownloadSettingsObject is the response type for the ListSettings operation
@@ -112,11 +114,22 @@ type DynatraceClient struct {
 
 	// classicConfigsCache caches classic settings values
 	classicConfigsCache cache.Cache[[]Value]
+
+	// limiter is used to limit parallel http requests
+	limiter *concurrency.Limiter
 }
 
 func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
 		d.generateExternalID = g
+	}
+}
+
+// WithClientRequestLimiter specifies that a specifies the limiter to be used for
+// limiting parallel client requests
+func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		d.limiter = limiter
 	}
 }
 
