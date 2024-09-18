@@ -103,13 +103,6 @@ func (d *DynatraceClient) CacheSettings(ctx context.Context, schemaID string) er
 }
 
 func (d *DynatraceClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
-	//d.limiter.ExecuteBlocking(func() {
-	schemas, err = d.listSchemas(ctx)
-	//})
-	return
-}
-
-func (d *DynatraceClient) listSchemas(ctx context.Context) (schemas SchemaList, err error) {
 	queryParams := url.Values{}
 	queryParams.Add("fields", "ordered,schemaId")
 
@@ -133,13 +126,6 @@ func (d *DynatraceClient) listSchemas(ctx context.Context) (schemas SchemaList, 
 }
 
 func (d *DynatraceClient) GetSchemaById(ctx context.Context, schemaID string) (constraints Schema, err error) {
-	//d.limiter.ExecuteBlocking(func() {
-	constraints, err = d.getSchemaById(ctx, schemaID)
-	//})
-	return
-}
-
-func (d *DynatraceClient) getSchemaById(ctx context.Context, schemaID string) (constraints Schema, err error) {
 	if ret, cached := d.schemaCache.Get(schemaID); cached {
 		return ret, nil
 	}
@@ -470,13 +456,6 @@ func parsePostResponse(body []byte) (DynatraceEntity, error) {
 }
 
 func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
-	//d.limiter.ExecuteBlocking(func() {
-	res, err = d.listSettings(ctx, schemaId, opts)
-	//})
-	return
-}
-
-func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
 	if settings, cached := d.settingsCache.Get(schemaId); cached {
 		log.WithCtxFields(ctx).Debug("Using cached settings for schema %s", schemaId)
 		return filter.FilterSlice(settings, opts.Filter), nil

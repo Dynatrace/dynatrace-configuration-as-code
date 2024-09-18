@@ -295,6 +295,14 @@ func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, n
 }
 
 func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		entity, err = d.upsertConfigByName(ctx, a, name, payload)
+	})
+	return
+}
+
+func (d *DynatraceClient) upsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+
 	if a.ID == api.Extension {
 		return d.uploadExtension(ctx, a, name, payload)
 	}
@@ -302,7 +310,10 @@ func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, a api.API, nam
 }
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
-	return d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
+	d.limiter.ExecuteBlocking(func() {
+		entity, err = d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
+	})
+	return
 }
 
 func (d *DynatraceClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
