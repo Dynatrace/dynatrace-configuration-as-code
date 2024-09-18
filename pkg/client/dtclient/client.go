@@ -203,6 +203,7 @@ func NewPlatformClient(client *corerest.Client, classicClient *corerest.Client, 
 		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
 		classicConfigsCache:   &cache.DefaultCache[[]Value]{},
 		schemaCache:           &cache.DefaultCache[Schema]{},
+		limiter:               concurrency.NewLimiter(5),
 	}
 
 	for _, o := range opts {
@@ -228,6 +229,7 @@ func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *Dyn
 		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
 		classicConfigsCache:   &cache.DefaultCache[[]Value]{},
 		schemaCache:           &cache.DefaultCache[Schema]{},
+		limiter:               concurrency.NewLimiter(5),
 	}
 
 	for _, o := range opts {
