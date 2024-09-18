@@ -18,6 +18,10 @@ package log
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers/console"
@@ -26,9 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/spf13/afero"
 	"golang.org/x/net/context"
-	"io"
-	"os"
-	"path/filepath"
 )
 
 const (
@@ -159,6 +160,12 @@ func ErrorFilePath() string {
 	return filepath.Join(LogDirectory, timestamp+"-errors.log")
 }
 
+// MemStatFilePath returns the full path of an memory statistics log file for the current execution time - if no stats are written (yet) no file may exist at this path.
+func MemStatFilePath() string {
+	timestamp := timeutils.TimeAnchor().Format(LogFileTimestampPrefixFormat)
+	return filepath.Join(LogDirectory, timestamp+"-memstat.log")
+}
+
 // prepareLogFiles tries to create a LogDirectory (if none exists) and a file each to write all logs and filtered error
 // logs to. As errors in preparing log files are viewed as optional for the logger setup using this method, partial data
 // may be returned in case of errors.
@@ -167,7 +174,6 @@ func ErrorFilePath() string {
 func prepareLogFiles(fs afero.Fs) (logFile afero.File, errFile afero.File, err error) {
 	if err := fs.MkdirAll(LogDirectory, 0777); err != nil {
 		return nil, nil, fmt.Errorf("unable to prepare log directory %s: %w", LogDirectory, err)
-
 	}
 
 	logFilePath := LogFilePath()
@@ -182,6 +188,10 @@ func prepareLogFiles(fs afero.Fs) (logFile afero.File, errFile afero.File, err e
 		return logFile, nil, fmt.Errorf("unable to prepare error file in %s directory: %w", LogDirectory, err)
 	}
 
+	err = createMemStatFile(fs, MemStatFilePath())
+	if err != nil {
+		return logFile, errFile, fmt.Errorf("unable to prepare memory stastics file in %s directory: %w", LogDirectory, err)
+	}
 	return logFile, errFile, nil
 
 }

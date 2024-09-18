@@ -22,7 +22,6 @@ import (
 	"time"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/memory"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
@@ -317,7 +316,7 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 		deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 	}
 
-	memory.LogMemStats("After deployment: " + c.Coordinate.String())
+	log.LogMemStats("After deployment: " + c.Coordinate.String())
 
 	if deployErr != nil {
 		var responseErr coreapi.APIError

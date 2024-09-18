@@ -70,7 +70,8 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			log.PrepareLogging(fs, verbose, logSpy, featureflags.Permanent[featureflags.LogToFile].Enabled() || support.SupportArchive)
+			fileBasedLogging := featureflags.Permanent[featureflags.LogToFile].Enabled() || support.SupportArchive
+			log.PrepareLogging(fs, verbose, logSpy, fileBasedLogging)
 
 			// log the version except for running the main command, help command and version command
 			if (cmd.Name() != "monaco") && (cmd.Name() != "help") && (cmd.Name() != "version") {
@@ -81,6 +82,7 @@ Examples:
 				log.Warn("Feature Flags modified - Dynatrace Support might not be able to assist you with issues.")
 			}
 
+			log.LogPeriodicMemStats()
 			memory.SetDefaultLimit()
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -92,6 +94,7 @@ Examples:
 	// global flags
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable debug logging")
 	rootCmd.PersistentFlags().BoolVar(&support.SupportArchive, "support-archive", false, "Create support archive")
+	rootCmd.PersistentFlags().BoolVar(&log.LogMemStatsAsInfo, "memory-statistics", false, "Log memory statistics as INFO")
 
 	// commands
 	rootCmd.AddCommand(download.GetDownloadCommand(fs, &download.DefaultCommand{}))

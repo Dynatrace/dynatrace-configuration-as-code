@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package memory
+package strings
 
 import "fmt"
 
-func byteCountToHumanReadableUnit(b uint64) string {
+func ByteCountToHumanReadableUnit(b uint64) string {
 	const unit = 1000
 	if b < unit {
 		return fmt.Sprintf("%d B", b)
