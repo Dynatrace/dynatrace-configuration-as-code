@@ -316,8 +316,6 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 		deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 	}
 
-	log.LogMemStats("After deployment: " + c.Coordinate.String())
-
 	if deployErr != nil {
 		var responseErr coreapi.APIError
 		if errors.As(deployErr, &responseErr) {
