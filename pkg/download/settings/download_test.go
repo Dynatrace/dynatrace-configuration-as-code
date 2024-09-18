@@ -42,6 +42,7 @@ import (
 
 func TestDownloadAll(t *testing.T) {
 	uuid1 := idutils.GenerateUUIDFromString("oid1")
+	uuid2 := idutils.GenerateUUIDFromString("oid2")
 	uuid3 := idutils.GenerateUUIDFromString("oid3")
 
 	type mockValues struct {
@@ -315,6 +316,10 @@ func TestDownloadAll(t *testing.T) {
 							ObjectId:      "oid1",
 							Scope:         "tenant",
 							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable: true,
+								Movable:    true,
+							},
 						},
 						{
 							ExternalId:    "ex2",
@@ -325,6 +330,7 @@ func TestDownloadAll(t *testing.T) {
 							Value:         json.RawMessage("{}"),
 							ModificationInfo: &dtclient.SettingsModificationInfo{
 								Modifiable: false,
+								Movable:    true,
 							},
 						},
 						{
@@ -334,6 +340,10 @@ func TestDownloadAll(t *testing.T) {
 							ObjectId:      "oid3",
 							Scope:         "tenant",
 							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable: true,
+								Movable:    true,
+							},
 						},
 					}, nil
 				},
@@ -380,6 +390,123 @@ func TestDownloadAll(t *testing.T) {
 								Property: "id",
 							},
 						},
+					},
+					Skip:           false,
+					OriginObjectId: "oid3",
+				},
+			}},
+		},
+		{
+			name: "DownloadSettings - non-movable ordered settings should not receive insertAfter param",
+			mockValues: mockValues{
+				ListSchemasCalls: 1,
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "id1", Ordered: true}}, nil
+				},
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "id1", Ordered: true}, nil
+				},
+				GetSchemaCalls: 1,
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{
+						{
+							ExternalId:    "ex1",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid1",
+							Scope:         "tenant",
+							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable: true,
+								Movable:    true,
+							},
+						},
+						{
+							ExternalId:    "ex2",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid2",
+							Scope:         "tenant",
+							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable: true,
+								Movable:    true,
+							},
+						},
+						{
+							ExternalId:    "ex3",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid3",
+							Scope:         "tenant",
+							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable: true,
+								Movable:    false,
+							},
+						},
+					}, nil
+				},
+				ListSettingsCalls: 1,
+			},
+			want: v2.ConfigsPerType{"id1": {
+				{
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid1,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					},
+					Skip:           false,
+					OriginObjectId: "oid1",
+				},
+				{
+					Template: template.NewInMemoryTemplate(uuid2, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid2,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
+						config.InsertAfterParameter: &reference.ReferenceParameter{
+							ParameterReference: parameter.ParameterReference{
+								Config: coordinate.Coordinate{
+									Project:  "projectName",
+									Type:     "sid1",
+									ConfigId: uuid1,
+								},
+								Property: "id",
+							},
+						},
+					},
+					Skip:           false,
+					OriginObjectId: "oid2",
+				},
+				{
+					Template: template.NewInMemoryTemplate(uuid3, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid3,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
 					},
 					Skip:           false,
 					OriginObjectId: "oid3",
