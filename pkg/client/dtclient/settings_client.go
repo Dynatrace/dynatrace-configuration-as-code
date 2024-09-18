@@ -103,9 +103,9 @@ func (d *DynatraceClient) CacheSettings(ctx context.Context, schemaID string) er
 }
 
 func (d *DynatraceClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		schemas, err = d.listSchemas(ctx)
-	})
+	//d.limiter.ExecuteBlocking(func() {
+	schemas, err = d.listSchemas(ctx)
+	//})
 	return
 }
 
@@ -133,9 +133,9 @@ func (d *DynatraceClient) listSchemas(ctx context.Context) (schemas SchemaList, 
 }
 
 func (d *DynatraceClient) GetSchemaById(ctx context.Context, schemaID string) (constraints Schema, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		constraints, err = d.getSchemaById(ctx, schemaID)
-	})
+	//d.limiter.ExecuteBlocking(func() {
+	constraints, err = d.getSchemaById(ctx, schemaID)
+	//})
 	return
 }
 
@@ -470,9 +470,9 @@ func parsePostResponse(body []byte) (DynatraceEntity, error) {
 }
 
 func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listSettings(ctx, schemaId, opts)
-	})
+	//d.limiter.ExecuteBlocking(func() {
+	res, err = d.listSettings(ctx, schemaId, opts)
+	//})
 	return
 }
 
