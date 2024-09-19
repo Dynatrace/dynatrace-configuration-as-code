@@ -190,7 +190,7 @@ func prepareLogFiles(fs afero.Fs) (logFile afero.File, errFile afero.File, err e
 
 	err = createMemStatFile(fs, MemStatFilePath())
 	if err != nil {
-		return logFile, errFile, fmt.Errorf("unable to prepare memory stastics file in %s directory: %w", LogDirectory, err)
+		return logFile, errFile, fmt.Errorf("unable to prepare memory statistics file in %s directory: %w", LogDirectory, err)
 	}
 	return logFile, errFile, nil
 
