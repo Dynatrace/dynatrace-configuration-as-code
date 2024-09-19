@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package memory
+package log
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/spf13/afero"
 	"runtime"
@@ -37,6 +37,7 @@ type extendedStats struct {
 	heapAllocMiB      float64
 	nextGCAtMiB       float64
 	lastGCTimeUTC     time.Time
+	goroutineCount    int
 }
 
 // LogMemStats creates a log line of memory stats which is useful for manually debugging/validating memory consumption.
@@ -50,27 +51,47 @@ type extendedStats struct {
 // log and using the utility script tools/parse-memstats-from-json-log.sh to post-process the log file.
 func LogMemStats(location string) { // nolint:unused
 
+	extended := getStats()
+	writeLog(location, extended)
+
+	if memstatFile == nil {
+		createFile("memstatlog.csv")
+		_, _ = memstatFile.WriteString("heapAlloc, heapAllocMiB, heapAllocByte, heapObjects, lastGCRun, location, nextGCAtHeap, nextGCAtHeapMiB, nextGCAtHeapByte, numGCRuns, totalAlloc, totalAllocMiB, totalAllocByte, totalGCPauseNs, ts\n")
+	}
+	writeCsv(memstatFile, location, extended)
+}
+
+func createFile(filename string) { // nolint:unused
+	fs := afero.NewOsFs()
+	ts := timeutils.TimeAnchor().Format("20060102-150405")
+
+	f, err := fs.Create(ts + "_" + filename)
+	if err != nil {
+		panic(err)
+	}
+
+	memstatFile = f
+}
+
+func getStats() extendedStats {
 	var stats runtime.MemStats
 	runtime.ReadMemStats(&stats)
 
-	extended := extendedStats{
+	return extendedStats{
 		MemStats:          stats,
-		readableTotal:     byteCountToHumanReadableUnit(stats.TotalAlloc),
-		readableHeapAlloc: byteCountToHumanReadableUnit(stats.HeapAlloc),
-		readableNextGC:    byteCountToHumanReadableUnit(stats.NextGC),
+		readableTotal:     strings.ByteCountToHumanReadableUnit(stats.TotalAlloc),
+		readableHeapAlloc: strings.ByteCountToHumanReadableUnit(stats.HeapAlloc),
+		readableNextGC:    strings.ByteCountToHumanReadableUnit(stats.NextGC),
 		totalAllocMiB:     float64(stats.TotalAlloc) / 1024 / 1024,
 		heapAllocMiB:      float64(stats.HeapAlloc) / 1024 / 1024,
 		nextGCAtMiB:       float64(stats.NextGC) / 1024 / 1024,
 		lastGCTimeUTC:     time.Unix(0, int64(stats.LastGC)).UTC(),
+		goroutineCount:    runtime.NumGoroutine(),
 	}
-
-	writeLog(location, extended)
-	writeCsv(location, extended)
 }
 
 func writeLog(location string, stats extendedStats) { // nolint:unused
-
-	log.WithFields(
+	WithFields(
 		field.F("location", location),
 		field.F("totalAlloc", stats.readableTotal),
 		field.F("totalAllocMiB", stats.totalAllocMiB),
@@ -85,6 +106,7 @@ func writeLog(location string, stats extendedStats) { // nolint:unused
 		field.F("nextGCRunAtMiB", stats.nextGCAtMiB),
 		field.F("nextGCRunAtB", stats.NextGC),
 		field.F("totalGCPauseNs", stats.PauseTotalNs),
+		field.F("goroutineCount", stats.goroutineCount),
 	).Info("### MEMSTATS ### %s ###\n- totalAlloc: %s\n- heapAlloc: %s\n- heapObjects: %d\n- GC runs: %d\n- Next GC at heap size: %s\n- totalGCPauseTime: %d ns",
 		location,
 		stats.readableTotal,
@@ -95,14 +117,9 @@ func writeLog(location string, stats extendedStats) { // nolint:unused
 		stats.PauseTotalNs)
 }
 
-func writeCsv(location string, stats extendedStats) { // nolint:unused
-	if memstatFile == nil {
-		createFile("memstatlog.csv")
-		_, _ = memstatFile.WriteString("heapAlloc, heapAllocMiB, heapAllocByte, heapObjects, lastGCRun, location, nextGCAtHeap, nextGCAtHeapMiB, nextGCAtHeapByte, numGCRuns, totalAlloc, totalAllocMiB, totalAllocByte, totalGCPauseNs, ts\n")
-	}
-
-	//"heapAlloc, heapAllocMB, heapAllocByte, heapObjects, lastGCRun, "location", nextGCAtHeap, nextGCAtHeapMB, nextGCAtHeapByte, numGCRuns, totalAlloc, totalAllocMB, totalAllocByte, totalGCPauseNs, ts\n"
-	line := fmt.Sprintf("%v, %v, %v, %v, %v, %q, %v, %v, %v, %v, %v, %v, %v, %v, %q\n",
+func writeCsv(file afero.File, location string, stats extendedStats) { // nolint:unused
+	//"heapAlloc, heapAllocMB, heapAllocByte, heapObjects, lastGCRun, "location", nextGCAtHeap, nextGCAtHeapMB, nextGCAtHeapByte, numGCRuns, totalAlloc, totalAllocMB, totalAllocByte, totalGCPauseNs, goroutineCount, ts\n"
+	line := fmt.Sprintf("%v, %v, %v, %v, %v, %q, %v, %v, %v, %v, %v, %v, %v, %v, %v, %q\n",
 		stats.readableHeapAlloc, stats.heapAllocMiB, stats.HeapAlloc,
 		stats.HeapObjects,
 		stats.lastGCTimeUTC.String(),
@@ -111,20 +128,30 @@ func writeCsv(location string, stats extendedStats) { // nolint:unused
 		stats.NumGC, //numGCRuns
 		stats.readableTotal, stats.totalAllocMiB, stats.TotalAlloc,
 		stats.PauseTotalNs, //totalGCPauseNs
+		stats.goroutineCount,
 		time.Now().UTC().String(),
 	)
 
-	_, _ = memstatFile.WriteString(line)
+	_, _ = file.WriteString(line)
 }
 
-func createFile(filename string) { // nolint:unused
-	fs := afero.NewOsFs()
-	ts := timeutils.TimeAnchor().Format("20060102-150405")
-
-	f, err := fs.Create(ts + "_" + filename)
+func createMemStatFile(fs afero.Fs, name string) error {
+	memStatFile, err := fs.Create(name)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	memstatFile = f
+	_, err = memStatFile.WriteString("heapAlloc, heapAllocMiB, heapAllocByte, heapObjects, lastGCRun, location, nextGCAtHeap, nextGCAtHeapMiB, nextGCAtHeapByte, numGCRuns, totalAlloc, totalAllocMiB, totalAllocByte, totalGCPauseNs,goroutineCount, ts\n")
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for {
+			time.Sleep(60 * time.Second)
+			writeCsv(memStatFile, "periodic", getStats())
+		}
+	}()
+
+	return nil
 }

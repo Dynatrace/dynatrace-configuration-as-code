@@ -70,7 +70,8 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			log.PrepareLogging(fs, verbose, logSpy, featureflags.Permanent[featureflags.LogToFile].Enabled() || support.SupportArchive)
+			fileBasedLogging := featureflags.Permanent[featureflags.LogToFile].Enabled() || support.SupportArchive
+			log.PrepareLogging(fs, verbose, logSpy, fileBasedLogging)
 
 			// log the version except for running the main command, help command and version command
 			if (cmd.Name() != "monaco") && (cmd.Name() != "help") && (cmd.Name() != "version") {

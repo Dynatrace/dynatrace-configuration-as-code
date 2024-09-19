@@ -42,6 +42,7 @@ func Archive(fs afero.Fs) error {
 		log.LogFilePath(),
 		log.ErrorFilePath(),
 		ffState,
+		log.MemStatFilePath(),
 	}
 
 	workingDir, err := os.Getwd()

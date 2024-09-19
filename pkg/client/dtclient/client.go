@@ -21,17 +21,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
-	"net/http"
-	"net/url"
 )
 
 // DownloadSettingsObject is the response type for the ListSettings operation
@@ -112,11 +114,22 @@ type DynatraceClient struct {
 
 	// classicConfigsCache caches classic settings values
 	classicConfigsCache cache.Cache[[]Value]
+
+	// limiter is used to limit parallel http requests
+	limiter *concurrency.Limiter
 }
 
 func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
 		d.generateExternalID = g
+	}
+}
+
+// WithClientRequestLimiter specifies that a specifies the limiter to be used for
+// limiting parallel client requests
+func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		d.limiter = limiter
 	}
 }
 
@@ -190,6 +203,7 @@ func NewPlatformClient(client *corerest.Client, classicClient *corerest.Client, 
 		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
 		classicConfigsCache:   &cache.DefaultCache[[]Value]{},
 		schemaCache:           &cache.DefaultCache[Schema]{},
+		limiter:               concurrency.NewLimiter(5),
 	}
 
 	for _, o := range opts {
@@ -215,6 +229,7 @@ func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *Dyn
 		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
 		classicConfigsCache:   &cache.DefaultCache[[]Value]{},
 		schemaCache:           &cache.DefaultCache[Schema]{},
+		limiter:               concurrency.NewLimiter(5),
 	}
 
 	for _, o := range opts {
@@ -280,6 +295,14 @@ func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, n
 }
 
 func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		entity, err = d.upsertConfigByName(ctx, a, name, payload)
+	})
+	return
+}
+
+func (d *DynatraceClient) upsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+
 	if a.ID == api.Extension {
 		return d.uploadExtension(ctx, a, name, payload)
 	}
@@ -287,7 +310,10 @@ func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, a api.API, nam
 }
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
-	return d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
+	d.limiter.ExecuteBlocking(func() {
+		entity, err = d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
+	})
+	return
 }
 
 func (d *DynatraceClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {

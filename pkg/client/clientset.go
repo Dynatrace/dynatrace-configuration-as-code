@@ -31,6 +31,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -262,6 +263,7 @@ func CreateClassicClientSet(url string, token string, opts ClientOptions) (*Clie
 		classicClient,
 		dtclient.WithCachingDisabled(opts.CachingDisabled),
 		dtclient.WithAutoServerVersion(),
+		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
 	)
 	if err != nil {
 		return nil, err
@@ -323,6 +325,7 @@ func CreatePlatformClientSet(platformURL string, auth PlatformAuth, opts ClientO
 		classicClient,
 		dtclient.WithCachingDisabled(opts.CachingDisabled),
 		dtclient.WithAutoServerVersion(),
+		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
 	)
 	if err != nil {
 		return nil, err

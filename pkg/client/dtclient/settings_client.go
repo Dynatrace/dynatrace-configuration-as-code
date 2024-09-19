@@ -179,6 +179,13 @@ func (d *DynatraceClient) handleUpsertUnsupportedVersion(ctx context.Context, ob
 }
 
 func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		result, err = d.upsertSettings(ctx, obj, upsertOptions)
+	})
+	return
+}
+
+func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
 	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
 		return d.handleUpsertUnsupportedVersion(ctx, obj)
 	}
