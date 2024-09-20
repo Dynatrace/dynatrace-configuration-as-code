@@ -17,9 +17,11 @@
 package memory
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"os"
 	"runtime/debug"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 )
 
 const gibibyte = int64(1073741824)
@@ -40,6 +42,6 @@ func SetDefaultLimit() bool {
 	}
 
 	debug.SetMemoryLimit(defaultLimit)
-	log.Debug("Default soft memory limit set: %s", byteCountToHumanReadableUnit(uint64(defaultLimit)))
+	log.Debug("Default soft memory limit set: %s", strings.ByteCountToHumanReadableUnit(uint64(defaultLimit)))
 	return true
 }
