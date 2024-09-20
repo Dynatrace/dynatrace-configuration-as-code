@@ -2,7 +2,7 @@ module github.com/dynatrace/dynatrace-configuration-as-code/v2
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/dynatrace/dynatrace-configuration-as-code-core v0.6.2-0.20240828123926-62143c50726d
+	github.com/dynatrace/dynatrace-configuration-as-code-core v0.6.2-0.20240920094136-5f8d3b0e7e36
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/go-cmp v0.6.0
@@ -17,7 +17,7 @@ require (
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.uber.org/mock v0.4.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
+	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	golang.org/x/net v0.29.0
 	golang.org/x/oauth2 v0.23.0
 	gonum.org/v1/gonum v0.15.1
@@ -38,6 +38,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-go 1.22
+go 1.23
 
-toolchain go1.22.7
+toolchain go1.23.1
