@@ -19,14 +19,15 @@ package deployer
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/go-logr/logr"
-	"io"
-	"net/http"
 )
 
 type (
@@ -350,7 +351,7 @@ func (d *accountManagementClient) handleClientResponseError(resp *http.Response,
 	if !rest.IsSuccess(resp) && resp.StatusCode != http.StatusNotFound {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("unable to read response body %w", err)
+			return fmt.Errorf("unable to read response body: %w", err)
 		}
 		return fmt.Errorf(errMessage+" (HTTP %d): %s", resp.StatusCode, string(body))
 	}
