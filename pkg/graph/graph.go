@@ -74,7 +74,7 @@ type ConfigGraphPerEnvironment map[string]*simple.DirectedGraph
 func (graphs ConfigGraphPerEnvironment) EncodeToDOT(environment string) ([]byte, error) {
 	g, ok := graphs[environment]
 	if !ok {
-		return nil, fmt.Errorf("no dependency graph exists for envrionment %s", environment)
+		return nil, fmt.Errorf("no dependency graph exists for environment %s", environment)
 	}
 	return dot.Marshal(g, environment+"_dependency_graph", "", "  ")
 }
@@ -83,7 +83,7 @@ func (graphs ConfigGraphPerEnvironment) EncodeToDOT(environment string) ([]byte,
 func (graphs ConfigGraphPerEnvironment) SortConfigs(environment string) ([]config.Config, error) {
 	g, ok := graphs[environment]
 	if !ok {
-		return nil, fmt.Errorf("no dependency graph exists for envrionment %s", environment)
+		return nil, fmt.Errorf("no dependency graph exists for environment %s", environment)
 	}
 
 	sortedNodes, err := topo.Sort(g)
@@ -115,7 +115,7 @@ type SortedComponent struct {
 func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environment string) ([]SortedComponent, error) {
 	g, ok := graphs[environment]
 	if !ok {
-		return nil, fmt.Errorf("no dependency graph exists for envrionment %s", environment)
+		return nil, fmt.Errorf("no dependency graph exists for environment %s", environment)
 	}
 
 	components := findConnectedComponents(g)
