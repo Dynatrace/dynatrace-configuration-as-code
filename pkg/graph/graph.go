@@ -72,18 +72,18 @@ type ConfigGraphPerEnvironment map[string]*simple.DirectedGraph
 
 // EncodeToDOT returns a DOT string represenation of the dependency graph for the given environment.
 func (graphs ConfigGraphPerEnvironment) EncodeToDOT(environment string) ([]byte, error) {
-	g, ok := graphs[environment]
-	if !ok {
-		return nil, missingDependencyGraphForEnvironmentError(environment)
+	g, err := graphs.getGraphForEnvironment(environment)
+	if err != nil {
+		return nil, err
 	}
 	return dot.Marshal(g, environment+"_dependency_graph", "", "  ")
 }
 
 // SortConfigs returns a slice of config.Config for the given environment sorted according to their dependencies.
 func (graphs ConfigGraphPerEnvironment) SortConfigs(environment string) ([]config.Config, error) {
-	g, ok := graphs[environment]
-	if !ok {
-		return nil, missingDependencyGraphForEnvironmentError(environment)
+	g, err := graphs.getGraphForEnvironment(environment)
+	if err != nil {
+		return nil, err
 	}
 
 	sortedNodes, err := topo.Sort(g)
@@ -113,9 +113,9 @@ type SortedComponent struct {
 // GetIndependentlySortedConfigs returns sorted slices of SortedComponent.
 // Dependent configurations are returned as a sub-graph as well as a slice, sorted in the correct order to deploy them sequentially.
 func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environment string) ([]SortedComponent, error) {
-	g, ok := graphs[environment]
-	if !ok {
-		return nil, missingDependencyGraphForEnvironmentError(environment)
+	g, err := graphs.getGraphForEnvironment(environment)
+	if err != nil {
+		return nil, err
 	}
 
 	components := findConnectedComponents(g)
@@ -145,8 +145,12 @@ func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environmen
 	return sortedComponents, nil
 }
 
-func missingDependencyGraphForEnvironmentError(environment string) error {
-	return fmt.Errorf("no dependency graph exists for environment %s", environment)
+func (graphs ConfigGraphPerEnvironment) getGraphForEnvironment(environment string) (*simple.DirectedGraph, error) {
+	g, ok := graphs[environment]
+	if !ok {
+		return nil, fmt.Errorf("no dependency graph exists for environment %s", environment)
+	}
+	return g, nil
 }
 
 func findConnectedComponents(d *simple.DirectedGraph) []*simple.DirectedGraph {
