@@ -1344,13 +1344,13 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			errsContain: []string{"type must be 'environment'"},
 		},
 		{
-			name: "Empty token",
+			name: "Empty token and no oauth",
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: ''}}} ]}]
 `,
-			errsContain: []string{"no name given or empty"},
+			errsContain: []string{"failed to parse Token and Oauth not set, token errors: empty"},
 		},
 		{
 			name: "Empty url",
@@ -1534,6 +1534,51 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 								Name:  "e",
 								Value: "mock token",
 							},
+							OAuth: &manifest.OAuth{
+								ClientID: manifest.AuthSecret{
+									Name:  "client-id",
+									Value: "resolved-client-id",
+								},
+								ClientSecret: manifest.AuthSecret{
+									Name:  "client-secret",
+									Value: "resolved-client-secret",
+								},
+								TokenEndpoint: &manifest.URLDefinition{
+									Type:  manifest.EnvironmentURLType,
+									Name:  "ENV_OAUTH_ENDPOINT",
+									Value: "resolved-oauth-endpoint",
+								},
+							},
+						},
+					},
+				},
+				Accounts: map[string]manifest.Account{},
+			},
+		},
+		{
+			name: "No errors with oAuth no token provided; OAuth token endpoint is specified via environment variable",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {type: environment, value: ENV_OAUTH_ENDPOINT}}}}]}]
+`,
+			errsContain: []string{},
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
+					"a": {
+						Name: "a",
+						Path: "p",
+					},
+				},
+				Environments: map[string]manifest.EnvironmentDefinition{
+					"c": {
+						Name: "c",
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
+							Value: "d",
+						},
+						Group: "b",
+						Auth: manifest.Auth{
 							OAuth: &manifest.OAuth{
 								ClientID: manifest.AuthSecret{
 									Name:  "client-id",

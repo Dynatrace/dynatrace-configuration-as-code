@@ -80,6 +80,8 @@ type ManifestLoaderError struct {
 	Reason string `json:"reason"`
 }
 
+const emptyAuthErr = "empty"
+
 func (e ManifestLoaderError) Error() string {
 	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Reason)
 }
@@ -207,31 +209,42 @@ func Load(context *Context) (manifest.Manifest, []error) {
 }
 
 func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
-	token, err := parseAuthSecret(context, a.Token)
-	if err != nil {
-		return manifest.Auth{}, fmt.Errorf("error parsing token: %w", err)
-	}
+	token, tErr := parseToken(context, a.Token)
+	if a.OAuth != nil {
+		o, oErr := parseOAuth(context, *a.OAuth)
 
-	if a.OAuth == nil {
+		if oErr != nil {
+			return manifest.Auth{}, fmt.Errorf("failed to parse Oauth fields, oauth errors %w", oErr)
+		}
+
+		if tErr != nil && tErr.Error() == emptyAuthErr {
+			log.Warn("classic token not set, only able to use platform endpoint")
+		}
+
 		return manifest.Auth{
 			Token: token,
+			OAuth: &o,
 		}, nil
 	}
 
-	o, err := parseOAuth(context, *a.OAuth)
-	if err != nil {
-		return manifest.Auth{}, fmt.Errorf("failed to parse OAuth credentials: %w", err)
+	if tErr != nil {
+		return manifest.Auth{}, fmt.Errorf("failed to parse Token and Oauth not set, token errors: %w", tErr)
 	}
 
+	log.Info("oauth client not set, only able to use classic endpoint")
 	return manifest.Auth{
 		Token: token,
-		OAuth: &o,
 	}, nil
+}
 
+func parseToken(context *Context, s persistence.AuthSecret) (manifest.AuthSecret, error) {
+	if s.Name == "" && s.Type == "" {
+		return manifest.AuthSecret{}, errors.New(emptyAuthErr)
+	}
+	return parseAuthSecret(context, s)
 }
 
 func parseAuthSecret(context *Context, s persistence.AuthSecret) (manifest.AuthSecret, error) {
-
 	if !(s.Type == persistence.TypeEnvironment || s.Type == "") {
 		return manifest.AuthSecret{}, errors.New("type must be 'environment'")
 	}
