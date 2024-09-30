@@ -86,6 +86,8 @@ The `monaco` tool is written in [Go](https://golang.org/), so you'll need to hav
 
 To build the tool, run `make build` in the repository root folder.
 
+**_NOTE:_**  `$GOPATH/bin` is required to be loaded in your `$PATH`
+
 > This guide references the make target for each step. If you want to see the actual Go commands take a look at the [Makefile](./Makefile)
 
 To install the tool to your machine, run `make install` in the repository root folder.

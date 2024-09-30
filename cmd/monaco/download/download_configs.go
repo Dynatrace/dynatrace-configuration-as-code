@@ -142,6 +142,10 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
 	}
 
+	if !isClassicTokenSet(env.Auth) {
+		options.onlyThirdGen = true
+	}
+
 	if errs := options.valid(); len(errs) != 0 {
 		err := printAndFormatErrors(errs, "command options are not valid")
 		return err
@@ -334,7 +338,7 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 
 // shouldDownloadConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
 func shouldDownloadConfigs(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline
+	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline && !opts.onlyThirdGen
 }
 
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
@@ -368,4 +372,8 @@ func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
 		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
 		!opts.onlyDocuments &&
 		!opts.onlyAutomation
+}
+
+func isClassicTokenSet(auth manifest.Auth) bool {
+	return auth.Token.Value != "" && auth.Token.Name != ""
 }

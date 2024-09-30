@@ -489,6 +489,9 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 		retrySetting = d.retrySettings.Normal
 	}
 
+	if d.classicClient == nil {
+		return nil, fmt.Errorf("classic client token not set, cannot deploy config")
+	}
 	resp, err := GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
 	if err != nil {
 		return nil, err
