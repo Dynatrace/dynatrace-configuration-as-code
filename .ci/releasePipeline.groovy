@@ -80,7 +80,7 @@ boolean isRelease(Map args = [version: null]) {
 
 boolean isReleaseCandidate(Map args = [version: null]) {
     errorIfArgumentIsNull(callerName: "isReleaseCandidate", name: "version", value: args.version)
-    return args.version ==~ /^\d+\.\d+\.\d+-rc\d*$/
+    return args.version ==~ /^\d+\.\d+\.\d+-rc\.\d+$/
 }
 
 boolean isFinal(Context ctx) {
