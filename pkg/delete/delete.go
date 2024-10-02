@@ -49,15 +49,20 @@ type DeleteEntries = map[configurationType][]pointer.DeletePointer
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
 func Configs(ctx context.Context, clients ClientSet, _ api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) error {
+	copiedDeleteEntries := make(DeleteEntries)
+	for k, v := range entriesToDelete {
+		copiedDeleteEntries[k] = v
+	}
+
 	var deleteErrors int
 
 	// Delete automation resources (in the specified order)
 	automationTypeOrder := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
 	for _, key := range automationTypeOrder {
-		entries := entriesToDelete[string(key)]
+		entries := copiedDeleteEntries[string(key)]
 		if clients.Automation == nil {
 			log.WithCtxFields(ctx).WithFields(field.Type(key)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
-			delete(entriesToDelete, string(key))
+			delete(copiedDeleteEntries, string(key))
 			continue
 		}
 		err := automation.Delete(ctx, clients.Automation, automationResources[string(key)], entries)
@@ -65,18 +70,18 @@ func Configs(ctx context.Context, clients ClientSet, _ api.APIs, automationResou
 			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
 			deleteErrors += 1
 		}
-		delete(entriesToDelete, string(key))
+		delete(copiedDeleteEntries, string(key))
 	}
 
 	//  Dashboard share settings cannot be deleted
-	if _, ok := entriesToDelete[api.DashboardShareSettings]; ok {
+	if _, ok := copiedDeleteEntries[api.DashboardShareSettings]; ok {
 		log.Warn("Classic config of type %s cannot be deleted. Note, that they can be removed by deleting the associated dashboard.", api.DashboardShareSettings)
-		delete(entriesToDelete, api.DashboardShareSettings)
+		delete(copiedDeleteEntries, api.DashboardShareSettings)
 
 	}
 
 	// Delete rest of config types
-	for t, entries := range entriesToDelete {
+	for t, entries := range copiedDeleteEntries {
 		var err error
 		if _, ok := api.NewAPIs()[t]; ok {
 			err = classic.Delete(ctx, clients.Classic, entries)
