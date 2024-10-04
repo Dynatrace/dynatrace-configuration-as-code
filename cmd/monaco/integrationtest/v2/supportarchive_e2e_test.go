@@ -21,12 +21,12 @@ package v2
 import (
 	"archive/zip"
 	"bytes"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"io"
 	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"

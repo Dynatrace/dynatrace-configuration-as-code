@@ -37,6 +37,9 @@ import (
 
 const TrafficLogFilePrefixFormat = log.LogFileTimestampPrefixFormat
 
+var TrafficLogger *FileBasedLogger
+var once sync.Once
+
 type FileBasedLogger struct {
 	fs               afero.Fs
 	requestFilePath  string
@@ -47,13 +50,14 @@ type FileBasedLogger struct {
 }
 
 func NewFileBased() *FileBasedLogger {
-	tl := &FileBasedLogger{
-		fs:               afero.NewOsFs(),
-		requestFilePath:  RequestFilePath(),
-		responseFilePath: ResponseFilePath(),
-	}
-
-	return tl
+	once.Do(func() {
+		TrafficLogger = &FileBasedLogger{
+			fs:               afero.NewOsFs(),
+			requestFilePath:  RequestFilePath(),
+			responseFilePath: ResponseFilePath(),
+		}
+	})
+	return TrafficLogger
 }
 
 // RequestFilePath returns the full path of an HTTP request log file for the current execution time - if no traffic logs are written (yet) no file may exist at this path.
@@ -97,6 +101,20 @@ func (l *FileBasedLogger) Log(req *http.Request, reqBody string, resp *http.Resp
 	}
 
 	return nil
+}
+
+func (l *FileBasedLogger) Sync() {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	if l.requestLogFile != nil {
+		l.requestLogFile.Sync()
+		l.requestLogFile = nil
+	}
+
+	if l.responseLogFile != nil {
+		l.responseLogFile.Sync()
+		l.responseLogFile = nil
+	}
 }
 
 func (l *FileBasedLogger) Close() {
@@ -148,7 +166,7 @@ func (l *FileBasedLogger) logRequest(id string, request *http.Request, body io.R
 	if _, err = l.requestLogFile.WriteString("\n=========================\n\n"); err != nil {
 		return err
 	}
-	return l.requestLogFile.Sync()
+	return nil
 }
 
 func (l *FileBasedLogger) logResponse(id string, response *http.Response, body io.ReadCloser) error {
@@ -191,7 +209,7 @@ func (l *FileBasedLogger) logResponse(id string, response *http.Response, body i
 	if _, err = l.responseLogFile.WriteString("\n=========================\n\n"); err != nil {
 		return err
 	}
-	return l.responseLogFile.Sync()
+	return nil
 }
 func (l *FileBasedLogger) openRequestLogFile() error {
 	if l.requestLogFile == nil {
