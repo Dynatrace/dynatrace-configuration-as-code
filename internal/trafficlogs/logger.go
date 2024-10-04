@@ -38,10 +38,10 @@ import (
 
 const TrafficLogFilePrefixFormat = log.LogFileTimestampPrefixFormat
 
-var TrafficLogger *FileBasedLogger
+var tr *trafficLogger
 var once sync.Once
 
-type FileBasedLogger struct {
+type trafficLogger struct {
 	fs            afero.Fs
 	reqFilePath   string
 	respFilePath  string
@@ -52,15 +52,15 @@ type FileBasedLogger struct {
 	lock          sync.Mutex
 }
 
-func NewFileBased() *FileBasedLogger {
+func GetInstance() *trafficLogger {
 	once.Do(func() {
-		TrafficLogger = &FileBasedLogger{
+		tr = &trafficLogger{
 			fs:           afero.NewOsFs(),
 			reqFilePath:  RequestFilePath(),
 			respFilePath: ResponseFilePath(),
 		}
 	})
-	return TrafficLogger
+	return tr
 }
 
 // RequestFilePath returns the full path of an HTTP request log file for the current execution time - if no traffic logs are written (yet) no file may exist at this path.
@@ -75,7 +75,7 @@ func ResponseFilePath() string {
 
 // LogToFiles takes a record containing request and response information and tries to write it into the files
 // created by this logger.
-func (l *FileBasedLogger) LogToFiles(record lib.RequestResponse) {
+func (l *trafficLogger) LogToFiles(record lib.RequestResponse) {
 	if req, ok := record.IsRequest(); ok {
 		if err := l.logRequest(record.ID, req, req.Body); err != nil {
 			l.logError(record.ID, "request", err)
@@ -90,7 +90,7 @@ func (l *FileBasedLogger) LogToFiles(record lib.RequestResponse) {
 
 // Log takes request and response data and tries to write them into files created by this logger.
 // Note: this method is used by the "old" rest.Client and not the one from configuration-as-code-core
-func (l *FileBasedLogger) Log(req *http.Request, reqBody string, resp *http.Response, respBody string) error {
+func (l *trafficLogger) Log(req *http.Request, reqBody string, resp *http.Response, respBody string) error {
 
 	requestId := ""
 	requestId = uuid.NewString()
@@ -106,7 +106,7 @@ func (l *FileBasedLogger) Log(req *http.Request, reqBody string, resp *http.Resp
 	return nil
 }
 
-func (l *FileBasedLogger) Sync() {
+func (l *trafficLogger) Sync() {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	if l.reqLogFile != nil {
@@ -122,12 +122,12 @@ func (l *FileBasedLogger) Sync() {
 	}
 }
 
-func (l *FileBasedLogger) Close() {
+func (l *trafficLogger) Close() {
 	l.reqLogFile.Close()
 	l.respLogFile.Close()
 }
 
-func (l *FileBasedLogger) logRequest(id string, request *http.Request, body io.ReadCloser) error {
+func (l *trafficLogger) logRequest(id string, request *http.Request, body io.ReadCloser) error {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	if err := l.openRequestLogFile(); err != nil {
@@ -174,7 +174,7 @@ func (l *FileBasedLogger) logRequest(id string, request *http.Request, body io.R
 	return nil
 }
 
-func (l *FileBasedLogger) logResponse(id string, response *http.Response, body io.ReadCloser) error {
+func (l *trafficLogger) logResponse(id string, response *http.Response, body io.ReadCloser) error {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	if err := l.openResponseLogFile(); err != nil {
@@ -216,7 +216,7 @@ func (l *FileBasedLogger) logResponse(id string, response *http.Response, body i
 	}
 	return nil
 }
-func (l *FileBasedLogger) openRequestLogFile() error {
+func (l *trafficLogger) openRequestLogFile() error {
 	if l.reqLogFile == nil {
 
 		if err := l.prepareLogDir(); err != nil {
@@ -233,7 +233,7 @@ func (l *FileBasedLogger) openRequestLogFile() error {
 	return nil
 }
 
-func (l *FileBasedLogger) openResponseLogFile() error {
+func (l *trafficLogger) openResponseLogFile() error {
 	if l.respLogFile == nil {
 
 		if err := l.prepareLogDir(); err != nil {
@@ -250,7 +250,7 @@ func (l *FileBasedLogger) openResponseLogFile() error {
 	return nil
 }
 
-func (l *FileBasedLogger) prepareLogDir() error {
+func (l *trafficLogger) prepareLogDir() error {
 	if exists, err := afero.Exists(l.fs, log.LogDirectory); err != nil {
 		return err
 	} else if !exists {
@@ -261,7 +261,7 @@ func (l *FileBasedLogger) prepareLogDir() error {
 	return nil
 }
 
-func (l *FileBasedLogger) logError(requestId, logType string, err error) {
+func (l *trafficLogger) logError(requestId, logType string, err error) {
 	logMessage := fmt.Sprintf("error while writing %s log", logType)
 	if requestId != "" {
 		logMessage += fmt.Sprintf(" for id `%s`", requestId)

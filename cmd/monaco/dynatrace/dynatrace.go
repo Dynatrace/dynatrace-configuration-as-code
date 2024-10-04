@@ -143,7 +143,7 @@ func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[acc
 			WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl))
 
 		if support.SupportArchive {
-			factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.NewFileBased().LogToFiles})
+			factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 		}
 
 		accClient, err := factory.AccountClient()

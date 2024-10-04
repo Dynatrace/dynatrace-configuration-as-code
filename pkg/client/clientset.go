@@ -248,10 +248,8 @@ func CreateClassicClientSet(url string, token string, opts ClientOptions) (*Clie
 		WithRetryOptions(&DefaultRetryOptions).
 		WithRateLimiter(true)
 
-	var trafficLogger *trafficlogs.FileBasedLogger
 	if opts.SupportArchive {
-		trafficLogger = trafficlogs.NewFileBased()
-		clientFactory = clientFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficLogger.LogToFiles})
+		clientFactory = clientFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
 
 	classicClient, err := clientFactory.CreateClassicClient()
@@ -299,8 +297,7 @@ func CreatePlatformClientSet(platformURL string, auth PlatformAuth, opts ClientO
 		WithRateLimiter(true)
 
 	if opts.SupportArchive {
-		trafficLogger := trafficlogs.NewFileBased()
-		clientFactory = clientFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficLogger.LogToFiles})
+		clientFactory = clientFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
 
 	client, err := clientFactory.CreatePlatformClient()

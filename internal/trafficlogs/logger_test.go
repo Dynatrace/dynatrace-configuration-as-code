@@ -33,8 +33,8 @@ func TestFileBasedLogger_Log(t *testing.T) {
 	// Create a temporary file system for testing
 	fs := afero.NewMemMapFs()
 
-	// Create a new FileBasedLogger with the temporary file system
-	logger := &FileBasedLogger{
+	// Create a new trafficLogger with the temporary file system
+	logger := &trafficLogger{
 		fs:           fs,
 		reqFilePath:  "request.log",
 		respFilePath: "response.log",
