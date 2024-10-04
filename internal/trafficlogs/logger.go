@@ -216,38 +216,37 @@ func (l *trafficLogger) logResponse(id string, response *http.Response, body io.
 	}
 	return nil
 }
+
 func (l *trafficLogger) openRequestLogFile() error {
 	if l.reqLogFile == nil {
-
-		if err := l.prepareLogDir(); err != nil {
+		var err error
+		if l.reqLogFile, l.reqBufWriter, err = l.obtainFileAndWriter(l.reqFilePath); err != nil {
 			return err
 		}
-
-		requestLogFile, err := l.fs.OpenFile(l.reqFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			return err
-		}
-		l.reqLogFile = requestLogFile
-		l.reqBufWriter = bufio.NewWriter(requestLogFile)
 	}
 	return nil
 }
 
 func (l *trafficLogger) openResponseLogFile() error {
 	if l.respLogFile == nil {
-
-		if err := l.prepareLogDir(); err != nil {
+		var err error
+		if l.respLogFile, l.respBufWriter, err = l.obtainFileAndWriter(l.respFilePath); err != nil {
 			return err
 		}
-
-		responseLogFile, err := l.fs.OpenFile(l.respFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			return err
-		}
-		l.respLogFile = responseLogFile
-		l.respBufWriter = bufio.NewWriter(responseLogFile)
 	}
 	return nil
+}
+
+func (l *trafficLogger) obtainFileAndWriter(path string) (afero.File, *bufio.Writer, error) {
+	if err := l.prepareLogDir(); err != nil {
+		return nil, nil, err
+	}
+
+	file, err := l.fs.OpenFile(path, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, nil, err
+	}
+	return file, bufio.NewWriter(file), nil
 }
 
 func (l *trafficLogger) prepareLogDir() error {
