@@ -110,14 +110,14 @@ func (l *trafficLogger) Sync() {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	if l.reqLogFile != nil {
-		l.reqBufWriter.Flush()
-		l.reqLogFile.Sync()
+		l.reqBufWriter.Flush() // nolint:errcheck
+		l.reqLogFile.Sync()    // nolint:errcheck
 		l.reqLogFile = nil
 	}
 
 	if l.respLogFile != nil {
-		l.respBufWriter.Flush()
-		l.respLogFile.Sync()
+		l.respBufWriter.Flush() // nolint:errcheck
+		l.respLogFile.Sync()    // nolint:errcheck
 		l.respLogFile = nil
 	}
 }
