@@ -39,7 +39,9 @@ import (
 func RunCmd(fs afero.Fs, command *cobra.Command) error {
 	defer func() { // writing the support archive is a deferred function call in order to guarantee that a support archive is also written in case of a panic
 		if support.SupportArchive {
-			trafficlogs.GetInstance().Sync()
+			if err := trafficlogs.GetInstance().Sync(); err != nil {
+				log.WithFields(field.Error(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
+			}
 			if err := support.Archive(fs); err != nil {
 				log.WithFields(field.Error(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
 			}

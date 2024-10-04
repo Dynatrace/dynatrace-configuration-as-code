@@ -19,6 +19,7 @@ package trafficlogs
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -106,20 +107,30 @@ func (l *trafficLogger) Log(req *http.Request, reqBody string, resp *http.Respon
 	return nil
 }
 
-func (l *trafficLogger) Sync() {
+func (l *trafficLogger) Sync() error {
 	l.lock.Lock()
 	defer l.lock.Unlock()
+	var errs []error
 	if l.reqLogFile != nil {
-		l.reqBufWriter.Flush() // nolint:errcheck
-		l.reqLogFile.Sync()    // nolint:errcheck
+		if err := l.reqBufWriter.Flush(); err != nil {
+			errs = append(errs, err)
+		}
+		if err := l.reqLogFile.Sync(); err != nil {
+			errs = append(errs, err)
+		}
 		l.reqLogFile = nil
 	}
 
 	if l.respLogFile != nil {
-		l.respBufWriter.Flush() // nolint:errcheck
-		l.respLogFile.Sync()    // nolint:errcheck
+		if err := l.respBufWriter.Flush(); err != nil {
+			errs = append(errs, err)
+		}
+		if err := l.respLogFile.Sync(); err != nil {
+			errs = append(errs, err)
+		}
 		l.respLogFile = nil
 	}
+	return errors.Join(errs...)
 }
 
 func (l *trafficLogger) Close() {
