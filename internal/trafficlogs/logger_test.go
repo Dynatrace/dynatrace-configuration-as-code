@@ -35,9 +35,9 @@ func TestFileBasedLogger_Log(t *testing.T) {
 
 	// Create a new FileBasedLogger with the temporary file system
 	logger := &FileBasedLogger{
-		fs:               fs,
-		requestFilePath:  "request.log",
-		responseFilePath: "response.log",
+		fs:           fs,
+		reqFilePath:  "request.log",
+		respFilePath: "response.log",
 	}
 
 	// Create a sample request and response
@@ -61,8 +61,8 @@ func TestFileBasedLogger_Log(t *testing.T) {
 	logger.Close()
 
 	// Verify that the log files are closed
-	assert.True(t, fileClosed(logger.requestLogFile))
-	assert.True(t, fileClosed(logger.responseLogFile))
+	assert.True(t, fileClosed(logger.reqLogFile))
+	assert.True(t, fileClosed(logger.respLogFile))
 }
 
 func fileExists(fs afero.Fs, path string) bool {

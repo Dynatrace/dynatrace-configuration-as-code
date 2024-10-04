@@ -17,6 +17,7 @@
 package trafficlogs
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
@@ -41,20 +42,22 @@ var TrafficLogger *FileBasedLogger
 var once sync.Once
 
 type FileBasedLogger struct {
-	fs               afero.Fs
-	requestFilePath  string
-	responseFilePath string
-	requestLogFile   afero.File
-	responseLogFile  afero.File
-	lock             sync.Mutex
+	fs            afero.Fs
+	reqFilePath   string
+	respFilePath  string
+	reqLogFile    afero.File
+	respLogFile   afero.File
+	respBufWriter *bufio.Writer
+	reqBufWriter  *bufio.Writer
+	lock          sync.Mutex
 }
 
 func NewFileBased() *FileBasedLogger {
 	once.Do(func() {
 		TrafficLogger = &FileBasedLogger{
-			fs:               afero.NewOsFs(),
-			requestFilePath:  RequestFilePath(),
-			responseFilePath: ResponseFilePath(),
+			fs:           afero.NewOsFs(),
+			reqFilePath:  RequestFilePath(),
+			respFilePath: ResponseFilePath(),
 		}
 	})
 	return TrafficLogger
@@ -106,20 +109,22 @@ func (l *FileBasedLogger) Log(req *http.Request, reqBody string, resp *http.Resp
 func (l *FileBasedLogger) Sync() {
 	l.lock.Lock()
 	defer l.lock.Unlock()
-	if l.requestLogFile != nil {
-		l.requestLogFile.Sync()
-		l.requestLogFile = nil
+	if l.reqLogFile != nil {
+		l.reqBufWriter.Flush()
+		l.reqLogFile.Sync()
+		l.reqLogFile = nil
 	}
 
-	if l.responseLogFile != nil {
-		l.responseLogFile.Sync()
-		l.responseLogFile = nil
+	if l.respLogFile != nil {
+		l.respBufWriter.Flush()
+		l.respLogFile.Sync()
+		l.respLogFile = nil
 	}
 }
 
 func (l *FileBasedLogger) Close() {
-	l.requestLogFile.Close()
-	l.responseLogFile.Close()
+	l.reqLogFile.Close()
+	l.respLogFile.Close()
 }
 
 func (l *FileBasedLogger) logRequest(id string, request *http.Request, body io.ReadCloser) error {
@@ -139,13 +144,13 @@ func (l *FileBasedLogger) logRequest(id string, request *http.Request, body io.R
 	}
 
 	// write id
-	_, err = l.requestLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
+	_, err = l.reqBufWriter.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
 	if err != nil {
 		return err
 	}
 
 	// write dump
-	if _, err = l.requestLogFile.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
+	if _, err = l.reqBufWriter.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
 		return err
 	}
 
@@ -157,13 +162,13 @@ func (l *FileBasedLogger) logRequest(id string, request *http.Request, body io.R
 			return err
 		}
 		maskedData := secret.Mask(data)
-		if _, err = io.Copy(l.requestLogFile, bytes.NewReader(maskedData)); err != nil {
+		if _, err = io.Copy(l.reqBufWriter, bytes.NewReader(maskedData)); err != nil {
 			return err
 		}
 	}
 
 	// write end indicator
-	if _, err = l.requestLogFile.WriteString("\n=========================\n\n"); err != nil {
+	if _, err = l.reqBufWriter.WriteString("\n=========================\n\n"); err != nil {
 		return err
 	}
 	return nil
@@ -182,13 +187,13 @@ func (l *FileBasedLogger) logResponse(id string, response *http.Response, body i
 	}
 
 	// write id
-	_, err = l.responseLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
+	_, err = l.respBufWriter.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
 	if err != nil {
 		return err
 	}
 
 	// write dump
-	if _, err = l.responseLogFile.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
+	if _, err = l.respBufWriter.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
 		return err
 	}
 
@@ -200,45 +205,47 @@ func (l *FileBasedLogger) logResponse(id string, response *http.Response, body i
 			return err
 		}
 		maskedData := secret.Mask(data)
-		if _, err = io.Copy(l.responseLogFile, bytes.NewReader(maskedData)); err != nil {
+		if _, err = io.Copy(l.respBufWriter, bytes.NewReader(maskedData)); err != nil {
 			return err
 		}
 	}
 
 	// write end indicator
-	if _, err = l.responseLogFile.WriteString("\n=========================\n\n"); err != nil {
+	if _, err = l.respBufWriter.WriteString("\n=========================\n\n"); err != nil {
 		return err
 	}
 	return nil
 }
 func (l *FileBasedLogger) openRequestLogFile() error {
-	if l.requestLogFile == nil {
+	if l.reqLogFile == nil {
 
 		if err := l.prepareLogDir(); err != nil {
 			return err
 		}
 
-		requestLogFile, err := l.fs.OpenFile(l.requestFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+		requestLogFile, err := l.fs.OpenFile(l.reqFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return err
 		}
-		l.requestLogFile = requestLogFile
+		l.reqLogFile = requestLogFile
+		l.reqBufWriter = bufio.NewWriter(requestLogFile)
 	}
 	return nil
 }
 
 func (l *FileBasedLogger) openResponseLogFile() error {
-	if l.responseLogFile == nil {
+	if l.respLogFile == nil {
 
 		if err := l.prepareLogDir(); err != nil {
 			return err
 		}
 
-		responseLogFile, err := l.fs.OpenFile(l.responseFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+		responseLogFile, err := l.fs.OpenFile(l.respFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return err
 		}
-		l.responseLogFile = responseLogFile
+		l.respLogFile = responseLogFile
+		l.respBufWriter = bufio.NewWriter(responseLogFile)
 	}
 	return nil
 }
