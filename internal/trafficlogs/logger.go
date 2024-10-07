@@ -136,7 +136,7 @@ func (l *trafficLogger) logRequest(id string, request *http.Request, body io.Rea
 	}
 
 	// write dump
-	if _, err = l.reqBufWriter.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
+	if _, err = l.reqBufWriter.WriteString(string(dump)); err != nil {
 		return err
 	}
 
@@ -179,7 +179,7 @@ func (l *trafficLogger) logResponse(id string, response *http.Response, body io.
 	}
 
 	// write dump
-	if _, err = l.respBufWriter.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
+	if _, err = l.respBufWriter.WriteString(string(dump)); err != nil {
 		return err
 	}
 
