@@ -20,13 +20,13 @@ package trafficlogs
 
 import (
 	"bytes"
+	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/spf13/afero"
 )
 
 func TestFileBasedLogger_Log(t *testing.T) {
@@ -47,22 +47,16 @@ func TestFileBasedLogger_Log(t *testing.T) {
 		Body:       io.NopCloser(bytes.NewBufferString("response body")),
 	}
 
-	// Log the request and response
-	err := logger.Log(request, "request body", response, "response body")
-	if err != nil {
-		t.Errorf("Log failed: %v", err)
+	rr := lib.RequestResponse{
+		Request:  request,
+		Response: response,
 	}
+
+	logger.LogToFiles(rr)
 
 	// Verify that the request and response logs are created
 	assert.True(t, fileExists(fs, "request.log"))
 	assert.True(t, fileExists(fs, "response.log"))
-
-	// Close the logger
-	logger.Close()
-
-	// Verify that the log files are closed
-	assert.True(t, fileClosed(logger.reqLogFile))
-	assert.True(t, fileClosed(logger.respLogFile))
 }
 
 func fileExists(fs afero.Fs, path string) bool {

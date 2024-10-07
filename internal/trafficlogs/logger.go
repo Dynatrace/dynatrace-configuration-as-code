@@ -26,14 +26,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
-	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"io"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"path"
-	"strings"
 	"sync"
 )
 
@@ -89,24 +87,6 @@ func (l *trafficLogger) LogToFiles(record lib.RequestResponse) {
 	}
 }
 
-// Log takes request and response data and tries to write them into files created by this logger.
-// Note: this method is used by the "old" rest.Client and not the one from configuration-as-code-core
-func (l *trafficLogger) Log(req *http.Request, reqBody string, resp *http.Response, respBody string) error {
-
-	requestId := ""
-	requestId = uuid.NewString()
-
-	if err := l.logRequest(requestId, req, io.NopCloser(strings.NewReader(reqBody))); err != nil {
-		l.logError(requestId, "request", err)
-	}
-
-	if err := l.logResponse(requestId, resp, io.NopCloser(strings.NewReader(respBody))); err != nil {
-		l.logError(requestId, "response", err)
-	}
-
-	return nil
-}
-
 func (l *trafficLogger) Sync() error {
 	l.lock.Lock()
 	defer l.lock.Unlock()
@@ -131,11 +111,6 @@ func (l *trafficLogger) Sync() error {
 		l.respLogFile = nil
 	}
 	return errors.Join(errs...)
-}
-
-func (l *trafficLogger) Close() {
-	l.reqLogFile.Close()
-	l.respLogFile.Close()
 }
 
 func (l *trafficLogger) logRequest(id string, request *http.Request, body io.ReadCloser) error {
