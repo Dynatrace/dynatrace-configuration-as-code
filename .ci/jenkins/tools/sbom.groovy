@@ -19,7 +19,7 @@
  * install sets the required tools
  */
 void install() {
-    sh(label: "download cyclonedx-gomod", script: 'go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.7.0')
+    sh(label: "download cyclonedx-gomod", script: 'go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.8.0')
 }
 
 void generate(String fileName) {
