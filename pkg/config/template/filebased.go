@@ -18,6 +18,7 @@ package template
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/spf13/afero"
 	"path/filepath"
@@ -27,6 +28,8 @@ import (
 var (
 	_ Template = (*FileBasedTemplate)(nil)
 )
+
+var tmplCache = &cache.DefaultCache[FileBasedTemplate]{}
 
 // FileBasedTemplate is a JSON Template stored in a file - when it's Template.Content is accessed, that file is read.
 // This is the usual type of Template monaco uses.
@@ -69,19 +72,20 @@ func (t *FileBasedTemplate) UpdateContent(newContent string) error {
 // If the file can not be accessed an error will be returned.
 func NewFileTemplate(fs afero.Fs, path string) (Template, error) {
 	sanitizedPath := filepath.Clean(strings.ReplaceAll(path, `\`, `/`))
-
-	log.Debug("Loading template for %s", sanitizedPath)
-
+	if template, ok := tmplCache.Get(sanitizedPath); ok {
+		return &template, nil
+	}
+	log.Debug("Loading template file for %s from disk", sanitizedPath)
 	if exists, err := afero.Exists(fs, sanitizedPath); err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	} else if !exists {
 		return nil, fmt.Errorf(`template file "%s" does not exist`, sanitizedPath)
 	}
-
 	template := FileBasedTemplate{
 		fs:   fs,
 		path: sanitizedPath,
 	}
+	tmplCache.Set(sanitizedPath, template)
 
 	return &template, nil
 }

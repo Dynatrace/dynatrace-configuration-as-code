@@ -28,7 +28,7 @@ import (
 )
 
 func TestLoadTemplate(t *testing.T) {
-	testFilepath := filepath.FromSlash("proj/api/template.json")
+	testFilepath := filepath.FromSlash("proj/api/template0.json")
 
 	testFs := afero.NewMemMapFs()
 	_ = testFs.MkdirAll("proj/api/", 0755)
@@ -44,7 +44,7 @@ func TestLoadTemplate(t *testing.T) {
 }
 
 func TestLoadTemplate_ReturnsErrorIfFileDoesNotExist(t *testing.T) {
-	testFilepath := filepath.FromSlash("proj/api/template.json")
+	testFilepath := filepath.FromSlash("proj/api/template1.json")
 
 	testFs := afero.NewMemMapFs()
 

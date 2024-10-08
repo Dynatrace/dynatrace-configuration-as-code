@@ -94,11 +94,11 @@ func TestResolveValue(t *testing.T) {
 
 func TestResolveValueWithRefernces(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	afero.WriteFile(fs, "test-content", []byte("test-content {{ .ref1 }} - {{ .ref2 }}"), 0644)
+	afero.WriteFile(fs, "test-content-1", []byte("test-content {{ .ref1 }} - {{ .ref2 }}"), 0644)
 
 	param, _ := parseFileValueParameter(parameter.ParameterParserContext{
 		Fs:    fs,
-		Value: map[string]any{"path": "test-content", "references": []any{"ref1", "ref2"}},
+		Value: map[string]any{"path": "test-content-1", "references": []any{"ref1", "ref2"}},
 	})
 
 	assert.Len(t, param.GetReferences(), 2)
@@ -115,11 +115,11 @@ func TestResolveValueWithRefernces(t *testing.T) {
 
 func TestResolveValueWithRefernces_RefMissing(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	afero.WriteFile(fs, "test-content", []byte("test-content {{ .ref1 }} - {{ .ref2 }}"), 0644)
+	afero.WriteFile(fs, "test-content-0", []byte("test-content {{ .ref1 }} - {{ .ref2 }}"), 0644)
 
 	param, _ := parseFileValueParameter(parameter.ParameterParserContext{
 		Fs:    fs,
-		Value: map[string]any{"path": "test-content", "references": []any{"ref1", "ref2"}},
+		Value: map[string]any{"path": "test-content-0", "references": []any{"ref1", "ref2"}},
 	})
 
 	assert.Len(t, param.GetReferences(), 2)
