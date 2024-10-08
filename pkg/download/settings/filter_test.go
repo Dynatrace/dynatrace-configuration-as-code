@@ -19,8 +19,9 @@
 package settings
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestShouldDiscard(t *testing.T) {
@@ -95,6 +96,12 @@ func TestShouldDiscard(t *testing.T) {
 			schema:  "builtin:logmonitoring.log-events",
 			json:    map[string]interface{}{"summary": "my log event"},
 			discard: false,
+		},
+		{
+			name:    "all builtin:host.monitoring.mode objects are discarded",
+			schema:  "builtin:host.monitoring.mode",
+			json:    map[string]interface{}{},
+			discard: true,
 		},
 	}
 

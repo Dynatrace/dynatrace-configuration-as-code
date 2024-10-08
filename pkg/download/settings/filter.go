@@ -86,4 +86,11 @@ var DefaultSettingsFilters = Filters{
 			return json["summary"] == "Default Kubernetes Log Events", formatDefaultDiscardReasonMsg("Default Kubernetes Log Events")
 		},
 	},
+
+	// builtin:host.monitoring.mode is not reliable during download, what's why we decided to skip it by default
+	"builtin:host.monitoring.mode": {
+		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
+			return true, formatDefaultDiscardReasonMsg("Monitoring mode")
+		},
+	},
 }

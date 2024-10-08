@@ -25,6 +25,9 @@ import (
 	"testing"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -36,8 +39,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
 )
 
 func TestDownloadAll(t *testing.T) {
@@ -539,6 +540,8 @@ func TestDownload(t *testing.T) {
 		ListSchemasCalls  int
 		ListSettingsCalls int
 		GetSchemaCalls    int
+
+		EnvVars map[string]string
 	}
 	tests := []struct {
 		name       string
@@ -607,9 +610,88 @@ func TestDownload(t *testing.T) {
 				},
 			}},
 		},
+		{
+			name:    "Downloading builtin:host.monitoring.mode discards all by default",
+			Schemas: []config.SettingsType{{SchemaId: "builtin:host.monitoring.mode"}},
+			mockValues: mockValues{
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "builtin:host.monitoring.mode"}}, nil
+				},
+				FetchedSchemas: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "builtin:host.monitoring.mode"}, nil
+				},
+				GetSchemaCalls: 1,
+
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
+						ExternalId:    "ex1",
+						SchemaVersion: "1.2.3",
+						SchemaId:      "builtin:host.monitoring.mode",
+						ObjectId:      "oid1",
+						Scope:         "HOST-1234567890ABCDEF",
+						Value:         json.RawMessage(`{}`),
+					}}, nil
+				},
+				ListSchemasCalls:  1,
+				ListSettingsCalls: 1,
+			},
+			want: v2.ConfigsPerType{"builtin:host.monitoring.mode": {}},
+		},
+		{
+			name:    "Downloading builtin:host.monitoring.mode does not discard them if the DownloadFilter FF is inactive",
+			Schemas: []config.SettingsType{{SchemaId: "builtin:host.monitoring.mode"}},
+			mockValues: mockValues{
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "builtin:host.monitoring.mode"}}, nil
+				},
+				FetchedSchemas: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "builtin:host.monitoring.mode"}, nil
+				},
+				GetSchemaCalls: 1,
+				EnvVars: map[string]string{
+					featureflags.DownloadFilter: "false",
+				},
+
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
+						ExternalId:    "ex1",
+						SchemaVersion: "1.2.3",
+						SchemaId:      "builtin:host.monitoring.mode",
+						ObjectId:      "oid1",
+						Scope:         "HOST-1234567890ABCDEF",
+						Value:         json.RawMessage(`{}`),
+					}}, nil
+				},
+				ListSchemasCalls:  1,
+				ListSettingsCalls: 1,
+			},
+			want: v2.ConfigsPerType{"builtin:host.monitoring.mode": {
+				{
+					Template: template.NewInMemoryTemplate(uuid, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "builtin:host.monitoring.mode",
+						ConfigId: uuid,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "builtin:host.monitoring.mode",
+						SchemaVersion: "1.2.3",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "HOST-1234567890ABCDEF"},
+					},
+					Skip:           false,
+					OriginObjectId: "oid1",
+				},
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			for k, v := range tt.mockValues.EnvVars {
+				t.Setenv(k, v)
+			}
+
 			c := client.NewMockDynatraceClient(gomock.NewController(t))
 			schemas, err1 := tt.mockValues.Schemas()
 			settings, err2 := tt.mockValues.Settings()
