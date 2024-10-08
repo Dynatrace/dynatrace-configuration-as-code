@@ -19,12 +19,14 @@
 package loader
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	listParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/list"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -41,6 +43,7 @@ func TestParametersAreLoadedAsExpected(t *testing.T) {
 		},
 		KnownApis:       map[string]struct{}{"some-api": {}},
 		ParametersSerDe: config.DefaultParameterParsers,
+		TemplateCache:   cache.NoopCache[template.FileBasedTemplate]{},
 	}
 
 	cfgs, errs := LoadConfigFile(fs, &context, "testdata/parameter-type-test-config.yaml")

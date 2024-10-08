@@ -19,6 +19,7 @@
 package loader
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -41,6 +42,7 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 		},
 		KnownApis:       map[string]struct{}{"some-api": {}},
 		ParametersSerDe: config.DefaultParameterParsers,
+		TemplateCache:   cache.NoopCache[template.FileBasedTemplate]{},
 	}
 
 	cfgs, errs := LoadConfigFile(fs, &context, test_yaml)

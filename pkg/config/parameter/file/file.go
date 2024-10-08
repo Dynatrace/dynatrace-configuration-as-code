@@ -18,6 +18,7 @@ package file
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -50,7 +51,7 @@ func (f *FileParameter) GetReferences() []parameter.ParameterReference {
 }
 
 func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interface{}, error) {
-	parameterTmpl, err := tmpl.NewFileTemplate(f.Fs, f.Path)
+	parameterTmpl, err := tmpl.NewFileTemplate(f.Fs, cache.NoopCache[tmpl.FileBasedTemplate]{}, f.Path)
 	if err != nil {
 		return nil, parameter.NewParameterResolveValueError(context, err.Error())
 	}

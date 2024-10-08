@@ -20,10 +20,12 @@ package convert
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
 	"github.com/spf13/afero"
@@ -138,6 +140,7 @@ profile:
 		Environments:    []manifest.EnvironmentDefinition{{Name: "env"}},
 		KnownApis:       map[string]struct{}{"alerting-profile": {}},
 		ParametersSerDe: config.DefaultParameterParsers,
+		TemplateCache:   cache.NoopCache[template.FileBasedTemplate]{},
 	}, "converted/project/alerting-profile/config.yaml")
 	assert.Empty(t, errs)
 

@@ -18,10 +18,12 @@ package loader
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
@@ -36,6 +38,7 @@ type LoaderContext struct {
 	Environments    []manifest.EnvironmentDefinition
 	KnownApis       map[string]struct{}
 	ParametersSerDe map[string]parameter.ParameterSerDe
+	TemplateCache   cache.Cache[template.FileBasedTemplate]
 }
 
 // configFileLoaderContext is a context for each config-file

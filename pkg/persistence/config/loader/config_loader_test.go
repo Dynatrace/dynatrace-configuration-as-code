@@ -20,6 +20,7 @@ package loader
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -57,6 +58,7 @@ func Test_parseConfigs(t *testing.T) {
 				},
 			},
 		},
+		TemplateCache:   cache.NoopCache[template.FileBasedTemplate]{},
 		ParametersSerDe: config.DefaultParameterParsers,
 	}
 

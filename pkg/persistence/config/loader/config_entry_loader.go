@@ -166,7 +166,7 @@ func getConfigFromDefinition(
 		}
 	}
 
-	tmpl, err := template.NewFileTemplate(fs, filepath.Join(context.Folder, definition.Template))
+	tmpl, err := template.NewFileTemplate(fs, context.TemplateCache, filepath.Join(context.Folder, definition.Template))
 
 	var errs []error
 

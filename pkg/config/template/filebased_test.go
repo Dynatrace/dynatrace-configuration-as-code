@@ -19,6 +19,7 @@
 package template_test
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,7 @@ func TestLoadTemplate(t *testing.T) {
 	_ = testFs.MkdirAll("proj/api/", 0755)
 	_ = afero.WriteFile(testFs, testFilepath, []byte("{ template: from_file }"), 0644)
 
-	got, gotErr := template.NewFileTemplate(testFs, testFilepath)
+	got, gotErr := template.NewFileTemplate(testFs, cache.NoopCache[template.FileBasedTemplate]{}, testFilepath)
 	require.NoError(t, gotErr)
 	assert.Equal(t, testFilepath, got.ID())
 	assert.Equal(t, testFilepath, got.(*template.FileBasedTemplate).FilePath())
@@ -48,7 +49,7 @@ func TestLoadTemplate_ReturnsErrorIfFileDoesNotExist(t *testing.T) {
 
 	testFs := afero.NewMemMapFs()
 
-	_, gotErr := template.NewFileTemplate(testFs, testFilepath)
+	_, gotErr := template.NewFileTemplate(testFs, cache.NoopCache[template.FileBasedTemplate]{}, testFilepath)
 	require.ErrorContains(t, gotErr, testFilepath)
 }
 
@@ -82,7 +83,7 @@ func TestLoadTemplate_WorksWithAnyPathSeparator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, gotErr := template.NewFileTemplate(testFs, tt.givenFilepath)
+			_, gotErr := template.NewFileTemplate(testFs, cache.NoopCache[template.FileBasedTemplate]{}, tt.givenFilepath)
 			require.NoError(t, gotErr)
 		})
 	}

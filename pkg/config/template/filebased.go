@@ -18,6 +18,7 @@ package template
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/spf13/afero"
 	"path/filepath"
@@ -67,8 +68,12 @@ func (t *FileBasedTemplate) UpdateContent(newContent string) error {
 
 // NewFileTemplate creates a FileBasedTemplate for a given afero.Fs and filepath.
 // If the file can not be accessed an error will be returned.
-func NewFileTemplate(fs afero.Fs, path string) (Template, error) {
+func NewFileTemplate(fs afero.Fs, tplCache cache.Cache[FileBasedTemplate], path string) (Template, error) {
 	sanitizedPath := filepath.Clean(strings.ReplaceAll(path, `\`, `/`))
+
+	if tmpl, ok := tplCache.Get(sanitizedPath); ok {
+		return &tmpl, nil
+	}
 
 	log.Debug("Loading template for %s", sanitizedPath)
 
@@ -83,5 +88,6 @@ func NewFileTemplate(fs afero.Fs, path string) (Template, error) {
 		path: sanitizedPath,
 	}
 
+	tplCache.Set(sanitizedPath, template)
 	return &template, nil
 }
