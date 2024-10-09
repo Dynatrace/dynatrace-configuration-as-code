@@ -23,14 +23,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"mime/multipart"
+	"net/http"
+	"time"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"mime/multipart"
-	"net/http"
-	"time"
 )
 
 type extensionStatus int
@@ -100,7 +102,10 @@ func (d *DynatraceClient) validateIfExtensionShouldBeUploaded(ctx context.Contex
 	if extProperties.Version == nil {
 		return extensionValidationError, fmt.Errorf("API failed to return a version for extension (%s)", extensionName)
 	}
-	curVersion := *extProperties.Version
+	curVersion, err := version.ParseVersion(*extProperties.Version)
+	if err != nil {
+		return extensionValidationError, fmt.Errorf("could not parse current version: %w", err)
+	}
 
 	var extension Properties
 	if err := json.Unmarshal(payload, &extension); err != nil {
@@ -110,9 +115,13 @@ func (d *DynatraceClient) validateIfExtensionShouldBeUploaded(ctx context.Contex
 	if extension.Version == nil {
 		return extensionValidationError, fmt.Errorf("extension configuration (%s) does not define a version", extensionName)
 	}
-	newVersion := *extension.Version
 
-	if curVersion > newVersion {
+	newVersion, err := version.ParseVersion(*extension.Version)
+	if err != nil {
+		return extensionValidationError, fmt.Errorf("could not parse extension configuration version: %w", err)
+	}
+
+	if curVersion.GreaterThan(newVersion) {
 		err := fmt.Errorf("already deployed version (%s) of extension (%s) is newer than local (%s)", extensionName, curVersion, newVersion)
 		return extensionConfigOutdated, err
 	}
