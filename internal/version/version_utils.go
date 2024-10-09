@@ -76,7 +76,7 @@ func (v Version) Invalid() bool {
 // according to the expected format: "MAJOR.MINOR.PATCH" or "MAJOR.MINOR" each component being a non-negative number
 func ParseVersion(versionString string) (Version, error) {
 	split := strings.Split(versionString, ".")
-	if !(len(split) == 2 || len(split) == 3) {
+	if !(len(split) == 1 || len(split) == 2 || len(split) == 3) {
 		return Version{}, fmt.Errorf("failed to parse version: format did not meet expected MAJOR.MINOR or MAJOR.MINOR.PATCH pattern: %v", versionString)
 	}
 
@@ -84,9 +84,13 @@ func ParseVersion(versionString string) (Version, error) {
 	if err != nil {
 		return Version{}, fmt.Errorf("failed to parse version: major %v is not a number", split[0])
 	}
-	minorVersion, err := strconv.Atoi(split[1])
-	if err != nil {
-		return Version{}, fmt.Errorf("failed to parse version: minor %v is not a number", split[1])
+
+	minorVersion := 0
+	if len(split) >= 2 {
+		minorVersion, err = strconv.Atoi(split[1])
+		if err != nil {
+			return Version{}, fmt.Errorf("failed to parse version: minor %v is not a number", split[1])
+		}
 	}
 	patchVersion := 0
 	if len(split) == 3 {

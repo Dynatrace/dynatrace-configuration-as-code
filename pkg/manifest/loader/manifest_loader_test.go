@@ -682,6 +682,11 @@ func Test_validateManifestVersion(t *testing.T) {
 			false,
 		},
 		{
+			"no error for short version",
+			"1",
+			false,
+		},
+		{
 			"fails if version is garbage string",
 			"just some random text that's not a version at all",
 			true,
@@ -689,11 +694,6 @@ func Test_validateManifestVersion(t *testing.T) {
 		{
 			"fails if semantic version is too long",
 			"1.2.3.4.5",
-			true,
-		},
-		{
-			"fails if semantic version is too short",
-			"1",
 			true,
 		},
 		{
