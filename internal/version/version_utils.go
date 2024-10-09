@@ -71,9 +71,10 @@ func (v Version) Invalid() bool {
 
 }
 
-// ParseVersion takes a version as string and tries to parse it to convert it to a
-// Version value. It returns the Version value and possibly an error if the string could not be parsed
-// according to the expected format: "MAJOR.MINOR.PATCH" or "MAJOR.MINOR" each component being a non-negative number
+// ParseVersion takes a version as string and tries to parse it to convert it to a Version value.
+// It returns the Version value and possibly an error if the string could not be parsed.
+// Expected formats are "MAJOR", "MAJOR.MINOR" or "MAJOR.MINOR.PATCH" with each component being a non-negative number.
+// Omitted minor or patch versions are interpreted as 0, so "2" is interpreted as 2.0.0 and "2.1" is interpreted as 2.1.0.
 func ParseVersion(versionString string) (Version, error) {
 	split := strings.Split(versionString, ".")
 	if len(split) < 1 || len(split) > 3 {
