@@ -142,10 +142,6 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
 	}
 
-	if !isClassicTokenSet(env.Auth) {
-		options.onlyThirdGen = true
-	}
-
 	if errs := options.valid(); len(errs) != 0 {
 		err := printAndFormatErrors(errs, "command options are not valid")
 		return err
@@ -372,8 +368,4 @@ func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
 		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
 		!opts.onlyDocuments &&
 		!opts.onlyAutomation
-}
-
-func isClassicTokenSet(auth manifest.Auth) bool {
-	return auth.Token.Value != "" && auth.Token.Name != ""
 }

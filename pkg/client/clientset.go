@@ -314,12 +314,13 @@ func CreateClientSet(url string, auth manifest.Auth, opts ClientOptions) (*Clien
 	}
 
 	if auth.Token != nil {
-		if client == nil {
-			return nil, fmt.Errorf("client not set")
-		}
-		classicUrl, err = metadata.GetDynatraceClassicURL(context.TODO(), *client)
-		if err != nil {
-			return nil, err
+		classicUrl = url
+		//when oauth is set the platform url needs to be transformed to classic url
+		if auth.OAuth != nil {
+			classicUrl, err = metadata.GetDynatraceClassicURL(context.TODO(), *client)
+			if err != nil {
+				return nil, err
+			}
 		}
 		cFactory = cFactory.WithAccessToken(auth.Token.Value.Value()).
 			WithClassicURL(classicUrl)
