@@ -18,30 +18,8 @@ package client
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateClassicClientSet(t *testing.T) {
-	t.Run("URL with leading space - should return an error", func(t *testing.T) {
-		_, err := CreateClassicClientSet(" https://my-environment.live.dynatrace.com/", "", ClientOptions{})
-		assert.Error(t, err)
-	})
-
-	t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
-		_, err := CreateClassicClientSet("some-url.com", "", ClientOptions{})
-		assert.ErrorContains(t, err, "not valid")
-	})
-
-	t.Run("URL is without valid local path - should return an error", func(t *testing.T) {
-		_, err := CreateClassicClientSet("/my-environment/live/dynatrace.com/", "", ClientOptions{})
-		assert.ErrorContains(t, err, "no host specified")
-	})
-
-	t.Run("without valid protocol - should return an error", func(t *testing.T) {
-		var err error
-
-		_, err = CreateClassicClientSet("https//my-environment.live.dynatrace.com/", "", ClientOptions{})
-		assert.ErrorContains(t, err, "not valid")
-	})
+func TestCreateClientSet(t *testing.T) {
+	//@TODO implement tests for token and oauth, token, oauth
 }

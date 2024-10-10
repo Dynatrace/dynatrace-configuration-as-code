@@ -80,8 +80,6 @@ type ManifestLoaderError struct {
 	Reason string `json:"reason"`
 }
 
-const emptyAuthErr = "empty"
-
 func (e ManifestLoaderError) Error() string {
 	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Reason)
 }
