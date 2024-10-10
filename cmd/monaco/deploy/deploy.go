@@ -62,6 +62,11 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	logging.LogProjectsInfo(loadedProjects)
 	logging.LogEnvironmentsInfo(loadedManifest.Environments)
 
+	err = validateAuthenticationWithProjectConfigs(loadedProjects, loadedManifest)
+	if err != nil {
+		return fmt.Errorf("manifest authentication missconfigured: %w", err)
+	}
+
 	clientSets, err := dynatrace.CreateEnvironmentClients(loadedManifest.Environments)
 	if err != nil {
 		return fmt.Errorf("failed to create API clients: %w", err)
@@ -241,4 +246,24 @@ func collectRequiresPlatformErrors(platformCoordinatesPerEnvironment Coordinates
 
 func platformEnvironment(e manifest.EnvironmentDefinition) bool {
 	return e.Auth.OAuth != nil
+}
+
+func validateAuthenticationWithProjectConfigs(projects []project.Project, loadedManifest *manifest.Manifest) error {
+	for _, p := range projects {
+		for envName, env := range p.Configs {
+			for _, conf := range env {
+				switch conf[0].Type.(type) {
+				case config.ClassicApiType:
+					if loadedManifest.Environments[envName].Auth.Token == nil {
+						return fmt.Errorf("API: %s requires token", conf[0].Type)
+					}
+				default:
+					if loadedManifest.Environments[envName].Auth.OAuth == nil {
+						return fmt.Errorf("API: %s oatuh provided", conf[0].Type)
+					}
+				}
+			}
+		}
+	}
+	return nil
 }

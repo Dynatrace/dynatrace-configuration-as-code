@@ -50,7 +50,7 @@ func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, er
 		return manifest.Account{}, err
 	}
 
-	oAuthDef, err := parseOAuth(c, a.OAuth)
+	oAuthDef, err := parseOAuth(c, &a.OAuth)
 	if err != nil {
 		return manifest.Account{}, fmt.Errorf("oAuth is invalid: %w", err)
 	}

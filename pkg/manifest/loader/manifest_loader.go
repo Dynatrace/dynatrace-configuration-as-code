@@ -209,53 +209,42 @@ func Load(context *Context) (manifest.Manifest, []error) {
 }
 
 func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
-	token, tErr := parseToken(context, a.Token)
-	if a.OAuth != nil {
-		o, oErr := parseOAuth(context, *a.OAuth)
-
-		if oErr != nil {
-			return manifest.Auth{}, fmt.Errorf("failed to parse Oauth fields, oauth errors %w", oErr)
-		}
-
-		if tErr != nil && tErr.Error() == emptyAuthErr {
-			log.Warn("classic token not set, only able to use platform endpoint")
-		}
-
-		return manifest.Auth{
-			Token: token,
-			OAuth: &o,
-		}, nil
+	if a.Token == nil && a.OAuth == nil {
+		return manifest.Auth{}, fmt.Errorf("no token or oauth provided in manifest")
 	}
 
-	if tErr != nil {
-		return manifest.Auth{}, fmt.Errorf("failed to parse Token and Oauth not set, token errors: %w", tErr)
+	token, err := parseAuthSecret(context, a.Token)
+	if err != nil {
+		return manifest.Auth{}, fmt.Errorf("failed to parse token, error: %w", err)
 	}
 
-	log.Info("oauth client not set, only able to use classic endpoint")
+	o, err := parseOAuth(context, a.OAuth)
+	if err != nil {
+		return manifest.Auth{}, fmt.Errorf("failed to parse oauth, error: %w", err)
+	}
+
 	return manifest.Auth{
 		Token: token,
+		OAuth: &o,
 	}, nil
 }
 
-func parseToken(context *Context, s persistence.AuthSecret) (manifest.AuthSecret, error) {
-	if s.Name == "" && s.Type == "" {
-		return manifest.AuthSecret{}, errors.New(emptyAuthErr)
+func parseAuthSecret(context *Context, s *persistence.AuthSecret) (*manifest.AuthSecret, error) {
+	if s == nil {
+		return nil, nil
 	}
-	return parseAuthSecret(context, s)
-}
 
-func parseAuthSecret(context *Context, s persistence.AuthSecret) (manifest.AuthSecret, error) {
 	if !(s.Type == persistence.TypeEnvironment || s.Type == "") {
-		return manifest.AuthSecret{}, errors.New("type must be 'environment'")
+		return nil, errors.New("type must be 'environment'")
 	}
 
 	if s.Name == "" {
-		return manifest.AuthSecret{}, errors.New("no name given or empty")
+		return nil, errors.New("no name given or empty")
 	}
 
 	if context.Opts.DoNotResolveEnvVars {
 		log.Debug("Skipped resolving environment variable %s based on loader options", s.Name)
-		return manifest.AuthSecret{
+		return &manifest.AuthSecret{
 			Name:  s.Name,
 			Value: secret.MaskedString(fmt.Sprintf("SKIPPED RESOLUTION OF ENV_VAR: %s", s.Name)),
 		}, nil
@@ -263,23 +252,23 @@ func parseAuthSecret(context *Context, s persistence.AuthSecret) (manifest.AuthS
 
 	v, f := os.LookupEnv(s.Name)
 	if !f {
-		return manifest.AuthSecret{}, fmt.Errorf("environment-variable %q was not found", s.Name)
+		return nil, fmt.Errorf("environment-variable %q was not found", s.Name)
 	}
 
 	if v == "" {
-		return manifest.AuthSecret{}, fmt.Errorf("environment-variable %q found, but the value resolved is empty", s.Name)
+		return nil, fmt.Errorf("environment-variable %q found, but the value resolved is empty", s.Name)
 	}
 
-	return manifest.AuthSecret{Name: s.Name, Value: secret.MaskedString(v)}, nil
+	return &manifest.AuthSecret{Name: s.Name, Value: secret.MaskedString(v)}, nil
 }
 
-func parseOAuth(context *Context, a persistence.OAuth) (manifest.OAuth, error) {
-	clientID, err := parseAuthSecret(context, a.ClientID)
+func parseOAuth(context *Context, a *persistence.OAuth) (manifest.OAuth, error) {
+	clientID, err := parseAuthSecret(context, &a.ClientID)
 	if err != nil {
 		return manifest.OAuth{}, fmt.Errorf("failed to parse ClientID: %w", err)
 	}
 
-	clientSecret, err := parseAuthSecret(context, a.ClientSecret)
+	clientSecret, err := parseAuthSecret(context, &a.ClientSecret)
 	if err != nil {
 		return manifest.OAuth{}, fmt.Errorf("failed to parse ClientSecret: %w", err)
 	}
@@ -291,15 +280,15 @@ func parseOAuth(context *Context, a persistence.OAuth) (manifest.OAuth, error) {
 		}
 
 		return manifest.OAuth{
-			ClientID:      clientID,
-			ClientSecret:  clientSecret,
+			ClientID:      *clientID,
+			ClientSecret:  *clientSecret,
 			TokenEndpoint: &urlDef,
 		}, nil
 	}
 
 	return manifest.OAuth{
-		ClientID:      clientID,
-		ClientSecret:  clientSecret,
+		ClientID:      *clientID,
+		ClientSecret:  *clientSecret,
 		TokenEndpoint: nil,
 	}, nil
 }

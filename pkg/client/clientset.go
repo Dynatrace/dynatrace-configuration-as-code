@@ -19,7 +19,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"net/url"
 	"runtime"
 	"time"
@@ -38,6 +37,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -305,11 +305,16 @@ func CreatePlatformClientSet(platformURL string, auth PlatformAuth, opts ClientO
 		return nil, err
 	}
 
-	classicURL, _ := metadata.GetDynatraceClassicURL(context.TODO(), *client)
+	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), *client)
+	if err != nil {
+		return nil, err
+	}
+
 	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(auth.Token)
+
 	classicClient, err := clientFactory.CreateClassicClient()
 	if err != nil {
-		log.Warn("Classic url token not set. You will be able only to use the OAuth APIs.")
+		return nil, err
 	}
 
 	dtClient, err := dtclient.NewPlatformClient(
