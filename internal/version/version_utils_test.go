@@ -148,7 +148,7 @@ func TestVersion_Valid(t *testing.T) {
 
 }
 
-func Test_parseDynatraceVersion(t *testing.T) {
+func Test_ParseVersion(t *testing.T) {
 	tests := []struct {
 		versionString string
 		wantVersion   Version
@@ -180,6 +180,11 @@ func Test_parseDynatraceVersion(t *testing.T) {
 			false,
 		},
 		{
+			"1",
+			Version{1, 0, 0},
+			false,
+		},
+		{
 			"236.0.20220203-192004",
 			Version{},
 			true,
@@ -196,11 +201,6 @@ func Test_parseDynatraceVersion(t *testing.T) {
 		},
 		{
 			"version 42",
-			Version{},
-			true,
-		},
-		{
-			"1",
 			Version{},
 			true,
 		},

@@ -28,18 +28,48 @@ import (
 )
 
 func TestCorrectlyIdentifiesLowerLocalVersion(t *testing.T) {
-	localPayload := `{ "version": "1" }`
-	remotePayload := `{ "version": "2" }`
+	tests := []struct {
+		name          string
+		localPayload  string
+		remotePayload string
+	}{
+		{
+			name:          "Major with major",
+			localPayload:  `{ "version": "1" }`,
+			remotePayload: `{ "version": "2" }`,
+		},
+		{
+			name:          "Major.minor with major.minor case 1",
+			localPayload:  `{ "version": "1.1" }`,
+			remotePayload: `{ "version": "1.2" }`,
+		},
+		{
+			name:          "Major.minor with major.minor case 2",
+			localPayload:  `{ "version": "1.9" }`,
+			remotePayload: `{ "version": "1.10" }`,
+		},
+		{
+			name:          "Major.minor with major.minor case 3",
+			localPayload:  `{ "version": "1.09" }`,
+			remotePayload: `{ "version": "1.10" }`,
+		},
+	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		_, _ = rw.Write([]byte(remotePayload))
-	}))
-	defer server.Close()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
-	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
-	require.Error(t, err)
-	assert.Equal(t, extensionConfigOutdated, status)
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				_, _ = rw.Write([]byte(tt.remotePayload))
+			}))
+			defer server.Close()
+
+			dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
+			status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(tt.localPayload))
+			require.Error(t, err)
+			assert.Equal(t, extensionConfigOutdated, status)
+		})
+	}
+
 }
 
 func TestCorrectlyIdentifiesEqualVersion(t *testing.T) {
@@ -58,17 +88,45 @@ func TestCorrectlyIdentifiesEqualVersion(t *testing.T) {
 }
 
 func TestCorrectlyIdentifiesNecessaryUpdate(t *testing.T) {
-	localPayload := `{ "version": "1.5" }`
-	remotePayload := `{ "version": "1" }`
+	tests := []struct {
+		name          string
+		localPayload  string
+		remotePayload string
+	}{
+		{
+			name:          "Major.minor with major",
+			localPayload:  `{ "version": "1.5" }`,
+			remotePayload: `{ "version": "1" }`,
+		},
+		{
+			name:          "Major.minor with major.minor",
+			localPayload:  `{ "version": "1.2" }`,
+			remotePayload: `{ "version": "1.1" }`,
+		},
+		{
+			name:          "Major.minor with major.minor",
+			localPayload:  `{ "version": "1.10" }`,
+			remotePayload: `{ "version": "1.9" }`,
+		},
+		{
+			name:          "Major.minor with major.minor",
+			localPayload:  `{ "version": "1.10" }`,
+			remotePayload: `{ "version": "1.09" }`,
+		},
+	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		_, _ = rw.Write([]byte(remotePayload))
-	}))
-	defer server.Close()
-	dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
-	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
-	require.NoError(t, err)
-	assert.Equal(t, extensionNeedsUpdate, status)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				_, _ = rw.Write([]byte(tt.remotePayload))
+			}))
+			defer server.Close()
+			dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
+			status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(tt.localPayload))
+			require.NoError(t, err)
+			assert.Equal(t, extensionNeedsUpdate, status)
+		})
+	}
 }
 
 func TestCorrectlyIdentifiesMissingExtension(t *testing.T) {
