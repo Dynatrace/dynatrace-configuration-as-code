@@ -68,7 +68,7 @@ func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, er
 		Name:        a.Name,
 		AccountUUID: accountUUID,
 		ApiUrl:      urlDef,
-		OAuth:       oAuthDef,
+		OAuth:       *oAuthDef,
 	}
 
 	return acc, nil

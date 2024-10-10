@@ -283,11 +283,11 @@ func validateAuthenticationWithProjectConfigs(projects []project.Project, loaded
 			switch c.Type.(type) {
 			case config.ClassicApiType:
 				if loadedManifest.Environments[c.Environment].Auth.Token == nil {
-					errs = append(errs, fmt.Errorf("API: %s requires token", c.Group))
+					errs = append(errs, fmt.Errorf("API: %s requires token", c.Type))
 				}
 			default:
 				if loadedManifest.Environments[c.Environment].Auth.OAuth == nil {
-					errs = append(errs, fmt.Errorf("API: %s oatuh provided", c.Group))
+					errs = append(errs, fmt.Errorf("API: %s oatuh provided", c.Type))
 				}
 			}
 		})

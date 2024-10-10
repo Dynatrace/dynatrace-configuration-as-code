@@ -207,31 +207,37 @@ func Load(context *Context) (manifest.Manifest, []error) {
 }
 
 func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
+	var (
+		err   error
+		token *manifest.AuthSecret
+		o     *manifest.OAuth
+	)
+
 	if a.Token == nil && a.OAuth == nil {
 		return manifest.Auth{}, fmt.Errorf("no token or oauth provided in manifest")
 	}
 
-	token, err := parseAuthSecret(context, a.Token)
-	if err != nil {
-		return manifest.Auth{}, fmt.Errorf("failed to parse token, error: %w", err)
+	if a.Token != nil {
+		token, err = parseAuthSecret(context, a.Token)
+		if err != nil {
+			return manifest.Auth{}, fmt.Errorf("failed to parse token, error: %w", err)
+		}
 	}
 
-	o, err := parseOAuth(context, a.OAuth)
-	if err != nil {
-		return manifest.Auth{}, fmt.Errorf("failed to parse oauth, error: %w", err)
+	if a.OAuth != nil {
+		o, err = parseOAuth(context, a.OAuth)
+		if err != nil {
+			return manifest.Auth{}, fmt.Errorf("failed to parse oauth, error: %w", err)
+		}
 	}
 
 	return manifest.Auth{
 		Token: token,
-		OAuth: &o,
+		OAuth: o,
 	}, nil
 }
 
 func parseAuthSecret(context *Context, s *persistence.AuthSecret) (*manifest.AuthSecret, error) {
-	if s == nil {
-		return nil, nil
-	}
-
 	if !(s.Type == persistence.TypeEnvironment || s.Type == "") {
 		return nil, errors.New("type must be 'environment'")
 	}
@@ -260,31 +266,31 @@ func parseAuthSecret(context *Context, s *persistence.AuthSecret) (*manifest.Aut
 	return &manifest.AuthSecret{Name: s.Name, Value: secret.MaskedString(v)}, nil
 }
 
-func parseOAuth(context *Context, a *persistence.OAuth) (manifest.OAuth, error) {
+func parseOAuth(context *Context, a *persistence.OAuth) (*manifest.OAuth, error) {
 	clientID, err := parseAuthSecret(context, &a.ClientID)
 	if err != nil {
-		return manifest.OAuth{}, fmt.Errorf("failed to parse ClientID: %w", err)
+		return nil, fmt.Errorf("failed to parse ClientID: %w", err)
 	}
 
 	clientSecret, err := parseAuthSecret(context, &a.ClientSecret)
 	if err != nil {
-		return manifest.OAuth{}, fmt.Errorf("failed to parse ClientSecret: %w", err)
+		return nil, fmt.Errorf("failed to parse ClientSecret: %w", err)
 	}
 
 	if a.TokenEndpoint != nil {
 		urlDef, err := parseURLDefinition(context, *a.TokenEndpoint)
 		if err != nil {
-			return manifest.OAuth{}, fmt.Errorf(`failed to parse "tokenEndpoint": %w`, err)
+			return nil, fmt.Errorf(`failed to parse "tokenEndpoint": %w`, err)
 		}
 
-		return manifest.OAuth{
+		return &manifest.OAuth{
 			ClientID:      *clientID,
 			ClientSecret:  *clientSecret,
 			TokenEndpoint: &urlDef,
 		}, nil
 	}
 
-	return manifest.OAuth{
+	return &manifest.OAuth{
 		ClientID:      *clientID,
 		ClientSecret:  *clientSecret,
 		TokenEndpoint: nil,

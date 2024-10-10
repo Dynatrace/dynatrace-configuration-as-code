@@ -32,7 +32,6 @@ type downloadConfigsOptions struct {
 	onlyAutomation   bool
 	onlyDocuments    bool
 	onlyOpenPipeline bool
-	onlyThirdGen     bool
 }
 
 func (opts downloadConfigsOptions) valid() []error {
