@@ -67,7 +67,7 @@ func (a auth) mapToAuth() (*manifest.Auth, []error) {
 	if v, err := readEnvVariable(a.token); err != nil {
 		errs = append(errs, err)
 	} else {
-		retVal.Token = v
+		retVal.Token = &v
 	}
 
 	if a.clientID != "" && a.clientSecret != "" {
@@ -338,7 +338,7 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 
 // shouldDownloadConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
 func shouldDownloadConfigs(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline && !opts.onlyThirdGen
+	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline
 }
 
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
