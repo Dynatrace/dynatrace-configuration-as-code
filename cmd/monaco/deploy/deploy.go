@@ -64,7 +64,7 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 
 	err = validateAuthenticationWithProjectConfigs(loadedProjects, loadedManifest)
 	if err != nil {
-		return fmt.Errorf("manifest authentication missconfigured: %w", err)
+		return fmt.Errorf("manifest auth field missconfigured: %w", err)
 	}
 
 	clientSets, err := dynatrace.CreateEnvironmentClients(loadedManifest.Environments)

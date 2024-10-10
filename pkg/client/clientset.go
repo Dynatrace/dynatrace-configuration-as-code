@@ -38,6 +38,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -233,128 +234,9 @@ func (o ClientOptions) getUserAgentString() string {
 	return o.CustomUserAgent
 }
 
-func CreateClassicClientSet(url string, token string, opts ClientOptions) (*ClientSet, error) {
-	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
-
-	if err := validateURL(url); err != nil {
-		return nil, err
-	}
-
-	clientFactory := clients.Factory().
-		WithConcurrentRequestLimit(concurrentRequestLimit).
-		WithAccessToken(token).
-		WithClassicURL(url).
-		WithUserAgent(opts.getUserAgentString()).
-		WithRetryOptions(&DefaultRetryOptions).
-		WithRateLimiter(true)
-
-	if opts.SupportArchive {
-		clientFactory = clientFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
-	}
-
-	classicClient, err := clientFactory.CreateClassicClient()
-	if err != nil {
-		return nil, err
-	}
-
-	dtClient, err := dtclient.NewClassicClient(
-		classicClient,
-		dtclient.WithCachingDisabled(opts.CachingDisabled),
-		dtclient.WithAutoServerVersion(),
-		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ClientSet{
-		DTClient: dtClient,
-	}, nil
-}
-
 type PlatformAuth struct {
 	OauthClientID, OauthClientSecret, OauthTokenURL string
 	Token                                           string
-}
-
-func CreatePlatformClientSet(platformURL string, auth PlatformAuth, opts ClientOptions) (*ClientSet, error) {
-	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
-
-	if err := validateURL(platformURL); err != nil {
-		return nil, err
-	}
-
-	clientFactory := clients.Factory().
-		WithOAuthCredentials(clientcredentials.Config{
-			ClientID:     auth.OauthClientID,
-			ClientSecret: auth.OauthClientSecret,
-			TokenURL:     auth.OauthTokenURL,
-		}).
-		WithConcurrentRequestLimit(concurrentRequestLimit).
-		WithPlatformURL(platformURL).
-		WithUserAgent(opts.getUserAgentString()).
-		WithRetryOptions(&DefaultRetryOptions).
-		WithRateLimiter(true)
-
-	if opts.SupportArchive {
-		clientFactory = clientFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
-	}
-
-	client, err := clientFactory.CreatePlatformClient()
-	if err != nil {
-		return nil, err
-	}
-
-	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), *client)
-	if err != nil {
-		return nil, err
-	}
-
-	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(auth.Token)
-
-	classicClient, err := clientFactory.CreateClassicClient()
-	if err != nil {
-		return nil, err
-	}
-
-	dtClient, err := dtclient.NewPlatformClient(
-		client,
-		classicClient,
-		dtclient.WithCachingDisabled(opts.CachingDisabled),
-		dtclient.WithAutoServerVersion(),
-		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	bucketClient, err := clientFactory.BucketClientWithRetrySettings(15, time.Second, 5*time.Minute)
-	if err != nil {
-		return nil, err
-	}
-
-	autClient, err := clientFactory.AutomationClient()
-	if err != nil {
-		return nil, err
-	}
-
-	documentClient, err := clientFactory.DocumentClient()
-	if err != nil {
-		return nil, err
-	}
-
-	openPipelineClient, err := clientFactory.OpenPipelineClient()
-	if err != nil {
-		return nil, err
-	}
-
-	return &ClientSet{
-		DTClient:           dtClient,
-		AutClient:          autClient,
-		BucketClient:       bucketClient,
-		DocumentClient:     documentClient,
-		OpenPipelineClient: openPipelineClient,
-	}, nil
 }
 
 func validateURL(dtURL string) error {
@@ -371,4 +253,111 @@ func validateURL(dtURL string) error {
 		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
 	}
 	return nil
+}
+
+func CreateClientSet(url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
+	var (
+		classicClient, client *corerest.Client
+		bucketClient          *buckets.Client
+		autClient             *automation.Client
+		documentClient        *documents.Client
+		openPipelineClient    *openpipeline.Client
+		err                   error
+		classicUrl            string
+	)
+	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
+	if err = validateURL(url); err != nil {
+		return nil, err
+	}
+
+	cFactory := clients.Factory().
+		WithConcurrentRequestLimit(concurrentReqLimit).
+		WithUserAgent(opts.getUserAgentString()).
+		WithRetryOptions(&DefaultRetryOptions).
+		WithRateLimiter(true)
+
+	if opts.SupportArchive {
+		cFactory = cFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
+	}
+
+	if auth.OAuth != nil {
+		cFactory = cFactory.WithOAuthCredentials(
+			clientcredentials.Config{
+				ClientID:     auth.OAuth.ClientID.Value.Value(),
+				ClientSecret: auth.OAuth.ClientSecret.Value.Value(),
+				TokenURL:     auth.OAuth.GetTokenEndpointValue(),
+			}).WithPlatformURL(url)
+		client, err = cFactory.CreatePlatformClient()
+		if err != nil {
+			return nil, err
+		}
+
+		bucketClient, err = cFactory.BucketClientWithRetrySettings(15, time.Second, 5*time.Minute)
+		if err != nil {
+			return nil, err
+		}
+
+		autClient, err = cFactory.AutomationClient()
+		if err != nil {
+			return nil, err
+		}
+
+		documentClient, err = cFactory.DocumentClient()
+		if err != nil {
+			return nil, err
+		}
+
+		openPipelineClient, err = cFactory.OpenPipelineClient()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if auth.Token != nil {
+		if client == nil {
+			return nil, fmt.Errorf("client not set")
+		}
+		classicUrl, err = metadata.GetDynatraceClassicURL(context.TODO(), *client)
+		if err != nil {
+			return nil, err
+		}
+		cFactory = cFactory.WithAccessToken(auth.Token.Value.Value()).
+			WithClassicURL(classicUrl)
+		classicClient, err = cFactory.CreateClassicClient()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	dtClient, err := createDTClient(classicClient, client, opts, concurrentReqLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ClientSet{
+		DTClient:           dtClient,
+		AutClient:          autClient,
+		BucketClient:       bucketClient,
+		DocumentClient:     documentClient,
+		OpenPipelineClient: openPipelineClient,
+	}, nil
+}
+
+func createDTClient(classicClient *corerest.Client, client *corerest.Client, opts ClientOptions, concurrentReqLimit int) (*dtclient.DynatraceClient, error) {
+	if client != nil {
+		return dtclient.NewPlatformClient(
+			client,
+			classicClient,
+			dtclient.WithCachingDisabled(opts.CachingDisabled),
+			dtclient.WithAutoServerVersion(),
+			dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)),
+		)
+	}
+
+	return dtclient.NewClassicClient(
+		classicClient,
+		dtclient.WithCachingDisabled(opts.CachingDisabled),
+		dtclient.WithAutoServerVersion(),
+		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)),
+	)
 }
