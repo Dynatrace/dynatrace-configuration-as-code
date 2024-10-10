@@ -140,6 +140,8 @@ func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[acc
 			WithConcurrentRequestLimit(concurrentRequestLimit).
 			WithOAuthCredentials(oauthCreds).
 			WithUserAgent(client.DefaultMonacoUserAgent).
+			WithRateLimiter(true).
+			WithRetryOptions(&client.DefaultRetryOptions).
 			WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl))
 
 		if support.SupportArchive {
