@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
@@ -194,16 +195,28 @@ func Load(context *Context) (manifest.Manifest, []error) {
 		errs = append(errs, newManifestLoaderError(context.ManifestPath, accErr.Error()))
 	}
 
+	// params
+	params, paramErrs := parseParameters(context.Fs, config.DefaultParameterParsers, manifestYAML.Parameters)
+	if paramErrs != nil {
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, paramErrs.Error()))
+	}
+
 	// if any errors occurred up to now, return them
 	if errs != nil {
 		return manifest.Manifest{}, errs
 	}
 
-	return manifest.Manifest{
+	m := manifest.Manifest{
 		Projects:     projectDefinitions,
 		Environments: environmentDefinitions,
 		Accounts:     accounts,
-	}, nil
+	}
+
+	if len(params) > 0 {
+		m.Parameters = params
+	}
+
+	return m, nil
 }
 
 func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
