@@ -53,7 +53,7 @@ func (o OAuth) GetTokenEndpointValue() string {
 }
 
 type Auth struct {
-	Token AuthSecret
+	Token *AuthSecret
 	OAuth *OAuth
 }
 

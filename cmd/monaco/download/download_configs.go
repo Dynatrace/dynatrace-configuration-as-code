@@ -67,7 +67,7 @@ func (a auth) mapToAuth() (*manifest.Auth, []error) {
 	if v, err := readEnvVariable(a.token); err != nil {
 		errs = append(errs, err)
 	} else {
-		retVal.Token = v
+		retVal.Token = &v
 	}
 
 	if a.clientID != "" && a.clientSecret != "" {
