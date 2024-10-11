@@ -43,6 +43,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 	gonum "gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 )
@@ -81,8 +82,8 @@ var (
 	skipError = errors.New("skip error")
 )
 
-func Deploy(projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
-	preloadCaches(projects, environmentClients)
+func Deploy(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
+	preloadCaches(ctx, projects, environmentClients)
 	g := graph.New(projects, environmentClients.Names())
 	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
 
@@ -94,7 +95,7 @@ func Deploy(projects []project.Project, environmentClients dynatrace.Environment
 	}
 
 	for env, clients := range environmentClients {
-		ctx := createContextWithEnvironment(env)
+		ctx := newContextWithEnvironment(ctx, env)
 		log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", env.Name)
 
 		sortedConfigs, err := g.GetIndependentlySortedConfigs(env.Name)
@@ -179,6 +180,8 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 		for _, root := range roots {
 			node := root.(graph.ConfigNode)
 			time.Sleep(api.NewAPIs()[node.Config.Coordinate.Type].DeployWaitDuration)
+
+			ctx := report.NewContextWithDetailer(ctx, report.NewDefaultDetailer())
 			go func(ctx context.Context, node graph.ConfigNode) {
 				errChan <- deployNode(ctx, node, configGraph, clients, resolvedEntities)
 			}(context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate), node)
@@ -208,6 +211,18 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 
 func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clients ClientSet, resolvedEntities *entities.EntityMap) error {
 	resolvedEntity, err := deployConfig(ctx, n.Config, clients, resolvedEntities)
+
+	details := report.GetDetailerFromContextOrDiscard(ctx).GetDetails()
+	// Need to tidy this up, just keep it all in once place at the moment
+	if err != nil {
+		if errors.Is(err, skipError) {
+			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.State_DEPL_SKIPPED, details, nil)
+		} else {
+			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.State_DEPL_ERR, details, err)
+		}
+	} else {
+		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.State_DEPL_SUCCESS, details, nil)
+	}
 
 	if err != nil {
 		failed := !errors.Is(err, skipError)
@@ -253,6 +268,8 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 			l.Warn("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
 		}
 
+		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.State_DEPL_SKIPPED, nil, nil)
+
 		removeChildren(ctx, child, root, configGraph, failed)
 
 		configGraph.RemoveNode(child.ID())
@@ -260,6 +277,8 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 }
 
 func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
+	report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: "INFO", Message: "Hello world"})
+
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
 		return entities.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
@@ -344,6 +363,6 @@ func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
 }
 
-func createContextWithEnvironment(env dynatrace.EnvironmentInfo) context.Context {
-	return context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
+func newContextWithEnvironment(ctx context.Context, env dynatrace.EnvironmentInfo) context.Context {
+	return context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 }
