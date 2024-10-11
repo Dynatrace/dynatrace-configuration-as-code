@@ -33,7 +33,7 @@ type preloadConfigTypeEntry struct {
 }
 
 // preloadCaches fills the caches of the specified clients for the config types used in the given projects.
-func preloadCaches(projects []project.Project, environmentClients dynatrace.EnvironmentClients) {
+func preloadCaches(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients) {
 	var wg sync.WaitGroup
 	for _, p := range gatherPreloadConfigTypeEntries(projects, environmentClients) {
 		wg.Add(1)
@@ -42,10 +42,10 @@ func preloadCaches(projects []project.Project, environmentClients dynatrace.Envi
 
 			switch t := p.configType.(type) {
 			case config.SettingsType:
-				preloadSettingsValuesForSchemaId(p.client, t.SchemaId)
+				preloadSettingsValuesForSchemaId(ctx, p.client, t.SchemaId)
 
 			case config.ClassicApiType:
-				preloadValuesForApi(p.client, t.Api)
+				preloadValuesForApi(ctx, p.client, t.Api)
 			}
 
 		}(p)
@@ -53,15 +53,15 @@ func preloadCaches(projects []project.Project, environmentClients dynatrace.Envi
 	wg.Wait()
 }
 
-func preloadSettingsValuesForSchemaId(client client.DynatraceClient, schemaId string) {
-	if err := client.CacheSettings(context.TODO(), schemaId); err != nil {
+func preloadSettingsValuesForSchemaId(ctx context.Context, client client.DynatraceClient, schemaId string) {
+	if err := client.CacheSettings(ctx, schemaId); err != nil {
 		log.Warn("Could not cache settings values for schema %s: %s", schemaId, err)
 		return
 	}
 	log.Debug("Cached settings values for schema %s", schemaId)
 }
 
-func preloadValuesForApi(client client.DynatraceClient, theApi string) {
+func preloadValuesForApi(ctx context.Context, client client.DynatraceClient, theApi string) {
 	a, ok := api.NewAPIs()[theApi]
 	if !ok {
 		return
@@ -69,7 +69,7 @@ func preloadValuesForApi(client client.DynatraceClient, theApi string) {
 	if a.HasParent() {
 		return
 	}
-	err := client.CacheConfigs(context.TODO(), a)
+	err := client.CacheConfigs(ctx, a)
 	if err != nil {
 		log.Warn("Could not cache values for API %s: %s", theApi, err)
 		return
