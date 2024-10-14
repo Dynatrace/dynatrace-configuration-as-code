@@ -102,7 +102,7 @@ download-restore-test: mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=download_restore -timeout=30m -v -race ./...
 
 account-management-test: mocks install-gotestsum
-	@gotestsum ${testopts} --format testdox -- -tags=integration -timeout=30m -v -race ./cmd/monaco/integrationtest/account
+	@gotestsum ${testopts} --format standard-verbose -- -tags=integration -timeout=30m -v -race ./cmd/monaco/integrationtest/account
 
 clean-environments:
 	@MONACO_ENABLE_DANGEROUS_COMMANDS=1 go run ./cmd/monaco purge cmd/monaco/integrationtest/v2/test-resources/test_environments_manifest.yaml
