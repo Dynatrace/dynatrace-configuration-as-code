@@ -559,28 +559,26 @@ func newMockDownloader(d mockData, t *testing.T) *downloader.Downloader {
 	}
 	client := http.NewMockhttpClient(gomock.NewController(t))
 
-	ctx := gomock.AssignableToTypeOf(context.TODO())
-
-	client.EXPECT().GetEnvironmentsAndMZones(ctx, d.ai.AccountUUID).Return(d.envs, d.mzones, d.environmentsAndMZonesError).MinTimes(0).MaxTimes(1)
-	client.EXPECT().GetPolicies(ctx, d.ai.AccountUUID).Return(d.policies, d.policiesError).MinTimes(0).MaxTimes(1)
-	client.EXPECT().GetPolicyDefinition(ctx, gomock.AnyOf(toSliceOfAny(d.policies)...)).Return(d.policieDef, d.policyDefinitionError).AnyTimes()
+	client.EXPECT().GetEnvironmentsAndMZones(gomock.Any(), d.ai.AccountUUID).Return(d.envs, d.mzones, d.environmentsAndMZonesError).MinTimes(0).MaxTimes(1)
+	client.EXPECT().GetPolicies(gomock.Any(), d.ai.AccountUUID).Return(d.policies, d.policiesError).MinTimes(0).MaxTimes(1)
+	client.EXPECT().GetPolicyDefinition(gomock.Any(), gomock.AnyOf(toSliceOfAny(d.policies)...)).Return(d.policieDef, d.policyDefinitionError).AnyTimes()
 	if len(d.policyGroupBindings) == 0 {
-		client.EXPECT().GetPolicyGroupBindings(ctx, gomock.Any(), gomock.Any()).Return(&accountmanagement.LevelPolicyBindingDto{}, nil).AnyTimes()
+		client.EXPECT().GetPolicyGroupBindings(gomock.Any(), gomock.Any(), gomock.Any()).Return(&accountmanagement.LevelPolicyBindingDto{}, nil).AnyTimes()
 	} else {
 		for _, b := range d.policyGroupBindings {
-			client.EXPECT().GetPolicyGroupBindings(ctx, b.levelType, b.levelId).Return(b.bindings, b.err).MinTimes(1)
+			client.EXPECT().GetPolicyGroupBindings(gomock.Any(), b.levelType, b.levelId).Return(b.bindings, b.err).MinTimes(1)
 		}
 	}
 	if len(d.permissionsBindings) == 0 {
-		client.EXPECT().GetPermissionFor(ctx, d.ai.AccountUUID, gomock.Any()).Return(&accountmanagement.PermissionsGroupDto{}, nil).AnyTimes()
+		client.EXPECT().GetPermissionFor(gomock.Any(), d.ai.AccountUUID, gomock.Any()).Return(&accountmanagement.PermissionsGroupDto{}, nil).AnyTimes()
 	} else {
 		for _, b := range d.permissionsBindings {
-			client.EXPECT().GetPermissionFor(ctx, d.ai.AccountUUID, b.groupUUID).Return(b.bindings, b.err).AnyTimes()
+			client.EXPECT().GetPermissionFor(gomock.Any(), d.ai.AccountUUID, b.groupUUID).Return(b.bindings, b.err).AnyTimes()
 		}
 	}
-	client.EXPECT().GetGroups(ctx, d.ai.AccountUUID).Return(d.groups, d.groupsError).MinTimes(0).MaxTimes(1)
-	client.EXPECT().GetUsers(ctx, d.ai.AccountUUID).Return(d.users, d.usersError).MinTimes(0).MaxTimes(1)
-	client.EXPECT().GetGroupsForUser(ctx, userEmail(d.users), d.ai.AccountUUID).Return(d.userGroups, d.groupsForUserError).AnyTimes()
+	client.EXPECT().GetGroups(gomock.Any(), d.ai.AccountUUID).Return(d.groups, d.groupsError).MinTimes(0).MaxTimes(1)
+	client.EXPECT().GetUsers(gomock.Any(), d.ai.AccountUUID).Return(d.users, d.usersError).MinTimes(0).MaxTimes(1)
+	client.EXPECT().GetGroupsForUser(gomock.Any(), userEmail(d.users), d.ai.AccountUUID).Return(d.userGroups, d.groupsForUserError).AnyTimes()
 
 	return downloader.New4Test(d.ai, client)
 }
