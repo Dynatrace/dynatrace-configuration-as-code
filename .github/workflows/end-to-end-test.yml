@@ -56,7 +56,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 #v5.0.2
       with:
-        go-version: '~1.22'
+        go-version: '~1.23'
 
     - name: 🏁 Build release binaries
       run: make build-release
@@ -80,7 +80,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 #v5.0.2
       with:
-        go-version: '~1.22'
+        go-version: '~1.23'
 
     - name: 🌎 Integration test
       run: make integration-test testopts="--junitfile test-result-integration.xml"
@@ -121,7 +121,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 #v5.0.2
       with:
-        go-version: '~1.22'
+        go-version: '~1.23'
 
     - name: 🧓 Integration test (legacy)
       run: make integration-test-v1 testopts="--junitfile test-result-integration-legacy.xml"
@@ -162,7 +162,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 #v5.0.2
       with:
-        go-version: '~1.22'
+        go-version: '~1.23'
 
     - name: 📥/📤 Download/Restore test
       run: make download-restore-test testopts="--junitfile test-result-integration-download-restore.xml"
@@ -202,7 +202,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 #v5.0.2
         with:
-          go-version: '~1.22'
+          go-version: '~1.23'
 
       - name: 🗂️ Account Management E2E tests
         run: make account-management-test testopts="--junitfile test-result-aim.xml"
@@ -241,7 +241,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 #v5.0.2
       with:
-        go-version: '~1.22'
+        go-version: '~1.23'
 
     - name: 🧪 Unit test
       run: make test testopts="--junitfile test-result-windows-latest-unit.xml"
@@ -268,7 +268,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 #v5.0.2
       with:
-        go-version: '~1.22'
+        go-version: '~1.23'
 
     - name: 🌜 Nightly Tests
       run: make nightly-test testopts="--junitfile test-result-integration-nightly.xml"
