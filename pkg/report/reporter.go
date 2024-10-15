@@ -183,7 +183,7 @@ func (d *defaultReporter) GetSummary() string {
 	defer d.mu.Unlock()
 
 	sb := strings.Builder{}
-	sb.WriteString(fmt.Sprintf("Deplyoments success: %d\n", d.deploymentFinishedCount))
+	sb.WriteString(fmt.Sprintf("Deployments success: %d\n", d.deploymentFinishedCount))
 	sb.WriteString(fmt.Sprintf("Deployments excluded: %d\n", d.deploymentsExcludedCount))
 	sb.WriteString(fmt.Sprintf("Deployments skipped: %d\n", d.deploymentsSkippedCount))
 	sb.WriteString(fmt.Sprintf("Deploy Start Time: %v\n", d.started.Format("20060102-150405")))
