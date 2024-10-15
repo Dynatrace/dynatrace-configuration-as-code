@@ -27,7 +27,7 @@ jobs:
 
     steps:
     - name: Fetch base repo sha
-      if: github.event.action == 'labeled' && github.event.label.name == 'run-e2e-test'
+      if: github.event.action == 'labeled' && (github.event.label.name == 'run-e2e-test' ||  github.event.label.name == 'run-iam-test')
       run: echo "sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
 
     - name: Fetch event sha
