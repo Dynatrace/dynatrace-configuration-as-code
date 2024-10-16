@@ -246,8 +246,7 @@ var defaultDownloadFn = downloadFn{
 
 func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
 	configs := make(project.ConfigsPerType)
-
-	if shouldDownloadConfigs(opts) {
+	if shouldDownloadConfigs(opts) && opts.auth.Token != nil {
 		classicCfgs, err := fn.classicDownload(clientSet.Classic(), opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
 		if err != nil {
 			return nil, err
@@ -255,7 +254,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		copyConfigs(configs, classicCfgs)
 	}
 
-	if shouldDownloadSettings(opts) {
+	if shouldDownloadSettings(opts) && opts.auth.Token != nil {
 		log.Info("Downloading settings objects")
 		settingCfgs, err := fn.settingsDownload(clientSet.Settings(), opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
 		if err != nil {
