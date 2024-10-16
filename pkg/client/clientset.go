@@ -314,13 +314,9 @@ func CreateClientSet(url string, auth manifest.Auth, opts ClientOptions) (*Clien
 	}
 
 	if auth.Token != nil {
-		classicUrl = url
-		//when oauth is set the platform url needs to be transformed to classic url
-		if auth.OAuth != nil {
-			classicUrl, err = metadata.GetDynatraceClassicURL(context.TODO(), *client)
-			if err != nil {
-				return nil, err
-			}
+		classicUrl, err = transformPlatformUrlToClassic(url, auth.OAuth, client)
+		if err != nil {
+			return nil, err
 		}
 		cFactory = cFactory.WithAccessToken(auth.Token.Value.Value()).
 			WithClassicURL(classicUrl)
@@ -361,4 +357,13 @@ func createDTClient(classicClient *corerest.Client, client *corerest.Client, opt
 		dtclient.WithAutoServerVersion(),
 		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)),
 	)
+}
+
+func transformPlatformUrlToClassic(url string, auth *manifest.OAuth, client *corerest.Client) (string, error) {
+	classicUrl := url
+	if auth != nil && client != nil {
+		return metadata.GetDynatraceClassicURL(context.TODO(), *client)
+	}
+
+	return classicUrl, nil
 }
