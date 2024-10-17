@@ -43,6 +43,10 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	if err != nil {
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
 	}
+
+	r := report.NewDefaultReporter("summary.jsonl")
+	ctx := report.NewContextWithReporter(context.TODO(), r)
+
 	loadedManifest, err := loadManifest(fs, absManifestPath, environmentGroups, specificEnvironments)
 	if err != nil {
 		return err
@@ -70,8 +74,6 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return fmt.Errorf("failed to create API clients: %w", err)
 	}
 
-	r := report.NewDefaultReporter("summary.jsonl")
-	ctx := report.NewContextWithReporter(context.TODO(), r)
 	err = deploy.Deploy(ctx, loadedProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun})
 	r.Stop()
 	if err != nil {
