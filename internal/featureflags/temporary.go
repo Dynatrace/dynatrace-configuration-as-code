@@ -57,7 +57,7 @@ var Temporary = map[TemporaryFlag]FeatureFlag{
 	},
 	PersistSettingsOrder: {
 		envName:        string(PersistSettingsOrder),
-		defaultEnabled: false,
+		defaultEnabled: true,
 	},
 	OpenPipeline: {
 		envName:        string(OpenPipeline),
