@@ -54,7 +54,7 @@ func (r record) ToJSON() (string, error) {
 		Time    string                `json:"time"`
 		Config  coordinate.Coordinate `json:"config"`
 		State   string                `json:"state"`
-		Details []Detail              `json:"details"`
+		Details []Detail              `json:"details,omitempty"`
 		Error   error                 `json:"error,omitempty"`
 	}{
 		Type:    r.Type,

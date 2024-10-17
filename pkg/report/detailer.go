@@ -21,6 +21,12 @@ import (
 	"fmt"
 )
 
+const (
+	TypeInfo  string = "INFO"
+	TypeWarn  string = "WARN"
+	TypeError string = "ERROR"
+)
+
 type Detail struct {
 	Type    string `json:"type"`
 	Message string `json:"msg"`
