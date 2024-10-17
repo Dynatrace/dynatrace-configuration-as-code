@@ -286,14 +286,14 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 	if len(errs) > 0 {
 		err := multierror.New(errs...)
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to resolve parameter values: %v", err)
-		report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: "ERROR", Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
+		report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: report.TypeError, Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to render JSON template: %v", err)
-		report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: "ERROR", Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
+		report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: report.TypeError, Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
