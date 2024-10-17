@@ -181,7 +181,6 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 			node := root.(graph.ConfigNode)
 			time.Sleep(api.NewAPIs()[node.Config.Coordinate.Type].DeployWaitDuration)
 
-			ctx := report.NewContextWithDetailer(ctx, report.NewDefaultDetailer())
 			go func(ctx context.Context, node graph.ConfigNode) {
 				errChan <- deployNode(ctx, node, configGraph, clients, resolvedEntities)
 			}(context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate), node)
@@ -210,9 +209,10 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 }
 
 func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clients ClientSet, resolvedEntities *entities.EntityMap) error {
+	ctx = report.NewContextWithDetailer(ctx, report.NewDefaultDetailer())
 	resolvedEntity, err := deployConfig(ctx, n.Config, clients, resolvedEntities)
-
 	details := report.GetDetailerFromContextOrDiscard(ctx).GetDetails()
+
 	// Need to tidy this up, just keep it all in once place at the moment
 	if err != nil {
 		if errors.Is(err, skipError) {
@@ -277,8 +277,6 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 }
 
 func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
-	report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: "INFO", Message: "Hello world"})
-
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
 		return entities.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
@@ -288,12 +286,14 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 	if len(errs) > 0 {
 		err := multierror.New(errs...)
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to resolve parameter values: %v", err)
+		report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: "ERROR", Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to render JSON template: %v", err)
+		report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: "ERROR", Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
@@ -352,6 +352,7 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	if responseErr.StatusCode >= 400 && responseErr.StatusCode <= 499 {
 		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
+		report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: "ERROR", Message: fmt.Sprintf("Dynatrace API rejected request: : %v", responseErr)})
 		return
 	}
 
