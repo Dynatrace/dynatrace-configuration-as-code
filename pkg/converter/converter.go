@@ -617,7 +617,7 @@ func newEnvironmentDefinitionFromV1(env *v1environment.EnvironmentV1, group stri
 		URL:   newUrlDefinitionFromV1(env),
 		Group: group,
 		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: env.GetTokenName()},
+			Token: &manifest.AuthSecret{Name: env.GetTokenName()},
 		},
 	}
 }

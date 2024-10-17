@@ -110,19 +110,7 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 
 // CreateClients creates a new client set based on the provided URL and authentication information.
 func CreateClients(url string, auth manifest.Auth) (*client.ClientSet, error) {
-	if auth.OAuth == nil {
-		return client.CreateClassicClientSet(url, auth.Token.Value.Value(), client.ClientOptions{
-			SupportArchive: support.SupportArchive,
-		})
-	}
-	return client.CreatePlatformClientSet(url, client.PlatformAuth{
-		OauthClientID:     auth.OAuth.ClientID.Value.Value(),
-		OauthClientSecret: auth.OAuth.ClientSecret.Value.Value(),
-		Token:             auth.Token.Value.Value(),
-		OauthTokenURL:     auth.OAuth.GetTokenEndpointValue(),
-	}, client.ClientOptions{
-		SupportArchive: support.SupportArchive,
-	})
+	return client.CreateClientSet(url, auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 }
 
 // CreateAccountClients gives back clients to use for specific accounts

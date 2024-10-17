@@ -40,24 +40,18 @@ import (
 // wrong information from the cache in cases where we want to get
 // resources immediately after they've been created (e.g. to assert that they exist)
 func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefinition) *client.ClientSet {
-	var clients *client.ClientSet
-	var err error
-	if environment.Auth.OAuth == nil {
-		clients, err = client.CreateClassicClientSet(environment.URL.Value, environment.Auth.Token.Value.Value(), client.ClientOptions{
+	var (
+		clients *client.ClientSet
+		err     error
+	)
+	clients, err = client.CreateClientSet(
+		environment.URL.Value,
+		environment.Auth,
+		client.ClientOptions{
 			SupportArchive:  support.SupportArchive,
 			CachingDisabled: true, // disabled to avoid wrong cache reads
-		})
-	} else {
-		clients, err = client.CreatePlatformClientSet(environment.URL.Value, client.PlatformAuth{
-			OauthClientID:     environment.Auth.OAuth.ClientID.Value.Value(),
-			OauthClientSecret: environment.Auth.OAuth.ClientSecret.Value.Value(),
-			Token:             environment.Auth.Token.Value.Value(),
-			OauthTokenURL:     environment.Auth.OAuth.GetTokenEndpointValue(),
-		}, client.ClientOptions{
-			SupportArchive:  support.SupportArchive,
-			CachingDisabled: true, // disabled to avoid wrong cache reads
-		})
-	}
+		},
+	)
 	require.NoError(t, err, "failed to create test client")
 	return clients
 }
