@@ -216,7 +216,7 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 	// Need to tidy this up, just keep it all in once place at the moment
 	if err != nil {
 		if errors.Is(err, skipError) {
-			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.State_DEPL_SKIPPED, details, nil)
+			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.State_DEPL_EXCLUDED, details, nil)
 		} else {
 			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.State_DEPL_ERR, details, err)
 		}
