@@ -62,28 +62,28 @@ type auth struct {
 
 func (a auth) mapToAuth() (*manifest.Auth, []error) {
 	errs := make([]error, 0)
-	retVal := manifest.Auth{}
+	mAuth := manifest.Auth{}
 
-	if v, err := readEnvVariable(a.token); err != nil {
+	if token, err := readEnvVariable(a.token); err != nil {
 		errs = append(errs, err)
 	} else {
-		retVal.Token = &v
+		mAuth.Token = &token
 	}
 
 	if a.clientID != "" && a.clientSecret != "" {
-		retVal.OAuth = &manifest.OAuth{}
-		if v, err := readEnvVariable(a.clientID); err != nil {
+		mAuth.OAuth = &manifest.OAuth{}
+		if clientId, err := readEnvVariable(a.clientID); err != nil {
 			errs = append(errs, err)
 		} else {
-			retVal.OAuth.ClientID = v
+			mAuth.OAuth.ClientID = clientId
 		}
-		if v, err := readEnvVariable(a.clientSecret); err != nil {
+		if clientSecret, err := readEnvVariable(a.clientSecret); err != nil {
 			errs = append(errs, err)
 		} else {
-			retVal.OAuth.ClientSecret = v
+			mAuth.OAuth.ClientSecret = clientSecret
 		}
 	}
-	return &retVal, errs
+	return &mAuth, errs
 }
 
 func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
@@ -246,7 +246,10 @@ var defaultDownloadFn = downloadFn{
 
 func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
 	configs := make(project.ConfigsPerType)
-	if shouldDownloadConfigs(opts) && opts.auth.Token != nil {
+	if shouldDownloadConfigs(opts) {
+		if opts.auth.Token == nil {
+			return nil, errors.New("classic client config requires token")
+		}
 		classicCfgs, err := fn.classicDownload(clientSet.Classic(), opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
 		if err != nil {
 			return nil, err
@@ -254,7 +257,10 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		copyConfigs(configs, classicCfgs)
 	}
 
-	if shouldDownloadSettings(opts) && opts.auth.Token != nil {
+	if shouldDownloadSettings(opts) {
+		if opts.auth.Token == nil {
+			return nil, errors.New("settings client config requires token")
+		}
 		log.Info("Downloading settings objects")
 		settingCfgs, err := fn.settingsDownload(clientSet.Settings(), opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
 		if err != nil {
