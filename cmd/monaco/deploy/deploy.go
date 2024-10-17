@@ -277,20 +277,22 @@ func platformEnvironment(e manifest.EnvironmentDefinition) bool {
 }
 
 func validateAuthenticationWithProjectConfigs(projects []project.Project, loadedManifest *manifest.Manifest) error {
-	var errs []error
+	var err error
 	for _, p := range projects {
 		p.ForEveryConfigDo(func(c config.Config) {
 			switch c.Type.(type) {
 			case config.ClassicApiType:
 				if loadedManifest.Environments[c.Environment].Auth.Token == nil {
-					errs = append(errs, fmt.Errorf("API: %s requires token", c.Type))
+					err = fmt.Errorf("API: %s requires token", c.Type)
+					return
 				}
 			default:
 				if loadedManifest.Environments[c.Environment].Auth.OAuth == nil {
-					errs = append(errs, fmt.Errorf("API: %s oatuh provided", c.Type))
+					err = fmt.Errorf("API: %s  requires oAuth", c.Type)
+					return
 				}
 			}
 		})
 	}
-	return errors.Join(errs...)
+	return err
 }

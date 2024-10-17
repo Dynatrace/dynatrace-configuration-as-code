@@ -207,48 +207,43 @@ func Load(context *Context) (manifest.Manifest, []error) {
 }
 
 func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
-	var (
-		err   error
-		token *manifest.AuthSecret
-		o     *manifest.OAuth
-	)
+	var mAuth manifest.Auth
 
 	if a.Token == nil && a.OAuth == nil {
-		return manifest.Auth{}, fmt.Errorf("no token or oauth provided in manifest")
+		return manifest.Auth{}, errors.New("no token or oauth provided in manifest")
 	}
 
 	if a.Token != nil {
-		token, err = parseAuthSecret(context, a.Token)
+		token, err := parseAuthSecret(context, a.Token)
 		if err != nil {
-			return manifest.Auth{}, fmt.Errorf("failed to parse token, error: %w", err)
+			return manifest.Auth{}, fmt.Errorf("failed to parse token: %w", err)
 		}
+		mAuth.Token = &token
 	}
 
 	if a.OAuth != nil {
-		o, err = parseOAuth(context, a.OAuth)
+		o, err := parseOAuth(context, a.OAuth)
 		if err != nil {
-			return manifest.Auth{}, fmt.Errorf("failed to parse oauth, error: %w", err)
+			return manifest.Auth{}, fmt.Errorf("failed to parse oauth: %w", err)
 		}
+		mAuth.OAuth = o
 	}
 
-	return manifest.Auth{
-		Token: token,
-		OAuth: o,
-	}, nil
+	return mAuth, nil
 }
 
-func parseAuthSecret(context *Context, s *persistence.AuthSecret) (*manifest.AuthSecret, error) {
+func parseAuthSecret(context *Context, s *persistence.AuthSecret) (manifest.AuthSecret, error) {
 	if !(s.Type == persistence.TypeEnvironment || s.Type == "") {
-		return nil, errors.New("type must be 'environment'")
+		return manifest.AuthSecret{}, errors.New("type must be 'environment'")
 	}
 
 	if s.Name == "" {
-		return nil, errors.New("no name given or empty")
+		return manifest.AuthSecret{}, errors.New("no name given or empty")
 	}
 
 	if context.Opts.DoNotResolveEnvVars {
 		log.Debug("Skipped resolving environment variable %s based on loader options", s.Name)
-		return &manifest.AuthSecret{
+		return manifest.AuthSecret{
 			Name:  s.Name,
 			Value: secret.MaskedString(fmt.Sprintf("SKIPPED RESOLUTION OF ENV_VAR: %s", s.Name)),
 		}, nil
@@ -256,14 +251,14 @@ func parseAuthSecret(context *Context, s *persistence.AuthSecret) (*manifest.Aut
 
 	v, f := os.LookupEnv(s.Name)
 	if !f {
-		return nil, fmt.Errorf("environment-variable %q was not found", s.Name)
+		return manifest.AuthSecret{}, fmt.Errorf("environment-variable %q was not found", s.Name)
 	}
 
 	if v == "" {
-		return nil, fmt.Errorf("environment-variable %q found, but the value resolved is empty", s.Name)
+		return manifest.AuthSecret{}, fmt.Errorf("environment-variable %q found, but the value resolved is empty", s.Name)
 	}
 
-	return &manifest.AuthSecret{Name: s.Name, Value: secret.MaskedString(v)}, nil
+	return manifest.AuthSecret{Name: s.Name, Value: secret.MaskedString(v)}, nil
 }
 
 func parseOAuth(context *Context, a *persistence.OAuth) (*manifest.OAuth, error) {
@@ -284,15 +279,15 @@ func parseOAuth(context *Context, a *persistence.OAuth) (*manifest.OAuth, error)
 		}
 
 		return &manifest.OAuth{
-			ClientID:      *clientID,
-			ClientSecret:  *clientSecret,
+			ClientID:      clientID,
+			ClientSecret:  clientSecret,
 			TokenEndpoint: &urlDef,
 		}, nil
 	}
 
 	return &manifest.OAuth{
-		ClientID:      *clientID,
-		ClientSecret:  *clientSecret,
+		ClientID:      clientID,
+		ClientSecret:  clientSecret,
 		TokenEndpoint: nil,
 	}, nil
 }
