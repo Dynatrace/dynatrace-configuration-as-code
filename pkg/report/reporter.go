@@ -108,45 +108,46 @@ type defaultReporter struct {
 }
 
 func NewDefaultReporter(reportFilePath string) *defaultReporter {
-	r := defaultReporter{
+	r := &defaultReporter{
 		started: time.Now(),
 		queue:   make(chan record, 32),
 	}
-	go r.record(reportFilePath)
-	return &r
+	r.wg.Add(1)
+	go func() {
+		defer r.wg.Done()
+		if err := r.runRecorder(reportFilePath); err != nil {
+			log.Error("Error recording deployment report: %s", err)
+		}
+	}()
+	return r
 }
 
-func (d *defaultReporter) record(reportFilePath string) {
+func (d *defaultReporter) runRecorder(reportFilePath string) error {
 	file, err := afero.NewOsFs().OpenFile(reportFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Error("Unable to open record file: %s", err)
+		return fmt.Errorf("error open record file: %w", err)
 	}
+
 	writer := bufio.NewWriter(file)
-
 	for r := range d.queue {
-		func() {
-			defer d.wg.Done()
-			d.updateSummaryFromRecord(r)
-			b, err := r.ToJSON()
-			if err != nil {
-				log.Error("Unable to convert record: %s", err)
-				return
-			}
-			if _, err := fmt.Fprintln(writer, b); err != nil {
-				log.Error("Unable to write record: %s", err)
-				return
-			}
-		}()
+		d.updateSummaryFromRecord(r)
+		b, err := r.ToJSON()
+		if err != nil {
+			return fmt.Errorf("unable to convert record: %w", err)
+		}
+		if _, err := fmt.Fprintln(writer, b); err != nil {
+			return fmt.Errorf("unable to write record: %w", err)
+		}
 	}
 
-	err = writer.Flush()
-	if err != nil {
-		log.Error("Unable to flush record file: %s", err)
+	if err := writer.Flush(); err != nil {
+		return fmt.Errorf("unable to flush record file: %w", err)
 	}
-	err = file.Close()
-	if err != nil {
-		log.Error("Unable to close record file: %s", err)
+
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("unable to close record file: %w", err)
 	}
+	return nil
 }
 
 func (d *defaultReporter) updateSummaryFromRecord(r record) {
@@ -167,7 +168,6 @@ func (d *defaultReporter) updateSummaryFromRecord(r record) {
 }
 
 func (d *defaultReporter) ReportDeployment(config coordinate.Coordinate, state string, details []Detail, err error) {
-	d.wg.Add(1)
 	d.queue <- record{
 		Type:    "DEPLOY",
 		Time:    time.Now(),
