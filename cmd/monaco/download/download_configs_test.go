@@ -143,7 +143,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			tt.givenOpts.downloadOptionsShared = downloadOptionsShared{
 				environmentURL: "testurl.com",
 				auth: manifest.Auth{
-					Token: manifest.AuthSecret{
+					Token: &manifest.AuthSecret{
 						Name:  "TEST_TOKEN_VAR",
 						Value: "test.token",
 					},
@@ -174,7 +174,7 @@ func TestDownload_Options(t *testing.T) {
 			"download all if options are not limiting",
 			downloadConfigsOptions{
 				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{OAuth: &manifest.OAuth{}}, // OAuth required to be defined for platform types
+					auth: manifest.Auth{Token: &manifest.AuthSecret{}, OAuth: &manifest.OAuth{}}, // OAuth and Token required to download whole config
 				},
 			},
 			wantDownload{
@@ -188,17 +188,26 @@ func TestDownload_Options(t *testing.T) {
 		},
 		{
 			"only settings requested",
-			downloadConfigsOptions{onlySettings: true},
+			downloadConfigsOptions{
+				onlySettings: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
+				}},
 			wantDownload{settings: true},
 		},
 		{
 			"specific settings requested",
-			downloadConfigsOptions{specificSchemas: []string{"some:schema"}},
+			downloadConfigsOptions{
+				specificSchemas: []string{"some:schema"},
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
+				}},
 			wantDownload{settings: true},
 		},
 		{
 			"only documents requested",
-			downloadConfigsOptions{onlyDocuments: true,
+			downloadConfigsOptions{
+				onlyDocuments: true,
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
@@ -206,7 +215,8 @@ func TestDownload_Options(t *testing.T) {
 		},
 		{
 			"only openpipeline requested",
-			downloadConfigsOptions{onlyOpenPipeline: true,
+			downloadConfigsOptions{
+				onlyOpenPipeline: true,
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
@@ -214,12 +224,20 @@ func TestDownload_Options(t *testing.T) {
 		},
 		{
 			"only apis requested",
-			downloadConfigsOptions{onlyAPIs: true},
+			downloadConfigsOptions{
+				onlyAPIs: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
+				}},
 			wantDownload{config: true},
 		},
 		{
 			"specific config apis requested",
-			downloadConfigsOptions{specificAPIs: []string{"alerting-profile"}},
+			downloadConfigsOptions{
+				specificAPIs: []string{"alerting-profile"},
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
+				}},
 			wantDownload{config: true},
 		},
 		{
@@ -234,7 +252,12 @@ func TestDownload_Options(t *testing.T) {
 		},
 		{
 			"specific APIs and schemas",
-			downloadConfigsOptions{specificAPIs: []string{"alerting-profile"}, specificSchemas: []string{"some:schema"}},
+			downloadConfigsOptions{
+				specificAPIs:    []string{"alerting-profile"},
+				specificSchemas: []string{"some:schema"},
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
+				}},
 			wantDownload{config: true, settings: true},
 		},
 	}
@@ -375,7 +398,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 		downloadOptionsShared: downloadOptionsShared{
 			environmentURL: "testurl.com",
 			auth: manifest.Auth{
-				Token: manifest.AuthSecret{
+				Token: &manifest.AuthSecret{
 					Name:  "TEST_TOKEN_VAR",
 					Value: "test.token",
 				},
@@ -397,7 +420,7 @@ func TestMapToAuth(t *testing.T) {
 	t.Run("Best case scenario only with token", func(t *testing.T) {
 		t.Setenv("TOKEN", "token_value")
 
-		expected := &manifest.Auth{Token: manifest.AuthSecret{Name: "TOKEN", Value: "token_value"}}
+		expected := &manifest.Auth{Token: &manifest.AuthSecret{Name: "TOKEN", Value: "token_value"}}
 
 		actual, errs := auth{token: "TOKEN"}.mapToAuth()
 
@@ -410,7 +433,7 @@ func TestMapToAuth(t *testing.T) {
 		t.Setenv("CLIENT_SECRET", "client_secret_value")
 
 		expected := &manifest.Auth{
-			Token: manifest.AuthSecret{Name: "TOKEN", Value: "token_value"},
+			Token: &manifest.AuthSecret{Name: "TOKEN", Value: "token_value"},
 			OAuth: &manifest.OAuth{
 				ClientID:      manifest.AuthSecret{Name: "CLIENT_ID", Value: "client_id_value"},
 				ClientSecret:  manifest.AuthSecret{Name: "CLIENT_SECRET", Value: "client_secret_value"},

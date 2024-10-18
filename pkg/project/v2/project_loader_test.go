@@ -668,7 +668,7 @@ func getFullProjectLoaderContext(apis []string, projects []string, environments 
 		envDefinitions[e] = manifest.EnvironmentDefinition{
 			Name: e,
 			Auth: manifest.Auth{
-				Token: manifest.AuthSecret{Name: fmt.Sprintf("%s_VAR", e)},
+				Token: &manifest.AuthSecret{Name: fmt.Sprintf("%s_VAR", e)},
 			},
 		}
 	}
@@ -770,7 +770,7 @@ func TestLoadProjects_Simple(t *testing.T) {
 			Environments: manifest.Environments{
 				"default": {
 					Name: "default",
-					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
@@ -872,7 +872,7 @@ func TestLoadProjects_Groups(t *testing.T) {
 			Environments: manifest.Environments{
 				"default": {
 					Name: "default",
-					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
@@ -992,11 +992,11 @@ func TestLoadProjects_WithEnvironmentOverrides(t *testing.T) {
 			Environments: manifest.Environments{
 				"dev": {
 					Name: "dev",
-					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 				"prod": {
 					Name: "prod",
-					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
@@ -1110,7 +1110,7 @@ func TestLoadProjects_WithEnvironmentOverridesAndLimitedEnvironments(t *testing.
 			Environments: manifest.Environments{
 				"dev": {
 					Name: "dev",
-					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
@@ -1174,7 +1174,7 @@ func TestLoadProjects_IgnoresIrrelevantProjectWithErrors(t *testing.T) {
 			Environments: manifest.Environments{
 				"dev": {
 					Name: "dev",
-					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
@@ -1271,7 +1271,7 @@ func TestLoadProjects_DeepDependencies(t *testing.T) {
 			Environments: manifest.Environments{
 				"default": {
 					Name: "default",
-					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
@@ -1349,7 +1349,7 @@ func TestLoadProjects_CircularDependencies(t *testing.T) {
 			Environments: manifest.Environments{
 				"default": {
 					Name: "default",
-					Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "ENV_VAR"}},
+					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
