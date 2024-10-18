@@ -56,6 +56,11 @@ func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
 }
 
 func isValidEnvironment(env manifest.EnvironmentDefinition) bool {
+	if env.Auth.Token == nil && env.Auth.OAuth == nil {
+		log.Error("no token and oAuth provided in manifest")
+		return false
+	}
+
 	if env.Auth.OAuth == nil {
 		return isClassicEnvironment(env)
 	}

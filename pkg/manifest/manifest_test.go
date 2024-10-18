@@ -112,7 +112,7 @@ func TestManifestLoading(t *testing.T) {
 					Value: "https://some.url",
 				},
 				Auth: manifest.Auth{
-					Token: manifest.AuthSecret{
+					Token: &manifest.AuthSecret{
 						Name:  "ENV_TOKEN",
 						Value: "dt01.token",
 					},
@@ -142,7 +142,7 @@ func TestManifestLoading(t *testing.T) {
 					Value: "https://ddd.bbb.cc",
 				},
 				Auth: manifest.Auth{
-					Token: manifest.AuthSecret{
+					Token: &manifest.AuthSecret{
 						Name:  "ENV_TOKEN",
 						Value: "dt01.token",
 					},
@@ -158,7 +158,7 @@ func TestManifestLoading(t *testing.T) {
 					Value: "https://some.url",
 				},
 				Auth: manifest.Auth{
-					Token: manifest.AuthSecret{
+					Token: &manifest.AuthSecret{
 						Name:  "ENV_TOKEN",
 						Value: "dt01.token",
 					},

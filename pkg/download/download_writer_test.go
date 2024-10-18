@@ -170,7 +170,7 @@ func TestWriteToDisk(t *testing.T) {
 			proj := CreateProjectData(tt.args.downloadedConfigs, tt.args.projectName) //using CreateProject data to simplify test struct setup
 			writerContext := WriterContext{
 				ProjectToWrite: proj,
-				Auth: manifest.Auth{Token: manifest.AuthSecret{
+				Auth: manifest.Auth{Token: &manifest.AuthSecret{
 					Name: tt.args.tokenEnvVarName,
 				}},
 				EnvironmentUrl:  tt.args.environmentUrl,
@@ -229,7 +229,7 @@ func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
 	proj := CreateProjectData(downloadedConfigs, projectName) //using CreateProject data to simplify test struct setup
 	writerContext := WriterContext{
 		ProjectToWrite: proj,
-		Auth: manifest.Auth{Token: manifest.AuthSecret{
+		Auth: manifest.Auth{Token: &manifest.AuthSecret{
 			Name: tokenEnvVarName,
 		}},
 		EnvironmentUrl:  environmentUrl,
