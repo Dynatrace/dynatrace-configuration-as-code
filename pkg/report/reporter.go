@@ -102,7 +102,8 @@ type defaultReporter struct {
 	wg                       sync.WaitGroup
 	started                  time.Time
 	ended                    time.Time
-	deploymentFinishedCount  int
+	deploymentsSuccessCount  int
+	deploymentsErrorCount    int
 	deploymentsExcludedCount int
 	deploymentsSkippedCount  int
 }
@@ -157,11 +158,13 @@ func (d *defaultReporter) updateSummaryFromRecord(r record) {
 	d.ended = r.Time
 	switch r.State {
 	case State_DEPL_SUCCESS:
-		d.deploymentFinishedCount++
+		d.deploymentsSuccessCount++
 	case State_DEPL_EXCLUDED:
 		d.deploymentsExcludedCount++
 	case State_DEPL_SKIPPED:
 		d.deploymentsSkippedCount++
+	case State_DEPL_ERR:
+		d.deploymentsErrorCount++
 	default:
 		panic(fmt.Sprintf("unexpected state for deployment event: %s", r.State))
 	}
@@ -183,7 +186,8 @@ func (d *defaultReporter) GetSummary() string {
 	defer d.mu.Unlock()
 
 	sb := strings.Builder{}
-	sb.WriteString(fmt.Sprintf("Deployments success: %d\n", d.deploymentFinishedCount))
+	sb.WriteString(fmt.Sprintf("Deployments success: %d\n", d.deploymentsSuccessCount))
+	sb.WriteString(fmt.Sprintf("Deployments errored: %d\n", d.deploymentsErrorCount))
 	sb.WriteString(fmt.Sprintf("Deployments excluded: %d\n", d.deploymentsExcludedCount))
 	sb.WriteString(fmt.Sprintf("Deployments skipped: %d\n", d.deploymentsSkippedCount))
 	sb.WriteString(fmt.Sprintf("Deploy Start Time: %v\n", d.started.Format("20060102-150405")))
