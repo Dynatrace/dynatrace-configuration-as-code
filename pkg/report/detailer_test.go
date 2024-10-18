@@ -27,7 +27,10 @@ import (
 // TestDetailer_ContextWithNoDetailerDiscardsDetails tests that the Detailer obtained from an context without the default one discards details.
 func TestDetailer_ContextWithNoDetailerDiscardsDetails(t *testing.T) {
 	ctx := context.TODO()
-	GetDetailerFromContextOrDiscard(ctx).AddDetail(Detail{Type: TypeInfo, Message: "Message"})
+	detailer := GetDetailerFromContextOrDiscard(ctx)
+	require.NotNil(t, detailer)
+
+	detailer.AddDetail(Detail{Type: TypeInfo, Message: "Message"})
 	assert.Empty(t, GetDetailerFromContextOrDiscard(ctx).GetDetails())
 }
 
@@ -38,6 +41,9 @@ func TestDetailer_ContextWithDefaultDetailerCollectsDetails(t *testing.T) {
 	detail3 := Detail{Type: TypeError, Message: "Message3"}
 
 	ctx := NewContextWithDetailer(context.TODO(), NewDefaultDetailer())
+	detailer := GetDetailerFromContextOrDiscard(ctx)
+	require.NotNil(t, detailer)
+
 	GetDetailerFromContextOrDiscard(ctx).AddDetail(detail1)
 	GetDetailerFromContextOrDiscard(ctx).AddDetail(detail2)
 	GetDetailerFromContextOrDiscard(ctx).AddDetail(detail3)
