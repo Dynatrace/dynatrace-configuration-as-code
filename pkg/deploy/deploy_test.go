@@ -36,7 +36,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )

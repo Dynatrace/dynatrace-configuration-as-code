@@ -17,6 +17,7 @@
 package deploy
 
 import (
+	"context"
 	"go.uber.org/mock/gomock"
 	"testing"
 
@@ -352,7 +353,7 @@ func Test_ScopedConfigsAreNotCached(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			preloadCaches(tt.args.projects, tt.args.environmentClients)
+			preloadCaches(context.TODO(), tt.args.projects, tt.args.environmentClients)
 		})
 	}
 }
