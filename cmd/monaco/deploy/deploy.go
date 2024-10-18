@@ -23,6 +23,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/internal/logging"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -39,13 +40,23 @@ import (
 )
 
 func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
+	ctx := createDeploymentContext(fs)
+	err := deployConfigsWithContext(ctx, fs, manifestPath, environmentGroups, specificEnvironments, specificProjects, continueOnErr, dryRun)
+
+	r := report.GetReporterFromContextOrDiscard(ctx)
+	r.Stop()
+	if summary := r.GetSummary(); len(summary) > 0 {
+		log.Info(summary)
+	}
+
+	return err
+}
+
+func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
 	absManifestPath, err := absPath(manifestPath)
 	if err != nil {
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
 	}
-
-	r := report.NewDefaultReporter("summary.jsonl")
-	ctx := report.NewContextWithReporter(context.TODO(), r)
 
 	loadedManifest, err := loadManifest(fs, absManifestPath, environmentGroups, specificEnvironments)
 	if err != nil {
@@ -75,15 +86,20 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	}
 
 	err = deploy.Deploy(ctx, loadedProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun})
-	r.Stop()
 	if err != nil {
 		return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
 	}
 
-	log.Info(r.GetSummary())
-
 	log.Info("%s finished without errors", logging.GetOperationNounForLogging(dryRun))
 	return nil
+}
+
+func createDeploymentContext(fs afero.Fs) context.Context {
+	if reportFilename, ok := environment.GetEnvValueString(environment.DeploymentReportFilename); ok && len(reportFilename) > 0 {
+		return report.NewContextWithReporter(context.TODO(), report.NewDefaultReporter(fs, reportFilename))
+	}
+
+	return context.TODO()
 }
 
 func absPath(manifestPath string) (string, error) {
