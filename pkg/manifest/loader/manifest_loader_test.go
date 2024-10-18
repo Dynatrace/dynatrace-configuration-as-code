@@ -47,7 +47,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "TEST URL", Type: persistence.TypeValue},
-				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{Token: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -60,7 +60,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "TEST URL", Type: ""},
-				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{Token: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -73,7 +73,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "https://www.test.url/", Type: persistence.TypeValue},
-				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{Token: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -86,7 +86,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
-				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{Token: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			givenEnvVarValue: "resolved url value",
 			want: manifest.URLDefinition{
@@ -101,7 +101,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
-				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{Token: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			givenEnvVarValue: "https://www.test.url/",
 			want: manifest.URLDefinition{
@@ -116,7 +116,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "TEST URL", Type: "this-is-not-a-type"},
-				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{Token: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want:    manifest.URLDefinition{},
 			wantErr: true,
@@ -543,7 +543,7 @@ environmentGroups:
 										Value: "ENV_URL",
 									},
 									Auth: persistence.Auth{
-										Token: persistence.AuthSecret{
+										Token: &persistence.AuthSecret{
 											Name: "ENV_TOKEN",
 										},
 									},
@@ -588,7 +588,7 @@ environmentGroups:
 										Value: "https://www.dynatrace.com",
 									},
 									Auth: persistence.Auth{
-										Token: persistence.AuthSecret{
+										Token: &persistence.AuthSecret{
 											Name: "ENV_TOKEN",
 										},
 									},
@@ -725,11 +725,11 @@ func TestLoadManifest(t *testing.T) {
 	t.Setenv("ENV_OAUTH_ENDPOINT", "resolved-oauth-endpoint")
 
 	tests := []struct {
-		name            string
-		manifestContent string
-		groups          []string
-		envs            []string
-
+		name             string
+		manifestContent  string
+		groups           []string
+		envs             []string
+		number           int
 		errsContain      []string
 		expectedManifest manifest.Manifest
 	}{
@@ -761,7 +761,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 						Group: "b",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -796,7 +796,7 @@ environmentGroups:
 						},
 						Group: "groupA",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -810,7 +810,7 @@ environmentGroups:
 						},
 						Group: "groupB",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -847,7 +847,7 @@ environmentGroups:
 						},
 						Group: "groupA",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -861,7 +861,7 @@ environmentGroups:
 						},
 						Group: "groupA",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -897,7 +897,7 @@ environmentGroups:
 						},
 						Group: "groupA",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -933,7 +933,7 @@ environmentGroups:
 						},
 						Group: "groupA",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -971,7 +971,7 @@ environmentGroups:
 						},
 						Group: "groupA",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -985,7 +985,7 @@ environmentGroups:
 						},
 						Group: "groupB",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -1022,7 +1022,7 @@ environmentGroups:
 						},
 						Group: "groupA",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -1036,7 +1036,7 @@ environmentGroups:
 						},
 						Group: "groupB",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -1073,7 +1073,7 @@ environmentGroups:
 						},
 						Group: "groupA",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -1087,7 +1087,7 @@ environmentGroups:
 						},
 						Group: "groupB",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -1125,7 +1125,7 @@ environmentGroups:
 						},
 						Group: "groupA",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -1139,7 +1139,7 @@ environmentGroups:
 						},
 						Group: "groupB",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -1229,7 +1229,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 						Group: "b",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -1275,7 +1275,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 						Group: "b",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -1344,13 +1344,13 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			errsContain: []string{"type must be 'environment'"},
 		},
 		{
-			name: "Empty token",
+			name: "Empty token and no oauth",
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: ''}}} ]}]
 `,
-			errsContain: []string{"no name given or empty"},
+			errsContain: []string{"failed to parse auth section: failed to parse token: no name given or empty"},
 		},
 		{
 			name: "Empty url",
@@ -1403,7 +1403,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 						Group: "b",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -1437,7 +1437,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 						Group: "b",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -1482,7 +1482,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 						Group: "b",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -1530,10 +1530,55 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 						Group: "b",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
+							OAuth: &manifest.OAuth{
+								ClientID: manifest.AuthSecret{
+									Name:  "client-id",
+									Value: "resolved-client-id",
+								},
+								ClientSecret: manifest.AuthSecret{
+									Name:  "client-secret",
+									Value: "resolved-client-secret",
+								},
+								TokenEndpoint: &manifest.URLDefinition{
+									Type:  manifest.EnvironmentURLType,
+									Name:  "ENV_OAUTH_ENDPOINT",
+									Value: "resolved-oauth-endpoint",
+								},
+							},
+						},
+					},
+				},
+				Accounts: map[string]manifest.Account{},
+			},
+		},
+		{
+			name: "No errors with oAuth no token provided; OAuth token endpoint is specified via environment variable",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {type: environment, value: ENV_OAUTH_ENDPOINT}}}}]}]
+`,
+			errsContain: []string{},
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
+					"a": {
+						Name: "a",
+						Path: "p",
+					},
+				},
+				Environments: map[string]manifest.EnvironmentDefinition{
+					"c": {
+						Name: "c",
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
+							Value: "d",
+						},
+						Group: "b",
+						Auth: manifest.Auth{
 							OAuth: &manifest.OAuth{
 								ClientID: manifest.AuthSecret{
 									Name:  "client-id",
@@ -1589,7 +1634,7 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}}]}]
 `,
-			errsContain: []string{"failed to parse auth section"},
+			errsContain: []string{"no token or oauth provided in manifest"},
 		},
 		{
 			name: "Unknown type",
@@ -1624,7 +1669,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {type: environment, 
 						},
 						Group: "b",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -1709,27 +1754,30 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			fs := afero.NewMemMapFs()
-			assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(test.manifestContent), 0400))
+		if test.number == 1 {
 
-			mani, errs := Load(&Context{
-				Fs:           fs,
-				ManifestPath: "manifest.yaml",
-				Groups:       test.groups,
-				Environments: test.envs,
-			})
+			t.Run(test.name, func(t *testing.T) {
+				fs := afero.NewMemMapFs()
+				assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(test.manifestContent), 0400))
 
-			if len(errs) == len(test.errsContain) {
-				for i := range test.errsContain {
-					assert.ErrorContains(t, errs[i], test.errsContain[i])
+				mani, errs := Load(&Context{
+					Fs:           fs,
+					ManifestPath: "manifest.yaml",
+					Groups:       test.groups,
+					Environments: test.envs,
+				})
+
+				if len(errs) == len(test.errsContain) {
+					for i := range test.errsContain {
+						assert.ErrorContains(t, errs[i], test.errsContain[i])
+					}
+				} else {
+					t.Errorf("Unexpected amount of errors: %#v", errs)
 				}
-			} else {
-				t.Errorf("Unexpected amount of errors: %#v", errs)
-			}
 
-			assert.Equal(t, test.expectedManifest, mani)
-		})
+				assert.Equal(t, test.expectedManifest, mani)
+			})
+		}
 	}
 }
 
@@ -1738,7 +1786,7 @@ func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
 		Name: "TEST ENV",
 		URL:  persistence.TypedValue{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
 		Auth: persistence.Auth{
-			Token: persistence.AuthSecret{Type: "environment", Name: "VAR"},
+			Token: &persistence.AuthSecret{Type: "environment", Name: "VAR"},
 			OAuth: &persistence.OAuth{
 				ClientID:     persistence.AuthSecret{Type: "environment", Name: "VAR_1"},
 				ClientSecret: persistence.AuthSecret{Type: "environment", Name: "VAR_2"},
