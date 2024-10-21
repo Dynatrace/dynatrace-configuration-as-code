@@ -277,22 +277,35 @@ func platformEnvironment(e manifest.EnvironmentDefinition) bool {
 }
 
 func validateAuthenticationWithProjectConfigs(projects []project.Project, loadedManifest *manifest.Manifest) error {
-	var err error
 	for _, p := range projects {
-		p.ForEveryConfigDo(func(c config.Config) {
+		for envName, env := range p.Configs {
+			for _, conf := range env {
+				switch conf[0].Type.(type) {
+				case config.ClassicApiType:
+					if loadedManifest.Environments[envName].Auth.Token == nil && conf[0].Skip == false {
+						return fmt.Errorf("API: %s requires token", conf[0].Type)
+					}
+				default:
+					if loadedManifest.Environments[envName].Auth.OAuth == nil && conf[0].Skip == false {
+						return fmt.Errorf("API: %s requires oAuth", conf[0].Type)
+					}
+				}
+			}
+		}
+		/*p.ForEveryConfigDo(func(c config.Config) {
 			switch c.Type.(type) {
 			case config.ClassicApiType:
-				if loadedManifest.Environments[c.Environment].Auth.Token == nil {
+				if loadedManifest.Environments[c.Environment].Auth.Token == nil && c.Skip == false {
 					err = fmt.Errorf("API: %s requires token", c.Type)
 					return
 				}
 			default:
-				if loadedManifest.Environments[c.Environment].Auth.OAuth == nil {
-					err = fmt.Errorf("API: %s  requires oAuth", c.Type)
+				if loadedManifest.Environments[c.Environment].Auth.OAuth == nil && c.Skip == false {
+					err = fmt.Errorf("API: %v  requires oAuth", c.Type)
 					return
 				}
 			}
-		})
+		})*/
 	}
-	return err
+	return nil
 }
