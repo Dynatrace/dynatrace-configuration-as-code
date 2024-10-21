@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -40,35 +39,35 @@ const (
 )
 
 type record struct {
-	Type    string
-	Time    time.Time
-	Config  coordinate.Coordinate
-	State   string
-	Details []Detail
-	Error   error
+	Type    string                `json:"type"`
+	Time    JSONTime              `json:"time"`
+	Config  coordinate.Coordinate `json:"config"`
+	State   string                `json:"state"`
+	Details []Detail              `json:"details,omitempty"`
+	Error   *string               `json:"error,omitempty"`
 }
 
-func (r record) ToJSON() (string, error) {
-	dto := struct {
-		Type    string                `json:"type"`
-		Time    string                `json:"time"`
-		Config  coordinate.Coordinate `json:"config"`
-		State   string                `json:"state"`
-		Details []Detail              `json:"details,omitempty"`
-		Error   error                 `json:"error,omitempty"`
-	}{
-		Type:    r.Type,
-		Time:    strconv.FormatInt(r.Time.Unix(), 10),
-		Config:  r.Config,
-		State:   r.State,
-		Details: r.Details,
-		Error:   r.Error,
-	}
-	jsonEvent, err := json.Marshal(dto)
+type JSONTime time.Time
+
+func (t JSONTime) MarshalJSON() ([]byte, error) {
+	s := time.Time(t).Format(time.RFC3339)
+	return json.Marshal(s)
+}
+
+func (t *JSONTime) UnmarshalJSON(b []byte) error {
+	var s string
+	err := json.Unmarshal(b, &s)
 	if err != nil {
-		return "", fmt.Errorf("error marshalling JSON: %w", err)
+		return err
 	}
-	return string(jsonEvent), nil
+
+	tVal, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return err
+	}
+
+	*t = JSONTime(tVal)
+	return nil
 }
 
 type reporterContextKey struct{}
@@ -96,10 +95,21 @@ type Reporter interface {
 	Stop()
 }
 
+type clock interface {
+	Now() time.Time
+}
+
+type rtcClock struct{}
+
+func (c *rtcClock) Now() time.Time {
+	return time.Now()
+}
+
 type defaultReporter struct {
 	queue                    chan record
 	mu                       sync.Mutex
 	wg                       sync.WaitGroup
+	clock                    clock
 	started                  time.Time
 	ended                    time.Time
 	deploymentsSuccessCount  int
@@ -109,8 +119,10 @@ type defaultReporter struct {
 }
 
 func NewDefaultReporter(fs afero.Fs, reportFilePath string) *defaultReporter {
+	c := &rtcClock{}
 	r := &defaultReporter{
-		started: time.Now(),
+		clock:   c,
+		started: c.Now(),
 		queue:   make(chan record, 32),
 	}
 	r.wg.Add(1)
@@ -132,12 +144,18 @@ func (d *defaultReporter) runRecorder(fs afero.Fs, reportFilePath string) error 
 	writer := bufio.NewWriter(file)
 	for r := range d.queue {
 		d.updateSummaryFromRecord(r)
-		b, err := r.ToJSON()
+
+		b, err := json.Marshal(r)
 		if err != nil {
 			return fmt.Errorf("unable to convert record: %w", err)
 		}
-		if _, err := fmt.Fprintln(writer, b); err != nil {
+
+		if _, err := writer.Write(b); err != nil {
 			return fmt.Errorf("unable to write record: %w", err)
+		}
+
+		if _, err := writer.WriteString("\n"); err != nil {
+			return fmt.Errorf("unable to write newline: %w", err)
 		}
 	}
 
@@ -155,7 +173,7 @@ func (d *defaultReporter) updateSummaryFromRecord(r record) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	d.ended = r.Time
+	d.ended = time.Time(r.Time)
 	switch r.State {
 	case State_DEPL_SUCCESS:
 		d.deploymentsSuccessCount++
@@ -173,12 +191,20 @@ func (d *defaultReporter) updateSummaryFromRecord(r record) {
 func (d *defaultReporter) ReportDeployment(config coordinate.Coordinate, state string, details []Detail, err error) {
 	d.queue <- record{
 		Type:    "DEPLOY",
-		Time:    time.Now(),
+		Time:    JSONTime(d.clock.Now()),
 		Config:  config,
 		State:   state,
 		Details: details,
-		Error:   err,
+		Error:   convertErrorToString(err),
 	}
+}
+
+func convertErrorToString(err error) *string {
+	if err == nil {
+		return nil
+	}
+	errString := err.Error()
+	return &errString
 }
 
 func (d *defaultReporter) GetSummary() string {
