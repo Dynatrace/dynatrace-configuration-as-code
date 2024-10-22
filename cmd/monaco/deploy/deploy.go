@@ -253,7 +253,8 @@ func validateAuthenticationWithProjectConfigs(projects []project.Project, loaded
 		for envName, env := range p.Configs {
 			for _, conf := range env {
 				switch conf[0].Type.(type) {
-				case config.ClassicApiType:
+				case config.ClassicApiType,
+					config.SettingsType:
 					if loadedManifest.Environments[envName].Auth.Token == nil && conf[0].Skip == false {
 						return fmt.Errorf("API: %s requires token", conf[0].Type)
 					}
@@ -264,20 +265,6 @@ func validateAuthenticationWithProjectConfigs(projects []project.Project, loaded
 				}
 			}
 		}
-		/*p.ForEveryConfigDo(func(c config.Config) {
-			switch c.Type.(type) {
-			case config.ClassicApiType:
-				if loadedManifest.Environments[c.Environment].Auth.Token == nil && c.Skip == false {
-					err = fmt.Errorf("API: %s requires token", c.Type)
-					return
-				}
-			default:
-				if loadedManifest.Environments[c.Environment].Auth.OAuth == nil && c.Skip == false {
-					err = fmt.Errorf("API: %v  requires oAuth", c.Type)
-					return
-				}
-			}
-		})*/
 	}
 	return nil
 }
