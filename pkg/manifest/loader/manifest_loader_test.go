@@ -729,7 +729,6 @@ func TestLoadManifest(t *testing.T) {
 		manifestContent  string
 		groups           []string
 		envs             []string
-		number           int
 		errsContain      []string
 		expectedManifest manifest.Manifest
 	}{
@@ -1634,7 +1633,7 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}}]}]
 `,
-			errsContain: []string{"no token or oauth provided in manifest"},
+			errsContain: []string{"no token or OAuth credentials provided"},
 		},
 		{
 			name: "Unknown type",
@@ -1754,30 +1753,27 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 		},
 	}
 	for _, test := range tests {
-		if test.number == 1 {
+		t.Run(test.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(test.manifestContent), 0400))
 
-			t.Run(test.name, func(t *testing.T) {
-				fs := afero.NewMemMapFs()
-				assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(test.manifestContent), 0400))
-
-				mani, errs := Load(&Context{
-					Fs:           fs,
-					ManifestPath: "manifest.yaml",
-					Groups:       test.groups,
-					Environments: test.envs,
-				})
-
-				if len(errs) == len(test.errsContain) {
-					for i := range test.errsContain {
-						assert.ErrorContains(t, errs[i], test.errsContain[i])
-					}
-				} else {
-					t.Errorf("Unexpected amount of errors: %#v", errs)
-				}
-
-				assert.Equal(t, test.expectedManifest, mani)
+			mani, errs := Load(&Context{
+				Fs:           fs,
+				ManifestPath: "manifest.yaml",
+				Groups:       test.groups,
+				Environments: test.envs,
 			})
-		}
+
+			if len(errs) == len(test.errsContain) {
+				for i := range test.errsContain {
+					assert.ErrorContains(t, errs[i], test.errsContain[i])
+				}
+			} else {
+				t.Errorf("Unexpected amount of errors: %#v", errs)
+			}
+
+			assert.Equal(t, test.expectedManifest, mani)
+		})
 	}
 }
 

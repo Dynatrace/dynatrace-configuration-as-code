@@ -17,6 +17,7 @@ package download
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/openpipeline"
 	"os"
 
@@ -147,7 +148,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		return err
 	}
 
-	clientSet, err := dynatrace.CreateClients(options.environmentURL, options.auth)
+	clientSet, err := client.CreateClientSet(options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {
 		return err
 	}
@@ -185,7 +186,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		return err
 	}
 
-	clientSet, err := dynatrace.CreateClients(options.environmentURL, options.auth)
+	clientSet, err := client.CreateClientSet(options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {
 		return err
 	}

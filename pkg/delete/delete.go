@@ -64,7 +64,7 @@ func Configs(ctx context.Context, clients ClientSet, _ api.APIs, automationResou
 	automationTypeOrder := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
 	for _, key := range automationTypeOrder {
 		entries := copiedDeleteEntries[string(key)]
-		if clients.Automation == nil {
+		if clients.Automation == (*coreAutomation.Client)(nil) {
 			log.WithCtxFields(ctx).WithFields(field.Type(key)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
 			delete(copiedDeleteEntries, string(key))
 			continue

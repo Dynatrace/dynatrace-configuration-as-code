@@ -82,9 +82,9 @@ func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath str
 	logging.LogProjectsInfo(loadedProjects)
 	logging.LogEnvironmentsInfo(loadedManifest.Environments)
 
-	err = validateAuthenticationWithProjectConfigs(loadedProjects, loadedManifest)
+	err = validateAuthenticationWithProjectConfigs(loadedProjects, loadedManifest.Environments)
 	if err != nil {
-		return fmt.Errorf("manifest auth field missconfigured: %w", err)
+		return fmt.Errorf("manifest auth field misconfigured: %w", err)
 	}
 
 	clientSets, err := dynatrace.CreateEnvironmentClients(loadedManifest.Environments)
@@ -276,36 +276,29 @@ func platformEnvironment(e manifest.EnvironmentDefinition) bool {
 	return e.Auth.OAuth != nil
 }
 
-func validateAuthenticationWithProjectConfigs(projects []project.Project, loadedManifest *manifest.Manifest) error {
+// validateAuthenticationWithProjectConfigs validates each config entry against the manifest if required credentials are set
+// it takes into consideration the project, environments and the skip parameter in each config entry
+func validateAuthenticationWithProjectConfigs(projects []project.Project, environments manifest.Environments) error {
 	for _, p := range projects {
 		for envName, env := range p.Configs {
 			for _, conf := range env {
+				if conf[0].Skip == true {
+					continue
+				}
+
 				switch conf[0].Type.(type) {
-				case config.ClassicApiType:
-					if loadedManifest.Environments[envName].Auth.Token == nil && conf[0].Skip == false {
-						return fmt.Errorf("API: %s requires token", conf[0].Type)
+				case config.ClassicApiType,
+					config.SettingsType:
+					if environments[envName].Auth.Token == nil {
+						return fmt.Errorf("API of type '%s' requires a token for environment '%s'", conf[0].Type, envName)
 					}
 				default:
-					if loadedManifest.Environments[envName].Auth.OAuth == nil && conf[0].Skip == false {
-						return fmt.Errorf("API: %s requires oAuth", conf[0].Type)
+					if environments[envName].Auth.OAuth == nil {
+						return fmt.Errorf("API of type '%s' requires OAuth for environment '%s'", conf[0].Type, envName)
 					}
 				}
 			}
 		}
-		/*p.ForEveryConfigDo(func(c config.Config) {
-			switch c.Type.(type) {
-			case config.ClassicApiType:
-				if loadedManifest.Environments[c.Environment].Auth.Token == nil && c.Skip == false {
-					err = fmt.Errorf("API: %s requires token", c.Type)
-					return
-				}
-			default:
-				if loadedManifest.Environments[c.Environment].Auth.OAuth == nil && c.Skip == false {
-					err = fmt.Errorf("API: %v  requires oAuth", c.Type)
-					return
-				}
-			}
-		})*/
 	}
 	return nil
 }

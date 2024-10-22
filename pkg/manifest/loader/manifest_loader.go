@@ -210,7 +210,7 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 	var mAuth manifest.Auth
 
 	if a.Token == nil && a.OAuth == nil {
-		return manifest.Auth{}, errors.New("no token or oauth provided in manifest")
+		return manifest.Auth{}, errors.New("no token or OAuth credentials provided")
 	}
 
 	if a.Token != nil {
@@ -222,11 +222,11 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 	}
 
 	if a.OAuth != nil {
-		o, err := parseOAuth(context, a.OAuth)
+		oauth, err := parseOAuth(context, a.OAuth)
 		if err != nil {
-			return manifest.Auth{}, fmt.Errorf("failed to parse oauth: %w", err)
+			return manifest.Auth{}, fmt.Errorf("failed to parse OAuth credentials: %w", err)
 		}
-		mAuth.OAuth = o
+		mAuth.OAuth = oauth
 	}
 
 	return mAuth, nil

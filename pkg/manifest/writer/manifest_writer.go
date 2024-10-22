@@ -190,10 +190,8 @@ func getTokenSecret(a manifest.Auth, envName string) *persistence.AuthSecret {
 		return nil
 	}
 
-	var envVarName string
-	if a.Token.Name != "" {
-		envVarName = a.Token.Name
-	} else {
+	envVarName := a.Token.Name
+	if envVarName == "" {
 		envVarName = envName + "_TOKEN"
 	}
 

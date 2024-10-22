@@ -20,9 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"path/filepath"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -89,7 +90,7 @@ func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) erro
 }
 
 func getClientSet(env manifest.EnvironmentDefinition) (delete.ClientSet, error) {
-	clients, err := dynatrace.CreateClients(env.URL.Value, env.Auth)
+	clients, err := client.CreateClientSet(env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {
 		return delete.ClientSet{}, fmt.Errorf("failed to create a client for env `%s` due to the following error: %w", env.Name, err)
 	}
