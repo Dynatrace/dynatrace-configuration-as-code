@@ -49,7 +49,7 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 	reportFilename := "test_report.jsonl"
 	fs := &afero.MemMapFs{}
 
-	testTime := time.Unix(time.Now().Unix(), 0)
+	testTime := time.Unix(time.Now().Unix(), 0).UTC()
 
 	r := report.NewDefaultReporterWithClock(fs, reportFilename, &testClock{t: testTime})
 	ctx := report.NewContextWithReporter(context.TODO(), r)
@@ -74,8 +74,8 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 
 	require.Len(t, records, 4)
 	anError := "an error"
-	assert.Equal(t, records[0], report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS", Details: nil, Error: nil})
-	assert.Equal(t, records[1], report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, State: "ERROR", Details: []report.Detail{report.Detail{Type: report.TypeError, Message: "error"}}, Error: &anError})
-	assert.Equal(t, records[2], report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, State: "SKIPPED", Details: []report.Detail{report.Detail{Type: report.TypeInfo, Message: "skipped"}}, Error: nil})
-	assert.Equal(t, records[3], report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, State: "EXCLUDED", Details: nil, Error: nil})
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS", Details: nil, Error: nil}, records[0])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, State: "ERROR", Details: []report.Detail{report.Detail{Type: report.TypeError, Message: "error"}}, Error: &anError}, records[1])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, State: "SKIPPED", Details: []report.Detail{report.Detail{Type: report.TypeInfo, Message: "skipped"}}, Error: nil}, records[2])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, State: "EXCLUDED", Details: nil, Error: nil}, records[3])
 }
