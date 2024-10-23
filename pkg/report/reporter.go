@@ -31,45 +31,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-const (
-	State_DEPL_SUCCESS  string = "SUCCESS"
-	State_DEPL_ERR      string = "ERROR"
-	State_DEPL_EXCLUDED string = "EXCLUDED"
-	State_DEPL_SKIPPED  string = "SKIPPED"
-)
-
-type record struct {
-	Type    string                `json:"type"`
-	Time    JSONTime              `json:"time"`
-	Config  coordinate.Coordinate `json:"config"`
-	State   string                `json:"state"`
-	Details []Detail              `json:"details,omitempty"`
-	Error   *string               `json:"error,omitempty"`
-}
-
-type JSONTime time.Time
-
-func (t JSONTime) MarshalJSON() ([]byte, error) {
-	s := time.Time(t).Format(time.RFC3339)
-	return json.Marshal(s)
-}
-
-func (t *JSONTime) UnmarshalJSON(b []byte) error {
-	var s string
-	err := json.Unmarshal(b, &s)
-	if err != nil {
-		return err
-	}
-
-	tVal, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return err
-	}
-
-	*t = JSONTime(tVal)
-	return nil
-}
-
 type reporterContextKey struct{}
 
 func NewContextWithReporter(ctx context.Context, r Reporter) context.Context {
@@ -95,7 +56,7 @@ type Reporter interface {
 	Stop()
 }
 
-type clock interface {
+type Clock interface {
 	Now() time.Time
 }
 
@@ -106,10 +67,10 @@ func (c *rtcClock) Now() time.Time {
 }
 
 type defaultReporter struct {
-	queue                    chan record
+	queue                    chan Record
 	mu                       sync.Mutex
 	wg                       sync.WaitGroup
-	clock                    clock
+	clock                    Clock
 	started                  time.Time
 	ended                    time.Time
 	deploymentsSuccessCount  int
@@ -118,12 +79,15 @@ type defaultReporter struct {
 	deploymentsSkippedCount  int
 }
 
-func NewDefaultReporter(fs afero.Fs, reportFilePath string) *defaultReporter {
-	c := &rtcClock{}
+func NewDefaultReporter(fs afero.Fs, reportFilePath string) Reporter {
+	return NewDefaultReporterWithClock(fs, reportFilePath, &rtcClock{})
+}
+
+func NewDefaultReporterWithClock(fs afero.Fs, reportFilePath string, c Clock) Reporter {
 	r := &defaultReporter{
 		clock:   c,
 		started: c.Now(),
-		queue:   make(chan record, 32),
+		queue:   make(chan Record, 32),
 	}
 	r.wg.Add(1)
 	go func() {
@@ -169,7 +133,7 @@ func (d *defaultReporter) runRecorder(fs afero.Fs, reportFilePath string) error 
 	return nil
 }
 
-func (d *defaultReporter) updateSummaryFromRecord(r record) {
+func (d *defaultReporter) updateSummaryFromRecord(r Record) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -189,7 +153,7 @@ func (d *defaultReporter) updateSummaryFromRecord(r record) {
 }
 
 func (d *defaultReporter) ReportDeployment(config coordinate.Coordinate, state string, details []Detail, err error) {
-	d.queue <- record{
+	d.queue <- Record{
 		Type:    "DEPLOY",
 		Time:    JSONTime(d.clock.Now()),
 		Config:  config,
