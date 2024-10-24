@@ -17,31 +17,98 @@
 package client
 
 import (
-	"testing"
-
+	"encoding/json"
+	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/oauth2"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
 )
 
-func TestCreateClassicClientSet(t *testing.T) {
-	t.Run("URL with leading space - should return an error", func(t *testing.T) {
-		_, err := CreateClassicClientSet(" https://my-environment.live.dynatrace.com/", "", ClientOptions{})
-		assert.Error(t, err)
-	})
+func TestCreateClientSet(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if strings.HasSuffix(req.URL.Path, "sso") {
+			token := &oauth2.Token{
+				AccessToken: "test-access-token",
+				TokenType:   "Bearer",
+				Expiry:      time.Now().Add(time.Hour),
+			}
 
-	t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
-		_, err := CreateClassicClientSet("some-url.com", "", ClientOptions{})
-		assert.ErrorContains(t, err, "not valid")
-	})
+			rw.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(rw).Encode(token)
+			return
+		}
 
-	t.Run("URL is without valid local path - should return an error", func(t *testing.T) {
-		_, err := CreateClassicClientSet("/my-environment/live/dynatrace.com/", "", ClientOptions{})
-		assert.ErrorContains(t, err, "no host specified")
-	})
+		rw.WriteHeader(200)
+		output := fmt.Sprintf(`{"version" : "0.59.3.20231603", "domain": "http://%s/api/test", "endpoint": "http://%s/api/test"}`, req.Host, req.Host)
+		_, _ = rw.Write([]byte(output))
+	}))
+	defer server.Close()
 
-	t.Run("without valid protocol - should return an error", func(t *testing.T) {
-		var err error
-
-		_, err = CreateClassicClientSet("https//my-environment.live.dynatrace.com/", "", ClientOptions{})
-		assert.ErrorContains(t, err, "not valid")
-	})
+	tests := []struct {
+		name string
+		url  string
+		auth manifest.Auth
+	}{
+		{"token client set",
+			server.URL,
+			manifest.Auth{
+				Token: &manifest.AuthSecret{
+					Name:  "token-env-var",
+					Value: "mock token",
+				},
+			},
+		},
+		{"oAuth client set",
+			server.URL,
+			manifest.Auth{
+				OAuth: &manifest.OAuth{
+					ClientID: manifest.AuthSecret{
+						Name:  "client-id",
+						Value: "resolved-client-id",
+					},
+					ClientSecret: manifest.AuthSecret{
+						Name:  "client-secret",
+						Value: "resolved-client-secret",
+					},
+					TokenEndpoint: &manifest.URLDefinition{
+						Value: server.URL + "/sso",
+					},
+				},
+			},
+		},
+		{"oAuth and token client set",
+			server.URL,
+			manifest.Auth{
+				Token: &manifest.AuthSecret{
+					Name:  "token-env-var",
+					Value: "mock token",
+				},
+				OAuth: &manifest.OAuth{
+					ClientID: manifest.AuthSecret{
+						Name:  "client-id",
+						Value: "resolved-client-id",
+					},
+					ClientSecret: manifest.AuthSecret{
+						Name:  "client-secret",
+						Value: "resolved-client-secret",
+					},
+					TokenEndpoint: &manifest.URLDefinition{
+						Value: server.URL + "/sso",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := CreateClientSet(tt.url, tt.auth, ClientOptions{SupportArchive: support.SupportArchive})
+			assert.NoError(t, err)
+		})
+	}
 }

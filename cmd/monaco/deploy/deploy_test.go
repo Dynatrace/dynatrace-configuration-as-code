@@ -379,3 +379,136 @@ func createOpenPipelineConfigForTest(configId string, kind string, project strin
 		Type: config.OpenPipelineType{Kind: kind},
 	}
 }
+func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
+	envId := "environmentId"
+	token := manifest.AuthSecret{Name: "token", Value: "value"}
+	oAuth := manifest.OAuth{
+		ClientID:     manifest.AuthSecret{Name: "id", Value: "value"},
+		ClientSecret: manifest.AuthSecret{Name: "id", Value: "value"}}
+	documentConf := config.Config{
+		Type: config.DocumentType{},
+		Skip: false,
+	}
+	classicConf := config.Config{
+		Type: config.ClassicApiType{},
+		Skip: false,
+	}
+	classicConfSkip := classicConf
+	classicConfSkip.Skip = true
+	documentConfSkip := documentConf
+	classicConfSkip.Skip = true
+
+	success_tests := []struct {
+		name                 string
+		environments         manifest.Environments
+		configs              project.ConfigsPerType
+		expectedErrorMessage string
+	}{
+		{
+			"oAuth manifest with document api",
+			manifest.Environments{
+				envId: manifest.EnvironmentDefinition{
+					Name: envId,
+					Auth: manifest.Auth{
+						OAuth: &oAuth},
+				}},
+			project.ConfigsPerType{
+				"dashboard": []config.Config{documentConf}},
+			"",
+		},
+		{
+			"token manifest with classic api",
+			manifest.Environments{
+				envId: manifest.EnvironmentDefinition{
+					Name: envId,
+					Auth: manifest.Auth{
+						Token: &token},
+				}},
+			project.ConfigsPerType{
+				"dashboard": []config.Config{classicConf}},
+			"",
+		},
+		{
+			"token and oAuth manifest with classic and document api",
+			manifest.Environments{
+				envId: manifest.EnvironmentDefinition{
+					Name: envId,
+					Auth: manifest.Auth{
+						Token: &token,
+						OAuth: &oAuth,
+					},
+				}},
+			project.ConfigsPerType{
+				"dashboard": []config.Config{classicConf, documentConf}},
+			"",
+		},
+		{
+			"token manifest with document api expect validation error",
+			manifest.Environments{
+				envId: manifest.EnvironmentDefinition{
+					Name: envId,
+					Auth: manifest.Auth{
+						Token: &token},
+				}},
+			project.ConfigsPerType{
+				"dashboard": []config.Config{documentConf}},
+			"requires OAuth for environment",
+		},
+		{
+			"oAuth manifest with document and classic api expect validation error",
+			manifest.Environments{
+				envId: manifest.EnvironmentDefinition{
+					Name: envId,
+					Auth: manifest.Auth{
+						OAuth: &oAuth},
+				}},
+			project.ConfigsPerType{
+				"dashboard": []config.Config{classicConf, documentConf}},
+			"requires a token for environment",
+		},
+		{
+			"oAuth manifest with document and classic api classic api with skip true, expect no error",
+			manifest.Environments{
+				envId: manifest.EnvironmentDefinition{
+					Name: envId,
+					Auth: manifest.Auth{
+						OAuth: &oAuth},
+				}},
+			project.ConfigsPerType{
+				"dashboard": []config.Config{classicConfSkip, documentConf}},
+			"",
+		},
+		{
+			"token manifest with document and classic api document api with skip true, expect no error",
+			manifest.Environments{
+				envId: manifest.EnvironmentDefinition{
+					Name: envId,
+					Auth: manifest.Auth{
+						Token: &token},
+				}},
+			project.ConfigsPerType{
+				"dashboard": []config.Config{classicConf, documentConfSkip}},
+			"",
+		},
+	}
+
+	for _, tc := range success_tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateAuthenticationWithProjectConfigs(
+				[]project.Project{
+					{
+						Id: "some id",
+						Configs: project.ConfigsPerTypePerEnvironments{
+							envId: tc.configs,
+						},
+					},
+				},
+				tc.environments)
+			if tc.expectedErrorMessage != "" {
+				assert.ErrorContains(t, err, tc.expectedErrorMessage)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
