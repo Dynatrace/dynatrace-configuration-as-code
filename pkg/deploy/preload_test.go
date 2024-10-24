@@ -17,8 +17,13 @@
 package deploy
 
 import (
-	"go.uber.org/mock/gomock"
+	"context"
 	"testing"
+
+	"go.uber.org/mock/gomock"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -26,8 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var dtClientEnv1 = &dtclient.DummyClient{}
@@ -352,7 +355,7 @@ func Test_ScopedConfigsAreNotCached(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			preloadCaches(tt.args.projects, tt.args.environmentClients)
+			preloadCaches(context.TODO(), tt.args.projects, tt.args.environmentClients)
 		})
 	}
 }

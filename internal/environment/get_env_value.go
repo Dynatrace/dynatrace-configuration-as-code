@@ -28,6 +28,7 @@ const (
 	defaultValueKey                   = "DEFAULT"
 	KeyUserActionWebWaitSecondsEnvKey = "MONACO_KUA_WEB_WAIT_SECONDS"
 	MaxFilenameLenKey                 = "MONACO_MAX_FILENAME_LEN"
+	DeploymentReportFilename          = "MONACO_DEPLOYMENT_REPORT_FILENAME"
 )
 
 var defaultValuesInt = map[string]int{
@@ -78,6 +79,10 @@ func getLogMessage(env string, messageMap map[string]string) string {
 		return logMessage
 	}
 	return messageMap[defaultValueKey]
+}
+
+func GetEnvValueString(env string) (string, bool) {
+	return os.LookupEnv(env)
 }
 
 func GetEnvValueInt(env string) int {
