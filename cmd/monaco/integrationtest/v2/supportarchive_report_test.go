@@ -112,7 +112,7 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 			assert.NoError(t, err)
 
 			manifest := configFolder + tt.manifestFile
-			monaco.RunWithFSf(fs, "monaco deploy %s/manifest --environment=%s --verbose --support-archive", manifest, tt.environment)
+			monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --support-archive", manifest, tt.environment)
 
 			fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
 			archive := "support-archive-" + fixedTime + ".zip"
