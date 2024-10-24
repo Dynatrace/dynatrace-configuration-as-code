@@ -18,14 +18,17 @@ package resolver
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"regexp"
-	"strings"
 )
 
+// resolveScope updates the `scope` parameter of the config and converts it to a reference parameter iff the scope
+// is a known id of another downloaded config.
 func resolveScope(configToBeUpdated *config.Config, ids map[string]config.Config) {
 	if configToBeUpdated.Type.ID() != config.SettingsTypeId {
 		return
@@ -76,4 +79,27 @@ func replaceAll(content string, key string, s string) string {
 	}
 
 	return re.ReplaceAllString(content, fmt.Sprintf("$1%s$3", s))
+}
+
+// canReference verifies whether configToUpdateFrom can actually reference configToBeUpdated.
+//
+// configToUpdateFrom can not reference configToBeUpdated if either
+//   - they are the same config (coordinate matches)
+//   - they are both dashboards (remove cyclic dependencies)
+//   - configToUpdateFrom is a dashboard-share-setting (can not be referenced)
+func canReference(configToBeUpdated config.Config, configToUpdateFrom config.Config) bool {
+	if configToBeUpdated.Coordinate == configToUpdateFrom.Coordinate {
+		return false // they are the same config
+	}
+
+	if configToBeUpdated.Coordinate.Type == "dashboard" && configToUpdateFrom.Coordinate.Type == "dashboard" {
+		return false //dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
+	}
+
+	if configToUpdateFrom.Coordinate.Type == "dashboard-share-setting" {
+		// dashboard share settings can not be referenced, but since they have the same id as their parent dashboard, dashboards suddenly reference them
+		return false
+	}
+
+	return true
 }
