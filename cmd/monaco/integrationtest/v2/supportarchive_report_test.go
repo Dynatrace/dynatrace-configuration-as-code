@@ -137,10 +137,7 @@ func TestDeployReport(t *testing.T) {
 		t.Setenv(environment.DeploymentReportFilename, reportFile)
 
 		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, _ TestContext) {
-			err := fs.Remove(reportFile)
-			assert.NoError(t, err)
-
-			err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=valid_env --verbose", manifest)
+			err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=valid_env --verbose", manifest)
 			require.NoError(t, err)
 
 			assertReport(t, fs, reportFile, true)
