@@ -1633,7 +1633,7 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}}]}]
 `,
-			errsContain: []string{"no token or oauth provided in manifest"},
+			errsContain: []string{"no token or OAuth credentials provided"},
 		},
 		{
 			name: "Unknown type",
