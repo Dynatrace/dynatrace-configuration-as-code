@@ -113,11 +113,6 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 	return true
 }
 
-// CreateClients creates a new client set based on the provided URL and authentication information.
-func CreateClients(url string, auth manifest.Auth) (*client.ClientSet, error) {
-	return client.CreateClientSet(url, auth, client.ClientOptions{SupportArchive: support.SupportArchive})
-}
-
 // CreateAccountClients gives back clients to use for specific accounts
 func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[account.AccountInfo]*accounts.Client, error) {
 	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
@@ -185,7 +180,7 @@ func CreateEnvironmentClients(environments manifest.Environments) (EnvironmentCl
 	clients := make(EnvironmentClients, len(environments))
 	for _, env := range environments {
 
-		clientSet, err := CreateClients(env.URL.Value, env.Auth)
+		clientSet, err := client.CreateClientSet(env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 		if err != nil {
 			return EnvironmentClients{}, err
 		}
