@@ -20,6 +20,11 @@ package dependency_resolution
 
 import (
 	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -29,9 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution/resolver"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestDependencyResolution(t *testing.T) {
@@ -672,6 +674,61 @@ func TestDependencyResolution(t *testing.T) {
 						Type:       config.SettingsType{SchemaId: "api-2"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "environment"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Dashboards should not be able to reference a dashboard-share-setting, even if it's the dashboard's share setting",
+			setup: project.ConfigsPerType{
+				"dashboard": []config.Config{
+					{
+						Template:   template.NewInMemoryTemplate("t1", "dashboard-id"),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "dashboard", ConfigId: "dashboard-id"},
+						Type:       config.ClassicApiType{Api: "dashboard"},
+						Parameters: config.Parameters{},
+					},
+					{
+						Template:   template.NewInMemoryTemplate("t3", "dashboard-id"), // referencing the above dashboard
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "dashboard", ConfigId: "dashboard-id2"},
+						Type:       config.ClassicApiType{Api: "dashboard"},
+						Parameters: config.Parameters{},
+					},
+				},
+				"dashboard-share-settings": []config.Config{
+					{
+						Template:   template.NewInMemoryTemplate("t2", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "dashboard-share-setting", ConfigId: "dashboard-id"},
+						Type:       config.ClassicApiType{Api: "dashboard-share-setting"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: refParam.New("project", "dashboard", "dashboard-id", "id"),
+						},
+					},
+				},
+			},
+			expected: project.ConfigsPerType{
+				"dashboard": []config.Config{
+					{
+						Template:   template.NewInMemoryTemplate("t1", "dashboard-id"),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "dashboard", ConfigId: "dashboard-id"},
+						Type:       config.ClassicApiType{Api: "dashboard"},
+						Parameters: config.Parameters{},
+					},
+					{
+						Template:   template.NewInMemoryTemplate("t3", "dashboard-id"),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "dashboard", ConfigId: "dashboard-id2"},
+						Type:       config.ClassicApiType{Api: "dashboard"},
+						Parameters: config.Parameters{}, // no references to the other dashboard or dashboard-share-setting is allowed
+					},
+				},
+				"dashboard-share-settings": []config.Config{
+					{
+						Template:   template.NewInMemoryTemplate("t2", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "dashboard-share-setting", ConfigId: "dashboard-id"},
+						Type:       config.ClassicApiType{Api: "dashboard-share-setting"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: refParam.New("project", "dashboard", "dashboard-id", "id"),
 						},
 					},
 				},

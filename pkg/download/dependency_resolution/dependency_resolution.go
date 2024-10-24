@@ -18,15 +18,15 @@ package dependency_resolution
 
 import (
 	"fmt"
+	"sync"
+	"sync/atomic"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution/resolver"
-	"sync"
-	"sync/atomic"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution/resolver"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
@@ -82,7 +82,7 @@ func getResolver(configs project.ConfigsPerType) dependencyResolver {
 	configsById := collectConfigsById(configs)
 
 	if featureflags.Permanent[featureflags.FastDependencyResolver].Enabled() {
-		log.Debug("Using fast but memory intensive dependency resolution. Can be deactivated using '%s=false' env var.", featureflags.Permanent[featureflags.FastDependencyResolver].EnvName())
+		log.Debug("Using fast but memory intensive dependency resolution. Can be deactivated by setting the environment variable '%s' to 'false'.", featureflags.Permanent[featureflags.FastDependencyResolver].EnvName())
 		r, err := resolver.AhoCorasickResolver(configsById)
 		if err != nil {
 			log.WithFields(field.Error(err)).Error("Failed to initialize fast dependency resolution, falling back to slow resolution: %v", err)
