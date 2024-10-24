@@ -18,10 +18,12 @@ package report_test
 
 import (
 	"context"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
 // TestDetailer_ContextWithNoDetailerDiscardsDetails tests that the Detailer obtained from an context without the default one discards details.

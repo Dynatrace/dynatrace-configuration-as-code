@@ -19,9 +19,11 @@ package report
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/spf13/afero"
 	"time"
+
+	"github.com/spf13/afero"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
 const (

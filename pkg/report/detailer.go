@@ -49,7 +49,7 @@ func GetDetailerFromContextOrDiscard(ctx context.Context) Detailer {
 		return &discardDetailer{}
 	}
 	switch v := v.(type) {
-	case *defaultDetailer:
+	case Detailer:
 		return v
 	default:
 		panic(fmt.Sprintf("unexpected value type for detailer context key: %T", v))

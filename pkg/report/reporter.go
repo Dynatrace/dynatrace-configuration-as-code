@@ -26,9 +26,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/spf13/afero"
 )
 
 type reporterContextKey struct{}
@@ -43,7 +44,7 @@ func GetReporterFromContextOrDiscard(ctx context.Context) Reporter {
 		return &discardReporter{}
 	}
 	switch v := v.(type) {
-	case *defaultReporter:
+	case Reporter:
 		return v
 	default:
 		panic(fmt.Sprintf("unexpected value type for reporter context key: %T", v))
