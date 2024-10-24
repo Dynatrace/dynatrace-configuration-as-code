@@ -18,11 +18,13 @@ package resolver
 
 import (
 	"fmt"
+
 	goaho "github.com/anknown/ahocorasick"
+	"golang.org/x/exp/maps"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
-	"golang.org/x/exp/maps"
 )
 
 // dependencyResolutionContext holds the important information for dependency resolution.
@@ -103,12 +105,8 @@ func findAndReplaceIDs(apiName string, configToBeUpdated config.Config, c depend
 			panic(fmt.Sprintf("No config found for given key %q", key))
 		}
 
-		if configToBeUpdated.Coordinate.Type == "dashboard" && conf.Coordinate.Type == "dashboard" {
-			continue // dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
-		}
-
-		if conf.Coordinate == configToBeUpdated.Coordinate {
-			continue // skip self referencing configs
+		if !canReference(configToBeUpdated, conf) {
+			continue
 		}
 
 		log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.ID(), key, conf.Coordinate)
