@@ -211,7 +211,7 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clients ClientSet, resolvedEntities *entities.EntityMap) error {
 	ctx = report.NewContextWithDetailer(ctx, report.NewDefaultDetailer())
 	resolvedEntity, err := deployConfig(ctx, n.Config, clients, resolvedEntities)
-	details := report.GetDetailerFromContextOrDiscard(ctx).GetDetails()
+	details := report.GetDetailerFromContextOrDiscard(ctx).GetAll()
 
 	// Need to tidy this up, just keep it all in once place at the moment
 	if err != nil {
@@ -286,14 +286,14 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 	if len(errs) > 0 {
 		err := multierror.New(errs...)
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to resolve parameter values: %v", err)
-		report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: report.TypeError, Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
+		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.TypeError, Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to render JSON template: %v", err)
-		report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: report.TypeError, Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
+		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.TypeError, Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
@@ -352,7 +352,7 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	if responseErr.StatusCode >= 400 && responseErr.StatusCode <= 499 {
 		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
-		report.GetDetailerFromContextOrDiscard(ctx).AddDetail(report.Detail{Type: "ERROR", Message: fmt.Sprintf("Dynatrace API rejected request: : %v", responseErr)})
+		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: "ERROR", Message: fmt.Sprintf("Dynatrace API rejected request: : %v", responseErr)})
 		return
 	}
 

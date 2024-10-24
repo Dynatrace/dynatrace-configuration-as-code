@@ -30,8 +30,8 @@ func TestDetailer_ContextWithNoDetailerDiscardsDetails(t *testing.T) {
 	detailer := report.GetDetailerFromContextOrDiscard(ctx)
 	require.NotNil(t, detailer)
 
-	detailer.AddDetail(report.Detail{Type: report.TypeInfo, Message: "Message"})
-	assert.Empty(t, report.GetDetailerFromContextOrDiscard(ctx).GetDetails())
+	detailer.Add(report.Detail{Type: report.TypeInfo, Message: "Message"})
+	assert.Empty(t, report.GetDetailerFromContextOrDiscard(ctx).GetAll())
 }
 
 // TestDetailer_ContextWithDefaultDetailerCollectsDetails tests that the Detailer obtained from an context with the default one attached collects and returns details.
@@ -44,11 +44,11 @@ func TestDetailer_ContextWithDefaultDetailerCollectsDetails(t *testing.T) {
 	detailer := report.GetDetailerFromContextOrDiscard(ctx)
 	require.NotNil(t, detailer)
 
-	report.GetDetailerFromContextOrDiscard(ctx).AddDetail(detail1)
-	report.GetDetailerFromContextOrDiscard(ctx).AddDetail(detail2)
-	report.GetDetailerFromContextOrDiscard(ctx).AddDetail(detail3)
+	report.GetDetailerFromContextOrDiscard(ctx).Add(detail1)
+	report.GetDetailerFromContextOrDiscard(ctx).Add(detail2)
+	report.GetDetailerFromContextOrDiscard(ctx).Add(detail3)
 
-	details := report.GetDetailerFromContextOrDiscard(ctx).GetDetails()
+	details := report.GetDetailerFromContextOrDiscard(ctx).GetAll()
 	require.Len(t, details, 3)
 	assert.EqualValues(t, details[0], detail1)
 	assert.EqualValues(t, details[1], detail2)

@@ -39,8 +39,8 @@ func NewContextWithDetailer(ctx context.Context, d Detailer) context.Context {
 }
 
 type Detailer interface {
-	AddDetail(d Detail)
-	GetDetails() []Detail
+	Add(d Detail)
+	GetAll() []Detail
 }
 
 func GetDetailerFromContextOrDiscard(ctx context.Context) Detailer {
@@ -58,9 +58,9 @@ func GetDetailerFromContextOrDiscard(ctx context.Context) Detailer {
 
 type discardDetailer struct{}
 
-func (_ *discardDetailer) AddDetail(_ Detail) {}
+func (_ *discardDetailer) Add(_ Detail) {}
 
-func (_ *discardDetailer) GetDetails() []Detail { return nil }
+func (_ *discardDetailer) GetAll() []Detail { return nil }
 
 type defaultDetailer struct {
 	details []Detail
@@ -70,8 +70,8 @@ func NewDefaultDetailer() Detailer {
 	return &defaultDetailer{}
 }
 
-func (dd *defaultDetailer) AddDetail(d Detail) {
+func (dd *defaultDetailer) Add(d Detail) {
 	dd.details = append(dd.details, d)
 }
 
-func (dd *defaultDetailer) GetDetails() []Detail { return dd.details }
+func (dd *defaultDetailer) GetAll() []Detail { return dd.details }
