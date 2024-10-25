@@ -134,7 +134,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 					Name:  "URL",
 					Value: server.URL,
 				},
-				Auth: manifest.Auth{Token: manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"}},
+				Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"}},
 			},
 		})
 		assert.True(t, ok)

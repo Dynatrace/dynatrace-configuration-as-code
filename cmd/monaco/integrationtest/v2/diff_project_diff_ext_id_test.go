@@ -20,9 +20,10 @@ package v2
 
 import (
 	"context"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -53,7 +54,7 @@ func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 		extIDProject1, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
 		extIDProject2, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][1].Coordinate)
 
-		clientSet, err := dynatrace.CreateClients(environment.URL.Value, environment.Auth)
+		clientSet, err := client.CreateClientSet(environment.URL.Value, environment.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 		assert.NoError(t, err)
 		c := clientSet.Settings()
 		settings, _ := c.ListSettings(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {

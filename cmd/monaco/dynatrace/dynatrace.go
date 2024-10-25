@@ -56,6 +56,11 @@ func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
 }
 
 func isValidEnvironment(env manifest.EnvironmentDefinition) bool {
+	if env.Auth.Token == nil && env.Auth.OAuth == nil {
+		log.Error("No token and oAuth provided in manifest")
+		return false
+	}
+
 	if env.Auth.OAuth == nil {
 		return isClassicEnvironment(env)
 	}
@@ -106,23 +111,6 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 		return false
 	}
 	return true
-}
-
-// CreateClients creates a new client set based on the provided URL and authentication information.
-func CreateClients(url string, auth manifest.Auth) (*client.ClientSet, error) {
-	if auth.OAuth == nil {
-		return client.CreateClassicClientSet(url, auth.Token.Value.Value(), client.ClientOptions{
-			SupportArchive: support.SupportArchive,
-		})
-	}
-	return client.CreatePlatformClientSet(url, client.PlatformAuth{
-		OauthClientID:     auth.OAuth.ClientID.Value.Value(),
-		OauthClientSecret: auth.OAuth.ClientSecret.Value.Value(),
-		Token:             auth.Token.Value.Value(),
-		OauthTokenURL:     auth.OAuth.GetTokenEndpointValue(),
-	}, client.ClientOptions{
-		SupportArchive: support.SupportArchive,
-	})
 }
 
 // CreateAccountClients gives back clients to use for specific accounts
@@ -194,7 +182,7 @@ func CreateEnvironmentClients(environments manifest.Environments) (EnvironmentCl
 	clients := make(EnvironmentClients, len(environments))
 	for _, env := range environments {
 
-		clientSet, err := CreateClients(env.URL.Value, env.Auth)
+		clientSet, err := client.CreateClientSet(env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 		if err != nil {
 			return EnvironmentClients{}, err
 		}
