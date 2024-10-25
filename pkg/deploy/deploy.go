@@ -107,12 +107,12 @@ func Deploy(projects []project.Project, environmentClients dynatrace.Environment
 			clientSet = DummyClientSet
 		} else {
 			clientSet = ClientSet{
-				Classic:      clients.DTClient,
-				Settings:     clients.DTClient,
-				Automation:   clients.AutClient,
-				Bucket:       clients.BucketClient,
-				Document:     clients.DocumentClient,
-				OpenPipeline: clients.OpenPipelineClient,
+				Classic:      clients.Classic(),
+				Settings:     clients.Settings(),
+				Automation:   clients.Automation(),
+				Bucket:       clients.Bucket(),
+				Document:     clients.Document(),
+				OpenPipeline: clients.OpenPipeline(),
 			}
 		}
 

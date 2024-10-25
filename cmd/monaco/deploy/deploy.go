@@ -259,8 +259,7 @@ func validateAuthenticationWithProjectConfigs(projects []project.Project, enviro
 				}
 
 				switch conf[0].Type.(type) {
-				case config.ClassicApiType,
-					config.SettingsType:
+				case config.ClassicApiType:
 					if environments[envName].Auth.Token == nil {
 						return fmt.Errorf("API of type '%s' requires a token for environment '%s'", conf[0].Type, envName)
 					}
