@@ -28,6 +28,7 @@ const (
 	defaultValueKey                   = "DEFAULT"
 	KeyUserActionWebWaitSecondsEnvKey = "MONACO_KUA_WEB_WAIT_SECONDS"
 	MaxFilenameLenKey                 = "MONACO_MAX_FILENAME_LEN"
+	DeploymentReportFilename          = "MONACO_DEPLOYMENT_REPORT_FILENAME"
 )
 
 var defaultValuesInt = map[string]int{

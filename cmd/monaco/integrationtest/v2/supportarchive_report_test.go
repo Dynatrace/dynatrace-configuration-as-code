@@ -21,17 +21,23 @@ package v2
 import (
 	"archive/zip"
 	"bytes"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"fmt"
 	"io"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
 func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
@@ -40,13 +46,20 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 	fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
 
 	RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "SupportArchive", func(fs afero.Fs, _ TestContext) {
-		cleanupLogsDir(t)
+		err := cleanupLogsDir()
+		assert.NoError(t, err)
 
 		_ = monaco.RunWithFSf(fs, "monaco deploy %s --environment=valid_env --verbose --support-archive", manifest)
 
 		archive := "support-archive-" + fixedTime + ".zip"
-
-		expectedFiles := []string{fixedTime + "-" + "req.log", fixedTime + "-" + "resp.log", fixedTime + ".log", fixedTime + "-errors.log", fixedTime + "-featureflag_state.log", fixedTime + "-memstat.log"}
+		expectedFiles := []string{
+			fixedTime + "-" + "req.log",
+			fixedTime + "-" + "resp.log",
+			fixedTime + ".log",
+			fixedTime + "-errors.log",
+			fixedTime + "-featureflag_state.log",
+			fixedTime + "-memstat.log",
+		}
 
 		assertSupportArchive(t, fs, archive, expectedFiles)
 
@@ -94,9 +107,10 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cleanupLogsDir(t)
-
 			fs := testutils.CreateTestFileSystem()
+
+			err := cleanupLogsDir()
+			assert.NoError(t, err)
 
 			manifest := configFolder + tt.manifestFile
 			monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --support-archive", manifest, tt.environment)
@@ -111,6 +125,36 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 			assertSupportArchive(t, fs, archive, expectedFiles)
 		})
 	}
+}
+
+func TestDeployReport(t *testing.T) {
+	t.Run("report is generated", func(t *testing.T) {
+		const (
+			configFolder = "test-resources/support-archive/"
+			manifest     = configFolder + "manifest.yaml"
+		)
+		reportFile := fmt.Sprintf("report%s.jsonl", time.Now().Format(trafficlogs.TrafficLogFilePrefixFormat))
+
+		t.Setenv(environment.DeploymentReportFilename, reportFile)
+
+		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, _ TestContext) {
+			err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=valid_env --verbose", manifest)
+			require.NoError(t, err)
+
+			assertReport(t, fs, reportFile, true)
+		})
+	})
+
+	t.Run("ensure that monaco runs without generating report", func(t *testing.T) {
+		const (
+			configFolder = "test-resources/support-archive/"
+			manifest     = configFolder + "manifest.yaml"
+		)
+		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, _ TestContext) {
+			err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=valid_env --verbose", manifest)
+			require.NoError(t, err)
+		})
+	})
 }
 
 func assertSupportArchive(t *testing.T, fs afero.Fs, archive string, expectedFiles []string) {
@@ -148,10 +192,38 @@ func readZipArchive(t *testing.T, fs afero.Fs, archive string) *zip.Reader {
 }
 
 // traffic logs always write to the OsFs so to ensure we tests start with a clean slate cleanupLogsDir removes the folder
-func cleanupLogsDir(t *testing.T) {
+func cleanupLogsDir() error {
 	logPath, err := filepath.Abs(log.LogDirectory)
-	assert.NoError(t, err)
-
+	if err != nil {
+		return err
+	}
 	err = afero.NewOsFs().RemoveAll(logPath)
-	assert.NoError(t, err)
+	return err
+}
+
+func assertReport(t *testing.T, fs afero.Fs, path string, succeed bool) {
+	t.Helper()
+
+	records, err := report.ReadReportFile(fs, path)
+	require.NoError(t, err, "file must exists and be readable")
+
+	require.NotEmpty(t, records)
+	if succeed {
+		for _, r := range records {
+			assert.Containsf(t, []string{"SUCCESS", "EXCLUDED", "SKIPPED"}, r.State, "config %s is with status %s", r.Config.String(), r.State)
+		}
+	}
+
+	if !succeed {
+		haveErrorRecord := false
+		for _, r := range records {
+			if "ERROR" == r.State {
+				haveErrorRecord = true
+				break
+			}
+		}
+		if !haveErrorRecord {
+			assert.Fail(t, "there is no record with ERROR status")
+		}
+	}
 }

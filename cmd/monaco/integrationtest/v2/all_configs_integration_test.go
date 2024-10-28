@@ -19,54 +19,91 @@
 package v2
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 )
 
 // tests all configs for a single environment
 func TestIntegrationAllConfigsClassic(t *testing.T) {
-	specificEnvironment := "classic_env"
-
-	runAllConfigsTest(t, specificEnvironment)
-}
-
-func TestIntegrationAllConfigsPlatform(t *testing.T) {
-	specificEnvironment := "platform_env"
-
-	runAllConfigsTest(t, specificEnvironment)
-}
-
-func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	envVars := map[string]string{
-		featureflags.Temporary[featureflags.OpenPipeline].EnvName(): "true",
-		featureflags.Temporary[featureflags.Documents].EnvName():    "true",
-	}
+	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "true")
+	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "true")
 
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
+	targetEnvironment := "classic_env"
+
+	RunIntegrationWithCleanup(t, configFolder, manifest, targetEnvironment, "AllConfigs", func(fs afero.Fs, _ TestContext) {
 		// This causes a POST for all configs:
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment)
-		assert.NoError(t, err)
+		runDeployCommand(t, fs, manifest, targetEnvironment)
 
 		// This causes a PUT for all configs:
-		err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment)
-		assert.NoError(t, err)
-
+		runDeployCommand(t, fs, manifest, targetEnvironment)
 	})
+}
+
+func TestIntegrationAllConfigsPlatform(t *testing.T) {
+	configFolder := "test-resources/integration-all-configs/"
+	manifest := configFolder + "manifest.yaml"
+
+	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "true")
+	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "true")
+
+	targetEnvironment := "platform_env"
+
+	RunIntegrationWithCleanup(t, configFolder, manifest, targetEnvironment, "AllConfigs", func(fs afero.Fs, _ TestContext) {
+		// This causes a POST for all configs:
+		runDeployCommand(t, fs, manifest, targetEnvironment)
+
+		// This causes a PUT for all configs:
+		runDeployCommand(t, fs, manifest, targetEnvironment)
+	})
+}
+
+func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment string) {
+	t.Helper()
+
+	reportFile := fmt.Sprintf("report%s.jsonl", time.Now().Format(trafficlogs.TrafficLogFilePrefixFormat))
+	fs.Remove(reportFile)
+	t.Setenv(environment.DeploymentReportFilename, reportFile)
+
+	// This causes a POST for all configs:
+	err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment)
+	assert.NoError(t, err)
+
+	if err == nil {
+		assertReport(t, fs, reportFile, true)
+	} else {
+		assertReport(t, fs, reportFile, false)
+	}
 }
 
 // Tests a dry run (validation)
 func TestIntegrationValidationAllConfigs(t *testing.T) {
-
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "true")
 
-	err := monaco.Runf("monaco deploy %s --dry-run --verbose", "test-resources/integration-all-configs/manifest.yaml")
+	fs := afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs())
+
+	reportFile := fmt.Sprintf("report%s.jsonl", time.Now().Format(trafficlogs.TrafficLogFilePrefixFormat))
+	fs.Remove(reportFile)
+	t.Setenv(environment.DeploymentReportFilename, reportFile)
+
+	err := monaco.RunWithFSf(fs, "monaco deploy %s --dry-run --verbose", "test-resources/integration-all-configs/manifest.yaml")
 	assert.NoError(t, err)
+
+	if err == nil {
+		assertReport(t, fs, reportFile, true)
+	} else {
+		assertReport(t, fs, reportFile, false)
+	}
 }
