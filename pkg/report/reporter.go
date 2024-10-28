@@ -34,10 +34,12 @@ import (
 
 type reporterContextKey struct{}
 
+// NewContextWithReporter returns a new Context associated with the specified Reporter.
 func NewContextWithReporter(ctx context.Context, r Reporter) context.Context {
 	return context.WithValue(ctx, reporterContextKey{}, r)
 }
 
+// GetReporterFromContextOrDiscard gets the Reporter associated with the Context or returns a discarding Reporter if none is available.
 func GetReporterFromContextOrDiscard(ctx context.Context) Reporter {
 	v := ctx.Value(reporterContextKey{})
 	if v == nil {
@@ -51,27 +53,24 @@ func GetReporterFromContextOrDiscard(ctx context.Context) Reporter {
 	}
 }
 
+// Reporter is a minimal interface for reporting events and retrieving summaries.
 type Reporter interface {
+	// ReportDeployment reports the result of deploying a config.
 	ReportDeployment(config coordinate.Coordinate, state string, details []Detail, err error)
+
+	// GetSummary returns a summary of all seen events as a string.
 	GetSummary() string
+
+	// Stop shuts down the Reporter, writing out all records.
 	Stop()
 }
 
-type Clock interface {
-	Now() time.Time
-}
-
-type rtcClock struct{}
-
-func (c *rtcClock) Now() time.Time {
-	return time.Now()
-}
-
+// defaultReporter is a Reporter that writes events to a file.
 type defaultReporter struct {
 	queue                    chan Record
 	mu                       sync.Mutex
 	wg                       sync.WaitGroup
-	clock                    Clock
+	clockFunc                func() time.Time
 	started                  time.Time
 	ended                    time.Time
 	deploymentsSuccessCount  int
@@ -80,15 +79,16 @@ type defaultReporter struct {
 	deploymentsSkippedCount  int
 }
 
+// NewDefaultReporter creates a new Reporter that writes events as records as objects in a JSON lines file specified by reportFilePath.
 func NewDefaultReporter(fs afero.Fs, reportFilePath string) Reporter {
-	return NewDefaultReporterWithClock(fs, reportFilePath, &rtcClock{})
+	return newDefaultReporterWithClockFunc(fs, reportFilePath, func() time.Time { return time.Now() })
 }
 
-func NewDefaultReporterWithClock(fs afero.Fs, reportFilePath string, c Clock) Reporter {
+func newDefaultReporterWithClockFunc(fs afero.Fs, reportFilePath string, c func() time.Time) Reporter {
 	r := &defaultReporter{
-		clock:   c,
-		started: c.Now(),
-		queue:   make(chan Record, 32),
+		clockFunc: c,
+		started:   c(),
+		queue:     make(chan Record, 32),
 	}
 	r.wg.Add(1)
 	go func() {
@@ -140,23 +140,24 @@ func (d *defaultReporter) updateSummaryFromRecord(r Record) {
 
 	d.ended = time.Time(r.Time)
 	switch r.State {
-	case State_DEPL_SUCCESS:
+	case StateDeploySuccess:
 		d.deploymentsSuccessCount++
-	case State_DEPL_EXCLUDED:
+	case StateDeployExcluded:
 		d.deploymentsExcludedCount++
-	case State_DEPL_SKIPPED:
+	case StateDeploySkipped:
 		d.deploymentsSkippedCount++
-	case State_DEPL_ERR:
+	case StateDeployError:
 		d.deploymentsErrorCount++
 	default:
 		panic(fmt.Sprintf("unexpected state for deployment event: %s", r.State))
 	}
 }
 
+// ReportDeployment reports the result of deploying a config.
 func (d *defaultReporter) ReportDeployment(config coordinate.Coordinate, state string, details []Detail, err error) {
 	d.queue <- Record{
-		Type:    "DEPLOY",
-		Time:    JSONTime(d.clock.Now()),
+		Type:    TypeDeploy,
+		Time:    JSONTime(d.clockFunc()),
 		Config:  config,
 		State:   state,
 		Details: details,
@@ -172,6 +173,7 @@ func convertErrorToString(err error) *string {
 	return &errString
 }
 
+// GetSummary returns a summary of all seen events as a string.
 func (d *defaultReporter) GetSummary() string {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -187,6 +189,7 @@ func (d *defaultReporter) GetSummary() string {
 	return sb.String()
 }
 
+// Stop shuts down the Reporter, writing out all records.
 func (d *defaultReporter) Stop() {
 	close(d.queue)
 	d.wg.Wait()

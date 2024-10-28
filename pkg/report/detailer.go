@@ -22,27 +22,43 @@ import (
 )
 
 const (
-	TypeInfo  string = "INFO"
-	TypeWarn  string = "WARN"
-	TypeError string = "ERROR"
+	// DetailTypeInfo indicates a detail of type info.
+	DetailTypeInfo = "INFO"
+
+	// DetailTypeWarn indicates a detail of type warning.
+	DetailTypeWarn = "WARN"
+
+	// DetailTypeError indicates a detail of type error.
+	DetailTypeError = "ERROR"
 )
 
+// Detail represents additional information produced during the deployment of an configuration.
 type Detail struct {
-	Type    string `json:"type"`
+	// Type is the type of detail: info, warning or error.
+	Type string `json:"type"`
+
+	// Message is the message of the detail.
 	Message string `json:"msg"`
 }
 
 type detailerContextKey struct{}
 
+// NewContextWithDetailer returns a copy of the specified Context associated with the specified Detailer.
 func NewContextWithDetailer(ctx context.Context, d Detailer) context.Context {
 	return context.WithValue(ctx, detailerContextKey{}, d)
 }
 
+// // Reporter is a minimal interface for recording and retrieving details.
 type Detailer interface {
+
+	// Add adds a Detail to the Detailer.
 	Add(d Detail)
+
+	// GetAll gets all Details stored by the Detailer.
 	GetAll() []Detail
 }
 
+// GetDetailerFromContextOrDiscard gets the Detailer associated with the Context or returns a discarding Detailer if none is available.
 func GetDetailerFromContextOrDiscard(ctx context.Context) Detailer {
 	v := ctx.Value(detailerContextKey{})
 	if v == nil {
@@ -56,6 +72,7 @@ func GetDetailerFromContextOrDiscard(ctx context.Context) Detailer {
 	}
 }
 
+// discardDetailer implements Detailer interface but does nothing.
 type discardDetailer struct{}
 
 func (_ *discardDetailer) Add(_ Detail) {}
@@ -66,12 +83,15 @@ type defaultDetailer struct {
 	details []Detail
 }
 
+// NewDefaultDetailer creates a Detailer that simply stores Details in a slice.
 func NewDefaultDetailer() Detailer {
 	return &defaultDetailer{}
 }
 
+// Add adds a Detail.
 func (dd *defaultDetailer) Add(d Detail) {
 	dd.details = append(dd.details, d)
 }
 
+// GetAll gets all Details.
 func (dd *defaultDetailer) GetAll() []Detail { return dd.details }

@@ -81,10 +81,6 @@ func getLogMessage(env string, messageMap map[string]string) string {
 	return messageMap[defaultValueKey]
 }
 
-func GetEnvValueString(env string) (string, bool) {
-	return os.LookupEnv(env)
-}
-
 func GetEnvValueInt(env string) int {
 	value, _ := getEnvValueIntInternal(env)
 	return value

@@ -1,3 +1,5 @@
+//go:build unit
+
 /*
  * @license
  * Copyright 2024 Dynatrace LLC
@@ -32,15 +34,15 @@ func TestDetailer_ContextWithNoDetailerDiscardsDetails(t *testing.T) {
 	detailer := report.GetDetailerFromContextOrDiscard(ctx)
 	require.NotNil(t, detailer)
 
-	detailer.Add(report.Detail{Type: report.TypeInfo, Message: "Message"})
+	detailer.Add(report.Detail{Type: report.DetailTypeInfo, Message: "Message"})
 	assert.Empty(t, report.GetDetailerFromContextOrDiscard(ctx).GetAll())
 }
 
 // TestDetailer_ContextWithDefaultDetailerCollectsDetails tests that the Detailer obtained from an context with the default one attached collects and returns details.
 func TestDetailer_ContextWithDefaultDetailerCollectsDetails(t *testing.T) {
-	detail1 := report.Detail{Type: report.TypeInfo, Message: "Message1"}
-	detail2 := report.Detail{Type: report.TypeWarn, Message: "Message2"}
-	detail3 := report.Detail{Type: report.TypeError, Message: "Message3"}
+	detail1 := report.Detail{Type: report.DetailTypeInfo, Message: "Message1"}
+	detail2 := report.Detail{Type: report.DetailTypeWarn, Message: "Message2"}
+	detail3 := report.Detail{Type: report.DetailTypeError, Message: "Message3"}
 
 	ctx := report.NewContextWithDetailer(context.TODO(), report.NewDefaultDetailer())
 	detailer := report.GetDetailerFromContextOrDiscard(ctx)

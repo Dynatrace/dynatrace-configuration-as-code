@@ -214,15 +214,14 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 	resolvedEntity, err := deployConfig(ctx, n.Config, clients, resolvedEntities)
 	details := report.GetDetailerFromContextOrDiscard(ctx).GetAll()
 
-	// Need to tidy this up, just keep it all in once place at the moment
 	if err != nil {
 		if errors.Is(err, skipError) {
-			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.State_DEPL_EXCLUDED, details, nil)
+			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateDeployExcluded, details, nil)
 		} else {
-			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.State_DEPL_ERR, details, err)
+			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateDeployError, details, err)
 		}
 	} else {
-		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.State_DEPL_SUCCESS, details, nil)
+		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateDeploySuccess, details, nil)
 	}
 
 	if err != nil {
@@ -269,7 +268,7 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 			l.Warn("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
 		}
 
-		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.State_DEPL_SKIPPED, nil, nil)
+		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.StateDeploySkipped, nil, nil)
 
 		removeChildren(ctx, child, root, configGraph, failed)
 
@@ -287,14 +286,14 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 	if len(errs) > 0 {
 		err := multierror.New(errs...)
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to resolve parameter values: %v", err)
-		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.TypeError, Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
+		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
 		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to render JSON template: %v", err)
-		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.TypeError, Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
+		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 

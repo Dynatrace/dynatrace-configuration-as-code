@@ -19,8 +19,9 @@
 package testutils
 
 import (
-	"github.com/spf13/afero"
 	"testing"
+
+	"github.com/spf13/afero"
 )
 
 // CreateTestFileSystem creates a virtual filesystem with 2 layers.
@@ -34,6 +35,7 @@ func CreateTestFileSystem() afero.Fs {
 
 // TempFs creates a new [afero.Fs] file system within a temporary directory.
 // The temp directory will be cleaned up automatically.
+// Use this to create a file system for testing rather than afero.MemMapFs as it catches more bugs as it works with actual files.
 func TempFs(t *testing.T) afero.Fs {
 	return afero.NewBasePathFs(afero.NewOsFs(), t.TempDir())
 }

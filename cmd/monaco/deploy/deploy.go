@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -96,7 +97,7 @@ func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath str
 }
 
 func createDeploymentContext(fs afero.Fs) context.Context {
-	if reportFilename, ok := environment.GetEnvValueString(environment.DeploymentReportFilename); ok && len(reportFilename) > 0 {
+	if reportFilename, ok := os.LookupEnv(environment.DeploymentReportFilename); ok && len(reportFilename) > 0 {
 		return report.NewContextWithReporter(context.TODO(), report.NewDefaultReporter(fs, reportFilename))
 	}
 

@@ -27,28 +27,54 @@ import (
 )
 
 const (
-	State_DEPL_SUCCESS  string = "SUCCESS"
-	State_DEPL_ERR      string = "ERROR"
-	State_DEPL_EXCLUDED string = "EXCLUDED"
-	State_DEPL_SKIPPED  string = "SKIPPED"
+	TypeDeploy = "DEPLOY"
 )
 
+const (
+	// StateDeploySuccess indicates a config was successfully deployed.
+	StateDeploySuccess = "SUCCESS"
+
+	// StateDeployError indicates a config could not be deployed due to an error.
+	StateDeployError = "ERROR"
+
+	// StateDeployExcluded indicates no attempt was made to deploy a config because it was marked by the user to skip.
+	StateDeployExcluded = "EXCLUDED"
+
+	// StateDeploySkipped indicates no attempt was made to deploy a config because one or mored dependencies were skipped or excluded.
+	StateDeploySkipped = "SKIPPED"
+)
+
+// Record is a single entry in a report.
 type Record struct {
-	Type    string                `json:"type"`
-	Time    JSONTime              `json:"time"`
-	Config  coordinate.Coordinate `json:"config"`
-	State   string                `json:"state"`
-	Details []Detail              `json:"details,omitempty"`
-	Error   *string               `json:"error,omitempty"`
+	// Type is the type of record, currently TypeDeploy.
+	Type string `json:"type"`
+
+	// Time is the time associated with the Record.
+	Time JSONTime `json:"time"`
+
+	// Config provides the config ID, project and type of the config associated with the Record.
+	Config coordinate.Coordinate `json:"config"`
+
+	// State is the result of the deployment of the config, currently StateDeploySuccess, StateDeployError, StateDeployExcluded, StateDeploySkipped.
+	State string `json:"state"`
+
+	// Details optionally provides Detail log entries associated with the record.
+	Details []Detail `json:"details,omitempty"`
+
+	// Error optionally provides the string representation of any error associated with the Record.
+	Error *string `json:"error,omitempty"`
 }
 
+// JSONTime represents a time.Time value that is serialized as a string in RFC3339 format.
 type JSONTime time.Time
 
+// MarshalJSON marshals a JSONTime value into a RFC3339 string.
 func (t JSONTime) MarshalJSON() ([]byte, error) {
 	s := time.Time(t).Format(time.RFC3339)
 	return json.Marshal(s)
 }
 
+// UnmarshalJSON unmarshals a JSONTime value from a RFC3339 string.
 func (t *JSONTime) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)
@@ -65,6 +91,7 @@ func (t *JSONTime) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// ReadReportFile reads a report file and returns a slice of records or an error. It is intended for use in testing.
 func ReadReportFile(fs afero.Fs, filename string) ([]Record, error) {
 	f, err := fs.Open(filename)
 	if err != nil {
