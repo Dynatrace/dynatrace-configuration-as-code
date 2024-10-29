@@ -58,15 +58,6 @@ type DeployConfigsOptions struct {
 	DryRun bool
 }
 
-type ClientSet struct {
-	Classic      client.ConfigClient
-	Settings     client.SettingsClient
-	Automation   automation.Client
-	Bucket       bucket.Client
-	Document     document.Client
-	OpenPipeline openpipeline.Client
-}
-
 var (
 	lock sync.Mutex
 
@@ -94,25 +85,11 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 			return fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)
 		}
 
-		var clientSet ClientSet
+		var clientSet client.ClientSet
 		if opts.DryRun {
-			clientSet = ClientSet{
-				Classic:      client.DummyClientSet.ClassicClient,
-				Settings:     client.DummyClientSet.SettingsClient,
-				Automation:   client.DummyClientSet.AutClient,
-				Bucket:       client.DummyClientSet.BucketClient,
-				Document:     client.DummyClientSet.DocumentClient,
-				OpenPipeline: client.DummyClientSet.OpenPipelineClient,
-			}
+			clientSet = client.DummyClientSet
 		} else {
-			clientSet = ClientSet{
-				Classic:      clients.ClassicClient,
-				Settings:     clients.SettingsClient,
-				Automation:   clients.AutClient,
-				Bucket:       clients.BucketClient,
-				Document:     clients.DocumentClient,
-				OpenPipeline: clients.OpenPipelineClient,
-			}
+			clientSet = *clients
 		}
 
 		if err = deployComponents(ctx, sortedConfigs, clientSet); err != nil {
@@ -133,7 +110,7 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 	return nil
 }
 
-func deployComponents(ctx context.Context, components []graph.SortedComponent, clients ClientSet) error {
+func deployComponents(ctx context.Context, components []graph.SortedComponent, clients client.ClientSet) error {
 	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets in parallel...", len(components))
 	errCount := 0
 	errChan := make(chan error, len(components))
@@ -165,7 +142,7 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 	return nil
 }
 
-func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients ClientSet, resolvedEntities *entities.EntityMap) error {
+func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients client.ClientSet, resolvedEntities *entities.EntityMap) error {
 	g := simple.NewDirectedGraph()
 	gonum.Copy(g, configGraph)
 
@@ -206,7 +183,7 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 	return nil
 }
 
-func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clients ClientSet, resolvedEntities *entities.EntityMap) error {
+func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clients client.ClientSet, resolvedEntities *entities.EntityMap) error {
 	ctx = report.NewContextWithDetailer(ctx, report.NewDefaultDetailer())
 	resolvedEntity, err := deployConfig(ctx, n.Config, clients, resolvedEntities)
 	details := report.GetDetailerFromContextOrDiscard(ctx).GetAll()
@@ -273,7 +250,7 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 	}
 }
 
-func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
+func deployConfig(ctx context.Context, c *config.Config, clients client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
 		return entities.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
@@ -303,27 +280,27 @@ func deployConfig(ctx context.Context, c *config.Config, clients ClientSet, reso
 		if ia, ok := properties[config.InsertAfterParameter]; ok {
 			insertAfter = ia.(string)
 		}
-		resolvedEntity, deployErr = setting.Deploy(ctx, clients.Settings, properties, renderedConfig, c, insertAfter)
+		resolvedEntity, deployErr = setting.Deploy(ctx, clients.SettingsClient, properties, renderedConfig, c, insertAfter)
 
 	case config.ClassicApiType:
-		resolvedEntity, deployErr = classic.Deploy(ctx, clients.Classic, api.NewAPIs(), properties, renderedConfig, c)
+		resolvedEntity, deployErr = classic.Deploy(ctx, clients.ClassicClient, api.NewAPIs(), properties, renderedConfig, c)
 
 	case config.AutomationType:
-		resolvedEntity, deployErr = automation.Deploy(ctx, clients.Automation, properties, renderedConfig, c)
+		resolvedEntity, deployErr = automation.Deploy(ctx, clients.AutClient, properties, renderedConfig, c)
 
 	case config.BucketType:
-		resolvedEntity, deployErr = bucket.Deploy(ctx, clients.Bucket, properties, renderedConfig, c)
+		resolvedEntity, deployErr = bucket.Deploy(ctx, clients.BucketClient, properties, renderedConfig, c)
 
 	case config.DocumentType:
 		if featureflags.Temporary[featureflags.Documents].Enabled() {
-			resolvedEntity, deployErr = document.Deploy(ctx, clients.Document, properties, renderedConfig, c)
+			resolvedEntity, deployErr = document.Deploy(ctx, clients.DocumentClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
 
 	case config.OpenPipelineType:
 		if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
-			resolvedEntity, deployErr = openpipeline.Deploy(ctx, clients.OpenPipeline, properties, renderedConfig, c)
+			resolvedEntity, deployErr = openpipeline.Deploy(ctx, clients.OpenPipelineClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
