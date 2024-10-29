@@ -63,18 +63,19 @@ func Configs(ctx context.Context, clients ClientSet, _ api.APIs, automationResou
 	// Delete automation resources (in the specified order)
 	automationTypeOrder := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
 	for _, key := range automationTypeOrder {
-		entries := copiedDeleteEntries[string(key)]
-		if clients.Automation == (*coreAutomation.Client)(nil) {
-			log.WithCtxFields(ctx).WithFields(field.Type(key)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
+		if _, ok := copiedDeleteEntries[string(key)]; ok {
+			if clients.Automation == (*coreAutomation.Client)(nil) {
+				log.WithCtxFields(ctx).WithFields(field.Type(key)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(copiedDeleteEntries[string(key)]), key)
+				delete(copiedDeleteEntries, string(key))
+				continue
+			}
+			err := automation.Delete(ctx, clients.Automation, automationResources[string(key)], copiedDeleteEntries[string(key)])
+			if err != nil {
+				log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
+				deleteErrors += 1
+			}
 			delete(copiedDeleteEntries, string(key))
-			continue
 		}
-		err := automation.Delete(ctx, clients.Automation, automationResources[string(key)], entries)
-		if err != nil {
-			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
-			deleteErrors += 1
-		}
-		delete(copiedDeleteEntries, string(key))
 	}
 
 	//  Dashboard share settings cannot be deleted
