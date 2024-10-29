@@ -20,18 +20,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"path/filepath"
 
+	"github.com/spf13/afero"
+	"golang.org/x/exp/maps"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/spf13/afero"
-	"golang.org/x/exp/maps"
 )
 
 func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string, apiNames []string) error {
@@ -73,13 +74,12 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) 
 }
 
 func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) error {
+	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
-	deleteClients, err := getClientSet(env)
+	deleteClients, err := getClientSet(ctx, env)
 	if err != nil {
 		return err
 	}
-
-	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
 	log.WithCtxFields(ctx).Info("Deleting configs for environment `%s`", env.Name)
 
@@ -89,8 +89,8 @@ func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) erro
 	return nil
 }
 
-func getClientSet(env manifest.EnvironmentDefinition) (delete.ClientSet, error) {
-	clients, err := client.CreateClientSet(env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+func getClientSet(ctx context.Context, env manifest.EnvironmentDefinition) (delete.ClientSet, error) {
+	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {
 		return delete.ClientSet{}, fmt.Errorf("failed to create a client for env `%s` due to the following error: %w", env.Name, err)
 	}

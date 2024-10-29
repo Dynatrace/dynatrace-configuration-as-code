@@ -259,7 +259,7 @@ func validateURL(dtURL string) error {
 	return nil
 }
 
-func CreateClientSet(url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
+func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
 	var (
 		classicClient, client *corerest.Client
 		bucketClient          *buckets.Client
@@ -318,7 +318,7 @@ func CreateClientSet(url string, auth manifest.Auth, opts ClientOptions) (*Clien
 	}
 
 	if auth.Token != nil {
-		classicUrl, err = transformPlatformUrlToClassic(url, auth.OAuth, client)
+		classicUrl, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
 		if err != nil {
 			return nil, err
 		}
@@ -364,10 +364,10 @@ func createDTClient(classicClient *corerest.Client, client *corerest.Client, opt
 	)
 }
 
-func transformPlatformUrlToClassic(url string, auth *manifest.OAuth, client *corerest.Client) (string, error) {
+func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth, client *corerest.Client) (string, error) {
 	classicUrl := url
 	if auth != nil && client != nil {
-		return metadata.GetDynatraceClassicURL(context.TODO(), *client)
+		return metadata.GetDynatraceClassicURL(ctx, *client)
 	}
 
 	return classicUrl, nil

@@ -87,7 +87,7 @@ func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath str
 		return fmt.Errorf("manifest auth field misconfigured: %w", err)
 	}
 
-	clientSets, err := dynatrace.CreateEnvironmentClients(loadedManifest.Environments, dryRun)
+	clientSets, err := dynatrace.CreateEnvironmentClients(ctx, loadedManifest.Environments, dryRun)
 	if err != nil {
 		return fmt.Errorf("failed to create API clients: %w", err)
 	}

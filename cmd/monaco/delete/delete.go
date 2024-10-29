@@ -17,12 +17,12 @@ package delete
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"strings"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -45,7 +45,7 @@ func Delete(environments manifest.Environments, entriesToDelete delete.DeleteEnt
 			log.WithCtxFields(ctx).Warn("Delete file contains Dynatrace Platform specific types, but no oAuth credentials are defined for environment %q - Dynatrace Platform configurations won't be deleted.", env.Name)
 		}
 
-		clientSet, err := client.CreateClientSet(env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 		if err != nil {
 			return fmt.Errorf("failed to create API client for environment %q due to the following error: %w", env.Name, err)
 		}
