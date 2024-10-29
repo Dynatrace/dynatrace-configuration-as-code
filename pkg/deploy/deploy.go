@@ -76,7 +76,7 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 		errors.As(validationErrs, &deploymentErrors)
 	}
 
-	for env, clients := range environmentClients {
+	for env, clientset := range environmentClients {
 		ctx := newContextWithEnvironment(ctx, env)
 		log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", env.Name)
 
@@ -85,14 +85,7 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 			return fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)
 		}
 
-		var clientSet client.ClientSet
-		if opts.DryRun {
-			clientSet = client.DummyClientSet
-		} else {
-			clientSet = *clients
-		}
-
-		if err = deployComponents(ctx, sortedConfigs, clientSet); err != nil {
+		if err = deployComponents(ctx, sortedConfigs, clientset); err != nil {
 			log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Error("Deployment failed for environment %q: %v", env.Name, err)
 			deploymentErrors = deploymentErrors.Append(env.Name, err)
 			if !opts.ContinueOnErr && !opts.DryRun {
@@ -110,7 +103,7 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 	return nil
 }
 
-func deployComponents(ctx context.Context, components []graph.SortedComponent, clients client.ClientSet) error {
+func deployComponents(ctx context.Context, components []graph.SortedComponent, clientset *client.ClientSet) error {
 	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets in parallel...", len(components))
 	errCount := 0
 	errChan := make(chan error, len(components))
@@ -119,7 +112,7 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 	// Iterate over components and launch a goroutine for each component deployment.
 	for i := range components {
 		go func(ctx context.Context, component graph.SortedComponent) {
-			errChan <- deployGraph(ctx, component.Graph, clients, resolvedEntities)
+			errChan <- deployGraph(ctx, component.Graph, clientset, resolvedEntities)
 		}(context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(i)), components[i])
 	}
 
@@ -142,7 +135,7 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 	return nil
 }
 
-func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients client.ClientSet, resolvedEntities *entities.EntityMap) error {
+func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clientset *client.ClientSet, resolvedEntities *entities.EntityMap) error {
 	g := simple.NewDirectedGraph()
 	gonum.Copy(g, configGraph)
 
@@ -157,7 +150,7 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 			time.Sleep(api.NewAPIs()[node.Config.Coordinate.Type].DeployWaitDuration)
 
 			go func(ctx context.Context, node graph.ConfigNode) {
-				errChan <- deployNode(ctx, node, configGraph, clients, resolvedEntities)
+				errChan <- deployNode(ctx, node, configGraph, clientset, resolvedEntities)
 			}(context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate), node)
 		}
 
@@ -183,9 +176,9 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 	return nil
 }
 
-func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clients client.ClientSet, resolvedEntities *entities.EntityMap) error {
+func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clientset *client.ClientSet, resolvedEntities *entities.EntityMap) error {
 	ctx = report.NewContextWithDetailer(ctx, report.NewDefaultDetailer())
-	resolvedEntity, err := deployConfig(ctx, n.Config, clients, resolvedEntities)
+	resolvedEntity, err := deployConfig(ctx, n.Config, clientset, resolvedEntities)
 	details := report.GetDetailerFromContextOrDiscard(ctx).GetAll()
 
 	if err != nil {
@@ -250,7 +243,7 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 	}
 }
 
-func deployConfig(ctx context.Context, c *config.Config, clients client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
+func deployConfig(ctx context.Context, c *config.Config, clientset *client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
 		return entities.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
@@ -280,27 +273,27 @@ func deployConfig(ctx context.Context, c *config.Config, clients client.ClientSe
 		if ia, ok := properties[config.InsertAfterParameter]; ok {
 			insertAfter = ia.(string)
 		}
-		resolvedEntity, deployErr = setting.Deploy(ctx, clients.SettingsClient, properties, renderedConfig, c, insertAfter)
+		resolvedEntity, deployErr = setting.Deploy(ctx, clientset.SettingsClient, properties, renderedConfig, c, insertAfter)
 
 	case config.ClassicApiType:
-		resolvedEntity, deployErr = classic.Deploy(ctx, clients.ClassicClient, api.NewAPIs(), properties, renderedConfig, c)
+		resolvedEntity, deployErr = classic.Deploy(ctx, clientset.ClassicClient, api.NewAPIs(), properties, renderedConfig, c)
 
 	case config.AutomationType:
-		resolvedEntity, deployErr = automation.Deploy(ctx, clients.AutClient, properties, renderedConfig, c)
+		resolvedEntity, deployErr = automation.Deploy(ctx, clientset.AutClient, properties, renderedConfig, c)
 
 	case config.BucketType:
-		resolvedEntity, deployErr = bucket.Deploy(ctx, clients.BucketClient, properties, renderedConfig, c)
+		resolvedEntity, deployErr = bucket.Deploy(ctx, clientset.BucketClient, properties, renderedConfig, c)
 
 	case config.DocumentType:
 		if featureflags.Temporary[featureflags.Documents].Enabled() {
-			resolvedEntity, deployErr = document.Deploy(ctx, clients.DocumentClient, properties, renderedConfig, c)
+			resolvedEntity, deployErr = document.Deploy(ctx, clientset.DocumentClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
 
 	case config.OpenPipelineType:
 		if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
-			resolvedEntity, deployErr = openpipeline.Deploy(ctx, clients.OpenPipelineClient, properties, renderedConfig, c)
+			resolvedEntity, deployErr = openpipeline.Deploy(ctx, clientset.OpenPipelineClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}

@@ -178,14 +178,22 @@ func (e EnvironmentClients) Names() []string {
 }
 
 // CreateEnvironmentClients gives back clients to use for specific environments
-func CreateEnvironmentClients(environments manifest.Environments) (EnvironmentClients, error) {
+func CreateEnvironmentClients(environments manifest.Environments, dryRun bool) (EnvironmentClients, error) {
 	clients := make(EnvironmentClients, len(environments))
 	for _, env := range environments {
+		if dryRun {
+			clients[EnvironmentInfo{
+				Name:  env.Name,
+				Group: env.Group,
+			}] = &client.DummyClientSet
+			continue
+		}
 
 		clientSet, err := client.CreateClientSet(env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 		if err != nil {
 			return EnvironmentClients{}, err
 		}
+
 		clients[EnvironmentInfo{
 			Name:  env.Name,
 			Group: env.Group,
