@@ -33,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/multierror"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
@@ -68,15 +67,6 @@ type ClientSet struct {
 	OpenPipeline openpipeline.Client
 }
 
-var DummyClientSet = ClientSet{
-	Classic:      &dtclient.DummyClient{},
-	Settings:     &dtclient.DummyClient{},
-	Automation:   &automation.DummyClient{},
-	Bucket:       &bucket.DummyClient{},
-	Document:     &document.DummyClient{},
-	OpenPipeline: &openpipeline.DummyClient{},
-}
-
 var (
 	lock sync.Mutex
 
@@ -106,7 +96,14 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 
 		var clientSet ClientSet
 		if opts.DryRun {
-			clientSet = DummyClientSet
+			clientSet = ClientSet{
+				Classic:      client.DummyClientSet.DTClient,
+				Settings:     client.DummyClientSet.DTClient,
+				Automation:   client.DummyClientSet.AutClient,
+				Bucket:       client.DummyClientSet.BucketClient,
+				Document:     client.DummyClientSet.DocumentClient,
+				OpenPipeline: client.DummyClientSet.OpenPipelineClient,
+			}
 		} else {
 			clientSet = ClientSet{
 				Classic:      clients.DTClient,

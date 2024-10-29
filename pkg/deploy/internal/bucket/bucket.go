@@ -20,6 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/go-logr/logr"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -28,23 +31,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/go-logr/logr"
-	"net/http"
 )
 
 type Client interface {
 	Upsert(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
-}
-
-var _ Client = (*DummyClient)(nil)
-
-type DummyClient struct{}
-
-func (c DummyClient) Upsert(_ context.Context, id string, data []byte) (response buckets.Response, err error) {
-	return buckets.Response{
-		StatusCode: http.StatusOK,
-		Data:       data,
-	}, nil
 }
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {

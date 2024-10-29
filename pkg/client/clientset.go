@@ -23,6 +23,8 @@ import (
 	"runtime"
 	"time"
 
+	"golang.org/x/oauth2/clientcredentials"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
@@ -40,7 +42,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
-	"golang.org/x/oauth2/clientcredentials"
 )
 
 var (
@@ -173,7 +174,6 @@ type DocumentClient interface {
 
 type OpenPipelineClient interface {
 	GetAll(ctx context.Context) ([]openpipeline.Response, error)
-
 	Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error)
 }
 

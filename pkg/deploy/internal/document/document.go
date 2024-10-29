@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-logr/logr"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
@@ -32,7 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/go-logr/logr"
 )
 
 //go:generate mockgen -source=document.go -destination=document_mock.go -package=document documentClient
@@ -41,30 +42,6 @@ type Client interface {
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
 	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
 	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
-}
-
-var _ Client = (*DummyClient)(nil)
-
-type DummyClient struct{}
-
-// Create implements Client.
-func (c *DummyClient) Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (libAPI.Response, error) {
-	return libAPI.Response{Data: []byte(`{}`)}, nil
-}
-
-// Get implements Client.
-func (c *DummyClient) Get(ctx context.Context, id string) (documents.Response, error) {
-	return documents.Response{}, nil
-}
-
-// List implements Client.
-func (c *DummyClient) List(ctx context.Context, filter string) (documents.ListResponse, error) {
-	return documents.ListResponse{}, nil
-}
-
-// Update implements Client.
-func (c *DummyClient) Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (libAPI.Response, error) {
-	return libAPI.Response{Data: []byte(`{}`)}, nil
 }
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {

@@ -25,18 +25,20 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	gomock "go.uber.org/mock/gomock"
 )
 
 const documentName = "my dashboard"
@@ -50,7 +52,7 @@ var documentConfigCoordinate = coordinate.Coordinate{
 }
 
 func TestDeployDocumentWrongType(t *testing.T) {
-	client := &DummyClient{}
+	client := &client.DummyDocumentClient{}
 
 	conf := &config.Config{
 		Type:     config.ClassicApiType{},
