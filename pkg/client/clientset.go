@@ -185,8 +185,12 @@ var DefaultRetryOptions = corerest.RetryOptions{MaxRetries: 10, ShouldRetryFunc:
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
 type ClientSet struct {
-	// dtClient is the client capable of updating or creating settings and classic configs
-	DTClient DynatraceClient
+	// ClassicClient is the client capable of updating or creating classic configs
+	ClassicClient ConfigClient
+
+	// SettingsClient is the client capable of updating or creating settings
+	SettingsClient SettingsClient
+
 	// autClient is the client capable of updating or creating automation API configs
 	AutClient AutomationClient
 	// bucketClient is the client capable of updating or creating Grail Bucket configs
@@ -198,11 +202,11 @@ type ClientSet struct {
 }
 
 func (s ClientSet) Classic() ConfigClient {
-	return s.DTClient
+	return s.ClassicClient
 }
 
 func (s ClientSet) Settings() SettingsClient {
-	return s.DTClient
+	return s.SettingsClient
 }
 
 func (s ClientSet) Automation() AutomationClient {
@@ -332,7 +336,8 @@ func CreateClientSet(url string, auth manifest.Auth, opts ClientOptions) (*Clien
 	}
 
 	return &ClientSet{
-		DTClient:           dtClient,
+		ClassicClient:      dtClient,
+		SettingsClient:     dtClient,
 		AutClient:          autClient,
 		BucketClient:       bucketClient,
 		DocumentClient:     documentClient,

@@ -96,7 +96,7 @@ func TestDeployConfigGraph_SingleConfig(t *testing.T) {
 	}
 
 	dummyClient := dtclient.DummyClient{}
-	clientSet := &client.ClientSet{DTClient: &dummyClient}
+	clientSet := &client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: clientSet,
@@ -163,7 +163,7 @@ func TestDeployConfigGraph_SettingShouldFailUpsert(t *testing.T) {
 	}
 
 	clients := dynatrace.EnvironmentClients{
-		dynatrace.EnvironmentInfo{Name: "env"}: &client.ClientSet{DTClient: c},
+		dynatrace.EnvironmentInfo{Name: "env"}: &client.ClientSet{ClassicClient: c, SettingsClient: c},
 	}
 
 	errors := deploy.Deploy(context.TODO(), p, clients, deploy.DeployConfigsOptions{})
@@ -184,7 +184,7 @@ func TestDeployConfigGraph_DoesNotFailOnEmptyConfigs(t *testing.T) {
 	}
 
 	dummyClient := dtclient.DummyClient{}
-	clientSet := client.ClientSet{DTClient: &dummyClient}
+	clientSet := client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
@@ -199,7 +199,7 @@ func TestDeployConfigGraph_DoesNotFailOnEmptyProject(t *testing.T) {
 	var p []project.Project
 
 	dummyClient := dtclient.DummyClient{}
-	clientSet := client.ClientSet{DTClient: &dummyClient}
+	clientSet := client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
@@ -212,7 +212,7 @@ func TestDeployConfigGraph_DoesNotFailOnEmptyProject(t *testing.T) {
 func TestDeployConfigGraph_DoesNotFailNilProject(t *testing.T) {
 
 	dummyClient := dtclient.DummyClient{}
-	clientSet := client.ClientSet{DTClient: &dummyClient}
+	clientSet := client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
 	}
@@ -237,7 +237,7 @@ func TestDeployConfigGraph_DoesNotDeploySkippedConfig(t *testing.T) {
 	}
 
 	dummyClient := dtclient.DummyClient{}
-	clientSet := client.ClientSet{DTClient: &dummyClient}
+	clientSet := client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
@@ -287,7 +287,7 @@ func TestDeployConfigGraph_DeploysSetting(t *testing.T) {
 		},
 	}
 
-	clientSet := client.ClientSet{DTClient: c}
+	clientSet := client.ClientSet{ClassicClient: c, SettingsClient: c}
 
 	clients := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
@@ -335,7 +335,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 		},
 	}
 
-	clientSet := client.ClientSet{DTClient: cl}
+	clientSet := client.ClientSet{ClassicClient: cl, SettingsClient: cl}
 	clients := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
 	}
@@ -382,7 +382,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 		},
 	}
 
-	clientSet := client.ClientSet{DTClient: cl}
+	clientSet := client.ClientSet{ClassicClient: cl, SettingsClient: cl}
 	clients := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
 	}
@@ -434,7 +434,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 	}
 
 	dummyClient := dtclient.DummyClient{}
-	clientSet := client.ClientSet{DTClient: &dummyClient}
+	clientSet := client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: env}: &clientSet,
@@ -561,7 +561,7 @@ func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *test
 
 	dummyClient := dtclient.DummyClient{}
 
-	clientSet := client.ClientSet{DTClient: &dummyClient}
+	clientSet := client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 
 	clients := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: environmentName}: &clientSet,
@@ -676,7 +676,7 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {
 	assert.Len(t, components, 2)
 
 	dummyClient := dtclient.DummyClient{}
-	clientSet := client.ClientSet{DTClient: &dummyClient}
+	clientSet := client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 	clients := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: environmentName}: &clientSet,
 	}
@@ -794,7 +794,7 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations_IfContinuingAfterFai
 	assert.Len(t, components, 2)
 
 	dummyClient := dtclient.DummyClient{}
-	clientSet := client.ClientSet{DTClient: &dummyClient}
+	clientSet := client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 
 	clients := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: environmentName}: &clientSet,
@@ -1179,7 +1179,7 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 
 			dummyClient := dtclient.DummyClient{}
-			clientSet := client.ClientSet{DTClient: &dummyClient}
+			clientSet := client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 
 			c := dynatrace.EnvironmentClients{
 				dynatrace.EnvironmentInfo{Name: "env1"}: &clientSet,
@@ -1270,7 +1270,7 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 	}
 
 	dummyClient := dtclient.DummyClient{}
-	clientSet := client.ClientSet{DTClient: &dummyClient}
+	clientSet := client.ClientSet{ClassicClient: &dummyClient, SettingsClient: &dummyClient}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,

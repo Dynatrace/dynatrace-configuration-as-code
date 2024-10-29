@@ -18,6 +18,18 @@ package download
 
 import (
 	"encoding/json"
+	"net/http/httptest"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -33,15 +45,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	projectLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"net/http/httptest"
-	"path/filepath"
-	"reflect"
-	"strings"
-	"testing"
 )
 
 // compareOptions holds all options we require for the tests to not be flaky.
@@ -83,11 +86,11 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
-
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -154,11 +157,11 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
-
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -245,10 +248,11 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NoError(t, err)
 
@@ -363,10 +367,11 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NoError(t, err)
 
@@ -431,10 +436,11 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NoError(t, err)
 
@@ -502,11 +508,11 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
-
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -600,12 +606,13 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
+
 	t.Setenv(featureflags.Permanent[featureflags.DownloadFilterClassicConfigs].EnvName(), "false")
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
-
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -718,11 +725,11 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
-
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -859,11 +866,11 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 
 			fs := afero.NewMemMapFs()
 
-			dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+			dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+			require.NoError(t, err)
 
 			// WHEN we download everything
-			err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
-
+			err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
 			assert.NoError(t, err)
 
 			// THEN we can load the project again and verify its content
@@ -933,10 +940,10 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	options.forceOverwriteManifest = true
 	options.outputFolder = testBasePath
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apis, options)
-
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apis, options)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1026,10 +1033,10 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	opts.onlySettings = false
 	opts.onlyAPIs = false
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apis, opts)
-
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apis, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1086,10 +1093,11 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	opts := setupTestingDownloadOptions(t, server, projectName)
 	opts.onlySettings = false
 	opts.onlyAPIs = true
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, apis, opts)
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, apis, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1137,10 +1145,10 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 	opts.onlySettings = true
 	opts.onlyAPIs = false
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, opts)
-
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, nil, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1191,13 +1199,13 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	opts.onlySettings = true
 	opts.onlyAPIs = false
 
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, err := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
 
 	// GIVEN filter feature flag is turned OFF
 	t.Setenv(featureflags.Permanent[featureflags.DownloadFilterSettingsUnmodifiable].EnvName(), "false")
 
-	err := doDownloadConfigs(fs, &client.ClientSet{DTClient: dtClient}, nil, opts)
-
+	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}, nil, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content

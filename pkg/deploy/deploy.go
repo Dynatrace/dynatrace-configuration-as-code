@@ -97,8 +97,8 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 		var clientSet ClientSet
 		if opts.DryRun {
 			clientSet = ClientSet{
-				Classic:      client.DummyClientSet.DTClient,
-				Settings:     client.DummyClientSet.DTClient,
+				Classic:      client.DummyClientSet.ClassicClient,
+				Settings:     client.DummyClientSet.SettingsClient,
 				Automation:   client.DummyClientSet.AutClient,
 				Bucket:       client.DummyClientSet.BucketClient,
 				Document:     client.DummyClientSet.DocumentClient,
@@ -106,8 +106,8 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 			}
 		} else {
 			clientSet = ClientSet{
-				Classic:      clients.DTClient,
-				Settings:     clients.DTClient,
+				Classic:      clients.ClassicClient,
+				Settings:     clients.SettingsClient,
 				Automation:   clients.AutClient,
 				Bucket:       clients.BucketClient,
 				Document:     clients.DocumentClient,
