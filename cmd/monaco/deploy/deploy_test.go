@@ -393,6 +393,10 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		Type: config.ClassicApiType{},
 		Skip: false,
 	}
+	settingsConf := config.Config{
+		Type: config.SettingsType{},
+		Skip: false,
+	}
 	classicConfSkip := classicConf
 	classicConfSkip.Skip = true
 	documentConfSkip := documentConf
@@ -405,7 +409,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		expectedErrorMessage string
 	}{
 		{
-			"oAuth manifest with document api",
+			"oAuth manifest with document and settings api",
 			manifest.Environments{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
@@ -413,11 +417,11 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						OAuth: &oAuth},
 				}},
 			project.ConfigsPerType{
-				"dashboard": []config.Config{documentConf}},
+				"dashboard": []config.Config{documentConf, settingsConf}},
 			"",
 		},
 		{
-			"token manifest with classic api",
+			"token manifest with classic and settings api",
 			manifest.Environments{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
@@ -425,7 +429,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						Token: &token},
 				}},
 			project.ConfigsPerType{
-				"dashboard": []config.Config{classicConf}},
+				"dashboard": []config.Config{classicConf, settingsConf}},
 			"",
 		},
 		{
