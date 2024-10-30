@@ -82,6 +82,11 @@ func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath str
 	logging.LogProjectsInfo(loadedProjects)
 	logging.LogEnvironmentsInfo(loadedManifest.Environments)
 
+	err = validateAuthenticationWithProjectConfigs(loadedProjects, loadedManifest.Environments)
+	if err != nil {
+		return fmt.Errorf("manifest auth field misconfigured: %w", err)
+	}
+
 	clientSets, err := dynatrace.CreateEnvironmentClients(loadedManifest.Environments)
 	if err != nil {
 		return fmt.Errorf("failed to create API clients: %w", err)
@@ -269,4 +274,31 @@ func collectRequiresPlatformErrors(platformCoordinatesPerEnvironment Coordinates
 
 func platformEnvironment(e manifest.EnvironmentDefinition) bool {
 	return e.Auth.OAuth != nil
+}
+
+// validateAuthenticationWithProjectConfigs validates each config entry against the manifest if required credentials are set
+// it takes into consideration the project, environments and the skip parameter in each config entry
+func validateAuthenticationWithProjectConfigs(projects []project.Project, environments manifest.Environments) error {
+	for _, p := range projects {
+		for envName, env := range p.Configs {
+			for _, conf := range env {
+				if conf[0].Skip == true {
+					continue
+				}
+
+				switch conf[0].Type.(type) {
+				case config.ClassicApiType,
+					config.SettingsType:
+					if environments[envName].Auth.Token == nil {
+						return fmt.Errorf("API of type '%s' requires a token for environment '%s'", conf[0].Type, envName)
+					}
+				default:
+					if environments[envName].Auth.OAuth == nil {
+						return fmt.Errorf("API of type '%s' requires OAuth for environment '%s'", conf[0].Type, envName)
+					}
+				}
+			}
+		}
+	}
+	return nil
 }

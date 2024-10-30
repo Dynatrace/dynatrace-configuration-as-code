@@ -152,8 +152,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 		wantResult []persistence.Group
 	}{
 		{
-			name: "correctly transforms simple env groups",
-			input: map[string]manifest.EnvironmentDefinition{
+			"correctly transforms simple env groups",
+			map[string]manifest.EnvironmentDefinition{
 				"env1": {
 					Name: "env1",
 					URL: manifest.URLDefinition{
@@ -161,7 +161,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 					Group: "group1",
 					Auth: manifest.Auth{
-						Token: manifest.AuthSecret{
+						Token: &manifest.AuthSecret{
 							Name: "TokenTest",
 						},
 					},
@@ -173,7 +173,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 					Group: "group1",
 					Auth: manifest.Auth{
-						Token: manifest.AuthSecret{},
+						Token: &manifest.AuthSecret{},
 						OAuth: &manifest.OAuth{
 							ClientID: manifest.AuthSecret{
 								Name:  "client-id-key",
@@ -198,7 +198,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 					Group: "group1",
 					Auth: manifest.Auth{
-						Token: manifest.AuthSecret{},
+						Token: &manifest.AuthSecret{},
 						OAuth: &manifest.OAuth{
 							ClientID: manifest.AuthSecret{
 								Name:  "client-id-key",
@@ -218,7 +218,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 					Group: "group1",
 					Auth: manifest.Auth{
-						Token: manifest.AuthSecret{},
+						Token: &manifest.AuthSecret{},
 						OAuth: &manifest.OAuth{
 							ClientID: manifest.AuthSecret{
 								Name:  "client-id-key",
@@ -242,11 +242,11 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 					Group: "group2",
 					Auth: manifest.Auth{
-						Token: manifest.AuthSecret{},
+						Token: &manifest.AuthSecret{},
 					},
 				},
 			},
-			wantResult: []persistence.Group{
+			[]persistence.Group{
 				{
 					Name: "group1",
 					Environments: []persistence.Environment{
@@ -254,7 +254,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env1",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								Token: persistence.AuthSecret{
+								Token: &persistence.AuthSecret{
 									Name: "TokenTest",
 									Type: "environment",
 								},
@@ -264,7 +264,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								Token: persistence.AuthSecret{
+								Token: &persistence.AuthSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
 								},
@@ -288,7 +288,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2a",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								Token: persistence.AuthSecret{
+								Token: &persistence.AuthSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
 								},
@@ -308,7 +308,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2b",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								Token: persistence.AuthSecret{
+								Token: &persistence.AuthSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
 								},
@@ -330,13 +330,13 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 				},
 				{
-					Name: "group2",
-					Environments: []persistence.Environment{
+					"group2",
+					[]persistence.Environment{
 						{
 							Name: "env3",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								Token: persistence.AuthSecret{
+								Token: &persistence.AuthSecret{
 									Name: "env3_TOKEN",
 									Type: "environment",
 								},
@@ -433,7 +433,7 @@ func Test_toWritableToken(t *testing.T) {
 				URL:   manifest.URLDefinition{},
 				Group: "GROUP",
 				Auth: manifest.Auth{
-					Token: manifest.AuthSecret{Name: "VARIABLE"},
+					Token: &manifest.AuthSecret{Name: "VARIABLE"},
 				},
 			},
 			persistence.AuthSecret{
@@ -449,7 +449,7 @@ func Test_toWritableToken(t *testing.T) {
 				Group: "GROUP",
 
 				Auth: manifest.Auth{
-					Token: manifest.AuthSecret{},
+					Token: &manifest.AuthSecret{},
 				},
 			},
 			persistence.AuthSecret{
@@ -460,7 +460,7 @@ func Test_toWritableToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getTokenSecret(tt.input.Auth, tt.input.Name); !reflect.DeepEqual(got, tt.want) {
+			if got := getTokenSecret(tt.input.Auth, tt.input.Name); !reflect.DeepEqual(got, &tt.want) {
 				t.Errorf("getTokenSecret() = %v, want %v", got, tt.want)
 			}
 		})
@@ -596,7 +596,7 @@ func TestWrite(t *testing.T) {
 						},
 						Group: "group1",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name: "TOKEN_VAR",
 							},
 						},
@@ -636,7 +636,7 @@ environmentGroups:
 						},
 						Group: "group1",
 						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
+							Token: &manifest.AuthSecret{
 								Name: "TOKEN_VAR",
 							},
 						},

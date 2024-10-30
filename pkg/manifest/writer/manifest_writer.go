@@ -185,15 +185,17 @@ func toWriteableURL(url manifest.URLDefinition) persistence.TypedValue {
 }
 
 // getTokenSecret returns the tokenConfig with some legacy magic string append that still might be used (?)
-func getTokenSecret(a manifest.Auth, envName string) persistence.AuthSecret {
-	var envVarName string
-	if a.Token.Name != "" {
-		envVarName = a.Token.Name
-	} else {
+func getTokenSecret(a manifest.Auth, envName string) *persistence.AuthSecret {
+	if a.Token == nil {
+		return nil
+	}
+
+	envVarName := a.Token.Name
+	if envVarName == "" {
 		envVarName = envName + "_TOKEN"
 	}
 
-	return persistence.AuthSecret{
+	return &persistence.AuthSecret{
 		Type: persistence.TypeEnvironment,
 		Name: envVarName,
 	}

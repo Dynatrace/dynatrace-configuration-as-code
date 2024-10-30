@@ -63,7 +63,7 @@ func TestConvertParameters(t *testing.T) {
 		URL:   createSimpleUrlDefinition(),
 		Group: "",
 		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "token"},
+			Token: &manifest.AuthSecret{Name: "token"},
 		},
 	}
 
@@ -181,7 +181,7 @@ func TestConvertConvertRemovesEscapeCharsFromParameters(t *testing.T) {
 		URL:   createSimpleUrlDefinition(),
 		Group: "",
 		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "token"},
+			Token: &manifest.AuthSecret{Name: "token"},
 		},
 	}
 
@@ -350,7 +350,7 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 		URL:   createSimpleUrlDefinition(),
 		Group: groupName,
 		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "token"},
+			Token: &manifest.AuthSecret{Name: "token"},
 		},
 	}
 
@@ -403,7 +403,7 @@ func TestConvertConfig(t *testing.T) {
 		URL:   createSimpleUrlDefinition(),
 		Group: "",
 		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "token"},
+			Token: &manifest.AuthSecret{Name: "token"},
 		},
 	}
 
@@ -471,7 +471,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 		URL:   createSimpleUrlDefinition(),
 		Group: "",
 		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "token"},
+			Token: &manifest.AuthSecret{Name: "token"},
 		},
 	}
 
@@ -545,7 +545,7 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 		URL:   createSimpleUrlDefinition(),
 		Group: "",
 		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "token"},
+			Token: &manifest.AuthSecret{Name: "token"},
 		},
 	}
 
@@ -590,7 +590,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 		URL:   createSimpleUrlDefinition(),
 		Group: "",
 		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "token"},
+			Token: &manifest.AuthSecret{Name: "token"},
 		},
 	}
 
@@ -643,7 +643,7 @@ func TestConvertConfigs(t *testing.T) {
 			URL:   createSimpleUrlDefinition(),
 			Group: environmentGroup,
 			Auth: manifest.Auth{
-				Token: manifest.AuthSecret{Name: "token"},
+				Token: &manifest.AuthSecret{Name: "token"},
 			},
 		},
 		environmentName2: manifest.EnvironmentDefinition{
@@ -651,7 +651,7 @@ func TestConvertConfigs(t *testing.T) {
 			URL:   createSimpleUrlDefinition(),
 			Group: environmentGroup2,
 			Auth: manifest.Auth{
-				Token: manifest.AuthSecret{Name: "token"},
+				Token: &manifest.AuthSecret{Name: "token"},
 			},
 		},
 	}
@@ -755,7 +755,7 @@ func TestConvertWithMissingName(t *testing.T) {
 			URL:   createSimpleUrlDefinition(),
 			Group: "development",
 			Auth: manifest.Auth{
-				Token: manifest.AuthSecret{Name: "token"},
+				Token: &manifest.AuthSecret{Name: "token"},
 			},
 		},
 	}
@@ -828,7 +828,7 @@ func TestConvertProjects(t *testing.T) {
 			URL:   createSimpleUrlDefinition(),
 			Group: environmentGroup,
 			Auth: manifest.Auth{
-				Token: manifest.AuthSecret{Name: "token"},
+				Token: &manifest.AuthSecret{Name: "token"},
 			},
 		},
 		environmentName2: manifest.EnvironmentDefinition{
@@ -836,7 +836,7 @@ func TestConvertProjects(t *testing.T) {
 			URL:   createSimpleUrlDefinition(),
 			Group: environmentGroup2,
 			Auth: manifest.Auth{
-				Token: manifest.AuthSecret{Name: "token"},
+				Token: &manifest.AuthSecret{Name: "token"},
 			},
 		},
 	}
@@ -1282,7 +1282,7 @@ func TestNewEnvironmentDefinitionFromV1(t *testing.T) {
 				URL:   newUrlDefinitionFromV1(tt.args.env),
 				Group: tt.args.group,
 				Auth: manifest.Auth{
-					Token: manifest.AuthSecret{Name: tt.args.env.GetTokenName()},
+					Token: &manifest.AuthSecret{Name: tt.args.env.GetTokenName()},
 				},
 			}); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewEnvironmentDefinitionFromV1() = %v, want %v", got, tt.want)
@@ -1434,7 +1434,7 @@ func createEnvEnvironmentDefinition() manifest.EnvironmentDefinition {
 		},
 		Group: "group",
 		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "NAME"},
+			Token: &manifest.AuthSecret{Name: "NAME"},
 		},
 	}
 }
@@ -1448,7 +1448,7 @@ func createValueEnvironmentDefinition() manifest.EnvironmentDefinition {
 		},
 		Group: "group",
 		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "NAME"},
+			Token: &manifest.AuthSecret{Name: "NAME"},
 		},
 	}
 }
