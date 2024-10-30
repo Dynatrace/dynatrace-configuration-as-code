@@ -59,15 +59,7 @@ func Delete(environments manifest.Environments, entriesToDelete delete.DeleteEnt
 			string(config.SchedulingRule):   config.SchedulingRule,
 		}
 
-		deleteClients := delete.ClientSet{
-			Classic:    clientSet.Classic(),
-			Settings:   clientSet.Settings(),
-			Automation: clientSet.Automation(),
-			Buckets:    clientSet.Bucket(),
-			Documents:  clientSet.Document(),
-		}
-
-		if err := delete.Configs(ctx, deleteClients, classicAPIs, automationAPIs, entriesToDelete); err != nil {
+		if err := delete.Configs(ctx, *clientSet, classicAPIs, automationAPIs, entriesToDelete); err != nil {
 			log.Error("Failed to delete all configurations from environment %q - check log for details", env.Name)
 			envsWithDeleteErrs = append(envsWithDeleteErrs, env.Name)
 		}

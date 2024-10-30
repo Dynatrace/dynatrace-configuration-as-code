@@ -76,30 +76,15 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) 
 func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) error {
 	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
-	deleteClients, err := getClientSet(ctx, env)
+	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create a client for env `%s` due to the following error: %w", env.Name, err)
 	}
 
 	log.WithCtxFields(ctx).Info("Deleting configs for environment `%s`", env.Name)
 
-	if err := delete.All(ctx, deleteClients, apis); err != nil {
+	if err := delete.All(ctx, *clients, apis); err != nil {
 		log.Error("Encountered errors while puring configurations from environment %s, further manual cleanup may be needed - check logs for details.", env.Name)
 	}
 	return nil
-}
-
-func getClientSet(ctx context.Context, env manifest.EnvironmentDefinition) (delete.ClientSet, error) {
-	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
-	if err != nil {
-		return delete.ClientSet{}, fmt.Errorf("failed to create a client for env `%s` due to the following error: %w", env.Name, err)
-	}
-
-	return delete.ClientSet{
-		Classic:    clients.Classic(),
-		Settings:   clients.Settings(),
-		Automation: clients.Automation(),
-		Buckets:    clients.Bucket(),
-		Documents:  clients.Document(),
-	}, nil
 }
