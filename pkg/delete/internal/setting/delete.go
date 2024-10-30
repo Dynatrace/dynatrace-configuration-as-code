@@ -50,7 +50,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 			continue
 		}
 
-		objects, err := c.List(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
+		settingsObjects, err := c.List(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
 		if err != nil {
 			logger.Error("Could not fetch settings object: %v", err)
 			deleteErrs++
@@ -66,16 +66,16 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 			continue
 		}
 
-		for _, obj := range objects {
-			if obj.ModificationInfo != nil && !obj.ModificationInfo.Deletable {
+		for _, settingsObject := range settingsObjects {
+			if !settingsObject.IsDeletable() {
 				logger.WithFields(field.F("object", obj)).Warn("Requested settings object with ID %s is not deletable.", obj.ObjectId)
 				continue
 			}
 
-			logger.Debug("Deleting settings object with objectId %q.", obj.ObjectId)
-			err := c.Delete(ctx, obj.ObjectId)
+			logger.Debug("Deleting settings object with objectId %q.", settingsObject.ObjectId)
+			err := c.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
-				logger.Error("Failed to delete settings object with object ID %s: %v", obj.ObjectId, err)
+				logger.Error("Failed to delete settings object with object ID %s: %v", settingsObject.ObjectId, err)
 				deleteErrs++
 			}
 		}
@@ -129,23 +129,24 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 		logger := logger.WithFields(field.Type(s))
 		logger.Info("Collecting objects of type %q...", s)
 
-		settings, err := c.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
+		settingsObjects, err := c.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
 			logger.WithFields(field.Error(err)).Error("Failed to collect object for schema %q: %v", s, err)
 			errs++
 			continue
 		}
 
-		logger.Info("Deleting %d objects of type %q...", len(settings), s)
-		for _, setting := range settings {
-			if setting.ModificationInfo != nil && !setting.ModificationInfo.Deletable {
+		logger.Info("Deleting %d objects of type %q...", len(settingsObjects), s)
+		for _, settingsObject := range settingsObjects {
+			if !settingsObject.IsDeletable() {
+				//@Reviewer should here also be a log as it is in the Delete() method
 				continue
 			}
 
-			logger.WithFields(field.F("object", setting)).Debug("Deleting settings object with objectId %q...", setting.ObjectId)
-			err := c.Delete(ctx, setting.ObjectId)
+			logger.WithFields(field.F("object", settingsObject)).Debug("Deleting settingsObjects object with objectId %q...", settingsObject.ObjectId)
+			err := c.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
-				logger.Error("Failed to delete settings object with object ID %s: %v", setting.ObjectId, err)
+				logger.Error("Failed to delete settingsObjects object with object ID %s: %v", settingsObject.ObjectId, err)
 				errs++
 			}
 		}
