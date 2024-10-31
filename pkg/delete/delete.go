@@ -19,6 +19,7 @@ package delete
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -41,76 +42,71 @@ type DeleteEntries = map[configurationType][]pointer.DeletePointer
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
 func Configs(ctx context.Context, clients client.ClientSet, _ api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) error {
-	copiedDeleteEntries := make(DeleteEntries)
-	for k, v := range entriesToDelete {
-		copiedDeleteEntries[k] = v
-	}
-
-	var deleteErrors int
-
-	// Delete automation resources (in the specified order)
-	automationTypeOrder := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
-	for _, key := range automationTypeOrder {
-		entries := copiedDeleteEntries[string(key)]
-		if clients.AutClient == nil {
-			log.WithCtxFields(ctx).WithFields(field.Type(key)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
-			delete(copiedDeleteEntries, string(key))
-			continue
-		}
-		err := automation.Delete(ctx, clients.AutClient, automationResources[string(key)], entries)
-		if err != nil {
-			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
-			deleteErrors += 1
-		}
-		delete(copiedDeleteEntries, string(key))
-	}
+	remainingEntriesToDelete, errCount := deleteAutomationConfigs(ctx, clients.AutClient, entriesToDelete)
 
 	//  Dashboard share settings cannot be deleted
-	if _, ok := copiedDeleteEntries[api.DashboardShareSettings]; ok {
+	if _, ok := remainingEntriesToDelete[api.DashboardShareSettings]; ok {
 		log.Warn("Classic config of type %s cannot be deleted. Note, that they can be removed by deleting the associated dashboard.", api.DashboardShareSettings)
-		delete(copiedDeleteEntries, api.DashboardShareSettings)
+		delete(remainingEntriesToDelete, api.DashboardShareSettings)
 
 	}
 
 	// Delete rest of config types
-	for t, entries := range copiedDeleteEntries {
-		var err error
-		if _, ok := api.NewAPIs()[t]; ok {
-			if clients.ClassicClient == nil {
-				log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Classic configuration(s) as API client was unavailable.", len(entries))
-				continue
-			}
-			err = classic.Delete(ctx, clients.ClassicClient, entries)
-		} else if t == "bucket" {
-			if clients.BucketClient == nil {
-				log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
-				continue
-			}
-			err = bucket.Delete(ctx, clients.BucketClient, entries)
-		} else if t == "document" {
-			if featureflags.Temporary[featureflags.Documents].Enabled() && featureflags.Temporary[featureflags.DeleteDocuments].Enabled() {
-				if clients.DocumentClient == nil {
-					log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
-					continue
-				}
-				err = document.Delete(ctx, clients.DocumentClient, entries)
-			}
-		} else {
-			if clients.SettingsClient == nil {
-				log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Settings configuration(s) as API client was unavailable.", len(entries))
-				continue
-			}
-			err = setting.Delete(ctx, clients.SettingsClient, entries)
-		}
-
-		if err != nil {
+	for t, entries := range remainingEntriesToDelete {
+		if err := deleteOtherConfigs(ctx, clients, t, entries); err != nil {
 			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
-			deleteErrors += 1
+			errCount += 1
 		}
 	}
 
-	if deleteErrors > 0 {
-		return fmt.Errorf("encountered %d errors", deleteErrors)
+	if errCount > 0 {
+		return fmt.Errorf("encountered %d errors", errCount)
+	}
+	return nil
+}
+
+func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationClient, allEntries DeleteEntries) (remainingDeleteEntries DeleteEntries, errCount int) {
+	automationTypeOrder := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
+	remainingDeleteEntries = maps.Clone(allEntries)
+	for _, key := range automationTypeOrder {
+		entries := allEntries[string(key)]
+		delete(remainingDeleteEntries, string(key))
+		if autClient == nil {
+			log.WithCtxFields(ctx).WithFields(field.Type(key)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
+			continue
+		}
+		err := automation.Delete(ctx, autClient, key, entries)
+		if err != nil {
+			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
+			errCount += 1
+		}
+	}
+	return
+}
+
+func deleteOtherConfigs(ctx context.Context, clients client.ClientSet, t string, entries []pointer.DeletePointer) error {
+	if _, ok := api.NewAPIs()[t]; ok {
+		if clients.ClassicClient != nil {
+			return classic.Delete(ctx, clients.ClassicClient, entries)
+		}
+		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Classic configuration(s) as API client was unavailable.", len(entries))
+	} else if t == "bucket" {
+		if clients.BucketClient != nil {
+			return bucket.Delete(ctx, clients.BucketClient, entries)
+		}
+		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
+	} else if t == "document" {
+		if featureflags.Temporary[featureflags.Documents].Enabled() && featureflags.Temporary[featureflags.DeleteDocuments].Enabled() {
+			if clients.DocumentClient != nil {
+				return document.Delete(ctx, clients.DocumentClient, entries)
+			}
+			log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
+		}
+	} else {
+		if clients.SettingsClient != nil {
+			return setting.Delete(ctx, clients.SettingsClient, entries)
+		}
+		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Settings configuration(s) as API client was unavailable.", len(entries))
 	}
 	return nil
 }
