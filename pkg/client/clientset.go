@@ -251,10 +251,10 @@ func validateURL(dtURL string) error {
 func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
 	var (
 		classicClient, client *corerest.Client
-		bucketClient          *buckets.Client
-		autClient             *automation.Client
-		documentClient        *documents.Client
-		openPipelineClient    *openpipeline.Client
+		bucketClient          BucketClient
+		autClient             AutomationClient
+		documentClient        DocumentClient
+		openPipelineClient    OpenPipelineClient
 		err                   error
 		classicUrl            string
 	)
