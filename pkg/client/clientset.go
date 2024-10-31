@@ -45,11 +45,13 @@ import (
 )
 
 var (
-	_ SettingsClient  = (*dtclient.DynatraceClient)(nil)
-	_ ConfigClient    = (*dtclient.DynatraceClient)(nil)
-	_ DynatraceClient = (*dtclient.DynatraceClient)(nil)
-	_ DynatraceClient = (*dtclient.DummyClient)(nil)
+	_ SettingsClient = (*dtclient.DynatraceClient)(nil)
+	_ ConfigClient   = (*dtclient.DynatraceClient)(nil)
+	_ SettingsClient = (*dtclient.DummyClient)(nil)
+	_ ConfigClient   = (*dtclient.DummyClient)(nil)
 )
+
+//go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client ConfigClient
 
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
 // Each config endpoint is described by an [API] object to describe endpoints, structure, and behavior.
@@ -95,6 +97,8 @@ type ConfigClient interface {
 	ConfigExistsByName(ctx context.Context, a api.API, name string) (exists bool, id string, err error)
 }
 
+//go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client SettingsClient
+
 // SettingsClient is the abstraction layer for CRUD operations on the Dynatrace Settings API.
 // Its design is intentionally not dependent on Monaco objects.
 //
@@ -129,21 +133,6 @@ type SettingsClient interface {
 
 	// DeleteSettings deletes a settings object giving its object ID
 	DeleteSettings(context.Context, string) error
-}
-
-//go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client DynatraceClient
-
-// DynatraceClient provides the functionality for performing basic CRUD operations on any Dynatrace API
-// supported by monaco.
-// It encapsulates the configuration-specific inconsistencies of certain APIs in one place to provide
-// a common interface to work with. After all: A user of Client shouldn't care about the
-// implementation details of each individual Dynatrace API.
-// Its design is intentionally not dependent on the Config and Environment interfaces included in monaco.
-// This makes sure, that Client can be used as a base for future tooling, which relies on
-// a standardized way to access Dynatrace APIs.
-type DynatraceClient interface {
-	ConfigClient
-	SettingsClient
 }
 
 type AutomationClient interface {

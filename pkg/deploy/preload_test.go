@@ -318,7 +318,7 @@ func Test_gatherPreloadConfigTypeEntries_NoEntryIfEnvironmentMissingClient(t *te
 }
 
 func Test_ScopedConfigsAreNotCached(t *testing.T) {
-	dtClient := client.NewMockDynatraceClient(gomock.NewController(t)) //<- dont expect any call(s) on the mocked client
+	dtClient := client.NewMockConfigClient(gomock.NewController(t)) //<- dont expect any call(s) on the mocked client
 	type args struct {
 		projects           []project.Project
 		environmentClients dynatrace.EnvironmentClients
@@ -350,7 +350,7 @@ func Test_ScopedConfigsAreNotCached(t *testing.T) {
 						},
 					},
 				},
-				environmentClients: dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: &client.ClientSet{ClassicClient: dtClient, SettingsClient: dtClient}},
+				environmentClients: dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: &client.ClientSet{ClassicClient: dtClient}},
 			},
 		},
 	}
