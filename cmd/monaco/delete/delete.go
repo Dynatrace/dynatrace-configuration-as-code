@@ -21,7 +21,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
@@ -52,14 +51,7 @@ func Delete(environments manifest.Environments, entriesToDelete delete.DeleteEnt
 
 		log.WithCtxFields(ctx).Info("Deleting configs for environment %q...", env.Name)
 
-		classicAPIs := api.NewAPIs()
-		automationAPIs := map[string]config.AutomationResource{
-			string(config.Workflow):         config.Workflow,
-			string(config.BusinessCalendar): config.BusinessCalendar,
-			string(config.SchedulingRule):   config.SchedulingRule,
-		}
-
-		if err := delete.Configs(ctx, *clientSet, classicAPIs, automationAPIs, entriesToDelete); err != nil {
+		if err := delete.Configs(ctx, *clientSet, entriesToDelete); err != nil {
 			log.Error("Failed to delete all configurations from environment %q - check log for details", env.Name)
 			envsWithDeleteErrs = append(envsWithDeleteErrs, env.Name)
 		}

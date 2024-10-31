@@ -41,7 +41,7 @@ type configurationType = string
 type DeleteEntries = map[configurationType][]pointer.DeletePointer
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
-func Configs(ctx context.Context, clients client.ClientSet, _ api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) error {
+func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete DeleteEntries) error {
 	remainingEntriesToDelete, errCount := deleteAutomationConfigs(ctx, clients.AutClient, entriesToDelete)
 
 	//  Dashboard share settings cannot be deleted
