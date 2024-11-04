@@ -84,31 +84,31 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	}
 
 	// filter account
-	accs := mani.Accounts
+	accounts := mani.Accounts
 	if opts.accountName != "" {
-		if acc, f := accs[opts.accountName]; !f {
+		acc, ok := accounts[opts.accountName]
+		if !ok {
 			return fmt.Errorf("required account %q was not found in manifest %q", opts.accountName, opts.manifestName)
-		} else {
-			clear(accs)
-			accs[acc.Name] = acc
 		}
+		clear(accounts)
+		accounts[acc.Name] = acc
 	}
 
 	// filter project
-	projs := mani.Projects
+	projects := mani.Projects
 	if opts.project != "" {
-		if proj, f := projs[opts.project]; !f {
-			return fmt.Errorf("required project %q was not found in manifest %q", opts.accountName, opts.manifestName)
-		} else {
-			clear(projs)
-			projs[proj.Name] = proj
+		proj, ok := projects[opts.project]
+		if !ok {
+			return fmt.Errorf("required project %q was not found in manifest %q", opts.project, opts.manifestName)
 		}
+		clear(projects)
+		projects[proj.Name] = proj
 	}
 
-	log.Debug("Deploying to accounts: %q", maps.Keys(accs))
-	log.Debug("Deploying projects: %q", maps.Keys(projs))
+	log.Debug("Deploying to accounts: %q", maps.Keys(accounts))
+	log.Debug("Deploying projects: %q", maps.Keys(projects))
 
-	resources, err := loadResources(fs, opts.workingDir, projs)
+	resources, err := loadResources(fs, opts.workingDir, projects)
 	if err != nil {
 		return fmt.Errorf("failed to load all account management resources: %w", err)
 	}
@@ -118,7 +118,7 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 		return nil
 	}
 
-	accountClients, err := dynatrace.CreateAccountClients(accs)
+	accountClients, err := dynatrace.CreateAccountClients(accounts)
 	if err != nil {
 		return fmt.Errorf("failed to create account clients: %w", err)
 	}
