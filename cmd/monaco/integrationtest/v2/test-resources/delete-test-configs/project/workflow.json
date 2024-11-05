@@ -18,7 +18,7 @@
   "description": "",
   "labels": {},
   "version": 2,
-  "actor": "",
+  "actor": "{{.actor}}",
   "owner": "be82e8ff-b418-4f8b-a07c-e8f09988af81",
   "isPrivate": false,
   "triggerType": "Manual",
