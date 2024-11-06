@@ -2,7 +2,7 @@ module github.com/dynatrace/dynatrace-configuration-as-code/v2
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/dynatrace/dynatrace-configuration-as-code-core v0.7.1-0.20241015144435-8f403760a264
+	github.com/dynatrace/dynatrace-configuration-as-code-core v0.7.1-0.20241120133258-d514d28440ee
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/go-cmp v0.6.0
@@ -34,7 +34,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
-	golang.org/x/time v0.7.0 // indirect
+	golang.org/x/time v0.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
