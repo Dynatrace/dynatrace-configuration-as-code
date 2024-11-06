@@ -46,6 +46,7 @@ func TestDryRun(t *testing.T) {
 		}))
 		defer server.Close()
 
+		// ensure all URLs used in the manifest point at the test server
 		t.Setenv("URL_ENVIRONMENT_1", server.URL)
 		t.Setenv("PLATFORM_URL_ENVIRONMENT_2", server.URL)
 		t.Setenv("OAUTH_TOKEN_ENDPOINT", server.URL)
