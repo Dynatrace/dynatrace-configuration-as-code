@@ -53,7 +53,7 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 
 	// Delete rest of config types
 	for t, entries := range remainingEntriesToDelete {
-		if err := deleteOtherConfigs(ctx, clients, t, entries); err != nil {
+		if err := deleteConfig(ctx, clients, t, entries); err != nil {
 			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
 			errCount += 1
 		}
@@ -65,9 +65,10 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 	return nil
 }
 
-func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationClient, allEntries DeleteEntries) (remainingDeleteEntries DeleteEntries, errCount int) {
+func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationClient, allEntries DeleteEntries) (DeleteEntries, int) {
+	remainingDeleteEntries := maps.Clone(allEntries)
+	errCount := 0
 	automationTypeOrder := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
-	remainingDeleteEntries = maps.Clone(allEntries)
 	for _, key := range automationTypeOrder {
 		entries := allEntries[string(key)]
 		delete(remainingDeleteEntries, string(key))
@@ -81,10 +82,10 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 			errCount += 1
 		}
 	}
-	return
+	return remainingDeleteEntries, errCount
 }
 
-func deleteOtherConfigs(ctx context.Context, clients client.ClientSet, t string, entries []pointer.DeletePointer) error {
+func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entries []pointer.DeletePointer) error {
 	if _, ok := api.NewAPIs()[t]; ok {
 		if clients.ClassicClient != nil {
 			return classic.Delete(ctx, clients.ClassicClient, entries)
@@ -118,34 +119,34 @@ func deleteOtherConfigs(ctx context.Context, clients client.ClientSet, t string,
 //   - ctx (context.Context): The context in which the function operates.
 //   - clients (ClientSet): A set of API clients used to collect and delete configurations from an environment.
 func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
-	errs := 0
+	errCount := 0
 
 	if clients.ClassicClient == nil {
 		log.Warn("Skipped deletion of classic configurations as API client was unavailable.")
 	} else if err := classic.DeleteAll(ctx, clients.ClassicClient, apis); err != nil {
 		log.Error("Failed to delete all classic API configurations: %v", err)
-		errs++
+		errCount++
 	}
 
 	if clients.SettingsClient == nil {
 		log.Warn("Skipped deletion of settings configurations as API client was unavailable.")
 	} else if err := setting.DeleteAll(ctx, clients.SettingsClient); err != nil {
 		log.Error("Failed to delete all Settings 2.0 objects: %v", err)
-		errs++
+		errCount++
 	}
 
 	if clients.AutClient == nil {
 		log.Warn("Skipped deletion of Automation configurations as API client was unavailable.")
 	} else if err := automation.DeleteAll(ctx, clients.AutClient); err != nil {
 		log.Error("Failed to delete all Automation configurations: %v", err)
-		errs++
+		errCount++
 	}
 
 	if clients.BucketClient == nil {
 		log.Warn("Skipped deletion of Grail Bucket configurations as API client was unavailable.")
 	} else if err := bucket.DeleteAll(ctx, clients.BucketClient); err != nil {
 		log.Error("Failed to delete all Grail Bucket configurations: %v", err)
-		errs++
+		errCount++
 	}
 
 	if featureflags.Temporary[featureflags.Documents].Enabled() && featureflags.Temporary[featureflags.DeleteDocuments].Enabled() {
@@ -153,12 +154,12 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 			log.Warn("Skipped deletion of Documents configurations as appropriate client was unavailable.")
 		} else if err := document.DeleteAll(ctx, clients.DocumentClient); err != nil {
 			log.Error("Failed to delete all Document configurations: %v", err)
-			errs++
+			errCount++
 		}
 	}
 
-	if errs > 0 {
-		return fmt.Errorf("failed to delete all configurations for %d types", errs)
+	if errCount > 0 {
+		return fmt.Errorf("failed to delete all configurations for %d types", errCount)
 	}
 	return nil
 }
