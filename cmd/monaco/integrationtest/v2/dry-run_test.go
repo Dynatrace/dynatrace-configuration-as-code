@@ -19,12 +19,15 @@
 package v2
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDryRun(t *testing.T) {
@@ -38,6 +41,15 @@ func TestDryRun(t *testing.T) {
 	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			t.Fatalf("unexpected HTTP request made during dry run: %s", req.RequestURI)
+		}))
+		defer server.Close()
+
+		t.Setenv("URL_ENVIRONMENT_1", server.URL)
+		t.Setenv("PLATFORM_URL_ENVIRONMENT_2", server.URL)
+		t.Setenv("OAUTH_TOKEN_ENDPOINT", server.URL)
+
 		// This causes a POST for all configs:
 		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
 		assert.NoError(t, err)
