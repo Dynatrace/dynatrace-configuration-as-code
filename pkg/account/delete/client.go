@@ -19,11 +19,13 @@ package delete
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"golang.org/x/net/context"
 	"io"
 	"net/http"
+
+	"golang.org/x/net/context"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 )
 
 // Client for deleting resources from the Account Management API
@@ -119,7 +121,7 @@ func (c *AccountAPIClient) deletePolicy(ctx context.Context, levelType string, l
 		return err
 	}
 
-	resp, err := c.client.PolicyManagementAPI.DeleteLevelPolicy(ctx, levelType, levelID, uuid).Force(true).Execute()
+	resp, err := c.client.PolicyManagementAPI.DeleteLevelPolicy(ctx, uuid, levelID, levelType).Force(true).Execute()
 	defer closeResponseBody(resp)
 	if resp != nil && resp.StatusCode == 404 {
 		return NotFoundErr
@@ -131,7 +133,7 @@ func (c *AccountAPIClient) deletePolicy(ctx context.Context, levelType string, l
 }
 
 func (c *AccountAPIClient) getPolicyID(ctx context.Context, levelType, levelID, name string) (string, error) {
-	policies, resp, err := c.client.PolicyManagementAPI.GetLevelPolicies(ctx, levelType, levelID).Execute()
+	policies, resp, err := c.client.PolicyManagementAPI.GetLevelPolicies(ctx, levelID, levelType).Execute()
 	defer closeResponseBody(resp)
 	if err := handleClientResponseError(resp, err, fmt.Sprintf("failed to fetch UUID for policy %q", name)); err != nil {
 		return "", err

@@ -22,12 +22,13 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/go-logr/logr"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/go-logr/logr"
 )
 
 type (
@@ -56,7 +57,7 @@ func (d *accountManagementClient) getAccountInfo() account.AccountInfo {
 func (d *accountManagementClient) getGlobalPolicies(ctx context.Context) (map[string]remoteId, error) {
 	globalPolicies, resp, err := d.client.PolicyManagementAPI.GetLevelPolicies(ctx, "global", "global").Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable get global policies"); err != nil {
+	if err = handleClientResponseError(resp, err, "unable get global policies"); err != nil {
 		return nil, err
 	}
 
@@ -70,7 +71,7 @@ func (d *accountManagementClient) getGlobalPolicies(ctx context.Context) (map[st
 func (d *accountManagementClient) getAllGroups(ctx context.Context) (map[string]remoteId, error) {
 	groups, resp, err := d.client.GroupManagementAPI.GetGroups(ctx, d.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable get all groups for account "+d.accountInfo.AccountUUID); err != nil {
+	if err = handleClientResponseError(resp, err, "unable get all groups for account "+d.accountInfo.AccountUUID); err != nil {
 		return nil, err
 	}
 	result := make(map[string]remoteId)
@@ -84,7 +85,7 @@ func (d *accountManagementClient) getAllGroups(ctx context.Context) (map[string]
 func (d *accountManagementClient) getManagementZones(ctx context.Context) ([]ManagementZone, error) {
 	envResources, resp, err := d.client.EnvironmentManagementAPI.GetEnvironmentResources(ctx, d.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to get environment resources for account "+d.accountInfo.AccountUUID); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to get environment resources for account "+d.accountInfo.AccountUUID); err != nil {
 		return nil, err
 	}
 	if err != nil {
@@ -100,18 +101,18 @@ func (d *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 	if policyId != "" {
 
 		logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update policy with origin object ID (UUID) " + policyId)
-		_, resp, err := d.client.PolicyManagementAPI.UpdateLevelPolicy(ctx, policyLevel, policyLevelId, policyId).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
+		_, resp, err := d.client.PolicyManagementAPI.UpdateLevelPolicy(ctx, policyId, policyLevelId, policyLevel).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
 		defer closeResponseBody(resp)
-		if err = d.handleClientResponseError(resp, err, "unable to update policy with UUID: "+policyId); err != nil {
+		if err = handleClientResponseError(resp, err, "unable to update policy with UUID: "+policyId); err != nil {
 			return "", err
 		}
 		return policyId, nil
 	}
 
 	logr.FromContextOrDiscard(ctx).V(1).Info("Trying to get policy with name " + policy.Name)
-	result, resp, err := d.client.PolicyManagementAPI.GetLevelPolicies(ctx, policyLevel, policyLevelId).Name(policy.Name).Execute()
+	result, resp, err := d.client.PolicyManagementAPI.GetLevelPolicies(ctx, policyLevelId, policyLevel).Name(policy.Name).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to get policy with name: "+policy.Name); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to get policy with name: "+policy.Name); err != nil {
 		return "", err
 	}
 
@@ -120,9 +121,9 @@ func (d *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 	if len(existingPolicies) == 0 {
 		logr.FromContextOrDiscard(ctx).V(1).Info("No policy with name " + policy.Name + " found. Creating a new one")
 		var createdPolicy *accountmanagement.LevelPolicyDto
-		createdPolicy, resp, err = d.client.PolicyManagementAPI.CreateLevelPolicy(ctx, policyLevel, policyLevelId).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
+		createdPolicy, resp, err = d.client.PolicyManagementAPI.CreateLevelPolicy(ctx, policyLevelId, policyLevel).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
 		defer closeResponseBody(resp)
-		if err = d.handleClientResponseError(resp, err, "unable to create policy with name: "+policy.Name); err != nil {
+		if err = handleClientResponseError(resp, err, "unable to create policy with name: "+policy.Name); err != nil {
 			return "", err
 		}
 		return createdPolicy.GetUuid(), nil
@@ -133,9 +134,9 @@ func (d *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 	}
 
 	logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update existing policy with name " + policy.Name + " and UUID " + existingPolicies[0].GetUuid())
-	_, resp, err = d.client.PolicyManagementAPI.UpdateLevelPolicy(ctx, policyLevel, policyLevelId, existingPolicies[0].GetUuid()).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
+	_, resp, err = d.client.PolicyManagementAPI.UpdateLevelPolicy(ctx, existingPolicies[0].GetUuid(), policyLevelId, policyLevel).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to update policy with name: "+policy.Name); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to update policy with name: "+policy.Name); err != nil {
 		return "", err
 	}
 	return existingPolicies[0].GetUuid(), nil
@@ -171,7 +172,7 @@ func (d *accountManagementClient) upsertGroup(ctx context.Context, groupId strin
 func (d *accountManagementClient) getGroupByID(ctx context.Context, groupID string) (*accountmanagement.GetGroupDto, error) {
 	result, resp, err := d.client.GroupManagementAPI.GetGroups(ctx, d.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to get group with ID: "+groupID); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to get group with ID: "+groupID); err != nil {
 		return nil, err
 	}
 
@@ -187,7 +188,7 @@ func (d *accountManagementClient) getGroupByID(ctx context.Context, groupID stri
 func (d *accountManagementClient) getGroupsByName(ctx context.Context, name string) ([]accountmanagement.GetGroupDto, error) {
 	groupList, resp, err := d.client.GroupManagementAPI.GetGroups(ctx, d.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to get group with name: "+name); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to get group with name: "+name); err != nil {
 		return nil, err
 	}
 
@@ -205,7 +206,7 @@ func (d *accountManagementClient) createGroup(ctx context.Context, group Group) 
 	var createdGroups []accountmanagement.GetGroupDto
 	createdGroups, resp, err := d.client.GroupManagementAPI.CreateGroups(ctx, d.accountInfo.AccountUUID).PutGroupDto([]accountmanagement.PutGroupDto{group}).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to create group with name: "+group.Name); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to create group with name: "+group.Name); err != nil {
 		return "", err
 	}
 	if len(createdGroups) < 1 {
@@ -223,7 +224,7 @@ func (d *accountManagementClient) updateExistingGroup(ctx context.Context, exist
 	resp, err := d.client.GroupManagementAPI.EditGroup(ctx, d.accountInfo.AccountUUID, existingGroup.GetUuid()).PutGroupDto(group).Execute()
 	defer closeResponseBody(resp)
 
-	if err = d.handleClientResponseError(resp, err, "unable to update group with UUID: "+existingGroup.GetUuid()); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to update group with UUID: "+existingGroup.GetUuid()); err != nil {
 		return "", err
 	}
 	return existingGroup.GetUuid(), nil
@@ -232,14 +233,14 @@ func (d *accountManagementClient) updateExistingGroup(ctx context.Context, exist
 func (d *accountManagementClient) upsertUser(ctx context.Context, userId string) (remoteId, error) {
 	_, resp, err := d.client.UserManagementAPI.GetUserGroups(ctx, d.accountInfo.AccountUUID, userId).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to create user with email: "+userId); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to create user with email: "+userId); err != nil {
 		return "", err
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
 		resp, err = d.client.UserManagementAPI.CreateUserForAccount(ctx, d.accountInfo.AccountUUID).UserEmailDto(accountmanagement.UserEmailDto{Email: userId}).Execute()
 		defer closeResponseBody(resp)
-		if err = d.handleClientResponseError(resp, err, "unable to create user with email: "+userId); err != nil {
+		if err = handleClientResponseError(resp, err, "unable to create user with email: "+userId); err != nil {
 			return "", err
 		}
 
@@ -260,7 +261,7 @@ func (d *accountManagementClient) updatePermissions(ctx context.Context, groupId
 
 	resp, err := d.client.PermissionManagementAPI.OverwriteGroupPermissions(ctx, d.accountInfo.AccountUUID, groupId).PermissionsDto(permissions).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to update permissions of group with UUID "+groupId); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to update permissions of group with UUID "+groupId); err != nil {
 		return err
 	}
 
@@ -276,9 +277,9 @@ func (d *accountManagementClient) updateAccountPolicyBindings(ctx context.Contex
 	}
 	data := accountmanagement.PolicyUuidsDto{PolicyUuids: policyIds}
 
-	resp, err := d.client.PolicyManagementAPI.UpdatePolicyBindingsToGroup(ctx, "account", d.accountInfo.AccountUUID, groupId).PolicyUuidsDto(data).Execute()
+	resp, err := d.client.PolicyManagementAPI.UpdatePolicyBindingsToGroup(ctx, groupId, d.accountInfo.AccountUUID, "account").PolicyUuidsDto(data).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to update policy binding between group with UUID "+groupId+" and policies with UUIDs "+fmt.Sprintf("%v", policyIds)); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to update policy binding between group with UUID "+groupId+" and policies with UUIDs "+fmt.Sprintf("%v", policyIds)); err != nil {
 		return err
 	}
 
@@ -296,9 +297,9 @@ func (d *accountManagementClient) updateEnvironmentPolicyBindings(ctx context.Co
 		policyIds = []string{}
 	}
 	data := accountmanagement.PolicyUuidsDto{PolicyUuids: policyIds}
-	resp, err := d.client.PolicyManagementAPI.UpdatePolicyBindingsToGroup(ctx, "environment", envName, groupId).PolicyUuidsDto(data).Execute()
+	resp, err := d.client.PolicyManagementAPI.UpdatePolicyBindingsToGroup(ctx, groupId, envName, "environment").PolicyUuidsDto(data).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to update policy binding between group with UUID "+groupId+" and policies with UUIDs "+fmt.Sprintf("%v", policyIds)); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to update policy binding between group with UUID "+groupId+" and policies with UUIDs "+fmt.Sprintf("%v", policyIds)); err != nil {
 		return err
 	}
 	return nil
@@ -307,20 +308,20 @@ func (d *accountManagementClient) updateEnvironmentPolicyBindings(ctx context.Co
 func (d *accountManagementClient) deleteAllEnvironmentPolicyBindings(ctx context.Context, groupId string) error {
 	environments, resp, err := d.client.EnvironmentManagementAPI.GetEnvironments(ctx, d.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to get all environments for account with id"+d.accountInfo.AccountUUID); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to get all environments for account with id"+d.accountInfo.AccountUUID); err != nil {
 		return err
 	}
 
 	for _, e := range environments.Data {
-		policies, resp, err := d.client.PolicyManagementAPI.GetPolicyUuidsBindings(ctx, "environment", e.Id, groupId).Execute()
+		policies, resp, err := d.client.PolicyManagementAPI.GetPolicyUuidsBindings(ctx, groupId, e.Id, "environment").Execute()
 		closeResponseBody(resp)
-		if err = d.handleClientResponseError(resp, err, "unable to list all environments policy bindings for account with UUID "+d.accountInfo.AccountUUID+" and group with UUID "+groupId); err != nil {
+		if err = handleClientResponseError(resp, err, "unable to list all environments policy bindings for account with UUID "+d.accountInfo.AccountUUID+" and group with UUID "+groupId); err != nil {
 			return err
 		}
 		for _, pol := range policies.PolicyUuids {
-			resp, err = d.client.PolicyManagementAPI.DeleteLevelPolicyBindingsForPolicyAndGroup(ctx, "environment", e.Id, pol, groupId).ForceMultiple(true).Execute()
+			resp, err = d.client.PolicyManagementAPI.DeleteLevelPolicyBindingsForPolicyAndGroup(ctx, groupId, pol, e.Id, "environment").ForceMultiple(true).Execute()
 			closeResponseBody(resp)
-			if err = d.handleClientResponseError(resp, err, "unable to delete all environments policy bindings for account with UUID "+d.accountInfo.AccountUUID+" and group with UUID "+groupId); err != nil {
+			if err = handleClientResponseError(resp, err, "unable to delete all environments policy bindings for account with UUID "+d.accountInfo.AccountUUID+" and group with UUID "+groupId); err != nil {
 				return err
 			}
 		}
@@ -337,14 +338,14 @@ func (d *accountManagementClient) updateGroupBindings(ctx context.Context, userI
 	}
 	resp, err := d.client.UserManagementAPI.ReplaceUserGroups(ctx, d.accountInfo.AccountUUID, userId).RequestBody(groupIds).Execute()
 	defer closeResponseBody(resp)
-	if err = d.handleClientResponseError(resp, err, "unable to add user "+userId+" to groups "+fmt.Sprintf("%v", groupIds)); err != nil {
+	if err = handleClientResponseError(resp, err, "unable to add user "+userId+" to groups "+fmt.Sprintf("%v", groupIds)); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (d *accountManagementClient) handleClientResponseError(resp *http.Response, clientErr error, errMessage string) error {
-	if clientErr != nil && resp == nil {
+func handleClientResponseError(resp *http.Response, clientErr error, errMessage string) error {
+	if clientErr != nil && (resp == nil || rest.IsSuccess(resp)) {
 		return fmt.Errorf(errMessage+": %w", clientErr)
 	}
 
