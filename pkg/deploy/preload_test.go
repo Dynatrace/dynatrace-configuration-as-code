@@ -402,17 +402,17 @@ func Test_gatherPreloadConfigTypeEntries_WithSkipParam(t *testing.T) {
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: &client.ClientSet{DTClient: dtClientEnv1}},
+		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1},
 	)
 
 	expectedEntries := []preloadConfigTypeEntry{
 		{
 			configType: config.ClassicApiType{Api: "dashboard-share-settings"},
-			client:     dtClientEnv1,
+			clientset:  clientsetEnv1,
 		},
 		{
 			configType: config.ClassicApiType{Api: "management-zone"},
-			client:     dtClientEnv1,
+			clientset:  clientsetEnv1,
 		},
 	}
 
