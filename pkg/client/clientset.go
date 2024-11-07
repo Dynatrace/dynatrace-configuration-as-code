@@ -182,10 +182,13 @@ type ClientSet struct {
 
 	// autClient is the client capable of updating or creating automation API configs
 	AutClient AutomationClient
+
 	// bucketClient is the client capable of updating or creating Grail Bucket configs
 	BucketClient BucketClient
+
 	// DocumentClient is a client capable of manipulating documents
 	DocumentClient DocumentClient
+
 	// OpenPipelineClient is a client capable of manipulating openPipeline configs
 	OpenPipelineClient OpenPipelineClient
 }

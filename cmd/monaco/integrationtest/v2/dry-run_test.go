@@ -47,9 +47,7 @@ func TestDryRun(t *testing.T) {
 		defer server.Close()
 
 		// ensure all URLs used in the manifest point at the test server
-		t.Setenv("URL_ENVIRONMENT_1", server.URL)
-		t.Setenv("PLATFORM_URL_ENVIRONMENT_2", server.URL)
-		t.Setenv("OAUTH_TOKEN_ENDPOINT", server.URL)
+		setAllURLEnvironmentVariables(t, server.URL)
 
 		// This causes a POST for all configs:
 		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
@@ -59,4 +57,12 @@ func TestDryRun(t *testing.T) {
 		err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
 		assert.NoError(t, err)
 	})
+}
+
+func setAllURLEnvironmentVariables(t *testing.T, url string) {
+	t.Setenv("URL_ENVIRONMENT_1", url)
+	t.Setenv("URL_ENVIRONMENT_2", url)
+	t.Setenv("PLATFORM_URL_ENVIRONMENT_1", url)
+	t.Setenv("PLATFORM_URL_ENVIRONMENT_2", url)
+	t.Setenv("OAUTH_TOKEN_ENDPOINT", url)
 }

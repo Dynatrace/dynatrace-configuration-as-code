@@ -48,7 +48,6 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 	if _, ok := remainingEntriesToDelete[api.DashboardShareSettings]; ok {
 		log.Warn("Classic config of type %s cannot be deleted. Note, that they can be removed by deleting the associated dashboard.", api.DashboardShareSettings)
 		delete(remainingEntriesToDelete, api.DashboardShareSettings)
-
 	}
 
 	// Delete rest of config types
