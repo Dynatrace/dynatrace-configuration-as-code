@@ -20,6 +20,11 @@ package setting
 
 import (
 	"context"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -27,9 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
@@ -85,7 +87,7 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 }
 
 func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
-	c := client.NewMockDynatraceClient(gomock.NewController(t))
+	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
 		Name: "mzname"}, nil)
@@ -110,7 +112,7 @@ func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
 }
 
 func TestDeploySetting_ManagementZone_NameGetsExtracted_ifPresent(t *testing.T) {
-	c := client.NewMockDynatraceClient(gomock.NewController(t))
+	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "abcdefghijk",
 		Name: "mzname"}, nil)
@@ -135,7 +137,7 @@ func TestDeploySetting_ManagementZone_NameGetsExtracted_ifPresent(t *testing.T) 
 }
 
 func TestDeploySetting_ManagementZone_FailToDecodeMZoneID(t *testing.T) {
-	c := client.NewMockDynatraceClient(gomock.NewController(t))
+	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "INVALID MANAGEMENT ZONE ID",
 		Name: "mzanme"}, nil)

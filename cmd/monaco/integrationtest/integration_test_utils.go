@@ -19,6 +19,15 @@
 package integrationtest
 
 import (
+	"context"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"path/filepath"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -27,12 +36,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"path/filepath"
-	"testing"
 )
 
 // CreateDynatraceClients creates a client set used in e2e tests.
@@ -45,6 +48,7 @@ func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefini
 		err     error
 	)
 	clients, err = client.CreateClientSet(
+		context.TODO(),
 		environment.URL.Value,
 		environment.Auth,
 		client.ClientOptions{

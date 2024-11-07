@@ -27,6 +27,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
@@ -39,23 +43,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
-
-var automationTypes = map[string]config.AutomationResource{
-	string(config.Workflow):         config.Workflow,
-	string(config.BusinessCalendar): config.BusinessCalendar,
-	string(config.SchedulingRule):   config.SchedulingRule,
-}
 
 func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 	t.Run("TestDeleteSettings_LegacyExternalID", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockSettingsClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJGlkMQ=="}))
 			return []dtclient.DownloadSettingsObject{
@@ -78,12 +72,12 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := delete.Configs(context.TODO(), client.ClientSet{SettingsClient: c}, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings with external ID fails", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockSettingsClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, coreapi.APIError{StatusCode: 0})
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
@@ -93,12 +87,12 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{SettingsClient: c}, entriesToDelete)
 		assert.Error(t, err)
 	})
 
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings returns no objects", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockSettingsClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
@@ -108,12 +102,12 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{SettingsClient: c}, entriesToDelete)
 		assert.NoError(t, err)
 	})
 
 	t.Run("TestDeleteSettings_LegacyExternalID - Delete settings based on object ID fails", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockSettingsClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{
 			{
 				ExternalId:    "externalID",
@@ -133,14 +127,14 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{SettingsClient: c}, entriesToDelete)
 		assert.Error(t, err)
 	})
 }
 
 func TestDeleteSettings(t *testing.T) {
 	t.Run("TestDeleteSettings", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockSettingsClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Eq("builtin:alerting.profile"), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			expectedExtID := "monaco:cHJvamVjdCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQx"
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: expectedExtID}), "Expected request filtering for externalID %q", expectedExtID)
@@ -166,12 +160,12 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{SettingsClient: c}, entriesToDelete)
 		assert.NoError(t, err)
 	})
 
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockSettingsClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, coreapi.APIError{StatusCode: 0})
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
@@ -182,12 +176,12 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{SettingsClient: c}, entriesToDelete)
 		assert.Error(t, err)
 	})
 
 	t.Run("TestDeleteSettings - List settings returns no objects", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockSettingsClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
@@ -198,12 +192,12 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{SettingsClient: c}, entriesToDelete)
 		assert.NoError(t, err)
 	})
 
 	t.Run("TestDeleteSettings - Delete settings based on object ID fails", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockSettingsClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{
 			{
 				ExternalId:    "externalID",
@@ -224,12 +218,12 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{SettingsClient: c}, entriesToDelete)
 		assert.Error(t, err)
 	})
 
 	t.Run("TestDeleteSettings - Skips non-deletable Objects", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockSettingsClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			expectedExtID := "monaco:cHJvamVjdCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQx"
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: expectedExtID}), "Expected request filtering for externalID %q", expectedExtID)
@@ -259,12 +253,12 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{SettingsClient: c}, entriesToDelete)
 		assert.NoError(t, err)
 	})
 
 	t.Run("identification via 'objectId'", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockSettingsClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Eq("builtin:alerting.profile"), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ObjectId: "DT-original-object-ID"}), "Expected request filtering for objectId %q", "DT-original-object-ID")
 			return []dtclient.DownloadSettingsObject{
@@ -288,7 +282,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{SettingsClient: c}, entriesToDelete)
 		assert.NoError(t, err)
 	})
 
@@ -319,7 +313,7 @@ func TestDelete_Automations(t *testing.T) {
 				},
 			},
 		}
-		errs := delete.Configs(context.TODO(), delete.ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := delete.Configs(context.TODO(), client.ClientSet{AutClient: c}, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -377,7 +371,7 @@ func TestDelete_Automations(t *testing.T) {
 				},
 			},
 		}
-		errs := delete.Configs(context.TODO(), delete.ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := delete.Configs(context.TODO(), client.ClientSet{AutClient: c}, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 		assert.True(t, workflowDeleted, "expected workflow to be deleted but it was not")
 		assert.True(t, calendarDeleted, "expected business-calendar to be deleted but it was not")
@@ -407,7 +401,7 @@ func TestDelete_Automations(t *testing.T) {
 				},
 			},
 		}
-		errs := delete.Configs(context.TODO(), delete.ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := delete.Configs(context.TODO(), client.ClientSet{AutClient: c}, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -434,7 +428,7 @@ func TestDelete_Automations(t *testing.T) {
 				},
 			},
 		}
-		err = delete.Configs(context.TODO(), delete.ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err = delete.Configs(context.TODO(), client.ClientSet{AutClient: c}, entriesToDelete)
 		assert.Error(t, err)
 	})
 
@@ -461,7 +455,7 @@ func TestDelete_Automations(t *testing.T) {
 				},
 			},
 		}
-		errs := delete.Configs(context.TODO(), delete.ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := delete.Configs(context.TODO(), client.ClientSet{AutClient: c}, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 }
@@ -512,7 +506,7 @@ func TestDeleteBuckets(t *testing.T) {
 				},
 			},
 		}
-		errs := delete.Configs(context.TODO(), delete.ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := delete.Configs(context.TODO(), client.ClientSet{BucketClient: c}, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -538,7 +532,7 @@ func TestDeleteBuckets(t *testing.T) {
 				},
 			},
 		}
-		errs := delete.Configs(context.TODO(), delete.ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := delete.Configs(context.TODO(), client.ClientSet{BucketClient: c}, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -564,7 +558,7 @@ func TestDeleteBuckets(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{BucketClient: c}, entriesToDelete)
 		assert.Error(t, err, "there should be one delete error")
 	})
 
@@ -612,7 +606,7 @@ func TestDeleteBuckets(t *testing.T) {
 				},
 			},
 		}
-		errs := delete.Configs(context.TODO(), delete.ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := delete.Configs(context.TODO(), client.ClientSet{BucketClient: c}, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -716,10 +710,10 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			apiMap := api.APIs{a.ID: a}
+
 			entriesToDelete := delete.DeleteEntries{a.ID: tc.args.entries}
 
-			c := client.NewMockDynatraceClient(gomock.NewController(t))
+			c := client.NewMockConfigClient(gomock.NewController(t))
 			if len(tc.args.entries) > 0 {
 				c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(a)).Return(tc.args.values, nil).Times(len(tc.args.entries))
 			}
@@ -727,7 +721,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(a), id).Times(1)
 			}
 
-			err := delete.Configs(context.TODO(), delete.ClientSet{Classic: c}, apiMap, automationTypes, entriesToDelete)
+			err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, entriesToDelete)
 			if tc.expect.err {
 				assert.Error(t, err)
 			} else {
@@ -928,7 +922,7 @@ func TestConfigsWithParent(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			c := client.NewMockDynatraceClient(gomock.NewController(t))
+			c := client.NewMockConfigClient(gomock.NewController(t))
 			if tc.mock.parentList != nil {
 				c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(tc.mock.parentList.api)).Return(tc.mock.parentList.response, tc.mock.parentList.err).Times(1)
 			}
@@ -939,7 +933,7 @@ func TestConfigsWithParent(t *testing.T) {
 				c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(tc.mock.del.api), tc.mock.del.id).Return(tc.mock.del.err).Times(1)
 			}
 
-			err := delete.Configs(context.TODO(), delete.ClientSet{Classic: c}, api.NewAPIs(), automationTypes, tc.forDelete)
+			err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, tc.forDelete)
 			if !tc.wantErr {
 				assert.NoError(t, err)
 			} else {
@@ -951,7 +945,7 @@ func TestConfigsWithParent(t *testing.T) {
 
 func TestDelete_Classic(t *testing.T) {
 	t.Run("identification via 'name'", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockConfigClient(gomock.NewController(t))
 		theAPI := api.NewAPIs()[api.ApplicationWeb]
 		c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(theAPI)).Return([]dtclient.Value{{Id: "DT-id-of-app", Name: "application name"}}, nil).Times(1)
 		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
@@ -965,12 +959,12 @@ func TestDelete_Classic(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), delete.ClientSet{Classic: c}, api.NewAPIs(), automationTypes, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, given)
 		require.NoError(t, err)
 	})
 
 	t.Run("identification via 'objectId'", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockConfigClient(gomock.NewController(t))
 		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(api.NewAPIs()["application-web"]), "DT-id-of-app").Return(nil).Times(1)
 
 		given := delete.DeleteEntries{
@@ -982,12 +976,12 @@ func TestDelete_Classic(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), delete.ClientSet{Classic: c}, api.NewAPIs(), automationTypes, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, given)
 		require.NoError(t, err)
 	})
 
 	t.Run("skip delete of DashboardShareSettings", func(t *testing.T) {
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockConfigClient(gomock.NewController(t))
 		given := delete.DeleteEntries{
 			"dashboard-share-settings": {
 				{
@@ -997,7 +991,7 @@ func TestDelete_Classic(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), delete.ClientSet{Classic: c}, api.NewAPIs(), automationTypes, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, given)
 		require.NoError(t, err)
 	})
 }
@@ -1005,7 +999,7 @@ func TestDelete_Classic(t *testing.T) {
 func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 	t.Run("uniqueness", func(t *testing.T) {
 		theAPI := api.NewAPIs()[api.KeyUserActionsWeb]
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockConfigClient(gomock.NewController(t))
 
 		c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
 		c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID"))).Return([]dtclient.Value{
@@ -1026,13 +1020,13 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), delete.ClientSet{Classic: c}, api.NewAPIs(), automationTypes, de)
+		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, de)
 		assert.NoError(t, err)
 	})
 
 	t.Run("identification via 'objectId'", func(t *testing.T) {
 		theAPI := api.NewAPIs()[api.KeyUserActionsWeb]
-		c := client.NewMockDynatraceClient(gomock.NewController(t))
+		c := client.NewMockConfigClient(gomock.NewController(t))
 
 		c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
 		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
@@ -1049,7 +1043,7 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), delete.ClientSet{Classic: c}, api.NewAPIs(), automationTypes, de)
+		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, de)
 		assert.NoError(t, err)
 	})
 }
@@ -1072,7 +1066,7 @@ func TestDelete_Documents(t *testing.T) {
 		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1)
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Documents: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{DocumentClient: c}, entriesToDelete)
 		assert.NoError(t, err)
 	})
 
@@ -1090,7 +1084,7 @@ func TestDelete_Documents(t *testing.T) {
 			Return(documents.ListResponse{Responses: []documents.Response{}}, nil)
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Documents: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{DocumentClient: c}, entriesToDelete)
 		assert.NoError(t, err)
 	})
 
@@ -1108,7 +1102,7 @@ func TestDelete_Documents(t *testing.T) {
 			Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: "originObjectID_1"}}, {Metadata: documents.Metadata{ID: "originObjectID_2"}}}}, nil)
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Documents: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{DocumentClient: c}, entriesToDelete)
 		assert.Error(t, err)
 	})
 
@@ -1124,7 +1118,7 @@ func TestDelete_Documents(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Documents: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{DocumentClient: c}, entriesToDelete)
 		assert.NoError(t, err)
 	})
 
@@ -1138,7 +1132,7 @@ func TestDelete_Documents(t *testing.T) {
 		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1).Return(libAPI.Response{}, coreapi.APIError{StatusCode: http.StatusNotFound})
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Documents: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{DocumentClient: c}, entriesToDelete)
 		assert.NoError(t, err)
 	})
 
@@ -1151,7 +1145,7 @@ func TestDelete_Documents(t *testing.T) {
 		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1).Return(libAPI.Response{}, coreapi.APIError{StatusCode: http.StatusInternalServerError}) // the error can be any kind except 404
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
-		err := delete.Configs(context.TODO(), delete.ClientSet{Documents: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		err := delete.Configs(context.TODO(), client.ClientSet{DocumentClient: c}, entriesToDelete)
 		assert.Error(t, err)
 	})
 }

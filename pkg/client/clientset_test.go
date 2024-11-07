@@ -17,17 +17,20 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/oauth2"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/oauth2"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
 
 func TestCreateClientSet(t *testing.T) {
@@ -107,7 +110,7 @@ func TestCreateClientSet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := CreateClientSet(tt.url, tt.auth, ClientOptions{SupportArchive: support.SupportArchive})
+			_, err := CreateClientSet(context.TODO(), tt.url, tt.auth, ClientOptions{SupportArchive: support.SupportArchive})
 			assert.NoError(t, err)
 		})
 	}

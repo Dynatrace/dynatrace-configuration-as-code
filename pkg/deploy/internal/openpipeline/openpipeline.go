@@ -19,6 +19,10 @@ package openpipeline
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/go-logr/logr"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -26,19 +30,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/go-logr/logr"
-	"time"
 )
 
-var _ Client = (*DummyClient)(nil)
-
-type DummyClient struct{}
-
 //go:generate mockgen -source=openpipeline.go -destination=openpipeline_mock.go -package=openpipeline openpipelineClient
-func (c *DummyClient) Update(_ context.Context, _ string, _ []byte) (openpipeline.Response, error) {
-	return openpipeline.Response{}, nil
-}
-
 type Client interface {
 	Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error)
 }

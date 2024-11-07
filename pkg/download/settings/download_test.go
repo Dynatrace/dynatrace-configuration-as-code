@@ -24,9 +24,10 @@ import (
 	"strconv"
 	"testing"
 
-	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -517,7 +518,7 @@ func TestDownloadAll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := client.NewMockDynatraceClient(gomock.NewController(t))
+			c := client.NewMockSettingsClient(gomock.NewController(t))
 			schemas, err := tt.mockValues.Schemas()
 			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			//c.EXPECT().GetSchemaById(gomock.Any()).Times(tt.mockValues.GetSchemaCalls).Return(tt.mockValues.GetSchema(""))
@@ -692,7 +693,7 @@ func TestDownload(t *testing.T) {
 				t.Setenv(k, v)
 			}
 
-			c := client.NewMockDynatraceClient(gomock.NewController(t))
+			c := client.NewMockSettingsClient(gomock.NewController(t))
 			schemas, err1 := tt.mockValues.Schemas()
 			settings, err2 := tt.mockValues.Settings()
 			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err1)

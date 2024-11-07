@@ -15,13 +15,15 @@
 package download
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/openpipeline"
 	"os"
 
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
@@ -34,12 +36,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
 )
 
 type downloadCmdOptions struct {
@@ -148,7 +150,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		return err
 	}
 
-	clientSet, err := client.CreateClientSet(options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+	clientSet, err := client.CreateClientSet(context.TODO(), options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {
 		return err
 	}
@@ -186,7 +188,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		return err
 	}
 
-	clientSet, err := client.CreateClientSet(options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+	clientSet, err := client.CreateClientSet(context.TODO(), options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {
 		return err
 	}

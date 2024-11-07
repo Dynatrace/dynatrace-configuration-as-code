@@ -30,7 +30,7 @@ import (
 
 type preloadConfigTypeEntry struct {
 	configType config.Type
-	client     client.DynatraceClient
+	clientset  *client.ClientSet
 }
 
 // preloadCaches fills the caches of the specified clients for the config types used in the given projects.
@@ -43,10 +43,10 @@ func preloadCaches(ctx context.Context, projects []project.Project, environmentC
 
 			switch t := p.configType.(type) {
 			case config.SettingsType:
-				preloadSettingsValuesForSchemaId(ctx, p.client, t.SchemaId)
+				preloadSettingsValuesForSchemaId(ctx, p.clientset.SettingsClient, t.SchemaId)
 
 			case config.ClassicApiType:
-				preloadValuesForApi(ctx, p.client, t.Api)
+				preloadValuesForApi(ctx, p.clientset.ClassicClient, t.Api)
 			}
 
 		}(p)
@@ -54,7 +54,7 @@ func preloadCaches(ctx context.Context, projects []project.Project, environmentC
 	wg.Wait()
 }
 
-func preloadSettingsValuesForSchemaId(ctx context.Context, client client.DynatraceClient, schemaId string) {
+func preloadSettingsValuesForSchemaId(ctx context.Context, client client.SettingsClient, schemaId string) {
 	if err := client.CacheSettings(ctx, schemaId); err != nil {
 		log.Warn("Could not cache settings values for schema %s: %s", schemaId, err)
 		return
@@ -62,7 +62,7 @@ func preloadSettingsValuesForSchemaId(ctx context.Context, client client.Dynatra
 	log.Debug("Cached settings values for schema %s", schemaId)
 }
 
-func preloadValuesForApi(ctx context.Context, client client.DynatraceClient, theApi string) {
+func preloadValuesForApi(ctx context.Context, client client.ConfigClient, theApi string) {
 	a, ok := api.NewAPIs()[theApi]
 	if !ok {
 		return
@@ -82,11 +82,6 @@ func preloadValuesForApi(ctx context.Context, client client.DynatraceClient, the
 func gatherPreloadConfigTypeEntries(projects []project.Project, environmentClients dynatrace.EnvironmentClients) []preloadConfigTypeEntry {
 	preloads := []preloadConfigTypeEntry{}
 	for environmentInfo, environmentClientSet := range environmentClients {
-		client := environmentClientSet.DTClient
-		if client == nil {
-			continue
-		}
-
 		seenConfigTypes := map[string]struct{}{}
 
 		for _, project := range projects {
@@ -101,8 +96,15 @@ func gatherPreloadConfigTypeEntries(projects []project.Project, environmentClien
 				seenConfigTypes[c.Coordinate.Type] = struct{}{}
 
 				switch t := c.Type.(type) {
-				case config.SettingsType, config.ClassicApiType:
-					preloads = append(preloads, preloadConfigTypeEntry{configType: t, client: client})
+				case config.ClassicApiType:
+					if environmentClientSet.ClassicClient != nil {
+						preloads = append(preloads, preloadConfigTypeEntry{configType: t, clientset: environmentClientSet})
+					}
+
+				case config.SettingsType:
+					if environmentClientSet.SettingsClient != nil {
+						preloads = append(preloads, preloadConfigTypeEntry{configType: t, clientset: environmentClientSet})
+					}
 				}
 			})
 		}

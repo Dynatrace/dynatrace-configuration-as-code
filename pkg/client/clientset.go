@@ -23,6 +23,8 @@ import (
 	"runtime"
 	"time"
 
+	"golang.org/x/oauth2/clientcredentials"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
@@ -40,15 +42,16 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
-	"golang.org/x/oauth2/clientcredentials"
 )
 
 var (
-	_ SettingsClient  = (*dtclient.DynatraceClient)(nil)
-	_ ConfigClient    = (*dtclient.DynatraceClient)(nil)
-	_ DynatraceClient = (*dtclient.DynatraceClient)(nil)
-	_ DynatraceClient = (*dtclient.DummyClient)(nil)
+	_ SettingsClient = (*dtclient.DynatraceClient)(nil)
+	_ ConfigClient   = (*dtclient.DynatraceClient)(nil)
+	_ SettingsClient = (*dtclient.DummyClient)(nil)
+	_ ConfigClient   = (*dtclient.DummyClient)(nil)
 )
+
+//go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client ConfigClient
 
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
 // Each config endpoint is described by an [API] object to describe endpoints, structure, and behavior.
@@ -94,6 +97,8 @@ type ConfigClient interface {
 	ConfigExistsByName(ctx context.Context, a api.API, name string) (exists bool, id string, err error)
 }
 
+//go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client SettingsClient
+
 // SettingsClient is the abstraction layer for CRUD operations on the Dynatrace Settings API.
 // Its design is intentionally not dependent on Monaco objects.
 //
@@ -130,21 +135,6 @@ type SettingsClient interface {
 	DeleteSettings(context.Context, string) error
 }
 
-//go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client DynatraceClient
-
-// DynatraceClient provides the functionality for performing basic CRUD operations on any Dynatrace API
-// supported by monaco.
-// It encapsulates the configuration-specific inconsistencies of certain APIs in one place to provide
-// a common interface to work with. After all: A user of Client shouldn't care about the
-// implementation details of each individual Dynatrace API.
-// Its design is intentionally not dependent on the Config and Environment interfaces included in monaco.
-// This makes sure, that Client can be used as a base for future tooling, which relies on
-// a standardized way to access Dynatrace APIs.
-type DynatraceClient interface {
-	ConfigClient
-	SettingsClient
-}
-
 type AutomationClient interface {
 	Get(ctx context.Context, resourceType automationApi.ResourceType, id string) (automation.Response, error)
 	Create(ctx context.Context, resourceType automationApi.ResourceType, data []byte) (result automation.Response, err error)
@@ -173,7 +163,6 @@ type DocumentClient interface {
 
 type OpenPipelineClient interface {
 	GetAll(ctx context.Context) ([]openpipeline.Response, error)
-
 	Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error)
 }
 
@@ -185,24 +174,31 @@ var DefaultRetryOptions = corerest.RetryOptions{MaxRetries: 10, ShouldRetryFunc:
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
 type ClientSet struct {
-	// dtClient is the client capable of updating or creating settings and classic configs
-	DTClient DynatraceClient
+	// ClassicClient is the client capable of updating or creating classic configs
+	ClassicClient ConfigClient
+
+	// SettingsClient is the client capable of updating or creating settings
+	SettingsClient SettingsClient
+
 	// autClient is the client capable of updating or creating automation API configs
 	AutClient AutomationClient
+
 	// bucketClient is the client capable of updating or creating Grail Bucket configs
 	BucketClient BucketClient
+
 	// DocumentClient is a client capable of manipulating documents
 	DocumentClient DocumentClient
+
 	// OpenPipelineClient is a client capable of manipulating openPipeline configs
 	OpenPipelineClient OpenPipelineClient
 }
 
 func (s ClientSet) Classic() ConfigClient {
-	return s.DTClient
+	return s.ClassicClient
 }
 
 func (s ClientSet) Settings() SettingsClient {
-	return s.DTClient
+	return s.SettingsClient
 }
 
 func (s ClientSet) Automation() AutomationClient {
@@ -255,13 +251,13 @@ func validateURL(dtURL string) error {
 	return nil
 }
 
-func CreateClientSet(url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
+func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
 	var (
 		classicClient, client *corerest.Client
-		bucketClient          *buckets.Client
-		autClient             *automation.Client
-		documentClient        *documents.Client
-		openPipelineClient    *openpipeline.Client
+		bucketClient          BucketClient
+		autClient             AutomationClient
+		documentClient        DocumentClient
+		openPipelineClient    OpenPipelineClient
 		err                   error
 		classicUrl            string
 	)
@@ -314,7 +310,7 @@ func CreateClientSet(url string, auth manifest.Auth, opts ClientOptions) (*Clien
 	}
 
 	if auth.Token != nil {
-		classicUrl, err = transformPlatformUrlToClassic(url, auth.OAuth, client)
+		classicUrl, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
 		if err != nil {
 			return nil, err
 		}
@@ -332,7 +328,8 @@ func CreateClientSet(url string, auth manifest.Auth, opts ClientOptions) (*Clien
 	}
 
 	return &ClientSet{
-		DTClient:           dtClient,
+		ClassicClient:      dtClient,
+		SettingsClient:     dtClient,
 		AutClient:          autClient,
 		BucketClient:       bucketClient,
 		DocumentClient:     documentClient,
@@ -359,10 +356,10 @@ func createDTClient(classicClient *corerest.Client, client *corerest.Client, opt
 	)
 }
 
-func transformPlatformUrlToClassic(url string, auth *manifest.OAuth, client *corerest.Client) (string, error) {
+func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth, client *corerest.Client) (string, error) {
 	classicUrl := url
 	if auth != nil && client != nil {
-		return metadata.GetDynatraceClassicURL(context.TODO(), *client)
+		return metadata.GetDynatraceClassicURL(ctx, *client)
 	}
 
 	return classicUrl, nil

@@ -87,7 +87,7 @@ func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath str
 		return fmt.Errorf("manifest auth field misconfigured: %w", err)
 	}
 
-	clientSets, err := dynatrace.CreateEnvironmentClients(loadedManifest.Environments)
+	clientSets, err := dynatrace.CreateEnvironmentClients(ctx, loadedManifest.Environments, dryRun)
 	if err != nil {
 		return fmt.Errorf("failed to create API clients: %w", err)
 	}
@@ -228,7 +228,7 @@ func configRequiresPlatform(c config.Config) bool {
 
 func collectUndefinedEnvironmentErrors(undefinedEnvironments map[string]struct{}) []error {
 	errs := []error{}
-	for envName, _ := range undefinedEnvironments {
+	for envName := range undefinedEnvironments {
 		errs = append(errs, fmt.Errorf("undefined environment %q", envName))
 	}
 	return errs

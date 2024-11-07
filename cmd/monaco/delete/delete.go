@@ -17,12 +17,11 @@ package delete
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"strings"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -45,29 +44,14 @@ func Delete(environments manifest.Environments, entriesToDelete delete.DeleteEnt
 			log.WithCtxFields(ctx).Warn("Delete file contains Dynatrace Platform specific types, but no oAuth credentials are defined for environment %q - Dynatrace Platform configurations won't be deleted.", env.Name)
 		}
 
-		clientSet, err := client.CreateClientSet(env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 		if err != nil {
 			return fmt.Errorf("failed to create API client for environment %q due to the following error: %w", env.Name, err)
 		}
 
 		log.WithCtxFields(ctx).Info("Deleting configs for environment %q...", env.Name)
 
-		classicAPIs := api.NewAPIs()
-		automationAPIs := map[string]config.AutomationResource{
-			string(config.Workflow):         config.Workflow,
-			string(config.BusinessCalendar): config.BusinessCalendar,
-			string(config.SchedulingRule):   config.SchedulingRule,
-		}
-
-		deleteClients := delete.ClientSet{
-			Classic:    clientSet.Classic(),
-			Settings:   clientSet.Settings(),
-			Automation: clientSet.Automation(),
-			Buckets:    clientSet.Bucket(),
-			Documents:  clientSet.Document(),
-		}
-
-		if err := delete.Configs(ctx, deleteClients, classicAPIs, automationAPIs, entriesToDelete); err != nil {
+		if err := delete.Configs(ctx, *clientSet, entriesToDelete); err != nil {
 			log.Error("Failed to delete all configurations from environment %q - check log for details", env.Name)
 			envsWithDeleteErrs = append(envsWithDeleteErrs, env.Name)
 		}
