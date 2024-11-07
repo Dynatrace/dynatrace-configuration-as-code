@@ -78,7 +78,7 @@ func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) erro
 
 	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {
-		return fmt.Errorf("failed to create a client for env `%s` due to the following error: %w", env.Name, err)
+		return fmt.Errorf("failed to create a client for env `%s`: %w", env.Name, err)
 	}
 
 	log.WithCtxFields(ctx).Info("Deleting configs for environment `%s`", env.Name)
