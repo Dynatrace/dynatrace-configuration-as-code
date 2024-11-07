@@ -82,9 +82,6 @@ func preloadValuesForApi(ctx context.Context, client client.DynatraceClient, the
 func gatherPreloadConfigTypeEntries(projects []project.Project, environmentClients dynatrace.EnvironmentClients) []preloadConfigTypeEntry {
 	preloads := []preloadConfigTypeEntry{}
 	for environmentInfo, environmentClientSet := range environmentClients {
-		if environmentClientSet.DTClient == nil {
-			continue
-		}
 		client := environmentClientSet.DTClient
 		if client == nil {
 			continue
@@ -94,6 +91,10 @@ func gatherPreloadConfigTypeEntries(projects []project.Project, environmentClien
 
 		for _, project := range projects {
 			project.ForEveryConfigInEnvironmentDo(environmentInfo.Name, func(c config.Config) {
+				//If the config shall be skipped there is no point in caching it
+				if c.Skip {
+					return
+				}
 				if _, ok := seenConfigTypes[c.Coordinate.Type]; ok {
 					return
 				}
