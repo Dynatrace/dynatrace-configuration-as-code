@@ -359,3 +359,62 @@ func Test_ScopedConfigsAreNotCached(t *testing.T) {
 		})
 	}
 }
+
+func Test_gatherPreloadConfigTypeEntries_WithSkipParam(t *testing.T) {
+	entries := gatherPreloadConfigTypeEntries(
+		[]project.Project{
+			{
+				Id:      "projectID",
+				GroupId: "groupID",
+				Configs: project.ConfigsPerTypePerEnvironments{
+					"env1": project.ConfigsPerType{
+						"builtin:alerting.profile": {
+							{
+								Coordinate: coordinate.Coordinate{Project: "projectID", ConfigId: "alertingProfile1", Type: "builtin:alerting.profile"},
+								Type: config.SettingsType{
+									SchemaId: "builtin:alerting.profile",
+								},
+								Skip: true,
+							},
+						},
+						"dashboard-share-settings": {
+							{
+								Coordinate: coordinate.Coordinate{
+									Project:  "projectID",
+									ConfigId: "dashboard-share-settings",
+									Type:     "dashboard-share-settings"},
+								Type: config.ClassicApiType{
+									Api: "dashboard-share-settings",
+								},
+							},
+						},
+						"management-zone": {
+							{
+								Coordinate: coordinate.Coordinate{Project: "projectID", ConfigId: "managementZone1", Type: "management-zone"},
+								Type: config.ClassicApiType{
+									Api: "management-zone",
+								},
+								Skip: false,
+							},
+						},
+					},
+				},
+			},
+		},
+		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: &client.ClientSet{DTClient: dtClientEnv1}},
+	)
+
+	expectedEntries := []preloadConfigTypeEntry{
+		{
+			configType: config.ClassicApiType{Api: "dashboard-share-settings"},
+			client:     dtClientEnv1,
+		},
+		{
+			configType: config.ClassicApiType{Api: "management-zone"},
+			client:     dtClientEnv1,
+		},
+	}
+
+	require.ElementsMatch(t, entries, expectedEntries)
+
+}
