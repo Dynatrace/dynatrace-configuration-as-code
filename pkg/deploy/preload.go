@@ -82,9 +82,6 @@ func preloadValuesForApi(ctx context.Context, client client.DynatraceClient, the
 func gatherPreloadConfigTypeEntries(projects []project.Project, environmentClients dynatrace.EnvironmentClients) []preloadConfigTypeEntry {
 	preloads := []preloadConfigTypeEntry{}
 	for environmentInfo, environmentClientSet := range environmentClients {
-		if environmentClientSet.DTClient == nil {
-			continue
-		}
 		client := environmentClientSet.DTClient
 		if client == nil {
 			continue
