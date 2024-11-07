@@ -20,6 +20,13 @@ package v2
 
 import (
 	"context"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2/clientcredentials"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
@@ -32,11 +39,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/oauth2/clientcredentials"
-	"testing"
 )
 
 // tests all configs for a single environment
@@ -224,7 +226,7 @@ func TestOrderedSettings(t *testing.T) {
 
 }
 
-func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.DynatraceClient)) client.SettingsClient {
+func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.SettingsClient)) client.SettingsClient {
 
 	clientFactory := clients.Factory().
 		WithOAuthCredentials(clientcredentials.Config{
@@ -247,7 +249,7 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 	classicClient, err := clientFactory.CreateClassicClient()
 	require.NoError(t, err)
 
-	dtClient, err := dtclient.NewPlatformClient(client, classicClient)
+	dtClient, err := dtclient.NewClassicSettingsClient(classicClient)
 	require.NoError(t, err)
 
 	for _, o := range opts {

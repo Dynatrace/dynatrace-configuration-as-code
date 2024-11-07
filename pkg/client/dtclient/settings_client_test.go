@@ -28,12 +28,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_schemaDetails(t *testing.T) {
@@ -82,7 +83,7 @@ func Test_schemaDetails(t *testing.T) {
 
 	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter())
 
-	d, err := NewPlatformClient(restClient, restClient)
+	d, err := NewPlatformSettingsClient(restClient)
 	require.NoError(t, err)
 
 	t.Run("unmarshall data", func(t *testing.T) {
@@ -110,7 +111,7 @@ func Test_GetSchemaUsesCache(t *testing.T) {
 	require.NoError(t, err)
 	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter())
 
-	d, err := NewPlatformClient(restClient, restClient)
+	d, err := NewPlatformSettingsClient(restClient)
 	require.NoError(t, err)
 
 	_, err = d.GetSchemaById(context.TODO(), "builtin:span-attribute")
@@ -661,7 +662,7 @@ func TestUpsertSettings(t *testing.T) {
 			require.NoError(t, err)
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			c, err := NewClassicClient(restClient,
+			c, err := NewClassicSettingsClient(restClient,
 				WithServerVersion(test.serverVersion),
 				WithRetrySettings(testRetrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
@@ -705,7 +706,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 
 	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-	client, err := NewClassicClient(restClient,
+	client, err := NewClassicSettingsClient(restClient,
 		WithRetrySettings(testRetrySettings),
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
@@ -747,7 +748,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 
 	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-	client, err := NewClassicClient(restClient,
+	client, err := NewClassicSettingsClient(restClient,
 		WithRetrySettings(testRetrySettings),
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
@@ -798,7 +799,7 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 
 	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-	client, err := NewClassicClient(restClient,
+	client, err := NewClassicSettingsClient(restClient,
 		WithRetrySettings(testRetrySettings),
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
@@ -1210,7 +1211,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			c, err := NewClassicClient(restClient,
+			c, err := NewClassicSettingsClient(restClient,
 				WithRetrySettings(testRetrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
@@ -1496,7 +1497,7 @@ func TestListKnownSettings(t *testing.T) {
 
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			client, err := NewClassicClient(restClient,
+			client, err := NewClassicSettingsClient(restClient,
 				WithRetrySettings(testRetrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
@@ -1611,7 +1612,7 @@ func TestGetSettingById(t *testing.T) {
 
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			client, err := NewClassicClient(restClient,
+			client, err := NewClassicSettingsClient(restClient,
 				WithRetrySettings(tt.fields.retrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
@@ -1709,7 +1710,7 @@ func TestDeleteSettings(t *testing.T) {
 
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			client, err := NewClassicClient(restClient,
+			client, err := NewClassicSettingsClient(restClient,
 				WithRetrySettings(tt.fields.retrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)

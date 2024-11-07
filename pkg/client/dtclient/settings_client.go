@@ -22,6 +22,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/google/go-cmp/cmp"
+	"golang.org/x/exp/maps"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
@@ -29,11 +36,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/google/go-cmp/cmp"
-	"golang.org/x/exp/maps"
-	"net/http"
-	"net/url"
-	"strings"
 )
 
 type (
@@ -97,17 +99,17 @@ type (
 	}
 )
 
-func (d *DynatraceClient) CacheSettings(ctx context.Context, schemaID string) error {
+func (d *SettingsClient) CacheSettings(ctx context.Context, schemaID string) error {
 	_, err := d.ListSettings(ctx, schemaID, ListSettingsOptions{})
 	return err
 }
 
-func (d *DynatraceClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
+func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
 	queryParams := url.Values{}
 	queryParams.Add("fields", "ordered,schemaId")
 
 	// getting all schemas does not have pagination
-	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsSchemaAPIPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	resp, err := coreapi.AsResponseOrError(d.client.GET(ctx, d.settingsSchemaAPIPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET schemas: %w", err)
 	}
@@ -125,14 +127,14 @@ func (d *DynatraceClient) ListSchemas(ctx context.Context) (schemas SchemaList, 
 	return result.Items, nil
 }
 
-func (d *DynatraceClient) GetSchemaById(ctx context.Context, schemaID string) (constraints Schema, err error) {
+func (d *SettingsClient) GetSchemaById(ctx context.Context, schemaID string) (constraints Schema, err error) {
 	if ret, cached := d.schemaCache.Get(schemaID); cached {
 		return ret, nil
 	}
 
 	ret := Schema{SchemaId: schemaID}
 	endpoint := d.settingsSchemaAPIPath + "/" + schemaID
-	r, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, endpoint, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	r, err := coreapi.AsResponseOrError(d.client.GET(ctx, endpoint, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return Schema{}, err
 	}
@@ -159,7 +161,7 @@ func (d *DynatraceClient) GetSchemaById(ctx context.Context, schemaID string) (c
 // settings 2.0 objects that are non-deletable.
 // So we check if the object with originObjectID already exists, if yes and the tenant is older than 1.262
 // then we cannot perform the upsert operation
-func (d *DynatraceClient) handleUpsertUnsupportedVersion(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
+func (d *SettingsClient) handleUpsertUnsupportedVersion(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
 
 	fetchedSettingObj, err := d.GetSettingById(ctx, obj.OriginObjectId)
 	if err != nil {
@@ -178,14 +180,14 @@ func (d *DynatraceClient) handleUpsertUnsupportedVersion(ctx context.Context, ob
 
 }
 
-func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
+func (d *SettingsClient) UpsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
 		result, err = d.upsertSettings(ctx, obj, upsertOptions)
 	})
 	return
 }
 
-func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
+func (d *SettingsClient) upsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
 	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
 		return d.handleUpsertUnsupportedVersion(ctx, obj)
 	}
@@ -270,7 +272,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		retrySetting = *upsertOptions.OverrideRetry
 	}
 
-	resp, err := SendWithRetryWithInitialTry(ctx, d.platformClient.POST, d.settingsObjectAPIPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, payload, retrySetting)
+	resp, err := SendWithRetryWithInitialTry(ctx, d.client.POST, d.settingsObjectAPIPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, payload, retrySetting)
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
@@ -290,7 +292,7 @@ type match struct {
 	matches constraintMatch
 }
 
-func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (match, bool, error) {
+func (d *SettingsClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (match, bool, error) {
 	constraints, err := d.GetSchemaById(ctx, source.SchemaId)
 	if err != nil {
 		return match{}, false, fmt.Errorf("unable to get details for schema %q: %w", source.SchemaId, err)
@@ -455,7 +457,7 @@ func parsePostResponse(body []byte) (DynatraceEntity, error) {
 	}, nil
 }
 
-func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
+func (d *SettingsClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
 	if settings, cached := d.settingsCache.Get(schemaId); cached {
 		log.WithCtxFields(ctx).Debug("Using cached settings for schema %s", schemaId)
 		return filter.FilterSlice(settings, opts.Filter), nil
@@ -487,7 +489,7 @@ func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opt
 		return len(parsed.Items), nil
 	}
 
-	err = listPaginated(ctx, d.platformClient, d.retrySettings.Normal, d.settingsObjectAPIPath, params, schemaId, addToResult)
+	err = listPaginated(ctx, d.client, d.retrySettings.Normal, d.settingsObjectAPIPath, params, schemaId, addToResult)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list settings of schema %q: %w", schemaId, err)
 	}

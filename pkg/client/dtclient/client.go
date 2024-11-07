@@ -81,18 +81,13 @@ type ListSettingsOptions struct {
 // ListSettingsFilter can be used to filter fetched settings objects with custom criteria, e.g. o.ExternalId == ""
 type ListSettingsFilter func(DownloadSettingsObject) bool
 
-// DynatraceClient is the default implementation of the HTTP
-// client targeting the relevant Dynatrace APIs for Monaco
-type DynatraceClient struct {
+type SettingsClient struct {
 	// serverVersion is the Dynatrace server version the
 	// client will be interacting with
 	serverVersion version.Version
 
-	// platformClient is a rest client used to target platform enabled environments
-	platformClient *corerest.Client
-
-	// classicClient is a rest client used to target classic environments (e.g.,for downloading classic configs)
-	classicClient *corerest.Client
+	// client is a rest client used to target platform enabled environments
+	client *corerest.Client
 
 	// settingsSchemaAPIPath is the API path to use for accessing settings schemas
 	settingsSchemaAPIPath string
@@ -112,6 +107,16 @@ type DynatraceClient struct {
 	// schemaCache caches schema constraints
 	schemaCache cache.Cache[Schema]
 
+	// limiter is used to limit parallel http requests
+	limiter *concurrency.Limiter
+}
+
+type ClassicClient struct {
+	client *corerest.Client
+
+	// retrySettings are the settings to be used for retrying failed http requests
+	retrySettings RetrySettings
+
 	// classicConfigsCache caches classic settings values
 	classicConfigsCache cache.Cache[[]Value]
 
@@ -119,47 +124,63 @@ type DynatraceClient struct {
 	limiter *concurrency.Limiter
 }
 
-func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
+func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *SettingsClient) {
+	return func(d *SettingsClient) {
 		d.generateExternalID = g
 	}
 }
 
 // WithClientRequestLimiter specifies that a specifies the limiter to be used for
 // limiting parallel client requests
-func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
+func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *SettingsClient) {
+	return func(d *SettingsClient) {
 		d.limiter = limiter
 	}
 }
 
 // WithRetrySettings sets the retry settings to be used by the DynatraceClient
-func WithRetrySettings(retrySettings RetrySettings) func(*DynatraceClient) {
-	return func(d *DynatraceClient) {
+func WithRetrySettings(retrySettings RetrySettings) func(*SettingsClient) {
+	return func(d *SettingsClient) {
+		d.retrySettings = retrySettings
+	}
+}
+
+// WithClientRequestLimiter specifies that a specifies the limiter to be used for
+// limiting parallel client requests
+func WithClientRequestLimiterForClassic(limiter *concurrency.Limiter) func(client *ClassicClient) {
+	return func(d *ClassicClient) {
+		d.limiter = limiter
+	}
+}
+
+// WithRetrySettings sets the retry settings to be used by the ClassicClient
+func WithRetrySettingsForClassic(retrySettings RetrySettings) func(*ClassicClient) {
+	return func(d *ClassicClient) {
 		d.retrySettings = retrySettings
 	}
 }
 
 // WithServerVersion sets the Dynatrace version of the Dynatrace server/tenant the client will be interacting with
-func WithServerVersion(serverVersion version.Version) func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
+func WithServerVersion(serverVersion version.Version) func(client *SettingsClient) {
+	return func(d *SettingsClient) {
 		d.serverVersion = serverVersion
 	}
 }
 
 // WithAutoServerVersion can be used to let the client automatically determine the Dynatrace server version
-// during creation using newDynatraceClient. If the server version is already known WithServerVersion should be used
-func WithAutoServerVersion() func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
+// during creation using newDynatraceClient. If the server version is already known WithServerVersion should be used.
+// Do not use this with NewPlatformSettingsClient() as the client will not work and cause an error to be logged.
+func WithAutoServerVersion() func(client *SettingsClient) {
+	return func(d *SettingsClient) {
 		var serverVersion version.Version
 		var err error
 
 		d.serverVersion = version.UnknownVersion
-		if d.classicClient == nil {
+		if d.client == nil {
 			return
 		}
 
-		serverVersion, err = dtVersion.GetDynatraceVersion(context.TODO(), d.classicClient) //this will send the default user-agent
+		serverVersion, err = dtVersion.GetDynatraceVersion(context.TODO(), d.client) //this will send the default user-agent
 		if err != nil {
 			log.WithFields(field.Error(err)).Warn("Unable to determine Dynatrace server version: %v", err)
 			return
@@ -168,13 +189,21 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 	}
 }
 
-// WithCachingDisabled allows disabling the client's builtin caching mechanism for
-// classic configs, schema constraints and settings objects. Disabling the caching
-// is recommended in situations where configs are fetched immediately after their creation (e.g. in test scenarios)
-func WithCachingDisabled(disabled bool) func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
+// WithCachingDisabledForClassic allows disabling the client's builtin caching mechanism for classic configs.
+// Disabling the caching is recommended in situations where configs are fetched immediately after their creation (e.g. in test scenarios).
+func WithCachingDisabledForClassic(disabled bool) func(client *ClassicClient) {
+	return func(d *ClassicClient) {
 		if disabled {
 			d.classicConfigsCache = &cache.NoopCache[[]Value]{}
+		}
+	}
+}
+
+// WithCachingDisabled allows disabling the client's builtin caching mechanism for schema constraints and settings objects.
+// Disabling the caching is recommended in situations where configs are fetched immediately after their creation (e.g. in test scenarios).
+func WithCachingDisabled(disabled bool) func(client *SettingsClient) {
+	return func(d *SettingsClient) {
+		if disabled {
 			d.schemaCache = &cache.NoopCache[Schema]{}
 			d.settingsCache = &cache.NoopCache[[]DownloadSettingsObject]{}
 		}
@@ -188,20 +217,18 @@ const (
 	settingsObjectAPIPathPlatform = "/platform/classic/environment-api/v2/settings/objects"
 )
 
-// NewPlatformClient creates a new dynatrace client to be used for platform enabled environments
+// NewPlatformSettingsClient creates a new settings client to be used for platform enabled environments
 //
 //nolint:dupl
-func NewPlatformClient(client *corerest.Client, classicClient *corerest.Client, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
-	d := &DynatraceClient{
+func NewPlatformSettingsClient(client *corerest.Client, opts ...func(dynatraceClient *SettingsClient)) (*SettingsClient, error) {
+	d := &SettingsClient{
 		serverVersion:         version.Version{},
-		platformClient:        client,
-		classicClient:         classicClient,
+		client:                client,
 		retrySettings:         DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
 		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
 		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
 		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
-		classicConfigsCache:   &cache.DefaultCache[[]Value]{},
 		schemaCache:           &cache.DefaultCache[Schema]{},
 		limiter:               concurrency.NewLimiter(5),
 	}
@@ -214,20 +241,34 @@ func NewPlatformClient(client *corerest.Client, classicClient *corerest.Client, 
 	return d, nil
 }
 
-// NewClassicClient creates a new dynatrace client to be used for classic environments
+func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *ClassicClient)) (*ClassicClient, error) {
+	d := &ClassicClient{
+		client:              client,
+		retrySettings:       DefaultRetrySettings,
+		classicConfigsCache: &cache.DefaultCache[[]Value]{},
+		limiter:             concurrency.NewLimiter(5),
+	}
+
+	for _, o := range opts {
+		if o != nil {
+			o(d)
+		}
+	}
+	return d, nil
+}
+
+// NewClassicSettingsClient creates a new settings client to be used for classic environments.
 //
 //nolint:dupl
-func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
-	d := &DynatraceClient{
+func NewClassicSettingsClient(client *corerest.Client, opts ...func(dynatraceClient *SettingsClient)) (*SettingsClient, error) {
+	d := &SettingsClient{
 		serverVersion:         version.Version{},
-		platformClient:        client,
-		classicClient:         client,
+		client:                client,
 		retrySettings:         DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
 		settingsObjectAPIPath: settingsObjectAPIPathClassic,
 		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
 		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
-		classicConfigsCache:   &cache.DefaultCache[[]Value]{},
 		schemaCache:           &cache.DefaultCache[Schema]{},
 		limiter:               concurrency.NewLimiter(5),
 	}
@@ -240,22 +281,22 @@ func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *Dyn
 	return d, nil
 }
 
-func (d *DynatraceClient) CacheConfigs(ctx context.Context, api api.API) error {
+func (d *ClassicClient) CacheConfigs(ctx context.Context, api api.API) error {
 	_, err := d.fetchExistingValues(ctx, api)
 	return err
 }
 
-func (d *DynatraceClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
+func (d *ClassicClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
 	return d.fetchExistingValues(ctx, api)
 }
 
-func (d *DynatraceClient) ReadConfigById(ctx context.Context, api api.API, id string) (json []byte, err error) {
+func (d *ClassicClient) ReadConfigById(ctx context.Context, api api.API, id string) (json []byte, err error) {
 	var dtUrl = api.URLPath
 	if !api.SingleConfiguration {
 		dtUrl = dtUrl + "/" + url.PathEscape(id)
 	}
 
-	response, err := coreapi.AsResponseOrError(d.classicClient.GET(ctx, dtUrl, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	response, err := coreapi.AsResponseOrError(d.client.GET(ctx, dtUrl, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return nil, err
 	}
@@ -263,14 +304,14 @@ func (d *DynatraceClient) ReadConfigById(ctx context.Context, api api.API, id st
 	return response.Data, nil
 }
 
-func (d *DynatraceClient) DeleteConfigById(ctx context.Context, api api.API, id string) error {
+func (d *ClassicClient) DeleteConfigById(ctx context.Context, api api.API, id string) error {
 	parsedURL, err := url.Parse(api.URLPath)
 	if err != nil {
 		return err
 	}
 	parsedURL = parsedURL.JoinPath(id)
 
-	_, err = coreapi.AsResponseOrError(d.classicClient.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	_, err = coreapi.AsResponseOrError(d.client.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		apiError := coreapi.APIError{}
 		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
@@ -283,7 +324,7 @@ func (d *DynatraceClient) DeleteConfigById(ctx context.Context, api api.API, id 
 	return nil
 }
 
-func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
+func (d *ClassicClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
 	if api.SingleConfiguration {
 		// check that a single configuration is there by actually reading it.
 		_, err := d.ReadConfigById(ctx, api, "")
@@ -294,14 +335,14 @@ func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, n
 	return existingObjectId != "", existingObjectId, err
 }
 
-func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *ClassicClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
 		entity, err = d.upsertConfigByName(ctx, a, name, payload)
 	})
 	return
 }
 
-func (d *DynatraceClient) upsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *ClassicClient) upsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 
 	if a.ID == api.Extension {
 		return d.uploadExtension(ctx, a, name, payload)
@@ -309,15 +350,15 @@ func (d *DynatraceClient) upsertConfigByName(ctx context.Context, a api.API, nam
 	return d.upsertDynatraceObject(ctx, a, name, payload)
 }
 
-func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
+func (d *ClassicClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
 		entity, err = d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
 	})
 	return
 }
 
-func (d *DynatraceClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
-	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+func (d *SettingsClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
+	resp, err := coreapi.AsResponseOrError(d.client.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return nil, err
 	}
@@ -330,8 +371,8 @@ func (d *DynatraceClient) GetSettingById(ctx context.Context, objectId string) (
 	return &result, nil
 }
 
-func (d *DynatraceClient) DeleteSettings(ctx context.Context, objectID string) error {
-	_, err := coreapi.AsResponseOrError(d.platformClient.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+func (d *SettingsClient) DeleteSettings(ctx context.Context, objectID string) error {
+	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		apiError := coreapi.APIError{}
 		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {

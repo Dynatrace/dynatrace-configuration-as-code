@@ -45,8 +45,8 @@ import (
 )
 
 var (
-	_ SettingsClient = (*dtclient.DynatraceClient)(nil)
-	_ ConfigClient   = (*dtclient.DynatraceClient)(nil)
+	_ SettingsClient = (*dtclient.SettingsClient)(nil)
+	_ ConfigClient   = (*dtclient.ClassicClient)(nil)
 	_ SettingsClient = (*dtclient.DummyClient)(nil)
 	_ ConfigClient   = (*dtclient.DummyClient)(nil)
 )
@@ -253,13 +253,13 @@ func validateURL(dtURL string) error {
 
 func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
 	var (
-		classicClient, client *corerest.Client
-		bucketClient          BucketClient
-		autClient             AutomationClient
-		documentClient        DocumentClient
-		openPipelineClient    OpenPipelineClient
-		err                   error
-		classicUrl            string
+		classicClient      ConfigClient
+		settingsClient     SettingsClient
+		bucketClient       BucketClient
+		autClient          AutomationClient
+		documentClient     DocumentClient
+		openPipelineClient OpenPipelineClient
+		err                error
 	)
 	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	if err = validateURL(url); err != nil {
@@ -276,6 +276,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 		cFactory = cFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
 
+	classicURL := url
 	if auth.OAuth != nil {
 		cFactory = cFactory.WithOAuthCredentials(
 			clientcredentials.Config{
@@ -283,7 +284,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 				ClientSecret: auth.OAuth.ClientSecret.Value.Value(),
 				TokenURL:     auth.OAuth.GetTokenEndpointValue(),
 			}).WithPlatformURL(url)
-		client, err = cFactory.CreatePlatformClient()
+		client, err := cFactory.CreatePlatformClient()
 		if err != nil {
 			return nil, err
 		}
@@ -307,53 +308,51 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 		if err != nil {
 			return nil, err
 		}
+
+		settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled),
+			dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)))
+		if err != nil {
+			return nil, err
+		}
+
+		classicURL, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if auth.Token != nil {
-		classicUrl, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
-		if err != nil {
-			return nil, err
-		}
 		cFactory = cFactory.WithAccessToken(auth.Token.Value.Value()).
-			WithClassicURL(classicUrl)
-		classicClient, err = cFactory.CreateClassicClient()
+			WithClassicURL(classicURL)
+		client, err := cFactory.CreateClassicClient()
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	dtClient, err := createDTClient(classicClient, client, opts, concurrentReqLimit)
-	if err != nil {
-		return nil, err
+		classicClient, err = dtclient.NewClassicClient(client, dtclient.WithCachingDisabledForClassic(opts.CachingDisabled),
+			dtclient.WithClientRequestLimiterForClassic(concurrency.NewLimiter(concurrentReqLimit)))
+		if err != nil {
+			return nil, err
+		}
+
+		if settingsClient == nil {
+			settingsClient, err = dtclient.NewClassicSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled),
+				dtclient.WithAutoServerVersion(),
+				dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)))
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return &ClientSet{
-		ClassicClient:      dtClient,
-		SettingsClient:     dtClient,
+		ClassicClient:      classicClient,
+		SettingsClient:     settingsClient,
 		AutClient:          autClient,
 		BucketClient:       bucketClient,
 		DocumentClient:     documentClient,
 		OpenPipelineClient: openPipelineClient,
 	}, nil
-}
-
-func createDTClient(classicClient *corerest.Client, client *corerest.Client, opts ClientOptions, concurrentReqLimit int) (*dtclient.DynatraceClient, error) {
-	if client != nil {
-		return dtclient.NewPlatformClient(
-			client,
-			classicClient,
-			dtclient.WithCachingDisabled(opts.CachingDisabled),
-			dtclient.WithAutoServerVersion(),
-			dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)),
-		)
-	}
-
-	return dtclient.NewClassicClient(
-		classicClient,
-		dtclient.WithCachingDisabled(opts.CachingDisabled),
-		dtclient.WithAutoServerVersion(),
-		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)),
-	)
 }
 
 func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth, client *corerest.Client) (string, error) {

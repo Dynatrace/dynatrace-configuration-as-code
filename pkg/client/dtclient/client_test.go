@@ -22,11 +22,12 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/stretchr/testify/assert"
 )
 
 var mockAPI = api.API{ID: "mock-api", SingleConfiguration: true}
@@ -37,7 +38,7 @@ func TestNewClassicClient(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{})
 		defer server.Close()
 
-		client, err := NewClassicClient(corerest.NewClient(server.URL(), server.Client()))
+		client, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 		assert.NoError(t, err)
 		assert.Equal(t, settingsSchemaAPIPathClassic, client.settingsSchemaAPIPath)
 		assert.Equal(t, settingsObjectAPIPathClassic, client.settingsObjectAPIPath)
@@ -62,7 +63,7 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		dcl, err := NewClassicClient(corerest.NewClient(server.URL(), server.Client()), WithAutoServerVersion())
+		dcl, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()), WithAutoServerVersion())
 
 		server.Close()
 		assert.NoError(t, err)
@@ -85,7 +86,7 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		dcl, err := NewClassicClient(corerest.NewClient(server.URL(), server.Client()), WithAutoServerVersion())
+		dcl, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()), WithAutoServerVersion())
 		assert.NoError(t, err)
 		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)
 	})

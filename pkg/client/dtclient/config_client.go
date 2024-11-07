@@ -27,6 +27,8 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/exp/maps"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
@@ -34,10 +36,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"golang.org/x/exp/maps"
 )
 
-func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
+func (d *ClassicClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
 	doUpsert := func() (DynatraceEntity, error) {
 		existingObjectID, err := d.getExistingObjectId(ctx, objectName, theApi, payload)
 		if err != nil {
@@ -84,7 +85,7 @@ func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.
 	}
 }
 
-func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
+func (d *ClassicClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	ctx context.Context,
 	entityId string,
 	objectName string,
@@ -135,7 +136,7 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	return d.updateDynatraceObject(ctx, objectName, entityId, theApi, body)
 }
 
-func (d *DynatraceClient) createDynatraceObject(ctx context.Context, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+func (d *ClassicClient) createDynatraceObject(ctx context.Context, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 	endpoint := theApi.URLPath
 	if theApi.ID == api.KeyUserActionsMobile {
 		endpoint = joinUrl(endpoint, objectName)
@@ -148,7 +149,7 @@ func (d *DynatraceClient) createDynatraceObject(ctx context.Context, objectName 
 		queryParams.Add("position", "PREPEND")
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.POST, endpoint, body, theApi, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.client.POST, endpoint, body, theApi, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -203,7 +204,7 @@ func unmarshalCreateResponse(ctx context.Context, resp coreapi.Response, configT
 	return dtEntity, nil
 }
 
-func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+func (d *ClassicClient) updateDynatraceObject(ctx context.Context, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 	endpoint := theApi.URLPath
 	if !theApi.SingleConfiguration {
 		endpoint = joinUrl(endpoint, existingObjectId)
@@ -227,7 +228,7 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, objectName 
 		}, nil
 	}
 
-	_, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.PUT, endpoint, payload, theApi, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
+	_, err := d.callWithRetryOnKnowTimingIssue(ctx, d.client.PUT, endpoint, payload, theApi, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -269,7 +270,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of known errors on upload.
-func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall SendRequestWithBody, endpoint string, requestBody []byte, theApi api.API, options corerest.RequestOptions) (*coreapi.Response, error) {
+func (d *ClassicClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall SendRequestWithBody, endpoint string, requestBody []byte, theApi api.API, options corerest.RequestOptions) (*coreapi.Response, error) {
 	resp, err := coreapi.AsResponseOrError(restCall(ctx, endpoint, bytes.NewReader(requestBody), options))
 	if err == nil {
 		return resp, nil
@@ -437,7 +438,7 @@ func isUserSessionPropertiesMobile(a api.API) bool {
 	return a.ID == api.UserActionAndSessionPropertiesMobile
 }
 
-func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName string, theApi api.API, payload []byte) (string, error) {
+func (d *ClassicClient) getExistingObjectId(ctx context.Context, objectName string, theApi api.API, payload []byte) (string, error) {
 	var objID string
 	// if there is a custom equal function registered, use that instead of just the Object name
 	// in order to search for existing values
@@ -468,7 +469,7 @@ func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName st
 	return objID, nil
 }
 
-func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.API) ([]Value, error) {
+func (d *ClassicClient) fetchExistingValues(ctx context.Context, theApi api.API) ([]Value, error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
 	if (!theApi.NonUniqueName && !theApi.HasParent()) && //there is potentially more than one config per api type/id to consider
@@ -489,7 +490,7 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 		retrySetting = d.retrySettings.Normal
 	}
 
-	resp, err := GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
+	resp, err := GetWithRetry(ctx, *d.client, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
 	if err != nil {
 		return nil, err
 	}
@@ -508,7 +509,7 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 			break
 		}
 
-		resp, err = GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
+		resp, err = GetWithRetry(ctx, *d.client, theApi.URLPath, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
 		if err != nil {
 
 			apiError := coreapi.APIError{}
@@ -524,7 +525,7 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 	return existingValues, nil
 }
 
-func (d *DynatraceClient) findUniqueByName(ctx context.Context, values []Value, objectName string) string {
+func (d *ClassicClient) findUniqueByName(ctx context.Context, values []Value, objectName string) string {
 	var objectId = ""
 	var matchingObjectsFound = 0
 	for i := 0; i < len(values); i++ {
@@ -552,7 +553,7 @@ func escapeApiValueName(ctx context.Context, value Value) string {
 	return valueName.(string)
 }
 
-func (d *DynatraceClient) findUnique(ctx context.Context, values []Value, payload []byte, checkEqualFunc func(map[string]any, map[string]any) bool) (string, error) {
+func (d *ClassicClient) findUnique(ctx context.Context, values []Value, payload []byte, checkEqualFunc func(map[string]any, map[string]any) bool) (string, error) {
 	if checkEqualFunc == nil {
 		return "", nil
 	}
