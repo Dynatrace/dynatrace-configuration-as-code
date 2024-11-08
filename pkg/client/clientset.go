@@ -33,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -309,8 +308,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 			return nil, err
 		}
 
-		settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled),
-			dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)))
+		settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
 		if err != nil {
 			return nil, err
 		}
@@ -329,16 +327,13 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 			return nil, err
 		}
 
-		classicClient, err = dtclient.NewClassicClient(client, dtclient.WithCachingDisabledForClassic(opts.CachingDisabled),
-			dtclient.WithClientRequestLimiterForClassic(concurrency.NewLimiter(concurrentReqLimit)))
+		classicClient, err = dtclient.NewClassicClient(client, dtclient.WithCachingDisabledForClassic(opts.CachingDisabled))
 		if err != nil {
 			return nil, err
 		}
 
 		if settingsClient == nil {
-			settingsClient, err = dtclient.NewClassicSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled),
-				dtclient.WithAutoServerVersion(),
-				dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)))
+			settingsClient, err = dtclient.NewClassicSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled), dtclient.WithAutoServerVersion())
 			if err != nil {
 				return nil, err
 			}

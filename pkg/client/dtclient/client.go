@@ -27,7 +27,6 @@ import (
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -106,9 +105,6 @@ type SettingsClient struct {
 
 	// schemaCache caches schema constraints
 	schemaCache cache.Cache[Schema]
-
-	// limiter is used to limit parallel http requests
-	limiter *concurrency.Limiter
 }
 
 type ClassicClient struct {
@@ -119,9 +115,6 @@ type ClassicClient struct {
 
 	// classicConfigsCache caches classic settings values
 	classicConfigsCache cache.Cache[[]Value]
-
-	// limiter is used to limit parallel http requests
-	limiter *concurrency.Limiter
 }
 
 func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *SettingsClient) {
@@ -130,26 +123,10 @@ func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *Setting
 	}
 }
 
-// WithClientRequestLimiter specifies that a specifies the limiter to be used for
-// limiting parallel client requests
-func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *SettingsClient) {
-	return func(d *SettingsClient) {
-		d.limiter = limiter
-	}
-}
-
 // WithRetrySettings sets the retry settings to be used by the DynatraceClient
 func WithRetrySettings(retrySettings RetrySettings) func(*SettingsClient) {
 	return func(d *SettingsClient) {
 		d.retrySettings = retrySettings
-	}
-}
-
-// WithClientRequestLimiter specifies that a specifies the limiter to be used for
-// limiting parallel client requests
-func WithClientRequestLimiterForClassic(limiter *concurrency.Limiter) func(client *ClassicClient) {
-	return func(d *ClassicClient) {
-		d.limiter = limiter
 	}
 }
 
@@ -230,7 +207,6 @@ func NewPlatformSettingsClient(client *corerest.Client, opts ...func(dynatraceCl
 		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
 		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
 		schemaCache:           &cache.DefaultCache[Schema]{},
-		limiter:               concurrency.NewLimiter(5),
 	}
 
 	for _, o := range opts {
@@ -246,7 +222,6 @@ func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *Cla
 		client:              client,
 		retrySettings:       DefaultRetrySettings,
 		classicConfigsCache: &cache.DefaultCache[[]Value]{},
-		limiter:             concurrency.NewLimiter(5),
 	}
 
 	for _, o := range opts {
@@ -270,7 +245,6 @@ func NewClassicSettingsClient(client *corerest.Client, opts ...func(dynatraceCli
 		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
 		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
 		schemaCache:           &cache.DefaultCache[Schema]{},
-		limiter:               concurrency.NewLimiter(5),
 	}
 
 	for _, o := range opts {
@@ -336,14 +310,10 @@ func (d *ClassicClient) ConfigExistsByName(ctx context.Context, api api.API, nam
 }
 
 func (d *ClassicClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		entity, err = d.upsertConfigByName(ctx, a, name, payload)
-	})
-	return
+	return d.upsertConfigByName(ctx, a, name, payload)
 }
 
 func (d *ClassicClient) upsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
-
 	if a.ID == api.Extension {
 		return d.uploadExtension(ctx, a, name, payload)
 	}
@@ -351,10 +321,7 @@ func (d *ClassicClient) upsertConfigByName(ctx context.Context, a api.API, name 
 }
 
 func (d *ClassicClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		entity, err = d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
-	})
-	return
+	return d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
 }
 
 func (d *SettingsClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {

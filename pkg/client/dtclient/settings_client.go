@@ -181,10 +181,7 @@ func (d *SettingsClient) handleUpsertUnsupportedVersion(ctx context.Context, obj
 }
 
 func (d *SettingsClient) UpsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		result, err = d.upsertSettings(ctx, obj, upsertOptions)
-	})
-	return
+	return d.upsertSettings(ctx, obj, upsertOptions)
 }
 
 func (d *SettingsClient) upsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
