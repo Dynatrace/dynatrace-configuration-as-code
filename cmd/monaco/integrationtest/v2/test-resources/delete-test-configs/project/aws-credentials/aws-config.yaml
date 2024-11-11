@@ -1,0 +1,7 @@
+configs:
+  - id: sample-aws-id
+    config:
+      name: sample-aws-id
+      template: aws-credentials.json
+    type:
+      api: aws-credentials

@@ -20,6 +20,7 @@ package v2
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"path/filepath"
 	"testing"
 
@@ -395,4 +396,36 @@ configs:
 
 	// Assert expected deletions
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", false)
+}
+
+func TestDeleteWithOAuthOnlyManifest(t *testing.T) {
+	configFolder := "test-resources/delete-test-configs/"
+	deleteFileName := configFolder + "aws-delete.yaml"
+	cmdFlag := "--manifest=" + configFolder + "oauth-only-manifest.yaml --file=" + deleteFileName
+	deployManifestPath := configFolder + "deploy-manifest.yaml"
+	fs := testutils.CreateTestFileSystem()
+
+	t.Cleanup(func() {
+		integrationtest.CleanupIntegrationTest(t, fs, deployManifestPath, "environment", "")
+	})
+
+	t.Run("OAuth only should not throw error but skip delete", func(t *testing.T) {
+		// DEPLOY Config
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+
+		// DELETE Config
+		err = monaco.RunWithFSf(fs, "monaco delete %s --verbose", cmdFlag)
+		assert.NoError(t, err)
+
+		logFile := log.LogFilePath()
+		_, err = afero.Exists(fs, logFile)
+		assert.NoError(t, err)
+
+		// assert log for skipped deletion
+		log, err := afero.ReadFile(fs, logFile)
+		assert.NoError(t, err)
+		assert.Contains(t, string(log), "Skipped deletion of 1 Classic configuration(s) as API client was unavailable")
+	})
 }
