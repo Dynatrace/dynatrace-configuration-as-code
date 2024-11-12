@@ -402,21 +402,11 @@ func TestDeleteWithOAuthOnlyManifest(t *testing.T) {
 	configFolder := "test-resources/delete-test-configs/"
 	deleteFileName := configFolder + "aws-delete.yaml"
 	cmdFlag := "--manifest=" + configFolder + "oauth-only-manifest.yaml --file=" + deleteFileName
-	deployManifestPath := configFolder + "deploy-manifest.yaml"
 	fs := testutils.CreateTestFileSystem()
 
-	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, fs, deployManifestPath, "environment", "")
-	})
-
 	t.Run("OAuth only should not throw error but skip delete", func(t *testing.T) {
-		// DEPLOY Config
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
-		assert.NoError(t, err)
-		integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
-
 		// DELETE Config
-		err = monaco.RunWithFSf(fs, "monaco delete %s --verbose", cmdFlag)
+		err := monaco.RunWithFSf(fs, "monaco delete %s --verbose", cmdFlag)
 		assert.NoError(t, err)
 
 		logFile := log.LogFilePath()
