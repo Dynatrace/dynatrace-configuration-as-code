@@ -280,7 +280,7 @@ func NewClassicSettingsClient(client *corerest.Client, opts ...func(dynatraceCli
 	return d, nil
 }
 
-func (d *SettingsClient) CacheSettings(ctx context.Context, schemaID string) error {
+func (d *SettingsClient) Cache(ctx context.Context, schemaID string) error {
 	_, err := d.List(ctx, schemaID, ListSettingsOptions{})
 	return err
 }

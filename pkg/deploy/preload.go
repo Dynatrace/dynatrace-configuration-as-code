@@ -55,7 +55,7 @@ func preloadCaches(ctx context.Context, projects []project.Project, environmentC
 }
 
 func preloadSettingsValuesForSchemaId(ctx context.Context, client client.SettingsClient, schemaId string) {
-	if err := client.CacheSettings(ctx, schemaId); err != nil {
+	if err := client.Cache(ctx, schemaId); err != nil {
 		log.Warn("Could not cache settings values for schema %s: %s", schemaId, err)
 		return
 	}

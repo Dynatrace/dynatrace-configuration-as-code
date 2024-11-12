@@ -25,7 +25,7 @@ import (
 
 type DummySettingsClient struct{}
 
-func (c *DummySettingsClient) CacheSettings(context.Context, string) error {
+func (c *DummySettingsClient) Cache(context.Context, string) error {
 	return nil
 }
 

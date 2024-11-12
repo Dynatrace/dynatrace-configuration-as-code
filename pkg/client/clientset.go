@@ -101,7 +101,7 @@ type ConfigClient interface {
 // SettingsClient is the abstraction layer for CRUD operations on the Dynatrace Settings API.
 // Its design is intentionally not dependent on Monaco objects.
 //
-// This interface exclusively accesses the [settings api] of Dynatrace.
+// This interface exclusively accesses the [Settings API] of Dynatrace.
 //
 // The base mechanism for all methods is the same:
 // We identify objects to be updated/deleted by their external-id. If an object can not be found using its external-id, we assume
@@ -110,8 +110,8 @@ type ConfigClient interface {
 //
 // [settings api]: https://www.dynatrace.com/support/help/dynatrace-api/environment-api/settings
 type SettingsClient interface {
-	// CacheSettings caches all settings objects for a given schema.
-	CacheSettings(context.Context, string) error
+	// Cache caches all settings objects for a given schema.
+	Cache(context.Context, string) error
 
 	// Upsert either creates the supplied object, or updates an existing one.
 	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
