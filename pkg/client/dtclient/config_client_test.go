@@ -787,7 +787,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 			testApi := api.API{ID: "some-api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
 			dtclient, _ := NewClassicClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(testRetrySettings))
-			got, err := dtclient.upsertDynatraceEntityByNonUniqueNameAndId(context.TODO(), generatedUuid, theConfigName, testApi, []byte("{}"), false)
+			got, err := dtclient.UpsertConfigByNonUniqueNameAndId(context.TODO(), testApi, generatedUuid, theConfigName, []byte("{}"), false)
 			assert.NoError(t, err)
 			assert.Equal(t, got.Id, tt.expectedIdToBeUpserted)
 		})

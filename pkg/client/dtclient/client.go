@@ -310,18 +310,10 @@ func (d *ClassicClient) ConfigExistsByName(ctx context.Context, api api.API, nam
 }
 
 func (d *ClassicClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
-	return d.upsertConfigByName(ctx, a, name, payload)
-}
-
-func (d *ClassicClient) upsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 	if a.ID == api.Extension {
 		return d.uploadExtension(ctx, a, name, payload)
 	}
 	return d.upsertDynatraceObject(ctx, a, name, payload)
-}
-
-func (d *ClassicClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
-	return d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
 }
 
 func (d *SettingsClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {

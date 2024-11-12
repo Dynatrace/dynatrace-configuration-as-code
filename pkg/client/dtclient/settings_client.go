@@ -181,10 +181,6 @@ func (d *SettingsClient) handleUpsertUnsupportedVersion(ctx context.Context, obj
 }
 
 func (d *SettingsClient) UpsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
-	return d.upsertSettings(ctx, obj, upsertOptions)
-}
-
-func (d *SettingsClient) upsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
 	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
 		return d.handleUpsertUnsupportedVersion(ctx, obj)
 	}
