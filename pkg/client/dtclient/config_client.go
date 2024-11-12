@@ -131,7 +131,7 @@ func (d *ConfigClient) ExistsWithName(ctx context.Context, api api.API, name str
 	return existingObjectId != "", existingObjectId, err
 }
 
-func (d *ConfigClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *ConfigClient) UpsertByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 	if a.ID == api.Extension {
 		return d.uploadExtension(ctx, a, name, payload)
 	}

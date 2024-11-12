@@ -110,7 +110,7 @@ func (c *DummyConfigClient) Get(_ context.Context, a api.API, id string) ([]byte
 	return nil, fmt.Errorf("nothing found for id %s in api %s", id, a.ID)
 }
 
-func (c *DummyConfigClient) UpsertConfigByName(_ context.Context, a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
+func (c *DummyConfigClient) UpsertByName(_ context.Context, a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
 	entries, _ := c.GetEntries(a)
 
 	var dataEntry DataEntry

@@ -362,7 +362,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 	}
 }
 
-func TestUpsertConfigByName(t *testing.T) {
+func TestUpsertByName(t *testing.T) {
 	tests := []struct {
 		name             string
 		testApi          api.API
@@ -394,8 +394,8 @@ func TestUpsertConfigByName(t *testing.T) {
 			defer server.Close()
 
 			dtClient, _ := NewClassicClientForTesting(server.URL, server.Client())
-			dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG", nil)
-			dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG 2", nil)
+			dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG", nil)
+			dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG 2", nil)
 			assert.Equal(t, apiHits, tt.expectedAPIHits)
 		})
 	}
@@ -450,7 +450,7 @@ func TestUpsertConfig_CheckEqualityFunctionIsUsed(t *testing.T) {
 			defer server.Close()
 
 			dtClient, _ := NewClassicClientForTesting(server.URL, server.Client())
-			dtObj, err := dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG", []byte(`{}`))
+			dtObj, err := dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG", []byte(`{}`))
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedAPIHits, 2)
 			assert.Equal(t, tt.expectedDynatraceObject, dtObj)

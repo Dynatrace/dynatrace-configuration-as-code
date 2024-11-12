@@ -19,6 +19,10 @@ package classic
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/go-logr/logr"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -29,8 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
-	"github.com/go-logr/logr"
-	"strings"
 )
 
 func Deploy(ctx context.Context, configClient client.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (entities.ResolvedEntity, error) {
@@ -72,7 +74,7 @@ func Deploy(ctx context.Context, configClient client.ConfigClient, apis api.APIs
 	if apiToDeploy.NonUniqueName {
 		dtEntity, err = upsertNonUniqueNameConfig(ctx, configClient, apiToDeploy, conf, configName, renderedConfig)
 	} else {
-		dtEntity, err = configClient.UpsertConfigByName(ctx, apiToDeploy, configName, []byte(renderedConfig))
+		dtEntity, err = configClient.UpsertByName(ctx, apiToDeploy, configName, []byte(renderedConfig))
 	}
 
 	if err != nil {
