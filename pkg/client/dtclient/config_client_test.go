@@ -33,6 +33,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
 
+var mockAPI = api.API{ID: "mock-api", SingleConfiguration: true}
+var mockAPINotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
+
 var testReportsApi = api.API{ID: "reports", URLPath: "/api/config/v1/reports"}
 var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueName: true, DeprecatedBy: "dashboard-v2"}
 var testMobileAppApi = api.API{ID: "application-mobile", URLPath: "/api/config/v1/applications/mobile"}
