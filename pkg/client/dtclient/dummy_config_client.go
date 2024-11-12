@@ -69,7 +69,7 @@ func (c *DummyConfigClient) CreatedObjects() int {
 	return objects
 }
 
-func (c *DummyConfigClient) CacheConfigs(ctx context.Context, a api.API) error {
+func (c *DummyConfigClient) Cache(ctx context.Context, a api.API) error {
 	return nil
 }
 

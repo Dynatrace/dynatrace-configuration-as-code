@@ -70,7 +70,7 @@ func preloadValuesForApi(ctx context.Context, client client.ConfigClient, theApi
 	if a.HasParent() {
 		return
 	}
-	err := client.CacheConfigs(ctx, a)
+	err := client.Cache(ctx, a)
 	if err != nil {
 		log.Warn("Could not cache values for API %s: %s", theApi, err)
 		return

@@ -298,7 +298,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	theApi := api.NewAPIs()["management-zone"]
 
 	cl := client.NewMockConfigClient(gomock.NewController(t))
-	cl.EXPECT().CacheConfigs(gomock.Any(), gomock.Eq(theApi)).Times(1)
+	cl.EXPECT().Cache(gomock.Any(), gomock.Eq(theApi)).Times(1)
 	cl.EXPECT().UpsertConfigByName(gomock.Any(), gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
 	parameters := []parameter.NamedParameter{
@@ -345,7 +345,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	theApiName := "alerting-profile"
 
 	cl := client.NewMockConfigClient(gomock.NewController(t))
-	cl.EXPECT().CacheConfigs(gomock.Any(), gomock.Eq(api.NewAPIs()[theApiName])).Times(1)
+	cl.EXPECT().Cache(gomock.Any(), gomock.Eq(api.NewAPIs()[theApiName])).Times(1)
 	cl.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), gomock.Any(), theConfigName, gomock.Any(), false)
 
 	parameters := []parameter.NamedParameter{

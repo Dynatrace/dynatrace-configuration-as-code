@@ -55,8 +55,8 @@ var (
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
 // Each config endpoint is described by an [API] object to describe endpoints, structure, and behavior.
 type ConfigClient interface {
-	// CacheConfigs caches all config values for a given API.
-	CacheConfigs(ctx context.Context, a api.API) error
+	// Cache caches all config values for a given API.
+	Cache(ctx context.Context, a api.API) error
 
 	// ListConfigs lists the available configs for an API.
 	// It calls the underlying GET endpoint of the API. E.g. for alerting profiles this would be:

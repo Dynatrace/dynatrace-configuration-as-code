@@ -81,7 +81,7 @@ func NewClassicConfigClient(client *corerest.Client, opts ...func(dynatraceClien
 	return d, nil
 }
 
-func (d *ConfigClient) CacheConfigs(ctx context.Context, api api.API) error {
+func (d *ConfigClient) Cache(ctx context.Context, api api.API) error {
 	_, err := d.fetchExistingValues(ctx, api)
 	return err
 }
