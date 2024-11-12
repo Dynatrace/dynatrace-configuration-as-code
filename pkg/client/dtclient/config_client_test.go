@@ -350,7 +350,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			defer server.Close()
 
 			dtclient, _ := NewClassicClientForTesting(server.URL, server.Client(), nil)
-			_, got, err := dtclient.ConfigExistsByName(context.TODO(), testApi, tt.givenObjectName)
+			_, got, err := dtclient.ExistsWithName(context.TODO(), testApi, tt.givenObjectName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -642,7 +642,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 			}
 			dtclient, _ := NewClassicClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(s))
 
-			_, _, err := dtclient.ConfigExistsByName(context.TODO(), testApi, "")
+			_, _, err := dtclient.ExistsWithName(context.TODO(), testApi, "")
 			if tt.expectError {
 				assert.NotNil(t, err)
 			} else {

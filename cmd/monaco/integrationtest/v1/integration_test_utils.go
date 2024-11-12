@@ -27,6 +27,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -38,8 +41,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 )
 
 // AssertConfigAvailability checks specific configuration for availability
@@ -111,7 +112,7 @@ func assertConfigAvailable(t *testing.T, ctx context.Context, client client.Conf
 	assert.True(t, found, "Config %s should have a known api, but does not. Api %s does not exist", c.Coordinate, typ.Api)
 
 	if c.Skip {
-		exists, _, err := client.ConfigExistsByName(ctx, a, fmt.Sprint(name))
+		exists, _, err := client.ExistsWithName(ctx, a, fmt.Sprint(name))
 		assert.NoError(t, err)
 		assert.False(t, !exists, "Config '%s' should NOT be available on env '%s', but was. environment.", env.Name, c.Coordinate)
 
@@ -123,7 +124,7 @@ func assertConfigAvailable(t *testing.T, ctx context.Context, client client.Conf
 	exists := false
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err = wait(description, 120, func() bool {
-		exists, _, err = client.ConfigExistsByName(ctx, a, fmt.Sprint(name))
+		exists, _, err = client.ExistsWithName(ctx, a, fmt.Sprint(name))
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NoError(t, err)

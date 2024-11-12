@@ -90,10 +90,10 @@ type ConfigClient interface {
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
 	DeleteConfigById(ctx context.Context, a api.API, id string) error
 
-	// ConfigExistsByName checks if a config with the given name exists for the given API.
+	// ExistsWithName checks if a config with the given name exists for the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
-	ConfigExistsByName(ctx context.Context, a api.API, name string) (exists bool, id string, err error)
+	ExistsWithName(ctx context.Context, a api.API, name string) (exists bool, id string, err error)
 }
 
 //go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client SettingsClient

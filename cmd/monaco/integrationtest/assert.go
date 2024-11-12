@@ -192,7 +192,7 @@ func AssertConfig(t *testing.T, ctx context.Context, client client.ConfigClient,
 	var exists bool
 
 	if config.Skip {
-		exists, _, _ = client.ConfigExistsByName(ctx, theApi, name)
+		exists, _, _ = client.ExistsWithName(ctx, theApi, name)
 		assert.False(t, exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 		return
 	}
@@ -201,7 +201,7 @@ func AssertConfig(t *testing.T, ctx context.Context, client client.ConfigClient,
 
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err := wait(description, 120, func() bool {
-		exists, id, _ = client.ConfigExistsByName(ctx, theApi, name)
+		exists, id, _ = client.ExistsWithName(ctx, theApi, name)
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NoError(t, err)

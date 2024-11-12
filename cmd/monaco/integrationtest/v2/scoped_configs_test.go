@@ -73,7 +73,7 @@ func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext Te
 
 	dashboardAPI := apis[api.Dashboard]
 	dashboardName := integrationtest.AddSuffix("Application monitoring", testContext.suffix)
-	exists, dashboardID, err := clientSet.Classic().ConfigExistsByName(context.TODO(), dashboardAPI, dashboardName)
+	exists, dashboardID, err := clientSet.Classic().ExistsWithName(context.TODO(), dashboardAPI, dashboardName)
 
 	require.NoError(t, err, "expect to be able to get dashboard by name")
 	require.True(t, exists, "dashboard must exist")

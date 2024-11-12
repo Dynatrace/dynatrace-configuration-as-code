@@ -120,7 +120,7 @@ func (d *ConfigClient) DeleteConfigById(ctx context.Context, api api.API, id str
 	return nil
 }
 
-func (d *ConfigClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
+func (d *ConfigClient) ExistsWithName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
 	if api.SingleConfiguration {
 		// check that a single configuration is there by actually reading it.
 		_, err := d.Get(ctx, api, "")

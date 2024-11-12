@@ -223,7 +223,7 @@ func (c *DummyConfigClient) DeleteConfigById(_ context.Context, a api.API, id st
 	return nil
 }
 
-func (c *DummyConfigClient) ConfigExistsByName(_ context.Context, a api.API, name string) (exists bool, id string, err error) {
+func (c *DummyConfigClient) ExistsWithName(_ context.Context, a api.API, name string) (exists bool, id string, err error) {
 	entries, found := c.GetEntries(a)
 
 	if !found {
