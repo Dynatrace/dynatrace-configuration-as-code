@@ -31,12 +31,116 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
+
+type ClassicClient struct {
+	client *corerest.Client
+
+	// retrySettings are the settings to be used for retrying failed http requests
+	retrySettings RetrySettings
+
+	// classicConfigsCache caches classic settings values
+	classicConfigsCache cache.Cache[[]Value]
+}
+
+// WithRetrySettings sets the retry settings to be used by the ClassicClient
+func WithRetrySettingsForClassic(retrySettings RetrySettings) func(*ClassicClient) {
+	return func(d *ClassicClient) {
+		d.retrySettings = retrySettings
+	}
+}
+
+// WithCachingDisabledForClassic allows disabling the client's builtin caching mechanism for classic configs.
+// Disabling the caching is recommended in situations where configs are fetched immediately after their creation (e.g. in test scenarios).
+func WithCachingDisabledForClassic(disabled bool) func(client *ClassicClient) {
+	return func(d *ClassicClient) {
+		if disabled {
+			d.classicConfigsCache = &cache.NoopCache[[]Value]{}
+		}
+	}
+}
+
+func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *ClassicClient)) (*ClassicClient, error) {
+	d := &ClassicClient{
+		client:              client,
+		retrySettings:       DefaultRetrySettings,
+		classicConfigsCache: &cache.DefaultCache[[]Value]{},
+	}
+
+	for _, o := range opts {
+		if o != nil {
+			o(d)
+		}
+	}
+	return d, nil
+}
+
+func (d *ClassicClient) CacheConfigs(ctx context.Context, api api.API) error {
+	_, err := d.fetchExistingValues(ctx, api)
+	return err
+}
+
+func (d *ClassicClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
+	return d.fetchExistingValues(ctx, api)
+}
+
+func (d *ClassicClient) ReadConfigById(ctx context.Context, api api.API, id string) (json []byte, err error) {
+	var dtUrl = api.URLPath
+	if !api.SingleConfiguration {
+		dtUrl = dtUrl + "/" + url.PathEscape(id)
+	}
+
+	response, err := coreapi.AsResponseOrError(d.client.GET(ctx, dtUrl, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Data, nil
+}
+
+func (d *ClassicClient) DeleteConfigById(ctx context.Context, api api.API, id string) error {
+	parsedURL, err := url.Parse(api.URLPath)
+	if err != nil {
+		return err
+	}
+	parsedURL = parsedURL.JoinPath(id)
+
+	_, err = coreapi.AsResponseOrError(d.client.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	if err != nil {
+		apiError := coreapi.APIError{}
+		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+			log.Debug("No config with id '%s' found to delete (HTTP 404 response)", id)
+			return nil
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (d *ClassicClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
+	if api.SingleConfiguration {
+		// check that a single configuration is there by actually reading it.
+		_, err := d.ReadConfigById(ctx, api, "")
+		return err == nil, "", nil
+	}
+
+	existingObjectId, err := d.getExistingObjectId(ctx, name, api, nil)
+	return existingObjectId != "", existingObjectId, err
+}
+
+func (d *ClassicClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+	if a.ID == api.Extension {
+		return d.uploadExtension(ctx, a, name, payload)
+	}
+	return d.upsertDynatraceObject(ctx, a, name, payload)
+}
 
 func (d *ClassicClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
 	doUpsert := func() (DynatraceEntity, error) {

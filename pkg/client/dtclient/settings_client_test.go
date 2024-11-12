@@ -32,10 +32,70 @@ import (
 	"github.com/stretchr/testify/require"
 
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
+
+func TestNewClassicSettingsClient(t *testing.T) {
+	t.Run("Client has correct URLs and settings API path", func(t *testing.T) {
+		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{})
+		defer server.Close()
+
+		client, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+		assert.NoError(t, err)
+		assert.Equal(t, settingsSchemaAPIPathClassic, client.settingsSchemaAPIPath)
+		assert.Equal(t, settingsObjectAPIPathClassic, client.settingsObjectAPIPath)
+	})
+}
+
+func TestNewClassicSettingsClientWithAutoServerVersion(t *testing.T) {
+	t.Run("Valid server version is parsed correctly", func(t *testing.T) {
+
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"version" : "1.262.0.20230214-193525"}`,
+						ContentType:  "application/json",
+					}
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		dcl, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()), WithAutoServerVersion())
+
+		server.Close()
+		assert.NoError(t, err)
+		assert.Equal(t, version.Version{Major: 1, Minor: 262}, dcl.serverVersion)
+	})
+
+	t.Run("Invalid server version is parsed to unknown", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{}`,
+						ContentType:  "application/json",
+					}
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		dcl, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()), WithAutoServerVersion())
+		assert.NoError(t, err)
+		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)
+	})
+}
 
 func Test_schemaDetails(t *testing.T) {
 
