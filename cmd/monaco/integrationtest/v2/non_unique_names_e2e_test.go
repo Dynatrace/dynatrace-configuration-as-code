@@ -70,7 +70,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, id := range []string{firstExistingObjectUUID, secondExistingObjectUUID, monacoGeneratedUUID} {
-			if err := c.DeleteConfigById(context.TODO(), a, id); err != nil {
+			if err := c.Delete(context.TODO(), a, id); err != nil {
 				t.Log("failed to cleanup test config with ID: ", id)
 			}
 		}
@@ -145,7 +145,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, id := range []string{firstExistingObjectUUID, secondExistingObjectUUID, monacoGeneratedUUID, otherMonacoGeneratedUUID} {
-			if err := c.DeleteConfigById(context.TODO(), a, id); err != nil {
+			if err := c.Delete(context.TODO(), a, id); err != nil {
 				t.Log("failed to cleanup test config with ID: ", id)
 			}
 		}

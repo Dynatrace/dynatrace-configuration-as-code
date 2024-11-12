@@ -195,7 +195,7 @@ func (c *DummyConfigClient) writeRequest(a api.API, name string, payload []byte)
 	}
 }
 
-func (c *DummyConfigClient) DeleteConfigById(_ context.Context, a api.API, id string) error {
+func (c *DummyConfigClient) Delete(_ context.Context, a api.API, id string) error {
 
 	c.entriesLock.Lock()
 	defer c.entriesLock.Unlock()

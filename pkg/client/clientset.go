@@ -85,10 +85,10 @@ type ConfigClient interface {
 	//	 PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... with the given (or found by unique name) entity ID
 	UpsertConfigByNonUniqueNameAndId(ctx context.Context, a api.API, entityID string, name string, payload []byte, duplicate bool) (entity dtclient.DynatraceEntity, err error)
 
-	// DeleteConfigById removes a given config for a given API using its id.
+	// Delete removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
-	DeleteConfigById(ctx context.Context, a api.API, id string) error
+	Delete(ctx context.Context, a api.API, id string) error
 
 	// ExistsWithName checks if a config with the given name exists for the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:

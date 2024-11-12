@@ -718,7 +718,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				c.EXPECT().List(gomock.Any(), matcher.EqAPI(a)).Return(tc.args.values, nil).Times(len(tc.args.entries))
 			}
 			for _, id := range tc.expect.ids {
-				c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(a), id).Times(1)
+				c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(a), id).Times(1)
 			}
 
 			err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, entriesToDelete)
@@ -930,7 +930,7 @@ func TestConfigsWithParent(t *testing.T) {
 				c.EXPECT().List(gomock.Any(), matcher.EqAPI(tc.mock.list.api)).Return(tc.mock.list.response, tc.mock.list.err).Times(1)
 			}
 			if tc.mock.del != nil {
-				c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(tc.mock.del.api), tc.mock.del.id).Return(tc.mock.del.err).Times(1)
+				c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(tc.mock.del.api), tc.mock.del.id).Return(tc.mock.del.err).Times(1)
 			}
 
 			err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, tc.forDelete)
@@ -948,7 +948,7 @@ func TestDelete_Classic(t *testing.T) {
 		c := client.NewMockConfigClient(gomock.NewController(t))
 		theAPI := api.NewAPIs()[api.ApplicationWeb]
 		c.EXPECT().List(gomock.Any(), matcher.EqAPI(theAPI)).Return([]dtclient.Value{{Id: "DT-id-of-app", Name: "application name"}}, nil).Times(1)
-		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
 
 		given := delete.DeleteEntries{
 			"application-web": {
@@ -965,7 +965,7 @@ func TestDelete_Classic(t *testing.T) {
 
 	t.Run("identification via 'objectId'", func(t *testing.T) {
 		c := client.NewMockConfigClient(gomock.NewController(t))
-		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(api.NewAPIs()["application-web"]), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(api.NewAPIs()["application-web"]), "DT-id-of-app").Return(nil).Times(1)
 
 		given := delete.DeleteEntries{
 			"application-web": {
@@ -1006,7 +1006,7 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 			{Id: "DT-id-of-app", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test.com", "actionType": "Load"}},
 			{Id: "DT-id-of-app2", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test2.com", "actionType": "Load"}},
 		}, nil).Times(1)
-		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
 
 		de := delete.DeleteEntries{
 			"key-user-actions-web": {
@@ -1029,7 +1029,7 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 		c := client.NewMockConfigClient(gomock.NewController(t))
 
 		c.EXPECT().List(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
-		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
 
 		de := delete.DeleteEntries{
 			"key-user-actions-web": {

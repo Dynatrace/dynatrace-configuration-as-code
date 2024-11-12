@@ -100,7 +100,7 @@ func (d *ConfigClient) Get(ctx context.Context, api api.API, id string) (json []
 	return response.Data, nil
 }
 
-func (d *ConfigClient) DeleteConfigById(ctx context.Context, api api.API, id string) error {
+func (d *ConfigClient) Delete(ctx context.Context, api api.API, id string) error {
 	parsedURL, err := url.Parse(api.URLPath)
 	if err != nil {
 		return err

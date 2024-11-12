@@ -69,7 +69,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 			}
 		}
 
-		if e := client.DeleteConfigById(ctx, a, id); e != nil && !is404(e) {
+		if e := client.Delete(ctx, a, id); e != nil && !is404(e) {
 			log.WithFields(field.Error(e)).Error("failed to delete config: %v", e)
 			err = errors.Join(err, e)
 		}
@@ -165,7 +165,7 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 		for _, v := range values {
 			logger := logger.WithFields(field.F("value", v))
 			logger.Debug("Deleting config %s:%s...", a.ID, v.Id)
-			err := client.DeleteConfigById(ctx, a, v.Id)
+			err := client.Delete(ctx, a, v.Id)
 
 			if err != nil {
 				logger.WithFields(field.Error(err)).Error("Failed to delete %s with ID %s: %v", a.ID, v.Id, err)
