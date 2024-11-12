@@ -55,7 +55,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.Value{}, nil)
-				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]byte("{}"), nil) // singleton configs are always attempted
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]byte("{}"), nil) // singleton configs are always attempted
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
 				c.EXPECT().ListSchemas(gomock.Any()).Return(dtclient.SchemaList{}, nil)
@@ -72,7 +72,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), gomock.Any()).Times(0)
-				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
 				c.EXPECT().ListSchemas(gomock.Any()).AnyTimes().Return(dtclient.SchemaList{{SchemaId: "builtin:magic.secret"}}, nil)
@@ -90,7 +90,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
-				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), "42").AnyTimes().Return([]byte("{}"), nil)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), "42").AnyTimes().Return([]byte("{}"), nil)
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
 				c.EXPECT().ListSchemas(gomock.Any()).Times(0)
@@ -107,7 +107,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
-				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), "42").AnyTimes().Return([]byte("{}"), nil)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), "42").AnyTimes().Return([]byte("{}"), nil)
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
 				c.EXPECT().ListSchemas(gomock.Any()).AnyTimes().Return(dtclient.SchemaList{{SchemaId: "builtin:magic.secret"}}, nil)
@@ -125,7 +125,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.Value{}, nil)
-				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]byte("{}"), nil) // singleton configs are always attempted
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]byte("{}"), nil) // singleton configs are always attempted
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
 				c.EXPECT().ListSchemas(gomock.Any()).Times(0)
@@ -142,7 +142,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), gomock.Any()).Times(0)
-				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
 				c.EXPECT().ListSchemas(gomock.Any()).Return(dtclient.SchemaList{}, nil)

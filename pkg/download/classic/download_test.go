@@ -50,8 +50,8 @@ func TestDownload_KeyUserActionMobile(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
 	c.EXPECT().List(context.TODO(), apiMap[api.ApplicationMobile]).Return([]dtclient.Value{{Id: applicationId, Name: "some-application-name"}}, nil).Times(2)
 	c.EXPECT().List(context.TODO(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId)).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil).Times(1)
-	c.EXPECT().ReadConfigById(context.TODO(), apiMap[api.ApplicationMobile], applicationId).Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil).Times(1)
-	c.EXPECT().ReadConfigById(context.TODO(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId), "").Return([]byte(`{}`), nil).Times(1)
+	c.EXPECT().Get(context.TODO(), apiMap[api.ApplicationMobile], applicationId).Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil).Times(1)
+	c.EXPECT().Get(context.TODO(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId), "").Return([]byte(`{}`), nil).Times(1)
 
 	configurations, err := classic.Download(c, "project", apiMap, classic.ApiContentFilters)
 	require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestDownload_KeyUserActionWeb(t *testing.T) {
 	ctx := context.TODO()
 	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
 	c.EXPECT().List(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
-	c.EXPECT().ReadConfigById(ctx, gomock.Any(), "").Return([]byte(`{"keyUserActionList":[{"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"}]}`), nil)
+	c.EXPECT().Get(ctx, gomock.Any(), "").Return([]byte(`{"keyUserActionList":[{"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"}]}`), nil)
 
 	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{api.KeyUserActionsWeb}))
 
@@ -107,7 +107,7 @@ func TestDownload_KeyUserActionWeb_Uniqnes(t *testing.T) {
 	ctx := context.TODO()
 	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
 	c.EXPECT().List(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID2", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID3", Name: "the_name"}}, nil)
-	c.EXPECT().ReadConfigById(ctx, matcher.EqAPI(apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")), "").Return([]byte(`{
+	c.EXPECT().Get(ctx, matcher.EqAPI(apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")), "").Return([]byte(`{
 "keyUserActionList":[
   {"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"},
   {"name":"the_name","actionType":"Load","domain":"dt2.com","meIdentifier":"APPLICATION_METHOD-ID2"},
@@ -129,7 +129,7 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
 	c.EXPECT().List(gomock.Any(), matcher.EqAPI(api1)).Return([]dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil)
 	c.EXPECT().List(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
-	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
+	c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
 
 	filters := map[string]classic.ContentFilter{"API_ID_1": {
 		ShouldConfigBePersisted: func(_ map[string]interface{}) bool {
@@ -181,7 +181,7 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 			c := client.NewMockConfigClient(gomock.NewController(t))
 			c.EXPECT().List(gomock.Any(), matcher.EqAPI(api1)).Return([]dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil)
 			c.EXPECT().List(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
-			c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
+			c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
 
 			t.Setenv(featureflags.Permanent[featureflags.DownloadFilterClassicConfigs].EnvName(), strconv.FormatBool(tt.withFiltering))
 			t.Setenv(featureflags.Permanent[featureflags.DownloadFilter].EnvName(), strconv.FormatBool(tt.withFiltering))
@@ -200,7 +200,7 @@ func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
 	c.EXPECT().List(gomock.Any(), matcher.EqAPI(api1)).Return([]dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil)
 	c.EXPECT().List(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
-	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+	c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
 	filters := map[string]classic.ContentFilter{"API_ID_1": {
 		ShouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
@@ -220,39 +220,39 @@ func Test_generalCases(t *testing.T) {
 	tests := []struct {
 		name           string
 		mockList       []listMockData
-		mockConfigByID []readConfigByIDData
+		mockConfigByID []getData
 		expectedKeys   []string // the tick is to have only one entry per an api, and to check which API is present in resulut
 	}{
 		{
-			name: "ReadConfigById (GET by ID) returns empty configuration - works",
+			name: "Get (GET by ID) returns empty configuration - works",
 			mockList: []listMockData{
 				{api: api1, response: []dtclient.Value{{Id: "ID_1", Name: "NAME_1"}}},
 				{api: api2, response: []dtclient.Value{{Id: "ID_2", Name: "NAME_2"}}},
 			},
-			mockConfigByID: []readConfigByIDData{
+			mockConfigByID: []getData{
 				{id: "ID_1", response: "{}"},
 				{id: "ID_2", response: "{}"},
 			},
 			expectedKeys: []string{"API_1", "API_2"},
 		},
 		{
-			name: "ReadConfigById (GET by ID) details returns NO configuration - works",
+			name: "Get (GET by ID) details returns NO configuration - works",
 			mockList: []listMockData{
 				{api: api1, response: []dtclient.Value{{Id: "ID_1", Name: "NAME_1"}}},
 				{api: api2, response: []dtclient.Value{{Id: "ID_2", Name: "NAME_2"}}},
 			},
-			mockConfigByID: []readConfigByIDData{
+			mockConfigByID: []getData{
 				{id: "ID_1"},
 				{id: "ID_2"},
 			},
 		},
 		{
-			name: "ReadConfigById (GET by ID) returns error - works",
+			name: "Get (GET by ID) returns error - works",
 			mockList: []listMockData{
 				{api: api1, response: []dtclient.Value{{Id: "ID_1", Name: "NAME_1"}}},
 				{api: api2, response: []dtclient.Value{{Id: "ID_2", Name: "NAME_2"}}},
 			},
-			mockConfigByID: []readConfigByIDData{
+			mockConfigByID: []getData{
 				{id: "ID_1", err: fmt.Errorf("some HTTP error")},
 				{id: "ID_2", err: fmt.Errorf("some HTTP error")},
 			},
@@ -263,7 +263,7 @@ func Test_generalCases(t *testing.T) {
 				{api: api1, response: []dtclient.Value{{Id: "ID_1", Name: "NAME_1"}}},
 				{api: api2},
 			},
-			mockConfigByID: []readConfigByIDData{
+			mockConfigByID: []getData{
 				{id: "ID_1", response: "{}"},
 			},
 			expectedKeys: []string{"API_1"},
@@ -274,7 +274,7 @@ func Test_generalCases(t *testing.T) {
 				{api: api1, response: []dtclient.Value{{Id: "ID_1", Name: "NAME_1"}}},
 				{api: api2, response: []dtclient.Value{}},
 			},
-			mockConfigByID: []readConfigByIDData{
+			mockConfigByID: []getData{
 				{id: "ID_1", response: "{}"},
 			},
 			expectedKeys: []string{"API_1"},
@@ -284,7 +284,7 @@ func Test_generalCases(t *testing.T) {
 			mockList: []listMockData{
 				{api: api1, response: []dtclient.Value{{Id: "ID_1", Name: "NAME_1"}}},
 				{api: api2, response: []dtclient.Value{{Id: "ID_2", Name: "NAME_2"}}}},
-			mockConfigByID: []readConfigByIDData{
+			mockConfigByID: []getData{
 				{id: "ID_1", response: "{}"},
 				{id: "ID_2", response: "not a JSON - ignore"},
 			},
@@ -299,7 +299,7 @@ func Test_generalCases(t *testing.T) {
 				c.EXPECT().List(gomock.Any(), matcher.EqAPI(m.api)).Return(m.response, m.err)
 			}
 			for _, m := range tc.mockConfigByID {
-				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), m.id).Return([]byte(m.response), m.err)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), m.id).Return([]byte(m.response), m.err)
 			}
 
 			actual, err := classic.Download(c, "project", toAPIs(api1, api2), classic.ApiContentFilters)
@@ -319,7 +319,7 @@ type (
 		response []dtclient.Value
 		err      error
 	}
-	readConfigByIDData struct {
+	getData struct {
 		id, response string
 		err          error
 	}

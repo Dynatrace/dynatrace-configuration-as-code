@@ -803,7 +803,7 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 	client, err := NewClassicClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	_, err = client.ReadConfigById(context.TODO(), mockAPI, "test")
+	_, err = client.Get(context.TODO(), mockAPI, "test")
 	assert.ErrorContains(t, err, "failed with status code")
 }
 
@@ -816,7 +816,7 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 	client, err := NewClassicClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	_, err = client.ReadConfigById(context.TODO(), mockAPINotSingle, unescapedID)
+	_, err = client.Get(context.TODO(), mockAPINotSingle, unescapedID)
 	assert.NoError(t, err)
 }
 
@@ -831,7 +831,7 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	client, err := NewClassicClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	resp, err := client.ReadConfigById(context.TODO(), mockAPI, "test")
+	resp, err := client.Get(context.TODO(), mockAPI, "test")
 	assert.NoError(t, err, "there should not be an error")
 	assert.Equal(t, body, resp)
 }

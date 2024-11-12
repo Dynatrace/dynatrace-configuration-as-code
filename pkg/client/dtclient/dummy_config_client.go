@@ -94,7 +94,7 @@ func (c *DummyConfigClient) List(_ context.Context, a api.API) (values []Value, 
 	return result, nil
 }
 
-func (c *DummyConfigClient) ReadConfigById(_ context.Context, a api.API, id string) ([]byte, error) {
+func (c *DummyConfigClient) Get(_ context.Context, a api.API, id string) ([]byte, error) {
 	entries, found := c.GetEntries(a)
 
 	if !found {

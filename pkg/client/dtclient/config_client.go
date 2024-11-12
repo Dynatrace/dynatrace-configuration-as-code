@@ -86,7 +86,7 @@ func (d *ConfigClient) Cache(ctx context.Context, api api.API) error {
 	return err
 }
 
-func (d *ConfigClient) ReadConfigById(ctx context.Context, api api.API, id string) (json []byte, err error) {
+func (d *ConfigClient) Get(ctx context.Context, api api.API, id string) (json []byte, err error) {
 	var dtUrl = api.URLPath
 	if !api.SingleConfiguration {
 		dtUrl = dtUrl + "/" + url.PathEscape(id)
@@ -123,7 +123,7 @@ func (d *ConfigClient) DeleteConfigById(ctx context.Context, api api.API, id str
 func (d *ConfigClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
 	if api.SingleConfiguration {
 		// check that a single configuration is there by actually reading it.
-		_, err := d.ReadConfigById(ctx, api, "")
+		_, err := d.Get(ctx, api, "")
 		return err == nil, "", nil
 	}
 

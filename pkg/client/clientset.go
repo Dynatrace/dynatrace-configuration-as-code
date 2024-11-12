@@ -64,10 +64,10 @@ type ConfigClient interface {
 	// The result is expressed using a list of Value (id and name tuples).
 	List(ctx context.Context, a api.API) (values []dtclient.Value, err error)
 
-	// ReadConfigById reads a Dynatrace config identified by id from the given API.
+	// Get reads a Dynatrace config identified by id from the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles/<id> ... to get the alerting profile
-	ReadConfigById(ctx context.Context, a api.API, id string) (json []byte, err error)
+	Get(ctx context.Context, a api.API, id string) (json []byte, err error)
 
 	// UpsertConfigByName creates a given Dynatrace config if it doesn't exist and updates it otherwise using its name.
 	// It calls the underlying GET, POST, and PUT endpoints for the API. E.g. for alerting profiles this would be:
