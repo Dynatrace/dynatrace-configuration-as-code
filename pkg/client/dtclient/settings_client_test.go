@@ -1502,7 +1502,7 @@ func TestListKnownSettings(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			res, err1 := client.ListSettings(context.TODO(), tt.givenSchemaID, tt.givenListSettingsOpts)
+			res, err1 := client.List(context.TODO(), tt.givenSchemaID, tt.givenListSettingsOpts)
 
 			if tt.wantError {
 				assert.Error(t, err1)

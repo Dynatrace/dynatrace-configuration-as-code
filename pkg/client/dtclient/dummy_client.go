@@ -22,10 +22,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 
@@ -286,7 +287,7 @@ func (c *DummyClient) GetSchemaById(_ context.Context, _ string) (schema Schema,
 func (c *DummyClient) GetSettingById(_ context.Context, _ string) (*DownloadSettingsObject, error) {
 	return &DownloadSettingsObject{}, nil
 }
-func (c *DummyClient) ListSettings(_ context.Context, _ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
+func (c *DummyClient) List(_ context.Context, _ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	return make([]DownloadSettingsObject, 0), nil
 }
 

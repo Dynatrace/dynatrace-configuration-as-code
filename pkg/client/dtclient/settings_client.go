@@ -100,7 +100,7 @@ type (
 )
 
 func (d *SettingsClient) CacheSettings(ctx context.Context, schemaID string) error {
-	_, err := d.ListSettings(ctx, schemaID, ListSettingsOptions{})
+	_, err := d.List(ctx, schemaID, ListSettingsOptions{})
 	return err
 }
 
@@ -207,7 +207,7 @@ func (d *SettingsClient) UpsertSettings(ctx context.Context, obj SettingsObject,
 		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
 	}
 
-	settingsWithExternalID, err := d.ListSettings(ctx, obj.SchemaId, ListSettingsOptions{
+	settingsWithExternalID, err := d.List(ctx, obj.SchemaId, ListSettingsOptions{
 		Filter: func(object DownloadSettingsObject) bool { return object.ExternalId == legacyExternalID },
 	})
 	if err != nil {
@@ -227,7 +227,7 @@ func (d *SettingsClient) UpsertSettings(ctx context.Context, obj SettingsObject,
 	// it is not possible to update the setting using the externalId and origin-object-id on the same POST request,
 	// as two settings objects can be the target of the change. In this case, we remove the origin-object-id
 	// and only update the object using the externalId.
-	settings, err := d.ListSettings(ctx, obj.SchemaId, ListSettingsOptions{
+	settings, err := d.List(ctx, obj.SchemaId, ListSettingsOptions{
 		Filter: func(object DownloadSettingsObject) bool {
 			return object.ObjectId == obj.OriginObjectId || object.ExternalId == externalID
 		},
@@ -295,7 +295,7 @@ func (d *SettingsClient) findObjectWithMatchingConstraints(ctx context.Context, 
 		return match{}, false, nil
 	}
 
-	objects, err := d.ListSettings(ctx, source.SchemaId, ListSettingsOptions{})
+	objects, err := d.List(ctx, source.SchemaId, ListSettingsOptions{})
 	if err != nil {
 		return match{}, false, fmt.Errorf("unable to get existing settings objects for %q schema: %w", source.SchemaId, err)
 	}
@@ -450,7 +450,7 @@ func parsePostResponse(body []byte) (DynatraceEntity, error) {
 	}, nil
 }
 
-func (d *SettingsClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
+func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
 	if settings, cached := d.settingsCache.Get(schemaId); cached {
 		log.WithCtxFields(ctx).Debug("Using cached settings for schema %s", schemaId)
 		return filter.FilterSlice(settings, opts.Filter), nil

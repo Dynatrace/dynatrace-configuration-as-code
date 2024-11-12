@@ -21,6 +21,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
@@ -37,8 +40,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"strings"
-	"sync"
 )
 
 type schema struct {
@@ -137,7 +138,7 @@ func download(client client.SettingsClient, schemas []schema, projectName string
 			lg := log.WithFields(field.Type(s.id))
 
 			lg.Debug("Downloading all settings for schema '%s'", s.id)
-			objects, err := client.ListSettings(context.TODO(), s.id, dtclient.ListSettingsOptions{})
+			objects, err := client.List(context.TODO(), s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string
 				var apiErr coreapi.APIError

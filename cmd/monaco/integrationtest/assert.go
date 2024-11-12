@@ -23,16 +23,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
-	"github.com/stretchr/testify/assert"
-	"net/http"
-	"testing"
-	"time"
+
+	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -42,7 +46,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
-	"github.com/spf13/afero"
 )
 
 type entityLookup map[coordinate.Coordinate]entities.ResolvedEntity
@@ -219,7 +222,7 @@ func AssertSetting(t *testing.T, ctx context.Context, c client.SettingsClient, t
 		return
 	}
 
-	objects, err := c.ListSettings(ctx, typ.SchemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
+	objects, err := c.List(ctx, typ.SchemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
 	assert.NoError(t, err)
 
 	if len(objects) > 1 {

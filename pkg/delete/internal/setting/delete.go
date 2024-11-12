@@ -19,13 +19,14 @@ package setting
 import (
 	"fmt"
 
+	"golang.org/x/net/context"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	"golang.org/x/net/context"
 )
 
 func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.DeletePointer) error {
@@ -49,7 +50,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 			continue
 		}
 
-		objects, err := c.ListSettings(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
+		objects, err := c.List(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
 		if err != nil {
 			logger.Error("Could not fetch settings object: %v", err)
 			deleteErrs++
@@ -128,7 +129,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 		logger := logger.WithFields(field.Type(s))
 		logger.Info("Collecting objects of type %q...", s)
 
-		settings, err := c.ListSettings(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
+		settings, err := c.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
 			logger.WithFields(field.Error(err)).Error("Failed to collect object for schema %q: %v", s, err)
 			errs++
