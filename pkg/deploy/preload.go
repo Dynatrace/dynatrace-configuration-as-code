@@ -46,7 +46,7 @@ func preloadCaches(ctx context.Context, projects []project.Project, environmentC
 				preloadSettingsValuesForSchemaId(ctx, p.clientset.SettingsClient, t.SchemaId)
 
 			case config.ClassicApiType:
-				preloadValuesForApi(ctx, p.clientset.ClassicClient, t.Api)
+				preloadValuesForApi(ctx, p.clientset.ConfigClient, t.Api)
 			}
 
 		}(p)
@@ -97,7 +97,7 @@ func gatherPreloadConfigTypeEntries(projects []project.Project, environmentClien
 
 				switch t := c.Type.(type) {
 				case config.ClassicApiType:
-					if environmentClientSet.ClassicClient != nil {
+					if environmentClientSet.ConfigClient != nil {
 						preloads = append(preloads, preloadConfigTypeEntry{configType: t, clientset: environmentClientSet})
 					}
 

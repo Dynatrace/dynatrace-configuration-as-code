@@ -86,8 +86,8 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 
 func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entries []pointer.DeletePointer) error {
 	if _, ok := api.NewAPIs()[t]; ok {
-		if clients.ClassicClient != nil {
-			return classic.Delete(ctx, clients.ClassicClient, entries)
+		if clients.ConfigClient != nil {
+			return classic.Delete(ctx, clients.ConfigClient, entries)
 		}
 		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Classic configuration(s) as API client was unavailable.", len(entries))
 	} else if t == "bucket" {
@@ -120,9 +120,9 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 	errCount := 0
 
-	if clients.ClassicClient == nil {
+	if clients.ConfigClient == nil {
 		log.Warn("Skipped deletion of classic configurations as API client was unavailable.")
-	} else if err := classic.DeleteAll(ctx, clients.ClassicClient, apis); err != nil {
+	} else if err := classic.DeleteAll(ctx, clients.ConfigClient, apis); err != nil {
 		log.Error("Failed to delete all classic API configurations: %v", err)
 		errCount++
 	}

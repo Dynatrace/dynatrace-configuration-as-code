@@ -31,7 +31,7 @@ import (
 )
 
 var DummyClientSet = ClientSet{
-	ClassicClient:      &dtclient.DummyConfigClient{},
+	ConfigClient:       &dtclient.DummyConfigClient{},
 	SettingsClient:     &dtclient.DummySettingsClient{},
 	AutClient:          &DummyAutomationClient{},
 	BucketClient:       &DummyBucketClient{},

@@ -86,14 +86,14 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -160,14 +160,14 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -254,14 +254,14 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 	fs := afero.NewMemMapFs()
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NoError(t, err)
 
@@ -376,14 +376,14 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NoError(t, err)
 
@@ -448,14 +448,14 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NoError(t, err)
 
@@ -523,14 +523,14 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -624,7 +624,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 
 	fs := afero.NewMemMapFs()
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
@@ -633,7 +633,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 	t.Setenv(featureflags.Permanent[featureflags.DownloadFilterClassicConfigs].EnvName(), "false")
 
 	// WHEN we download everything
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -746,14 +746,14 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -890,14 +890,14 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 
 			fs := afero.NewMemMapFs()
 
-			classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+			configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 			require.NoError(t, err)
 
 			settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 			require.NoError(t, err)
 
 			// WHEN we download everything
-			err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
+			err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
 			assert.NoError(t, err)
 
 			// THEN we can load the project again and verify its content
@@ -967,13 +967,13 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	options.forceOverwriteManifest = true
 	options.outputFolder = testBasePath
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apis, options)
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apis, options)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1063,13 +1063,13 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	opts.onlySettings = false
 	opts.onlyAPIs = false
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apis, opts)
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apis, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1127,13 +1127,13 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	opts.onlySettings = false
 	opts.onlyAPIs = true
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, apis, opts)
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apis, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1181,13 +1181,13 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 	opts.onlySettings = true
 	opts.onlyAPIs = false
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, nil, opts)
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, nil, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1238,7 +1238,7 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	opts.onlySettings = true
 	opts.onlyAPIs = false
 
-	classicClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
@@ -1247,7 +1247,7 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	// GIVEN filter feature flag is turned OFF
 	t.Setenv(featureflags.Permanent[featureflags.DownloadFilterSettingsUnmodifiable].EnvName(), "false")
 
-	err = doDownloadConfigs(fs, &client.ClientSet{ClassicClient: classicClient, SettingsClient: settingsClient}, nil, opts)
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, nil, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content

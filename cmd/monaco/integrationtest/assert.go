@@ -155,7 +155,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						theApi = theApi.ApplyParentObjectID(scope)
 					}
 
-					foundID = AssertConfig(t, ctx, clients.Classic(), theApi, env, available, theConfig, configName)
+					foundID = AssertConfig(t, ctx, clients.Config(), theApi, env, available, theConfig, configName)
 				case config.AutomationType:
 					if clients.Automation() == nil {
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)

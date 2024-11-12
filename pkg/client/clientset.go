@@ -173,8 +173,8 @@ var DefaultRetryOptions = corerest.RetryOptions{MaxRetries: 10, ShouldRetryFunc:
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
 type ClientSet struct {
-	// ClassicClient is the client capable of updating or creating classic configs
-	ClassicClient ConfigClient
+	// ConfigClient is the client capable of updating or creating classic configs
+	ConfigClient ConfigClient
 
 	// SettingsClient is the client capable of updating or creating settings
 	SettingsClient SettingsClient
@@ -192,8 +192,8 @@ type ClientSet struct {
 	OpenPipelineClient OpenPipelineClient
 }
 
-func (s ClientSet) Classic() ConfigClient {
-	return s.ClassicClient
+func (s ClientSet) Config() ConfigClient {
+	return s.ConfigClient
 }
 
 func (s ClientSet) Settings() SettingsClient {
@@ -252,7 +252,7 @@ func validateURL(dtURL string) error {
 
 func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
 	var (
-		classicClient      ConfigClient
+		configClient       ConfigClient
 		settingsClient     SettingsClient
 		bucketClient       BucketClient
 		autClient          AutomationClient
@@ -327,7 +327,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 			return nil, err
 		}
 
-		classicClient, err = dtclient.NewClassicConfigClient(client, dtclient.WithCachingDisabledForConfigClient(opts.CachingDisabled))
+		configClient, err = dtclient.NewClassicConfigClient(client, dtclient.WithCachingDisabledForConfigClient(opts.CachingDisabled))
 		if err != nil {
 			return nil, err
 		}
@@ -341,7 +341,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 	}
 
 	return &ClientSet{
-		ClassicClient:      classicClient,
+		ConfigClient:       configClient,
 		SettingsClient:     settingsClient,
 		AutClient:          autClient,
 		BucketClient:       bucketClient,

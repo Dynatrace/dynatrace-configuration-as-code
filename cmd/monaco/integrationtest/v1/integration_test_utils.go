@@ -72,7 +72,7 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 	ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, coord)
 	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: conf.Environment, Group: conf.Group})
 
-	assertConfigAvailable(t, ctx, clients.Classic(), envDefinition, available, *conf)
+	assertConfigAvailable(t, ctx, clients.Config(), envDefinition, available, *conf)
 }
 
 func getConfigsForEnv(t *testing.T, project project.Project, env manifest.EnvironmentDefinition) project.ConfigsPerType {

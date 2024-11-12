@@ -721,7 +721,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(a), id).Times(1)
 			}
 
-			err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, entriesToDelete)
+			err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, entriesToDelete)
 			if tc.expect.err {
 				assert.Error(t, err)
 			} else {
@@ -933,7 +933,7 @@ func TestConfigsWithParent(t *testing.T) {
 				c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(tc.mock.del.api), tc.mock.del.id).Return(tc.mock.del.err).Times(1)
 			}
 
-			err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, tc.forDelete)
+			err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, tc.forDelete)
 			if !tc.wantErr {
 				assert.NoError(t, err)
 			} else {
@@ -959,7 +959,7 @@ func TestDelete_Classic(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, given)
 		require.NoError(t, err)
 	})
 
@@ -976,7 +976,7 @@ func TestDelete_Classic(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, given)
 		require.NoError(t, err)
 	})
 
@@ -991,7 +991,7 @@ func TestDelete_Classic(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, given)
 		require.NoError(t, err)
 	})
 }
@@ -1020,7 +1020,7 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, de)
+		err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, de)
 		assert.NoError(t, err)
 	})
 
@@ -1043,7 +1043,7 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, de)
+		err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, de)
 		assert.NoError(t, err)
 	})
 }

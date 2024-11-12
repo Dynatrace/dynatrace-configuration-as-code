@@ -276,7 +276,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		resolvedEntity, deployErr = setting.Deploy(ctx, clientset.SettingsClient, properties, renderedConfig, c, insertAfter)
 
 	case config.ClassicApiType:
-		resolvedEntity, deployErr = classic.Deploy(ctx, clientset.ClassicClient, api.NewAPIs(), properties, renderedConfig, c)
+		resolvedEntity, deployErr = classic.Deploy(ctx, clientset.ConfigClient, api.NewAPIs(), properties, renderedConfig, c)
 
 	case config.AutomationType:
 		resolvedEntity, deployErr = automation.Deploy(ctx, clientset.AutClient, properties, renderedConfig, c)

@@ -172,7 +172,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			settingsClient := client.NewMockSettingsClient(gomock.NewController(t))
 			tt.expectedSettingsBehaviour(settingsClient)
 
-			_, err := downloadConfigs(&client.ClientSet{ClassicClient: configClient, SettingsClient: settingsClient}, api.NewAPIs(), tt.givenOpts, defaultDownloadFn)
+			_, err := downloadConfigs(&client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, api.NewAPIs(), tt.givenOpts, defaultDownloadFn)
 			assert.NoError(t, err)
 		})
 	}
@@ -321,7 +321,7 @@ func TestDownload_Options(t *testing.T) {
 			}
 
 			c := client.NewMockConfigClient(gomock.NewController(t))
-			_, err := downloadConfigs(&client.ClientSet{ClassicClient: c}, api.NewAPIs(), tt.given, fn)
+			_, err := downloadConfigs(&client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
 			assert.NoError(t, err)
 		})
 	}

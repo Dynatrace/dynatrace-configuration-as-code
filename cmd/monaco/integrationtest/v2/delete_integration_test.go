@@ -342,7 +342,7 @@ configs:
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
 	// get application ID
-	v, err := clientSet.Classic().List(context.TODO(), apis["application-mobile"])
+	v, err := clientSet.Config().List(context.TODO(), apis["application-mobile"])
 	assert.NoError(t, err)
 
 	var appID string
@@ -369,7 +369,7 @@ configs:
 	require.NoError(t, err)
 
 	// Assert key-user-action is deleted
-	integrationtest.AssertConfig(t, context.TODO(), clientSet.Classic(), apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
+	integrationtest.AssertConfig(t, context.TODO(), clientSet.Config(), apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "key-user-actions-mobile",

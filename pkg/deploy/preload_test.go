@@ -35,8 +35,8 @@ import (
 
 var dummyConfigClient = &dtclient.DummyConfigClient{}
 var dummySettingsClient = &dtclient.DummySettingsClient{}
-var clientsetEnv1 = &client.ClientSet{ClassicClient: dummyConfigClient, SettingsClient: dummySettingsClient}
-var clientsetEnv2 = &client.ClientSet{ClassicClient: dummyConfigClient, SettingsClient: dummySettingsClient}
+var clientsetEnv1 = &client.ClientSet{ConfigClient: dummyConfigClient, SettingsClient: dummySettingsClient}
+var clientsetEnv2 = &client.ClientSet{ConfigClient: dummyConfigClient, SettingsClient: dummySettingsClient}
 
 func Test_gatherPreloadConfigTypeEntries_OneEntryPerConfigType(t *testing.T) {
 	entries := gatherPreloadConfigTypeEntries(
@@ -351,7 +351,7 @@ func Test_ScopedConfigsAreNotCached(t *testing.T) {
 						},
 					},
 				},
-				environmentClients: dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: &client.ClientSet{ClassicClient: dtClient}},
+				environmentClients: dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: &client.ClientSet{ConfigClient: dtClient}},
 			},
 		},
 	}
