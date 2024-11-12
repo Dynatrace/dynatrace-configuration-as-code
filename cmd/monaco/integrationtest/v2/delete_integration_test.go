@@ -400,12 +400,12 @@ configs:
 
 func TestDeleteWithOAuthOnlyManifest(t *testing.T) {
 	configFolder := "test-resources/delete-test-configs/"
-	deleteFileName := configFolder + "aws-delete.yaml"
-	cmdFlag := "--manifest=" + configFolder + "oauth-only-manifest.yaml --file=" + deleteFileName
 	fs := testutils.CreateTestFileSystem()
 
 	t.Run("OAuth only should not throw error but skip delete", func(t *testing.T) {
 		// DELETE Config
+		deleteFileName := configFolder + "oauth-delete.yaml"
+		cmdFlag := "--manifest=" + configFolder + "oauth-only-manifest.yaml --file=" + deleteFileName
 		err := monaco.RunWithFSf(fs, "monaco delete %s --verbose", cmdFlag)
 		assert.NoError(t, err)
 
@@ -417,5 +417,22 @@ func TestDeleteWithOAuthOnlyManifest(t *testing.T) {
 		log, err := afero.ReadFile(fs, logFile)
 		assert.NoError(t, err)
 		assert.Contains(t, string(log), "Skipped deletion of 1 Classic configuration(s) as API client was unavailable")
+	})
+
+	t.Run("token only should not throw error but skip delete for documents api", func(t *testing.T) {
+		// DELETE Config
+		deleteFileName := configFolder + "token-delete.yaml"
+		cmdFlag := "--manifest=" + configFolder + "token-only-manifest.yaml --file=" + deleteFileName
+		err := monaco.RunWithFSf(fs, "monaco delete %s --verbose", cmdFlag)
+		assert.NoError(t, err)
+
+		logFile := log.LogFilePath()
+		_, err = afero.Exists(fs, logFile)
+		assert.NoError(t, err)
+
+		// assert log for skipped deletion
+		log, err := afero.ReadFile(fs, logFile)
+		assert.NoError(t, err)
+		assert.Contains(t, string(log), "Skipped deletion of 1 Automation configuration(s)")
 	})
 }
