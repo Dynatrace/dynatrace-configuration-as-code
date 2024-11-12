@@ -1577,7 +1577,7 @@ func TestListKnownSettings(t *testing.T) {
 	}
 }
 
-func TestGetSettingById(t *testing.T) {
+func TestSettingsClientGet(t *testing.T) {
 	type fields struct {
 		environmentURL string
 		retrySettings  RetrySettings
@@ -1677,7 +1677,7 @@ func TestGetSettingById(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			settingsObj, err := client.GetSettingById(context.TODO(), tt.args.objectID)
+			settingsObj, err := client.Get(context.TODO(), tt.args.objectID)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

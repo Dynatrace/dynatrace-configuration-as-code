@@ -53,7 +53,7 @@ func (c *DummySettingsClient) GetSchemaById(_ context.Context, _ string) (schema
 	return Schema{}, nil
 }
 
-func (c *DummySettingsClient) GetSettingById(_ context.Context, _ string) (*DownloadSettingsObject, error) {
+func (c *DummySettingsClient) Get(_ context.Context, _ string) (*DownloadSettingsObject, error) {
 	return &DownloadSettingsObject{}, nil
 }
 func (c *DummySettingsClient) List(_ context.Context, _ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {

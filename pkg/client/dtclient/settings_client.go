@@ -344,7 +344,7 @@ func (d *SettingsClient) GetSchemaById(ctx context.Context, schemaID string) (co
 // then we cannot perform the upsert operation
 func (d *SettingsClient) handleUpsertUnsupportedVersion(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
 
-	fetchedSettingObj, err := d.GetSettingById(ctx, obj.OriginObjectId)
+	fetchedSettingObj, err := d.Get(ctx, obj.OriginObjectId)
 	if err != nil {
 		apiErr := coreapi.APIError{}
 		// Settings API returns 400 StatusBadRequest for 404 StatusNotFound
@@ -673,7 +673,7 @@ func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSet
 	return filter.FilterSlice(result, opts.Filter), nil
 }
 
-func (d *SettingsClient) GetSettingById(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
+func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
 	resp, err := coreapi.AsResponseOrError(d.client.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return nil, err

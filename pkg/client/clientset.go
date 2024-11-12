@@ -127,8 +127,8 @@ type SettingsClient interface {
 	// List returns all settings objects for a given schema.
 	List(context.Context, string, dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
 
-	// GetSettingById returns the setting with the given object ID
-	GetSettingById(context.Context, string) (*dtclient.DownloadSettingsObject, error)
+	// Get returns the setting with the given object ID
+	Get(context.Context, string) (*dtclient.DownloadSettingsObject, error)
 
 	// DeleteSettings deletes a settings object giving its object ID
 	DeleteSettings(context.Context, string) error
