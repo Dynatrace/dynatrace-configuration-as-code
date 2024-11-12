@@ -402,7 +402,7 @@ func TestDeleteWithOAuthOnlyManifest(t *testing.T) {
 	configFolder := "test-resources/delete-test-configs/"
 	fs := testutils.CreateTestFileSystem()
 
-	t.Run("OAuth only should not throw error but skip delete", func(t *testing.T) {
+	t.Run("OAuth only should not throw error but skip delete for Classic API", func(t *testing.T) {
 		// DELETE Config
 		deleteFileName := configFolder + "oauth-delete.yaml"
 		cmdFlag := "--manifest=" + configFolder + "oauth-only-manifest.yaml --file=" + deleteFileName
@@ -419,7 +419,7 @@ func TestDeleteWithOAuthOnlyManifest(t *testing.T) {
 		assert.Contains(t, string(log), "Skipped deletion of 1 Classic configuration(s) as API client was unavailable")
 	})
 
-	t.Run("token only should not throw error but skip delete for documents api", func(t *testing.T) {
+	t.Run("Token only should not throw error but skip delete for Automation API", func(t *testing.T) {
 		// DELETE Config
 		deleteFileName := configFolder + "token-delete.yaml"
 		cmdFlag := "--manifest=" + configFolder + "token-only-manifest.yaml --file=" + deleteFileName
