@@ -87,13 +87,13 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 1. if only one config of non-unique-name exist it MUST be updated
-	e, err := c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
+	e, err := c.UpsertByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
 	assert.NoError(t, err)
 	assert.Equal(t, e.Id, firstExistingObjectUUID, "expected existing single config %d to be updated, but reply UUID was", firstExistingObjectUUID, e.Id)
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 1.1. Deploying another config of the same name is also just an update (unwanted behaviour if a project re-uses names)
-	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, uuid2.GenerateUUIDFromConfigId("test_project", "other-config"), name, payload, false)
+	e, err = c.UpsertByNonUniqueNameAndId(context.TODO(), a, uuid2.GenerateUUIDFromConfigId("test_project", "other-config"), name, payload, false)
 	assert.NoError(t, err)
 	assert.Equal(t, e.Id, firstExistingObjectUUID, "expected existing single config %d to be updated, but reply UUID was", firstExistingObjectUUID, e.Id)
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
@@ -104,14 +104,14 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	// 2. if several configs of non-unique-name exist an additional config with monaco controlled UUID is created
 	assert.NoError(t, err)
-	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
+	e, err = c.UpsertByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
 	assert.NoError(t, err)
 	assert.Equal(t, e.Id, monacoGeneratedUUID)
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
 
 	// 3. if several configs of non-unique-name exist and one with known monaco-controlled UUID is found that MUST be updated
 	assert.NoError(t, err)
-	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
+	e, err = c.UpsertByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
 	assert.NoError(t, err)
 	assert.Equal(t, e.Id, monacoGeneratedUUID)
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
@@ -162,13 +162,13 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 1. if only one config of non-unique-name exist an additional one is still create (update feature OFF)
-	e, err := c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
+	e, err := c.UpsertByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
 	assert.NoError(t, err)
 	assert.Equal(t, e.Id, monacoGeneratedUUID, "expected existing single config %d to be updated, but reply UUID was", firstExistingObjectUUID, e.Id)
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 2, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 2. Deploying another config of the same name is also just an update (unwanted behaviour if a project re-uses names)
-	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, otherMonacoGeneratedUUID, name, payload, false)
+	e, err = c.UpsertByNonUniqueNameAndId(context.TODO(), a, otherMonacoGeneratedUUID, name, payload, false)
 	assert.NoError(t, err)
 	assert.Equal(t, e.Id, otherMonacoGeneratedUUID, "expected existing single config %d to be updated, but reply UUID was", firstExistingObjectUUID, e.Id)
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected single configs of name %q but found %d", name, len(existing))
@@ -179,7 +179,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 
 	// 3. if several configs of non-unique-name exist and one with known monaco-controlled UUID is found that MUST be updated
 	assert.NoError(t, err)
-	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
+	e, err = c.UpsertByNonUniqueNameAndId(context.TODO(), a, monacoGeneratedUUID, name, payload, false)
 	assert.NoError(t, err)
 	assert.Equal(t, e.Id, monacoGeneratedUUID)
 	assert.True(t, len(getConfigsOfName(t, c, a, name)) == 4, "Expected three configs of name %q but found %d", name, len(existing))

@@ -143,7 +143,7 @@ func (c *DummyConfigClient) UpsertByName(_ context.Context, a api.API, name stri
 	}, nil
 }
 
-func (c *DummyConfigClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a api.API, entityId string, name string, data []byte, _ bool) (entity DynatraceEntity, err error) {
+func (c *DummyConfigClient) UpsertByNonUniqueNameAndId(_ context.Context, a api.API, entityId string, name string, data []byte, _ bool) (entity DynatraceEntity, err error) {
 	entries, _ := c.GetEntries(a)
 
 	var dataEntry DataEntry

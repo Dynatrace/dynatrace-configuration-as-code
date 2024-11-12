@@ -185,7 +185,7 @@ func (d *ConfigClient) upsertDynatraceObject(ctx context.Context, theApi api.API
 	}
 }
 
-func (d *ConfigClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, theApi api.API, entityId string, objectName string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
+func (d *ConfigClient) UpsertByNonUniqueNameAndId(ctx context.Context, theApi api.API, entityId string, objectName string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
 	body := payload
 
 	existingEntities, err := d.List(ctx, theApi)

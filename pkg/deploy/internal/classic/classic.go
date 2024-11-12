@@ -131,5 +131,5 @@ func upsertNonUniqueNameConfig(ctx context.Context, client client.ConfigClient, 
 		}
 		duplicate = resolvedValBool
 	}
-	return client.UpsertConfigByNonUniqueNameAndId(ctx, apiToDeploy, entityUuid, configName, []byte(renderedConfig), duplicate)
+	return client.UpsertByNonUniqueNameAndId(ctx, apiToDeploy, entityUuid, configName, []byte(renderedConfig), duplicate)
 }
