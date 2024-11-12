@@ -54,7 +54,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				onlySettings:    false,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
-				c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.Value{}, nil)
+				c.EXPECT().List(gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.Value{}, nil)
 				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]byte("{}"), nil) // singleton configs are always attempted
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
@@ -71,7 +71,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				onlySettings:    false,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
-				c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).Times(0)
+				c.EXPECT().List(gomock.Any(), gomock.Any()).Times(0)
 				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
@@ -89,7 +89,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				onlySettings:    false,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
-				c.EXPECT().ListConfigs(gomock.Any(), api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
+				c.EXPECT().List(gomock.Any(), api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
 				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), "42").AnyTimes().Return([]byte("{}"), nil)
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
@@ -106,7 +106,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				onlySettings:    false,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
-				c.EXPECT().ListConfigs(gomock.Any(), api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
+				c.EXPECT().List(gomock.Any(), api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
 				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), "42").AnyTimes().Return([]byte("{}"), nil)
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
@@ -124,7 +124,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				onlySettings:    false,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
-				c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.Value{}, nil)
+				c.EXPECT().List(gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.Value{}, nil)
 				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]byte("{}"), nil) // singleton configs are always attempted
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
@@ -141,7 +141,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				onlySettings:    true,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
-				c.EXPECT().ListConfigs(gomock.Any(), gomock.Any()).Times(0)
+				c.EXPECT().List(gomock.Any(), gomock.Any()).Times(0)
 				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {

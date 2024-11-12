@@ -82,12 +82,8 @@ func NewClassicConfigClient(client *corerest.Client, opts ...func(dynatraceClien
 }
 
 func (d *ConfigClient) Cache(ctx context.Context, api api.API) error {
-	_, err := d.fetchExistingValues(ctx, api)
+	_, err := d.List(ctx, api)
 	return err
-}
-
-func (d *ConfigClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
-	return d.fetchExistingValues(ctx, api)
 }
 
 func (d *ConfigClient) ReadConfigById(ctx context.Context, api api.API, id string) (json []byte, err error) {
@@ -192,7 +188,7 @@ func (d *ConfigClient) upsertDynatraceObject(ctx context.Context, theApi api.API
 func (d *ConfigClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, theApi api.API, entityId string, objectName string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
 	body := payload
 
-	existingEntities, err := d.fetchExistingValues(ctx, theApi)
+	existingEntities, err := d.List(ctx, theApi)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities: %w", err)
 	}
@@ -540,7 +536,7 @@ func (d *ConfigClient) getExistingObjectId(ctx context.Context, objectName strin
 	// if there is a custom equal function registered, use that instead of just the Object name
 	// in order to search for existing values
 	if theApi.CheckEqualFunc != nil {
-		values, err := d.fetchExistingValues(ctx, theApi)
+		values, err := d.List(ctx, theApi)
 		if err != nil {
 			return "", err
 		}
@@ -553,7 +549,7 @@ func (d *ConfigClient) getExistingObjectId(ctx context.Context, objectName strin
 
 	// Single configuration APIs don't have an id which allows skipping this step
 	if !theApi.SingleConfiguration {
-		values, err := d.fetchExistingValues(ctx, theApi)
+		values, err := d.List(ctx, theApi)
 		if err != nil {
 			return "", err
 		}
@@ -566,7 +562,7 @@ func (d *ConfigClient) getExistingObjectId(ctx context.Context, objectName strin
 	return objID, nil
 }
 
-func (d *ConfigClient) fetchExistingValues(ctx context.Context, theApi api.API) ([]Value, error) {
+func (d *ConfigClient) List(ctx context.Context, theApi api.API) ([]Value, error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
 	if (!theApi.NonUniqueName && !theApi.HasParent()) && //there is potentially more than one config per api type/id to consider

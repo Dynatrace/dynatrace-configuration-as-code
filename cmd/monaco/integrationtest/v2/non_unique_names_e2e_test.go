@@ -187,7 +187,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 
 func getConfigsOfName(t *testing.T, c client.ConfigClient, a api.API, name string) []dtclient.Value {
 	var existingEntities []dtclient.Value
-	entities, err := c.ListConfigs(context.TODO(), a)
+	entities, err := c.List(context.TODO(), a)
 	assert.NoError(t, err)
 	for _, e := range entities {
 		if e.Name == name {

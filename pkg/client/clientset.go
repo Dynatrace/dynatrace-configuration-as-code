@@ -58,11 +58,11 @@ type ConfigClient interface {
 	// Cache caches all config values for a given API.
 	Cache(ctx context.Context, a api.API) error
 
-	// ListConfigs lists the available configs for an API.
+	// List lists the available configs for an API.
 	// It calls the underlying GET endpoint of the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
 	// The result is expressed using a list of Value (id and name tuples).
-	ListConfigs(ctx context.Context, a api.API) (values []dtclient.Value, err error)
+	List(ctx context.Context, a api.API) (values []dtclient.Value, err error)
 
 	// ReadConfigById reads a Dynatrace config identified by id from the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:

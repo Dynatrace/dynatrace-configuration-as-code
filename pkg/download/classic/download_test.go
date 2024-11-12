@@ -48,8 +48,8 @@ func TestDownload_KeyUserActionMobile(t *testing.T) {
 	applicationId := "some-application-id"
 
 	c := client.NewMockConfigClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(context.TODO(), apiMap[api.ApplicationMobile]).Return([]dtclient.Value{{Id: applicationId, Name: "some-application-name"}}, nil).Times(2)
-	c.EXPECT().ListConfigs(context.TODO(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId)).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil).Times(1)
+	c.EXPECT().List(context.TODO(), apiMap[api.ApplicationMobile]).Return([]dtclient.Value{{Id: applicationId, Name: "some-application-name"}}, nil).Times(2)
+	c.EXPECT().List(context.TODO(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId)).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil).Times(1)
 	c.EXPECT().ReadConfigById(context.TODO(), apiMap[api.ApplicationMobile], applicationId).Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil).Times(1)
 	c.EXPECT().ReadConfigById(context.TODO(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId), "").Return([]byte(`{}`), nil).Times(1)
 
@@ -83,8 +83,8 @@ func toAPIs(apis ...api.API) api.APIs {
 func TestDownload_KeyUserActionWeb(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
 	ctx := context.TODO()
-	c.EXPECT().ListConfigs(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
-	c.EXPECT().ListConfigs(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
+	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
+	c.EXPECT().List(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
 	c.EXPECT().ReadConfigById(ctx, gomock.Any(), "").Return([]byte(`{"keyUserActionList":[{"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"}]}`), nil)
 
 	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{api.KeyUserActionsWeb}))
@@ -105,8 +105,8 @@ func TestDownload_KeyUserActionWeb(t *testing.T) {
 func TestDownload_KeyUserActionWeb_Uniqnes(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
 	ctx := context.TODO()
-	c.EXPECT().ListConfigs(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
-	c.EXPECT().ListConfigs(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID2", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID3", Name: "the_name"}}, nil)
+	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
+	c.EXPECT().List(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID2", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID3", Name: "the_name"}}, nil)
 	c.EXPECT().ReadConfigById(ctx, matcher.EqAPI(apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")), "").Return([]byte(`{
 "keyUserActionList":[
   {"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"},
@@ -127,8 +127,8 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	api2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 
 	c := client.NewMockConfigClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(api1)).Return([]dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil)
-	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
+	c.EXPECT().List(gomock.Any(), matcher.EqAPI(api1)).Return([]dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil)
+	c.EXPECT().List(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
 
 	filters := map[string]classic.ContentFilter{"API_ID_1": {
@@ -179,8 +179,8 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := client.NewMockConfigClient(gomock.NewController(t))
-			c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(api1)).Return([]dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil)
-			c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
+			c.EXPECT().List(gomock.Any(), matcher.EqAPI(api1)).Return([]dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil)
+			c.EXPECT().List(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
 			c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
 
 			t.Setenv(featureflags.Permanent[featureflags.DownloadFilterClassicConfigs].EnvName(), strconv.FormatBool(tt.withFiltering))
@@ -198,8 +198,8 @@ func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 	api2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 
 	c := client.NewMockConfigClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(api1)).Return([]dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil)
-	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
+	c.EXPECT().List(gomock.Any(), matcher.EqAPI(api1)).Return([]dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil)
+	c.EXPECT().List(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
 	filters := map[string]classic.ContentFilter{"API_ID_1": {
@@ -258,7 +258,7 @@ func Test_generalCases(t *testing.T) {
 			},
 		},
 		{
-			name: "ListConfigs returns nothing - works",
+			name: "List returns nothing - works",
 			mockList: []listMockData{
 				{api: api1, response: []dtclient.Value{{Id: "ID_1", Name: "NAME_1"}}},
 				{api: api2},
@@ -269,7 +269,7 @@ func Test_generalCases(t *testing.T) {
 			expectedKeys: []string{"API_1"},
 		},
 		{
-			name: "ListConfigs returns an empty list - works",
+			name: "List returns an empty list - works",
 			mockList: []listMockData{
 				{api: api1, response: []dtclient.Value{{Id: "ID_1", Name: "NAME_1"}}},
 				{api: api2, response: []dtclient.Value{}},
@@ -296,7 +296,7 @@ func Test_generalCases(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c := client.NewMockConfigClient(gomock.NewController(t))
 			for _, m := range tc.mockList {
-				c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(m.api)).Return(m.response, m.err)
+				c.EXPECT().List(gomock.Any(), matcher.EqAPI(m.api)).Return(m.response, m.err)
 			}
 			for _, m := range tc.mockConfigByID {
 				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any(), m.id).Return([]byte(m.response), m.err)
@@ -345,7 +345,7 @@ func TestDownload_SkippedParentsSkipChildren(t *testing.T) {
 	}
 
 	c := client.NewMockConfigClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(parentAPI)).Return([]dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil).Times(2)
+	c.EXPECT().List(gomock.Any(), matcher.EqAPI(parentAPI)).Return([]dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil).Times(2)
 
 	configurations, err := classic.Download(c, "project", apiMap, contentFilters)
 	require.NoError(t, err)

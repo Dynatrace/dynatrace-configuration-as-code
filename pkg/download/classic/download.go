@@ -19,6 +19,14 @@ package classic
 import (
 	"context"
 	"encoding/json"
+	"slices"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/mitchellh/mapstructure"
+	"golang.org/x/exp/maps"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -32,12 +40,6 @@ import (
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/mitchellh/mapstructure"
-	"golang.org/x/exp/maps"
-	"slices"
-	"strings"
-	"sync"
-	"time"
 )
 
 func Download(client client.ConfigClient, projectName string, apisToDownload api.APIs, filters ContentFilters) (projectv2.ConfigsPerType, error) {
@@ -158,7 +160,7 @@ func findConfigsToDownload(client client.ConfigClient, apiToDownload api.API, fi
 
 	if apiToDownload.HasParent() {
 		var res values
-		parentAPIValues, err := client.ListConfigs(context.TODO(), *apiToDownload.Parent)
+		parentAPIValues, err := client.List(context.TODO(), *apiToDownload.Parent)
 		if err != nil {
 			return values{}, err
 		}
@@ -174,7 +176,7 @@ func findConfigsToDownload(client client.ConfigClient, apiToDownload api.API, fi
 				continue
 			}
 
-			apiValues, err := client.ListConfigs(context.TODO(), apiToDownload.ApplyParentObjectID(parentAPIValue.Id))
+			apiValues, err := client.List(context.TODO(), apiToDownload.ApplyParentObjectID(parentAPIValue.Id))
 			if err != nil {
 				return values{}, err
 			}
@@ -186,7 +188,7 @@ func findConfigsToDownload(client client.ConfigClient, apiToDownload api.API, fi
 	}
 
 	var res values
-	vals, err := client.ListConfigs(context.TODO(), apiToDownload)
+	vals, err := client.List(context.TODO(), apiToDownload)
 	for _, v := range vals {
 		res = append(res, value{value: v})
 	}
