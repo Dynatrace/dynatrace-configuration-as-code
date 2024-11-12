@@ -142,7 +142,7 @@ func NewIntegrationTestServer(t *testing.T, basePath string, mappings map[string
 	return testServer
 }
 
-func NewSettingsClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *SettingsClient)) (*SettingsClient, error) {
+func NewPlatformSettingsClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *SettingsClient)) (*SettingsClient, error) {
 	u, err := url.Parse(environmentUrl)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func NewSettingsClientForTesting(environmentUrl string, client *http.Client, opt
 		opts...)
 }
 
-func NewClassicClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *ConfigClient)) (*ConfigClient, error) {
+func NewClassicConfigClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *ConfigClient)) (*ConfigClient, error) {
 	u, err := url.Parse(environmentUrl)
 	if err != nil {
 		return nil, err

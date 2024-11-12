@@ -349,7 +349,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			}))
 			defer server.Close()
 
-			dtclient, _ := NewClassicClientForTesting(server.URL, server.Client(), nil)
+			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), nil)
 			_, got, err := dtclient.ExistsWithName(context.TODO(), testApi, tt.givenObjectName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
@@ -393,7 +393,7 @@ func TestUpsertByName(t *testing.T) {
 			}))
 			defer server.Close()
 
-			dtClient, _ := NewClassicClientForTesting(server.URL, server.Client())
+			dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
 			dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG", nil)
 			dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG 2", nil)
 			assert.Equal(t, apiHits, tt.expectedAPIHits)
@@ -449,7 +449,7 @@ func TestUpsertConfig_CheckEqualityFunctionIsUsed(t *testing.T) {
 			}))
 			defer server.Close()
 
-			dtClient, _ := NewClassicClientForTesting(server.URL, server.Client())
+			dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
 			dtObj, err := dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG", []byte(`{}`))
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedAPIHits, 2)
@@ -640,7 +640,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 					MaxRetries: 3,
 				},
 			}
-			dtclient, _ := NewClassicClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(s))
+			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(s))
 
 			_, _, err := dtclient.ExistsWithName(context.TODO(), testApi, "")
 			if tt.expectError {
@@ -732,7 +732,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			defer server.Close()
 			testApi := api.API{ID: tt.apiKey}
 
-			dtclient, _ := NewClassicClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(testRetrySettings))
+			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(testRetrySettings))
 			got, err := dtclient.createDynatraceObject(context.TODO(), tt.objectName, testApi, []byte("{}"))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
@@ -786,7 +786,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 
 			testApi := api.API{ID: "some-api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
-			dtclient, _ := NewClassicClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(testRetrySettings))
+			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(testRetrySettings))
 			got, err := dtclient.UpsertByNonUniqueNameAndId(context.TODO(), testApi, generatedUuid, theConfigName, []byte("{}"), false)
 			assert.NoError(t, err)
 			assert.Equal(t, got.Id, tt.expectedIdToBeUpserted)
@@ -800,7 +800,7 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	client, err := NewClassicClientForTesting(testServer.URL, testServer.Client())
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
 	_, err = client.Get(context.TODO(), mockAPI, "test")
@@ -813,7 +813,7 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
 	defer testServer.Close()
 
-	client, err := NewClassicClientForTesting(testServer.URL, testServer.Client())
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
 	_, err = client.Get(context.TODO(), mockAPINotSingle, unescapedID)
@@ -828,7 +828,7 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	client, err := NewClassicClientForTesting(testServer.URL, testServer.Client())
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
 	resp, err := client.Get(context.TODO(), mockAPI, "test")
