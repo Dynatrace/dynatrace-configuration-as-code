@@ -60,6 +60,6 @@ func (c *DummySettingsClient) List(_ context.Context, _ string, _ ListSettingsOp
 	return make([]DownloadSettingsObject, 0), nil
 }
 
-func (c *DummySettingsClient) DeleteSettings(_ context.Context, _ string) error {
+func (c *DummySettingsClient) Delete(_ context.Context, _ string) error {
 	return nil
 }

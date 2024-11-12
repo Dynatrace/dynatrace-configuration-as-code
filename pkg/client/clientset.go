@@ -130,8 +130,8 @@ type SettingsClient interface {
 	// Get returns the setting with the given object ID
 	Get(context.Context, string) (*dtclient.DownloadSettingsObject, error)
 
-	// DeleteSettings deletes a settings object giving its object ID
-	DeleteSettings(context.Context, string) error
+	// Delete deletes a settings object giving its object ID
+	Delete(context.Context, string) error
 }
 
 type AutomationClient interface {

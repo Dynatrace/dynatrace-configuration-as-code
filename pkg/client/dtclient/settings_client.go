@@ -687,7 +687,7 @@ func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *Downloa
 	return &result, nil
 }
 
-func (d *SettingsClient) DeleteSettings(ctx context.Context, objectID string) error {
+func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		apiError := coreapi.APIError{}

@@ -63,7 +63,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			}, nil
 		})
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -118,7 +118,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				Value:         nil,
 			},
 		}, nil)
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -150,7 +150,7 @@ func TestDeleteSettings(t *testing.T) {
 			}, nil
 
 		})
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -208,7 +208,7 @@ func TestDeleteSettings(t *testing.T) {
 				Value:         nil,
 			},
 		}, nil)
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -243,7 +243,7 @@ func TestDeleteSettings(t *testing.T) {
 			}, nil
 
 		})
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Times(0) // deletion should not be attempted for non-deletable objects
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Times(0) // deletion should not be attempted for non-deletable objects
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -273,7 +273,7 @@ func TestDeleteSettings(t *testing.T) {
 			}, nil
 
 		})
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("DT-original-object-ID")).Return(nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("DT-original-object-ID")).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{

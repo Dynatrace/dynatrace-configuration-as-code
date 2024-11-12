@@ -1775,7 +1775,7 @@ func TestDeleteSettings(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			if err := client.DeleteSettings(context.TODO(), tt.args.objectID); (err != nil) != tt.wantErr {
+			if err := client.Delete(context.TODO(), tt.args.objectID); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteSettings() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

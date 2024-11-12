@@ -73,7 +73,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 			}
 
 			logger.Debug("Deleting settings object with objectId %q.", obj.ObjectId)
-			err := c.DeleteSettings(ctx, obj.ObjectId)
+			err := c.Delete(ctx, obj.ObjectId)
 			if err != nil {
 				logger.Error("Failed to delete settings object with object ID %s: %v", obj.ObjectId, err)
 				deleteErrs++
@@ -143,7 +143,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 			}
 
 			logger.WithFields(field.F("object", setting)).Debug("Deleting settings object with objectId %q...", setting.ObjectId)
-			err := c.DeleteSettings(ctx, setting.ObjectId)
+			err := c.Delete(ctx, setting.ObjectId)
 			if err != nil {
 				logger.Error("Failed to delete settings object with object ID %s: %v", setting.ObjectId, err)
 				errs++
