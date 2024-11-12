@@ -39,38 +39,38 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
 
-type ClassicClient struct {
+type ConfigClient struct {
 	client *corerest.Client
 
 	// retrySettings are the settings to be used for retrying failed http requests
 	retrySettings RetrySettings
 
-	// classicConfigsCache caches classic settings values
-	classicConfigsCache cache.Cache[[]Value]
+	// configCache caches config API values
+	configCache cache.Cache[[]Value]
 }
 
-// WithRetrySettings sets the retry settings to be used by the ClassicClient
-func WithRetrySettingsForClassic(retrySettings RetrySettings) func(*ClassicClient) {
-	return func(d *ClassicClient) {
+// WithRetrySettings sets the retry settings to be used by the ConfigClient
+func WithRetrySettingsForClassic(retrySettings RetrySettings) func(*ConfigClient) {
+	return func(d *ConfigClient) {
 		d.retrySettings = retrySettings
 	}
 }
 
-// WithCachingDisabledForClassic allows disabling the client's builtin caching mechanism for classic configs.
+// WithCachingDisabledForConfigClient allows disabling the client's builtin caching mechanism for classic configs.
 // Disabling the caching is recommended in situations where configs are fetched immediately after their creation (e.g. in test scenarios).
-func WithCachingDisabledForClassic(disabled bool) func(client *ClassicClient) {
-	return func(d *ClassicClient) {
+func WithCachingDisabledForConfigClient(disabled bool) func(client *ConfigClient) {
+	return func(d *ConfigClient) {
 		if disabled {
-			d.classicConfigsCache = &cache.NoopCache[[]Value]{}
+			d.configCache = &cache.NoopCache[[]Value]{}
 		}
 	}
 }
 
-func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *ClassicClient)) (*ClassicClient, error) {
-	d := &ClassicClient{
-		client:              client,
-		retrySettings:       DefaultRetrySettings,
-		classicConfigsCache: &cache.DefaultCache[[]Value]{},
+func NewClassicConfigClient(client *corerest.Client, opts ...func(dynatraceClient *ConfigClient)) (*ConfigClient, error) {
+	d := &ConfigClient{
+		client:        client,
+		retrySettings: DefaultRetrySettings,
+		configCache:   &cache.DefaultCache[[]Value]{},
 	}
 
 	for _, o := range opts {
@@ -81,16 +81,16 @@ func NewClassicClient(client *corerest.Client, opts ...func(dynatraceClient *Cla
 	return d, nil
 }
 
-func (d *ClassicClient) CacheConfigs(ctx context.Context, api api.API) error {
+func (d *ConfigClient) CacheConfigs(ctx context.Context, api api.API) error {
 	_, err := d.fetchExistingValues(ctx, api)
 	return err
 }
 
-func (d *ClassicClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
+func (d *ConfigClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
 	return d.fetchExistingValues(ctx, api)
 }
 
-func (d *ClassicClient) ReadConfigById(ctx context.Context, api api.API, id string) (json []byte, err error) {
+func (d *ConfigClient) ReadConfigById(ctx context.Context, api api.API, id string) (json []byte, err error) {
 	var dtUrl = api.URLPath
 	if !api.SingleConfiguration {
 		dtUrl = dtUrl + "/" + url.PathEscape(id)
@@ -104,7 +104,7 @@ func (d *ClassicClient) ReadConfigById(ctx context.Context, api api.API, id stri
 	return response.Data, nil
 }
 
-func (d *ClassicClient) DeleteConfigById(ctx context.Context, api api.API, id string) error {
+func (d *ConfigClient) DeleteConfigById(ctx context.Context, api api.API, id string) error {
 	parsedURL, err := url.Parse(api.URLPath)
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func (d *ClassicClient) DeleteConfigById(ctx context.Context, api api.API, id st
 	return nil
 }
 
-func (d *ClassicClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
+func (d *ConfigClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
 	if api.SingleConfiguration {
 		// check that a single configuration is there by actually reading it.
 		_, err := d.ReadConfigById(ctx, api, "")
@@ -135,14 +135,14 @@ func (d *ClassicClient) ConfigExistsByName(ctx context.Context, api api.API, nam
 	return existingObjectId != "", existingObjectId, err
 }
 
-func (d *ClassicClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *ConfigClient) UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 	if a.ID == api.Extension {
 		return d.uploadExtension(ctx, a, name, payload)
 	}
 	return d.upsertDynatraceObject(ctx, a, name, payload)
 }
 
-func (d *ClassicClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
+func (d *ConfigClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
 	doUpsert := func() (DynatraceEntity, error) {
 		existingObjectID, err := d.getExistingObjectId(ctx, objectName, theApi, payload)
 		if err != nil {
@@ -184,12 +184,12 @@ func (d *ClassicClient) upsertDynatraceObject(ctx context.Context, theApi api.AP
 	if obj, err := doUpsert(); err == nil {
 		return obj, nil
 	} else {
-		d.classicConfigsCache.Delete(theApi.ID)
+		d.configCache.Delete(theApi.ID)
 		return doUpsert()
 	}
 }
 
-func (d *ClassicClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, theApi api.API, entityId string, objectName string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
+func (d *ConfigClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, theApi api.API, entityId string, objectName string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
 	body := payload
 
 	existingEntities, err := d.fetchExistingValues(ctx, theApi)
@@ -233,7 +233,7 @@ func (d *ClassicClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, th
 	return d.updateDynatraceObject(ctx, objectName, entityId, theApi, body)
 }
 
-func (d *ClassicClient) createDynatraceObject(ctx context.Context, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+func (d *ConfigClient) createDynatraceObject(ctx context.Context, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 	endpoint := theApi.URLPath
 	if theApi.ID == api.KeyUserActionsMobile {
 		endpoint = joinUrl(endpoint, objectName)
@@ -301,7 +301,7 @@ func unmarshalCreateResponse(ctx context.Context, resp coreapi.Response, configT
 	return dtEntity, nil
 }
 
-func (d *ClassicClient) updateDynatraceObject(ctx context.Context, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+func (d *ConfigClient) updateDynatraceObject(ctx context.Context, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 	endpoint := theApi.URLPath
 	if !theApi.SingleConfiguration {
 		endpoint = joinUrl(endpoint, existingObjectId)
@@ -367,7 +367,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of known errors on upload.
-func (d *ClassicClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall SendRequestWithBody, endpoint string, requestBody []byte, theApi api.API, options corerest.RequestOptions) (*coreapi.Response, error) {
+func (d *ConfigClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall SendRequestWithBody, endpoint string, requestBody []byte, theApi api.API, options corerest.RequestOptions) (*coreapi.Response, error) {
 	resp, err := coreapi.AsResponseOrError(restCall(ctx, endpoint, bytes.NewReader(requestBody), options))
 	if err == nil {
 		return resp, nil
@@ -535,7 +535,7 @@ func isUserSessionPropertiesMobile(a api.API) bool {
 	return a.ID == api.UserActionAndSessionPropertiesMobile
 }
 
-func (d *ClassicClient) getExistingObjectId(ctx context.Context, objectName string, theApi api.API, payload []byte) (string, error) {
+func (d *ConfigClient) getExistingObjectId(ctx context.Context, objectName string, theApi api.API, payload []byte) (string, error) {
 	var objID string
 	// if there is a custom equal function registered, use that instead of just the Object name
 	// in order to search for existing values
@@ -566,12 +566,12 @@ func (d *ClassicClient) getExistingObjectId(ctx context.Context, objectName stri
 	return objID, nil
 }
 
-func (d *ClassicClient) fetchExistingValues(ctx context.Context, theApi api.API) ([]Value, error) {
+func (d *ConfigClient) fetchExistingValues(ctx context.Context, theApi api.API) ([]Value, error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
 	if (!theApi.NonUniqueName && !theApi.HasParent()) && //there is potentially more than one config per api type/id to consider
 		(theApi.ID != api.ApplicationWeb && theApi.ID != api.ApplicationMobile) { //there is no refresh mechanism for delete; outdated values can cause decreasing performance during delete (unnecessary retrying)
-		if values, cached := d.classicConfigsCache.Get(theApi.ID); cached {
+		if values, cached := d.configCache.Get(theApi.ID); cached {
 			return values, nil
 		}
 	}
@@ -618,11 +618,11 @@ func (d *ClassicClient) fetchExistingValues(ctx context.Context, theApi api.API)
 			return nil, err
 		}
 	}
-	d.classicConfigsCache.Set(theApi.ID, existingValues)
+	d.configCache.Set(theApi.ID, existingValues)
 	return existingValues, nil
 }
 
-func (d *ClassicClient) findUniqueByName(ctx context.Context, values []Value, objectName string) string {
+func (d *ConfigClient) findUniqueByName(ctx context.Context, values []Value, objectName string) string {
 	var objectId = ""
 	var matchingObjectsFound = 0
 	for i := 0; i < len(values); i++ {
@@ -650,7 +650,7 @@ func escapeApiValueName(ctx context.Context, value Value) string {
 	return valueName.(string)
 }
 
-func (d *ClassicClient) findUnique(ctx context.Context, values []Value, payload []byte, checkEqualFunc func(map[string]any, map[string]any) bool) (string, error) {
+func (d *ConfigClient) findUnique(ctx context.Context, values []Value, payload []byte, checkEqualFunc func(map[string]any, map[string]any) bool) (string, error) {
 	if checkEqualFunc == nil {
 		return "", nil
 	}

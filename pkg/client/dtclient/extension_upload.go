@@ -44,7 +44,7 @@ const (
 	extensionNeedsUpdate
 )
 
-func (d *ClassicClient) uploadExtension(ctx context.Context, api api.API, extensionName string, payload []byte) (DynatraceEntity, error) {
+func (d *ConfigClient) uploadExtension(ctx context.Context, api api.API, extensionName string, payload []byte) (DynatraceEntity, error) {
 	status, err := d.validateIfExtensionShouldBeUploaded(ctx, api.URLPath, extensionName, payload)
 	if err != nil {
 		return DynatraceEntity{}, err
@@ -83,7 +83,7 @@ type Properties struct {
 	Version *string `json:"version"`
 }
 
-func (d *ClassicClient) validateIfExtensionShouldBeUploaded(ctx context.Context, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
+func (d *ConfigClient) validateIfExtensionShouldBeUploaded(ctx context.Context, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
 	response, err := coreapi.AsResponseOrError(d.client.GET(ctx, apiPath+"/"+extensionName, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		apiError := coreapi.APIError{}

@@ -23,6 +23,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
@@ -32,12 +40,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"os"
-	"strings"
-	"testing"
 )
 
 // TestNonUniqueNameUpserts asserts the logic of non-unique name configs being updated by name if only a single one is found.
@@ -60,7 +62,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	httpClient, err := factory.CreateClassicClient()
 	require.NoError(t, err)
 
-	c, err := dtclient.NewClassicClient(httpClient)
+	c, err := dtclient.NewClassicConfigClient(httpClient)
 	assert.NoError(t, err)
 
 	a := api.NewAPIs()["alerting-profile"]
@@ -135,7 +137,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 	classicClient, err := clients.Factory().WithClassicURL(url).WithAccessToken(token).CreateClassicClient()
 	require.NoError(t, err)
 
-	c, err := dtclient.NewClassicClient(classicClient)
+	c, err := dtclient.NewClassicConfigClient(classicClient)
 	assert.NoError(t, err)
 
 	a := api.NewAPIs()["alerting-profile"]

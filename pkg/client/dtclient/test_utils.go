@@ -154,14 +154,14 @@ func NewSettingsClientForTesting(environmentUrl string, client *http.Client, opt
 		opts...)
 }
 
-func NewClassicClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *ClassicClient)) (*ClassicClient, error) {
+func NewClassicClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *ConfigClient)) (*ConfigClient, error) {
 	u, err := url.Parse(environmentUrl)
 	if err != nil {
 		return nil, err
 	}
 
 	restClient := corerest.NewClient(u, client, corerest.WithRateLimiter())
-	return NewClassicClient(
+	return NewClassicConfigClient(
 		restClient,
 		opts...)
 }

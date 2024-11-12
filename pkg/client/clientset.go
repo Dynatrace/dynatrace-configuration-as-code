@@ -45,7 +45,7 @@ import (
 
 var (
 	_ SettingsClient = (*dtclient.SettingsClient)(nil)
-	_ ConfigClient   = (*dtclient.ClassicClient)(nil)
+	_ ConfigClient   = (*dtclient.ConfigClient)(nil)
 	_ SettingsClient = (*dtclient.DummyClient)(nil)
 	_ ConfigClient   = (*dtclient.DummyClient)(nil)
 )
@@ -327,7 +327,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 			return nil, err
 		}
 
-		classicClient, err = dtclient.NewClassicClient(client, dtclient.WithCachingDisabledForClassic(opts.CachingDisabled))
+		classicClient, err = dtclient.NewClassicConfigClient(client, dtclient.WithCachingDisabledForConfigClient(opts.CachingDisabled))
 		if err != nil {
 			return nil, err
 		}
