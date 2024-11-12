@@ -101,7 +101,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	}))
 	content, err := configToDeploy.Template.Content()
 	assert.NoError(t, err)
-	_, err = c.UpsertSettings(context.TODO(), dtclient.SettingsObject{
+	_, err = c.Upsert(context.TODO(), dtclient.SettingsObject{
 		Coordinate:     configToDeploy.Coordinate,
 		SchemaId:       configToDeploy.Type.(config.SettingsType).SchemaId,
 		SchemaVersion:  configToDeploy.Type.(config.SettingsType).SchemaVersion,

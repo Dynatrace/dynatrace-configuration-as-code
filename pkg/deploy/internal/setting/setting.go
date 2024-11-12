@@ -19,6 +19,8 @@ package setting
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -30,7 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
-	"time"
 )
 
 func Deploy(ctx context.Context, settingsClient client.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config, insertAfter string) (entities.ResolvedEntity, error) {
@@ -66,7 +67,7 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		insertOptions.OverrideRetry = &dtclient.DefaultRetrySettings.VeryLong
 	}
 
-	dtEntity, err := settingsClient.UpsertSettings(ctx, settingsObj, insertOptions)
+	dtEntity, err := settingsClient.Upsert(ctx, settingsObj, insertOptions)
 	if err != nil {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
 	}

@@ -141,7 +141,7 @@ func TestDeployConfigGraph_SettingShouldFailUpsert(t *testing.T) {
 
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().CacheSettings(gomock.Any(), gomock.Eq("builtin:test")).Times(1)
-	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+	c.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := config.Config{
 		Type: config.SettingsType{
@@ -267,7 +267,7 @@ func TestDeployConfigGraph_DeploysSetting(t *testing.T) {
 		},
 	}
 	c.EXPECT().CacheSettings(gomock.Any(), gomock.Eq("builtin:test")).Times(1)
-	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+	c.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)

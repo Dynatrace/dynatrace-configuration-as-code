@@ -29,7 +29,7 @@ func (c *DummySettingsClient) CacheSettings(context.Context, string) error {
 	return nil
 }
 
-func (c *DummySettingsClient) UpsertSettings(_ context.Context, obj SettingsObject, _ UpsertSettingsOptions) (DynatraceEntity, error) {
+func (c *DummySettingsClient) Upsert(_ context.Context, obj SettingsObject, _ UpsertSettingsOptions) (DynatraceEntity, error) {
 
 	id := obj.Coordinate.ConfigId
 

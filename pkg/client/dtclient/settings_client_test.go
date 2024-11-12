@@ -728,7 +728,7 @@ func TestUpsertSettings(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			resp, err := c.UpsertSettings(context.TODO(), SettingsObject{
+			resp, err := c.Upsert(context.TODO(), SettingsObject{
 				OriginObjectId: "anObjectID",
 				Coordinate:     coord,
 				SchemaId:       "builtin:alerting.profile",
@@ -771,7 +771,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	_, err = client.UpsertSettings(context.TODO(), SettingsObject{
+	_, err = client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -813,7 +813,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	_, err = client.UpsertSettings(context.TODO(), SettingsObject{
+	_, err = client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -823,7 +823,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	assert.Equal(t, 1, numAPIGetCalls)
 	assert.Equal(t, 1, numAPIPostCalls)
 
-	_, err = client.UpsertSettings(context.TODO(), SettingsObject{
+	_, err = client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -864,21 +864,21 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	client.UpsertSettings(context.TODO(), SettingsObject{
+	client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
 	}, UpsertSettingsOptions{})
 	assert.Equal(t, 1, numGetAPICalls)
 
-	client.UpsertSettings(context.TODO(), SettingsObject{
+	client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
 	}, UpsertSettingsOptions{})
 	assert.Equal(t, 2, numGetAPICalls)
 
-	client.UpsertSettings(context.TODO(), SettingsObject{
+	client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -1276,7 +1276,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			_, err = c.UpsertSettings(context.TODO(), tt.given.settingsObject, UpsertSettingsOptions{})
+			_, err = c.Upsert(context.TODO(), tt.given.settingsObject, UpsertSettingsOptions{})
 			if tt.want.error {
 				assert.Error(t, err)
 			} else {

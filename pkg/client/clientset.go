@@ -113,10 +113,10 @@ type SettingsClient interface {
 	// CacheSettings caches all settings objects for a given schema.
 	CacheSettings(context.Context, string) error
 
-	// UpsertSettings either creates the supplied object, or updates an existing one.
+	// Upsert either creates the supplied object, or updates an existing one.
 	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
 	// update the object.
-	UpsertSettings(context.Context, dtclient.SettingsObject, dtclient.UpsertSettingsOptions) (dtclient.DynatraceEntity, error)
+	Upsert(context.Context, dtclient.SettingsObject, dtclient.UpsertSettingsOptions) (dtclient.DynatraceEntity, error)
 
 	// ListSchemas returns all schemas that the Dynatrace environment reports
 	ListSchemas(context.Context) (dtclient.SchemaList, error)
