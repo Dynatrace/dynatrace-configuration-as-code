@@ -33,9 +33,10 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-var dtDummyClient = &dtclient.DummyClient{}
-var clientsetEnv1 = &client.ClientSet{ClassicClient: dtDummyClient, SettingsClient: dtDummyClient}
-var clientsetEnv2 = &client.ClientSet{ClassicClient: dtDummyClient, SettingsClient: dtDummyClient}
+var dummyConfigClient = &dtclient.DummyConfigClient{}
+var dummySettingsClient = &dtclient.DummySettingsClient{}
+var clientsetEnv1 = &client.ClientSet{ClassicClient: dummyConfigClient, SettingsClient: dummySettingsClient}
+var clientsetEnv2 = &client.ClientSet{ClassicClient: dummyConfigClient, SettingsClient: dummySettingsClient}
 
 func Test_gatherPreloadConfigTypeEntries_OneEntryPerConfigType(t *testing.T) {
 	entries := gatherPreloadConfigTypeEntries(

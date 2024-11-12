@@ -63,7 +63,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 		},
 	}
 
-	client := &dtclient.DummyClient{}
+	client := &dtclient.DummySettingsClient{}
 
 	conf := &config.Config{
 		Type:       config.ClassicApiType{},
@@ -75,7 +75,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 }
 
 func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
-	client := &dtclient.DummyClient{}
+	client := &dtclient.DummySettingsClient{}
 
 	conf := &config.Config{
 		Type:     config.ClassicApiType{},
