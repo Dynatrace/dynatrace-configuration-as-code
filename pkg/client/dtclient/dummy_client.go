@@ -49,7 +49,7 @@ func (c *DummySettingsClient) ListSchemas(_ context.Context) (SchemaList, error)
 	return make(SchemaList, 0), nil
 }
 
-func (c *DummySettingsClient) GetSchemaById(_ context.Context, _ string) (schema Schema, err error) {
+func (c *DummySettingsClient) GetSchema(_ context.Context, _ string) (schema Schema, err error) {
 	return Schema{}, nil
 }
 

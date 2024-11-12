@@ -308,7 +308,7 @@ func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, e
 	return result.Items, nil
 }
 
-func (d *SettingsClient) GetSchemaById(ctx context.Context, schemaID string) (constraints Schema, err error) {
+func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constraints Schema, err error) {
 	if ret, cached := d.schemaCache.Get(schemaID); cached {
 		return ret, nil
 	}
@@ -467,7 +467,7 @@ type match struct {
 }
 
 func (d *SettingsClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (match, bool, error) {
-	constraints, err := d.GetSchemaById(ctx, source.SchemaId)
+	constraints, err := d.GetSchema(ctx, source.SchemaId)
 	if err != nil {
 		return match{}, false, fmt.Errorf("unable to get details for schema %q: %w", source.SchemaId, err)
 	}

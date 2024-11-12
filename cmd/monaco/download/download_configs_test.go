@@ -76,7 +76,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
 				c.EXPECT().ListSchemas(gomock.Any()).AnyTimes().Return(dtclient.SchemaList{{SchemaId: "builtin:magic.secret"}}, nil)
-				c.EXPECT().GetSchemaById(gomock.Any(), gomock.Any()).AnyTimes().Return(dtclient.Schema{SchemaId: "builtin:magic.secret"}, nil)
+				c.EXPECT().GetSchema(gomock.Any(), gomock.Any()).AnyTimes().Return(dtclient.Schema{SchemaId: "builtin:magic.secret"}, nil)
 				c.EXPECT().List(gomock.Any(), "builtin:magic.secret", gomock.Any()).AnyTimes().Return([]dtclient.DownloadSettingsObject{}, nil)
 			},
 		},
@@ -111,7 +111,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			},
 			expectedSettingsBehaviour: func(c *client.MockSettingsClient) {
 				c.EXPECT().ListSchemas(gomock.Any()).AnyTimes().Return(dtclient.SchemaList{{SchemaId: "builtin:magic.secret"}}, nil)
-				c.EXPECT().GetSchemaById(gomock.Any(), gomock.Any()).AnyTimes().Return(dtclient.Schema{SchemaId: "builtin:magic.secret"}, nil)
+				c.EXPECT().GetSchema(gomock.Any(), gomock.Any()).AnyTimes().Return(dtclient.Schema{SchemaId: "builtin:magic.secret"}, nil)
 				c.EXPECT().List(gomock.Any(), "builtin:magic.secret", gomock.Any()).AnyTimes().Return([]dtclient.DownloadSettingsObject{}, nil)
 			},
 		},
