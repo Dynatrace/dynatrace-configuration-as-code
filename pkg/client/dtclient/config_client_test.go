@@ -21,17 +21,20 @@ package dtclient
 import (
 	"context"
 	"fmt"
-	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
+
+var mockAPI = api.API{ID: "mock-api", SingleConfiguration: true}
+var mockAPINotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
 
 var testReportsApi = api.API{ID: "reports", URLPath: "/api/config/v1/reports"}
 var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueName: true, DeprecatedBy: "dashboard-v2"}
@@ -346,8 +349,8 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			}))
 			defer server.Close()
 
-			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), nil)
-			_, got, err := dtclient.ConfigExistsByName(context.TODO(), testApi, tt.givenObjectName)
+			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), nil)
+			_, got, err := dtclient.ExistsWithName(context.TODO(), testApi, tt.givenObjectName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -359,7 +362,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 	}
 }
 
-func TestUpsertConfigByName(t *testing.T) {
+func TestUpsertByName(t *testing.T) {
 	tests := []struct {
 		name             string
 		testApi          api.API
@@ -390,9 +393,9 @@ func TestUpsertConfigByName(t *testing.T) {
 			}))
 			defer server.Close()
 
-			dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
-			dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG", nil)
-			dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG 2", nil)
+			dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
+			dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG", nil)
+			dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG 2", nil)
 			assert.Equal(t, apiHits, tt.expectedAPIHits)
 		})
 	}
@@ -446,8 +449,8 @@ func TestUpsertConfig_CheckEqualityFunctionIsUsed(t *testing.T) {
 			}))
 			defer server.Close()
 
-			dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
-			dtObj, err := dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG", []byte(`{}`))
+			dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
+			dtObj, err := dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG", []byte(`{}`))
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedAPIHits, 2)
 			assert.Equal(t, tt.expectedDynatraceObject, dtObj)
@@ -637,9 +640,9 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 					MaxRetries: 3,
 				},
 			}
-			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(s))
+			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(s))
 
-			_, _, err := dtclient.ConfigExistsByName(context.TODO(), testApi, "")
+			_, _, err := dtclient.ExistsWithName(context.TODO(), testApi, "")
 			if tt.expectError {
 				assert.NotNil(t, err)
 			} else {
@@ -729,7 +732,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			defer server.Close()
 			testApi := api.API{ID: tt.apiKey}
 
-			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(testRetrySettings))
+			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(testRetrySettings))
 			got, err := dtclient.createDynatraceObject(context.TODO(), tt.objectName, testApi, []byte("{}"))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
@@ -783,8 +786,8 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 
 			testApi := api.API{ID: "some-api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
-			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(testRetrySettings))
-			got, err := dtclient.upsertDynatraceEntityByNonUniqueNameAndId(context.TODO(), generatedUuid, theConfigName, testApi, []byte("{}"), false)
+			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(testRetrySettings))
+			got, err := dtclient.UpsertByNonUniqueNameAndId(context.TODO(), testApi, generatedUuid, theConfigName, []byte("{}"), false)
 			assert.NoError(t, err)
 			assert.Equal(t, got.Id, tt.expectedIdToBeUpserted)
 		})
@@ -797,15 +800,10 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	serverURL, err := url.Parse(testServer.URL)
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	client := DynatraceClient{
-		classicClient:      corerest.NewClient(serverURL, testServer.Client(), corerest.WithRateLimiter()),
-		generateExternalID: idutils.GenerateExternalIDForSettingsObject,
-	}
-
-	_, err = client.ReadConfigById(context.TODO(), mockAPI, "test")
+	_, err = client.Get(context.TODO(), mockAPI, "test")
 	assert.ErrorContains(t, err, "failed with status code")
 }
 
@@ -815,14 +813,10 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
 	defer testServer.Close()
 
-	serverURL, err := url.Parse(testServer.URL)
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	client := DynatraceClient{
-		classicClient:      corerest.NewClient(serverURL, testServer.Client(), corerest.WithRateLimiter()),
-		generateExternalID: idutils.GenerateExternalIDForSettingsObject,
-	}
-	_, err = client.ReadConfigById(context.TODO(), mockAPINotSingle, unescapedID)
+	_, err = client.Get(context.TODO(), mockAPINotSingle, unescapedID)
 	assert.NoError(t, err)
 }
 
@@ -834,15 +828,10 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	serverURL, err := url.Parse(testServer.URL)
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	client := DynatraceClient{
-		classicClient:      corerest.NewClient(serverURL, testServer.Client(), corerest.WithRateLimiter()),
-		generateExternalID: idutils.GenerateExternalIDForSettingsObject,
-	}
-
-	resp, err := client.ReadConfigById(context.TODO(), mockAPI, "test")
+	resp, err := client.Get(context.TODO(), mockAPI, "test")
 	assert.NoError(t, err, "there should not be an error")
 	assert.Equal(t, body, resp)
 }

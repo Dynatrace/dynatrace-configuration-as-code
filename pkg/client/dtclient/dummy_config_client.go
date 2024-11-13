@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2024 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,14 +18,14 @@ package dtclient
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 
@@ -40,14 +40,14 @@ type DataEntry struct {
 	Payload []byte
 }
 
-type DummyClient struct {
+type DummyConfigClient struct {
 	entries          map[string][]DataEntry
 	entriesLock      sync.RWMutex
 	Fs               afero.Fs
 	RequestOutputDir string
 }
 
-func (c *DummyClient) GetEntries(a api.API) ([]DataEntry, bool) {
+func (c *DummyConfigClient) GetEntries(a api.API) ([]DataEntry, bool) {
 	c.entriesLock.RLock()
 	defer c.entriesLock.RUnlock()
 
@@ -58,7 +58,7 @@ func (c *DummyClient) GetEntries(a api.API) ([]DataEntry, bool) {
 	return v, true
 }
 
-func (c *DummyClient) storeEntry(a api.API, e DataEntry) {
+func (c *DummyConfigClient) storeEntry(a api.API, e DataEntry) {
 	c.entriesLock.Lock()
 	defer c.entriesLock.Unlock()
 
@@ -74,7 +74,7 @@ func (c *DummyClient) storeEntry(a api.API, e DataEntry) {
 	c.entries[a.ID] = entries
 }
 
-func (c *DummyClient) CreatedObjects() int {
+func (c *DummyConfigClient) CreatedObjects() int {
 	c.entriesLock.RLock()
 	defer c.entriesLock.RUnlock()
 
@@ -85,11 +85,11 @@ func (c *DummyClient) CreatedObjects() int {
 	return objects
 }
 
-func (c *DummyClient) CacheConfigs(ctx context.Context, a api.API) error {
+func (c *DummyConfigClient) Cache(ctx context.Context, a api.API) error {
 	return nil
 }
 
-func (c *DummyClient) ListConfigs(_ context.Context, a api.API) (values []Value, err error) {
+func (c *DummyConfigClient) List(_ context.Context, a api.API) (values []Value, err error) {
 	entries, found := c.GetEntries(a)
 
 	if !found {
@@ -110,7 +110,7 @@ func (c *DummyClient) ListConfigs(_ context.Context, a api.API) (values []Value,
 	return result, nil
 }
 
-func (c *DummyClient) ReadConfigById(_ context.Context, a api.API, id string) ([]byte, error) {
+func (c *DummyConfigClient) Get(_ context.Context, a api.API, id string) ([]byte, error) {
 	entries, found := c.GetEntries(a)
 
 	if !found {
@@ -126,7 +126,7 @@ func (c *DummyClient) ReadConfigById(_ context.Context, a api.API, id string) ([
 	return nil, fmt.Errorf("nothing found for id %s in api %s", id, a.ID)
 }
 
-func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
+func (c *DummyConfigClient) UpsertByName(_ context.Context, a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
 	entries, _ := c.GetEntries(a)
 
 	var dataEntry DataEntry
@@ -159,7 +159,7 @@ func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name stri
 	}, nil
 }
 
-func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a api.API, entityId string, name string, data []byte, _ bool) (entity DynatraceEntity, err error) {
+func (c *DummyConfigClient) UpsertByNonUniqueNameAndId(_ context.Context, a api.API, entityId string, name string, data []byte, _ bool) (entity DynatraceEntity, err error) {
 	entries, _ := c.GetEntries(a)
 
 	var dataEntry DataEntry
@@ -192,7 +192,7 @@ func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a api.
 	}, nil
 }
 
-func (c *DummyClient) writeRequest(a api.API, name string, payload []byte) {
+func (c *DummyConfigClient) writeRequest(a api.API, name string, payload []byte) {
 	if c.Fs == nil {
 		return
 	}
@@ -211,7 +211,7 @@ func (c *DummyClient) writeRequest(a api.API, name string, payload []byte) {
 	}
 }
 
-func (c *DummyClient) DeleteConfigById(_ context.Context, a api.API, id string) error {
+func (c *DummyConfigClient) Delete(_ context.Context, a api.API, id string) error {
 
 	c.entriesLock.Lock()
 	defer c.entriesLock.Unlock()
@@ -239,7 +239,7 @@ func (c *DummyClient) DeleteConfigById(_ context.Context, a api.API, id string) 
 	return nil
 }
 
-func (c *DummyClient) ConfigExistsByName(_ context.Context, a api.API, name string) (exists bool, id string, err error) {
+func (c *DummyConfigClient) ExistsWithName(_ context.Context, a api.API, name string) (exists bool, id string, err error) {
 	entries, found := c.GetEntries(a)
 
 	if !found {
@@ -253,43 +253,4 @@ func (c *DummyClient) ConfigExistsByName(_ context.Context, a api.API, name stri
 	}
 
 	return false, "", nil
-}
-
-func (c *DummyClient) CacheSettings(context.Context, string) error {
-	return nil
-}
-
-func (c *DummyClient) UpsertSettings(_ context.Context, obj SettingsObject, _ UpsertSettingsOptions) (DynatraceEntity, error) {
-
-	id := obj.Coordinate.ConfigId
-
-	// to ensure decoding of Management Zone Numeric IDs works for dry-runs the dummy client needs to produce a fake but validly formated objectID
-	if obj.SchemaId == "builtin:management-zones" {
-		uuid := uuid.New().String()
-		id = base64.RawURLEncoding.EncodeToString([]byte(uuid))
-	}
-
-	return DynatraceEntity{
-		Id:   id,
-		Name: obj.Coordinate.ConfigId,
-	}, nil
-}
-
-func (c *DummyClient) ListSchemas(_ context.Context) (SchemaList, error) {
-	return make(SchemaList, 0), nil
-}
-
-func (c *DummyClient) GetSchemaById(_ context.Context, _ string) (schema Schema, err error) {
-	return Schema{}, nil
-}
-
-func (c *DummyClient) GetSettingById(_ context.Context, _ string) (*DownloadSettingsObject, error) {
-	return &DownloadSettingsObject{}, nil
-}
-func (c *DummyClient) ListSettings(_ context.Context, _ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
-	return make([]DownloadSettingsObject, 0), nil
-}
-
-func (c *DummyClient) DeleteSettings(_ context.Context, _ string) error {
-	return nil
 }

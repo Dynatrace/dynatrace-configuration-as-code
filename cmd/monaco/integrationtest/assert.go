@@ -23,16 +23,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
-	"github.com/stretchr/testify/assert"
-	"net/http"
-	"testing"
-	"time"
+
+	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -42,7 +46,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
-	"github.com/spf13/afero"
 )
 
 type entityLookup map[coordinate.Coordinate]entities.ResolvedEntity
@@ -152,7 +155,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						theApi = theApi.ApplyParentObjectID(scope)
 					}
 
-					foundID = AssertConfig(t, ctx, clients.Classic(), theApi, env, available, theConfig, configName)
+					foundID = AssertConfig(t, ctx, clients.Config(), theApi, env, available, theConfig, configName)
 				case config.AutomationType:
 					if clients.Automation() == nil {
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
@@ -189,7 +192,7 @@ func AssertConfig(t *testing.T, ctx context.Context, client client.ConfigClient,
 	var exists bool
 
 	if config.Skip {
-		exists, _, _ = client.ConfigExistsByName(ctx, theApi, name)
+		exists, _, _ = client.ExistsWithName(ctx, theApi, name)
 		assert.False(t, exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 		return
 	}
@@ -198,7 +201,7 @@ func AssertConfig(t *testing.T, ctx context.Context, client client.ConfigClient,
 
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err := wait(description, 120, func() bool {
-		exists, id, _ = client.ConfigExistsByName(ctx, theApi, name)
+		exists, id, _ = client.ExistsWithName(ctx, theApi, name)
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NoError(t, err)
@@ -219,7 +222,7 @@ func AssertSetting(t *testing.T, ctx context.Context, c client.SettingsClient, t
 		return
 	}
 
-	objects, err := c.ListSettings(ctx, typ.SchemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
+	objects, err := c.List(ctx, typ.SchemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
 	assert.NoError(t, err)
 
 	if len(objects) > 1 {

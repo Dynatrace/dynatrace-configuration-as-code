@@ -50,7 +50,7 @@ import (
 func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 	t.Run("TestDeleteSettings_LegacyExternalID", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
+		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJGlkMQ=="}))
 			return []dtclient.DownloadSettingsObject{
 				{
@@ -63,7 +63,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			}, nil
 		})
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -78,7 +78,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings with external ID fails", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, coreapi.APIError{StatusCode: 0})
+		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, coreapi.APIError{StatusCode: 0})
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -93,7 +93,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings returns no objects", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, nil)
+		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -108,7 +108,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 
 	t.Run("TestDeleteSettings_LegacyExternalID - Delete settings based on object ID fails", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{
+		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{
 			{
 				ExternalId:    "externalID",
 				SchemaVersion: "v1",
@@ -118,7 +118,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				Value:         nil,
 			},
 		}, nil)
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -135,7 +135,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 func TestDeleteSettings(t *testing.T) {
 	t.Run("TestDeleteSettings", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Eq("builtin:alerting.profile"), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
+		c.EXPECT().List(gomock.Any(), gomock.Eq("builtin:alerting.profile"), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			expectedExtID := "monaco:cHJvamVjdCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQx"
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: expectedExtID}), "Expected request filtering for externalID %q", expectedExtID)
 			return []dtclient.DownloadSettingsObject{
@@ -150,7 +150,7 @@ func TestDeleteSettings(t *testing.T) {
 			}, nil
 
 		})
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -166,7 +166,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, coreapi.APIError{StatusCode: 0})
+		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, coreapi.APIError{StatusCode: 0})
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -182,7 +182,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - List settings returns no objects", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, nil)
+		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -198,7 +198,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - Delete settings based on object ID fails", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{
+		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{
 			{
 				ExternalId:    "externalID",
 				SchemaVersion: "v1",
@@ -208,7 +208,7 @@ func TestDeleteSettings(t *testing.T) {
 				Value:         nil,
 			},
 		}, nil)
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -224,7 +224,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - Skips non-deletable Objects", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
+		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			expectedExtID := "monaco:cHJvamVjdCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQx"
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: expectedExtID}), "Expected request filtering for externalID %q", expectedExtID)
 			return []dtclient.DownloadSettingsObject{
@@ -243,7 +243,7 @@ func TestDeleteSettings(t *testing.T) {
 			}, nil
 
 		})
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("12345")).Times(0) // deletion should not be attempted for non-deletable objects
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Times(0) // deletion should not be attempted for non-deletable objects
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -259,7 +259,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("identification via 'objectId'", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Eq("builtin:alerting.profile"), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
+		c.EXPECT().List(gomock.Any(), gomock.Eq("builtin:alerting.profile"), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ObjectId: "DT-original-object-ID"}), "Expected request filtering for objectId %q", "DT-original-object-ID")
 			return []dtclient.DownloadSettingsObject{
 				{
@@ -273,7 +273,7 @@ func TestDeleteSettings(t *testing.T) {
 			}, nil
 
 		})
-		c.EXPECT().DeleteSettings(gomock.Any(), gomock.Eq("DT-original-object-ID")).Return(nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("DT-original-object-ID")).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -715,13 +715,13 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 
 			c := client.NewMockConfigClient(gomock.NewController(t))
 			if len(tc.args.entries) > 0 {
-				c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(a)).Return(tc.args.values, nil).Times(len(tc.args.entries))
+				c.EXPECT().List(gomock.Any(), matcher.EqAPI(a)).Return(tc.args.values, nil).Times(len(tc.args.entries))
 			}
 			for _, id := range tc.expect.ids {
-				c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(a), id).Times(1)
+				c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(a), id).Times(1)
 			}
 
-			err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, entriesToDelete)
+			err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, entriesToDelete)
 			if tc.expect.err {
 				assert.Error(t, err)
 			} else {
@@ -924,16 +924,16 @@ func TestConfigsWithParent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c := client.NewMockConfigClient(gomock.NewController(t))
 			if tc.mock.parentList != nil {
-				c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(tc.mock.parentList.api)).Return(tc.mock.parentList.response, tc.mock.parentList.err).Times(1)
+				c.EXPECT().List(gomock.Any(), matcher.EqAPI(tc.mock.parentList.api)).Return(tc.mock.parentList.response, tc.mock.parentList.err).Times(1)
 			}
 			if tc.mock.list != nil {
-				c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(tc.mock.list.api)).Return(tc.mock.list.response, tc.mock.list.err).Times(1)
+				c.EXPECT().List(gomock.Any(), matcher.EqAPI(tc.mock.list.api)).Return(tc.mock.list.response, tc.mock.list.err).Times(1)
 			}
 			if tc.mock.del != nil {
-				c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(tc.mock.del.api), tc.mock.del.id).Return(tc.mock.del.err).Times(1)
+				c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(tc.mock.del.api), tc.mock.del.id).Return(tc.mock.del.err).Times(1)
 			}
 
-			err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, tc.forDelete)
+			err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, tc.forDelete)
 			if !tc.wantErr {
 				assert.NoError(t, err)
 			} else {
@@ -947,8 +947,8 @@ func TestDelete_Classic(t *testing.T) {
 	t.Run("identification via 'name'", func(t *testing.T) {
 		c := client.NewMockConfigClient(gomock.NewController(t))
 		theAPI := api.NewAPIs()[api.ApplicationWeb]
-		c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(theAPI)).Return([]dtclient.Value{{Id: "DT-id-of-app", Name: "application name"}}, nil).Times(1)
-		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().List(gomock.Any(), matcher.EqAPI(theAPI)).Return([]dtclient.Value{{Id: "DT-id-of-app", Name: "application name"}}, nil).Times(1)
+		c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
 
 		given := delete.DeleteEntries{
 			"application-web": {
@@ -959,13 +959,13 @@ func TestDelete_Classic(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, given)
 		require.NoError(t, err)
 	})
 
 	t.Run("identification via 'objectId'", func(t *testing.T) {
 		c := client.NewMockConfigClient(gomock.NewController(t))
-		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(api.NewAPIs()["application-web"]), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(api.NewAPIs()["application-web"]), "DT-id-of-app").Return(nil).Times(1)
 
 		given := delete.DeleteEntries{
 			"application-web": {
@@ -976,7 +976,7 @@ func TestDelete_Classic(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, given)
 		require.NoError(t, err)
 	})
 
@@ -991,7 +991,7 @@ func TestDelete_Classic(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, given)
 		require.NoError(t, err)
 	})
 }
@@ -1001,12 +1001,12 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 		theAPI := api.NewAPIs()[api.KeyUserActionsWeb]
 		c := client.NewMockConfigClient(gomock.NewController(t))
 
-		c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
-		c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID"))).Return([]dtclient.Value{
+		c.EXPECT().List(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
+		c.EXPECT().List(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID"))).Return([]dtclient.Value{
 			{Id: "DT-id-of-app", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test.com", "actionType": "Load"}},
 			{Id: "DT-id-of-app2", Name: "test", CustomFields: map[string]any{"name": "test", "domain": "test2.com", "actionType": "Load"}},
 		}, nil).Times(1)
-		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
 
 		de := delete.DeleteEntries{
 			"key-user-actions-web": {
@@ -1020,7 +1020,7 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, de)
+		err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, de)
 		assert.NoError(t, err)
 	})
 
@@ -1028,8 +1028,8 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 		theAPI := api.NewAPIs()[api.KeyUserActionsWeb]
 		c := client.NewMockConfigClient(gomock.NewController(t))
 
-		c.EXPECT().ListConfigs(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
-		c.EXPECT().DeleteConfigById(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
+		c.EXPECT().List(gomock.Any(), matcher.EqAPI(*theAPI.Parent)).Return([]dtclient.Value{{Id: "APP-ID", Name: "application name"}}, nil).Times(1)
+		c.EXPECT().Delete(gomock.Any(), matcher.EqAPI(theAPI.ApplyParentObjectID("APP-ID")), "DT-id-of-app").Return(nil).Times(1)
 
 		de := delete.DeleteEntries{
 			"key-user-actions-web": {
@@ -1043,7 +1043,7 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 			},
 		}
 
-		err := delete.Configs(context.TODO(), client.ClientSet{ClassicClient: c}, de)
+		err := delete.Configs(context.TODO(), client.ClientSet{ConfigClient: c}, de)
 		assert.NoError(t, err)
 	})
 }

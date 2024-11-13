@@ -23,6 +23,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/net/context"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
@@ -30,10 +35,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 )
 
 func TestDelete(t *testing.T) {
@@ -341,7 +342,7 @@ configs:
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
 	// get application ID
-	v, err := clientSet.Classic().ListConfigs(context.TODO(), apis["application-mobile"])
+	v, err := clientSet.Config().List(context.TODO(), apis["application-mobile"])
 	assert.NoError(t, err)
 
 	var appID string
@@ -368,7 +369,7 @@ configs:
 	require.NoError(t, err)
 
 	// Assert key-user-action is deleted
-	integrationtest.AssertConfig(t, context.TODO(), clientSet.Classic(), apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
+	integrationtest.AssertConfig(t, context.TODO(), clientSet.Config(), apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "key-user-actions-mobile",

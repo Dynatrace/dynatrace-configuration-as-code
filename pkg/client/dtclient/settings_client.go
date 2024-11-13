@@ -22,19 +22,96 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/google/go-cmp/cmp"
-	"golang.org/x/exp/maps"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/google/go-cmp/cmp"
+	"golang.org/x/exp/maps"
+
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
+
+// DownloadSettingsObject is the response type for the ListSettings operation
+type DownloadSettingsObject struct {
+	ExternalId       string                    `json:"externalId"`
+	SchemaVersion    string                    `json:"schemaVersion"`
+	SchemaId         string                    `json:"schemaId"`
+	ObjectId         string                    `json:"objectId"`
+	Scope            string                    `json:"scope"`
+	Value            json.RawMessage           `json:"value"`
+	ModificationInfo *SettingsModificationInfo `json:"modificationInfo"`
+}
+
+type SettingsModificationInfo struct {
+	Deletable          bool          `json:"deletable"`
+	Modifiable         bool          `json:"modifiable"`
+	Movable            bool          `json:"movable"`
+	ModifiablePaths    []interface{} `json:"modifiablePaths"`
+	NonModifiablePaths []interface{} `json:"nonModifiablePaths"`
+}
+
+type UpsertSettingsOptions struct {
+	OverrideRetry *RetrySetting
+	InsertAfter   string
+}
+
+// defaultListSettingsFields  are the fields we are interested in when getting setting objects
+const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schemaId,scope,modificationInfo"
+
+// reducedListSettingsFields are the fields we are interested in when getting settings objects but don't care about the
+// actual value payload
+const reducedListSettingsFields = "objectId,externalId,schemaVersion,schemaId,scope,modificationInfo"
+const defaultPageSize = "500"
+
+// ListSettingsOptions are additional options for the ListSettings method
+// of the Settings client
+type ListSettingsOptions struct {
+	// DiscardValue specifies whether the value field of the returned
+	// settings object shall be included in the payload
+	DiscardValue bool
+	// ListSettingsFilter can be set to pre-filter the result given a special logic
+	Filter ListSettingsFilter
+}
+
+// ListSettingsFilter can be used to filter fetched settings objects with custom criteria, e.g. o.ExternalId == ""
+type ListSettingsFilter func(DownloadSettingsObject) bool
+
+type SettingsClient struct {
+	// serverVersion is the Dynatrace server version the
+	// client will be interacting with
+	serverVersion version.Version
+
+	// client is a rest client used to target platform enabled environments
+	client *corerest.Client
+
+	// settingsSchemaAPIPath is the API path to use for accessing settings schemas
+	settingsSchemaAPIPath string
+
+	//  settingsObjectAPIPath is the API path to use for accessing settings objects
+	settingsObjectAPIPath string
+
+	// retrySettings are the settings to be used for retrying failed http requests
+	retrySettings RetrySettings
+
+	// generateExternalID is used to generate an external id for settings 2.0 objects
+	generateExternalID idutils.ExternalIDGenerator
+
+	// settingsCache caches settings objects
+	settingsCache cache.Cache[[]DownloadSettingsObject]
+
+	// schemaCache caches schema constraints
+	schemaCache cache.Cache[Schema]
+}
 
 type (
 	// SettingsObject contains all the information necessary to create/update a settings object
@@ -97,17 +174,123 @@ type (
 	}
 )
 
-func (d *DynatraceClient) CacheSettings(ctx context.Context, schemaID string) error {
-	_, err := d.ListSettings(ctx, schemaID, ListSettingsOptions{})
+const (
+	settingsSchemaAPIPathClassic  = "/api/v2/settings/schemas"
+	settingsSchemaAPIPathPlatform = "/platform/classic/environment-api/v2/settings/schemas"
+	settingsObjectAPIPathClassic  = "/api/v2/settings/objects"
+	settingsObjectAPIPathPlatform = "/platform/classic/environment-api/v2/settings/objects"
+)
+
+func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *SettingsClient) {
+	return func(d *SettingsClient) {
+		d.generateExternalID = g
+	}
+}
+
+// WithRetrySettings sets the retry settings to be used by the DynatraceClient
+func WithRetrySettings(retrySettings RetrySettings) func(*SettingsClient) {
+	return func(d *SettingsClient) {
+		d.retrySettings = retrySettings
+	}
+}
+
+// WithServerVersion sets the Dynatrace version of the Dynatrace server/tenant the client will be interacting with
+func WithServerVersion(serverVersion version.Version) func(client *SettingsClient) {
+	return func(d *SettingsClient) {
+		d.serverVersion = serverVersion
+	}
+}
+
+// WithAutoServerVersion can be used to let the client automatically determine the Dynatrace server version
+// during creation using newDynatraceClient. If the server version is already known WithServerVersion should be used.
+// Do not use this with NewPlatformSettingsClient() as the client will not work and cause an error to be logged.
+func WithAutoServerVersion() func(client *SettingsClient) {
+	return func(d *SettingsClient) {
+		var serverVersion version.Version
+		var err error
+
+		d.serverVersion = version.UnknownVersion
+		if d.client == nil {
+			return
+		}
+
+		serverVersion, err = dtVersion.GetDynatraceVersion(context.TODO(), d.client) //this will send the default user-agent
+		if err != nil {
+			log.WithFields(field.Error(err)).Warn("Unable to determine Dynatrace server version: %v", err)
+			return
+		}
+		d.serverVersion = serverVersion
+	}
+}
+
+// WithCachingDisabled allows disabling the client's builtin caching mechanism for schema constraints and settings objects.
+// Disabling the caching is recommended in situations where configs are fetched immediately after their creation (e.g. in test scenarios).
+func WithCachingDisabled(disabled bool) func(client *SettingsClient) {
+	return func(d *SettingsClient) {
+		if disabled {
+			d.schemaCache = &cache.NoopCache[Schema]{}
+			d.settingsCache = &cache.NoopCache[[]DownloadSettingsObject]{}
+		}
+	}
+}
+
+// NewPlatformSettingsClient creates a new settings client to be used for platform enabled environments
+//
+//nolint:dupl
+func NewPlatformSettingsClient(client *corerest.Client, opts ...func(dynatraceClient *SettingsClient)) (*SettingsClient, error) {
+	d := &SettingsClient{
+		serverVersion:         version.Version{},
+		client:                client,
+		retrySettings:         DefaultRetrySettings,
+		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
+		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
+		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
+		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
+		schemaCache:           &cache.DefaultCache[Schema]{},
+	}
+
+	for _, o := range opts {
+		if o != nil {
+			o(d)
+		}
+	}
+	return d, nil
+}
+
+// NewClassicSettingsClient creates a new settings client to be used for classic environments.
+//
+//nolint:dupl
+func NewClassicSettingsClient(client *corerest.Client, opts ...func(dynatraceClient *SettingsClient)) (*SettingsClient, error) {
+	d := &SettingsClient{
+		serverVersion:         version.Version{},
+		client:                client,
+		retrySettings:         DefaultRetrySettings,
+		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
+		settingsObjectAPIPath: settingsObjectAPIPathClassic,
+		generateExternalID:    idutils.GenerateExternalIDForSettingsObject,
+		settingsCache:         &cache.DefaultCache[[]DownloadSettingsObject]{},
+		schemaCache:           &cache.DefaultCache[Schema]{},
+	}
+
+	for _, o := range opts {
+		if o != nil {
+			o(d)
+		}
+	}
+	return d, nil
+}
+
+func (d *SettingsClient) Cache(ctx context.Context, schemaID string) error {
+	_, err := d.List(ctx, schemaID, ListSettingsOptions{})
 	return err
 }
 
-func (d *DynatraceClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
+func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
 	queryParams := url.Values{}
 	queryParams.Add("fields", "ordered,schemaId")
 
 	// getting all schemas does not have pagination
-	resp, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, d.settingsSchemaAPIPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	resp, err := coreapi.AsResponseOrError(d.client.GET(ctx, d.settingsSchemaAPIPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET schemas: %w", err)
 	}
@@ -125,14 +308,14 @@ func (d *DynatraceClient) ListSchemas(ctx context.Context) (schemas SchemaList, 
 	return result.Items, nil
 }
 
-func (d *DynatraceClient) GetSchemaById(ctx context.Context, schemaID string) (constraints Schema, err error) {
+func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constraints Schema, err error) {
 	if ret, cached := d.schemaCache.Get(schemaID); cached {
 		return ret, nil
 	}
 
 	ret := Schema{SchemaId: schemaID}
 	endpoint := d.settingsSchemaAPIPath + "/" + schemaID
-	r, err := coreapi.AsResponseOrError(d.platformClient.GET(ctx, endpoint, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	r, err := coreapi.AsResponseOrError(d.client.GET(ctx, endpoint, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return Schema{}, err
 	}
@@ -159,9 +342,9 @@ func (d *DynatraceClient) GetSchemaById(ctx context.Context, schemaID string) (c
 // settings 2.0 objects that are non-deletable.
 // So we check if the object with originObjectID already exists, if yes and the tenant is older than 1.262
 // then we cannot perform the upsert operation
-func (d *DynatraceClient) handleUpsertUnsupportedVersion(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
+func (d *SettingsClient) handleUpsertUnsupportedVersion(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
 
-	fetchedSettingObj, err := d.GetSettingById(ctx, obj.OriginObjectId)
+	fetchedSettingObj, err := d.Get(ctx, obj.OriginObjectId)
 	if err != nil {
 		apiErr := coreapi.APIError{}
 		// Settings API returns 400 StatusBadRequest for 404 StatusNotFound
@@ -178,14 +361,7 @@ func (d *DynatraceClient) handleUpsertUnsupportedVersion(ctx context.Context, ob
 
 }
 
-func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		result, err = d.upsertSettings(ctx, obj, upsertOptions)
-	})
-	return
-}
-
-func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
+func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
 	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
 		return d.handleUpsertUnsupportedVersion(ctx, obj)
 	}
@@ -212,7 +388,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
 	}
 
-	settingsWithExternalID, err := d.ListSettings(ctx, obj.SchemaId, ListSettingsOptions{
+	settingsWithExternalID, err := d.List(ctx, obj.SchemaId, ListSettingsOptions{
 		Filter: func(object DownloadSettingsObject) bool { return object.ExternalId == legacyExternalID },
 	})
 	if err != nil {
@@ -232,7 +408,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	// it is not possible to update the setting using the externalId and origin-object-id on the same POST request,
 	// as two settings objects can be the target of the change. In this case, we remove the origin-object-id
 	// and only update the object using the externalId.
-	settings, err := d.ListSettings(ctx, obj.SchemaId, ListSettingsOptions{
+	settings, err := d.List(ctx, obj.SchemaId, ListSettingsOptions{
 		Filter: func(object DownloadSettingsObject) bool {
 			return object.ObjectId == obj.OriginObjectId || object.ExternalId == externalID
 		},
@@ -270,7 +446,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		retrySetting = *upsertOptions.OverrideRetry
 	}
 
-	resp, err := SendWithRetryWithInitialTry(ctx, d.platformClient.POST, d.settingsObjectAPIPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, payload, retrySetting)
+	resp, err := SendWithRetryWithInitialTry(ctx, d.client.POST, d.settingsObjectAPIPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, payload, retrySetting)
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
@@ -290,8 +466,8 @@ type match struct {
 	matches constraintMatch
 }
 
-func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (match, bool, error) {
-	constraints, err := d.GetSchemaById(ctx, source.SchemaId)
+func (d *SettingsClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (match, bool, error) {
+	constraints, err := d.GetSchema(ctx, source.SchemaId)
 	if err != nil {
 		return match{}, false, fmt.Errorf("unable to get details for schema %q: %w", source.SchemaId, err)
 	}
@@ -300,7 +476,7 @@ func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context,
 		return match{}, false, nil
 	}
 
-	objects, err := d.ListSettings(ctx, source.SchemaId, ListSettingsOptions{})
+	objects, err := d.List(ctx, source.SchemaId, ListSettingsOptions{})
 	if err != nil {
 		return match{}, false, fmt.Errorf("unable to get existing settings objects for %q schema: %w", source.SchemaId, err)
 	}
@@ -455,7 +631,7 @@ func parsePostResponse(body []byte) (DynatraceEntity, error) {
 	}, nil
 }
 
-func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
+func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
 	if settings, cached := d.settingsCache.Get(schemaId); cached {
 		log.WithCtxFields(ctx).Debug("Using cached settings for schema %s", schemaId)
 		return filter.FilterSlice(settings, opts.Filter), nil
@@ -487,7 +663,7 @@ func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opt
 		return len(parsed.Items), nil
 	}
 
-	err = listPaginated(ctx, d.platformClient, d.retrySettings.Normal, d.settingsObjectAPIPath, params, schemaId, addToResult)
+	err = listPaginated(ctx, d.client, d.retrySettings.Normal, d.settingsObjectAPIPath, params, schemaId, addToResult)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list settings of schema %q: %w", schemaId, err)
 	}
@@ -495,4 +671,32 @@ func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opt
 	d.settingsCache.Set(schemaId, result)
 
 	return filter.FilterSlice(result, opts.Filter), nil
+}
+
+func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
+	resp, err := coreapi.AsResponseOrError(d.client.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	if err != nil {
+		return nil, err
+	}
+
+	var result DownloadSettingsObject
+	if err = json.Unmarshal(resp.Data, &result); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal settings object: %w", err)
+	}
+
+	return &result, nil
+}
+
+func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
+	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	if err != nil {
+		apiError := coreapi.APIError{}
+		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+			log.Debug("No settings object with id '%s' found to delete (HTTP 404 response)", objectID)
+			return nil
+		}
+		return err
+	}
+
+	return nil
 }

@@ -46,7 +46,7 @@ func preloadCaches(ctx context.Context, projects []project.Project, environmentC
 				preloadSettingsValuesForSchemaId(ctx, p.clientset.SettingsClient, t.SchemaId)
 
 			case config.ClassicApiType:
-				preloadValuesForApi(ctx, p.clientset.ClassicClient, t.Api)
+				preloadValuesForApi(ctx, p.clientset.ConfigClient, t.Api)
 			}
 
 		}(p)
@@ -55,7 +55,7 @@ func preloadCaches(ctx context.Context, projects []project.Project, environmentC
 }
 
 func preloadSettingsValuesForSchemaId(ctx context.Context, client client.SettingsClient, schemaId string) {
-	if err := client.CacheSettings(ctx, schemaId); err != nil {
+	if err := client.Cache(ctx, schemaId); err != nil {
 		log.Warn("Could not cache settings values for schema %s: %s", schemaId, err)
 		return
 	}
@@ -70,7 +70,7 @@ func preloadValuesForApi(ctx context.Context, client client.ConfigClient, theApi
 	if a.HasParent() {
 		return
 	}
-	err := client.CacheConfigs(ctx, a)
+	err := client.Cache(ctx, a)
 	if err != nil {
 		log.Warn("Could not cache values for API %s: %s", theApi, err)
 		return
@@ -97,7 +97,7 @@ func gatherPreloadConfigTypeEntries(projects []project.Project, environmentClien
 
 				switch t := c.Type.(type) {
 				case config.ClassicApiType:
-					if environmentClientSet.ClassicClient != nil {
+					if environmentClientSet.ConfigClient != nil {
 						preloads = append(preloads, preloadConfigTypeEntry{configType: t, clientset: environmentClientSet})
 					}
 

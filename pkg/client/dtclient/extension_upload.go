@@ -44,7 +44,7 @@ const (
 	extensionNeedsUpdate
 )
 
-func (d *DynatraceClient) uploadExtension(ctx context.Context, api api.API, extensionName string, payload []byte) (DynatraceEntity, error) {
+func (d *ConfigClient) uploadExtension(ctx context.Context, api api.API, extensionName string, payload []byte) (DynatraceEntity, error) {
 	status, err := d.validateIfExtensionShouldBeUploaded(ctx, api.URLPath, extensionName, payload)
 	if err != nil {
 		return DynatraceEntity{}, err
@@ -63,7 +63,7 @@ func (d *DynatraceClient) uploadExtension(ctx context.Context, api api.API, exte
 		}, err
 	}
 
-	_, err = coreapi.AsResponseOrError(d.classicClient.POST(ctx, api.URLPath, buffer, corerest.RequestOptions{ContentType: contentType, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	_, err = coreapi.AsResponseOrError(d.client.POST(ctx, api.URLPath, buffer, corerest.RequestOptions{ContentType: contentType, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("upload of %s failed: %w", extensionName, err)
 	}
@@ -83,8 +83,8 @@ type Properties struct {
 	Version *string `json:"version"`
 }
 
-func (d *DynatraceClient) validateIfExtensionShouldBeUploaded(ctx context.Context, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
-	response, err := coreapi.AsResponseOrError(d.classicClient.GET(ctx, apiPath+"/"+extensionName, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+func (d *ConfigClient) validateIfExtensionShouldBeUploaded(ctx context.Context, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
+	response, err := coreapi.AsResponseOrError(d.client.GET(ctx, apiPath+"/"+extensionName, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		apiError := coreapi.APIError{}
 		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {

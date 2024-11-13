@@ -33,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -45,10 +44,10 @@ import (
 )
 
 var (
-	_ SettingsClient = (*dtclient.DynatraceClient)(nil)
-	_ ConfigClient   = (*dtclient.DynatraceClient)(nil)
-	_ SettingsClient = (*dtclient.DummyClient)(nil)
-	_ ConfigClient   = (*dtclient.DummyClient)(nil)
+	_ SettingsClient = (*dtclient.SettingsClient)(nil)
+	_ ConfigClient   = (*dtclient.ConfigClient)(nil)
+	_ SettingsClient = (*dtclient.DummySettingsClient)(nil)
+	_ ConfigClient   = (*dtclient.DummyConfigClient)(nil)
 )
 
 //go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client ConfigClient
@@ -56,45 +55,45 @@ var (
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
 // Each config endpoint is described by an [API] object to describe endpoints, structure, and behavior.
 type ConfigClient interface {
-	// CacheConfigs caches all config values for a given API.
-	CacheConfigs(ctx context.Context, a api.API) error
+	// Cache caches all config values for a given API.
+	Cache(ctx context.Context, a api.API) error
 
-	// ListConfigs lists the available configs for an API.
+	// List lists the available configs for an API.
 	// It calls the underlying GET endpoint of the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
 	// The result is expressed using a list of Value (id and name tuples).
-	ListConfigs(ctx context.Context, a api.API) (values []dtclient.Value, err error)
+	List(ctx context.Context, a api.API) (values []dtclient.Value, err error)
 
-	// ReadConfigById reads a Dynatrace config identified by id from the given API.
+	// Get reads a Dynatrace config identified by id from the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles/<id> ... to get the alerting profile
-	ReadConfigById(ctx context.Context, a api.API, id string) (json []byte, err error)
+	Get(ctx context.Context, a api.API, id string) (json []byte, err error)
 
-	// UpsertConfigByName creates a given Dynatrace config if it doesn't exist and updates it otherwise using its name.
+	// UpsertByName creates a given Dynatrace config if it doesn't exist and updates it otherwise using its name.
 	// It calls the underlying GET, POST, and PUT endpoints for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//    POST <environment-url>/api/config/v1/alertingProfiles ... afterwards, if the config is not yet available
 	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... instead of POST, if the config is already available
-	UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity dtclient.DynatraceEntity, err error)
+	UpsertByName(ctx context.Context, a api.API, name string, payload []byte) (entity dtclient.DynatraceEntity, err error)
 
-	// UpsertConfigByNonUniqueNameAndId creates a given Dynatrace config if it doesn't exist and updates it based on specific rules if it does not
+	// UpsertByNonUniqueNameAndId creates a given Dynatrace config if it doesn't exist and updates it based on specific rules if it does not
 	// - if only one config with the name exist, behave like any other type and just update this entity
 	// - if an exact match is found (same name and same generated UUID) update that entity
 	// - if several configs exist, but non match the generated UUID create a new entity with generated UUID
 	// It calls the underlying GET and PUT endpoints for the API. E.g. for alerting profiles this would be:
 	//	 GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//	 PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... with the given (or found by unique name) entity ID
-	UpsertConfigByNonUniqueNameAndId(ctx context.Context, a api.API, entityID string, name string, payload []byte, duplicate bool) (entity dtclient.DynatraceEntity, err error)
+	UpsertByNonUniqueNameAndId(ctx context.Context, a api.API, entityID string, name string, payload []byte, duplicate bool) (entity dtclient.DynatraceEntity, err error)
 
-	// DeleteConfigById removes a given config for a given API using its id.
+	// Delete removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
-	DeleteConfigById(ctx context.Context, a api.API, id string) error
+	Delete(ctx context.Context, a api.API, id string) error
 
-	// ConfigExistsByName checks if a config with the given name exists for the given API.
+	// ExistsWithName checks if a config with the given name exists for the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
-	ConfigExistsByName(ctx context.Context, a api.API, name string) (exists bool, id string, err error)
+	ExistsWithName(ctx context.Context, a api.API, name string) (exists bool, id string, err error)
 }
 
 //go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client SettingsClient
@@ -102,7 +101,7 @@ type ConfigClient interface {
 // SettingsClient is the abstraction layer for CRUD operations on the Dynatrace Settings API.
 // Its design is intentionally not dependent on Monaco objects.
 //
-// This interface exclusively accesses the [settings api] of Dynatrace.
+// This interface exclusively accesses the [Settings API] of Dynatrace.
 //
 // The base mechanism for all methods is the same:
 // We identify objects to be updated/deleted by their external-id. If an object can not be found using its external-id, we assume
@@ -111,28 +110,28 @@ type ConfigClient interface {
 //
 // [settings api]: https://www.dynatrace.com/support/help/dynatrace-api/environment-api/settings
 type SettingsClient interface {
-	// CacheSettings caches all settings objects for a given schema.
-	CacheSettings(context.Context, string) error
+	// Cache caches all settings objects for a given schema.
+	Cache(context.Context, string) error
 
-	// UpsertSettings either creates the supplied object, or updates an existing one.
+	// Upsert either creates the supplied object, or updates an existing one.
 	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
 	// update the object.
-	UpsertSettings(context.Context, dtclient.SettingsObject, dtclient.UpsertSettingsOptions) (dtclient.DynatraceEntity, error)
+	Upsert(context.Context, dtclient.SettingsObject, dtclient.UpsertSettingsOptions) (dtclient.DynatraceEntity, error)
 
 	// ListSchemas returns all schemas that the Dynatrace environment reports
 	ListSchemas(context.Context) (dtclient.SchemaList, error)
 
-	// GetSchemaById returns the settings schema with the given schema ID
-	GetSchemaById(context.Context, string) (dtclient.Schema, error)
+	// GetSchema returns the settings schema with the given schema ID
+	GetSchema(context.Context, string) (dtclient.Schema, error)
 
-	// ListSettings returns all settings objects for a given schema.
-	ListSettings(context.Context, string, dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
+	// List returns all settings objects for a given schema.
+	List(context.Context, string, dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
 
-	// GetSettingById returns the setting with the given object ID
-	GetSettingById(context.Context, string) (*dtclient.DownloadSettingsObject, error)
+	// Get returns the setting with the given object ID
+	Get(context.Context, string) (*dtclient.DownloadSettingsObject, error)
 
-	// DeleteSettings deletes a settings object giving its object ID
-	DeleteSettings(context.Context, string) error
+	// Delete deletes a settings object giving its object ID
+	Delete(context.Context, string) error
 }
 
 type AutomationClient interface {
@@ -174,8 +173,8 @@ var DefaultRetryOptions = corerest.RetryOptions{MaxRetries: 10, ShouldRetryFunc:
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
 type ClientSet struct {
-	// ClassicClient is the client capable of updating or creating classic configs
-	ClassicClient ConfigClient
+	// ConfigClient is the client capable of updating or creating classic configs
+	ConfigClient ConfigClient
 
 	// SettingsClient is the client capable of updating or creating settings
 	SettingsClient SettingsClient
@@ -193,8 +192,8 @@ type ClientSet struct {
 	OpenPipelineClient OpenPipelineClient
 }
 
-func (s ClientSet) Classic() ConfigClient {
-	return s.ClassicClient
+func (s ClientSet) Config() ConfigClient {
+	return s.ConfigClient
 }
 
 func (s ClientSet) Settings() SettingsClient {
@@ -253,13 +252,13 @@ func validateURL(dtURL string) error {
 
 func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
 	var (
-		classicClient, client *corerest.Client
-		bucketClient          BucketClient
-		autClient             AutomationClient
-		documentClient        DocumentClient
-		openPipelineClient    OpenPipelineClient
-		err                   error
-		classicUrl            string
+		configClient       ConfigClient
+		settingsClient     SettingsClient
+		bucketClient       BucketClient
+		autClient          AutomationClient
+		documentClient     DocumentClient
+		openPipelineClient OpenPipelineClient
+		err                error
 	)
 	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	if err = validateURL(url); err != nil {
@@ -276,6 +275,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 		cFactory = cFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
 
+	classicURL := url
 	if auth.OAuth != nil {
 		cFactory = cFactory.WithOAuthCredentials(
 			clientcredentials.Config{
@@ -283,7 +283,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 				ClientSecret: auth.OAuth.ClientSecret.Value.Value(),
 				TokenURL:     auth.OAuth.GetTokenEndpointValue(),
 			}).WithPlatformURL(url)
-		client, err = cFactory.CreatePlatformClient()
+		client, err := cFactory.CreatePlatformClient()
 		if err != nil {
 			return nil, err
 		}
@@ -307,53 +307,47 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 		if err != nil {
 			return nil, err
 		}
+
+		settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
+		if err != nil {
+			return nil, err
+		}
+
+		classicURL, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if auth.Token != nil {
-		classicUrl, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
-		if err != nil {
-			return nil, err
-		}
 		cFactory = cFactory.WithAccessToken(auth.Token.Value.Value()).
-			WithClassicURL(classicUrl)
-		classicClient, err = cFactory.CreateClassicClient()
+			WithClassicURL(classicURL)
+		client, err := cFactory.CreateClassicClient()
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	dtClient, err := createDTClient(classicClient, client, opts, concurrentReqLimit)
-	if err != nil {
-		return nil, err
+		configClient, err = dtclient.NewClassicConfigClient(client, dtclient.WithCachingDisabledForConfigClient(opts.CachingDisabled))
+		if err != nil {
+			return nil, err
+		}
+
+		if settingsClient == nil {
+			settingsClient, err = dtclient.NewClassicSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled), dtclient.WithAutoServerVersion())
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return &ClientSet{
-		ClassicClient:      dtClient,
-		SettingsClient:     dtClient,
+		ConfigClient:       configClient,
+		SettingsClient:     settingsClient,
 		AutClient:          autClient,
 		BucketClient:       bucketClient,
 		DocumentClient:     documentClient,
 		OpenPipelineClient: openPipelineClient,
 	}, nil
-}
-
-func createDTClient(classicClient *corerest.Client, client *corerest.Client, opts ClientOptions, concurrentReqLimit int) (*dtclient.DynatraceClient, error) {
-	if client != nil {
-		return dtclient.NewPlatformClient(
-			client,
-			classicClient,
-			dtclient.WithCachingDisabled(opts.CachingDisabled),
-			dtclient.WithAutoServerVersion(),
-			dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)),
-		)
-	}
-
-	return dtclient.NewClassicClient(
-		classicClient,
-		dtclient.WithCachingDisabled(opts.CachingDisabled),
-		dtclient.WithAutoServerVersion(),
-		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentReqLimit)),
-	)
 }
 
 func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth, client *corerest.Client) (string, error) {

@@ -43,11 +43,7 @@ import (
 // wrong information from the cache in cases where we want to get
 // resources immediately after they've been created (e.g. to assert that they exist)
 func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefinition) *client.ClientSet {
-	var (
-		clients *client.ClientSet
-		err     error
-	)
-	clients, err = client.CreateClientSet(
+	clients, err := client.CreateClientSet(
 		context.TODO(),
 		environment.URL.Value,
 		environment.Auth,

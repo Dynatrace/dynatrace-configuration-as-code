@@ -25,12 +25,13 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 
+	"golang.org/x/net/context"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	"golang.org/x/net/context"
 )
 
 // Delete removes the given pointer.DeletePointer entries from the environment the supplied client dtclient.Client connects to
@@ -68,7 +69,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 			}
 		}
 
-		if e := client.DeleteConfigById(ctx, a, id); e != nil && !is404(e) {
+		if e := client.Delete(ctx, a, id); e != nil && !is404(e) {
 			log.WithFields(field.Error(e)).Error("failed to delete config: %v", e)
 			err = errors.Join(err, e)
 		}
@@ -94,7 +95,7 @@ func is404(err error) bool {
 
 // resolveIdentifier get the actual ID from DT and update entries with it
 func resolveIdentifier(ctx context.Context, client client.ConfigClient, theAPI *api.API, identifier identifier) (string, error) {
-	knownValues, err := client.ListConfigs(ctx, *theAPI)
+	knownValues, err := client.List(ctx, *theAPI)
 	if err != nil {
 		return "", err
 	}
@@ -153,7 +154,7 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 			logger.Debug("Skipping %q, will be deleted by the parent api %q", a.ID, a.Parent)
 		}
 		logger.Info("Collecting configs of type %q...", a.ID)
-		values, err := client.ListConfigs(ctx, a)
+		values, err := client.List(ctx, a)
 		if err != nil {
 			errs++
 			continue
@@ -164,7 +165,7 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 		for _, v := range values {
 			logger := logger.WithFields(field.F("value", v))
 			logger.Debug("Deleting config %s:%s...", a.ID, v.Id)
-			err := client.DeleteConfigById(ctx, a, v.Id)
+			err := client.Delete(ctx, a, v.Id)
 
 			if err != nil {
 				logger.WithFields(field.Error(err)).Error("Failed to delete %s with ID %s: %v", a.ID, v.Id, err)

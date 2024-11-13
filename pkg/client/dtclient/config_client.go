@@ -27,17 +27,118 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/exp/maps"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"golang.org/x/exp/maps"
 )
 
-func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
+type ConfigClient struct {
+	client *corerest.Client
+
+	// retrySettings are the settings to be used for retrying failed http requests
+	retrySettings RetrySettings
+
+	// configCache caches config API values
+	configCache cache.Cache[[]Value]
+}
+
+// WithRetrySettings sets the retry settings to be used by the ConfigClient
+func WithRetrySettingsForClassic(retrySettings RetrySettings) func(*ConfigClient) {
+	return func(d *ConfigClient) {
+		d.retrySettings = retrySettings
+	}
+}
+
+// WithCachingDisabledForConfigClient allows disabling the client's builtin caching mechanism for classic configs.
+// Disabling the caching is recommended in situations where configs are fetched immediately after their creation (e.g. in test scenarios).
+func WithCachingDisabledForConfigClient(disabled bool) func(client *ConfigClient) {
+	return func(d *ConfigClient) {
+		if disabled {
+			d.configCache = &cache.NoopCache[[]Value]{}
+		}
+	}
+}
+
+func NewClassicConfigClient(client *corerest.Client, opts ...func(dynatraceClient *ConfigClient)) (*ConfigClient, error) {
+	d := &ConfigClient{
+		client:        client,
+		retrySettings: DefaultRetrySettings,
+		configCache:   &cache.DefaultCache[[]Value]{},
+	}
+
+	for _, o := range opts {
+		if o != nil {
+			o(d)
+		}
+	}
+	return d, nil
+}
+
+func (d *ConfigClient) Cache(ctx context.Context, api api.API) error {
+	_, err := d.List(ctx, api)
+	return err
+}
+
+func (d *ConfigClient) Get(ctx context.Context, api api.API, id string) (json []byte, err error) {
+	var dtUrl = api.URLPath
+	if !api.SingleConfiguration {
+		dtUrl = dtUrl + "/" + url.PathEscape(id)
+	}
+
+	response, err := coreapi.AsResponseOrError(d.client.GET(ctx, dtUrl, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Data, nil
+}
+
+func (d *ConfigClient) Delete(ctx context.Context, api api.API, id string) error {
+	parsedURL, err := url.Parse(api.URLPath)
+	if err != nil {
+		return err
+	}
+	parsedURL = parsedURL.JoinPath(id)
+
+	_, err = coreapi.AsResponseOrError(d.client.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	if err != nil {
+		apiError := coreapi.APIError{}
+		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+			log.Debug("No config with id '%s' found to delete (HTTP 404 response)", id)
+			return nil
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (d *ConfigClient) ExistsWithName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
+	if api.SingleConfiguration {
+		// check that a single configuration is there by actually reading it.
+		_, err := d.Get(ctx, api, "")
+		return err == nil, "", nil
+	}
+
+	existingObjectId, err := d.getExistingObjectId(ctx, name, api, nil)
+	return existingObjectId != "", existingObjectId, err
+}
+
+func (d *ConfigClient) UpsertByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+	if a.ID == api.Extension {
+		return d.uploadExtension(ctx, a, name, payload)
+	}
+	return d.upsertDynatraceObject(ctx, a, name, payload)
+}
+
+func (d *ConfigClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
 	doUpsert := func() (DynatraceEntity, error) {
 		existingObjectID, err := d.getExistingObjectId(ctx, objectName, theApi, payload)
 		if err != nil {
@@ -79,22 +180,15 @@ func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.
 	if obj, err := doUpsert(); err == nil {
 		return obj, nil
 	} else {
-		d.classicConfigsCache.Delete(theApi.ID)
+		d.configCache.Delete(theApi.ID)
 		return doUpsert()
 	}
 }
 
-func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
-	ctx context.Context,
-	entityId string,
-	objectName string,
-	theApi api.API,
-	payload []byte,
-	duplicate bool,
-) (DynatraceEntity, error) {
+func (d *ConfigClient) UpsertByNonUniqueNameAndId(ctx context.Context, theApi api.API, entityId string, objectName string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
 	body := payload
 
-	existingEntities, err := d.fetchExistingValues(ctx, theApi)
+	existingEntities, err := d.List(ctx, theApi)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities: %w", err)
 	}
@@ -135,7 +229,7 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	return d.updateDynatraceObject(ctx, objectName, entityId, theApi, body)
 }
 
-func (d *DynatraceClient) createDynatraceObject(ctx context.Context, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+func (d *ConfigClient) createDynatraceObject(ctx context.Context, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 	endpoint := theApi.URLPath
 	if theApi.ID == api.KeyUserActionsMobile {
 		endpoint = joinUrl(endpoint, objectName)
@@ -148,7 +242,7 @@ func (d *DynatraceClient) createDynatraceObject(ctx context.Context, objectName 
 		queryParams.Add("position", "PREPEND")
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.POST, endpoint, body, theApi, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.client.POST, endpoint, body, theApi, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -203,7 +297,7 @@ func unmarshalCreateResponse(ctx context.Context, resp coreapi.Response, configT
 	return dtEntity, nil
 }
 
-func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
+func (d *ConfigClient) updateDynatraceObject(ctx context.Context, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 	endpoint := theApi.URLPath
 	if !theApi.SingleConfiguration {
 		endpoint = joinUrl(endpoint, existingObjectId)
@@ -227,7 +321,7 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, objectName 
 		}, nil
 	}
 
-	_, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.PUT, endpoint, payload, theApi, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
+	_, err := d.callWithRetryOnKnowTimingIssue(ctx, d.client.PUT, endpoint, payload, theApi, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -269,7 +363,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of known errors on upload.
-func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall SendRequestWithBody, endpoint string, requestBody []byte, theApi api.API, options corerest.RequestOptions) (*coreapi.Response, error) {
+func (d *ConfigClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall SendRequestWithBody, endpoint string, requestBody []byte, theApi api.API, options corerest.RequestOptions) (*coreapi.Response, error) {
 	resp, err := coreapi.AsResponseOrError(restCall(ctx, endpoint, bytes.NewReader(requestBody), options))
 	if err == nil {
 		return resp, nil
@@ -437,12 +531,12 @@ func isUserSessionPropertiesMobile(a api.API) bool {
 	return a.ID == api.UserActionAndSessionPropertiesMobile
 }
 
-func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName string, theApi api.API, payload []byte) (string, error) {
+func (d *ConfigClient) getExistingObjectId(ctx context.Context, objectName string, theApi api.API, payload []byte) (string, error) {
 	var objID string
 	// if there is a custom equal function registered, use that instead of just the Object name
 	// in order to search for existing values
 	if theApi.CheckEqualFunc != nil {
-		values, err := d.fetchExistingValues(ctx, theApi)
+		values, err := d.List(ctx, theApi)
 		if err != nil {
 			return "", err
 		}
@@ -455,7 +549,7 @@ func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName st
 
 	// Single configuration APIs don't have an id which allows skipping this step
 	if !theApi.SingleConfiguration {
-		values, err := d.fetchExistingValues(ctx, theApi)
+		values, err := d.List(ctx, theApi)
 		if err != nil {
 			return "", err
 		}
@@ -468,12 +562,12 @@ func (d *DynatraceClient) getExistingObjectId(ctx context.Context, objectName st
 	return objID, nil
 }
 
-func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.API) ([]Value, error) {
+func (d *ConfigClient) List(ctx context.Context, theApi api.API) ([]Value, error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
 	if (!theApi.NonUniqueName && !theApi.HasParent()) && //there is potentially more than one config per api type/id to consider
 		(theApi.ID != api.ApplicationWeb && theApi.ID != api.ApplicationMobile) { //there is no refresh mechanism for delete; outdated values can cause decreasing performance during delete (unnecessary retrying)
-		if values, cached := d.classicConfigsCache.Get(theApi.ID); cached {
+		if values, cached := d.configCache.Get(theApi.ID); cached {
 			return values, nil
 		}
 	}
@@ -489,7 +583,7 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 		retrySetting = d.retrySettings.Normal
 	}
 
-	resp, err := GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
+	resp, err := GetWithRetry(ctx, *d.client, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
 	if err != nil {
 		return nil, err
 	}
@@ -508,7 +602,7 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 			break
 		}
 
-		resp, err = GetWithRetry(ctx, *d.classicClient, theApi.URLPath, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
+		resp, err = GetWithRetry(ctx, *d.client, theApi.URLPath, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
 		if err != nil {
 
 			apiError := coreapi.APIError{}
@@ -520,11 +614,11 @@ func (d *DynatraceClient) fetchExistingValues(ctx context.Context, theApi api.AP
 			return nil, err
 		}
 	}
-	d.classicConfigsCache.Set(theApi.ID, existingValues)
+	d.configCache.Set(theApi.ID, existingValues)
 	return existingValues, nil
 }
 
-func (d *DynatraceClient) findUniqueByName(ctx context.Context, values []Value, objectName string) string {
+func (d *ConfigClient) findUniqueByName(ctx context.Context, values []Value, objectName string) string {
 	var objectId = ""
 	var matchingObjectsFound = 0
 	for i := 0; i < len(values); i++ {
@@ -552,7 +646,7 @@ func escapeApiValueName(ctx context.Context, value Value) string {
 	return valueName.(string)
 }
 
-func (d *DynatraceClient) findUnique(ctx context.Context, values []Value, payload []byte, checkEqualFunc func(map[string]any, map[string]any) bool) (string, error) {
+func (d *ConfigClient) findUnique(ctx context.Context, values []Value, payload []byte, checkEqualFunc func(map[string]any, map[string]any) bool) (string, error) {
 	if checkEqualFunc == nil {
 		return "", nil
 	}

@@ -20,6 +20,10 @@ package classic
 
 import (
 	"context"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -27,8 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var dashboardApi = api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}
@@ -45,7 +47,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		},
 	}
 
-	client := &dtclient.DummyClient{}
+	client := &dtclient.DummyConfigClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: testutils.GenerateDummyTemplate(t),
@@ -98,7 +100,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		},
 	}
 
-	client := &dtclient.DummyClient{}
+	client := &dtclient.DummyConfigClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: testutils.GenerateDummyTemplate(t),
@@ -119,7 +121,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 	parameters := []parameter.NamedParameter{}
 
-	client := &dtclient.DummyClient{}
+	client := &dtclient.DummyConfigClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: testutils.GenerateDummyTemplate(t),
@@ -156,7 +158,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		},
 	}
 
-	client := &dtclient.DummyClient{}
+	client := &dtclient.DummyConfigClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: testutils.GenerateDummyTemplate(t),
@@ -195,7 +197,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		},
 	}
 
-	client := &dtclient.DummyClient{}
+	client := &dtclient.DummyConfigClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: testutils.GenerateDummyTemplate(t),

@@ -23,13 +23,14 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDeployScopedConfigurations(t *testing.T) {
@@ -72,17 +73,17 @@ func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext Te
 
 	dashboardAPI := apis[api.Dashboard]
 	dashboardName := integrationtest.AddSuffix("Application monitoring", testContext.suffix)
-	exists, dashboardID, err := clientSet.Classic().ConfigExistsByName(context.TODO(), dashboardAPI, dashboardName)
+	exists, dashboardID, err := clientSet.Config().ExistsWithName(context.TODO(), dashboardAPI, dashboardName)
 
 	require.NoError(t, err, "expect to be able to get dashboard by name")
 	require.True(t, exists, "dashboard must exist")
 
-	dashboardJSONBytes, err := clientSet.Classic().ReadConfigById(context.TODO(), dashboardAPI, dashboardID)
+	dashboardJSONBytes, err := clientSet.Config().Get(context.TODO(), dashboardAPI, dashboardID)
 	require.NoError(t, err, "expect to be able to get dashboard by ID")
 	assertDashboardSharedState(t, dashboardJSONBytes, expectShared)
 
 	dashboardShareSettingsAPI := apis[api.DashboardShareSettings].ApplyParentObjectID(dashboardID)
-	dashboardShareSettingsJSONBytes, err := clientSet.Classic().ReadConfigById(context.TODO(), dashboardShareSettingsAPI, "")
+	dashboardShareSettingsJSONBytes, err := clientSet.Config().Get(context.TODO(), dashboardShareSettingsAPI, "")
 	require.NoError(t, err, "expect to be able to get dashboard shared settings by ID")
 	assertDashboardShareSettingsEnabledState(t, dashboardShareSettingsJSONBytes, expectShared)
 }

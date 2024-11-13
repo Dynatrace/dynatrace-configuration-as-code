@@ -28,13 +28,74 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
+
+func TestNewClassicSettingsClient(t *testing.T) {
+	t.Run("Client has correct URLs and settings API path", func(t *testing.T) {
+		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{})
+		defer server.Close()
+
+		client, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+		assert.NoError(t, err)
+		assert.Equal(t, settingsSchemaAPIPathClassic, client.settingsSchemaAPIPath)
+		assert.Equal(t, settingsObjectAPIPathClassic, client.settingsObjectAPIPath)
+	})
+}
+
+func TestNewClassicSettingsClientWithAutoServerVersion(t *testing.T) {
+	t.Run("Valid server version is parsed correctly", func(t *testing.T) {
+
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"version" : "1.262.0.20230214-193525"}`,
+						ContentType:  "application/json",
+					}
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		dcl, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()), WithAutoServerVersion())
+
+		server.Close()
+		assert.NoError(t, err)
+		assert.Equal(t, version.Version{Major: 1, Minor: 262}, dcl.serverVersion)
+	})
+
+	t.Run("Invalid server version is parsed to unknown", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{}`,
+						ContentType:  "application/json",
+					}
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		dcl, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()), WithAutoServerVersion())
+		assert.NoError(t, err)
+		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)
+	})
+}
 
 func Test_schemaDetails(t *testing.T) {
 
@@ -82,13 +143,13 @@ func Test_schemaDetails(t *testing.T) {
 
 	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter())
 
-	d, err := NewPlatformClient(restClient, restClient)
+	d, err := NewPlatformSettingsClient(restClient)
 	require.NoError(t, err)
 
 	t.Run("unmarshall data", func(t *testing.T) {
 		expected := Schema{SchemaId: "builtin:span-attribute", UniqueProperties: [][]string{{"key0", "key1"}, {"key2", "key3"}}}
 
-		actual, err := d.GetSchemaById(context.TODO(), "builtin:span-attribute")
+		actual, err := d.GetSchema(context.TODO(), "builtin:span-attribute")
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)
@@ -110,16 +171,16 @@ func Test_GetSchemaUsesCache(t *testing.T) {
 	require.NoError(t, err)
 	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter())
 
-	d, err := NewPlatformClient(restClient, restClient)
+	d, err := NewPlatformSettingsClient(restClient)
 	require.NoError(t, err)
 
-	_, err = d.GetSchemaById(context.TODO(), "builtin:span-attribute")
+	_, err = d.GetSchema(context.TODO(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, apiHits)
-	_, err = d.GetSchemaById(context.TODO(), "builtin:alerting.profile")
+	_, err = d.GetSchema(context.TODO(), "builtin:alerting.profile")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
-	_, err = d.GetSchemaById(context.TODO(), "builtin:span-attribute")
+	_, err = d.GetSchema(context.TODO(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
 }
@@ -661,13 +722,13 @@ func TestUpsertSettings(t *testing.T) {
 			require.NoError(t, err)
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			c, err := NewClassicClient(restClient,
+			c, err := NewClassicSettingsClient(restClient,
 				WithServerVersion(test.serverVersion),
 				WithRetrySettings(testRetrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			resp, err := c.UpsertSettings(context.TODO(), SettingsObject{
+			resp, err := c.Upsert(context.TODO(), SettingsObject{
 				OriginObjectId: "anObjectID",
 				Coordinate:     coord,
 				SchemaId:       "builtin:alerting.profile",
@@ -705,12 +766,12 @@ func TestUpsertSettingsRetries(t *testing.T) {
 
 	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-	client, err := NewClassicClient(restClient,
+	client, err := NewClassicSettingsClient(restClient,
 		WithRetrySettings(testRetrySettings),
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	_, err = client.UpsertSettings(context.TODO(), SettingsObject{
+	_, err = client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -747,12 +808,12 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 
 	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-	client, err := NewClassicClient(restClient,
+	client, err := NewClassicSettingsClient(restClient,
 		WithRetrySettings(testRetrySettings),
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	_, err = client.UpsertSettings(context.TODO(), SettingsObject{
+	_, err = client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -762,7 +823,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	assert.Equal(t, 1, numAPIGetCalls)
 	assert.Equal(t, 1, numAPIPostCalls)
 
-	_, err = client.UpsertSettings(context.TODO(), SettingsObject{
+	_, err = client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -798,26 +859,26 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 
 	restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-	client, err := NewClassicClient(restClient,
+	client, err := NewClassicSettingsClient(restClient,
 		WithRetrySettings(testRetrySettings),
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	client.UpsertSettings(context.TODO(), SettingsObject{
+	client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
 	}, UpsertSettingsOptions{})
 	assert.Equal(t, 1, numGetAPICalls)
 
-	client.UpsertSettings(context.TODO(), SettingsObject{
+	client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
 	}, UpsertSettingsOptions{})
 	assert.Equal(t, 2, numGetAPICalls)
 
-	client.UpsertSettings(context.TODO(), SettingsObject{
+	client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -1210,12 +1271,12 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			c, err := NewClassicClient(restClient,
+			c, err := NewClassicSettingsClient(restClient,
 				WithRetrySettings(testRetrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			_, err = c.UpsertSettings(context.TODO(), tt.given.settingsObject, UpsertSettingsOptions{})
+			_, err = c.Upsert(context.TODO(), tt.given.settingsObject, UpsertSettingsOptions{})
 			if tt.want.error {
 				assert.Error(t, err)
 			} else {
@@ -1496,12 +1557,12 @@ func TestListKnownSettings(t *testing.T) {
 
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			client, err := NewClassicClient(restClient,
+			client, err := NewClassicSettingsClient(restClient,
 				WithRetrySettings(testRetrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			res, err1 := client.ListSettings(context.TODO(), tt.givenSchemaID, tt.givenListSettingsOpts)
+			res, err1 := client.List(context.TODO(), tt.givenSchemaID, tt.givenListSettingsOpts)
 
 			if tt.wantError {
 				assert.Error(t, err1)
@@ -1516,7 +1577,7 @@ func TestListKnownSettings(t *testing.T) {
 	}
 }
 
-func TestGetSettingById(t *testing.T) {
+func TestSettingsClientGet(t *testing.T) {
 	type fields struct {
 		environmentURL string
 		retrySettings  RetrySettings
@@ -1611,12 +1672,12 @@ func TestGetSettingById(t *testing.T) {
 
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			client, err := NewClassicClient(restClient,
+			client, err := NewClassicSettingsClient(restClient,
 				WithRetrySettings(tt.fields.retrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			settingsObj, err := client.GetSettingById(context.TODO(), tt.args.objectID)
+			settingsObj, err := client.Get(context.TODO(), tt.args.objectID)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -1709,12 +1770,12 @@ func TestDeleteSettings(t *testing.T) {
 
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
-			client, err := NewClassicClient(restClient,
+			client, err := NewClassicSettingsClient(restClient,
 				WithRetrySettings(tt.fields.retrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			if err := client.DeleteSettings(context.TODO(), tt.args.objectID); (err != nil) != tt.wantErr {
+			if err := client.Delete(context.TODO(), tt.args.objectID); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteSettings() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

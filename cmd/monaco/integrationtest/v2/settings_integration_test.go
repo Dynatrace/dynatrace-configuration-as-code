@@ -20,6 +20,13 @@ package v2
 
 import (
 	"context"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2/clientcredentials"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
@@ -32,11 +39,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/oauth2/clientcredentials"
-	"testing"
 )
 
 // tests all configs for a single environment
@@ -99,7 +101,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	}))
 	content, err := configToDeploy.Template.Content()
 	assert.NoError(t, err)
-	_, err = c.UpsertSettings(context.TODO(), dtclient.SettingsObject{
+	_, err = c.Upsert(context.TODO(), dtclient.SettingsObject{
 		Coordinate:     configToDeploy.Coordinate,
 		SchemaId:       configToDeploy.Type.(config.SettingsType).SchemaId,
 		SchemaVersion:  configToDeploy.Type.(config.SettingsType).SchemaVersion,
@@ -115,7 +117,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 
 	// Check if settings 2.0 object with "new" external ID exists
 	c = createSettingsClient(t, environment)
-	settings, _ := c.ListSettings(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+	settings, _ := c.List(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == extID
 	}})
 	assert.Len(t, settings, 1)
@@ -124,7 +126,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	coord := sortedConfigs["platform_env"][0].Coordinate
 	coord.Project = ""
 	legacyExtID, _ := idutils.GenerateExternalIDForSettingsObject(coord)
-	settings, _ = c.ListSettings(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+	settings, _ = c.List(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == legacyExtID
 	}})
 	assert.Len(t, settings, 0)
@@ -195,7 +197,7 @@ func TestOrderedSettings(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.ListSettings(context.TODO(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		results, err := settingsClient.List(context.TODO(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
 		assert.NoError(t, err)
 
 		assert.Len(t, results, 2)
@@ -214,7 +216,7 @@ func TestOrderedSettings(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.ListSettings(context.TODO(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		results, err := settingsClient.List(context.TODO(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
 		assert.NoError(t, err)
 
 		assert.Len(t, results, 2)
@@ -224,7 +226,7 @@ func TestOrderedSettings(t *testing.T) {
 
 }
 
-func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.DynatraceClient)) client.SettingsClient {
+func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.SettingsClient)) client.SettingsClient {
 
 	clientFactory := clients.Factory().
 		WithOAuthCredentials(clientcredentials.Config{
@@ -247,7 +249,7 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 	classicClient, err := clientFactory.CreateClassicClient()
 	require.NoError(t, err)
 
-	dtClient, err := dtclient.NewPlatformClient(client, classicClient)
+	dtClient, err := dtclient.NewClassicSettingsClient(classicClient)
 	require.NoError(t, err)
 
 	for _, o := range opts {

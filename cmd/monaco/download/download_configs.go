@@ -253,7 +253,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		if opts.auth.Token == nil {
 			return nil, errors.New("classic client config requires token")
 		}
-		classicCfgs, err := fn.classicDownload(clientSet.Classic(), opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
+		classicCfgs, err := fn.classicDownload(clientSet.Config(), opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
 		if err != nil {
 			return nil, err
 		}

@@ -19,10 +19,6 @@
 package dtclient
 
 import (
-	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
-	"golang.org/x/exp/maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -30,6 +26,12 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"golang.org/x/exp/maps"
+
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 )
 
 var testRetrySettings = RetrySettings{
@@ -140,14 +142,26 @@ func NewIntegrationTestServer(t *testing.T, basePath string, mappings map[string
 	return testServer
 }
 
-func NewDynatraceClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *DynatraceClient)) (*DynatraceClient, error) {
+func NewPlatformSettingsClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *SettingsClient)) (*SettingsClient, error) {
 	u, err := url.Parse(environmentUrl)
 	if err != nil {
 		return nil, err
 	}
 
 	restClient := corerest.NewClient(u, client, corerest.WithRateLimiter())
-	return NewPlatformClient(
-		restClient, restClient,
+	return NewPlatformSettingsClient(
+		restClient,
+		opts...)
+}
+
+func NewClassicConfigClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *ConfigClient)) (*ConfigClient, error) {
+	u, err := url.Parse(environmentUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	restClient := corerest.NewClient(u, client, corerest.WithRateLimiter())
+	return NewClassicConfigClient(
+		restClient,
 		opts...)
 }
