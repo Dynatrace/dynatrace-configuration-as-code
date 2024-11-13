@@ -396,7 +396,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 	classicConfSkip := classicConf
 	classicConfSkip.Skip = true
 	documentConfSkip := documentConf
-	classicConfSkip.Skip = true
+	documentConfSkip.Skip = true
 
 	success_tests := []struct {
 		name                 string
@@ -413,7 +413,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						OAuth: &oAuth},
 				}},
 			project.ConfigsPerType{
-				"dashboard": []config.Config{documentConf}},
+				string(config.DocumentTypeId): []config.Config{documentConf}},
 			"",
 		},
 		{
@@ -425,7 +425,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						Token: &token},
 				}},
 			project.ConfigsPerType{
-				"dashboard": []config.Config{classicConf}},
+				string(config.ClassicApiTypeId): []config.Config{classicConf}},
 			"",
 		},
 		{
@@ -439,7 +439,9 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 					},
 				}},
 			project.ConfigsPerType{
-				"dashboard": []config.Config{classicConf, documentConf}},
+				string(config.DocumentTypeId):   []config.Config{documentConf},
+				string(config.ClassicApiTypeId): []config.Config{classicConf, classicConfSkip},
+			},
 			"",
 		},
 		{
@@ -451,7 +453,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						Token: &token},
 				}},
 			project.ConfigsPerType{
-				"dashboard": []config.Config{documentConf}},
+				string(config.DocumentTypeId): []config.Config{documentConf}},
 			"requires OAuth for environment",
 		},
 		{
@@ -463,7 +465,9 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						OAuth: &oAuth},
 				}},
 			project.ConfigsPerType{
-				"dashboard": []config.Config{classicConf, documentConf}},
+				string(config.DocumentTypeId):   []config.Config{documentConf},
+				string(config.ClassicApiTypeId): []config.Config{classicConf},
+			},
 			"requires a token for environment",
 		},
 		{
@@ -487,7 +491,9 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						Token: &token},
 				}},
 			project.ConfigsPerType{
-				"dashboard": []config.Config{classicConf, documentConfSkip}},
+				string(config.DocumentTypeId):   []config.Config{documentConfSkip},
+				string(config.ClassicApiTypeId): []config.Config{classicConf},
+			},
 			"",
 		},
 	}
