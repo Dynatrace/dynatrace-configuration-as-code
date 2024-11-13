@@ -303,6 +303,12 @@ jobs:
         name: Test Results - Integration Nightly
         path: test-result-*.xml
 
+    - name: Trigger Dynatrace Workflow on Failure
+      if: failure()
+      run: |
+        curl \
+          -H 'Authorization: Bearer ${{ secrets.SFM_OAUTH_SECRET }}' \
+          -X POST https://${{secrets.SFM_TENANT_URL}}/platform/automation/v1/workflows/${{secrets.SFM_WORKFLOW_ID}}/run
 
   upload_event:
     name: "Upload Event File"
