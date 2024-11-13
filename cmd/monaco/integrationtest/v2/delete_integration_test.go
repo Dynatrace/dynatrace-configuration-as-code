@@ -398,7 +398,7 @@ configs:
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", false)
 }
 
-func TestDeleteWithOAuthOnlyManifest(t *testing.T) {
+func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 	configFolder := "test-resources/delete-test-configs/"
 	fs := testutils.CreateTestFileSystem()
 
