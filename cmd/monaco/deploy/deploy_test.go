@@ -396,7 +396,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 	classicConfSkip := classicConf
 	classicConfSkip.Skip = true
 	documentConfSkip := documentConf
-	classicConfSkip.Skip = true
+	documentConfSkip.Skip = true
 
 	success_tests := []struct {
 		name                 string
