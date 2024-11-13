@@ -1,0 +1,4 @@
+delete:
+  - type: workflow
+    project: project
+    id: sample-id
