@@ -17,7 +17,6 @@
 package deploy
 
 import (
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
@@ -414,7 +413,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						OAuth: &oAuth},
 				}},
 			project.ConfigsPerType{
-				fmt.Sprintf("%v", config.DocumentTypeId): []config.Config{documentConf}},
+				string(config.DocumentTypeId): []config.Config{documentConf}},
 			"",
 		},
 		{
@@ -426,7 +425,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						Token: &token},
 				}},
 			project.ConfigsPerType{
-				fmt.Sprintf("%v", config.ClassicApiTypeId): []config.Config{classicConf}},
+				string(config.ClassicApiTypeId): []config.Config{classicConf}},
 			"",
 		},
 		{
@@ -440,8 +439,8 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 					},
 				}},
 			project.ConfigsPerType{
-				fmt.Sprintf("%v", config.DocumentTypeId):   []config.Config{documentConf},
-				fmt.Sprintf("%v", config.ClassicApiTypeId): []config.Config{classicConf, classicConfSkip},
+				string(config.DocumentTypeId):   []config.Config{documentConf},
+				string(config.ClassicApiTypeId): []config.Config{classicConf, classicConfSkip},
 			},
 			"",
 		},
@@ -454,7 +453,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						Token: &token},
 				}},
 			project.ConfigsPerType{
-				fmt.Sprintf("%v", config.DocumentTypeId): []config.Config{documentConf}},
+				string(config.DocumentTypeId): []config.Config{documentConf}},
 			"requires OAuth for environment",
 		},
 		{
@@ -466,8 +465,8 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						OAuth: &oAuth},
 				}},
 			project.ConfigsPerType{
-				fmt.Sprintf("%v", config.DocumentTypeId):   []config.Config{documentConf},
-				fmt.Sprintf("%v", config.ClassicApiTypeId): []config.Config{classicConf},
+				string(config.DocumentTypeId):   []config.Config{documentConf},
+				string(config.ClassicApiTypeId): []config.Config{classicConf},
 			},
 			"requires a token for environment",
 		},
@@ -492,8 +491,8 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						Token: &token},
 				}},
 			project.ConfigsPerType{
-				fmt.Sprintf("%v", config.DocumentTypeId):   []config.Config{documentConfSkip},
-				fmt.Sprintf("%v", config.ClassicApiTypeId): []config.Config{classicConf},
+				string(config.DocumentTypeId):   []config.Config{documentConfSkip},
+				string(config.ClassicApiTypeId): []config.Config{classicConf},
 			},
 			"",
 		},
