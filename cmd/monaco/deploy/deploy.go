@@ -281,20 +281,22 @@ func platformEnvironment(e manifest.EnvironmentDefinition) bool {
 func validateAuthenticationWithProjectConfigs(projects []project.Project, environments manifest.Environments) error {
 	for _, p := range projects {
 		for envName, env := range p.Configs {
-			for _, conf := range env {
-				if conf[0].Skip == true {
-					continue
-				}
-
-				switch conf[0].Type.(type) {
-				case config.ClassicApiType,
-					config.SettingsType:
-					if environments[envName].Auth.Token == nil {
-						return fmt.Errorf("API of type '%s' requires a token for environment '%s'", conf[0].Type, envName)
+			for _, file := range env {
+				for _, conf := range file {
+					if conf.Skip == true {
+						continue
 					}
-				default:
-					if environments[envName].Auth.OAuth == nil {
-						return fmt.Errorf("API of type '%s' requires OAuth for environment '%s'", conf[0].Type, envName)
+
+					switch conf.Type.(type) {
+					case config.ClassicApiType,
+						config.SettingsType:
+						if environments[envName].Auth.Token == nil {
+							return fmt.Errorf("API of type '%s' requires a token for environment '%s'", conf.Type, envName)
+						}
+					default:
+						if environments[envName].Auth.OAuth == nil {
+							return fmt.Errorf("API of type '%s' requires OAuth for environment '%s'", conf.Type, envName)
+						}
 					}
 				}
 			}
