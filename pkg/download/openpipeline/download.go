@@ -19,6 +19,7 @@ package openpipeline
 import (
 	"context"
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -64,6 +65,10 @@ func createConfig(projectName string, response openpipeline.Response) (config.Co
 	if !ok {
 		return config.Config{}, fmt.Errorf("failed to extract id as string from payload")
 	}
+
+	// delete fields that prevent a re-upload of the configuration
+	jsonObj.Delete("version")
+	jsonObj.Delete("updateToken")
 
 	jsonRaw, err := jsonObj.ToJSON(true)
 	if err != nil {
