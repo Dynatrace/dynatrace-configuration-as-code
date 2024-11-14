@@ -34,6 +34,18 @@ pipeline {
 
                     stage("Build binaries") {
                         def tasks = [:]
+
+                        tasks["Docker container"] = {
+                            stage("for testing") {
+                                releaseDockerContainer(ctx, "DT")
+                            }
+                            if (isRelease(ctx)) {
+                                stage ("for DockerHub") {
+                                    releaseDockerContainer(ctx, "DockerHub")
+                                }
+                            }
+                        }
+
                         //linux
                         for (arch in ["amd64", "arm64", "386"]) {
                             Release r = newRelease(os: "linux", arch: arch)
@@ -50,9 +62,7 @@ pipeline {
                             tasks[r.binary.name()] = { releaseBinary(ctx, r) }
                         }
 
-                        tasks["Generate SBOM"] = { sbom(ctx) }
-
-                        tasks["Docker container"] = { releaseDockerContainer(ctx) }
+                        tasks["Generate SBOM"] = { generateSBOM(ctx) }
 
                         parallel tasks
                     }
@@ -179,22 +189,22 @@ void releaseBinary(Context ctx, Release release) {
     }
 }
 
-void releaseDockerContainer(Context ctx) {
+void releaseDockerContainer(Context ctx, String registry) {
     stage("Build Docker") {
-        def dockerTools = load(".ci/jenkins/tools/docker.groovy")
+        def ko = load(".ci/jenkins/tools/ko.groovy")
+        ko.install()
+        def cosign = load(".ci/jenkins/tools/cosign.groovy")
+        cosign.install("latest")
 
-        dockerTools.installKo()
-        dockerTools.installCosign()
-
-        boolean latest = false
+        List<String> tags = [ctx.version]
         if (isFinal(ctx)) {
-            latest = true
+            tags << "latest"
+            ctx.githubRelease.addToRelease(rawData: cosign.getPublicKey(), underName: "cosign.pub")
         }
-        dockerTools.buildContainer(version: ctx.version, registrySecretsPath: "keptn-jenkins/monaco/registry-deploy", latest: latest)
 
-        if (isRelease(ctx)) {
-            dockerTools.buildContainer(version: ctx.version, registrySecretsPath: "keptn-jenkins/monaco/dockerhub-deploy", latest: latest)
-        }
+        ko.loginToRegistry(registry: registry)
+        image = ko.buildContainer(tags: tags, registry: registry)
+        cosign.sign(image)
     }
 }
 
@@ -260,16 +270,17 @@ def pushToDtRepository(Map args = [source: null, dest: null]) {
     }
 }
 
-void sbom(Context ctx) {
+void generateSBOM(Context ctx) {
     stage("Generate SBOM") {
         final String sbomName = "sbom.cdx.json"
-        def sbomTools = load(".ci/jenkins/tools/sbom.groovy")
 
-        sbomTools.install()
-        sbomTools.generate(sbomName)
+        def cyclonedxGomod = load(".ci/jenkins/tools/cyclonedxGomod.groovy")
+        cyclonedxGomod.install("latest")
+
+        cyclonedxGomod.generateSbom(sbomName)
         pushToDtRepository(source: sbomName, dest: "monaco/${ctx.version}/${sbomName}")
         if (isRelease(ctx)) {
-            ctx.githubRelease.addToRelease(source: sbomName, underName: sbomName)
+            ctx.githubRelease.addFileToRelease(filename: sbomName, underName: sbomName)
         }
     }
 }
@@ -305,12 +316,16 @@ class GithubRelease {
     }
 
     void addToRelease(Release release) {
-        githubTools.pushFileToRelease(rleaseName: release.binary.name(), source: release.binary.localPath(), releaseId: this.releaseId)
-        githubTools.pushFileToRelease(rleaseName: "${release.binary.shaName()}", source: release.binary.shaPath(), releaseId: this.releaseId)
+        githubTools.pushFileToRelease(rleaseName: release.binary.name(), filename: release.binary.localPath(), releaseId: this.releaseId)
+        githubTools.pushFileToRelease(rleaseName: "${release.binary.shaName()}", filename: release.binary.shaPath(), releaseId: this.releaseId)
     }
 
-    void addToRelease(Map args = [source: null, underName: null]) {
-        githubTools.pushFileToRelease(rleaseName: args.underName, source: args.source, releaseId: this.releaseId)
+    void addFileToRelease(Map args = [filename: null, underName: null]) {
+        githubTools.pushFileToRelease(rleaseName: args.underName, filename: args.filename, releaseId: this.releaseId)
+    }
+
+    void addToRelease(Map args = [rawData: null, underName: null]) {
+        githubTools.pushRawDataToRelease(rleaseName: args.underName, rawData: args.rawData, releaseId: this.releaseId)
     }
 }
 
