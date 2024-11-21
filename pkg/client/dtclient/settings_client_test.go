@@ -477,6 +477,48 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 				},
 				expected: nil,
 			},
+			{
+				name: "objects with identical unique properties on 2nd level - match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A/B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A" : {"B" : "x" } }`)},
+					},
+				},
+				expected: &match{
+					object: DownloadSettingsObject{Value: []byte(`{"A" : {"B" : "x" } }`)},
+					matches: constraintMatch{
+						"A/B": "x",
+					},
+				},
+			},
+			{
+				name: "objects with different unique properties on 2nd level - no match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A/B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A" : {"B" : "y" } }`)},
+					},
+				},
+				expected: &match{
+					object:  DownloadSettingsObject{Value: []byte(`{"A":"x", "B":"y"}`)},
+					matches: nil,
+				},
+			},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
@@ -514,6 +556,22 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 					objects: []DownloadSettingsObject{
 						{Value: []byte(`{"A":"x", "B":"y1"}`)},
 						{Value: []byte(`{"A":"x2", "B":"y"}`)},
+					},
+				},
+			},
+			{
+				name: "missing unique properties",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{}`)},
 					},
 				},
 			},
