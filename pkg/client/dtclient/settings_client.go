@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -41,6 +42,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
+// SettingsResourceContext.Operations possibilities
+const (
+	DeleteOperation = "delete"
+	WriteOperation  = "write"
+	//ReadOperation   = "read"
+)
+
 // DownloadSettingsObject is the response type for the ListSettings operation
 type DownloadSettingsObject struct {
 	ExternalId       string                    `json:"externalId"`
@@ -50,6 +58,55 @@ type DownloadSettingsObject struct {
 	Scope            string                    `json:"scope"`
 	Value            json.RawMessage           `json:"value"`
 	ModificationInfo *SettingsModificationInfo `json:"modificationInfo"`
+	ResourceContext  *SettingsResourceContext  `json:"resourceContext"`
+}
+
+func (settingObject *DownloadSettingsObject) IsDeletable() bool {
+	if settingObject.ResourceContext != nil {
+		return slices.Contains(settingObject.ResourceContext.Operations, DeleteOperation)
+	}
+
+	if settingObject.ModificationInfo != nil {
+		return settingObject.ModificationInfo.Deletable
+	}
+
+	return true
+}
+
+func (settingObject *DownloadSettingsObject) IsModifiable() bool {
+	if settingObject.ResourceContext != nil {
+		return slices.Contains(settingObject.ResourceContext.Operations, WriteOperation)
+	}
+
+	if settingObject.ModificationInfo != nil {
+		return settingObject.ModificationInfo.Modifiable
+	}
+
+	return true
+}
+
+func (settingObject *DownloadSettingsObject) IsMovable() bool {
+	if settingObject.ResourceContext != nil {
+		//API allows the parameter to be optional, so more logic is needed to handle it
+		if settingObject.ResourceContext.Movable != nil {
+			return *settingObject.ResourceContext.Movable
+		}
+		return true
+	}
+
+	if settingObject.ModificationInfo != nil {
+		return settingObject.ModificationInfo.Movable
+	}
+
+	return true
+}
+
+func (settingObject *DownloadSettingsObject) GetModifiablePaths() []interface{} {
+	if settingObject.ResourceContext != nil {
+		return settingObject.ResourceContext.ModifiablePaths
+	}
+
+	return settingObject.ModificationInfo.ModifiablePaths
 }
 
 type SettingsModificationInfo struct {
@@ -58,6 +115,13 @@ type SettingsModificationInfo struct {
 	Movable            bool          `json:"movable"`
 	ModifiablePaths    []interface{} `json:"modifiablePaths"`
 	NonModifiablePaths []interface{} `json:"nonModifiablePaths"`
+}
+
+type SettingsResourceContext struct {
+	Operations         []string      `json:"operations"`
+	Movable            *bool         `json:"modifications:movable"`
+	ModifiablePaths    []interface{} `json:"modifications:modifiablePaths"`
+	NonModifiablePaths []interface{} `json:"modifications:nonModifiablePaths"`
 }
 
 type UpsertSettingsOptions struct {

@@ -1857,3 +1857,56 @@ func TestDeleteSettings(t *testing.T) {
 		})
 	}
 }
+
+func TestResourceContextWorksAsModificationInfo(t *testing.T) {
+	boolFalse := false
+	tests := []struct {
+		name             string
+		modificationInfo SettingsModificationInfo
+		resourceContext  SettingsResourceContext
+	}{
+		{
+			name: "only read item",
+			modificationInfo: SettingsModificationInfo{
+				Deletable:       false,
+				Modifiable:      false,
+				Movable:         false,
+				ModifiablePaths: []interface{}{"apiColor", "thirdPartyApi"},
+			},
+			resourceContext: SettingsResourceContext{
+				Operations:      []string{"read"},
+				Movable:         &boolFalse,
+				ModifiablePaths: []interface{}{"apiColor", "thirdPartyApi"},
+			},
+		},
+		{
+			name: "deletable, modifiable, movable item - no movable param provided in resource context",
+			modificationInfo: SettingsModificationInfo{
+				Deletable:       true,
+				Modifiable:      true,
+				Movable:         true,
+				ModifiablePaths: []interface{}{},
+			},
+			resourceContext: SettingsResourceContext{
+				Operations:      []string{"read", "write", "delete"},
+				ModifiablePaths: []interface{}{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			settingObjectWithModificationInfo := DownloadSettingsObject{
+				ModificationInfo: &tt.modificationInfo,
+			}
+			settingObjectWithResourceContext := DownloadSettingsObject{
+				ResourceContext: &tt.resourceContext,
+			}
+			assert.Equal(t, settingObjectWithModificationInfo.IsDeletable(), settingObjectWithResourceContext.IsDeletable())
+			assert.Equal(t, settingObjectWithModificationInfo.IsMovable(), settingObjectWithResourceContext.IsMovable())
+			assert.Equal(t, settingObjectWithModificationInfo.IsModifiable(), settingObjectWithResourceContext.IsModifiable())
+
+			assert.Equal(t, settingObjectWithModificationInfo.GetModifiablePaths(), settingObjectWithResourceContext.GetModifiablePaths())
+		})
+	}
+}

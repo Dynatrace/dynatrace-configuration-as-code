@@ -224,7 +224,7 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, projec
 			OriginObjectId: settingsObject.ObjectId,
 		}
 
-		if !settingsObject.IsMovable() && ordered && (previousConfig != nil) {
+		if settingsObject.IsMovable() && ordered && (previousConfig != nil) {
 			c.Parameters[config.InsertAfterParameter] = reference.NewWithCoordinate(previousConfig.Coordinate, "id")
 		}
 		result = append(result, c)

@@ -57,7 +57,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 			continue
 		}
 
-		if len(objects) == 0 {
+		if len(settingsObjects) == 0 {
 			if e.OriginObjectId != "" {
 				logger.Debug("No settings object found to delete. Could not find object with matching object id.")
 				continue
@@ -68,7 +68,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 
 		for _, settingsObject := range settingsObjects {
 			if !settingsObject.IsDeletable() {
-				logger.WithFields(field.F("object", obj)).Warn("Requested settings object with ID %s is not deletable.", obj.ObjectId)
+				logger.WithFields(field.F("object", settingsObject)).Warn("Requested settings object with ID %s is not deletable.", settingsObject.ObjectId)
 				continue
 			}
 
