@@ -21,9 +21,9 @@ void install() {
 private def registrySecret(String registry) {
     String path
     switch (registry) {
-        case "DockerHub": path = "keptn-jenkins/monaco/dockerhub-deploy"
-        case "DT": path = "keptn-jenkins/monaco/registry-deploy"
-        default: path = "keptn-jenkins/monaco/registry-deploy"
+        case "DockerHub": path = "keptn-jenkins/monaco/dockerhub-deploy"; break
+        case "DT": path = "keptn-jenkins/monaco/registry-deploy"; break
+        default: path = "keptn-jenkins/monaco/registry-deploy"; break
     }
 
     return [[path        : "${path}",
@@ -37,7 +37,7 @@ private def registrySecret(String registry) {
 
 void loginToRegistry(Map args = [registry: null]) {
     withVault(vaultSecrets: registrySecret(args.registry)) {
-        sh(label: "sign in to container registry",
+        sh(label: "sign in to ${args.registry} registry",
             script: 'ko login --username=$username --password=$password $registry')
     }
 }
