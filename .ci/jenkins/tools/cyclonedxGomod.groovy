@@ -18,12 +18,12 @@
 /**
  * install sets the required tools
  */
-void install() {
-    sh(label: "download cyclonedx-gomod", script: 'go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.8.0')
+void install(String version) {
+    sh(label: "download cyclonedx-gomod", script: "go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@${version}")
 }
 
-void generate(String fileName) {
-    sh(label: "generate", script: "cyclonedx-gomod app -licenses -assert-licenses -json -main cmd/monaco/ -output ${fileName}")
+void generateSbom(String fileName) {
+    sh(label: "generate SBOM", script: "cyclonedx-gomod app -licenses -assert-licenses -json -main cmd/monaco/ -output ${fileName}")
 }
 
 return this
