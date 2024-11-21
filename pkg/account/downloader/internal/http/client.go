@@ -20,10 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
-	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"io"
 	"net/http"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 )
 
 type Client accounts.Client
@@ -53,7 +54,7 @@ func (c *Client) GetGroupsForUser(ctx context.Context, userEmail string, account
 }
 
 func (c *Client) GetPolicies(ctx context.Context, account string) ([]accountmanagement.PolicyOverview, error) {
-	r, resp, err := c.PolicyManagementAPI.GetPolicyOverviewList(ctx, "account", account).Execute()
+	r, resp, err := c.PolicyManagementAPI.GetPolicyOverviewList(ctx, account, "account").Execute()
 	defer closeResponseBody(resp)
 	if err = getErrorMessageFromResponse(resp, err); err != nil {
 		return nil, err
@@ -62,7 +63,7 @@ func (c *Client) GetPolicies(ctx context.Context, account string) ([]accountmana
 }
 
 func (c *Client) GetPolicyDefinition(ctx context.Context, dto accountmanagement.PolicyOverview) (*accountmanagement.LevelPolicyDto, error) {
-	r, resp, err := c.PolicyManagementAPI.GetLevelPolicy(ctx, dto.LevelType, dto.LevelId, dto.Uuid).Execute()
+	r, resp, err := c.PolicyManagementAPI.GetLevelPolicy(ctx, dto.Uuid, dto.LevelId, dto.LevelType).Execute()
 	defer closeResponseBody(resp)
 	if is404(resp) {
 		return nil, nil
@@ -95,7 +96,7 @@ func (c *Client) GetPermissionFor(ctx context.Context, accUUID string, groupUUID
 }
 
 func (c *Client) GetPolicyGroupBindings(ctx context.Context, levelType string, levelId string) (*accountmanagement.LevelPolicyBindingDto, error) {
-	r, resp, err := c.PolicyManagementAPI.GetAllLevelPoliciesBindings(ctx, levelType, levelId).Execute()
+	r, resp, err := c.PolicyManagementAPI.GetAllLevelPoliciesBindings(ctx, levelId, levelType).Execute()
 	defer closeResponseBody(resp)
 	if err = getErrorMessageFromResponse(resp, err); err != nil {
 		return nil, err

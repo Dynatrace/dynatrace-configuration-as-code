@@ -24,14 +24,15 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDeployAndDelete_AllResources(t *testing.T) {
@@ -164,7 +165,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 }
 
 func getPolicyIdByName(cl *accounts.Client, name, level, levelId string) (string, bool) {
-	all, _, _ := cl.PolicyManagementAPI.GetLevelPolicies(context.TODO(), level, levelId).Execute()
+	all, _, _ := cl.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelId, level).Execute()
 
 	p, found := getElementInSlice(all.Policies, func(el accountmanagement.PolicyDto) bool {
 		return el.Name == name
@@ -223,16 +224,16 @@ func (a AccountResourceChecker) GroupAvailable(t *testing.T, accountUUID, groupN
 
 func (a AccountResourceChecker) PolicyAvailable(t *testing.T, levelType, levelId, policyName string) {
 	expectedPolicyName := a.randomize(policyName)
-	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelType, levelId).Name(expectedPolicyName).Execute()
-	require.NotNil(t, policies)
+	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelId, levelType).Name(expectedPolicyName).Execute()
 	require.NoError(t, err)
+	require.NotNil(t, policies)
 	_, found := getElementInSlice(policies.Policies, func(el accountmanagement.PolicyDto) bool { return el.Name == expectedPolicyName })
 	require.True(t, found)
 }
 
 func (a AccountResourceChecker) PolicyNotAvailable(t *testing.T, levelType, levelId, policyName string) {
 	expectedPolicyName := a.randomize(policyName)
-	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelType, levelId).Execute()
+	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelId, levelType).Execute()
 	require.NotNil(t, policies)
 	require.NoError(t, err)
 	assertElementNotInSlice(t, policies.Policies, func(el accountmanagement.PolicyDto) bool { return el.Name == expectedPolicyName })
@@ -246,10 +247,10 @@ func (a AccountResourceChecker) GroupNotAvailable(t *testing.T, accountUUID, gro
 	assertElementNotInSlice(t, groups.GetItems(), func(el accountmanagement.GetGroupDto) bool { return el.Name == expectedGroupName })
 }
 
-func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUUID, groupName, policyName, environmentName string) {
+func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUUID, groupName, policyName, environmentID string) {
 	expectedPolicyName := a.randomize(policyName)
 	var pid string
-	pid, found := getPolicyIdByName(a.Client, expectedPolicyName, "environment", environmentName)
+	pid, found := getPolicyIdByName(a.Client, expectedPolicyName, "environment", environmentID)
 	if !found {
 		pid, found = getPolicyIdByName(a.Client, expectedPolicyName, "account", accountUUID)
 	}
@@ -262,7 +263,7 @@ func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUU
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
 	require.True(t, found)
 
-	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), "environment", environmentName).Execute()
+	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), environmentID, "environment").Execute()
 	require.NoError(t, err)
 	require.NotNil(t, envPolBindings)
 	assertElementInSlice(t, envPolBindings.PolicyBindings, func(el accountmanagement.Binding) bool {
@@ -275,7 +276,7 @@ func (a AccountResourceChecker) PolicyBindingsCount(t *testing.T, accountUUID st
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
 	require.True(t, found)
 
-	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), levelType, levelId).Execute()
+	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), levelId, levelType).Execute()
 	require.NoError(t, err)
 	require.NotNil(t, envPolBindings)
 
@@ -299,7 +300,7 @@ func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, 
 	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
 	require.True(t, found)
 
-	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), "account", accountUUID).Execute()
+	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), accountUUID, "account").Execute()
 	require.NoError(t, err)
 	require.NotNil(t, envPolBindings)
 	assertElementInSlice(t, envPolBindings.PolicyBindings, func(el accountmanagement.Binding) bool {

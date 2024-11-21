@@ -20,32 +20,29 @@ package deployer
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"io"
-	"net/http"
-	"testing"
 )
 
 func TestClient_UpsertUser_UserAlreadyExists(t *testing.T) {
 
 	payload := `{
-   "count": 1,
-   "items": [
-	 {
 	   "uid": "3288032b-9bdc-4480-bb11-2ec0ad2610b2",
 	   "email": "abcd@ef.com",
 	   "emergencyContact": false,
 	   "userStatus": "PENDING",
-	   "type": "DEFAULT"
-	 }
-   ]
+	   "groups": []
  }`
 
 	responses := []testutils.ResponseDef{
@@ -263,6 +260,8 @@ func makeTestAccountGetGroupsResponseBody(owner string) string {
 		 {
 		 "uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
 		 "name": "my-group",
+		 "createdAt": "2024-11-06T17:42:22Z",
+		 "updatedAt": "2024-11-06T17:42:22Z",
 		 "description": "group-description",
 		 "federatedAttributeValues": [],
 		 "owner": "` + owner + `"
@@ -283,6 +282,8 @@ func TestClient_UpsertGroup_Update_Existing_Fails(t *testing.T) {
 	 {
 	   "uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
 	   "name": "my-group",
+	   "createdAt": "2024-11-06T17:42:22Z",
+	   "updatedAt": "2024-11-06T17:42:22Z",
 	   "description": "group-description",
 	   "federatedAttributeValues": [],
 	   "owner": "LOCAL"
@@ -351,8 +352,10 @@ func TestClient_UpsertGroup_Create_New(t *testing.T) {
 	 "uuid": "5d9ba2f2-a00c-433b-b5fa-589c5120244b",
 	 "name": "my-group",
 	 "description": "This is my group",
+	 "createdAt": "2024-11-06T17:42:22Z",
+	 "updatedAt": "2024-11-06T17:42:22Z",
 	 "federatedAttributeValues": [],
-	 "owner": {}
+	 "owner": "5d9ba2f2-a00c-433b-b5fa-589c5120244b"
    }
  ]`,
 				}
@@ -797,7 +800,7 @@ func TestClient_UpsertPolicy_UpdateExisting(t *testing.T) {
 			PUT: func(t *testing.T, request *http.Request) testutils.Response {
 				return testutils.Response{
 					ResponseCode: http.StatusOK,
-					ResponseBody: `{"uuid": "256d42d9-5a75-49d8-94cf-673c45b9410d","name": "Monaco Test Policy"}`,
+					ResponseBody: `{"uuid": "256d42d9-5a75-49d8-94cf-673c45b9410d","name": "Monaco Test Policy", "tags": [], "description": "", "statementQuery":"", "statements": []}`,
 				}
 			},
 			ValidateRequest: func(t *testing.T, request *http.Request) {
@@ -806,8 +809,7 @@ func TestClient_UpsertPolicy_UpdateExisting(t *testing.T) {
 				assert.JSONEq(t, `{
    "description": "Just a monaco test policy",
    "name": "Monaco Test Policy",
-   "statementQuery": "ALLOW automation:workflows:read;",
-   "tags": null
+   "statementQuery": "ALLOW automation:workflows:read;"
  }`, string(body))
 
 			},
@@ -884,7 +886,7 @@ func TestClient_UpsertPolicy_CreateNew(t *testing.T) {
 			POST: func(t *testing.T, request *http.Request) testutils.Response {
 				return testutils.Response{
 					ResponseCode: http.StatusOK,
-					ResponseBody: `{"uuid": "5bc7ce51-a41f-47f3-a0ca-207c899c7747","name": "Monaco Test Policy"}`,
+					ResponseBody: `{"uuid": "5bc7ce51-a41f-47f3-a0ca-207c899c7747","name": "Monaco Test Policy",  "description": "Just a monaco test policy", "tags": [], "statementQuery": "ALLOW automation:workflows:read;", "statements":[]}`,
 				}
 			},
 			ValidateRequest: func(t *testing.T, request *http.Request) {
@@ -893,8 +895,7 @@ func TestClient_UpsertPolicy_CreateNew(t *testing.T) {
 				assert.JSONEq(t, `{
    "description": "Just a monaco test policy",
    "name": "Monaco Test Policy",
-   "statementQuery": "ALLOW automation:workflows:read;",
-   "tags": null
+   "statementQuery": "ALLOW automation:workflows:read;"
  }`, string(body))
 			},
 		},
@@ -1017,7 +1018,7 @@ func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
 				GET: func(t *testing.T, request *http.Request) testutils.Response {
 					return testutils.Response{
 						ResponseCode: http.StatusOK,
-						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":true}]}`,
+						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":true,"name": "vsy13800"}]}`,
 					}
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
@@ -1063,7 +1064,7 @@ func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
 				GET: func(t *testing.T, request *http.Request) testutils.Response {
 					return testutils.Response{
 						ResponseCode: http.StatusOK,
-						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":true}]}`,
+						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":true,"name": "vsy13800"}]}`,
 					}
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
@@ -1121,7 +1122,7 @@ func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
 				GET: func(t *testing.T, request *http.Request) testutils.Response {
 					return testutils.Response{
 						ResponseCode: http.StatusOK,
-						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":true}]}`,
+						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":true,"name": "vsy13800"}]}`,
 					}
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
