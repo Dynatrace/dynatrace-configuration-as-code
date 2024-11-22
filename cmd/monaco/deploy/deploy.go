@@ -292,6 +292,10 @@ func validateAuthenticationWithProjectConfigs(projects []project.Project, enviro
 						if environments[envName].Auth.Token == nil {
 							return fmt.Errorf("API of type '%s' requires a token for environment '%s'", conf.Type, envName)
 						}
+					case config.SettingsType:
+						if environments[envName].Auth.Token == nil && environments[envName].Auth.OAuth == nil {
+							return fmt.Errorf("API of type '%s' requires a token or OAuth for environment '%s'", conf.Type, envName)
+						}
 					default:
 						if environments[envName].Auth.OAuth == nil {
 							return fmt.Errorf("API of type '%s' requires OAuth for environment '%s'", conf.Type, envName)
