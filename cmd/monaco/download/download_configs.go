@@ -261,9 +261,6 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 	}
 
 	if shouldDownloadSettings(opts) {
-		if opts.auth.Token == nil {
-			return nil, errors.New("settings client config requires token")
-		}
 		log.Info("Downloading settings objects")
 		settingCfgs, err := fn.settingsDownload(clientSet.Settings(), opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
 		if err != nil {
