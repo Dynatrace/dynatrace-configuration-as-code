@@ -35,16 +35,7 @@ pipeline {
                     stage("Build binaries") {
                         def tasks = [:]
 
-                        tasks["Docker container"] = {
-                            stage("for testing") {
-                                releaseDockerContainer(ctx, "DT")
-                            }
-                            if (isRelease(ctx)) {
-                                stage ("for DockerHub") {
-                                    releaseDockerContainer(ctx, "DockerHub")
-                                }
-                            }
-                        }
+                        tasks["Docker container"] = { releaseDockerContainer(ctx) }
 
                         //linux
                         for (arch in ["amd64", "arm64", "386"]) {
@@ -189,23 +180,33 @@ void releaseBinary(Context ctx, Release release) {
     }
 }
 
-void releaseDockerContainer(Context ctx, String registry) {
-    stage("Build Docker") {
-        def ko = load(".ci/jenkins/tools/ko.groovy")
-        ko.install()
+void releaseDockerContainer(Context ctx) {
+    createAndPublishContainer(ctx, "DT")
+
+    if (isRelease(ctx)) {
+        createAndPublishContainer(ctx, "DockerHub")
+
         def cosign = load(".ci/jenkins/tools/cosign.groovy")
-        cosign.install("latest")
-
-        List<String> tags = [ctx.version]
-        if (isFinal(ctx)) {
-            tags << "latest"
-            ctx.githubRelease.addToRelease(rawData: cosign.getPublicKey(), underName: "cosign.pub")
-        }
-
-        ko.loginToRegistry(registry: registry)
-        image = ko.buildContainer(tags: tags, registry: registry)
-        cosign.sign(image)
+        ctx.githubRelease.addToRelease(rawData: cosign.getPublicKey(), underName: "cosign.pub")
     }
+}
+
+void createAndPublishContainer(Context ctx, String registry) {
+    def ko = load(".ci/jenkins/tools/ko.groovy")
+    ko.install()
+    def cosign = load(".ci/jenkins/tools/cosign.groovy")
+    cosign.install("latest")
+
+    List<String> tags = [ctx.version]
+    if (isFinal(ctx)) {
+        tags << "latest"
+    }
+
+    ko.loginToRegistry(registry: registry)
+    image = ko.buildContainer(tags: tags, registry: registry)
+    cosign.sign(image)
+
+    echo "Created docker image ${image}"
 }
 
 void signWinBinaries(Map args = [source: null, version: null, destDir: null, projectName: null]) {

@@ -135,8 +135,3 @@ IMAGE_PATH ?= $(REPO_PATH)/$(CONTAINER_NAME)
 docker-container: install-ko
 	@echo Building docker container...
 	KO_DOCKER_REPO=$(IMAGE_PATH) VERSION=$(VERSION) ko build --bare --sbom=none --tags=$(TAGS) ./cmd/monaco
-
-sign-verify-image:
-	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.2
-	COSIGN_PASSWORD=$(COSIGN_PASSWORD) cosign sign --key env://cosign_key $(FULL_IMAGE_NAME) -y
-	cosign verify --key env://cosign_pub $(FULL_IMAGE_NAME)
