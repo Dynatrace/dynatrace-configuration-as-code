@@ -499,6 +499,17 @@ func TestDownloadConfigs_OnlyAutomationWithoutAutomationCredentials(t *testing.T
 	assert.ErrorContains(t, err, "no OAuth credentials configured")
 }
 
+func TestDownloadConfigs_OnlySettings(t *testing.T) {
+	opts := downloadConfigsOptions{
+		onlySettings: true,
+	}
+	c := client.NewMockSettingsClient(gomock.NewController(t))
+	c.EXPECT().ListSchemas(gomock.Any()).Return(dtclient.SchemaList{{SchemaId: "builtin:auto.schema"}}, nil)
+	c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.DownloadSettingsObject{}, nil)
+	err := doDownloadConfigs(testutils.CreateTestFileSystem(), &client.ClientSet{SettingsClient: c}, nil, opts)
+	assert.NoError(t, err)
+}
+
 func Test_downloadConfigsOptions_valid(t *testing.T) {
 	t.Run("no error for konwn api", func(t *testing.T) {
 		given := downloadConfigsOptions{specificAPIs: []string{"alerting-profile"}}

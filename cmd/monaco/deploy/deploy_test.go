@@ -393,6 +393,10 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		Type: config.ClassicApiType{},
 		Skip: false,
 	}
+	settingsConf := config.Config{
+		Type: config.SettingsType{},
+		Skip: false,
+	}
 	classicConfSkip := classicConf
 	classicConfSkip.Skip = true
 	documentConfSkip := documentConf
@@ -493,6 +497,19 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 			project.ConfigsPerType{
 				string(config.DocumentTypeId):   []config.Config{documentConfSkip},
 				string(config.ClassicApiTypeId): []config.Config{classicConf},
+			},
+			"",
+		},
+		{
+			"OAuth manifest with settings api",
+			manifest.Environments{
+				envId: manifest.EnvironmentDefinition{
+					Name: envId,
+					Auth: manifest.Auth{
+						OAuth: &oAuth},
+				}},
+			project.ConfigsPerType{
+				string(config.SettingsTypeId): []config.Config{settingsConf},
 			},
 			"",
 		},
