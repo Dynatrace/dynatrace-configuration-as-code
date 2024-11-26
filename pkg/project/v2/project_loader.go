@@ -16,6 +16,11 @@ package v2
 
 import (
 	"fmt"
+	"maps"
+	"slices"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -28,8 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
-	"github.com/spf13/afero"
-	"slices"
 )
 
 type ProjectLoaderContext struct {
@@ -83,7 +86,7 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectName
 		return nil, []error{fmt.Errorf("no projects defined in manifest")}
 	}
 
-	environments := toEnvironmentSlice(context.Manifest.Environments)
+	environments := slices.Collect(maps.Values(context.Manifest.Environments))
 
 	projectNamesToLoad, errors := getProjectNamesToLoad(context.Manifest.Projects, specificProjectNames)
 
@@ -158,16 +161,6 @@ func getProjectNamesToLoad(allProjectsDefinitions manifest.ProjectDefinitionByPr
 	}
 
 	return projectNamesToLoad, errors
-}
-
-func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) []manifest.EnvironmentDefinition {
-	var result []manifest.EnvironmentDefinition
-
-	for _, env := range environments {
-		result = append(result, env)
-	}
-
-	return result
 }
 
 func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
