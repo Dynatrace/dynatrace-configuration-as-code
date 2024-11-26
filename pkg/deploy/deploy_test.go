@@ -518,11 +518,6 @@ func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *test
 					},
 				},
 			},
-			Dependencies: project.DependenciesPerEnvironment{
-				environmentName: []string{
-					referencedProjectId,
-				},
-			},
 		},
 		{
 			Id: referencedProjectId,
@@ -629,11 +624,6 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {
 							Template: testutils.GenerateDummyTemplate(t),
 						},
 					},
-				},
-			},
-			Dependencies: project.DependenciesPerEnvironment{
-				environmentName: []string{
-					referencedProjectId,
 				},
 			},
 		},
@@ -748,11 +738,6 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations_IfContinuingAfterFai
 							Template: testutils.GenerateDummyTemplate(t),
 						},
 					},
-				},
-			},
-			Dependencies: project.DependenciesPerEnvironment{
-				environmentName: []string{
-					referencedProjectId,
 				},
 			},
 		},

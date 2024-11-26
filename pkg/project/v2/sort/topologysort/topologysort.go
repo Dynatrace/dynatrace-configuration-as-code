@@ -17,13 +17,14 @@
 package topologysort
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
-	errors2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/errors"
+	"slices"
+	s "sort"
 	"strings"
 	"sync"
 
-	s "sort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
+	errors2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/errors"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -203,7 +204,7 @@ func sortProjects(projects []project.Project, environments []string) (projectsPe
 				errs = append(errs, &errors2.CircualDependencyProjectSortError{
 					Environment:       env,
 					Project:           p.Id,
-					DependsOnProjects: p.Dependencies[env],
+					DependsOnProjects: toDependenciesPerEnvironment(p)[env],
 				})
 			}
 		}
@@ -224,6 +225,35 @@ func sortProjects(projects []project.Project, environments []string) (projectsPe
 	return resultByEnvironment, nil
 }
 
+type projectID = string
+
+// dependenciesPerEnvironment is a map of EnvironmentName to project IDs
+type dependenciesPerEnvironment map[project.EnvironmentName][]projectID
+
+func toDependenciesPerEnvironment(p project.Project) dependenciesPerEnvironment {
+	result := make(dependenciesPerEnvironment)
+
+	for _, c := range p.ConfigList() {
+		// ignore skipped configs
+		if c.Skip {
+			continue
+		}
+
+		for _, ref := range c.References() {
+			// ignore project on same project
+			if p.Id == ref.Project {
+				continue
+			}
+
+			if !slices.Contains(result[c.Environment], ref.Project) {
+				result[c.Environment] = append(result[c.Environment], ref.Project)
+			}
+		}
+	}
+
+	return result
+}
+
 func projectsToSortData(projects []project.Project, environment string) ([][]bool, []int) {
 	numProjects := len(projects)
 	matrix := make([][]bool, numProjects)
@@ -237,7 +267,7 @@ func projectsToSortData(projects []project.Project, environment string) ([][]boo
 				continue
 			}
 
-			if p.HasDependencyOn(environment, prj) {
+			if hasDependencyOn(p, environment, prj) {
 				logDependency("Project", p.Id, prj.Id)
 				matrix[i][j] = true
 				inDegrees[i]++
@@ -250,4 +280,18 @@ func projectsToSortData(projects []project.Project, environment string) ([][]boo
 
 func logDependency(prefix string, depending string, dependedOn string) {
 	log.Debug("%s: %s has dependency on %s", prefix, depending, dependedOn)
+}
+
+// hasDependencyOn returns whether the project it is called on, has a dependency on the given project, for the given environment
+func hasDependencyOn(orig project.Project, environment string, project project.Project) bool {
+	for c := range slices.Values(orig.ConfigList()) {
+		if c.Environment == environment {
+			for r := range slices.Values(c.References()) {
+				if r.Project == project.Id {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

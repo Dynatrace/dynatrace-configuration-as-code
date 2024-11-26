@@ -17,11 +17,13 @@
 package v2_test
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestGetConfigFor(t *testing.T) {
@@ -85,64 +87,6 @@ func TestGetConfigFor(t *testing.T) {
 			assert.Equal(t, tc.wantFound, found)
 		})
 	}
-}
-func TestHasDependencyOn(t *testing.T) {
-	environment := "dev"
-	referencedProjectId := "projct2"
-
-	p := project.Project{
-		Id: "project1",
-		Dependencies: project.DependenciesPerEnvironment{
-			environment: []string{
-				referencedProjectId,
-			},
-		},
-	}
-
-	referencedProject := project.Project{
-		Id: referencedProjectId,
-	}
-
-	result := p.HasDependencyOn(environment, referencedProject)
-
-	assert.True(t, result, "should have dependency")
-}
-
-func TestHasDependencyOnShouldReturnFalseIfNoDependenciesForEnvironmentAreDefined(t *testing.T) {
-	environment := "dev"
-
-	p := project.Project{
-		Id: "project1",
-	}
-
-	p2 := project.Project{
-		Id: "project2",
-	}
-
-	result := p.HasDependencyOn(environment, p2)
-
-	assert.False(t, result, "should not have dependency")
-}
-
-func TestHasDependencyOnShouldReturnFalseIfNoDependencyDefined(t *testing.T) {
-	environment := "dev"
-
-	p := project.Project{
-		Id: "project1",
-		Dependencies: project.DependenciesPerEnvironment{
-			environment: []string{
-				"project3",
-			},
-		},
-	}
-
-	project2 := project.Project{
-		Id: "project2",
-	}
-
-	result := p.HasDependencyOn(environment, project2)
-
-	assert.False(t, result, "should not have dependency")
 }
 
 func TestProject_ForEveryConfigDo(t *testing.T) {

@@ -18,13 +18,17 @@ package converter
 
 import (
 	"fmt"
+	"reflect"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	compoundParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/converter/v1environment"
-	"reflect"
-	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -34,8 +38,6 @@ import (
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v1"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 )
 
 const simpleParameterName = "randomValue"
@@ -130,8 +132,8 @@ func TestConvertParameters(t *testing.T) {
 	envParameter, found := parameters[envParameterName]
 	assert.Equal(t, true, found)
 	assert.Equal(t, "SOME_ENV_VAR", envParameter.(*envParam.EnvironmentVariableParameter).Name)
-	//assert.Len(t, envParameter.(*compoundParam.CompoundParameter).GetReferences(), 1)
-	//assert.Equal(t, "__ENV_SOME_ENV_VAR__", envParameter.(*compoundParam.CompoundParameter).GetReferences()[0].Property)
+	// assert.Len(t, envParameter.(*compoundParam.CompoundParameter).GetReferences(), 1)
+	// assert.Equal(t, "__ENV_SOME_ENV_VAR__", envParameter.(*compoundParam.CompoundParameter).GetReferences()[0].Property)
 
 	compound := parameters["nickname"]
 
@@ -875,7 +877,7 @@ func TestConvertProjects(t *testing.T) {
 
 	assert.Equal(t, projectId, projectDefinition.Name)
 	assert.Equal(t, projectId, projectDefinition.Path)
-	assert.Nil(t, convertedProject.Dependencies, "Dependencies should not be resolved")
+	// assert.Empty(t, projectV2.ToDependenciesPerEnvironment(convertedProject), "Dependencies should not be resolved")
 
 	convertedConfigs := convertedProject.Configs
 
@@ -1161,7 +1163,7 @@ func Test_parseReference(t *testing.T) {
 			"returns error for unknown api reference",
 			"test-param",
 			"/some-project/alerting-profile/some-configV1.id",
-			api.APIs{}, //no APIs known
+			api.APIs{}, // no APIs known
 			nil,
 			true,
 		},

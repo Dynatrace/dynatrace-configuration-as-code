@@ -114,9 +114,7 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectName
 
 		loadedProjects = append(loadedProjects, project)
 
-		for _, environment := range environments {
-			projectNamesToLoad = append(projectNamesToLoad, project.Dependencies[environment.Name]...)
-		}
+		projectNamesToLoad = append(projectNamesToLoad, getConnectedProjects(project)...)
 	}
 
 	if len(errors) > 0 {
@@ -124,6 +122,26 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectName
 	}
 
 	return loadedProjects, nil
+}
+
+func getConnectedProjects(p Project) []string {
+	var result []string
+
+	for _, c := range p.ConfigList() {
+		// ignore skipped configs
+		if c.Skip {
+			continue
+		}
+
+		for _, r := range c.References() {
+			// ignore project on same project
+			if p.Id == r.Project {
+				continue
+			}
+			result = append(result, r.Project)
+		}
+	}
+	return result
 }
 
 // Gets full project names to load specified by project or grouping project names. If none are specified, all project names are returned. Errors are returned for any project names that do not exist.
@@ -185,10 +203,9 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	insertNetworkZoneParameter(configs)
 
 	return Project{
-		Id:           projectDefinition.Name,
-		GroupId:      projectDefinition.Group,
-		Configs:      toConfigMap(configs),
-		Dependencies: toDependenciesMap(projectDefinition.Name, configs),
+		Id:      projectDefinition.Name,
+		GroupId: projectDefinition.Group,
+		Configs: toConfigMap(configs),
 	}, nil
 }
 
@@ -326,28 +343,4 @@ func findDuplicatedConfigIdentifiers(configs []config.Config) []error {
 // environment or group override of the same configuration
 func toFullyQualifiedConfigIdentifier(config config.Config) string {
 	return fmt.Sprintf("%s:%s:%s", config.Group, config.Environment, config.Coordinate)
-}
-
-func toDependenciesMap(projectId string, configs []config.Config) DependenciesPerEnvironment {
-	result := make(DependenciesPerEnvironment)
-
-	for _, c := range configs {
-		// ignore skipped configs
-		if c.Skip {
-			continue
-		}
-
-		for _, ref := range c.References() {
-			// ignore project on same project
-			if projectId == ref.Project {
-				continue
-			}
-
-			if !slices.Contains(result[c.Environment], ref.Project) {
-				result[c.Environment] = append(result[c.Environment], ref.Project)
-			}
-		}
-	}
-
-	return result
 }

@@ -19,15 +19,17 @@
 package graph_test
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	graph2 "gonum.org/v1/gonum/graph"
+	"gonum.org/v1/gonum/graph/simple"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/stretchr/testify/assert"
-	graph2 "gonum.org/v1/gonum/graph"
-	"gonum.org/v1/gonum/graph/simple"
-	"testing"
 )
 
 func TestConfigGraphPerEnvironment_GetConnectedConfigs(t *testing.T) {
@@ -88,11 +90,6 @@ func TestConfigGraphPerEnvironment_GetConnectedConfigs(t *testing.T) {
 							},
 						},
 					},
-				},
-			},
-			Dependencies: project.DependenciesPerEnvironment{
-				environmentName: []string{
-					referencedProjectId,
 				},
 			},
 		},
@@ -196,11 +193,6 @@ func TestGraphExport(t *testing.T) {
 							},
 						},
 					},
-				},
-			},
-			Dependencies: project.DependenciesPerEnvironment{
-				environmentName: []string{
-					referencedProjectId,
 				},
 			},
 		},
@@ -386,11 +378,6 @@ func TestGraphCycleErrors(t *testing.T) {
 						dash3,
 						dash4,
 					},
-				},
-			},
-			Dependencies: project.DependenciesPerEnvironment{
-				environmentName: []string{
-					referencedProjectId,
 				},
 			},
 		},
