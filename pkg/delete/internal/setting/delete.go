@@ -139,7 +139,6 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 		logger.Info("Deleting %d objects of type %q...", len(settingsObjects), s)
 		for _, settingsObject := range settingsObjects {
 			if !settingsObject.IsDeletable() {
-				//@Reviewer should here also be a log as it is in the Delete() method
 				continue
 			}
 

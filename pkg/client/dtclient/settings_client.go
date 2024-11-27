@@ -46,17 +46,17 @@ import (
 const (
 	DeleteOperation = "delete"
 	WriteOperation  = "write"
-	//ReadOperation   = "read"
 )
 
 // DownloadSettingsObject is the response type for the ListSettings operation
 type DownloadSettingsObject struct {
-	ExternalId       string                    `json:"externalId"`
-	SchemaVersion    string                    `json:"schemaVersion"`
-	SchemaId         string                    `json:"schemaId"`
-	ObjectId         string                    `json:"objectId"`
-	Scope            string                    `json:"scope"`
-	Value            json.RawMessage           `json:"value"`
+	ExternalId    string          `json:"externalId"`
+	SchemaVersion string          `json:"schemaVersion"`
+	SchemaId      string          `json:"schemaId"`
+	ObjectId      string          `json:"objectId"`
+	Scope         string          `json:"scope"`
+	Value         json.RawMessage `json:"value"`
+	//Deprecated in the API used only as fallback replaced by ResourceContext
 	ModificationInfo *SettingsModificationInfo `json:"modificationInfo"`
 	ResourceContext  *SettingsResourceContext  `json:"resourceContext"`
 }
