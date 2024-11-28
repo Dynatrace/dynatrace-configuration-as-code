@@ -636,7 +636,7 @@ func isSameValueForKey(targetPath string, c1 []byte, c2 []byte) (same bool, matc
 	if err != nil {
 		return false, nil, err
 	}
-
+	u = nil
 	if err := json.Unmarshal(c2, &u); err != nil {
 		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", targetPath, err)
 	}
