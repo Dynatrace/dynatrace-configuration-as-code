@@ -572,6 +572,38 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 					},
 				},
 			},
+			{
+				name: "full path not matching",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A" : {"B" : "x" } }`)},
+					},
+				},
+			},
+			{
+				name: "only one objet with match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"B" : "x" } `),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A" : {"B" : "x" } }`)},
+					},
+				},
+			},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
