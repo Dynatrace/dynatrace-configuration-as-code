@@ -514,10 +514,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 						{Value: []byte(`{"A" : {"B" : "y" } }`)},
 					},
 				},
-				expected: &match{
-					object:  DownloadSettingsObject{Value: []byte(`{"A":"x", "B":"y"}`)},
-					matches: nil,
-				},
+				expected: nil,
 			},
 		}
 		for _, tc := range tests {
