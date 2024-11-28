@@ -625,22 +625,50 @@ func doObjectsMatchBasedOnUniqueKeys(uniqueKeys []string, source SettingsObject,
 	return true, matches, nil
 }
 
-func isSameValueForKey(key string, c1 []byte, c2 []byte) (same bool, matchingVal any, err error) {
+func isSameValueForKey(targetPath string, c1 []byte, c2 []byte) (same bool, matchingVal any, err error) {
 	u := make(map[string]any)
 	if err := json.Unmarshal(c1, &u); err != nil {
-		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", targetPath, err)
 	}
-	v1 := u[key]
+
+	keys := explodePath(targetPath)
+	value1, err := recursiveSearch(u, keys)
+	if err != nil {
+		return false, nil, err
+	}
 
 	if err := json.Unmarshal(c2, &u); err != nil {
-		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", targetPath, err)
 	}
-	v2 := u[key]
 
-	if cmp.Equal(v1, v2) {
-		return true, v1, nil
+	value2, err := recursiveSearch(u, keys)
+	if err != nil {
+		return false, nil, err
+	}
+
+	if cmp.Equal(value1, value2) {
+		return true, value1, nil
 	}
 	return false, nil, nil
+}
+
+func recursiveSearch(nestedMap map[string]any, keys []string) (any, error) {
+	currentMap := nestedMap
+	value, found := currentMap[keys[0]]
+	if found {
+		if nestedMap, ok := value.(map[string]interface{}); ok && len(keys) > 1 {
+			return recursiveSearch(nestedMap, keys[1:])
+		}
+		return value, nil
+	}
+
+	return nil, fmt.Errorf("key: %q not found", keys[0])
+}
+
+// explodePath splits targetPath by "/", this is the format of settings api.
+// If no "/" is present the string is returned as is. If in future there should be other separators expand logic here.
+func explodePath(targetPath string) []string {
+	return strings.Split(targetPath, "/")
 }
 
 // buildPostRequestPayload builds the json that is required as body in the settings api.
