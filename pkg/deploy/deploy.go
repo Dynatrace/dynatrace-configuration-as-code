@@ -61,12 +61,19 @@ type DeployConfigsOptions struct {
 }
 
 var (
-	lock sync.Mutex
+	lock                         sync.Mutex
+	concurrentDeploymentsLimiter *rest.ConcurrentRequestLimiter
 
 	skipError = errors.New("skip error")
 )
 
 func Deploy(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
+	maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
+	if maxConcurrentDeployments > 0 {
+		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
+		concurrentDeploymentsLimiter = rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
+	}
+
 	preloadCaches(ctx, projects, environmentClients)
 	g := graph.New(projects, environmentClients.Names())
 	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
@@ -245,11 +252,11 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 	}
 }
 
-var limiter *rest.ConcurrentRequestLimiter = rest.NewConcurrentRequestLimiter(environment.GetEnvValueInt(environment.ConcurrentRequestsEnvKey))
-
 func deployConfig(ctx context.Context, c *config.Config, clientset *client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
-	limiter.Acquire()
-	defer limiter.Release()
+	if concurrentDeploymentsLimiter != nil {
+		concurrentDeploymentsLimiter.Acquire()
+		defer concurrentDeploymentsLimiter.Release()
+	}
 
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
