@@ -361,10 +361,21 @@ func (d *SettingsClient) handleUpsertUnsupportedVersion(ctx context.Context, obj
 
 }
 
+// Upsert creates or updates remote settings objects.
+// The logic to find the correct object to update is as follows:
+//  1. We try to match the unique-constrains of the object
+//  2. We try to find the correct object by checking the legacy-external-id, the external-id, as well as the given originObjectId
+//
+// If we find an object, we update it. If we don't, a new one will be created.
+//
+// Note: If the Dynatrace version of the remote system is <262, nothing will be performed and an error is returned.
 func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
 	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
 		return d.handleUpsertUnsupportedVersion(ctx, obj)
 	}
+
+	// The objectID of the object we want to update
+	remoteObjectId := ""
 
 	if matchingObject, found, err := d.findObjectWithMatchingConstraints(ctx, obj); err != nil {
 		return DynatraceEntity{}, err
@@ -376,7 +387,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		}
 
 		log.WithCtxFields(ctx).Debug("Updating existing object %q with matching unique properties: %v", matchingObject.object.ObjectId, strings.Join(props, ", "))
-		obj.OriginObjectId = matchingObject.object.ObjectId
+		remoteObjectId = matchingObject.object.ObjectId
 	}
 
 	// generate legacy external ID without project name.
@@ -396,7 +407,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 	}
 
 	if len(settingsWithExternalID) > 0 {
-		obj.OriginObjectId = settingsWithExternalID[0].ObjectId
+		remoteObjectId = settingsWithExternalID[0].ObjectId
 	}
 
 	externalID, err := d.generateExternalID(obj.Coordinate)
@@ -416,7 +427,9 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
-	if len(settings) == 2 {
+	if len(settings) == 1 {
+		remoteObjectId = settings[0].ObjectId
+	} else if len(settings) == 2 {
 		var exIdSetting, ooIdSetting string
 		if settings[0].ExternalId == externalID {
 			exIdSetting = settings[0].ObjectId
@@ -427,7 +440,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		}
 
 		log.WithCtxFields(ctx).Warn("Found two configs, one with the defined originObjectId (%q), and one with the expected monaco externalId (%q). Updating the one with the expected externalId.", ooIdSetting, exIdSetting)
-		obj.OriginObjectId = ""
+		remoteObjectId = ""
 	}
 
 	if schema, ok := d.schemaCache.Get(obj.SchemaId); ok {
@@ -436,7 +449,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		}
 	}
 
-	payload, err := buildPostRequestPayload(ctx, obj, externalID, upsertOptions.InsertAfter)
+	payload, err := buildPostRequestPayload(ctx, remoteObjectId, obj, externalID, upsertOptions.InsertAfter)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
 	}
@@ -574,7 +587,7 @@ func isSameValueForKey(key string, c1 []byte, c2 []byte) (same bool, matchingVal
 // To do this, we have to wrap the template in another object and send this object to the server.
 // Currently, we only encode one object into an array of objects, but we can optimize it to contain multiple elements to update.
 // Note payload limitations: https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit#payload-limit
-func buildPostRequestPayload(ctx context.Context, obj SettingsObject, externalID string, insertAfter string) ([]byte, error) {
+func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj SettingsObject, externalID string, insertAfter string) ([]byte, error) {
 	var value any
 	if err := json.Unmarshal(obj.Content, &value); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal rendered config: %w", err)
@@ -586,7 +599,7 @@ func buildPostRequestPayload(ctx context.Context, obj SettingsObject, externalID
 		Scope:         obj.Scope,
 		Value:         value,
 		SchemaVersion: obj.SchemaVersion,
-		ObjectId:      obj.OriginObjectId,
+		ObjectId:      remoteObjectId,
 		InsertAfter:   insertAfter,
 	}
 
