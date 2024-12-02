@@ -548,6 +548,22 @@ func TestUpsertSettings(t *testing.T) {
 		listSettingsResponseContent string
 	}{
 		{
+			name:                        "Invalid JSON value in GET response returns an error",
+			expectSettingsRequestValue:  "{",
+			expectError:                 true,
+			expectEntity:                DynatraceEntity{},
+			listSettingsResponseCode:    http.StatusOK,
+			listSettingsResponseContent: `{"items":[{"externalId":"","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}]}`,
+		},
+		{
+			name:                        "Invalid JSON value in LIST response returns an error",
+			expectSettingsRequestValue:  "{",
+			expectError:                 true,
+			expectEntity:                DynatraceEntity{},
+			listSettingsResponseCode:    http.StatusOK,
+			listSettingsResponseContent: `{`,
+		},
+		{
 			name:                        "Invalid json returns an error",
 			expectSettingsRequestValue:  "{",
 			expectError:                 true,
@@ -556,7 +572,25 @@ func TestUpsertSettings(t *testing.T) {
 			listSettingsResponseContent: `{"items":[{"externalId":"","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}]}`,
 		},
 		{
-			name: "Valid call with valid response",
+			name: "Correct call where the remote Object-ID cannot be found",
+			serverVersion: version.Version{
+				Major: 1,
+				Minor: 262,
+				Patch: 0,
+			},
+			expectSettingsRequestValue: "{}",
+			expectOriginObjectID:       "",
+			expectError:                false,
+			expectEntity: DynatraceEntity{
+				Id:   "entity-id",
+				Name: "entity-id",
+			},
+			postSettingsResponseContent: `[{"objectId": "entity-id"}]`,
+			listSettingsResponseCode:    http.StatusOK,
+			listSettingsResponseContent: `{"items":[{"externalId":"","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}]}`,
+		},
+		{
+			name: "Correct call where the remote Object-ID is found",
 			serverVersion: version.Version{
 				Major: 1,
 				Minor: 262,
@@ -571,10 +605,27 @@ func TestUpsertSettings(t *testing.T) {
 			},
 			postSettingsResponseContent: `[{"objectId": "entity-id"}]`,
 			listSettingsResponseCode:    http.StatusOK,
-			listSettingsResponseContent: `{"items":[{"externalId":"","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}]}`,
+			listSettingsResponseContent: `{"items":[{"externalId":"","objectId":"anObjectID","scope":"tenant"}]}`,
 		},
 		{
-			name:                       "Updating an object, where there is a conflict on the remote system works",
+			name:                       "Updating an object where there are two objects, first one with the correct externalId and second one with the correct objectId, works correctly.",
+			serverVersion:              version.Version{Major: 1, Minor: 262, Patch: 0},
+			expectSettingsRequestValue: "{}",
+			expectOriginObjectID:       "", // no origin object id is important for this test
+			expectError:                false,
+			expectEntity: DynatraceEntity{
+				Id:   "entity-id",
+				Name: "entity-id",
+			},
+			postSettingsResponseContent: `[{"objectId": "entity-id"}]`,
+			listSettingsResponseCode:    http.StatusOK,
+			listSettingsResponseContent: fmt.Sprintf(`{"items":[`+
+				`{"externalId":"%s","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"},`+ // setting with externalId to be updated
+				`{"externalId":"","objectId":"anObjectID","scope":"tenant"}`+ // setting with originObjectId to be updated
+				`]}`, exId),
+		},
+		{
+			name:                       "Updating an object where there are two objects, second one with the correct externalId and first one with the correct objectId, works correctly.",
 			serverVersion:              version.Version{Major: 1, Minor: 262, Patch: 0},
 			expectSettingsRequestValue: "{}",
 			expectOriginObjectID:       "", // no origin object id is important for this test
@@ -589,6 +640,24 @@ func TestUpsertSettings(t *testing.T) {
 				`{"externalId":"","objectId":"anObjectID","scope":"tenant"},`+ // setting with originObjectId to be updated
 				`{"externalId":"%s","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}`+ // setting with externalId to be updated
 				`]}`, exId),
+		},
+		{
+			name: "Correct call where the remote Object-ID is found with a matching externalID in the same object",
+			serverVersion: version.Version{
+				Major: 1,
+				Minor: 262,
+				Patch: 0,
+			},
+			expectSettingsRequestValue: "{}",
+			expectOriginObjectID:       "anObjectID",
+			expectError:                false,
+			expectEntity: DynatraceEntity{
+				Id:   "entity-id",
+				Name: "entity-id",
+			},
+			postSettingsResponseContent: `[{"objectId": "entity-id"}]`,
+			listSettingsResponseCode:    http.StatusOK,
+			listSettingsResponseContent: fmt.Sprintf(`{"items":[{"externalId":"%s","objectId":"anObjectID","scope":"tenant"}]}`, exId),
 		},
 		{
 			name: "Valid call with valid response - Object with external ID already exists",
@@ -609,9 +678,9 @@ func TestUpsertSettings(t *testing.T) {
 			listSettingsResponseContent: `{"items":[{"externalId":"monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}]}`,
 		},
 		{
-			name:                        "Valid request, invalid response",
+			name:                        "Valid request, invalid JSON in POST response",
 			expectSettingsRequestValue:  "{}",
-			expectOriginObjectID:        "anObjectID",
+			expectOriginObjectID:        "",
 			expectError:                 true,
 			postSettingsResponseContent: `{`,
 			listSettingsResponseCode:    http.StatusOK,
@@ -620,7 +689,7 @@ func TestUpsertSettings(t *testing.T) {
 		{
 			name:                        "Valid request, 400 return",
 			expectSettingsRequestValue:  "{}",
-			expectOriginObjectID:        "anObjectID",
+			expectOriginObjectID:        "",
 			expectError:                 true,
 			postSettingsResponseCode:    400,
 			listSettingsResponseCode:    http.StatusOK,
@@ -629,7 +698,7 @@ func TestUpsertSettings(t *testing.T) {
 		{
 			name:                        "Valid request, but empty response",
 			expectSettingsRequestValue:  "{}",
-			expectOriginObjectID:        "anObjectID",
+			expectOriginObjectID:        "",
 			expectError:                 true,
 			postSettingsResponseContent: `[]`,
 			listSettingsResponseCode:    http.StatusOK,
@@ -638,7 +707,7 @@ func TestUpsertSettings(t *testing.T) {
 		{
 			name:                        "Valid request, but multiple responses",
 			expectSettingsRequestValue:  "{}",
-			expectOriginObjectID:        "anObjectID",
+			expectOriginObjectID:        "",
 			expectError:                 true,
 			expectEntity:                DynatraceEntity{},
 			postSettingsResponseContent: `[{"objectId": "entity-id"},{"objectId": "entity-id"}]`,
@@ -686,10 +755,13 @@ func TestUpsertSettings(t *testing.T) {
 					return
 				}
 
+				assert.Equal(t, http.MethodPost, r.Method, "Expected HTTP POST request")
+
 				// Build  & assert object we expect Dynatrace to receive
 				var expectedSettingsObject any
 				err := json.Unmarshal([]byte(test.expectSettingsRequestValue), &expectedSettingsObject)
 				assert.NoError(t, err)
+
 				extId, _ := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{
 					Project:  "my-project",
 					Type:     "builtin:alerting.profile",
@@ -707,7 +779,7 @@ func TestUpsertSettings(t *testing.T) {
 				var obj []settingsRequest
 				err = json.NewDecoder(r.Body).Decode(&obj)
 				assert.NoError(t, err)
-				assert.Equal(t, obj, expectedRequestPayload)
+				assert.Equal(t, expectedRequestPayload, obj, "Expected POST payload does not match")
 
 				// response to client
 				if test.postSettingsResponseCode != 0 {
@@ -736,8 +808,12 @@ func TestUpsertSettings(t *testing.T) {
 				Content:        []byte(test.expectSettingsRequestValue),
 			}, UpsertSettingsOptions{})
 
-			assert.Equal(t, err != nil, test.expectError)
-			assert.Equal(t, resp, test.expectEntity)
+			if test.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, test.expectEntity, resp)
 		})
 	}
 }
