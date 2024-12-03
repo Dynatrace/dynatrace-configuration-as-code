@@ -20,6 +20,13 @@ package loader
 
 import (
 	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -32,11 +39,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/google/go-cmp/cmp"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
 )
 
 func Test_parseConfigs(t *testing.T) {
@@ -1127,7 +1129,7 @@ configs:
 			},
 		},
 		{
-			name:             "Bucket config with FF on",
+			name:             "Bucket config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1166,6 +1168,62 @@ configs:
     api: bucket
 `,
 			wantErrorsContain: []string{"unknown API: bucket"},
+		},
+		{
+			name:             "grail filter-segment config with FF on",
+			envVars:          map[string]string{featureflags.Temporary[featureflags.GrailFilterSegment].EnvName(): "true"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    template: 'profile.json'
+  type: filter-segment
+`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "filter-segment",
+						ConfigId: "profile-id",
+					},
+					Type:        config.GrailFilterSegment{},
+					Template:    template.NewInMemoryTemplate("filter-segment.json", "{}"),
+					Parameters:  config.Parameters{},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
+			name:             "grail filter-segment config with FF off",
+			envVars:          map[string]string{featureflags.Temporary[featureflags.GrailFilterSegment].EnvName(): "false"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    template: 'profile.json'
+  type: filter-segment
+`,
+			wantErrorsContain: []string{"unknown config-type \"filter-segment\""},
+		},
+		{
+			name:             "grail filter-segment written as api config",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    template: 'profile.json'
+  type:
+    api: filter-segment
+`,
+			wantErrorsContain: []string{"unknown API: filter-segment"},
 		},
 		{
 			name:             "API without scope",

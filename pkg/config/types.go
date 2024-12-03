@@ -17,13 +17,14 @@
 package config
 
 const (
-	SettingsTypeID     TypeID = "settings"
-	ClassicApiTypeID   TypeID = "classic"
-	EntityTypeID       TypeID = "entity"
-	AutomationTypeID   TypeID = "automation"
-	BucketTypeID       TypeID = "bucket"
-	DocumentTypeID     TypeID = "document"
-	OpenPipelineTypeID TypeID = "openpipeline"
+	SettingsTypeID       TypeID = "settings"
+	ClassicApiTypeID     TypeID = "classic"
+	EntityTypeID         TypeID = "entity"
+	AutomationTypeID     TypeID = "automation"
+	BucketTypeID         TypeID = "bucket"
+	DocumentTypeID       TypeID = "document"
+	OpenPipelineTypeID   TypeID = "openpipeline"
+	GrailFilterSegmentID TypeID = "filter-segment"
 )
 
 var _ Type = SettingsType{}
@@ -119,4 +120,12 @@ type OpenPipelineType struct {
 
 func (OpenPipelineType) ID() TypeID {
 	return OpenPipelineTypeID
+}
+
+var _ Type = GrailFilterSegment{}
+
+type GrailFilterSegment struct{}
+
+func (GrailFilterSegment) ID() TypeID {
+	return GrailFilterSegmentID
 }
