@@ -1871,12 +1871,12 @@ func TestResourceContextWorksAsModificationInfo(t *testing.T) {
 				Deletable:       false,
 				Modifiable:      false,
 				Movable:         false,
-				ModifiablePaths: []interface{}{"apiColor", "thirdPartyApi"},
+				ModifiablePaths: []string{"apiColor", "thirdPartyApi"},
 			},
 			resourceContext: SettingsResourceContext{
 				Operations:      []string{"read"},
 				Movable:         &boolFalse,
-				ModifiablePaths: []interface{}{"apiColor", "thirdPartyApi"},
+				ModifiablePaths: []string{"apiColor", "thirdPartyApi"},
 			},
 		},
 		{
@@ -1885,11 +1885,11 @@ func TestResourceContextWorksAsModificationInfo(t *testing.T) {
 				Deletable:       true,
 				Modifiable:      true,
 				Movable:         true,
-				ModifiablePaths: []interface{}{},
+				ModifiablePaths: []string{},
 			},
 			resourceContext: SettingsResourceContext{
 				Operations:      []string{"read", "write", "delete"},
-				ModifiablePaths: []interface{}{},
+				ModifiablePaths: []string{},
 			},
 		},
 	}

@@ -101,7 +101,7 @@ func (settingObject *DownloadSettingsObject) IsMovable() bool {
 	return true
 }
 
-func (settingObject *DownloadSettingsObject) GetModifiablePaths() []interface{} {
+func (settingObject *DownloadSettingsObject) GetModifiablePaths() []string {
 	if settingObject.ResourceContext != nil {
 		return settingObject.ResourceContext.ModifiablePaths
 	}
@@ -110,18 +110,16 @@ func (settingObject *DownloadSettingsObject) GetModifiablePaths() []interface{} 
 }
 
 type SettingsModificationInfo struct {
-	Deletable          bool          `json:"deletable"`
-	Modifiable         bool          `json:"modifiable"`
-	Movable            bool          `json:"movable"`
-	ModifiablePaths    []interface{} `json:"modifiablePaths"`
-	NonModifiablePaths []interface{} `json:"nonModifiablePaths"`
+	Deletable       bool     `json:"deletable"`
+	Modifiable      bool     `json:"modifiable"`
+	Movable         bool     `json:"movable"`
+	ModifiablePaths []string `json:"modifiablePaths"`
 }
 
 type SettingsResourceContext struct {
-	Operations         []string      `json:"operations"`
-	Movable            *bool         `json:"modifications:movable"`
-	ModifiablePaths    []interface{} `json:"modifications:modifiablePaths"`
-	NonModifiablePaths []interface{} `json:"modifications:nonModifiablePaths"`
+	Operations      []string `json:"operations"`
+	Movable         *bool    `json:"modifications:movable"`
+	ModifiablePaths []string `json:"modifications:modifiablePaths"`
 }
 
 type UpsertSettingsOptions struct {
