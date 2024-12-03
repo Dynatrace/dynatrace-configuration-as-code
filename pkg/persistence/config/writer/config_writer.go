@@ -18,6 +18,14 @@ package writer
 
 import (
 	"fmt"
+	"path/filepath"
+	"reflect"
+	"strings"
+
+	"github.com/spf13/afero"
+	"golang.org/x/exp/slices"
+	"gopkg.in/yaml.v2"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	mystrings "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -27,12 +35,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
-	"github.com/spf13/afero"
-	"golang.org/x/exp/slices"
-	"gopkg.in/yaml.v2"
-	"path/filepath"
-	"reflect"
-	"strings"
 )
 
 type WriterContext struct {
@@ -185,8 +187,8 @@ func byConfigId(a, b persistence.TopLevelConfigDefinition) int {
 func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinate, definition persistence.TopLevelDefinition) error {
 	// sort configs so that they are stable within a config file
 	slices.SortFunc(definition.Configs, byConfigId)
-	definitionYaml, err := yaml.Marshal(definition)
 
+	definitionYaml, err := yaml.Marshal(definition)
 	if err != nil {
 		return newConfigWriterError(context, err)
 	}
