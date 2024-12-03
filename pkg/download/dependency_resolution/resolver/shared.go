@@ -30,7 +30,7 @@ import (
 // resolveScope updates the `scope` parameter of the config and converts it to a reference parameter iff the scope
 // is a known id of another downloaded config.
 func resolveScope(configToBeUpdated *config.Config, ids map[string]config.Config) {
-	if configToBeUpdated.Type.ID() != config.SettingsTypeId {
+	if configToBeUpdated.Type.ID() != config.SettingsTypeID {
 		return
 	}
 
@@ -93,7 +93,7 @@ func canReference(configToBeUpdated config.Config, configToUpdateFrom config.Con
 	}
 
 	if configToBeUpdated.Coordinate.Type == "dashboard" && configToUpdateFrom.Coordinate.Type == "dashboard" {
-		return false //dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
+		return false // dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
 	}
 
 	if configToUpdateFrom.Coordinate.Type == "dashboard-share-setting" {
