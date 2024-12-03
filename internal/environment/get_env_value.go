@@ -25,6 +25,7 @@ import (
 
 const (
 	ConcurrentRequestsEnvKey          = "MONACO_CONCURRENT_REQUESTS"
+	ConcurrentDeploymentsEnvKey       = "MONACO_CONCURRENT_DEPLOYMENTS"
 	defaultValueKey                   = "DEFAULT"
 	KeyUserActionWebWaitSecondsEnvKey = "MONACO_KUA_WEB_WAIT_SECONDS"
 	MaxFilenameLenKey                 = "MONACO_MAX_FILENAME_LEN"
@@ -33,6 +34,7 @@ const (
 
 var defaultValuesInt = map[string]int{
 	ConcurrentRequestsEnvKey:          5,
+	ConcurrentDeploymentsEnvKey:       0,
 	defaultValueKey:                   0,
 	KeyUserActionWebWaitSecondsEnvKey: 1,
 	MaxFilenameLenKey:                 254,
@@ -40,11 +42,13 @@ var defaultValuesInt = map[string]int{
 
 var logStringInt = map[string]string{
 	ConcurrentRequestsEnvKey:          "Concurrent Request Limit: %d, from '%s' environment variable",
+	ConcurrentDeploymentsEnvKey:       "Concurrent Deployments Limit: %d, from '%s' environment variable",
 	defaultValueKey:                   "Environment variable %s: %d",
 	KeyUserActionWebWaitSecondsEnvKey: "Key User Action Web wait seconds: %d, from '%s' environment variable",
 }
 var logStringIntDefault = map[string]string{
 	ConcurrentRequestsEnvKey:          "Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value",
+	ConcurrentDeploymentsEnvKey:       "Concurrent Deployments Limit: %d, '%s' environment variable is NOT set, using default value",
 	defaultValueKey:                   "Environment variable %s: %d, variable is NOT set, using default value",
 	KeyUserActionWebWaitSecondsEnvKey: "Key User Action Web wait seconds: %d, from '%s' environment variable is NOT set, using default value",
 }
