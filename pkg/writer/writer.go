@@ -15,16 +15,17 @@
 package writer
 
 import (
+	"path/filepath"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	manifestwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/writer"
 	configwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/writer"
-	"path/filepath"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
 )
 
 type WriterContext struct {
@@ -74,7 +75,7 @@ func writeProjects(context *WriterContext, projectDefinitions manifest.ProjectDe
 			continue
 		}
 
-		configs := collectAllConfigs(p)
+		configs := p.ConfigList()
 
 		errs := configwriter.WriteConfigs(&configwriter.WriterContext{
 			Fs:              context.Fs,
@@ -91,14 +92,4 @@ func writeProjects(context *WriterContext, projectDefinitions manifest.ProjectDe
 	}
 
 	return nil
-}
-
-func collectAllConfigs(p project.Project) (result []config.Config) {
-	for _, configsPerApi := range p.Configs {
-		for _, configs := range configsPerApi {
-			result = append(result, configs...)
-		}
-	}
-
-	return result
 }
