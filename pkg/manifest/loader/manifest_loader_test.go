@@ -21,6 +21,9 @@ package loader
 import (
 	"fmt"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
+	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
@@ -643,6 +646,65 @@ environmentGroups:
 				},
 			},
 		},
+		{
+			name: "unmarshal manifest with parameters",
+			given: `
+manifestVersion: "1.0"
+projects:
+- name: project
+environmentGroups:
+- name: default
+  environments:
+  - name: env
+    url:
+      type: environment
+      value: ENV_URL
+    auth:
+      token:
+        name: ENV_TOKEN
+parameters:
+  owner: hansi
+  department:
+    type: environment
+    name: ENV_VAR
+`,
+			expected: expected{
+				manifest: persistence.Manifest{
+					ManifestVersion: "1.0",
+					Projects: []persistence.Project{
+						{
+							Name: "project",
+						},
+					},
+					EnvironmentGroups: []persistence.Group{
+						{
+							Name: "default",
+							Environments: []persistence.Environment{
+								{
+									Name: "env",
+									URL: persistence.TypedValue{
+										Type:  persistence.TypeEnvironment,
+										Value: "ENV_URL",
+									},
+									Auth: persistence.Auth{
+										Token: persistence.AuthSecret{
+											Name: "ENV_TOKEN",
+										},
+									},
+								},
+							},
+						},
+					},
+					Parameters: map[string]interface{}{
+						"owner": "hansi",
+						"department": map[interface{}]interface{}{
+							"type": "environment",
+							"name": "ENV_VAR",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1147,6 +1209,81 @@ environmentGroups:
 				},
 				Accounts: map[string]manifest.Account{},
 			},
+		},
+		{
+			name: "Valid with parameters",
+			manifestContent: `
+manifestVersion: "1.0"
+projects:
+- name: project
+environmentGroups:
+- name: default
+  environments:
+  - name: env
+    url: "https://test.test"
+    auth:
+      token:
+        name: e
+parameters:
+  owner: hansi
+  department:
+    type: environment
+    name: test-env-var
+`,
+			errsContain: []string{},
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
+					"project": {
+						Name: "project",
+						Path: "project",
+					},
+				},
+				Environments: map[string]manifest.EnvironmentDefinition{
+					"env": {
+						Group: "default",
+						Name:  "env",
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
+							Value: "https://test.test",
+						},
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
+								Name:  "e",
+								Value: "mock token",
+							},
+						},
+					},
+				},
+				Accounts: map[string]manifest.Account{},
+				Parameters: map[string]parameter.Parameter{
+					"owner":      valueParam.New("hansi"),
+					"department": environment.New("test-env-var"),
+				},
+			},
+		},
+		{
+			name: "Invalid global parameter types produce error",
+			manifestContent: `
+manifestVersion: "1.0"
+projects:
+- name: project
+environmentGroups:
+- name: default
+  environments:
+  - name: env
+    url: "https://test.test"
+    auth:
+      token:
+        name: e
+parameters:
+  department:
+    type: reference
+    project: project
+    configType: application-mobile
+    configId: monaco-has-no-clue-I-exist-yet
+`,
+			errsContain:      []string{"invalid parameter type"},
+			expectedManifest: manifest.Manifest{},
 		},
 		{
 			name:   "Missing group errors",
