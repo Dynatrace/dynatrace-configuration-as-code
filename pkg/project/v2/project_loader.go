@@ -250,7 +250,7 @@ func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 	nonUniqueNameConfigCount := make(map[string]map[string]int)
 	apis := api.NewAPIs()
 	for _, c := range configs {
-		if c.Type.ID() == config.ClassicApiTypeId && apis[c.Coordinate.Type].NonUniqueName {
+		if c.Type.ID() == config.ClassicApiTypeID && apis[c.Coordinate.Type].NonUniqueName {
 			name, err := config.GetNameForConfig(c)
 			if err != nil {
 				log.WithFields(field.Error(err), field.Coordinate(c.Coordinate)).Error("Unable to resolve name of configuration")

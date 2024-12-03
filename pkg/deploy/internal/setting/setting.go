@@ -37,7 +37,7 @@ import (
 func Deploy(ctx context.Context, settingsClient client.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config, insertAfter string) (entities.ResolvedEntity, error) {
 	t, ok := c.Type.(config.SettingsType)
 	if !ok {
-		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID()))
+		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeID, c.Type.ID()))
 	}
 
 	scope, err := extract.Scope(properties)
@@ -59,7 +59,7 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		InsertAfter:   insertAfter,
 	}
 
-	if c.HasRefTo(string(config.BucketTypeId)) {
+	if c.HasRefTo(string(config.BucketTypeID)) {
 		insertOptions.OverrideRetry = &dtclient.RetrySetting{WaitTime: 10 * time.Second, MaxRetries: 6}
 	}
 

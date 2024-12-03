@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -64,45 +65,46 @@ var ReservedParameterNames = []string{IdParameter, NameParameter, ScopeParameter
 // Parameters defines a map of name to parameter
 type Parameters map[string]parameter.Parameter
 
-type TypeId string
+type TypeID string
 
 const (
-	SettingsTypeId     TypeId = "settings"
-	ClassicApiTypeId   TypeId = "classic"
-	EntityTypeId       TypeId = "entity"
-	AutomationTypeId   TypeId = "automation"
-	BucketTypeId       TypeId = "bucket"
-	DocumentTypeId     TypeId = "document"
-	OpenPipelineTypeId TypeId = "openpipeline"
+	SettingsTypeID       TypeID = "settings"
+	ClassicApiTypeID     TypeID = "classic"
+	EntityTypeID         TypeID = "entity"
+	AutomationTypeID     TypeID = "automation"
+	BucketTypeID         TypeID = "bucket"
+	DocumentTypeID       TypeID = "document"
+	OpenPipelineTypeID   TypeID = "openpipeline"
+	GrailFilterSegmentID TypeID = "filter-segment"
 )
 
 type Type interface {
 	// ID returns the type-id.
-	ID() TypeId
+	ID() TypeID
 }
 
 type SettingsType struct {
 	SchemaId, SchemaVersion string
 }
 
-func (SettingsType) ID() TypeId {
-	return SettingsTypeId
+func (SettingsType) ID() TypeID {
+	return SettingsTypeID
 }
 
 type ClassicApiType struct {
 	Api string
 }
 
-func (ClassicApiType) ID() TypeId {
-	return ClassicApiTypeId
+func (ClassicApiType) ID() TypeID {
+	return ClassicApiTypeID
 }
 
 type EntityType struct {
 	EntitiesType string
 }
 
-func (EntityType) ID() TypeId {
-	return EntityTypeId
+func (EntityType) ID() TypeID {
+	return EntityTypeID
 }
 
 // AutomationResource defines which resource is an AutomationType
@@ -121,14 +123,14 @@ type AutomationType struct {
 	Resource AutomationResource
 }
 
-func (AutomationType) ID() TypeId {
-	return AutomationTypeId
+func (AutomationType) ID() TypeID {
+	return AutomationTypeID
 }
 
 type BucketType struct{}
 
-func (BucketType) ID() TypeId {
-	return BucketTypeId
+func (BucketType) ID() TypeID {
+	return BucketTypeID
 }
 
 // DocumentKind defines the type of a document. Currently, it can be a dashboard or a notebook.
@@ -148,8 +150,8 @@ type DocumentType struct {
 	Private bool
 }
 
-func (DocumentType) ID() TypeId {
-	return DocumentTypeId
+func (DocumentType) ID() TypeID {
+	return DocumentTypeID
 }
 
 // OpenPipelineType represents an OpenPipeline configuration.
@@ -158,8 +160,14 @@ type OpenPipelineType struct {
 	Kind string
 }
 
-func (OpenPipelineType) ID() TypeId {
-	return OpenPipelineTypeId
+func (OpenPipelineType) ID() TypeID {
+	return OpenPipelineTypeID
+}
+
+type GrailFilterSegment struct{}
+
+func (GrailFilterSegment) ID() TypeID {
+	return GrailFilterSegmentID
 }
 
 // Config struct defining a configuration which can be deployed.
