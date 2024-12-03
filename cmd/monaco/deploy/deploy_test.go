@@ -417,7 +417,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						OAuth: &oAuth},
 				}},
 			project.ConfigsPerType{
-				string(config.DocumentTypeId): []config.Config{documentConf}},
+				string(config.DocumentTypeID): []config.Config{documentConf}},
 			"",
 		},
 		{
@@ -429,7 +429,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						Token: &token},
 				}},
 			project.ConfigsPerType{
-				string(config.ClassicApiTypeId): []config.Config{classicConf}},
+				string(config.ClassicApiTypeID): []config.Config{classicConf}},
 			"",
 		},
 		{
@@ -443,8 +443,8 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 					},
 				}},
 			project.ConfigsPerType{
-				string(config.DocumentTypeId):   []config.Config{documentConf},
-				string(config.ClassicApiTypeId): []config.Config{classicConf, classicConfSkip},
+				string(config.DocumentTypeID):   []config.Config{documentConf},
+				string(config.ClassicApiTypeID): []config.Config{classicConf, classicConfSkip},
 			},
 			"",
 		},
@@ -457,7 +457,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						Token: &token},
 				}},
 			project.ConfigsPerType{
-				string(config.DocumentTypeId): []config.Config{documentConf}},
+				string(config.DocumentTypeID): []config.Config{documentConf}},
 			"requires OAuth for environment",
 		},
 		{
@@ -469,8 +469,8 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						OAuth: &oAuth},
 				}},
 			project.ConfigsPerType{
-				string(config.DocumentTypeId):   []config.Config{documentConf},
-				string(config.ClassicApiTypeId): []config.Config{classicConf},
+				string(config.DocumentTypeID):   []config.Config{documentConf},
+				string(config.ClassicApiTypeID): []config.Config{classicConf},
 			},
 			"requires a token for environment",
 		},
@@ -495,8 +495,8 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						Token: &token},
 				}},
 			project.ConfigsPerType{
-				string(config.DocumentTypeId):   []config.Config{documentConfSkip},
-				string(config.ClassicApiTypeId): []config.Config{classicConf},
+				string(config.DocumentTypeID):   []config.Config{documentConfSkip},
+				string(config.ClassicApiTypeID): []config.Config{classicConf},
 			},
 			"",
 		},
@@ -509,7 +509,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 						OAuth: &oAuth},
 				}},
 			project.ConfigsPerType{
-				string(config.SettingsTypeId): []config.Config{settingsConf},
+				string(config.SettingsTypeID): []config.Config{settingsConf},
 			},
 			"",
 		},

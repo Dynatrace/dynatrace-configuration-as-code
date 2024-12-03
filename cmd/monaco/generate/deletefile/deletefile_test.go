@@ -114,7 +114,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "document", "my-dashboard", "my-notebook")
 
 	assert.Empty(t, entries[api.DashboardShareSettings])
-	assert.Empty(t, entries[string(config.OpenPipelineTypeId)])
+	assert.Empty(t, entries[string(config.OpenPipelineTypeID)])
 }
 
 func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
