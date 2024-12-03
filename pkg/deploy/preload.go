@@ -86,7 +86,7 @@ func gatherPreloadConfigTypeEntries(projects []project.Project, environmentClien
 
 		for _, project := range projects {
 			project.ForEveryConfigInEnvironmentDo(environmentInfo.Name, func(c config.Config) {
-				//If the config shall be skipped there is no point in caching it
+				// If the config shall be skipped there is no point in caching it
 				if c.Skip {
 					return
 				}

@@ -20,9 +20,13 @@ package writer
 
 import (
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"path/filepath"
 	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+
+	"github.com/spf13/afero"
+	"gopkg.in/yaml.v2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
@@ -33,12 +37,11 @@ import (
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
-	"github.com/spf13/afero"
-	"gopkg.in/yaml.v2"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestExtractCommonBase(t *testing.T) {
@@ -1023,6 +1026,68 @@ func TestWriteConfigs(t *testing.T) {
 				"project/bucket/mybucket.json",
 			},
 		},
+		{
+			name:    "Grail filter-segment",
+			envVars: map[string]string{featureflags.Temporary[featureflags.GrailFilterSegment].EnvName(): "true"},
+			configs: []config.Config{
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/file-segment/template.json", "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "file-segment",
+						ConfigId: "configId1",
+					},
+					Type: config.GrailFilterSegment{},
+					Parameters: map[string]parameter.Parameter{
+						"some param": &value.ValueParameter{Value: "some value"},
+					},
+					Skip: false,
+				},
+			},
+			expectedConfigs: map[string]persistence.TopLevelDefinition{
+				"file-segment": {
+					Configs: []persistence.TopLevelConfigDefinition{
+						{
+							Id: "configId1",
+							Config: persistence.ConfigDefinition{
+								Parameters: map[string]persistence.ConfigParameter{
+									"some param": "some value",
+								},
+								Template: "template.json",
+								Skip:     false,
+							},
+							Type: persistence.TypeDefinition{
+								Type: config.GrailFilterSegment{},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/file-segment/template.json",
+			},
+		},
+		{
+			name:    "Grail filter-segment should fail if FF MONACO_FILTER_SEGMENTS is not set",
+			envVars: map[string]string{featureflags.Temporary[featureflags.GrailFilterSegment].EnvName(): "false"},
+			configs: []config.Config{
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/file-segment/template.json", "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "file-segment",
+						ConfigId: "configId1",
+					},
+					Type: config.GrailFilterSegment{},
+					Parameters: map[string]parameter.Parameter{
+						"some param": &value.ValueParameter{Value: "some value"},
+					},
+					Skip: false,
+				},
+			},
+			expectedErrs: []string{"config.GrailFilterSegment"},
+		},
+
 		{
 			name: "Reference scope",
 			configs: []config.Config{
