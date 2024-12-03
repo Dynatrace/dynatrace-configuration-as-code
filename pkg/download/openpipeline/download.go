@@ -33,11 +33,11 @@ import (
 
 func Download(client client.OpenPipelineClient, projectName string) (v2.ConfigsPerType, error) {
 
-	result := v2.ConfigsPerType{string(config.OpenPipelineTypeId): nil}
+	result := v2.ConfigsPerType{string(config.OpenPipelineTypeID): nil}
 
 	all, err := client.GetAll(context.TODO())
 	if err != nil {
-		log.WithFields(field.Type(config.OpenPipelineTypeId), field.Error(err)).Error("Failed to get all configs of type '%s': %v", config.OpenPipelineTypeId, err)
+		log.WithFields(field.Type(config.OpenPipelineTypeID), field.Error(err)).Error("Failed to get all configs of type '%s': %v", config.OpenPipelineTypeID, err)
 		return result, nil
 	}
 
@@ -45,12 +45,12 @@ func Download(client client.OpenPipelineClient, projectName string) (v2.ConfigsP
 	for _, response := range all {
 		c, err := createConfig(projectName, response)
 		if err != nil {
-			log.WithFields(field.Type(config.OpenPipelineTypeId), field.Error(err)).Error("Failed to convert config of type '%s': %v", config.OpenPipelineTypeId, err)
+			log.WithFields(field.Type(config.OpenPipelineTypeID), field.Error(err)).Error("Failed to convert config of type '%s': %v", config.OpenPipelineTypeID, err)
 			continue
 		}
 		configs = append(configs, c)
 	}
-	result[string(config.OpenPipelineTypeId)] = configs
+	result[string(config.OpenPipelineTypeID)] = configs
 
 	return result, nil
 }
@@ -79,7 +79,7 @@ func createConfig(projectName string, response openpipeline.Response) (config.Co
 		Template: template.NewInMemoryTemplate(id, string(jsonRaw)),
 		Coordinate: coordinate.Coordinate{
 			Project:  projectName,
-			Type:     string(config.OpenPipelineTypeId),
+			Type:     string(config.OpenPipelineTypeID),
 			ConfigId: id,
 		},
 		Type: config.OpenPipelineType{

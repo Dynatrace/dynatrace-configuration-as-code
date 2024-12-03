@@ -151,7 +151,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 	c := config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  projectName,
-			Type:     string(config.BucketTypeId),
+			Type:     string(config.BucketTypeID),
 			ConfigId: b.Name,
 		},
 		OriginObjectId: b.Name,

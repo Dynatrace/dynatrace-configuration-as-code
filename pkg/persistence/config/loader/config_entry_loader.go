@@ -19,6 +19,12 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
+	"slices"
+	"strconv"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -27,10 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
-	"github.com/spf13/afero"
-	"path/filepath"
-	"slices"
-	"strconv"
 )
 
 // parseConfigEntry parses a single config entry
@@ -205,7 +207,7 @@ func getConfigFromDefinition(
 			parameters[config.NameParameter] = name
 		}
 
-	} else if (configType.Type.ID() == config.ClassicApiTypeId) && (configType.GetApiType() != api.DashboardShareSettings) {
+	} else if (configType.Type.ID() == config.ClassicApiTypeID) && (configType.GetApiType() != api.DashboardShareSettings) {
 		errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, "missing parameter `name`"))
 	}
 

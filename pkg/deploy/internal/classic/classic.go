@@ -41,7 +41,7 @@ func Deploy(ctx context.Context, configClient client.ConfigClient, apis api.APIs
 
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
-		return entities.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())
+		return entities.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeID, conf.Type.ID())
 	}
 
 	apiToDeploy, found := apis[t.Api]

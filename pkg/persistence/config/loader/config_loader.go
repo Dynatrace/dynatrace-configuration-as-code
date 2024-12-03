@@ -18,6 +18,11 @@ package loader
 
 import (
 	"fmt"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+	"gopkg.in/yaml.v2"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -25,9 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
-	"github.com/spf13/afero"
-	"gopkg.in/yaml.v2"
-	"path/filepath"
 )
 
 type LoaderContext struct {
@@ -82,7 +84,7 @@ func LoadConfigFile(fs afero.Fs, context *LoaderContext, filePath string) ([]con
 	}
 
 	// Actually load the configs
-	definedConfigEntries, err := loadConfigDefinitions(data)
+	loadedConfigEntries, err := loadConfigDefinitions(data)
 	if err != nil {
 		return nil, []error{newLoadError(filePath, err)}
 	}
@@ -96,7 +98,7 @@ func LoadConfigFile(fs afero.Fs, context *LoaderContext, filePath string) ([]con
 	var errs []error
 	var configs []config.Config
 
-	for _, cgf := range definedConfigEntries {
+	for _, cgf := range loadedConfigEntries {
 
 		result, definitionErrors := parseConfigEntry(fs, configLoaderContext, cgf.Id, cgf)
 

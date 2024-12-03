@@ -25,7 +25,10 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-const BucketType = "bucket"
+const (
+	BucketType         = "bucket"
+	GrailFilterSegment = "filter-segment"
+)
 
 type TypeDefinition struct {
 	Type        config.Type
@@ -65,14 +68,19 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 
 	// The TypeDefinition allows for the shorthand syntax of `api: my-api`.
 	// To catch that, let's try to unmarshal directly into a string. If it works, we know the shorthand is used.
-	str := ""
+	var str string
 	if err := unmarshal(&str); err == nil {
-		if str == BucketType {
+		switch str {
+		case BucketType:
 			c.Type = config.BucketType{}
-		} else {
+		case GrailFilterSegment:
+			if !featureflags.Temporary[featureflags.GrailFilterSegment].Enabled() {
+				return fmt.Errorf("unknown config-type %q", str)
+			}
+			c.Type = config.GrailFilterSegment{}
+		default:
 			c.Type = config.ClassicApiType{Api: str}
 		}
-
 		return nil
 	}
 
@@ -256,6 +264,8 @@ func (c *TypeDefinition) GetApiType() string {
 		return string(t.ID())
 	case config.OpenPipelineType:
 		return string(t.ID())
+	case config.GrailFilterSegment:
+		return string(t.ID())
 	}
 
 	return ""
@@ -322,7 +332,11 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 				},
 			}, nil
 		}
-	}
 
+	case config.GrailFilterSegment:
+		if featureflags.Temporary[featureflags.GrailFilterSegment].Enabled() {
+			return GrailFilterSegment, nil
+		}
+	}
 	return nil, fmt.Errorf("unknown type: %T", c.Type)
 }

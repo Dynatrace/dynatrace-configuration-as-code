@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -64,102 +65,11 @@ var ReservedParameterNames = []string{IdParameter, NameParameter, ScopeParameter
 // Parameters defines a map of name to parameter
 type Parameters map[string]parameter.Parameter
 
-type TypeId string
-
-const (
-	SettingsTypeId     TypeId = "settings"
-	ClassicApiTypeId   TypeId = "classic"
-	EntityTypeId       TypeId = "entity"
-	AutomationTypeId   TypeId = "automation"
-	BucketTypeId       TypeId = "bucket"
-	DocumentTypeId     TypeId = "document"
-	OpenPipelineTypeId TypeId = "openpipeline"
-)
+type TypeID string
 
 type Type interface {
 	// ID returns the type-id.
-	ID() TypeId
-}
-
-type SettingsType struct {
-	SchemaId, SchemaVersion string
-}
-
-func (SettingsType) ID() TypeId {
-	return SettingsTypeId
-}
-
-type ClassicApiType struct {
-	Api string
-}
-
-func (ClassicApiType) ID() TypeId {
-	return ClassicApiTypeId
-}
-
-type EntityType struct {
-	EntitiesType string
-}
-
-func (EntityType) ID() TypeId {
-	return EntityTypeId
-}
-
-// AutomationResource defines which resource is an AutomationType
-type AutomationResource string
-
-const (
-	Workflow         AutomationResource = "workflow"
-	BusinessCalendar AutomationResource = "business-calendar"
-	SchedulingRule   AutomationResource = "scheduling-rule"
-)
-
-// AutomationType represents any Dynatrace Platform automation-resource
-type AutomationType struct {
-	// Resource identifies which Automation resource is used in this config.
-	// Currently, this can be Workflow, BusinessCalendar, or SchedulingRule.
-	Resource AutomationResource
-}
-
-func (AutomationType) ID() TypeId {
-	return AutomationTypeId
-}
-
-type BucketType struct{}
-
-func (BucketType) ID() TypeId {
-	return BucketTypeId
-}
-
-// DocumentKind defines the type of a document. Currently, it can be a dashboard or a notebook.
-type DocumentKind string
-
-const (
-	DashboardKind DocumentKind = "dashboard"
-	NotebookKind  DocumentKind = "notebook"
-)
-
-// DocumentType represents a Dynatrace platform document.
-type DocumentType struct {
-	// Kind indicates the type of document.
-	Kind DocumentKind
-
-	// Private indicates if a document is private, otherwise by default it is visible to other users.
-	Private bool
-}
-
-func (DocumentType) ID() TypeId {
-	return DocumentTypeId
-}
-
-// OpenPipelineType represents an OpenPipeline configuration.
-type OpenPipelineType struct {
-	// Kind indicates the type of OpenPipeline.
-	Kind string
-}
-
-func (OpenPipelineType) ID() TypeId {
-	return OpenPipelineTypeId
+	ID() TypeID
 }
 
 // Config struct defining a configuration which can be deployed.
