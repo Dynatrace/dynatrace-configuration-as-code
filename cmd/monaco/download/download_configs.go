@@ -238,6 +238,7 @@ type downloadFn struct {
 	bucketDownload       func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
 	documentDownload     func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
 	openPipelineDownload func(client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
+	grailFilterSegment   func(client.GrailFilterSegmentClient, string) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
@@ -341,38 +342,63 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 
 // shouldDownloadConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
 func shouldDownloadConfigs(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline
+	return (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) &&
+		!opts.onlyAutomation &&
+		!opts.onlySettings &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlyGrailFilterSegment
 }
 
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
 func shouldDownloadSettings(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline
+	return (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0) &&
+		!opts.onlyAPIs &&
+		!opts.onlyAutomation &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlyGrailFilterSegment
 }
 
 // shouldDownloadAutomationResources returns true unless download is limited to settings or config API types
 func shouldDownloadAutomationResources(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 &&
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && !opts.onlyDocuments && !opts.onlyOpenPipeline
+	return !opts.onlyAPIs && len(opts.specificSchemas) == 0 &&
+		!opts.onlySettings && len(opts.specificAPIs) == 0 &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlyGrailFilterSegment
 }
 
 // shouldDownloadBuckets returns true if download is not limited to another specific type
 func shouldDownloadBuckets(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 &&
+		!opts.onlySettings && len(opts.specificSchemas) == 0 &&
+		!opts.onlyAutomation &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlyGrailFilterSegment
+}
+
+func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
+		!opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
+		!opts.onlyAutomation &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlyGrailFilterSegment
+}
+
+func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
+		!opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
+		!opts.onlyAutomation &&
+		!opts.onlyDocuments &&
+		!opts.onlyGrailFilterSegment
+}
+
+func shouldDownloadGrailFilterSegments(opts downloadConfigsOptions) bool {
 	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
 		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
 		!opts.onlyAutomation &&
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline
-}
-
-func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlyAutomation && !opts.onlyOpenPipeline
-}
-
-func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlyDocuments &&
-		!opts.onlyAutomation
 }
