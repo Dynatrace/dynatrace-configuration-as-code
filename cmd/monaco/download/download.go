@@ -16,17 +16,19 @@ package download
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"net/url"
 	"path"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+
+	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
-	"github.com/spf13/afero"
 )
 
 //go:generate mockgen -source=download.go -destination=download_mock.go -package=download -write_package_comment=false Command
@@ -46,12 +48,6 @@ type DefaultCommand struct{}
 var (
 	_ Command = (*DefaultCommand)(nil)
 )
-
-type sharedDownloadCmdOptions struct {
-	projectName    string
-	outputFolder   string
-	forceOverwrite bool
-}
 
 type downloadOptionsShared struct {
 	environmentURL         string
