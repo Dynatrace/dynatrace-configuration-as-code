@@ -18,6 +18,7 @@ package download
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -25,13 +26,14 @@ import (
 
 type downloadConfigsOptions struct {
 	downloadOptionsShared
-	specificAPIs     []string
-	specificSchemas  []string
-	onlyAPIs         bool
-	onlySettings     bool
-	onlyAutomation   bool
-	onlyDocuments    bool
-	onlyOpenPipeline bool
+	specificAPIs           []string
+	specificSchemas        []string
+	onlyAPIs               bool
+	onlySettings           bool
+	onlyAutomation         bool
+	onlyDocuments          bool
+	onlyOpenPipeline       bool
+	onlyGrailFilterSegment bool
 }
 
 func (opts downloadConfigsOptions) valid() []error {
@@ -56,6 +58,8 @@ func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
 	case opts.onlyAutomation:
 		return nil
 	case opts.onlySettings:
+		return nil
+	case opts.onlyGrailFilterSegment:
 		return nil
 	case opts.onlyAPIs:
 		return apis.Filter(removeSkipDownload, removeDeprecated(withWarn()))
