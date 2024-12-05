@@ -45,7 +45,9 @@ import (
 )
 
 type downloadCmdOptions struct {
-	sharedDownloadCmdOptions
+	projectName    string
+	outputFolder   string
+	forceOverwrite bool
 	environmentURL string
 	auth
 	manifestFile            string
