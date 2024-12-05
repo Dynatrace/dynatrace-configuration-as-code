@@ -17,12 +17,13 @@
 package download
 
 import (
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestGetDownloadCommand(t *testing.T) {
@@ -35,9 +36,9 @@ func TestGetDownloadCommand(t *testing.T) {
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
-			manifestFile:             "path/to/my-manifest.yaml",
-			specificEnvironmentName:  "my-environment1",
-			sharedDownloadCmdOptions: sharedDownloadCmdOptions{projectName: "project"},
+			manifestFile:            "path/to/my-manifest.yaml",
+			specificEnvironmentName: "my-environment1",
+			projectName:             "project",
 		}
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
 
@@ -50,9 +51,9 @@ func TestGetDownloadCommand(t *testing.T) {
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
-			manifestFile:             "manifest.yaml",
-			specificEnvironmentName:  "my-environment",
-			sharedDownloadCmdOptions: sharedDownloadCmdOptions{projectName: "project"},
+			manifestFile:            "manifest.yaml",
+			specificEnvironmentName: "my-environment",
+			projectName:             "project",
 		}
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
 
@@ -70,9 +71,9 @@ func TestGetDownloadCommand(t *testing.T) {
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
-			environmentURL:           "http://some.url",
-			auth:                     auth{token: "TOKEN"},
-			sharedDownloadCmdOptions: sharedDownloadCmdOptions{projectName: "project"},
+			environmentURL: "http://some.url",
+			auth:           auth{token: "TOKEN"},
+			projectName:    "project",
 		}
 		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
 
@@ -91,7 +92,7 @@ func TestGetDownloadCommand(t *testing.T) {
 				clientID:     "CLIENT_ID",
 				clientSecret: "CLIENT_SECRET",
 			},
-			sharedDownloadCmdOptions: sharedDownloadCmdOptions{projectName: "project"},
+			projectName: "project",
 		}
 		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
 
@@ -120,11 +121,9 @@ func TestGetDownloadCommand(t *testing.T) {
 		expected := downloadCmdOptions{
 			manifestFile:            "path/my-manifest.yaml",
 			specificEnvironmentName: "my-environment",
-			sharedDownloadCmdOptions: sharedDownloadCmdOptions{
-				projectName:    "my-project",
-				outputFolder:   "path/to/my-folder",
-				forceOverwrite: true,
-			},
+			projectName:             "my-project",
+			outputFolder:            "path/to/my-folder",
+			forceOverwrite:          true,
 		}
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
 
@@ -137,9 +136,9 @@ func TestGetDownloadCommand(t *testing.T) {
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
-			manifestFile:             "manifest.yaml",
-			specificEnvironmentName:  "my_environment",
-			sharedDownloadCmdOptions: sharedDownloadCmdOptions{projectName: "project"},
+			manifestFile:            "manifest.yaml",
+			specificEnvironmentName: "my_environment",
+			projectName:             "project",
 		}
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
 
@@ -151,10 +150,10 @@ func TestGetDownloadCommand(t *testing.T) {
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
-			manifestFile:             "manifest.yaml",
-			specificEnvironmentName:  "myEnvironment",
-			sharedDownloadCmdOptions: sharedDownloadCmdOptions{projectName: "project"},
-			specificAPIs:             []string{"test", "test2", "test3", "test4"},
+			manifestFile:            "manifest.yaml",
+			specificEnvironmentName: "myEnvironment",
+			projectName:             "project",
+			specificAPIs:            []string{"test", "test2", "test3", "test4"},
 		}
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
 
@@ -164,10 +163,10 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Api selection - download all api", func(t *testing.T) {
 		expected := downloadCmdOptions{
-			environmentURL:           "test.url",
-			auth:                     auth{token: "token"},
-			sharedDownloadCmdOptions: sharedDownloadCmdOptions{projectName: "project"},
-			onlyAPIs:                 true,
+			environmentURL: "test.url",
+			auth:           auth{token: "token"},
+			projectName:    "project",
+			onlyAPIs:       true,
 		}
 
 		m := newMonaco(t)
@@ -193,10 +192,10 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Settings schema selection - set of wanted settings schema", func(t *testing.T) {
 		expected := downloadCmdOptions{
-			manifestFile:             "manifest.yaml",
-			specificEnvironmentName:  "myEnvironment",
-			sharedDownloadCmdOptions: sharedDownloadCmdOptions{projectName: "project"},
-			specificSchemas:          []string{"settings:schema:1", "settings:schema:2", "settings:schema:3", "settings:schema:4"},
+			manifestFile:            "manifest.yaml",
+			specificEnvironmentName: "myEnvironment",
+			projectName:             "project",
+			specificSchemas:         []string{"settings:schema:1", "settings:schema:2", "settings:schema:3", "settings:schema:4"},
 		}
 		m := newMonaco(t)
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
@@ -207,10 +206,10 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Settings schema selection - download all settings schema", func(t *testing.T) {
 		expected := downloadCmdOptions{
-			environmentURL:           "test.url",
-			auth:                     auth{token: "token"},
-			sharedDownloadCmdOptions: sharedDownloadCmdOptions{projectName: "project"},
-			onlySettings:             true,
+			environmentURL: "test.url",
+			auth:           auth{token: "token"},
+			projectName:    "project",
+			onlySettings:   true,
 		}
 
 		m := newMonaco(t)
