@@ -20,6 +20,9 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
@@ -30,8 +33,6 @@ import (
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	versionClient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
@@ -97,6 +98,10 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 
 	if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
 		cmd.Flags().BoolVar(&f.onlyOpenPipeline, "only-openpipeline", false, "Only download openpipeline configurations, skip all other configuration types")
+	}
+
+	if featureflags.Temporary[featureflags.GrailFilterSegment].Enabled() {
+		cmd.Flags().BoolVar(&f.onlyOpenPipeline, "only-filtersegments", false, "Only download Grail filter-segment configurations, skip all other configuration types")
 	}
 
 	err := errors.Join(

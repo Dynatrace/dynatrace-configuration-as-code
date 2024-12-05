@@ -19,10 +19,12 @@
 package download
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func Test_prepareAPIs(t *testing.T) {
@@ -50,6 +52,10 @@ func Test_prepareAPIs(t *testing.T) {
 			{
 				name:  "specificSchemas is pressent",
 				given: downloadConfigsOptions{specificSchemas: []string{"anything"}},
+			},
+			{
+				name:  "onlyFilterSegments",
+				given: downloadConfigsOptions{onlyGrailFilterSegment: true},
 			},
 		}
 
@@ -81,6 +87,10 @@ func Test_prepareAPIs(t *testing.T) {
 			{
 				name:  "onlyOpenpipeline",
 				given: downloadConfigsOptions{onlyOpenPipeline: true},
+			},
+			{
+				name:  "onlyGrailFilterSegment",
+				given: downloadConfigsOptions{onlyGrailFilterSegment: true},
 			},
 			{
 				name:  "onlyAPIs",
@@ -155,7 +165,7 @@ func Test_prepareAPIs(t *testing.T) {
 	})
 
 	t.Run("do not skip anything when `MONACO_FEAT_DOWNLOAD_FILTER` are disabled", func(t *testing.T) {
-		t.Setenv(featureflags.Permanent[featureflags.DownloadFilter].EnvName(), "false") //by default, it is true
+		t.Setenv(featureflags.Permanent[featureflags.DownloadFilter].EnvName(), "false") // by default, it is true
 		tests := []struct {
 			name  string
 			given downloadConfigsOptions
@@ -228,6 +238,11 @@ func Test_prepareAPIs(t *testing.T) {
 			given      downloadConfigsOptions
 			deprecated bool
 		}{
+			{
+				name:       "onlyGrailFilterSegment",
+				given:      downloadConfigsOptions{onlyGrailFilterSegment: true},
+				deprecated: false,
+			},
 			{
 				name:       "onlyAutomation",
 				given:      downloadConfigsOptions{onlyAutomation: true},
