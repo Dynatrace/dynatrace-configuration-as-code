@@ -165,6 +165,9 @@ type OpenPipelineClient interface {
 	Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error)
 }
 
+type GrailFilterSegmentClient interface {
+}
+
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
 var DefaultRetryOptions = corerest.RetryOptions{MaxRetries: 10, ShouldRetryFunc: corerest.RetryIfNotSuccess}
