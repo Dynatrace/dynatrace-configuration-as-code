@@ -632,37 +632,33 @@ func isSameValueForKey(targetPath string, c1 []byte, c2 []byte) (same bool, matc
 	}
 
 	keys := explodePath(targetPath)
-	value1, err := recursiveSearch(u, keys)
-	if err != nil {
-		return false, nil, err
-	}
+	value1 := recursiveSearch(u, keys)
+
 	u = nil
 	if err := json.Unmarshal(c2, &u); err != nil {
 		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", targetPath, err)
 	}
 
-	value2, err := recursiveSearch(u, keys)
-	if err != nil {
-		return false, nil, err
-	}
+	value2 := recursiveSearch(u, keys)
 
-	if cmp.Equal(value1, value2) {
+	if value1 != nil && value2 != nil && cmp.Equal(value1, value2) {
 		return true, value1, nil
 	}
 	return false, nil, nil
 }
 
-func recursiveSearch(nestedMap map[string]any, keys []string) (any, error) {
+// Recursive search allows for nil values in case a field is not in the payload
+func recursiveSearch(nestedMap map[string]any, keys []string) any {
 	currentMap := nestedMap
 	value, found := currentMap[keys[0]]
 	if found {
 		if nestedMap, ok := value.(map[string]interface{}); ok && len(keys) > 1 {
 			return recursiveSearch(nestedMap, keys[1:])
 		}
-		return value, nil
+		return value
 	}
 
-	return nil, fmt.Errorf("key: %q not found", keys[0])
+	return nil
 }
 
 // explodePath splits targetPath by "/", this is the format of settings api.
