@@ -40,7 +40,7 @@ const (
 	IgnoreSkippedConfigs TemporaryFlag = "MONACO_FEAT_IGNORE_SKIPPED_CONFIGS"
 	// GrailFilterSegment toggles whether filter-segment configurations are downloaded and / or deployed.
 	// Introduced: v2.18.0
-	GrailFilterSegment TemporaryFlag = "MONACO_FILTER_SEGMENTS"
+	GrailFilterSegment TemporaryFlag = "MONACO_FEAT_FILTER_SEGMENTS"
 )
 
 // Temporary FeatureFlags - for features that are hidden during development or have some uncertainty.
