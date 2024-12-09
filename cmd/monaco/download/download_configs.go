@@ -323,6 +323,18 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		}
 	}
 
+	if featureflags.Temporary[featureflags.Segments].Enabled() {
+		if shouldDownloadGrailFilterSegments(opts) {
+			cgfs, err := fn.grailFilterSegment(clientSet.GrailFilterSegmentClient, opts.projectName)
+			if err != nil {
+				return nil, err
+			}
+			copyConfigs(configs, cgfs)
+		} else if opts.onlyGrailFilterSegment {
+			return nil, errors.New("can't download filter-segment resources: no OAuth credentials configured")
+		}
+	}
+
 	return configs, nil
 }
 
