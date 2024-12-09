@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -41,23 +42,84 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
+// SettingsResourceContext.Operations possibilities
+const (
+	DeleteOperation = "delete"
+	WriteOperation  = "write"
+)
+
 // DownloadSettingsObject is the response type for the ListSettings operation
 type DownloadSettingsObject struct {
-	ExternalId       string                    `json:"externalId"`
-	SchemaVersion    string                    `json:"schemaVersion"`
-	SchemaId         string                    `json:"schemaId"`
-	ObjectId         string                    `json:"objectId"`
-	Scope            string                    `json:"scope"`
-	Value            json.RawMessage           `json:"value"`
+	ExternalId    string          `json:"externalId"`
+	SchemaVersion string          `json:"schemaVersion"`
+	SchemaId      string          `json:"schemaId"`
+	ObjectId      string          `json:"objectId"`
+	Scope         string          `json:"scope"`
+	Value         json.RawMessage `json:"value"`
+	//Deprecated in the API used only as fallback replaced by ResourceContext
 	ModificationInfo *SettingsModificationInfo `json:"modificationInfo"`
+	ResourceContext  *SettingsResourceContext  `json:"resourceContext"`
+}
+
+func (settingObject *DownloadSettingsObject) IsDeletable() bool {
+	if settingObject.ResourceContext != nil {
+		return slices.Contains(settingObject.ResourceContext.Operations, DeleteOperation)
+	}
+
+	if settingObject.ModificationInfo != nil {
+		return settingObject.ModificationInfo.Deletable
+	}
+
+	return true
+}
+
+func (settingObject *DownloadSettingsObject) IsModifiable() bool {
+	if settingObject.ResourceContext != nil {
+		return slices.Contains(settingObject.ResourceContext.Operations, WriteOperation)
+	}
+
+	if settingObject.ModificationInfo != nil {
+		return settingObject.ModificationInfo.Modifiable
+	}
+
+	return true
+}
+
+func (settingObject *DownloadSettingsObject) IsMovable() bool {
+	if settingObject.ResourceContext != nil {
+		//API allows the parameter to be optional, so more logic is needed to handle it
+		if settingObject.ResourceContext.Movable != nil {
+			return *settingObject.ResourceContext.Movable
+		}
+		return true
+	}
+
+	if settingObject.ModificationInfo != nil {
+		return settingObject.ModificationInfo.Movable
+	}
+
+	return true
+}
+
+func (settingObject *DownloadSettingsObject) GetModifiablePaths() []string {
+	if settingObject.ResourceContext != nil {
+		return settingObject.ResourceContext.ModifiablePaths
+	}
+
+	return settingObject.ModificationInfo.ModifiablePaths
 }
 
 type SettingsModificationInfo struct {
-	Deletable          bool          `json:"deletable"`
-	Modifiable         bool          `json:"modifiable"`
-	Movable            bool          `json:"movable"`
-	ModifiablePaths    []interface{} `json:"modifiablePaths"`
-	NonModifiablePaths []interface{} `json:"nonModifiablePaths"`
+	Deletable       bool     `json:"deletable"`
+	Modifiable      bool     `json:"modifiable"`
+	Movable         bool     `json:"movable"`
+	ModifiablePaths []string `json:"modifiablePaths"`
+}
+
+type SettingsResourceContext struct {
+	Operations      []string `json:"operations"`
+	Movable         *bool    `json:"modifications:movable"`
+	ModifiablePaths []string `json:"modifications:modifiablePaths"`
 }
 
 type UpsertSettingsOptions struct {

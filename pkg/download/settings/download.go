@@ -182,50 +182,49 @@ func asConcurrentErrMsg(err coreapi.APIError) string {
 	return fmt.Sprintf("%s\n%s", err.Error(), additionalMessage)
 }
 
-func convertAllObjects(objects []dtclient.DownloadSettingsObject, projectName string, ordered bool, filters Filters) []config.Config {
-	result := make([]config.Config, 0, len(objects))
+func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, projectName string, ordered bool, filters Filters) []config.Config {
+	result := make([]config.Config, 0, len(settingsObjects))
 	var previousConfig *config.Config = nil
-	for _, o := range objects {
-
-		if shouldFilterUnmodifiableSettings() && o.ModificationInfo != nil && !o.ModificationInfo.Modifiable && len(o.ModificationInfo.ModifiablePaths) == 0 {
-			log.WithFields(field.Type(o.SchemaId), field.F("object", o)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
+	for _, settingsObject := range settingsObjects {
+		if shouldFilterUnmodifiableSettings() && !settingsObject.IsModifiable() && len(settingsObject.GetModifiablePaths()) == 0 {
+			log.WithFields(field.Type(settingsObject.SchemaId), field.F("object", settingsObject)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", settingsObject.ObjectId, settingsObject.SchemaId)
 			continue
 		}
 
 		// try to unmarshall settings value
 		var contentUnmarshalled map[string]interface{}
-		if err := json.Unmarshal(o.Value, &contentUnmarshalled); err != nil {
-			log.WithFields(field.Type(o.SchemaId), field.F("object", o)).Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
+		if err := json.Unmarshal(settingsObject.Value, &contentUnmarshalled); err != nil {
+			log.WithFields(field.Type(settingsObject.SchemaId), field.F("object", settingsObject)).Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
 			return result
 		}
-		// skip discarded settings objects
-		if shouldDiscard, reason := filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled); shouldFilterSettings() && shouldDiscard {
-			log.WithFields(field.Type(o.SchemaId), field.F("object", o)).Debug("Discarded setting object %q (%s). Reason: %s", o.ObjectId, o.SchemaId, reason)
+		// skip discarded settings settingsObjects
+		if shouldDiscard, reason := filters.Get(settingsObject.SchemaId).ShouldDiscard(contentUnmarshalled); shouldFilterSettings() && shouldDiscard {
+			log.WithFields(field.Type(settingsObject.SchemaId), field.F("object", settingsObject)).Debug("Discarded setting object %q (%s). Reason: %s", settingsObject.ObjectId, settingsObject.SchemaId, reason)
 			continue
 		}
 
-		indentedJson := jsonutils.MarshalIndent(o.Value)
+		indentedJson := jsonutils.MarshalIndent(settingsObject.Value)
 		// construct config object with generated config ID
-		configId := idutils.GenerateUUIDFromString(o.ObjectId)
+		configId := idutils.GenerateUUIDFromString(settingsObject.ObjectId)
 		c := config.Config{
 			Template: template.NewInMemoryTemplate(configId, string(indentedJson)),
 			Coordinate: coordinate.Coordinate{
 				Project:  projectName,
-				Type:     o.SchemaId,
+				Type:     settingsObject.SchemaId,
 				ConfigId: configId,
 			},
 			Type: config.SettingsType{
-				SchemaId:      o.SchemaId,
-				SchemaVersion: o.SchemaVersion,
+				SchemaId:      settingsObject.SchemaId,
+				SchemaVersion: settingsObject.SchemaVersion,
 			},
 			Parameters: map[string]parameter.Parameter{
-				config.ScopeParameter: &value.ValueParameter{Value: o.Scope},
+				config.ScopeParameter: &value.ValueParameter{Value: settingsObject.Scope},
 			},
 			Skip:           false,
-			OriginObjectId: o.ObjectId,
+			OriginObjectId: settingsObject.ObjectId,
 		}
 
-		if o.ModificationInfo != nil && o.ModificationInfo.Movable && ordered && (previousConfig != nil) {
+		if settingsObject.IsMovable() && ordered && (previousConfig != nil) {
 			c.Parameters[config.InsertAfterParameter] = reference.NewWithCoordinate(previousConfig.Coordinate, "id")
 		}
 		result = append(result, c)
