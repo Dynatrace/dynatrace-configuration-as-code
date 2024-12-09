@@ -516,6 +516,48 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 				},
 				expected: nil,
 			},
+			{
+				name: "objects with no constraint fields in payload - no match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A"},
+							{"B"},
+							{"A/B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"R" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"R" : {"B" : "y" } }`)},
+					},
+				},
+				expected: nil,
+			},
+			{
+				name: "objects with multiple constrains, only one matching - match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A/B"},
+							{"A/C"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A" : {"B" : "x" } }`)},
+					},
+				},
+				expected: &match{
+					object: DownloadSettingsObject{Value: []byte(`{"A" : {"B" : "x" } }`)},
+					matches: constraintMatch{
+						"A/B": "x",
+					},
+				},
+			},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
@@ -553,54 +595,6 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 					objects: []DownloadSettingsObject{
 						{Value: []byte(`{"A":"x", "B":"y1"}`)},
 						{Value: []byte(`{"A":"x2", "B":"y"}`)},
-					},
-				},
-			},
-			{
-				name: "missing unique properties",
-				given: given{
-					schema: Schema{
-						UniqueProperties: [][]string{
-							{"A"},
-						},
-					},
-					source: SettingsObject{
-						SchemaId: "schemaID", Content: []byte(`{}`),
-					},
-					objects: []DownloadSettingsObject{
-						{Value: []byte(`{}`)},
-					},
-				},
-			},
-			{
-				name: "full path not matching",
-				given: given{
-					schema: Schema{
-						UniqueProperties: [][]string{
-							{"B"},
-						},
-					},
-					source: SettingsObject{
-						SchemaId: "schemaID", Content: []byte(`{"A" : {"B" : "x" } }`),
-					},
-					objects: []DownloadSettingsObject{
-						{Value: []byte(`{"A" : {"B" : "x" } }`)},
-					},
-				},
-			},
-			{
-				name: "only one objet with match",
-				given: given{
-					schema: Schema{
-						UniqueProperties: [][]string{
-							{"B"},
-						},
-					},
-					source: SettingsObject{
-						SchemaId: "schemaID", Content: []byte(`{"B" : "x" } `),
-					},
-					objects: []DownloadSettingsObject{
-						{Value: []byte(`{"A" : {"B" : "x" } }`)},
 					},
 				},
 			},
