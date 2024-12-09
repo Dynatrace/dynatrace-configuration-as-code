@@ -258,7 +258,7 @@ environmentGroups:
 	clientSet := integrationtest.CreateDynatraceClients(t, env)
 
 	// check the setting was deleted
-	integrationtest.AssertSetting(t, context.TODO(), clientSet.Settings(), config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
+	integrationtest.AssertSetting(t, context.TODO(), clientSet.SettingsClient, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "builtin:tags.auto-tagging",
@@ -267,7 +267,7 @@ environmentGroups:
 	})
 
 	// check the workflow still exists after deletion was skipped without error
-	integrationtest.AssertAutomation(t, clientSet.Automation(), env, true, config.Workflow, config.Config{
+	integrationtest.AssertAutomation(t, clientSet.AutClient, env, true, config.Workflow, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "workflow",
@@ -276,7 +276,7 @@ environmentGroups:
 	})
 
 	// check the bucket still exists after deletion was skipped without error
-	integrationtest.AssertBucket(t, clientSet.Bucket(), env, true, config.Config{
+	integrationtest.AssertBucket(t, clientSet.BucketClient, env, true, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "bucket",
@@ -343,7 +343,7 @@ configs:
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
 	// get application ID
-	v, err := clientSet.Config().List(context.TODO(), apis["application-mobile"])
+	v, err := clientSet.ConfigClient.List(context.TODO(), apis["application-mobile"])
 	assert.NoError(t, err)
 
 	var appID string
@@ -370,7 +370,7 @@ configs:
 	require.NoError(t, err)
 
 	// Assert key-user-action is deleted
-	integrationtest.AssertConfig(t, context.TODO(), clientSet.Config(), apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
+	integrationtest.AssertConfig(t, context.TODO(), clientSet.ConfigClient, apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "key-user-actions-mobile",

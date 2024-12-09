@@ -57,7 +57,7 @@ func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 
 		clientSet, err := client.CreateClientSet(context.TODO(), environment.URL.Value, environment.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 		assert.NoError(t, err)
-		c := clientSet.Settings()
+		c := clientSet.SettingsClient
 		settings, _ := c.List(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 			return object.ExternalId == extIDProject1 || object.ExternalId == extIDProject2
 		}})
