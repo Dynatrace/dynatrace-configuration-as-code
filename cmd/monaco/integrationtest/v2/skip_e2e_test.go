@@ -105,7 +105,7 @@ func TestSkip(t *testing.T) {
 
 	for name, def := range loadedManifest.Environments {
 		set := integrationtest.CreateDynatraceClients(t, def)
-		clients[name] = set.Settings()
+		clients[name] = set.SettingsClient
 	}
 
 	for _, tt := range tests {

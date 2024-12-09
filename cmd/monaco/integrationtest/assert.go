@@ -142,7 +142,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 				var foundID string
 				switch typ := theConfig.Type.(type) {
 				case config.SettingsType:
-					foundID = AssertSetting(t, ctx, clients.Settings(), typ, env.Name, available, theConfig)
+					foundID = AssertSetting(t, ctx, clients.SettingsClient, typ, env.Name, available, theConfig)
 				case config.ClassicApiType:
 					assert.NotEmpty(t, configName, "classic API config %v is missing name, can not assert if it exists", theConfig.Coordinate)
 
@@ -155,21 +155,21 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						theApi = theApi.ApplyParentObjectID(scope)
 					}
 
-					foundID = AssertConfig(t, ctx, clients.Config(), theApi, env, available, theConfig, configName)
+					foundID = AssertConfig(t, ctx, clients.ConfigClient, theApi, env, available, theConfig, configName)
 				case config.AutomationType:
-					if clients.Automation() == nil {
+					if clients.AutClient == nil {
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
 						return
 					}
-					foundID = AssertAutomation(t, clients.Automation(), env, available, typ.Resource, theConfig)
+					foundID = AssertAutomation(t, clients.AutClient, env, available, typ.Resource, theConfig)
 				case config.BucketType:
-					if clients.Bucket() == nil {
+					if clients.BucketClient == nil {
 						t.Errorf("can not assert existience of Bucket config %q) because no BucketClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
 						return
 					}
-					foundID = AssertBucket(t, clients.Bucket(), env, available, theConfig)
+					foundID = AssertBucket(t, clients.BucketClient, env, available, theConfig)
 				case config.DocumentType:
-					if clients.Document() == nil {
+					if clients.DocumentClient == nil {
 						t.Errorf("can not assert existience of Document config %q) because no DocumentClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
 						return
 					}
