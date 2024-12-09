@@ -192,7 +192,8 @@ type ClientSet struct {
 	DocumentClient DocumentClient
 
 	// OpenPipelineClient is a client capable of manipulating openPipeline configs
-	OpenPipelineClient OpenPipelineClient
+	OpenPipelineClient       OpenPipelineClient
+	GrailFilterSegmentClient GrailFilterSegmentClient
 }
 
 func (s ClientSet) Config() ConfigClient {
@@ -255,13 +256,14 @@ func validateURL(dtURL string) error {
 
 func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
 	var (
-		configClient       ConfigClient
-		settingsClient     SettingsClient
-		bucketClient       BucketClient
-		autClient          AutomationClient
-		documentClient     DocumentClient
-		openPipelineClient OpenPipelineClient
-		err                error
+		configClient             ConfigClient
+		settingsClient           SettingsClient
+		bucketClient             BucketClient
+		autClient                AutomationClient
+		documentClient           DocumentClient
+		openPipelineClient       OpenPipelineClient
+		grailFilterSegmentClient GrailFilterSegmentClient
+		err                      error
 	)
 	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	if err = validateURL(url); err != nil {
@@ -311,6 +313,11 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 			return nil, err
 		}
 
+		grailFilterSegmentClient, err = cFactory.FilterSegmentsClient()
+		if err != nil {
+			return nil, err
+		}
+
 		settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
 		if err != nil {
 			return nil, err
@@ -344,12 +351,13 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 	}
 
 	return &ClientSet{
-		ConfigClient:       configClient,
-		SettingsClient:     settingsClient,
-		AutClient:          autClient,
-		BucketClient:       bucketClient,
-		DocumentClient:     documentClient,
-		OpenPipelineClient: openPipelineClient,
+		ConfigClient:             configClient,
+		SettingsClient:           settingsClient,
+		AutClient:                autClient,
+		BucketClient:             bucketClient,
+		DocumentClient:           documentClient,
+		OpenPipelineClient:       openPipelineClient,
+		GrailFilterSegmentClient: grailFilterSegmentClient,
 	}, nil
 }
 
