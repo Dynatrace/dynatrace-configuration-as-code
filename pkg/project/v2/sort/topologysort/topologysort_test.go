@@ -19,15 +19,18 @@
 package topologysort
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/errors"
 	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/errors"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestSortConfigs(t *testing.T) {
@@ -234,9 +237,16 @@ func TestSortProjects(t *testing.T) {
 	projects := []project.Project{
 		{
 			Id: projectId,
-			Dependencies: project.DependenciesPerEnvironment{
-				environmentName: []string{
-					referencedProjectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: project.ConfigsPerType{
+					"some_type": []config.Config{
+						{
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"parameter_name": &reference.ReferenceParameter{parameter.ParameterReference{Config: coordinate.Coordinate{Project: referencedProjectId}}},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -277,17 +287,31 @@ func TestSortProjectsShouldFailOnCyclicDependency(t *testing.T) {
 	projects := []project.Project{
 		{
 			Id: projectId,
-			Dependencies: project.DependenciesPerEnvironment{
-				environmentName: []string{
-					referencedProjectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: project.ConfigsPerType{
+					"some_type": []config.Config{
+						{
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"parameter_name": &reference.ReferenceParameter{parameter.ParameterReference{Config: coordinate.Coordinate{Project: referencedProjectId}}},
+							},
+						},
+					},
 				},
 			},
 		},
 		{
 			Id: referencedProjectId,
-			Dependencies: project.DependenciesPerEnvironment{
-				environmentName: []string{
-					projectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: project.ConfigsPerType{
+					"some_type_2": []config.Config{
+						{
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"parameter_name": &reference.ReferenceParameter{parameter.ParameterReference{Config: coordinate.Coordinate{Project: projectId}}},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -398,4 +422,97 @@ func Test_parseConfigSortErrors(t *testing.T) {
 			assert.ElementsMatch(t, got, tt.want)
 		})
 	}
+}
+
+func TestHasDependencyOn(t *testing.T) {
+	t.Run("positive case", func(t *testing.T) {
+		environment := "dev"
+		referencedProjectId := "projct2"
+
+		p := project.Project{
+			Id: "project1",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environment: project.ConfigsPerType{
+					"something": []config.Config{
+						{
+							Environment: environment,
+							Parameters: map[string]parameter.Parameter{
+								"parameter_name": &reference.ReferenceParameter{parameter.ParameterReference{Config: coordinate.Coordinate{Project: referencedProjectId}}},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		referencedProject := project.Project{Id: referencedProjectId}
+
+		assert.True(t, hasDependencyOn(p, environment, referencedProject), "should have dependency")
+	})
+
+	t.Run("negative case", func(t *testing.T) {
+		environment := "dev"
+		referencedProjectId := "projct2"
+
+		p := project.Project{
+			Id: "project1",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environment: project.ConfigsPerType{
+					"something": []config.Config{
+						{
+							Environment: environment,
+						},
+					},
+				},
+			},
+		}
+
+		referencedProject := project.Project{Id: referencedProjectId}
+
+		assert.False(t, hasDependencyOn(p, environment, referencedProject), "should have dependency")
+	})
+}
+
+func TestHasDependencyOnShouldReturnFalseIfNoDependenciesForEnvironmentAreDefined(t *testing.T) {
+	environment := "dev"
+
+	p := project.Project{
+		Id: "project1",
+	}
+
+	p2 := project.Project{
+		Id: "project2",
+	}
+
+	result := hasDependencyOn(p, environment, p2)
+
+	assert.False(t, result, "should not have dependency")
+}
+
+func TestHasDependencyOnShouldReturnFalseIfNoDependencyDefined(t *testing.T) {
+	environment := "dev"
+
+	p := project.Project{
+		Id: "project1",
+		Configs: project.ConfigsPerTypePerEnvironments{
+			environment: project.ConfigsPerType{
+				"some_type": []config.Config{
+					{
+						Environment: environment,
+						Parameters: map[string]parameter.Parameter{
+							"parameter_name": &reference.ReferenceParameter{parameter.ParameterReference{Config: coordinate.Coordinate{Project: "project3"}}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	project2 := project.Project{
+		Id: "project2",
+	}
+
+	result := hasDependencyOn(p, environment, project2)
+
+	assert.False(t, result, "should not have dependency")
 }
