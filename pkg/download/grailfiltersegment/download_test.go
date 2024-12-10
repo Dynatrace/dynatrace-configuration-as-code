@@ -93,6 +93,67 @@ func TestDownloader_Download(t *testing.T) {
 		require.Len(t, result[string(config.SegmentID)], 2, "all listed segments should be downloaded")
 	})
 
+	t.Run("grail filter-segment without uio is ignored", func(t *testing.T) {
+		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
+		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/listResponse.json")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/storage/filter-segments/v1/filter-segments:lean", request.URL.Path)
+					assert.Equal(t, "add-fields=EXTERNALID", request.URL.RawQuery)
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/uid_1_getResponse_wo_uid.json")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/storage/filter-segments/v1/filter-segments/uid_1", request.URL.Path)
+					assert.Equal(t, "add-fields=INCLUDES&add-fields=VARIABLES&add-fields=EXTERNALID&add-fields=RESOURCECONTEXT", request.URL.RawQuery)
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/uid_2_getResponse.json")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/storage/filter-segments/v1/filter-segments/uid_2", request.URL.Path)
+					assert.Equal(t, "add-fields=INCLUDES&add-fields=VARIABLES&add-fields=EXTERNALID&add-fields=RESOURCECONTEXT", request.URL.RawQuery)
+				},
+			},
+		})
+		defer server.Close()
+
+		client := coreLib.NewClient(rest.NewClient(server.URL(), server.Client()))
+		result, err := grailfiltersegment.Download(client, "project")
+
+		assert.NoError(t, err)
+		assert.Len(t, result, 1)
+
+		assert.Len(t, result[string(config.SegmentID)], 1, "all listed segments should be downloaded")
+		assert.Equal(t, "uid_2", result[string(config.SegmentID)][0].OriginObjectId)
+	})
+
 	t.Run("no error downloading grail filter segments with faulty client", func(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{})
 		defer server.Close()

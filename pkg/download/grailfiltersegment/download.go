@@ -34,17 +34,17 @@ import (
 func Download(client client.GrailFilterSegmentClient, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{}
 
-	dtos, err := client.GetAll(context.TODO())
+	downloadedConfigs, err := client.GetAll(context.TODO())
 	if err != nil {
 		log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to fetch the list of existing filter-segments: %v", err)
 		return nil, nil
 	}
 
 	var configs []config.Config
-	for _, dto := range dtos {
-		c, err := createConfig(projectName, dto)
+	for _, downloadedConfig := range downloadedConfigs {
+		c, err := createConfig(projectName, downloadedConfig)
 		if err != nil {
-			log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to convert config of type '%s': %v", config.SegmentID, err)
+			log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to convert segment: %v", err)
 			continue
 		}
 		configs = append(configs, c)
@@ -62,9 +62,10 @@ func createConfig(projectName string, response openpipeline.Response) (config.Co
 
 	id, ok := jsonObj.Get("uid").(string)
 	if !ok {
-		return config.Config{}, fmt.Errorf("failed to extract id as string from payload")
+		return config.Config{}, fmt.Errorf("API payload is missing 'uid'")
 	}
 
+	// delete fields that prevent a re-upload of the configuration
 	jsonObj.Delete("uid")
 	jsonObj.Delete("version")
 	jsonObj.Delete("externalId")
