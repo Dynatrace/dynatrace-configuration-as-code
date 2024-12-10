@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -195,12 +196,13 @@ func TestDownload_Options(t *testing.T) {
 				},
 			},
 			wantDownload{
-				config:       true,
-				settings:     true,
-				bucket:       true,
-				automation:   true,
-				document:     true,
-				openpipeline: true,
+				config:             true,
+				settings:           true,
+				bucket:             true,
+				automation:         true,
+				document:           true,
+				openpipeline:       true,
+				grailFilterSegment: true,
 			},
 		},
 		{
@@ -238,7 +240,8 @@ func TestDownload_Options(t *testing.T) {
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
 			wantDownload{openpipeline: true},
-		}, {
+		},
+		{
 			"only grail filter-segment requested",
 			downloadConfigsOptions{
 				onlyGrailFilterSegment: true,
@@ -289,6 +292,7 @@ func TestDownload_Options(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
 			fn := downloadFn{
 				classicDownload: func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
 					if !tt.want.config {
@@ -326,7 +330,7 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return nil, nil
 				},
-				grailFilterSegment: func(b client.GrailFilterSegmentClient, s string) (projectv2.ConfigsPerType, error) {
+				grailFilterSegmentDownload: func(b client.GrailFilterSegmentClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.grailFilterSegment {
 						t.Fatalf("grail file-segment download was not meant to be called but was")
 					}
