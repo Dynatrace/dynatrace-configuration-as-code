@@ -517,13 +517,32 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 				expected: nil,
 			},
 			{
-				name: "objects with no constraint fields in payload - no match",
+				name: "nested objects with no constraint fields in payload - no match",
 				given: given{
 					schema: Schema{
 						UniqueProperties: [][]string{
 							{"A"},
 							{"B"},
 							{"A/B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"R" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"R" : {"B" : "y" } }`)},
+					},
+				},
+				expected: nil,
+			},
+			{
+				name: "objects with no constraint fields in payload - no match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A"},
+							{"B"},
+							{"X"},
 						},
 					},
 					source: SettingsObject{

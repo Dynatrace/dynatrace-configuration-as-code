@@ -626,21 +626,22 @@ func doObjectsMatchBasedOnUniqueKeys(uniqueKeys []string, source SettingsObject,
 }
 
 func isSameValueForKey(targetPath string, c1 []byte, c2 []byte) (same bool, matchingVal any, err error) {
-	u := make(map[string]any)
-	if err := json.Unmarshal(c1, &u); err != nil {
+	unmarshalledSourceConfig := make(map[string]any)
+	if err := json.Unmarshal(c1, &unmarshalledSourceConfig); err != nil {
 		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", targetPath, err)
 	}
 
 	keys := explodePath(targetPath)
-	value1 := recursiveSearch(u, keys)
+	value1 := recursiveSearch(unmarshalledSourceConfig, keys)
 
-	u = nil
-	if err := json.Unmarshal(c2, &u); err != nil {
+	unmarshalledObjectConfig := make(map[string]any)
+	if err := json.Unmarshal(c2, &unmarshalledObjectConfig); err != nil {
 		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", targetPath, err)
 	}
 
-	value2 := recursiveSearch(u, keys)
+	value2 := recursiveSearch(unmarshalledObjectConfig, keys)
 
+	// The nil check here is to prevent constraint field that is not in the payload to match(nil==nil)
 	if value1 != nil && value2 != nil && cmp.Equal(value1, value2) {
 		return true, value1, nil
 	}
