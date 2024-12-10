@@ -255,7 +255,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		if opts.auth.Token == nil {
 			return nil, errors.New("classic client config requires token")
 		}
-		classicCfgs, err := fn.classicDownload(clientSet.Config(), opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
+		classicCfgs, err := fn.classicDownload(clientSet.ConfigClient, opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
 		if err != nil {
 			return nil, err
 		}
@@ -264,7 +264,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 
 	if shouldDownloadSettings(opts) {
 		log.Info("Downloading settings objects")
-		settingCfgs, err := fn.settingsDownload(clientSet.Settings(), opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
+		settingCfgs, err := fn.settingsDownload(clientSet.SettingsClient, opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
 		if err != nil {
 			return nil, err
 		}
@@ -274,7 +274,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 	if shouldDownloadAutomationResources(opts) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading automation resources")
-			automationCfgs, err := fn.automationDownload(clientSet.Automation(), opts.projectName)
+			automationCfgs, err := fn.automationDownload(clientSet.AutClient, opts.projectName)
 			if err != nil {
 				return nil, err
 			}
@@ -286,7 +286,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 
 	if shouldDownloadBuckets(opts) && opts.auth.OAuth != nil {
 		log.Info("Downloading Grail buckets")
-		bucketCfgs, err := fn.bucketDownload(clientSet.Bucket(), opts.projectName)
+		bucketCfgs, err := fn.bucketDownload(clientSet.BucketClient, opts.projectName)
 		if err != nil {
 			return nil, err
 		}
@@ -297,7 +297,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		if shouldDownloadDocuments(opts) {
 			if opts.auth.OAuth != nil {
 				log.Info("Downloading documents")
-				documentCfgs, err := fn.documentDownload(clientSet.Document(), opts.projectName)
+				documentCfgs, err := fn.documentDownload(clientSet.DocumentClient, opts.projectName)
 				if err != nil {
 					return nil, err
 				}

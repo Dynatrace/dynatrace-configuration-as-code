@@ -192,30 +192,6 @@ type ClientSet struct {
 	OpenPipelineClient OpenPipelineClient
 }
 
-func (s ClientSet) Config() ConfigClient {
-	return s.ConfigClient
-}
-
-func (s ClientSet) Settings() SettingsClient {
-	return s.SettingsClient
-}
-
-func (s ClientSet) Automation() AutomationClient {
-	return s.AutClient
-}
-
-func (s ClientSet) Bucket() BucketClient {
-	return s.BucketClient
-}
-
-func (s ClientSet) Document() DocumentClient {
-	return s.DocumentClient
-}
-
-func (s ClientSet) OpenPipeline() OpenPipelineClient {
-	return s.OpenPipelineClient
-}
-
 type ClientOptions struct {
 	CustomUserAgent string
 	SupportArchive  bool

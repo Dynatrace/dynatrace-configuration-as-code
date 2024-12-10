@@ -21,15 +21,17 @@ package v2
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 // TestDocuments verifies that the "private" field of a document config definition in the config.yaml file
@@ -63,13 +65,13 @@ func TestDocuments(t *testing.T) {
 
 		// check isPrivate == false
 		clientSet := integrationtest.CreateDynatraceClients(t, man.Environments[environment])
-		result, err := clientSet.Document().List(context.TODO(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+		result, err := clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.False(t, result.Responses[0].IsPrivate)
 
 		// check isPrivate == true
-		result, err = clientSet.Document().List(context.TODO(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.True(t, result.Responses[0].IsPrivate)
@@ -101,13 +103,13 @@ func TestDocuments(t *testing.T) {
 		assert.NoError(t, err)
 
 		// check if isPrivate was changed to true
-		result, err = clientSet.Document().List(context.TODO(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.True(t, result.Responses[0].IsPrivate)
 
 		// check if isPrivate was changed to false
-		result, err = clientSet.Document().List(context.TODO(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.False(t, result.Responses[0].IsPrivate)
