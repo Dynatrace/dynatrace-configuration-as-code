@@ -65,6 +65,7 @@ func createConfig(projectName string, response openpipeline.Response) (config.Co
 		return config.Config{}, fmt.Errorf("failed to extract id as string from payload")
 	}
 
+	// delete fields that prevent a re-upload of the configuration
 	jsonObj.Delete("uid")
 	jsonObj.Delete("version")
 	jsonObj.Delete("externalId")
