@@ -26,3 +26,5 @@ environmentGroups:
         tokenEndpoint:
           type: environment
           value: OAUTH_TOKEN_ENDPOINT
+parameters:
+  hansi: hinterseer
