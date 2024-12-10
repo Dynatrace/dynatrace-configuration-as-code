@@ -625,22 +625,47 @@ func doObjectsMatchBasedOnUniqueKeys(uniqueKeys []string, source SettingsObject,
 	return true, matches, nil
 }
 
-func isSameValueForKey(key string, c1 []byte, c2 []byte) (same bool, matchingVal any, err error) {
-	u := make(map[string]any)
-	if err := json.Unmarshal(c1, &u); err != nil {
-		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+func isSameValueForKey(targetPath string, c1 []byte, c2 []byte) (same bool, matchingVal any, err error) {
+	unmarshalledSourceConfig := make(map[string]any)
+	if err := json.Unmarshal(c1, &unmarshalledSourceConfig); err != nil {
+		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", targetPath, err)
 	}
-	v1 := u[key]
 
-	if err := json.Unmarshal(c2, &u); err != nil {
-		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+	keys := explodePath(targetPath)
+	value1 := recursiveSearch(unmarshalledSourceConfig, keys)
+
+	unmarshalledObjectConfig := make(map[string]any)
+	if err := json.Unmarshal(c2, &unmarshalledObjectConfig); err != nil {
+		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", targetPath, err)
 	}
-	v2 := u[key]
 
-	if cmp.Equal(v1, v2) {
-		return true, v1, nil
+	value2 := recursiveSearch(unmarshalledObjectConfig, keys)
+
+	// The nil check here is to prevent constraint field that is not in the payload to match(nil==nil)
+	if value1 != nil && value2 != nil && cmp.Equal(value1, value2) {
+		return true, value1, nil
 	}
 	return false, nil, nil
+}
+
+// Recursive search allows for nil values in case a field is not in the payload
+func recursiveSearch(nestedMap map[string]any, keys []string) any {
+	currentMap := nestedMap
+	value, found := currentMap[keys[0]]
+	if found {
+		if nestedMap, ok := value.(map[string]interface{}); ok && len(keys) > 1 {
+			return recursiveSearch(nestedMap, keys[1:])
+		}
+		return value
+	}
+
+	return nil
+}
+
+// explodePath splits targetPath by "/", this is the format of settings api.
+// If no "/" is present the string is returned as is. If in future there should be other separators expand logic here.
+func explodePath(targetPath string) []string {
+	return strings.Split(targetPath, "/")
 }
 
 // buildPostRequestPayload builds the json that is required as body in the settings api.

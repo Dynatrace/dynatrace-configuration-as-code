@@ -477,6 +477,106 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 				},
 				expected: nil,
 			},
+			{
+				name: "objects with identical unique properties on 2nd level - match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A/B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A" : {"B" : "x" } }`)},
+					},
+				},
+				expected: &match{
+					object: DownloadSettingsObject{Value: []byte(`{"A" : {"B" : "x" } }`)},
+					matches: constraintMatch{
+						"A/B": "x",
+					},
+				},
+			},
+			{
+				name: "objects with different unique properties on 2nd level - no match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A/B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A" : {"B" : "y" } }`)},
+					},
+				},
+				expected: nil,
+			},
+			{
+				name: "nested objects with no constraint fields in payload - no match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A"},
+							{"B"},
+							{"A/B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"R" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"R" : {"B" : "y" } }`)},
+					},
+				},
+				expected: nil,
+			},
+			{
+				name: "objects with no constraint fields in payload - no match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A"},
+							{"B"},
+							{"X"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"R" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"R" : {"B" : "y" } }`)},
+					},
+				},
+				expected: nil,
+			},
+			{
+				name: "objects with multiple constrains, only one matching - match",
+				given: given{
+					schema: Schema{
+						UniqueProperties: [][]string{
+							{"A/B"},
+							{"A/C"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A" : {"B" : "x" } }`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A" : {"B" : "x" } }`)},
+					},
+				},
+				expected: &match{
+					object: DownloadSettingsObject{Value: []byte(`{"A" : {"B" : "x" } }`)},
+					matches: constraintMatch{
+						"A/B": "x",
+					},
+				},
+			},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
