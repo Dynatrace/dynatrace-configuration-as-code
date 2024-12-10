@@ -35,6 +35,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/document"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/grailfiltersegment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
@@ -59,6 +60,7 @@ type downloadCmdOptions struct {
 	onlyAutomation          bool
 	onlyDocuments           bool
 	onlyOpenPipeline        bool
+	onlyGrailFilterSegments bool
 }
 
 type auth struct {
@@ -138,13 +140,14 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 			projectName:            cmdOptions.projectName,
 			forceOverwriteManifest: cmdOptions.forceOverwrite,
 		},
-		specificAPIs:     cmdOptions.specificAPIs,
-		specificSchemas:  cmdOptions.specificSchemas,
-		onlyAPIs:         cmdOptions.onlyAPIs,
-		onlySettings:     cmdOptions.onlySettings,
-		onlyAutomation:   cmdOptions.onlyAutomation,
-		onlyDocuments:    cmdOptions.onlyDocuments,
-		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
+		specificAPIs:           cmdOptions.specificAPIs,
+		specificSchemas:        cmdOptions.specificSchemas,
+		onlyAPIs:               cmdOptions.onlyAPIs,
+		onlySettings:           cmdOptions.onlySettings,
+		onlyAutomation:         cmdOptions.onlyAutomation,
+		onlyDocuments:          cmdOptions.onlyDocuments,
+		onlyOpenPipeline:       cmdOptions.onlyOpenPipeline,
+		onlyGrailFilterSegment: cmdOptions.onlyGrailFilterSegments,
 	}
 
 	if errs := options.valid(); len(errs) != 0 {
@@ -232,21 +235,23 @@ func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, apisToDownload 
 }
 
 type downloadFn struct {
-	classicDownload      func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
-	settingsDownload     func(client.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
-	automationDownload   func(client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
-	bucketDownload       func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
-	documentDownload     func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
-	openPipelineDownload func(client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
+	classicDownload            func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
+	settingsDownload           func(client.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
+	automationDownload         func(client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
+	bucketDownload             func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
+	documentDownload           func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
+	openPipelineDownload       func(client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
+	grailFilterSegmentDownload func(client.GrailFilterSegmentClient, string) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
-	classicDownload:      classic.Download,
-	settingsDownload:     settings.Download,
-	automationDownload:   automation.Download,
-	bucketDownload:       bucket.Download,
-	documentDownload:     document.Download,
-	openPipelineDownload: openpipeline.Download,
+	classicDownload:            classic.Download,
+	settingsDownload:           settings.Download,
+	automationDownload:         automation.Download,
+	bucketDownload:             bucket.Download,
+	documentDownload:           document.Download,
+	openPipelineDownload:       openpipeline.Download,
+	grailFilterSegmentDownload: grailfiltersegment.Download,
 }
 
 func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
@@ -322,6 +327,18 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		}
 	}
 
+	if featureflags.Temporary[featureflags.GrailFilterSegment].Enabled() {
+		if shouldDownloadGrailFilterSegments(opts) {
+			grailFilterSegmentCgfs, err := fn.grailFilterSegmentDownload(clientSet.GrailFilterSegmentClient, opts.projectName)
+			if err != nil {
+				return nil, err
+			}
+			copyConfigs(configs, grailFilterSegmentCgfs)
+		} else if opts.onlyGrailFilterSegment {
+			return nil, errors.New("can't download filter-segment resources: no OAuth credentials configured")
+		}
+	}
+
 	return configs, nil
 }
 
@@ -341,38 +358,63 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 
 // shouldDownloadConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
 func shouldDownloadConfigs(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline
+	return (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) &&
+		!opts.onlyAutomation &&
+		!opts.onlySettings &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlyGrailFilterSegment
 }
 
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
 func shouldDownloadSettings(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline
+	return (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0) &&
+		!opts.onlyAPIs &&
+		!opts.onlyAutomation &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlyGrailFilterSegment
 }
 
 // shouldDownloadAutomationResources returns true unless download is limited to settings or config API types
 func shouldDownloadAutomationResources(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 &&
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && !opts.onlyDocuments && !opts.onlyOpenPipeline
+	return !opts.onlyAPIs && len(opts.specificSchemas) == 0 &&
+		!opts.onlySettings && len(opts.specificAPIs) == 0 &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlyGrailFilterSegment
 }
 
 // shouldDownloadBuckets returns true if download is not limited to another specific type
 func shouldDownloadBuckets(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 &&
+		!opts.onlySettings && len(opts.specificSchemas) == 0 &&
+		!opts.onlyAutomation &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlyGrailFilterSegment
+}
+
+func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
+		!opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
+		!opts.onlyAutomation &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlyGrailFilterSegment
+}
+
+func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
+		!opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
+		!opts.onlyAutomation &&
+		!opts.onlyDocuments &&
+		!opts.onlyGrailFilterSegment
+}
+
+func shouldDownloadGrailFilterSegments(opts downloadConfigsOptions) bool {
 	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
 		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
 		!opts.onlyAutomation &&
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline
-}
-
-func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlyAutomation && !opts.onlyOpenPipeline
-}
-
-func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlyDocuments &&
-		!opts.onlyAutomation
 }

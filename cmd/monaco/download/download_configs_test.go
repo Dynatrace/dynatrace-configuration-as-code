@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -180,7 +181,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 func TestDownload_Options(t *testing.T) {
 	type wantDownload struct {
-		config, settings, bucket, automation, document, openpipeline bool
+		config, settings, bucket, automation, document, openpipeline, grailFilterSegment bool
 	}
 	tests := []struct {
 		name  string
@@ -195,12 +196,13 @@ func TestDownload_Options(t *testing.T) {
 				},
 			},
 			wantDownload{
-				config:       true,
-				settings:     true,
-				bucket:       true,
-				automation:   true,
-				document:     true,
-				openpipeline: true,
+				config:             true,
+				settings:           true,
+				bucket:             true,
+				automation:         true,
+				document:           true,
+				openpipeline:       true,
+				grailFilterSegment: true,
 			},
 		},
 		{
@@ -238,6 +240,15 @@ func TestDownload_Options(t *testing.T) {
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
 			wantDownload{openpipeline: true},
+		},
+		{
+			"only grail filter-segment requested",
+			downloadConfigsOptions{
+				onlyGrailFilterSegment: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
+				}},
+			wantDownload{grailFilterSegment: true},
 		},
 		{
 			"only apis requested",
@@ -281,6 +292,7 @@ func TestDownload_Options(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(featureflags.Temporary[featureflags.GrailFilterSegment].EnvName(), "true")
 			fn := downloadFn{
 				classicDownload: func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
 					if !tt.want.config {
@@ -315,6 +327,12 @@ func TestDownload_Options(t *testing.T) {
 				openPipelineDownload: func(b client.OpenPipelineClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.openpipeline {
 						t.Fatalf("openpipeline download was not meant to be called but was")
+					}
+					return nil, nil
+				},
+				grailFilterSegmentDownload: func(b client.GrailFilterSegmentClient, s string) (projectv2.ConfigsPerType, error) {
+					if !tt.want.grailFilterSegment {
+						t.Fatalf("grail file-segment download was not meant to be called but was")
 					}
 					return nil, nil
 				},
