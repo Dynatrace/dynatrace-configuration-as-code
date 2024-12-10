@@ -271,7 +271,7 @@ func TestDownloadAll(t *testing.T) {
 							Value:         json.RawMessage("{}"),
 							ModificationInfo: &dtclient.SettingsModificationInfo{
 								Modifiable:      false,
-								ModifiablePaths: []any{"enabled"},
+								ModifiablePaths: []string{"enabled"},
 							},
 						},
 					}, nil
