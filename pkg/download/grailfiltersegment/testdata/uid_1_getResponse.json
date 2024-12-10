@@ -1,0 +1,18 @@
+{
+    "uid": "uid_1",
+    "name": "private_grail_filter_segment",
+    "description": "description for private test grail filter segment",
+    "variables": {
+        "type": "query",
+        "value": "fetch logs | limit 1"
+    },
+    "isPublic": false,
+    "owner": "bd62720e-e72a-49c6-aff2-43ca82662bee",
+    "allowedOperations": [
+        "READ",
+        "WRITE",
+        "DELETE"
+    ],
+    "includes": [],
+    "version": 1
+}

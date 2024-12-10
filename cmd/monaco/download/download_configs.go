@@ -35,6 +35,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/document"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/grailfiltersegment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
@@ -59,6 +60,7 @@ type downloadCmdOptions struct {
 	onlyAutomation          bool
 	onlyDocuments           bool
 	onlyOpenPipeline        bool
+	onlyGrailFilterSegments bool
 }
 
 type auth struct {
@@ -138,13 +140,14 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 			projectName:            cmdOptions.projectName,
 			forceOverwriteManifest: cmdOptions.forceOverwrite,
 		},
-		specificAPIs:     cmdOptions.specificAPIs,
-		specificSchemas:  cmdOptions.specificSchemas,
-		onlyAPIs:         cmdOptions.onlyAPIs,
-		onlySettings:     cmdOptions.onlySettings,
-		onlyAutomation:   cmdOptions.onlyAutomation,
-		onlyDocuments:    cmdOptions.onlyDocuments,
-		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
+		specificAPIs:           cmdOptions.specificAPIs,
+		specificSchemas:        cmdOptions.specificSchemas,
+		onlyAPIs:               cmdOptions.onlyAPIs,
+		onlySettings:           cmdOptions.onlySettings,
+		onlyAutomation:         cmdOptions.onlyAutomation,
+		onlyDocuments:          cmdOptions.onlyDocuments,
+		onlyOpenPipeline:       cmdOptions.onlyOpenPipeline,
+		onlyGrailFilterSegment: cmdOptions.onlyGrailFilterSegments,
 	}
 
 	if errs := options.valid(); len(errs) != 0 {
@@ -248,6 +251,7 @@ var defaultDownloadFn = downloadFn{
 	bucketDownload:       bucket.Download,
 	documentDownload:     document.Download,
 	openPipelineDownload: openpipeline.Download,
+	grailFilterSegment:   grailfiltersegment.Download,
 }
 
 func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {

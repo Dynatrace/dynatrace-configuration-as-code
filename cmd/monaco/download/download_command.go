@@ -101,7 +101,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	}
 
 	if featureflags.Temporary[featureflags.Segments].Enabled() {
-		cmd.Flags().BoolVar(&f.onlyOpenPipeline, "only-filtersegments", false, "Only download Grail filter-segment configurations, skip all other configuration types")
+		cmd.Flags().BoolVar(&f.onlyGrailFilterSegments, "only-filtersegments", false, "Only download Grail filter-segment configurations, skip all other configuration types")
 	}
 
 	err := errors.Join(

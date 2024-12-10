@@ -1,0 +1,14 @@
+{
+    "filterSegments": [
+        {
+            "uid": "uid_1",
+            "name": "private_grail_filter_segment",
+            "isPublic": false
+        },
+        {
+            "uid": "uid_2",
+            "name": "public_grail_filter_segment",
+            "isPublic": true
+        }
+    ]
+}
