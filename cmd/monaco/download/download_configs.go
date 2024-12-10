@@ -235,23 +235,23 @@ func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, apisToDownload 
 }
 
 type downloadFn struct {
-	classicDownload      func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
-	settingsDownload     func(client.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
-	automationDownload   func(client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
-	bucketDownload       func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
-	documentDownload     func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
-	openPipelineDownload func(client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
-	grailFilterSegment   func(client.GrailFilterSegmentClient, string) (projectv2.ConfigsPerType, error)
+	classicDownload            func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
+	settingsDownload           func(client.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
+	automationDownload         func(client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
+	bucketDownload             func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
+	documentDownload           func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
+	openPipelineDownload       func(client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
+	grailFilterSegmentDownload func(client.GrailFilterSegmentClient, string) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
-	classicDownload:      classic.Download,
-	settingsDownload:     settings.Download,
-	automationDownload:   automation.Download,
-	bucketDownload:       bucket.Download,
-	documentDownload:     document.Download,
-	openPipelineDownload: openpipeline.Download,
-	grailFilterSegment:   grailfiltersegment.Download,
+	classicDownload:            classic.Download,
+	settingsDownload:           settings.Download,
+	automationDownload:         automation.Download,
+	bucketDownload:             bucket.Download,
+	documentDownload:           document.Download,
+	openPipelineDownload:       openpipeline.Download,
+	grailFilterSegmentDownload: grailfiltersegment.Download,
 }
 
 func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
@@ -329,11 +329,11 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 
 	if featureflags.Temporary[featureflags.Segments].Enabled() {
 		if shouldDownloadGrailFilterSegments(opts) {
-			cgfs, err := fn.grailFilterSegment(clientSet.GrailFilterSegmentClient, opts.projectName)
+			grailFilterSegmentCgfs, err := fn.grailFilterSegmentDownload(clientSet.GrailFilterSegmentClient, opts.projectName)
 			if err != nil {
 				return nil, err
 			}
-			copyConfigs(configs, cgfs)
+			copyConfigs(configs, grailFilterSegmentCgfs)
 		} else if opts.onlyGrailFilterSegment {
 			return nil, errors.New("can't download filter-segment resources: no OAuth credentials configured")
 		}
