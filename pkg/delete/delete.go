@@ -31,6 +31,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/document"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
@@ -101,6 +102,13 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 				return document.Delete(ctx, clients.DocumentClient, entries)
 			}
 			log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
+		}
+	} else if t == string(config.SegmentID) {
+		if featureflags.Temporary[featureflags.Segments].Enabled() {
+			if clients.SegmentClient != nil {
+				return segment.Delete(ctx, clients.SegmentClient, entries)
+			}
+			log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d %s configuration(s) as API client was unavailable.", config.SegmentID, len(entries))
 		}
 	} else {
 		if clients.SettingsClient != nil {

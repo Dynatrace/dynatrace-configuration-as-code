@@ -167,7 +167,9 @@ type OpenPipelineClient interface {
 }
 
 type SegmentClient interface {
+	List(ctx context.Context) (segments.Response, error)
 	GetAll(ctx context.Context) ([]segments.Response, error)
+	Delete(ctx context.Context, id string) (segments.Response, error)
 }
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
