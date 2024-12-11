@@ -28,6 +28,8 @@ type Validator interface {
 	Validate(c config.Config) error
 }
 
+// Validate verifies that the passed projects are sound to an extent that can be checked before deployment.
+// This means, that only checks can be performed that work on 'static' data.
 func Validate(projects []project.Project) error {
 	defaultValidators := []Validator{
 		classic.NewValidator(),
