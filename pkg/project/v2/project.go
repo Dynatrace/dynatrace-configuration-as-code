@@ -88,6 +88,27 @@ func (p Project) GetConfigForIgnoreEnvironment(c coordinate.Coordinate) (config.
 	return config.Config{}, false
 }
 
+// GetConfigFor searches a config object for matching the given coordinate in the
+// current project.
+func (p Project) GetConfigFor(env string, c coordinate.Coordinate) (config.Config, bool) {
+	configsPerEnvironments, f := p.Configs[env]
+	if !f {
+		return config.Config{}, false
+	}
+
+	for cType, configsPerType := range configsPerEnvironments {
+		if c.Type == cType {
+			for _, cfg := range configsPerType {
+				if cfg.Coordinate.ConfigId == c.ConfigId {
+					return cfg, true
+				}
+			}
+		}
+	}
+
+	return config.Config{}, false
+}
+
 func (p Project) String() string {
 	if p.GroupId != "" {
 		return fmt.Sprintf("%s [group: %s]", p.Id, p.GroupId)
