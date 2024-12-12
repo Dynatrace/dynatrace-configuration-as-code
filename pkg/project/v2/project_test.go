@@ -17,14 +17,16 @@
 package v2_test
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
-func TestGetConfigFor(t *testing.T) {
+func TestGetConfigForIgnoreEnvironment(t *testing.T) {
 	tests := []struct {
 		name            string
 		givenCoordinate coordinate.Coordinate
@@ -80,7 +82,7 @@ func TestGetConfigFor(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg, found := tc.givenProject.GetConfigFor(tc.givenCoordinate)
+			cfg, found := tc.givenProject.GetConfigForIgnoreEnvironment(tc.givenCoordinate)
 			assert.Equal(t, tc.wantConfig, cfg)
 			assert.Equal(t, tc.wantFound, found)
 		})

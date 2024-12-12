@@ -20,6 +20,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"sort"
+	"strings"
+
+	"github.com/spf13/afero"
+	"golang.org/x/exp/maps"
+	"gopkg.in/yaml.v2"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
@@ -31,12 +39,6 @@ import (
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"golang.org/x/exp/maps"
-	"gopkg.in/yaml.v2"
-	"path/filepath"
-	"sort"
-	"strings"
 )
 
 type createDeleteFileOptions struct {
@@ -267,7 +269,7 @@ func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Projec
 			return persistence.DeleteEntry{}, fmt.Errorf("scope parameter has no references")
 		}
 
-		refCfg, ok := project.GetConfigFor(refs[0].Config)
+		refCfg, ok := project.GetConfigForIgnoreEnvironment(refs[0].Config)
 		if !ok {
 			return persistence.DeleteEntry{}, fmt.Errorf("no config for referenced scope found")
 		}
