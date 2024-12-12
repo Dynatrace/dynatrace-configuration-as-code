@@ -487,6 +487,7 @@ func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *test
 						{
 							Coordinate:  dashboardConfigCoordinate,
 							Environment: environmentName,
+							Type:        config.ClassicApiType{Api: "dashboard"},
 							Parameters: map[string]parameter.Parameter{
 								"autoTagId": &parameter.DummyParameter{
 									References: []parameter.ParameterReference{
@@ -501,6 +502,7 @@ func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *test
 						{
 							Coordinate:  individualConfigCoordinate,
 							Environment: environmentName,
+							Type:        config.ClassicApiType{Api: "dashboard"},
 							Parameters: map[string]parameter.Parameter{
 								"name": &parameter.DummyParameter{
 									Value: "sample",
@@ -532,6 +534,7 @@ func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *test
 						{
 							Coordinate:  autoTagCoordinates,
 							Environment: environmentName,
+							Type:        config.ClassicApiType{Api: "auto-tag"},
 							Parameters: map[string]parameter.Parameter{
 								referencedPropertyName: &parameter.DummyParameter{
 									Value: "10",
