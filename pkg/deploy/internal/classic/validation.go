@@ -18,11 +18,14 @@ package classic
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	compoundParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -46,7 +49,7 @@ func NewValidator() *validator {
 
 // Validate checks that for each classic config API type, only one config exists with any given name.
 // As classic configs are identified by name, ValidateUniqueConfigNames returns errors if a name is used more than once for the same type.
-func (v *validator) Validate(c config.Config) error {
+func (v *validator) Validate(_ project.Project, c config.Config) error {
 	if v.uniqueNames == nil {
 		v.uniqueNames = make(map[environmentName]map[classicEndpoint][]config.Config)
 	}

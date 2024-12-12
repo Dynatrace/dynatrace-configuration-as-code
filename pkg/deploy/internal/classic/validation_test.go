@@ -19,9 +19,13 @@
 package classic
 
 import (
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
-	"testing"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -29,31 +33,28 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestValidate_NoErrorForNonClassicAPIs(t *testing.T) {
 	validator := NewValidator()
-	err := validator.Validate(
-		newTestConfigForValidation(t,
-			coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "abcde"},
-			config.SettingsType{SchemaId: "builtin:management-zones", SchemaVersion: "1.2.3"},
-			map[string]parameter.Parameter{}))
+	err := validator.Validate(newTestConfigForValidation(t,
+		coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "abcde"},
+		config.SettingsType{SchemaId: "builtin:management-zones", SchemaVersion: "1.2.3"},
+		map[string]parameter.Parameter{}))
 
 	assert.NoError(t, err)
 }
 
 func TestValidate_NoErrorForNonUniqueNames(t *testing.T) {
 	validator := NewValidator()
-	err := validator.Validate(
-		newTestConfigForValidation(t,
-			coordinate.Coordinate{
-				Project:  "project",
-				Type:     api.Dashboard,
-				ConfigId: "sampleDashboard",
-			},
-			config.ClassicApiType{Api: api.Dashboard},
-			map[string]parameter.Parameter{}))
+	err := validator.Validate(newTestConfigForValidation(t,
+		coordinate.Coordinate{
+			Project:  "project",
+			Type:     api.Dashboard,
+			ConfigId: "sampleDashboard",
+		},
+		config.ClassicApiType{Api: api.Dashboard},
+		map[string]parameter.Parameter{}))
 
 	assert.NoError(t, err)
 }
@@ -170,10 +171,10 @@ func TestValidate_ValidateCompoundParameterName(t *testing.T) {
 				config.NameParameter: compoundParam2,
 			}}
 
-		err1 := validator.Validate(c1)
+		err1 := validator.Validate(project.Project{}, c1)
 		assert.NoError(t, err1)
 
-		err2 := validator.Validate(c2)
+		err2 := validator.Validate(project.Project{}, c2)
 		assert.NoError(t, err2)
 	})
 
@@ -207,10 +208,10 @@ func TestValidate_ValidateCompoundParameterName(t *testing.T) {
 				config.NameParameter: compoundParam2,
 			}}
 
-		err1 := validator.Validate(c1)
+		err1 := validator.Validate(project.Project{}, c1)
 		assert.NoError(t, err1)
 
-		err2 := validator.Validate(c2)
+		err2 := validator.Validate(project.Project{}, c2)
 		assert.NoError(t, err2)
 	})
 
@@ -248,10 +249,10 @@ func TestValidate_ValidateCompoundParameterName(t *testing.T) {
 		//compound value == "forrest gump"
 		// names equal -> error
 
-		err1 := validator.Validate(c1)
+		err1 := validator.Validate(project.Project{}, c1)
 		assert.NoError(t, err1)
 
-		err2 := validator.Validate(c2)
+		err2 := validator.Validate(project.Project{}, c2)
 		assert.Error(t, err2)
 	})
 
@@ -285,10 +286,10 @@ func TestValidate_ValidateCompoundParameterName(t *testing.T) {
 				config.NameParameter: compoundParam2,
 			}}
 
-		err1 := validator.Validate(c1)
+		err1 := validator.Validate(project.Project{}, c1)
 		assert.NoError(t, err1)
 
-		err2 := validator.Validate(c2)
+		err2 := validator.Validate(project.Project{}, c2)
 		assert.Error(t, err2)
 	})
 
@@ -319,13 +320,13 @@ func TestValidate_ValidateCompoundParameterName(t *testing.T) {
 			Coordinate: coordinate.Coordinate{ConfigId: "SECOND", Project: "project", Type: api.ApplicationMobile},
 			Parameters: map[string]parameter.Parameter{config.NameParameter: compoundParam1}}
 
-		err1 := validator.Validate(c0)
+		err1 := validator.Validate(project.Project{}, c0)
 		assert.NoError(t, err1)
 
-		err2 := validator.Validate(c1)
+		err2 := validator.Validate(project.Project{}, c1)
 		assert.NoError(t, err2)
 
-		err3 := validator.Validate(c2)
+		err3 := validator.Validate(project.Project{}, c2)
 		assert.Error(t, err3)
 
 	})
@@ -354,13 +355,13 @@ func TestValidate_ValidateCompoundParameterName(t *testing.T) {
 			Coordinate: coordinate.Coordinate{ConfigId: "SECOND", Project: "project", Type: api.ApplicationMobile},
 			Parameters: map[string]parameter.Parameter{config.NameParameter: ref1}}
 
-		err1 := validator.Validate(c0)
+		err1 := validator.Validate(project.Project{}, c0)
 		assert.NoError(t, err1)
 
-		err2 := validator.Validate(c1)
+		err2 := validator.Validate(project.Project{}, c1)
 		assert.NoError(t, err2)
 
-		err3 := validator.Validate(c2)
+		err3 := validator.Validate(project.Project{}, c2)
 		assert.Error(t, err3)
 
 	})
@@ -390,21 +391,21 @@ func TestValidate_ValidateCompoundParameterName(t *testing.T) {
 			Coordinate: coordinate.Coordinate{ConfigId: "SECOND", Project: "project", Type: api.ApplicationMobile},
 			Parameters: map[string]parameter.Parameter{config.NameParameter: ref2}}
 
-		err1 := validator.Validate(c0)
+		err1 := validator.Validate(project.Project{}, c0)
 		assert.NoError(t, err1)
 
-		err2 := validator.Validate(c1)
+		err2 := validator.Validate(project.Project{}, c1)
 		assert.NoError(t, err2)
 
-		err3 := validator.Validate(c2)
+		err3 := validator.Validate(project.Project{}, c2)
 		assert.NoError(t, err3)
 
 	})
 
 }
 
-func newTestConfigForValidation(t *testing.T, coordinate coordinate.Coordinate, configType config.Type, parameters map[string]parameter.Parameter) config.Config {
-	return config.Config{
+func newTestConfigForValidation(t *testing.T, coordinate coordinate.Coordinate, configType config.Type, parameters map[string]parameter.Parameter) (project.Project, config.Config) {
+	return project.Project{}, config.Config{
 		Coordinate:  coordinate,
 		Type:        configType,
 		Environment: "dev",
@@ -413,7 +414,7 @@ func newTestConfigForValidation(t *testing.T, coordinate coordinate.Coordinate, 
 	}
 }
 
-func newTestClassicConfigForValidation(t *testing.T, configId string, apiID string, parameters map[string]parameter.Parameter) config.Config {
+func newTestClassicConfigForValidation(t *testing.T, configId string, apiID string, parameters map[string]parameter.Parameter) (project.Project, config.Config) {
 	return newTestConfigForValidation(
 		t,
 		coordinate.Coordinate{Project: "project", Type: apiID, ConfigId: configId},
