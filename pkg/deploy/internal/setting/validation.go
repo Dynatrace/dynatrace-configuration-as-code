@@ -20,6 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
 type Validator struct{}
@@ -31,7 +32,7 @@ var deprecatedSchemas = map[string]string{
 }
 
 // Validate checks for each settings type whether it is using a deprecated schema.
-func (v *Validator) Validate(c config.Config) error {
+func (v *Validator) Validate(_ project.Project, c config.Config) error {
 
 	s, ok := c.Type.(config.SettingsType)
 	if !ok {
