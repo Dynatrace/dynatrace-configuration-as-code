@@ -78,6 +78,7 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 	g := graph.New(projects, environmentClients.Names())
 	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
 
+	// note: Currently the validation works 'environment-independent', but that might be something we should reconsider to improve error messages
 	if validationErrs := validate.Validate(projects); validationErrs != nil {
 		if !opts.ContinueOnErr && !opts.DryRun {
 			return validationErrs
