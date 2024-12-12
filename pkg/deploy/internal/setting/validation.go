@@ -23,7 +23,7 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-type Validator struct{}
+type DeprecatedSchemaValidator struct{}
 
 var deprecatedSchemas = map[string]string{
 	"builtin:span-attribute":       "this setting was replaced by 'builtin:attribute-allow-list' and 'builtin:attribute-masking'",
@@ -32,7 +32,7 @@ var deprecatedSchemas = map[string]string{
 }
 
 // Validate checks for each settings type whether it is using a deprecated schema.
-func (v *Validator) Validate(_ project.Project, c config.Config) error {
+func (v *DeprecatedSchemaValidator) Validate(_ project.Project, c config.Config) error {
 
 	s, ok := c.Type.(config.SettingsType)
 	if !ok {
