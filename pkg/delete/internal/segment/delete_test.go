@@ -141,3 +141,29 @@ func TestDelete(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestDeleteAll(t *testing.T) {
+	t.Run("simple case", func(t *testing.T) {
+		c := client.NewMockSegmentClient(gomock.NewController(t))
+		c.EXPECT().List(gomock.Any()).Times(1).
+			Return(libSegment.Response{Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("uid_1")).Times(1)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("uid_2")).Times(1)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("uid_3")).Times(1)
+
+		err := segment.DeleteAll(context.TODO(), c)
+		assert.NoError(t, err)
+	})
+
+	t.Run("error during delete - continue to delete, an error", func(t *testing.T) {
+		c := client.NewMockSegmentClient(gomock.NewController(t))
+		c.EXPECT().List(gomock.Any()).Times(1).
+			Return(libSegment.Response{Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("uid_1")).Times(1)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("uid_2")).Times(1).Return(libAPI.Response{}, libAPI.APIError{StatusCode: http.StatusInternalServerError}) // the error can be any kind except 404
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq("uid_3")).Times(1)
+
+		err := segment.DeleteAll(context.TODO(), c)
+		assert.Error(t, err)
+	})
+}
