@@ -79,17 +79,9 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 }
 
 func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePointer) (string, error) {
-	listResp, err := c.List(ctx)
+	items, err := list(c, ctx)
 	if err != nil {
 		return "", err
-	}
-
-	var items []struct {
-		Uid        string `json:"uid"`
-		ExternalId string `json:"externalId"`
-	}
-	if err = json.Unmarshal(listResp.Data, &items); err != nil {
-		return "", fmt.Errorf("problem with reading recieved data: %w", err)
 	}
 
 	extID, err := idutils.GenerateExternalIDForDocument(dp.AsCoordinate())
@@ -98,9 +90,9 @@ func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePoi
 	}
 
 	var foundUid []string
-	for _, item := range items {
-		if item.ExternalId == extID {
-			foundUid = append(foundUid, item.Uid)
+	for _, i := range items {
+		if i.ExternalId == extID {
+			foundUid = append(foundUid, i.Uid)
 		}
 	}
 
@@ -121,4 +113,39 @@ func isAPIErrorStatusNotFound(err error) bool {
 	}
 
 	return apiErr.StatusCode == http.StatusNotFound
+}
+
+func DeleteAll(ctx context.Context, c client) error {
+	items, err := list(c, ctx)
+	if err != nil {
+		return err
+	}
+
+	var retErr error
+	for _, i := range items {
+		err := deleteSingle(ctx, c, pointer.DeletePointer{Type: string(config.SegmentID), OriginObjectId: i.Uid})
+		if err != nil {
+			retErr = errors.Join(retErr, err)
+		}
+	}
+	return retErr
+}
+
+type items []struct {
+	Uid        string `json:"uid"`
+	ExternalId string `json:"externalId"`
+}
+
+func list(c client, ctx context.Context) (items, error) {
+	listResp, err := c.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var items items
+	if err = json.Unmarshal(listResp.Data, &items); err != nil {
+		return nil, fmt.Errorf("problem with reading recieved data: %w", err)
+	}
+
+	return items, nil
 }
