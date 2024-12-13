@@ -26,14 +26,14 @@ import (
 
 type downloadConfigsOptions struct {
 	downloadOptionsShared
-	specificAPIs           []string
-	specificSchemas        []string
-	onlyAPIs               bool
-	onlySettings           bool
-	onlyAutomation         bool
-	onlyDocuments          bool
-	onlyOpenPipeline       bool
-	onlyGrailFilterSegment bool
+	specificAPIs     []string
+	specificSchemas  []string
+	onlyAPIs         bool
+	onlySettings     bool
+	onlyAutomation   bool
+	onlyDocuments    bool
+	onlyOpenPipeline bool
+	onlySegment      bool
 }
 
 func (opts downloadConfigsOptions) valid() []error {
@@ -59,7 +59,7 @@ func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
 		return nil
 	case opts.onlySettings:
 		return nil
-	case opts.onlyGrailFilterSegment:
+	case opts.onlySegment:
 		return nil
 	case opts.onlyAPIs:
 		return apis.Filter(removeSkipDownload, removeDeprecated(withWarn()))
