@@ -55,7 +55,7 @@ func Test_prepareAPIs(t *testing.T) {
 			},
 			{
 				name:  "onlyFilterSegments",
-				given: downloadConfigsOptions{onlyGrailFilterSegment: true},
+				given: downloadConfigsOptions{onlySegment: true},
 			},
 		}
 
@@ -89,8 +89,8 @@ func Test_prepareAPIs(t *testing.T) {
 				given: downloadConfigsOptions{onlyOpenPipeline: true},
 			},
 			{
-				name:  "onlyGrailFilterSegment",
-				given: downloadConfigsOptions{onlyGrailFilterSegment: true},
+				name:  "onlySegment",
+				given: downloadConfigsOptions{onlySegment: true},
 			},
 			{
 				name:  "onlyAPIs",
@@ -239,8 +239,8 @@ func Test_prepareAPIs(t *testing.T) {
 			deprecated bool
 		}{
 			{
-				name:       "onlyGrailFilterSegment",
-				given:      downloadConfigsOptions{onlyGrailFilterSegment: true},
+				name:       "onlySegment",
+				given:      downloadConfigsOptions{onlySegment: true},
 				deprecated: false,
 			},
 			{

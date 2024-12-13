@@ -181,7 +181,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 func TestDownload_Options(t *testing.T) {
 	type wantDownload struct {
-		config, settings, bucket, automation, document, openpipeline, grailFilterSegment bool
+		config, settings, bucket, automation, document, openpipeline, segment bool
 	}
 	tests := []struct {
 		name  string
@@ -196,13 +196,13 @@ func TestDownload_Options(t *testing.T) {
 				},
 			},
 			wantDownload{
-				config:             true,
-				settings:           true,
-				bucket:             true,
-				automation:         true,
-				document:           true,
-				openpipeline:       true,
-				grailFilterSegment: true,
+				config:       true,
+				settings:     true,
+				bucket:       true,
+				automation:   true,
+				document:     true,
+				openpipeline: true,
+				segment:      true,
 			},
 		},
 		{
@@ -242,13 +242,13 @@ func TestDownload_Options(t *testing.T) {
 			wantDownload{openpipeline: true},
 		},
 		{
-			"only grail filter-segment requested",
+			"only segment requested",
 			downloadConfigsOptions{
-				onlyGrailFilterSegment: true,
+				onlySegment: true,
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
-			wantDownload{grailFilterSegment: true},
+			wantDownload{segment: true},
 		},
 		{
 			"only apis requested",
@@ -330,9 +330,9 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return nil, nil
 				},
-				grailFilterSegmentDownload: func(b client.GrailFilterSegmentClient, s string) (projectv2.ConfigsPerType, error) {
-					if !tt.want.grailFilterSegment {
-						t.Fatalf("grail file-segment download was not meant to be called but was")
+				segmentDownload: func(b client.SegmentClient, s string) (projectv2.ConfigsPerType, error) {
+					if !tt.want.segment {
+						t.Fatalf("segment download was not meant to be called but was")
 					}
 					return nil, nil
 				},

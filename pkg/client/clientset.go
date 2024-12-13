@@ -166,7 +166,7 @@ type OpenPipelineClient interface {
 	Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error)
 }
 
-type GrailFilterSegmentClient interface {
+type SegmentClient interface {
 	GetAll(ctx context.Context) ([]segments.Response, error)
 }
 
@@ -178,13 +178,13 @@ var DefaultRetryOptions = corerest.RetryOptions{MaxRetries: 10, ShouldRetryFunc:
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
 type ClientSet struct {
-	ConfigClient             ConfigClient
-	SettingsClient           SettingsClient
-	AutClient                AutomationClient
-	BucketClient             BucketClient
-	DocumentClient           DocumentClient
-	OpenPipelineClient       OpenPipelineClient
-	GrailFilterSegmentClient GrailFilterSegmentClient
+	ConfigClient       ConfigClient
+	SettingsClient     SettingsClient
+	AutClient          AutomationClient
+	BucketClient       BucketClient
+	DocumentClient     DocumentClient
+	OpenPipelineClient OpenPipelineClient
+	SegmentClient      SegmentClient
 }
 
 type ClientOptions struct {
@@ -223,14 +223,14 @@ func validateURL(dtURL string) error {
 
 func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
 	var (
-		configClient             ConfigClient
-		settingsClient           SettingsClient
-		bucketClient             BucketClient
-		autClient                AutomationClient
-		documentClient           DocumentClient
-		openPipelineClient       OpenPipelineClient
-		grailFilterSegmentClient GrailFilterSegmentClient
-		err                      error
+		configClient       ConfigClient
+		settingsClient     SettingsClient
+		bucketClient       BucketClient
+		autClient          AutomationClient
+		documentClient     DocumentClient
+		openPipelineClient OpenPipelineClient
+		segmentClient      SegmentClient
+		err                error
 	)
 	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	if err = validateURL(url); err != nil {
@@ -280,7 +280,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 			return nil, err
 		}
 
-		grailFilterSegmentClient, err = cFactory.SegmentsClient()
+		segmentClient, err = cFactory.SegmentsClient()
 		if err != nil {
 			return nil, err
 		}
@@ -318,13 +318,13 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 	}
 
 	return &ClientSet{
-		ConfigClient:             configClient,
-		SettingsClient:           settingsClient,
-		AutClient:                autClient,
-		BucketClient:             bucketClient,
-		DocumentClient:           documentClient,
-		OpenPipelineClient:       openPipelineClient,
-		GrailFilterSegmentClient: grailFilterSegmentClient,
+		ConfigClient:       configClient,
+		SettingsClient:     settingsClient,
+		AutClient:          autClient,
+		BucketClient:       bucketClient,
+		DocumentClient:     documentClient,
+		OpenPipelineClient: openPipelineClient,
+		SegmentClient:      segmentClient,
 	}, nil
 }
 
