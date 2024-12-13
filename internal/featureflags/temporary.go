@@ -38,9 +38,9 @@ const (
 	// from the dependency graph created by Monaco. These configs are not only skipped during deployment but also
 	// not validated prior to deployment. Further, other configs cannot reference properties of this config anymore.
 	IgnoreSkippedConfigs TemporaryFlag = "MONACO_FEAT_IGNORE_SKIPPED_CONFIGS"
-	// GrailFilterSegment toggles whether filter-segment configurations are downloaded and / or deployed.
+	// Segments toggles whether segment configurations are downloaded and / or deployed.
 	// Introduced: v2.18.0
-	GrailFilterSegment TemporaryFlag = "MONACO_FEAT_FILTER_SEGMENTS"
+	Segments TemporaryFlag = "MONACO_FEAT_SEGMENTS"
 )
 
 // Temporary FeatureFlags - for features that are hidden during development or have some uncertainty.
@@ -70,8 +70,8 @@ var Temporary = map[TemporaryFlag]FeatureFlag{
 		envName:        string(IgnoreSkippedConfigs),
 		defaultEnabled: false,
 	},
-	GrailFilterSegment: {
-		envName:        string(GrailFilterSegment),
+	Segments: {
+		envName:        string(Segments),
 		defaultEnabled: false,
 	},
 }
