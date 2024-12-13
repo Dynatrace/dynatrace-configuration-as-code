@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package grailfiltersegment
+package segment
 
 import (
 	"context"
@@ -31,12 +31,12 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-func Download(client client.GrailFilterSegmentClient, projectName string) (project.ConfigsPerType, error) {
+func Download(client client.SegmentClient, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{}
 
 	downloadedConfigs, err := client.GetAll(context.TODO())
 	if err != nil {
-		log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to fetch the list of existing filter-segments: %v", err)
+		log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to fetch the list of existing segments: %v", err)
 		return nil, nil
 	}
 
@@ -79,7 +79,7 @@ func createConfig(projectName string, response openpipeline.Response) (config.Co
 		Template: template.NewInMemoryTemplate(id, string(jsonRaw)),
 		Coordinate: coordinate.Coordinate{
 			Project:  projectName,
-			Type:     string(config.SettingsTypeID),
+			Type:     string(config.SegmentID),
 			ConfigId: id,
 		},
 		OriginObjectId: id,

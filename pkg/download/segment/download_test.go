@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package grailfiltersegment_test
+package segment_test
 
 import (
 	"net/http"
@@ -29,11 +29,11 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/grailfiltersegment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/segment"
 )
 
 func TestDownloader_Download(t *testing.T) {
-	t.Run("download grail filter-segments works", func(t *testing.T) {
+	t.Run("download segments works", func(t *testing.T) {
 		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
 		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{
 			{
@@ -85,7 +85,7 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		client := coreLib.NewClient(rest.NewClient(server.URL(), server.Client()))
-		result, err := grailfiltersegment.Download(client, "project")
+		result, err := segment.Download(client, "project")
 
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
@@ -93,7 +93,7 @@ func TestDownloader_Download(t *testing.T) {
 		require.Len(t, result[string(config.SegmentID)], 2, "all listed segments should be downloaded")
 	})
 
-	t.Run("grail filter-segment without uio is ignored", func(t *testing.T) {
+	t.Run("segment without uio is ignored", func(t *testing.T) {
 		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
 		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{
 			{
@@ -145,7 +145,7 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		client := coreLib.NewClient(rest.NewClient(server.URL(), server.Client()))
-		result, err := grailfiltersegment.Download(client, "project")
+		result, err := segment.Download(client, "project")
 
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
@@ -154,12 +154,12 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Equal(t, "uid_2", result[string(config.SegmentID)][0].OriginObjectId)
 	})
 
-	t.Run("no error downloading grail filter segments with faulty client", func(t *testing.T) {
+	t.Run("no error downloading segments with faulty client", func(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{})
 		defer server.Close()
 
 		client := coreLib.NewClient(rest.NewClient(server.URL(), server.FaultyClient()))
-		result, err := grailfiltersegment.Download(client, "project")
+		result, err := segment.Download(client, "project")
 		assert.NoError(t, err)
 		assert.Empty(t, result)
 	})

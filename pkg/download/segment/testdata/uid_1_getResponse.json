@@ -1,7 +1,7 @@
 {
     "uid": "uid_1",
-    "name": "private_grail_filter_segment",
-    "description": "description for private test grail filter segment",
+    "name": "private_segment",
+    "description": "description for private test segment",
     "variables": {
         "type": "query",
         "value": "fetch logs | limit 1"
