@@ -1170,8 +1170,8 @@ configs:
 			wantErrorsContain: []string{"unknown API: bucket"},
 		},
 		{
-			name:             "grail filter-segment config with FF on",
-			envVars:          map[string]string{featureflags.Temporary[featureflags.GrailFilterSegment].EnvName(): "true"},
+			name:             "segment config with FF on",
+			envVars:          map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "true"},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1179,17 +1179,17 @@ configs:
 - id: profile-id
   config:
     template: 'profile.json'
-  type: filter-segment
+  type: segment
 `,
 			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "filter-segment",
+						Type:     "segment",
 						ConfigId: "profile-id",
 					},
-					Type:        config.GrailFilterSegment{},
-					Template:    template.NewInMemoryTemplate("filter-segment.json", "{}"),
+					Type:        config.Segment{},
+					Template:    template.NewInMemoryTemplate("segment.json", "{}"),
 					Parameters:  config.Parameters{},
 					Skip:        false,
 					Environment: "env name",
@@ -1198,8 +1198,8 @@ configs:
 			},
 		},
 		{
-			name:             "grail filter-segment config with FF off",
-			envVars:          map[string]string{featureflags.Temporary[featureflags.GrailFilterSegment].EnvName(): "false"},
+			name:             "segment config with FF off",
+			envVars:          map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "false"},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1207,12 +1207,12 @@ configs:
 - id: profile-id
   config:
     template: 'profile.json'
-  type: filter-segment
+  type: segment
 `,
-			wantErrorsContain: []string{"unknown config-type \"filter-segment\""},
+			wantErrorsContain: []string{"unknown config-type \"segment\""},
 		},
 		{
-			name:             "grail filter-segment written as api config",
+			name:             "segment written as api config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1221,9 +1221,9 @@ configs:
   config:
     template: 'profile.json'
   type:
-    api: filter-segment
+    api: segment
 `,
-			wantErrorsContain: []string{"unknown API: filter-segment"},
+			wantErrorsContain: []string{"unknown API: segment"},
 		},
 		{
 			name:             "API without scope",

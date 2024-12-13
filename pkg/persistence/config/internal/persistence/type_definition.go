@@ -19,15 +19,17 @@ package persistence
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/exp/maps"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 )
 
 const (
-	BucketType         = "bucket"
-	GrailFilterSegment = "filter-segment"
+	BucketType  = "bucket"
+	SegmentType = "segment"
 )
 
 type TypeDefinition struct {
@@ -73,11 +75,11 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		switch str {
 		case BucketType:
 			c.Type = config.BucketType{}
-		case GrailFilterSegment:
-			if !featureflags.Temporary[featureflags.GrailFilterSegment].Enabled() {
+		case SegmentType:
+			if !featureflags.Temporary[featureflags.Segments].Enabled() {
 				return fmt.Errorf("unknown config-type %q", str)
 			}
-			c.Type = config.GrailFilterSegment{}
+			c.Type = config.Segment{}
 		default:
 			c.Type = config.ClassicApiType{Api: str}
 		}
@@ -264,7 +266,7 @@ func (c *TypeDefinition) GetApiType() string {
 		return string(t.ID())
 	case config.OpenPipelineType:
 		return string(t.ID())
-	case config.GrailFilterSegment:
+	case config.Segment:
 		return string(t.ID())
 	}
 
@@ -333,9 +335,9 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 			}, nil
 		}
 
-	case config.GrailFilterSegment:
-		if featureflags.Temporary[featureflags.GrailFilterSegment].Enabled() {
-			return GrailFilterSegment, nil
+	case config.Segment:
+		if featureflags.Temporary[featureflags.Segments].Enabled() {
+			return SegmentType, nil
 		}
 	}
 	return nil, fmt.Errorf("unknown type: %T", c.Type)

@@ -1027,8 +1027,8 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
-			name:    "Grail filter-segment",
-			envVars: map[string]string{featureflags.Temporary[featureflags.GrailFilterSegment].EnvName(): "true"},
+			name:    "segment",
+			envVars: map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "true"},
 			configs: []config.Config{
 				{
 					Template: template.NewInMemoryTemplateWithPath("project/file-segment/template.json", "{}"),
@@ -1037,7 +1037,7 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "file-segment",
 						ConfigId: "configId1",
 					},
-					Type: config.GrailFilterSegment{},
+					Type: config.Segment{},
 					Parameters: map[string]parameter.Parameter{
 						"some param": &value.ValueParameter{Value: "some value"},
 					},
@@ -1057,7 +1057,7 @@ func TestWriteConfigs(t *testing.T) {
 								Skip:     false,
 							},
 							Type: persistence.TypeDefinition{
-								Type: config.GrailFilterSegment{},
+								Type: config.Segment{},
 							},
 						},
 					},
@@ -1068,24 +1068,24 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
-			name:    "Grail filter-segment should fail if FF MONACO_FILTER_SEGMENTS is not set",
-			envVars: map[string]string{featureflags.Temporary[featureflags.GrailFilterSegment].EnvName(): "false"},
+			name:    "Segment should fail if FF MONACO_FEAT_SEGMENTSis not set",
+			envVars: map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "false"},
 			configs: []config.Config{
 				{
 					Template: template.NewInMemoryTemplateWithPath("project/file-segment/template.json", "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "file-segment",
+						Type:     "segment",
 						ConfigId: "configId1",
 					},
-					Type: config.GrailFilterSegment{},
+					Type: config.Segment{},
 					Parameters: map[string]parameter.Parameter{
 						"some param": &value.ValueParameter{Value: "some value"},
 					},
 					Skip: false,
 				},
 			},
-			expectedErrs: []string{"config.GrailFilterSegment"},
+			expectedErrs: []string{"config.Segment"},
 		},
 
 		{
