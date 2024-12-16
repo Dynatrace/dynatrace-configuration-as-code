@@ -16,6 +16,8 @@ package v2
 
 import (
 	"fmt"
+	"maps"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
@@ -32,10 +34,6 @@ type (
 	// ConfigsPerEnvironment is a map of EnvironmentName to configs. This is a flattened version of ConfigsPerTypePerEnvironments
 	ConfigsPerEnvironment map[EnvironmentName][]config.Config
 
-	ProjectID = string
-	// DependenciesPerEnvironment is a map of EnvironmentName to project IDs
-	DependenciesPerEnvironment map[EnvironmentName][]ProjectID
-
 	// ActionOverConfig is a function that will be performed over each config that is part of a project via a Project.ForEveryConfigDo method
 	ActionOverConfig func(c config.Config)
 )
@@ -48,26 +46,16 @@ type Project struct {
 
 	// Configs are the configurations within this Project
 	Configs ConfigsPerTypePerEnvironments
-
-	// Dependencies of this project to other projects
-	Dependencies DependenciesPerEnvironment
 }
 
-// HasDependencyOn returns whether the project it is called on, has a dependency on the given project, for the given environment
-func (p Project) HasDependencyOn(environment string, project Project) bool {
-	dependencies, found := p.Dependencies[environment]
-
-	if !found {
-		return false
-	}
-
-	for _, dep := range dependencies {
-		if dep == project.Id {
-			return true
+func (p Project) ConfigList() []config.Config {
+	var configs []config.Config
+	for x := range maps.Values(p.Configs) {
+		for y := range maps.Values(x) {
+			configs = append(configs, y...)
 		}
 	}
-
-	return false
+	return configs
 }
 
 // GetConfigFor searches a config object for matching the given coordinate in the
