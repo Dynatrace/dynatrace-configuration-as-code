@@ -269,7 +269,7 @@ func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Projec
 			return persistence.DeleteEntry{}, fmt.Errorf("scope parameter has no references")
 		}
 
-		refCfg, ok := project.GetConfigForIgnoreEnvironment(refs[0].Config)
+		refCfg, ok := project.GetConfigFor(c.Environment, refs[0].Config)
 		if !ok {
 			return persistence.DeleteEntry{}, fmt.Errorf("no config for referenced scope found")
 		}
