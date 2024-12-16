@@ -26,16 +26,17 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-func TestGetConfigForIgnoreEnvironment(t *testing.T) {
+func TestGetConfigFor(t *testing.T) {
 	tests := []struct {
 		name            string
 		givenCoordinate coordinate.Coordinate
 		givenProject    project.Project
+		givenEnv        string
 		wantConfig      config.Config
 		wantFound       bool
 	}{
 		{
-			name:            "Config found",
+			name:            "Config found in same env",
 			givenCoordinate: coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"},
 			givenProject: project.Project{
 
@@ -45,9 +46,40 @@ func TestGetConfigForIgnoreEnvironment(t *testing.T) {
 					"env2": project.ConfigsPerType{"t2": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c2"}}}},
 				},
 			},
+			givenEnv: "env1",
 
 			wantFound:  true,
 			wantConfig: config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c1"}},
+		},
+		{
+			name:            "Config not found in different env",
+			givenCoordinate: coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"},
+			givenProject: project.Project{
+
+				Id: "p1",
+				Configs: project.ConfigsPerTypePerEnvironments{
+					"env1": project.ConfigsPerType{"t1": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c1"}}}},
+					"env2": project.ConfigsPerType{"t2": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c2"}}}},
+				},
+			},
+			givenEnv: "env2",
+
+			wantFound: false,
+		},
+		{
+			name:            "Config not found as env does not exist",
+			givenCoordinate: coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"},
+			givenProject: project.Project{
+
+				Id: "p1",
+				Configs: project.ConfigsPerTypePerEnvironments{
+					"env1": project.ConfigsPerType{"t1": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c1"}}}},
+					"env2": project.ConfigsPerType{"t2": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c2"}}}},
+				},
+			},
+			givenEnv: "env3",
+
+			wantFound: false,
 		},
 		{
 			name:            "Config not found - type mismatch",
@@ -60,6 +92,7 @@ func TestGetConfigForIgnoreEnvironment(t *testing.T) {
 					"env2": project.ConfigsPerType{"t2": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c2"}}}},
 				},
 			},
+			givenEnv: "env1",
 
 			wantFound:  false,
 			wantConfig: config.Config{},
@@ -75,6 +108,7 @@ func TestGetConfigForIgnoreEnvironment(t *testing.T) {
 					"env2": project.ConfigsPerType{"t2": {config.Config{Coordinate: coordinate.Coordinate{ConfigId: "c2"}}}},
 				},
 			},
+			givenEnv: "env1",
 
 			wantFound:  false,
 			wantConfig: config.Config{},
@@ -82,7 +116,9 @@ func TestGetConfigForIgnoreEnvironment(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg, found := tc.givenProject.GetConfigForIgnoreEnvironment(tc.givenCoordinate)
+			t.Parallel()
+
+			cfg, found := tc.givenProject.GetConfigFor(tc.givenEnv, tc.givenCoordinate)
 			assert.Equal(t, tc.wantConfig, cfg)
 			assert.Equal(t, tc.wantFound, found)
 		})
