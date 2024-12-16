@@ -34,6 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -330,7 +331,7 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return nil, nil
 				},
-				segmentDownload: func(b client.SegmentClient, s string) (projectv2.ConfigsPerType, error) {
+				segmentDownload: func(b segment.Client, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.segment {
 						t.Fatalf("segment download was not meant to be called but was")
 					}
