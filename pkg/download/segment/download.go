@@ -21,9 +21,9 @@ import (
 	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
@@ -31,7 +31,11 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-func Download(client client.SegmentClient, projectName string) (project.ConfigsPerType, error) {
+type Client interface {
+	GetAll(ctx context.Context) ([]segments.Response, error)
+}
+
+func Download(client Client, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{}
 
 	downloadedConfigs, err := client.GetAll(context.TODO())

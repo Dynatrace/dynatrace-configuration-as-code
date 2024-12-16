@@ -17,149 +17,95 @@
 package segment_test
 
 import (
+	"context"
+	"errors"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	coreLib "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/segment"
 )
 
+type stubClient struct {
+	getAll func() ([]coreLib.Response, error)
+}
+
+func (s stubClient) GetAll(_ context.Context) ([]coreLib.Response, error) {
+	return s.getAll()
+}
+
 func TestDownloader_Download(t *testing.T) {
 	t.Run("download segments works", func(t *testing.T) {
-		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
-		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{
-			{
-				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					data, err := os.ReadFile("./testdata/listResponse.json")
-					assert.NoError(t, err)
+		c := stubClient{getAll: func() ([]coreLib.Response, error) {
+			return []coreLib.Response{
+				{
+					StatusCode: http.StatusOK,
+					Data: []byte(`{
+    "uid": "uid",
+    "externalId": "some_external_ID",
+    "version": 1,
+    "name": "segment_name"
+}`),
+				},
+			}, nil
+		}}
 
-					return testutils.Response{
-						ResponseCode: http.StatusOK,
-						ResponseBody: string(data),
-					}
-				},
-				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/platform/storage/filter-segments/v1/filter-segments:lean", request.URL.Path)
-					assert.Equal(t, "add-fields=EXTERNALID", request.URL.RawQuery)
-				},
-			},
-			{
-				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					data, err := os.ReadFile("./testdata/uid_1_getResponse.json")
-					assert.NoError(t, err)
-
-					return testutils.Response{
-						ResponseCode: http.StatusOK,
-						ResponseBody: string(data),
-					}
-				},
-				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/platform/storage/filter-segments/v1/filter-segments/uid_1", request.URL.Path)
-					assert.Equal(t, "add-fields=INCLUDES&add-fields=VARIABLES&add-fields=EXTERNALID&add-fields=RESOURCECONTEXT", request.URL.RawQuery)
-				},
-			},
-			{
-				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					data, err := os.ReadFile("./testdata/uid_2_getResponse.json")
-					assert.NoError(t, err)
-
-					return testutils.Response{
-						ResponseCode: http.StatusOK,
-						ResponseBody: string(data),
-					}
-				},
-				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/platform/storage/filter-segments/v1/filter-segments/uid_2", request.URL.Path)
-					assert.Equal(t, "add-fields=INCLUDES&add-fields=VARIABLES&add-fields=EXTERNALID&add-fields=RESOURCECONTEXT", request.URL.RawQuery)
-				},
-			},
-		})
-		defer server.Close()
-
-		client := coreLib.NewClient(rest.NewClient(server.URL(), server.Client()))
-		result, err := segment.Download(client, "project")
+		result, err := segment.Download(c, "project")
 
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
-		require.Len(t, result[string(config.SegmentID)], 2, "all listed segments should be downloaded")
+		require.Len(t, result[string(config.SegmentID)], 1, "all listed segments should be downloaded")
+
+		actual := result[string(config.SegmentID)][0]
+
+		assert.Equal(t, config.Segment{}, actual.Type)
+		assert.Equal(t, coordinate.Coordinate{Project: "project", Type: "segment", ConfigId: "uid"}, actual.Coordinate)
+		assert.Equal(t, "uid", actual.OriginObjectId)
+		actualTemplate, err := actual.Template.Content()
+		assert.NoError(t, err)
+		assert.JSONEq(t, `{"name":"segment_name"}`, actualTemplate)
+
+		assert.False(t, actual.Skip)
+		assert.Empty(t, actual.Group)
+		assert.Empty(t, actual.Environment)
+		assert.Empty(t, actual.Parameters)
+		assert.Empty(t, actual.SkipForConversion)
 	})
 
 	t.Run("segment without uio is ignored", func(t *testing.T) {
-		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
-		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{
-			{
-				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					data, err := os.ReadFile("./testdata/listResponse.json")
-					assert.NoError(t, err)
+		c := stubClient{getAll: func() ([]coreLib.Response, error) {
+			return []coreLib.Response{
+				{
+					StatusCode: http.StatusOK,
+					Data: []byte(`{
+    "externalId": "some_external_ID",
+    "version": 1,
+    "name": "segment_name"
+}`),
+				},
+			}, nil
+		}}
 
-					return testutils.Response{
-						ResponseCode: http.StatusOK,
-						ResponseBody: string(data),
-					}
-				},
-				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/platform/storage/filter-segments/v1/filter-segments:lean", request.URL.Path)
-					assert.Equal(t, "add-fields=EXTERNALID", request.URL.RawQuery)
-				},
-			},
-			{
-				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					data, err := os.ReadFile("./testdata/uid_1_getResponse_wo_uid.json")
-					assert.NoError(t, err)
-
-					return testutils.Response{
-						ResponseCode: http.StatusOK,
-						ResponseBody: string(data),
-					}
-				},
-				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/platform/storage/filter-segments/v1/filter-segments/uid_1", request.URL.Path)
-					assert.Equal(t, "add-fields=INCLUDES&add-fields=VARIABLES&add-fields=EXTERNALID&add-fields=RESOURCECONTEXT", request.URL.RawQuery)
-				},
-			},
-			{
-				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					data, err := os.ReadFile("./testdata/uid_2_getResponse.json")
-					assert.NoError(t, err)
-
-					return testutils.Response{
-						ResponseCode: http.StatusOK,
-						ResponseBody: string(data),
-					}
-				},
-				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/platform/storage/filter-segments/v1/filter-segments/uid_2", request.URL.Path)
-					assert.Equal(t, "add-fields=INCLUDES&add-fields=VARIABLES&add-fields=EXTERNALID&add-fields=RESOURCECONTEXT", request.URL.RawQuery)
-				},
-			},
-		})
-		defer server.Close()
-
-		client := coreLib.NewClient(rest.NewClient(server.URL(), server.Client()))
-		result, err := segment.Download(client, "project")
+		result, err := segment.Download(c, "project")
 
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
-		assert.Len(t, result[string(config.SegmentID)], 1, "all listed segments should be downloaded")
-		assert.Equal(t, "uid_2", result[string(config.SegmentID)][0].OriginObjectId)
+		assert.Empty(t, result[string(config.SegmentID)])
 	})
 
 	t.Run("no error downloading segments with faulty client", func(t *testing.T) {
-		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{})
-		defer server.Close()
+		c := stubClient{getAll: func() ([]coreLib.Response, error) {
+			return []coreLib.Response{}, errors.New("some unexpected error")
+		}}
 
-		client := coreLib.NewClient(rest.NewClient(server.URL(), server.FaultyClient()))
-		result, err := segment.Download(client, "project")
+		result, err := segment.Download(c, "project")
 		assert.NoError(t, err)
 		assert.Empty(t, result)
 	})
