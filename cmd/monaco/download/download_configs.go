@@ -241,7 +241,7 @@ type downloadFn struct {
 	bucketDownload       func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
 	documentDownload     func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
 	openPipelineDownload func(client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
-	segmentDownload      func(client.SegmentClient, string) (projectv2.ConfigsPerType, error)
+	segmentDownload      func(segment.Client, string) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
