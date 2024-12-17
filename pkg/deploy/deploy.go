@@ -73,9 +73,6 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
 		concurrentDeploymentsLimiter = rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
 	}
-
-	preloadCaches(ctx, projects, environmentClients)
-	g := graph.New(projects, environmentClients.Names())
 	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
 
 	// note: Currently the validation works 'environment-independent', but that might be something we should reconsider to improve error messages
@@ -85,6 +82,9 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 		}
 		errors.As(validationErrs, &deploymentErrors)
 	}
+
+	preloadCaches(ctx, projects, environmentClients)
+	g := graph.New(projects, environmentClients.Names())
 
 	for env, clientset := range environmentClients {
 		ctx := newContextWithEnvironment(ctx, env)
