@@ -20,6 +20,8 @@ package download
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -292,57 +294,90 @@ func TestDownload_Options(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
-			fn := downloadFn{
-				classicDownload: func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
-					if !tt.want.config {
-						t.Fatalf("classic config download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				settingsDownload: func(settingsClient client.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (projectv2.ConfigsPerType, error) {
-					if !tt.want.settings {
-						t.Fatalf("settings download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				automationDownload: func(a client.AutomationClient, s string, automationType ...config.AutomationType) (projectv2.ConfigsPerType, error) {
-					if !tt.want.automation {
-						t.Fatalf("automation download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				bucketDownload: func(b client.BucketClient, s string) (projectv2.ConfigsPerType, error) {
-					if !tt.want.bucket {
-						t.Fatalf("automation download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				documentDownload: func(b client.DocumentClient, s string) (projectv2.ConfigsPerType, error) {
-					if !tt.want.document {
-						t.Fatalf("document download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				openPipelineDownload: func(b client.OpenPipelineClient, s string) (projectv2.ConfigsPerType, error) {
-					if !tt.want.openpipeline {
-						t.Fatalf("openpipeline download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				segmentDownload: func(b segment.Client, s string) (projectv2.ConfigsPerType, error) {
-					if !tt.want.segment {
-						t.Fatalf("segment download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-			}
+		fn := downloadFn{
+			classicDownload: func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
+				if !tt.want.config {
+					t.Fatalf("classic config download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			settingsDownload: func(settingsClient client.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (projectv2.ConfigsPerType, error) {
+				if !tt.want.settings {
+					t.Fatalf("settings download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			automationDownload: func(a client.AutomationClient, s string, automationType ...config.AutomationType) (projectv2.ConfigsPerType, error) {
+				if !tt.want.automation {
+					t.Fatalf("automation download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			bucketDownload: func(b client.BucketClient, s string) (projectv2.ConfigsPerType, error) {
+				if !tt.want.bucket {
+					t.Fatalf("automation download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			documentDownload: func(b client.DocumentClient, s string) (projectv2.ConfigsPerType, error) {
+				if !tt.want.document {
+					t.Fatalf("document download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			openPipelineDownload: func(b client.OpenPipelineClient, s string) (projectv2.ConfigsPerType, error) {
+				if !tt.want.openpipeline {
+					t.Fatalf("openpipeline download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			segmentDownload: func(b segment.DownloadSegmentClient, s string) (projectv2.ConfigsPerType, error) {
+				if !tt.want.segment {
+					t.Fatalf("segment download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+		}
 
+		t.Run(fmt.Sprintf("%s - all temroray FF are false", tt.name), func(t *testing.T) {
+			setTemporaryFFTo(t, false)
 			c := client.NewMockConfigClient(gomock.NewController(t))
 			_, err := downloadConfigs(&client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
 			assert.NoError(t, err)
 		})
+
+		t.Run(fmt.Sprintf("%s - all temroray FF are false)", tt.name), func(t *testing.T) {
+			setTemporaryFFTo(t, true)
+			c := client.NewMockConfigClient(gomock.NewController(t))
+			_, err := downloadConfigs(&client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
+			assert.NoError(t, err)
+		})
+
+		for _, ff := range featureflags.Temporary {
+			t.Run(fmt.Sprintf("%s - only %s if set to true (other tmp to false)", tt.name, ff.EnvName()), func(t *testing.T) {
+				setTemporaryFFTo(t, false)
+				t.Setenv(ff.EnvName(), "true")
+				c := client.NewMockConfigClient(gomock.NewController(t))
+				_, err := downloadConfigs(&client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
+				assert.NoError(t, err)
+			})
+
+			t.Run(fmt.Sprintf("%s - only %s if set to false (other tmp to true)", tt.name, ff.EnvName()), func(t *testing.T) {
+				setTemporaryFFTo(t, true)
+				t.Setenv(ff.EnvName(), "false")
+				c := client.NewMockConfigClient(gomock.NewController(t))
+				_, err := downloadConfigs(&client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
+				assert.NoError(t, err)
+			})
+
+		}
+	}
+}
+
+func setTemporaryFFTo(t *testing.T, b bool) {
+	t.Helper()
+	for _, f := range featureflags.Temporary {
+		t.Setenv(f.EnvName(), strconv.FormatBool(b))
 	}
 }
 
