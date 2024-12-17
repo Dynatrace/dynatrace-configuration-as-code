@@ -69,7 +69,7 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Equal(t, "uid", actual.OriginObjectId)
 		actualTemplate, err := actual.Template.Content()
 		assert.NoError(t, err)
-		assert.JSONEq(t, `{"name":"segment_name"}`, actualTemplate)
+		assert.JSONEq(t, `{"name":"segment_name"}`, actualTemplate, "uid, externalId and version must be deleted")
 
 		assert.False(t, actual.Skip)
 		assert.Empty(t, actual.Group)
@@ -100,6 +100,23 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Empty(t, result[string(config.SegmentID)])
 	})
 
+	t.Run("Downloading multiple segments works", func(t *testing.T) {
+		c := stubClient{getAll: func() ([]coreLib.Response, error) {
+			return []coreLib.Response{
+				{Data: []byte(`{"uid": "uid1","externalId": "some_external_ID","version": 1,"name": "segment_name"}`), StatusCode: http.StatusOK},
+				{Data: []byte(`{"uid": "uid2","externalId": "some_external_ID","version": 1,"name": "segment_name"}`), StatusCode: http.StatusOK},
+				{Data: []byte(`{"uid": "uid3","externalId": "some_external_ID","version": 1,"name": "segment_name"}`), StatusCode: http.StatusOK},
+			}, nil
+		}}
+
+		actual, err := segment.Download(c, "project")
+
+		assert.NoError(t, err)
+		assert.Len(t, actual, 1)
+
+		assert.Len(t, actual[string(config.SegmentID)], 3, "must contain all downloaded configs")
+	})
+
 	t.Run("no error downloading segments with faulty client", func(t *testing.T) {
 		c := stubClient{getAll: func() ([]coreLib.Response, error) {
 			return []coreLib.Response{}, errors.New("some unexpected error")
@@ -108,5 +125,73 @@ func TestDownloader_Download(t *testing.T) {
 		result, err := segment.Download(c, "project")
 		assert.NoError(t, err)
 		assert.Empty(t, result)
+	})
+
+	t.Run("complete real payload", func(t *testing.T) {
+		given := `{
+  "uid": "PfdP4Qp1IJG",
+  "externalId": "some_external_ID",
+  "name": "Host based logs",
+  "variables": {
+    "type": "query",
+    "value": "fetch dt.entity.host | fields id, entity.name"
+  },
+  "isPublic": true,
+  "owner": "cd3fc936-5b1a-4d6c-b1b6-f1025dbde7d5",
+  "allowedOperations": [
+    "READ"
+  ],
+  "includes": [
+    {
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":58},\"logicalOperator\":\"OR\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":22},\"key\":{\"type\":\"Key\",\"textValue\":\"dt.entity.host\",\"value\":\"dt.entity.host\",\"range\":{\"from\":0,\"to\":14}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":15,\"to\":16}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"$id\\\"\",\"value\":\"$id\",\"range\":{\"from\":17,\"to\":22},\"isEscaped\":true}},{\"type\":\"LogicalOperator\",\"textValue\":\"OR\",\"value\":\"OR\",\"range\":{\"from\":23,\"to\":25}},{\"type\":\"Statement\",\"range\":{\"from\":26,\"to\":57},\"key\":{\"type\":\"Key\",\"textValue\":\"dt.entity.host\",\"value\":\"dt.entity.host\",\"range\":{\"from\":26,\"to\":40}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":41,\"to\":42}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"$entity.name\\\"\",\"value\":\"$entity.name\",\"range\":{\"from\":43,\"to\":57},\"isEscaped\":true}}]}",
+      "dataObject": "logs",
+      "applyTo": []
+    },
+    {
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":11},\"logicalOperator\":\"AND\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":10},\"key\":{\"type\":\"Key\",\"textValue\":\"id\",\"value\":\"id\",\"range\":{\"from\":0,\"to\":2}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":3,\"to\":4}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"$id\\\"\",\"value\":\"$id\",\"range\":{\"from\":5,\"to\":10},\"isEscaped\":true}}]}",
+      "dataObject": "dt.entity.host",
+      "applyTo": []
+    }
+  ],
+  "version": 16
+}`
+		expected := `{
+  "name": "Host based logs",
+  "variables": {
+    "type": "query",
+    "value": "fetch dt.entity.host | fields id, entity.name"
+  },
+  "isPublic": true,
+  "owner": "cd3fc936-5b1a-4d6c-b1b6-f1025dbde7d5",
+  "allowedOperations": [
+    "READ"
+  ],
+  "includes": [
+    {
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":58},\"logicalOperator\":\"OR\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":22},\"key\":{\"type\":\"Key\",\"textValue\":\"dt.entity.host\",\"value\":\"dt.entity.host\",\"range\":{\"from\":0,\"to\":14}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":15,\"to\":16}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"$id\\\"\",\"value\":\"$id\",\"range\":{\"from\":17,\"to\":22},\"isEscaped\":true}},{\"type\":\"LogicalOperator\",\"textValue\":\"OR\",\"value\":\"OR\",\"range\":{\"from\":23,\"to\":25}},{\"type\":\"Statement\",\"range\":{\"from\":26,\"to\":57},\"key\":{\"type\":\"Key\",\"textValue\":\"dt.entity.host\",\"value\":\"dt.entity.host\",\"range\":{\"from\":26,\"to\":40}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":41,\"to\":42}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"$entity.name\\\"\",\"value\":\"$entity.name\",\"range\":{\"from\":43,\"to\":57},\"isEscaped\":true}}]}",
+      "dataObject": "logs",
+      "applyTo": []
+    },
+    {
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":11},\"logicalOperator\":\"AND\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":10},\"key\":{\"type\":\"Key\",\"textValue\":\"id\",\"value\":\"id\",\"range\":{\"from\":0,\"to\":2}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":3,\"to\":4}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"$id\\\"\",\"value\":\"$id\",\"range\":{\"from\":5,\"to\":10},\"isEscaped\":true}}]}",
+      "dataObject": "dt.entity.host",
+      "applyTo": []
+    }
+  ]
+}`
+
+		c := stubClient{getAll: func() ([]coreLib.Response, error) {
+			return []coreLib.Response{{StatusCode: http.StatusOK, Data: []byte(given)}}, nil
+		}}
+
+		result, err := segment.Download(c, "project")
+		assert.NoError(t, err)
+
+		actual := result[string(config.SegmentID)][0].Template
+		assert.Equal(t, "PfdP4Qp1IJG", actual.ID())
+
+		actualContent, err := actual.Content()
+		assert.NoError(t, err)
+		assert.JSONEq(t, expected, actualContent)
 	})
 }
