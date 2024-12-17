@@ -31,11 +31,11 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-type Client interface {
+type DownloadSegmentClient interface {
 	GetAll(ctx context.Context) ([]segments.Response, error)
 }
 
-func Download(client Client, projectName string) (project.ConfigsPerType, error) {
+func Download(client DownloadSegmentClient, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{}
 
 	downloadedConfigs, err := client.GetAll(context.TODO())
