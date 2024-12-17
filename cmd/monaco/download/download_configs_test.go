@@ -20,6 +20,7 @@ package download
 
 import (
 	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -185,18 +186,19 @@ func TestDownload_Options(t *testing.T) {
 		config, settings, bucket, automation, document, openpipeline, segment bool
 	}
 	tests := []struct {
-		name  string
-		given downloadConfigsOptions
-		want  wantDownload
+		name         string
+		given        downloadConfigsOptions
+		want         wantDownload
+		featureFlags map[featureflags.TemporaryFlag]bool
 	}{
 		{
-			"download all if options are not limiting",
-			downloadConfigsOptions{
+			name: "download all if options are not limiting",
+			given: downloadConfigsOptions{
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}, OAuth: &manifest.OAuth{}}, // OAuth and Token required to download whole config
 				},
 			},
-			wantDownload{
+			want: wantDownload{
 				config:       true,
 				settings:     true,
 				bucket:       true,
@@ -207,93 +209,107 @@ func TestDownload_Options(t *testing.T) {
 			},
 		},
 		{
-			"only settings requested",
-			downloadConfigsOptions{
+			name: "only settings requested",
+			given: downloadConfigsOptions{
 				onlySettings: true,
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
 				}},
-			wantDownload{settings: true},
+			want: wantDownload{settings: true},
 		},
 		{
-			"specific settings requested",
-			downloadConfigsOptions{
+			name: "specific settings requested",
+			given: downloadConfigsOptions{
 				specificSchemas: []string{"some:schema"},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
 				}},
-			wantDownload{settings: true},
+			want: wantDownload{settings: true},
 		},
 		{
-			"only documents requested",
-			downloadConfigsOptions{
+			name: "only documents requested",
+			given: downloadConfigsOptions{
 				onlyDocuments: true,
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
-			wantDownload{document: true},
+			want: wantDownload{document: true},
 		},
 		{
-			"only openpipeline requested",
-			downloadConfigsOptions{
+			name: "only openpipeline requested",
+			given: downloadConfigsOptions{
 				onlyOpenPipeline: true,
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
-			wantDownload{openpipeline: true},
+			want: wantDownload{openpipeline: true},
 		},
 		{
-			"only segment requested",
-			downloadConfigsOptions{
+			name: "only segment requested with FF on",
+			given: downloadConfigsOptions{
 				onlySegment: true,
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
-			wantDownload{segment: true},
+			featureFlags: map[featureflags.TemporaryFlag]bool{featureflags.Segments: true},
+			want:         wantDownload{segment: true},
 		},
 		{
-			"only apis requested",
-			downloadConfigsOptions{
+			name: "only segment requested with FF off",
+			given: downloadConfigsOptions{
+				onlySegment: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
+				}},
+			featureFlags: map[featureflags.TemporaryFlag]bool{featureflags.Segments: false},
+			want:         wantDownload{},
+		},
+		{
+			name: "only apis requested",
+			given: downloadConfigsOptions{
 				onlyAPIs: true,
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
 				}},
-			wantDownload{config: true},
+			want: wantDownload{config: true},
 		},
 		{
-			"specific config apis requested",
-			downloadConfigsOptions{
+			name: "specific config apis requested",
+			given: downloadConfigsOptions{
 				specificAPIs: []string{"alerting-profile"},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
 				}},
-			wantDownload{config: true},
+			want: wantDownload{config: true},
 		},
 		{
-			"only automations requested",
-			downloadConfigsOptions{
+			name: "only automations requested",
+			given: downloadConfigsOptions{
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				},
 				onlyAutomation: true,
 			},
-			wantDownload{automation: true},
+			want: wantDownload{automation: true},
 		},
 		{
-			"specific APIs and schemas",
-			downloadConfigsOptions{
+			name: "specific APIs and schemas",
+			given: downloadConfigsOptions{
 				specificAPIs:    []string{"alerting-profile"},
 				specificSchemas: []string{"some:schema"},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
 				}},
-			wantDownload{config: true, settings: true},
+			want: wantDownload{config: true, settings: true},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
+			for ff, v := range tt.featureFlags {
+				t.Setenv(string(ff), strconv.FormatBool(v))
+			}
+
 			fn := downloadFn{
 				classicDownload: func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
 					if !tt.want.config {
@@ -331,7 +347,7 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return nil, nil
 				},
-				segmentDownload: func(b segment.Client, s string) (projectv2.ConfigsPerType, error) {
+				segmentDownload: func(b segment.DownloadSegmentClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.segment {
 						t.Fatalf("segment download was not meant to be called but was")
 					}
