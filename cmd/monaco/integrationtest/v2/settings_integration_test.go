@@ -226,6 +226,37 @@ func TestOrderedSettings(t *testing.T) {
 
 }
 
+// TestOrderedSettingsCrossProjects tries to deploy two setting objects A and B, while both are in different projects.
+// After each of the two deployment the actual order is asserted.
+func TestOrderedSettingsCrossProjects(t *testing.T) {
+	configFolder := "test-resources/settings-ordered/cross-project-reference"
+	manifestPath := configFolder + "/manifest.yaml"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=source", manifestPath)
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"source"}, "platform_env", true)
+
+		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
+		environment := loadedManifest.Environments["platform_env"]
+		settingsClient := createSettingsClient(t, environment)
+		results, err := settingsClient.List(context.TODO(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		assert.NoError(t, err)
+
+		assert.Len(t, results, 2)
+
+		// target is first, as source 'insertsAfter' target
+		targetConfigExternalId, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "target", Type: "builtin:container.monitoring-rule", ConfigId: "target-id"})
+		assert.NoError(t, err)
+		assert.Equal(t, targetConfigExternalId, results[0].ExternalId)
+
+		sourceConfigExternalId, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "source", Type: "builtin:container.monitoring-rule", ConfigId: "source-id"})
+		assert.NoError(t, err)
+		assert.Equal(t, sourceConfigExternalId, results[1].ExternalId)
+	})
+
+}
+
 func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.SettingsClient)) client.SettingsClient {
 
 	clientFactory := clients.Factory().
