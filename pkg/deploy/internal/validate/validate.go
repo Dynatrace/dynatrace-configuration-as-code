@@ -25,7 +25,7 @@ import (
 )
 
 type Validator interface {
-	Validate(p project.Project, c config.Config) error
+	Validate(projects []project.Project, config config.Config) error
 }
 
 // Validate verifies that the passed projects are sound to an extent that can be checked before deployment.
@@ -46,7 +46,7 @@ func validate(projects []project.Project, validators []Validator) error {
 	for _, p := range projects {
 		p.ForEveryConfigDo(func(c config.Config) {
 			for _, v := range validators {
-				if err := v.Validate(p, c); err != nil {
+				if err := v.Validate(projects, c); err != nil {
 					errs = errs.Append(c.Environment, err)
 				}
 			}
