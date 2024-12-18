@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -55,7 +56,7 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 				Environment: "env",
 				Type:        &config.SettingsType{SchemaId: "type-a"},
 				Parameters: map[string]parameter.Parameter{
-					config.InsertAfterParameter: refParam.New("my-project", "type-a", "config-y", "id"),
+					config.InsertAfterParameter: refParam.New("project-id", "type-a", "config-y", "id"),
 					config.ScopeParameter:       valueParam.New("environment"),
 				},
 			},
@@ -77,7 +78,7 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 				Environment: "env",
 				Type:        &config.SettingsType{SchemaId: "type-a"},
 				Parameters: map[string]parameter.Parameter{
-					config.InsertAfterParameter: refParam.New("my-project", "type-a", "config-y", "id"),
+					config.InsertAfterParameter: refParam.New("project-id", "type-a", "config-y", "id"),
 					config.ScopeParameter:       valueParam.New("environment"),
 				},
 			},
@@ -100,7 +101,7 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 				Environment: "env",
 				Type:        &config.SettingsType{SchemaId: "type-a"},
 				Parameters: map[string]parameter.Parameter{
-					config.InsertAfterParameter: refParam.New("my-project", "type-a", "config-y", "id"),
+					config.InsertAfterParameter: refParam.New("project-id", "type-a", "config-y", "id"),
 					config.ScopeParameter:       valueParam.New("environment"),
 				},
 			},
@@ -114,7 +115,7 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 				Environment: "env",
 				Type:        &config.SettingsType{SchemaId: "type-a"},
 				Parameters: map[string]parameter.Parameter{
-					config.InsertAfterParameter: refParam.New("my-project", "type-a", "config-y", "id"),
+					config.InsertAfterParameter: refParam.New("project-id", "type-a", "config-y", "id"),
 					config.ScopeParameter:       valueParam.New("environment"),
 				},
 			},
@@ -137,7 +138,7 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 				Environment: "env",
 				Type:        &config.SettingsType{SchemaId: "type-a"},
 				Parameters: map[string]parameter.Parameter{
-					config.InsertAfterParameter: refParam.New("my-project", "type-b", "config-y", "id"),
+					config.InsertAfterParameter: refParam.New("project-id", "type-b", "config-y", "id"),
 					config.ScopeParameter:       valueParam.New("environment"),
 				},
 			},
@@ -152,7 +153,7 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 				Type:        &config.SettingsType{SchemaId: "type-a"},
 				Skip:        true,
 				Parameters: map[string]parameter.Parameter{
-					config.InsertAfterParameter: refParam.New("my-project", "type-a", "config-y", "id"),
+					config.InsertAfterParameter: refParam.New("project-id", "type-a", "config-y", "id"),
 					config.ScopeParameter:       valueParam.New("environment"),
 				},
 			},
@@ -187,7 +188,7 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 				Environment: "env",
 				Type:        &config.SettingsType{SchemaId: "type-a"},
 				Parameters: map[string]parameter.Parameter{
-					config.InsertAfterParameter: refParam.New("my-project", "type-a", "config-y", "id"),
+					config.InsertAfterParameter: refParam.New("project-id", "type-a", "config-y", "id"),
 					config.ScopeParameter:       refParam.New("", "", "", ""),
 				},
 			},
@@ -209,7 +210,7 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 				Environment: "env",
 				Type:        &config.SettingsType{SchemaId: "type-a"},
 				Parameters: map[string]parameter.Parameter{
-					config.InsertAfterParameter: refParam.New("my-project", "type-a", "config-y", "id"),
+					config.InsertAfterParameter: refParam.New("project-id", "type-a", "config-y", "id"),
 					config.ScopeParameter:       valueParam.New("environment"),
 				},
 			},
@@ -231,7 +232,7 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 				Environment: "env",
 				Type:        &config.SettingsType{SchemaId: "type-a"},
 				Parameters: map[string]parameter.Parameter{
-					config.InsertAfterParameter: refParam.New("my-project", "type-a", "config-y", "id"),
+					config.InsertAfterParameter: refParam.New("project-id", "type-a", "config-y", "id"),
 					config.ScopeParameter:       valueParam.New("environment"),
 				},
 			},
@@ -246,15 +247,88 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Valid reference to config in other project",
+			sourceConfig: config.Config{
+				Coordinate:  coordinate.Coordinate{Project: "project-id", Type: "type-a", ConfigId: "config-x"},
+				Environment: "env",
+				Type:        &config.SettingsType{SchemaId: "type-a"},
+				Parameters: map[string]parameter.Parameter{
+					config.InsertAfterParameter: refParam.New("other-project", "type-a", "config-y", "id"),
+					config.ScopeParameter:       valueParam.New("environment"),
+				},
+			},
+			otherProjectConfigs: []config.Config{
+				{
+					Coordinate:  coordinate.Coordinate{Project: "other-project", Type: "type-a", ConfigId: "config-y"},
+					Environment: "env",
+					Type:        &config.SettingsType{SchemaId: "type-a"},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: valueParam.New("environment"),
+					},
+				},
+			},
+		},
+		{
+			name: "Reference to config in other project, but other project does not exist/can't be found",
+			sourceConfig: config.Config{
+				Coordinate:  coordinate.Coordinate{Project: "project-id", Type: "type-a", ConfigId: "config-x"},
+				Environment: "env",
+				Type:        &config.SettingsType{SchemaId: "type-a"},
+				Parameters: map[string]parameter.Parameter{
+					config.InsertAfterParameter: refParam.New("other-project", "type-a", "config-y", "id"),
+					config.ScopeParameter:       valueParam.New("environment"),
+				},
+			},
+			otherProjectConfigs: []config.Config{
+				{
+					Coordinate:  coordinate.Coordinate{Project: "completely-different-project", Type: "type-a", ConfigId: "config-y"},
+					Environment: "env",
+					Type:        &config.SettingsType{SchemaId: "type-a"},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: valueParam.New("environment"),
+					},
+				},
+			},
+			expectError: errReferencedProjectNotFound,
+		},
+		{
+			name: "Reference to config in other project, but no other configs exist",
+			sourceConfig: config.Config{
+				Coordinate:  coordinate.Coordinate{Project: "project-id", Type: "type-a", ConfigId: "config-x"},
+				Environment: "env",
+				Type:        &config.SettingsType{SchemaId: "type-a"},
+				Parameters: map[string]parameter.Parameter{
+					config.InsertAfterParameter: refParam.New("project-id", "type-a", "config-y", "id"),
+					config.ScopeParameter:       valueParam.New("environment"),
+				},
+			},
+			otherProjectConfigs: []config.Config{},
+			expectError:         errReferencedNotFound,
+		},
+		{
+			name: "Reference to config in other project, but no other configs exist and other project is referenced",
+			sourceConfig: config.Config{
+				Coordinate:  coordinate.Coordinate{Project: "project-id", Type: "type-a", ConfigId: "config-x"},
+				Environment: "env",
+				Type:        &config.SettingsType{SchemaId: "type-a"},
+				Parameters: map[string]parameter.Parameter{
+					config.InsertAfterParameter: refParam.New("other-project", "type-a", "config-y", "id"),
+					config.ScopeParameter:       valueParam.New("environment"),
+				},
+			},
+			otherProjectConfigs: []config.Config{},
+			expectError:         errReferencedProjectNotFound,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			proj := buildProject(test.sourceConfig, test.otherProjectConfigs)
+			projects := buildProjects(test.sourceConfig, test.otherProjectConfigs)
 
-			err := validator.Validate(proj, test.sourceConfig)
+			err := validator.Validate(projects, test.sourceConfig)
 			if test.expectError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -265,26 +339,37 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 	}
 }
 
-func buildProject(sourceConfig config.Config, configs []config.Config) project.Project {
+func buildProjects(sourceConfig config.Config, configs []config.Config) []project.Project {
 
 	configs = append(configs, sourceConfig)
 
-	projectConfigs := project.ConfigsPerTypePerEnvironments{}
+	projects := map[string]project.Project{}
+
 	for _, c := range configs {
-		if _, f := projectConfigs[c.Environment]; !f {
-			projectConfigs[c.Environment] = map[project.ConfigTypeName][]config.Config{}
+		var (
+			proj  project.Project
+			found bool
+		)
+		if proj, found = projects[c.Coordinate.Project]; !found {
+			proj = project.Project{
+				Id:      c.Coordinate.Project,
+				Configs: map[project.EnvironmentName]project.ConfigsPerType{},
+			}
 		}
 
-		if _, f := projectConfigs[c.Environment][c.Coordinate.Type]; !f {
-			projectConfigs[c.Environment][c.Coordinate.Type] = []config.Config{}
+		var env map[project.ConfigTypeName][]config.Config
+		if env, found = proj.Configs[c.Environment]; !found {
+			env = map[project.ConfigTypeName][]config.Config{}
 		}
 
-		projectConfigs[c.Environment][c.Coordinate.Type] = append(projectConfigs[c.Environment][c.Coordinate.Type], c)
+		if _, f := env[c.Coordinate.Type]; !f {
+			env[c.Coordinate.Type] = []config.Config{}
+		}
+
+		env[c.Coordinate.Type] = append(env[c.Coordinate.Type], c)
+		proj.Configs[c.Environment] = env
+		projects[c.Coordinate.Project] = proj
 	}
 
-	return project.Project{
-		Id:      "my-project",
-		Configs: projectConfigs,
-	}
-
+	return maps.Values(projects)
 }

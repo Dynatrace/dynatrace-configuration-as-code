@@ -49,7 +49,7 @@ func NewValidator() *validator {
 
 // Validate checks that for each classic config API type, only one config exists with any given name.
 // As classic configs are identified by name, ValidateUniqueConfigNames returns errors if a name is used more than once for the same type.
-func (v *validator) Validate(_ project.Project, c config.Config) error {
+func (v *validator) Validate(_ []project.Project, c config.Config) error {
 	if v.uniqueNames == nil {
 		v.uniqueNames = make(map[environmentName]map[classicEndpoint][]config.Config)
 	}

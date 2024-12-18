@@ -38,7 +38,7 @@ var deprecatedSchemas = map[string]string{
 }
 
 // Validate checks for each settings type whether it is using a deprecated schema.
-func (v *DeprecatedSchemaValidator) Validate(_ project.Project, c config.Config) error {
+func (v *DeprecatedSchemaValidator) Validate(_ []project.Project, c config.Config) error {
 
 	s, ok := c.Type.(config.SettingsType)
 	if !ok {
@@ -53,9 +53,10 @@ func (v *DeprecatedSchemaValidator) Validate(_ project.Project, c config.Config)
 }
 
 var (
-	errDiffSchema         = errors.New("different schemas")
-	errDiffScope          = errors.New("different scopes")
-	errReferencedNotFound = errors.New("reference not found")
+	errDiffSchema                = errors.New("different schemas")
+	errDiffScope                 = errors.New("different scopes")
+	errReferencedProjectNotFound = errors.New("referenced project does not exist")
+	errReferencedNotFound        = errors.New("reference not found")
 )
 
 type insertAfterSameScopeError struct {
@@ -84,7 +85,7 @@ func NewInsertAfterSameScopeError(source, target coordinate.Coordinate, cause er
 // This only works if both scopes are 'static' data and not references or something similar.
 type InsertAfterSameScopeValidator struct{}
 
-func (_ InsertAfterSameScopeValidator) Validate(p project.Project, conf config.Config) error {
+func (_ InsertAfterSameScopeValidator) Validate(projects []project.Project, conf config.Config) error {
 
 	if conf.Skip {
 		return nil
@@ -103,7 +104,12 @@ func (_ InsertAfterSameScopeValidator) Validate(p project.Project, conf config.C
 		return NewInsertAfterSameScopeError(conf.Coordinate, targetCoordinate, errDiffSchema)
 	}
 
-	targetConf, f := p.GetConfigFor(conf.Environment, targetCoordinate)
+	proj, f := findProjectByName(projects, targetCoordinate.Project)
+	if !f {
+		return NewInsertAfterSameScopeError(conf.Coordinate, targetCoordinate, errReferencedProjectNotFound)
+	}
+
+	targetConf, f := proj.GetConfigFor(conf.Environment, targetCoordinate)
 	if !f {
 		return NewInsertAfterSameScopeError(conf.Coordinate, targetCoordinate, errReferencedNotFound)
 	}
@@ -123,6 +129,16 @@ func (_ InsertAfterSameScopeValidator) Validate(p project.Project, conf config.C
 	}
 
 	return nil
+}
+
+func findProjectByName(projects []project.Project, projectName string) (project.Project, bool) {
+	for _, p := range projects {
+		if p.Id == projectName {
+			return p, true
+		}
+	}
+
+	return project.Project{}, false
 }
 
 func extractInsertAfterReference(c config.Config) coordinate.Coordinate {
