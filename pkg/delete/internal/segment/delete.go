@@ -47,7 +47,7 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 		}
 	}
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d %s objects(s)", errCount, config.Segment{})
+		return fmt.Errorf("failed to delete %d %s objects(s)", errCount, config.SegmentID)
 	}
 	return nil
 }

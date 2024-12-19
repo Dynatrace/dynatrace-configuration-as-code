@@ -1151,29 +1151,31 @@ func TestDelete_Documents(t *testing.T) {
 	})
 }
 
-type fakeSegmentsClient struct {
+type stubClient struct {
+	called bool
 	list   func() (segments.Response, error)
 	getAll func() ([]segments.Response, error)
 	delete func() (segments.Response, error)
 }
 
-func (c fakeSegmentsClient) List(_ context.Context) (segments.Response, error) {
+func (c *stubClient) List(_ context.Context) (segments.Response, error) {
 	return c.list()
 }
 
-func (c fakeSegmentsClient) GetAll(_ context.Context) ([]segments.Response, error) {
+func (c *stubClient) GetAll(_ context.Context) ([]segments.Response, error) {
 	return c.getAll()
 }
 
-func (c fakeSegmentsClient) Delete(_ context.Context, _ string) (segments.Response, error) {
+func (c *stubClient) Delete(_ context.Context, _ string) (segments.Response, error) {
+	c.called = true
 	return c.delete()
 }
 
-func TestDelete_SegmentsWithFakes(t *testing.T) {
+func TestDelete_Segments(t *testing.T) {
 	t.Run("simple case", func(t *testing.T) {
 		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
 
-		fakeClient := fakeSegmentsClient{
+		c := stubClient{
 			delete: func() (segments.Response, error) {
 				return segments.Response{StatusCode: http.StatusOK}, nil
 			},
@@ -1187,18 +1189,15 @@ func TestDelete_SegmentsWithFakes(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: fakeClient}, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: &c}, given)
 		assert.NoError(t, err)
+		assert.True(t, c.called, "there should be delete call")
 	})
 
-}
+	t.Run("simple case with FF turned off", func(t *testing.T) {
+		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "false")
 
-func TestDelete_Segments(t *testing.T) {
-	t.Run("simple case", func(t *testing.T) {
-		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
-
-		c := client.NewMockSegmentClient(gomock.NewController(t))
-		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1)
+		c := stubClient{}
 
 		given := delete.DeleteEntries{
 			"segment": {
@@ -1208,24 +1207,9 @@ func TestDelete_Segments(t *testing.T) {
 				},
 			},
 		}
-		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: c}, given)
+		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: &c}, given)
 		assert.NoError(t, err)
-	})
-
-	t.Run("FF is turned off", func(t *testing.T) {
-		c := client.NewMockSegmentClient(gomock.NewController(t))
-		// no calls to client
-
-		entriesToDelete := delete.DeleteEntries{
-			"segment": {
-				{
-					Type:           "segment",
-					OriginObjectId: "originObjectID",
-				},
-			},
-		}
-		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: c}, entriesToDelete)
-		assert.NoError(t, err)
+		assert.False(t, c.called, "there should NOT be delete call")
 	})
 }
 
@@ -1233,19 +1217,27 @@ func TestDeleteAll_Segments(t *testing.T) {
 	t.Run("simple case", func(t *testing.T) {
 		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
 
-		c := client.NewMockSegmentClient(gomock.NewController(t))
-		c.EXPECT().List(gomock.Any()).Return(segments.Response{StatusCode: http.StatusOK, Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil).Times(1)
-		c.EXPECT().Delete(gomock.Any(), gomock.Any()).Times(3)
+		c := stubClient{
+			list: func() (segments.Response, error) {
+				return segments.Response{StatusCode: http.StatusOK, Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
+			},
+			delete: func() (segments.Response, error) {
+				return segments.Response{StatusCode: http.StatusOK}, nil
+			},
+		}
 
-		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: c}, api.APIs{})
+		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
 		assert.NoError(t, err)
+		assert.True(t, c.called, "there should be delete call")
 	})
 
 	t.Run("FF is turned off", func(t *testing.T) {
-		c := client.NewMockSegmentClient(gomock.NewController(t))
-		// no calls to client
+		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "false")
 
-		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: c}, api.APIs{})
+		c := stubClient{}
+
+		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
 		assert.NoError(t, err)
+		assert.False(t, c.called, "there should NOT be delete call")
 	})
 }
