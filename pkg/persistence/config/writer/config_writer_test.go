@@ -1068,7 +1068,7 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
-			name:    "Segment should fail if FF MONACO_FEAT_SEGMENTSis not set",
+			name:    "Segment should fail if FF MONACO_FEAT_SEGMENTS is not set",
 			envVars: map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "false"},
 			configs: []config.Config{
 				{
