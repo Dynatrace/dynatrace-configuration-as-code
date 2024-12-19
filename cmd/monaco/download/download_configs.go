@@ -37,6 +37,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
@@ -59,6 +60,7 @@ type downloadCmdOptions struct {
 	onlyAutomation          bool
 	onlyDocuments           bool
 	onlyOpenPipeline        bool
+	onlySegments            bool
 }
 
 type auth struct {
@@ -145,6 +147,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		onlyAutomation:   cmdOptions.onlyAutomation,
 		onlyDocuments:    cmdOptions.onlyDocuments,
 		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
+		onlySegment:      cmdOptions.onlySegments,
 	}
 
 	if errs := options.valid(); len(errs) != 0 {
@@ -238,6 +241,7 @@ type downloadFn struct {
 	bucketDownload       func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
 	documentDownload     func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
 	openPipelineDownload func(client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
+	segmentDownload      func(segment.DownloadSegmentClient, string) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
@@ -247,6 +251,7 @@ var defaultDownloadFn = downloadFn{
 	bucketDownload:       bucket.Download,
 	documentDownload:     document.Download,
 	openPipelineDownload: openpipeline.Download,
+	segmentDownload:      segment.Download,
 }
 
 func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
@@ -322,6 +327,18 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		}
 	}
 
+	if featureflags.Temporary[featureflags.Segments].Enabled() {
+		if shouldDownloadSegments(opts) {
+			segmentCgfs, err := fn.segmentDownload(clientSet.SegmentClient, opts.projectName)
+			if err != nil {
+				return nil, err
+			}
+			copyConfigs(configs, segmentCgfs)
+		} else if opts.onlySegment {
+			return nil, errors.New("can't download segment resources: no OAuth credentials configured")
+		}
+	}
+
 	return configs, nil
 }
 
@@ -341,38 +358,63 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 
 // shouldDownloadConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
 func shouldDownloadConfigs(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline
+	return (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) &&
+		!opts.onlyAutomation &&
+		!opts.onlySettings &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlySegment
 }
 
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
 func shouldDownloadSettings(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0) && !opts.onlyDocuments && !opts.onlyOpenPipeline
+	return (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0) &&
+		!opts.onlyAPIs &&
+		!opts.onlyAutomation &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlySegment
 }
 
 // shouldDownloadAutomationResources returns true unless download is limited to settings or config API types
 func shouldDownloadAutomationResources(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 &&
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && !opts.onlyDocuments && !opts.onlyOpenPipeline
+	return !opts.onlyAPIs && len(opts.specificSchemas) == 0 &&
+		!opts.onlySettings && len(opts.specificAPIs) == 0 &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlySegment
 }
 
 // shouldDownloadBuckets returns true if download is not limited to another specific type
 func shouldDownloadBuckets(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 &&
+		!opts.onlySettings && len(opts.specificSchemas) == 0 &&
+		!opts.onlyAutomation &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlySegment
+}
+
+func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
+		!opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
+		!opts.onlyAutomation &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlySegment
+}
+
+func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
+		!opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
+		!opts.onlyAutomation &&
+		!opts.onlyDocuments &&
+		!opts.onlySegment
+}
+
+func shouldDownloadSegments(opts downloadConfigsOptions) bool {
 	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
 		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
 		!opts.onlyAutomation &&
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline
-}
-
-func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlyAutomation && !opts.onlyOpenPipeline
-}
-
-func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlyDocuments &&
-		!opts.onlyAutomation
 }

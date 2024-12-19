@@ -20,12 +20,15 @@ package download
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -33,6 +36,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -180,7 +184,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 func TestDownload_Options(t *testing.T) {
 	type wantDownload struct {
-		config, settings, bucket, automation, document, openpipeline bool
+		config, settings, bucket, automation, document, openpipeline, segment bool
 	}
 	tests := []struct {
 		name  string
@@ -201,6 +205,7 @@ func TestDownload_Options(t *testing.T) {
 				automation:   true,
 				document:     true,
 				openpipeline: true,
+				segment:      true,
 			},
 		},
 		{
@@ -238,6 +243,15 @@ func TestDownload_Options(t *testing.T) {
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
 			wantDownload{openpipeline: true},
+		},
+		{
+			"only segment requested",
+			downloadConfigsOptions{
+				onlySegment: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
+				}},
+			wantDownload{segment: true},
 		},
 		{
 			"only apis requested",
@@ -280,50 +294,90 @@ func TestDownload_Options(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fn := downloadFn{
-				classicDownload: func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
-					if !tt.want.config {
-						t.Fatalf("classic config download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				settingsDownload: func(settingsClient client.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (projectv2.ConfigsPerType, error) {
-					if !tt.want.settings {
-						t.Fatalf("settings download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				automationDownload: func(a client.AutomationClient, s string, automationType ...config.AutomationType) (projectv2.ConfigsPerType, error) {
-					if !tt.want.automation {
-						t.Fatalf("automation download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				bucketDownload: func(b client.BucketClient, s string) (projectv2.ConfigsPerType, error) {
-					if !tt.want.bucket {
-						t.Fatalf("automation download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				documentDownload: func(b client.DocumentClient, s string) (projectv2.ConfigsPerType, error) {
-					if !tt.want.document {
-						t.Fatalf("document download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-				openPipelineDownload: func(b client.OpenPipelineClient, s string) (projectv2.ConfigsPerType, error) {
-					if !tt.want.openpipeline {
-						t.Fatalf("openpipeline download was not meant to be called but was")
-					}
-					return nil, nil
-				},
-			}
+		fn := downloadFn{
+			classicDownload: func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
+				if !tt.want.config {
+					t.Fatalf("classic config download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			settingsDownload: func(settingsClient client.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (projectv2.ConfigsPerType, error) {
+				if !tt.want.settings {
+					t.Fatalf("settings download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			automationDownload: func(a client.AutomationClient, s string, automationType ...config.AutomationType) (projectv2.ConfigsPerType, error) {
+				if !tt.want.automation {
+					t.Fatalf("automation download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			bucketDownload: func(b client.BucketClient, s string) (projectv2.ConfigsPerType, error) {
+				if !tt.want.bucket {
+					t.Fatalf("automation download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			documentDownload: func(b client.DocumentClient, s string) (projectv2.ConfigsPerType, error) {
+				if !tt.want.document {
+					t.Fatalf("document download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			openPipelineDownload: func(b client.OpenPipelineClient, s string) (projectv2.ConfigsPerType, error) {
+				if !tt.want.openpipeline {
+					t.Fatalf("openpipeline download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+			segmentDownload: func(b segment.DownloadSegmentClient, s string) (projectv2.ConfigsPerType, error) {
+				if !tt.want.segment {
+					t.Fatalf("segment download was not meant to be called but was")
+				}
+				return nil, nil
+			},
+		}
 
+		t.Run(fmt.Sprintf("%s - all temroray FF are false", tt.name), func(t *testing.T) {
+			setTemporaryFFTo(t, false)
 			c := client.NewMockConfigClient(gomock.NewController(t))
 			_, err := downloadConfigs(&client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
 			assert.NoError(t, err)
 		})
+
+		t.Run(fmt.Sprintf("%s - all temroray FF are false)", tt.name), func(t *testing.T) {
+			setTemporaryFFTo(t, true)
+			c := client.NewMockConfigClient(gomock.NewController(t))
+			_, err := downloadConfigs(&client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
+			assert.NoError(t, err)
+		})
+
+		for _, ff := range featureflags.Temporary {
+			t.Run(fmt.Sprintf("%s - only %s if set to true (other tmp to false)", tt.name, ff.EnvName()), func(t *testing.T) {
+				setTemporaryFFTo(t, false)
+				t.Setenv(ff.EnvName(), "true")
+				c := client.NewMockConfigClient(gomock.NewController(t))
+				_, err := downloadConfigs(&client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
+				assert.NoError(t, err)
+			})
+
+			t.Run(fmt.Sprintf("%s - only %s if set to false (other tmp to true)", tt.name, ff.EnvName()), func(t *testing.T) {
+				setTemporaryFFTo(t, true)
+				t.Setenv(ff.EnvName(), "false")
+				c := client.NewMockConfigClient(gomock.NewController(t))
+				_, err := downloadConfigs(&client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
+				assert.NoError(t, err)
+			})
+
+		}
+	}
+}
+
+func setTemporaryFFTo(t *testing.T, b bool) {
+	t.Helper()
+	for _, f := range featureflags.Temporary {
+		t.Setenv(f.EnvName(), strconv.FormatBool(b))
 	}
 }
 

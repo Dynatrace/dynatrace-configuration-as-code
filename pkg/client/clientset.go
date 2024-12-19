@@ -33,6 +33,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -165,6 +166,10 @@ type OpenPipelineClient interface {
 	Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error)
 }
 
+type SegmentClient interface {
+	GetAll(ctx context.Context) ([]segments.Response, error)
+}
+
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
 var DefaultRetryOptions = corerest.RetryOptions{MaxRetries: 10, ShouldRetryFunc: corerest.RetryIfNotSuccess}
@@ -179,6 +184,7 @@ type ClientSet struct {
 	BucketClient       BucketClient
 	DocumentClient     DocumentClient
 	OpenPipelineClient OpenPipelineClient
+	SegmentClient      SegmentClient
 }
 
 type ClientOptions struct {
@@ -223,6 +229,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 		autClient          AutomationClient
 		documentClient     DocumentClient
 		openPipelineClient OpenPipelineClient
+		segmentClient      SegmentClient
 		err                error
 	)
 	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
@@ -273,6 +280,11 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 			return nil, err
 		}
 
+		segmentClient, err = cFactory.SegmentsClient()
+		if err != nil {
+			return nil, err
+		}
+
 		settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
 		if err != nil {
 			return nil, err
@@ -312,6 +324,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 		BucketClient:       bucketClient,
 		DocumentClient:     documentClient,
 		OpenPipelineClient: openPipelineClient,
+		SegmentClient:      segmentClient,
 	}, nil
 }
 

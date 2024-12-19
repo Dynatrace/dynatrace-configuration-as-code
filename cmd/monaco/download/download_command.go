@@ -17,8 +17,12 @@ package download
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
 
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
@@ -29,9 +33,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	versionClient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
@@ -97,6 +100,10 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 
 	if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
 		cmd.Flags().BoolVar(&f.onlyOpenPipeline, "only-openpipeline", false, "Only download openpipeline configurations, skip all other configuration types")
+	}
+
+	if featureflags.Temporary[featureflags.Segments].Enabled() {
+		cmd.Flags().BoolVar(&f.onlySegments, fmt.Sprintf("only-%ss", config.SegmentID), false, fmt.Sprintf("Only download %s configurations, skip all other configuration types", config.SegmentID))
 	}
 
 	err := errors.Join(
