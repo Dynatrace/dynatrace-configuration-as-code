@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -33,6 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -180,7 +182,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 func TestDownload_Options(t *testing.T) {
 	type wantDownload struct {
-		config, settings, bucket, automation, document, openpipeline bool
+		config, settings, bucket, automation, document, openpipeline, segment bool
 	}
 	tests := []struct {
 		name  string
@@ -201,6 +203,7 @@ func TestDownload_Options(t *testing.T) {
 				automation:   true,
 				document:     true,
 				openpipeline: true,
+				segment:      true,
 			},
 		},
 		{
@@ -238,6 +241,15 @@ func TestDownload_Options(t *testing.T) {
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
 			wantDownload{openpipeline: true},
+		},
+		{
+			"only segment requested",
+			downloadConfigsOptions{
+				onlySegment: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
+				}},
+			wantDownload{segment: true},
 		},
 		{
 			"only apis requested",
@@ -281,6 +293,7 @@ func TestDownload_Options(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
 			fn := downloadFn{
 				classicDownload: func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
 					if !tt.want.config {
@@ -315,6 +328,12 @@ func TestDownload_Options(t *testing.T) {
 				openPipelineDownload: func(b client.OpenPipelineClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.openpipeline {
 						t.Fatalf("openpipeline download was not meant to be called but was")
+					}
+					return nil, nil
+				},
+				segmentDownload: func(b segment.Client, s string) (projectv2.ConfigsPerType, error) {
+					if !tt.want.segment {
+						t.Fatalf("segment download was not meant to be called but was")
 					}
 					return nil, nil
 				},
