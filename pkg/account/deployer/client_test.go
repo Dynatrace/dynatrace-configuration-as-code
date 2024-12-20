@@ -192,7 +192,7 @@ func TestClient_UpsertGroup_UpdateExistingLocalGroupWorks(t *testing.T) {
 }
 
 func TestClient_UpsertGroup_UpdateExistingSCIMGroupSkipped(t *testing.T) {
-	t.Setenv(featureflags.Temporary[featureflags.SkipReadOnlyAccountGroupUpdates].EnvName(), "true") // turn on SkipReadOnlyAccountGroupUpdates for this test
+	t.Setenv(featureflags.SkipReadOnlyAccountGroupUpdates.EnvName(), "true") // turn on SkipReadOnlyAccountGroupUpdates for this test
 
 	responses := []testutils.ResponseDef{
 		{
@@ -223,7 +223,7 @@ func TestClient_UpsertGroup_UpdateExistingSCIMGroupSkipped(t *testing.T) {
 }
 
 func TestClient_UpsertGroup_UpdateExistingAllUsersGroupSkipped(t *testing.T) {
-	t.Setenv(featureflags.Temporary[featureflags.SkipReadOnlyAccountGroupUpdates].EnvName(), "true") // turn on SkipReadOnlyAccountGroupUpdates for this test
+	t.Setenv(featureflags.SkipReadOnlyAccountGroupUpdates.EnvName(), "true") // turn on SkipReadOnlyAccountGroupUpdates for this test
 
 	responses := []testutils.ResponseDef{
 		{

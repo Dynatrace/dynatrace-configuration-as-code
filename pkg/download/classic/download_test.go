@@ -183,8 +183,8 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 			c.EXPECT().List(gomock.Any(), matcher.EqAPI(api2)).Return([]dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil)
 			c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
 
-			t.Setenv(featureflags.Permanent[featureflags.DownloadFilterClassicConfigs].EnvName(), strconv.FormatBool(tt.withFiltering))
-			t.Setenv(featureflags.Permanent[featureflags.DownloadFilter].EnvName(), strconv.FormatBool(tt.withFiltering))
+			t.Setenv(featureflags.DownloadFilterClassicConfigs.EnvName(), strconv.FormatBool(tt.withFiltering))
+			t.Setenv(featureflags.DownloadFilter.EnvName(), strconv.FormatBool(tt.withFiltering))
 
 			configurations, err := classic.Download(c, "project", toAPIs(api1, api2), filters)
 			assert.NoError(t, err)

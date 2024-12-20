@@ -1050,8 +1050,8 @@ func TestDeleteClassicKeyUserActionsWeb(t *testing.T) {
 }
 
 func TestDelete_Documents(t *testing.T) {
-	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "true")
-	t.Setenv(featureflags.Temporary[featureflags.DeleteDocuments].EnvName(), "true")
+	t.Setenv(featureflags.Documents.EnvName(), "true")
+	t.Setenv(featureflags.DeleteDocuments.EnvName(), "true")
 	t.Run("delete via coordinate", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "document",
@@ -1173,7 +1173,7 @@ func (c *segmentStubClient) Delete(_ context.Context, _ string) (segments.Respon
 
 func TestDelete_Segments(t *testing.T) {
 	t.Run("simple case", func(t *testing.T) {
-		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
+		t.Setenv(featureflags.Segments.EnvName(), "true")
 
 		c := segmentStubClient{
 			delete: func() (segments.Response, error) {
@@ -1195,7 +1195,7 @@ func TestDelete_Segments(t *testing.T) {
 	})
 
 	t.Run("simple case with FF turned off", func(t *testing.T) {
-		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "false")
+		t.Setenv(featureflags.Segments.EnvName(), "false")
 
 		c := segmentStubClient{}
 
@@ -1215,7 +1215,7 @@ func TestDelete_Segments(t *testing.T) {
 
 func TestDeleteAll_Segments(t *testing.T) {
 	t.Run("simple case", func(t *testing.T) {
-		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
+		t.Setenv(featureflags.Segments.EnvName(), "true")
 
 		c := segmentStubClient{
 			list: func() (segments.Response, error) {
@@ -1232,7 +1232,7 @@ func TestDeleteAll_Segments(t *testing.T) {
 	})
 
 	t.Run("FF is turned off", func(t *testing.T) {
-		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "false")
+		t.Setenv(featureflags.Segments.EnvName(), "false")
 
 		c := segmentStubClient{}
 

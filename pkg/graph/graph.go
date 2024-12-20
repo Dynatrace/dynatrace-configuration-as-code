@@ -19,16 +19,18 @@ package graph
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/encoding/dot"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 	"gonum.org/v1/gonum/graph/traverse"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
 // coordinateToNodeIDMap is a lookup map from a configuration's coordinate.Coordinate to the int64 ID of its graph node.
@@ -229,7 +231,7 @@ func buildDependencyGraph(projects []project.Project, environment string, nodeOp
 	}
 
 	for i, c := range configs {
-		if c.Skip && featureflags.Temporary[featureflags.IgnoreSkippedConfigs].Enabled() {
+		if c.Skip && featureflags.IgnoreSkippedConfigs.Enabled() {
 			log.Debug("Excluding config %s from dependency graph", c.Coordinate)
 			continue
 		}
@@ -263,7 +265,7 @@ func buildDependencyGraph(projects []project.Project, environment string, nodeOp
 				logDependency(c, other)
 				g.SetEdge(g.NewEdge(g.Node(otherNode), g.Node(cNode)))
 			} else {
-				//TODO: to comply with the current 'continue-on-error' behaviour we can not recognize invalid references at this point but must return a dependency graph even if we know things will fail later on
+				// TODO: to comply with the current 'continue-on-error' behaviour we can not recognize invalid references at this point but must return a dependency graph even if we know things will fail later on
 				log.Warn("Configuration %q references unknown configuration %q", c, other)
 			}
 

@@ -44,7 +44,7 @@ import (
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
 // using the configured credentials
 func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
-	if !featureflags.Permanent[featureflags.VerifyEnvironmentType].Enabled() {
+	if !featureflags.VerifyEnvironmentType.Enabled() {
 		return true
 	}
 	for _, env := range envs {
@@ -204,7 +204,7 @@ func CreateEnvironmentClients(ctx context.Context, environments manifest.Environ
 }
 
 func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds clientcredentials.Config) (string, error) {
-	if featureflags.Permanent[featureflags.BuildSimpleClassicURL].Enabled() {
+	if featureflags.BuildSimpleClassicURL.Enabled() {
 		if classicURL, ok := findSimpleClassicURL(ctx, platformURL); ok {
 			return classicURL, nil
 		}

@@ -121,7 +121,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 // deactivated. For the base behaviour see TestNonUniqueNameUpserts.
 func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 
-	t.Setenv(featureflags.Permanent[featureflags.UpdateNonUniqueByNameIfSingleOneExists].EnvName(), "false")
+	t.Setenv(featureflags.UpdateNonUniqueByNameIfSingleOneExists.EnvName(), "false")
 
 	testSuffix := integrationtest.GenerateTestSuffix(t, "NonUniqueName")
 

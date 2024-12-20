@@ -261,7 +261,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
-		return entities.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
+		return entities.ResolvedEntity{}, skipError // fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
 	}
 
 	properties, errs := c.ResolveParameterValues(resolvedEntities)
@@ -300,14 +300,14 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		resolvedEntity, deployErr = bucket.Deploy(ctx, clientset.BucketClient, properties, renderedConfig, c)
 
 	case config.DocumentType:
-		if featureflags.Temporary[featureflags.Documents].Enabled() {
+		if featureflags.Documents.Enabled() {
 			resolvedEntity, deployErr = document.Deploy(ctx, clientset.DocumentClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
 
 	case config.OpenPipelineType:
-		if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
+		if featureflags.OpenPipeline.Enabled() {
 			resolvedEntity, deployErr = openpipeline.Deploy(ctx, clientset.OpenPipelineClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())

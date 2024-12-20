@@ -36,8 +36,8 @@ func TestDryRun(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 
 	envVars := map[string]string{
-		featureflags.Temporary[featureflags.OpenPipeline].EnvName(): "true",
-		featureflags.Temporary[featureflags.Documents].EnvName():    "true",
+		featureflags.OpenPipeline.EnvName(): "true",
+		featureflags.Documents.EnvName():    "true",
 	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
