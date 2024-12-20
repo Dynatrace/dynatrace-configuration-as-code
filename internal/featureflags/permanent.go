@@ -16,17 +16,15 @@
 
 package featureflags
 
-type PermanentFlag string
-
 const (
 	// VerifyEnvironmentType returns the feature flag that tells whether the environment check
 	// at the beginning of execution is enabled or not.
 	// Introduced: before 2023-04-27; v2.0.0
-	VerifyEnvironmentType PermanentFlag = "MONACO_FEAT_VERIFY_ENV_TYPE"
+	VerifyEnvironmentType FeatureFlagID = "MONACO_FEAT_VERIFY_ENV_TYPE"
 	// ManagementZoneSettingsNumericIDs returns the feature flag that tells whether configs of settings type builtin:management-zones
 	// are addressed directly via their object ID or their resolved numeric ID when they are referenced.
 	// Introduced: 2023-04-18; v2.0.1
-	ManagementZoneSettingsNumericIDs PermanentFlag = "MONACO_FEAT_USE_MZ_NUMERIC_ID"
+	ManagementZoneSettingsNumericIDs FeatureFlagID = "MONACO_FEAT_USE_MZ_NUMERIC_ID"
 	// DangerousCommands returns the feature flag that tells whether dangerous commands for the CLI are enabled or not
 	DangerousCommands = "MONACO_ENABLE_DANGEROUS_COMMANDS"
 	// featureflags.Permanent[featureflags.FastDependencyResolver] returns the feature flag controlling whether the fast (but memory intensive) Aho-Corasick
@@ -62,13 +60,13 @@ const (
 )
 
 // Permanent FeatureFlag - features we want to be able to toggle long-term, instead of removing them after a stabilization period.
-var Permanent = map[PermanentFlag]FeatureFlag{
+var Permanent = map[FeatureFlagID]FeatureFlag{
 	VerifyEnvironmentType: {
-		envName:        string(VerifyEnvironmentType),
+		envName:        VerifyEnvironmentType,
 		defaultEnabled: true,
 	},
 	ManagementZoneSettingsNumericIDs: {
-		envName:        string(ManagementZoneSettingsNumericIDs),
+		envName:        ManagementZoneSettingsNumericIDs,
 		defaultEnabled: true,
 	},
 	DangerousCommands: {

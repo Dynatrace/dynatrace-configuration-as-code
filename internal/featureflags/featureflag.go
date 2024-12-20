@@ -17,23 +17,33 @@
 package featureflags
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
 
-// FeatureFlag represents a command line switch to turn certain features
-// ON or OFF. Values are read from environment variables defined by
-// the feature flag. The feature flag can have default values that are used
-// when the resp. environment variable does not exist
-type FeatureFlag struct {
-	// envName is the environment variable name
-	// that is used to read the value from
-	envName string
-	// defaultEnabled states whether this feature flag
-	// is enabled or disabled by default
-	defaultEnabled bool
+type (
+	// FeatureFlagID is the environment variable name
+	FeatureFlagID string
+
+	// FeatureFlag represents a command line switch to turn certain features
+	// ON or OFF. Values are read from environment variables defined by
+	// the feature flag. The feature flag can have default values that are used
+	// when the resp. environment variable does not exist
+	FeatureFlag struct {
+		// envName is the environment variable name
+		// that is used to read the value from
+		envName FeatureFlagID
+		// defaultEnabled states whether this feature flag
+		// is enabled or disabled by default
+		defaultEnabled bool
+	}
+)
+
+func (ff FeatureFlagID) String() string {
+	return string(ff)
 }
 
 // Enabled evaluates the feature flag.
@@ -42,7 +52,7 @@ type FeatureFlag struct {
 // Feature flags are considered to be "disabled" if their resp. environment variable
 // is set to 0, f, F, FALSE, false or False.
 func (ff FeatureFlag) Enabled() bool {
-	if val, ok := os.LookupEnv(ff.envName); ok {
+	if val, ok := os.LookupEnv(ff.EnvName()); ok {
 		enabled, err := strconv.ParseBool(strings.ToLower(val))
 		if err != nil {
 			log.Warn("Unsupported value %q for feature flag %q. Using default value: %v", val, ff.envName, ff.defaultEnabled)
@@ -56,7 +66,7 @@ func (ff FeatureFlag) Enabled() bool {
 // EnvName gives back the environment variable name for
 // the feature flag
 func (ff FeatureFlag) EnvName() string {
-	return ff.envName
+	return ff.envName.String()
 }
 
 // Value returns the current value and default value of a FeatureFlag
