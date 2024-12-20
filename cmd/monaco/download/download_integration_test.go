@@ -630,7 +630,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
-	t.Setenv(featureflags.Permanent[featureflags.DownloadFilterClassicConfigs].EnvName(), "false")
+	t.Setenv(featureflags.DownloadFilterClassicConfigs.EnvName(), "false")
 
 	// WHEN we download everything
 	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
@@ -1245,7 +1245,7 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	require.NoError(t, err)
 
 	// GIVEN filter feature flag is turned OFF
-	t.Setenv(featureflags.Permanent[featureflags.DownloadFilterSettingsUnmodifiable].EnvName(), "false")
+	t.Setenv(featureflags.DownloadFilterSettingsUnmodifiable.EnvName(), "false")
 
 	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, nil, opts)
 	assert.NoError(t, err)
