@@ -18,9 +18,10 @@ package featureflags
 
 import (
 	"fmt"
-	"golang.org/x/exp/maps"
 	"slices"
 	"strings"
+
+	"golang.org/x/exp/maps"
 )
 
 // AnyModified returns true if any Permanent or Temporary feature flag value is different to its default.
@@ -29,7 +30,7 @@ func AnyModified() bool {
 }
 
 // anyFeatureFlagModified returns true if any feature flag value is different to its default.
-func anyFeatureFlagModified[K TemporaryFlag | PermanentFlag](featureFlags map[K]FeatureFlag) bool {
+func anyFeatureFlagModified(featureFlags map[FeatureFlagID]FeatureFlag) bool {
 	for _, v := range featureFlags {
 		enabled, def := v.Value()
 		if enabled != def {
@@ -57,7 +58,7 @@ func StateInfo() string {
 	return s.String()
 }
 
-func makeFeatureFlagTableString[K TemporaryFlag | PermanentFlag](featureFlags map[K]FeatureFlag) string {
+func makeFeatureFlagTableString(featureFlags map[FeatureFlagID]FeatureFlag) string {
 	s := strings.Builder{}
 	keys := maps.Keys(featureFlags)
 	slices.Sort(keys)
