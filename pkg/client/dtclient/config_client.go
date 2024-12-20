@@ -211,7 +211,7 @@ func (d *ConfigClient) UpsertByNonUniqueNameAndId(ctx context.Context, theApi ap
 	}
 
 	// check if we are dealing with a duplicate non-unique name configuration, if not, go ahead and update the known entity
-	if featureflags.Permanent[featureflags.UpdateNonUniqueByNameIfSingleOneExists].Enabled() && len(entitiesWithSameName) == 1 && !duplicate {
+	if featureflags.UpdateNonUniqueByNameIfSingleOneExists.Enabled() && len(entitiesWithSameName) == 1 && !duplicate {
 		existingUuid := entitiesWithSameName[0].Id
 		entity, err := d.updateDynatraceObject(ctx, objectName, existingUuid, theApi, body)
 		return entity, err
@@ -565,8 +565,8 @@ func (d *ConfigClient) getExistingObjectId(ctx context.Context, objectName strin
 func (d *ConfigClient) List(ctx context.Context, theApi api.API) ([]Value, error) {
 	// caching cannot be used for subPathAPI as well because there is potentially more than one config per api type/id to consider.
 	// the cache cannot deal with that
-	if (!theApi.NonUniqueName && !theApi.HasParent()) && //there is potentially more than one config per api type/id to consider
-		(theApi.ID != api.ApplicationWeb && theApi.ID != api.ApplicationMobile) { //there is no refresh mechanism for delete; outdated values can cause decreasing performance during delete (unnecessary retrying)
+	if (!theApi.NonUniqueName && !theApi.HasParent()) && // there is potentially more than one config per api type/id to consider
+		(theApi.ID != api.ApplicationWeb && theApi.ID != api.ApplicationMobile) { // there is no refresh mechanism for delete; outdated values can cause decreasing performance during delete (unnecessary retrying)
 		if values, cached := d.configCache.Get(theApi.ID); cached {
 			return values, nil
 		}

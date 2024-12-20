@@ -189,7 +189,7 @@ func TestDownload_Options(t *testing.T) {
 		name         string
 		given        downloadConfigsOptions
 		want         wantDownload
-		featureFlags map[featureflags.TemporaryFlag]bool
+		featureFlags map[featureflags.FeatureFlag]bool
 	}{
 		{
 			name: "download all if options are not limiting",
@@ -251,7 +251,7 @@ func TestDownload_Options(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
-			featureFlags: map[featureflags.TemporaryFlag]bool{featureflags.Segments: true},
+			featureFlags: map[featureflags.FeatureFlag]bool{featureflags.Segments: true},
 			want:         wantDownload{segment: true},
 		},
 		{
@@ -261,7 +261,7 @@ func TestDownload_Options(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
-			featureFlags: map[featureflags.TemporaryFlag]bool{featureflags.Segments: false},
+			featureFlags: map[featureflags.FeatureFlag]bool{featureflags.Segments: false},
 			want:         wantDownload{},
 		},
 		{

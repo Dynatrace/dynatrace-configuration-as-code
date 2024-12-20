@@ -76,7 +76,7 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		case BucketType:
 			c.Type = config.BucketType{}
 		case SegmentType:
-			if !featureflags.Temporary[featureflags.Segments].Enabled() {
+			if !featureflags.Segments.Enabled() {
 				return fmt.Errorf("unknown config-type %q", str)
 			}
 			c.Type = config.Segment{}
@@ -111,11 +111,11 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		"automation": c.parseAutomation,
 	}
 
-	if featureflags.Temporary[featureflags.Documents].Enabled() {
+	if featureflags.Documents.Enabled() {
 		unmarshalers["document"] = c.parseDocumentType
 	}
 
-	if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
+	if featureflags.OpenPipeline.Enabled() {
 		unmarshalers["openpipeline"] = c.parseOpenPipelineType
 	}
 
@@ -293,7 +293,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 
 	case config.SettingsType:
 		var insertAfterValue ConfigParameter
-		if featureflags.Temporary[featureflags.PersistSettingsOrder].Enabled() {
+		if featureflags.PersistSettingsOrder.Enabled() {
 			insertAfterValue = c.InsertAfter
 		}
 
@@ -317,7 +317,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		return BucketType, nil
 
 	case config.DocumentType:
-		if featureflags.Temporary[featureflags.Documents].Enabled() {
+		if featureflags.Documents.Enabled() {
 			return map[string]any{
 				"document": DocumentDefinition{
 					Kind:    t.Kind,
@@ -327,7 +327,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}
 
 	case config.OpenPipelineType:
-		if featureflags.Temporary[featureflags.OpenPipeline].Enabled() {
+		if featureflags.OpenPipeline.Enabled() {
 			return map[string]any{
 				"openpipeline": OpenPipelineDefinition{
 					Kind: t.Kind,
@@ -336,7 +336,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}
 
 	case config.Segment:
-		if featureflags.Temporary[featureflags.Segments].Enabled() {
+		if featureflags.Segments.Enabled() {
 			return SegmentType, nil
 		}
 	}

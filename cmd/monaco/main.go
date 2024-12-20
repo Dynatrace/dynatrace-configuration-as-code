@@ -20,13 +20,14 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
-	"github.com/spf13/afero"
 )
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 	log.PrepareLogging(nil, true, nil, false)
 
 	var versionNotification string
-	if !featureflags.Permanent[featureflags.SkipVersionCheck].Enabled() {
+	if !featureflags.SkipVersionCheck.Enabled() {
 		go setVersionNotificationStr(&versionNotification)
 	}
 

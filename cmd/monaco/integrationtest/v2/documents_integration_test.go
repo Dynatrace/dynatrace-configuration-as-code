@@ -47,8 +47,8 @@ func TestDocuments(t *testing.T) {
 	environment := "platform_env"
 
 	envVars := map[string]string{
-		featureflags.Temporary[featureflags.Documents].EnvName():       "true",
-		featureflags.Temporary[featureflags.DeleteDocuments].EnvName(): "true",
+		featureflags.Documents.EnvName():       "true",
+		featureflags.DeleteDocuments.EnvName(): "true",
 	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifestPath, environment, "Documents", envVars, func(fs afero.Fs, testContext TestContext) {
