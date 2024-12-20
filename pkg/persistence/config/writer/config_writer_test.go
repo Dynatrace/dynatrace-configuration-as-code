@@ -1028,7 +1028,7 @@ func TestWriteConfigs(t *testing.T) {
 		},
 		{
 			name:    "Segment",
-			envVars: map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "true"},
+			envVars: map[string]string{featureflags.Segments.EnvName(): "true"},
 			configs: []config.Config{
 				{
 					Template: template.NewInMemoryTemplateWithPath("project/segment/template.json", "{}"),
@@ -1069,7 +1069,7 @@ func TestWriteConfigs(t *testing.T) {
 		},
 		{
 			name:    "Segment should fail if FF MONACO_FEAT_SEGMENTS is not set",
-			envVars: map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "false"},
+			envVars: map[string]string{featureflags.Segments.EnvName(): "false"},
 			configs: []config.Config{
 				{
 					Template: template.NewInMemoryTemplateWithPath("project/segment/template.json", "{}"),
@@ -1334,7 +1334,7 @@ func TestWriteConfigs(t *testing.T) {
 				"project/document-notebook/a.json",
 			},
 			envVars: map[string]string{
-				featureflags.Temporary[featureflags.Documents].EnvName(): "true",
+				featureflags.Documents.EnvName(): "true",
 			},
 		},
 		{
@@ -1378,7 +1378,7 @@ func TestWriteConfigs(t *testing.T) {
 				"project/openpipeline/a.json",
 			},
 			envVars: map[string]string{
-				featureflags.Temporary[featureflags.OpenPipeline].EnvName(): "true",
+				featureflags.OpenPipeline.EnvName(): "true",
 			},
 		},
 	}

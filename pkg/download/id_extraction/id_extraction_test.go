@@ -19,6 +19,10 @@
 package id_extraction
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -26,8 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestExtractIDsIntoYAML(t *testing.T) {
@@ -295,7 +297,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 }
 
 func TestScopeParameterIsTreatedAsParameter(t *testing.T) {
-	t.Setenv(featureflags.Permanent[featureflags.ExtractScopeAsParameter].EnvName(), "1")
+	t.Setenv(featureflags.ExtractScopeAsParameter.EnvName(), "1")
 
 	tests := []struct {
 		name  string

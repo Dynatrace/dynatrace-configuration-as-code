@@ -521,7 +521,7 @@ func TestDownloadAll(t *testing.T) {
 			c := client.NewMockSettingsClient(gomock.NewController(t))
 			schemas, err := tt.mockValues.Schemas()
 			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
-			//c.EXPECT().GetSchemaById(gomock.Any()).Times(tt.mockValues.GetSchemaCalls).Return(tt.mockValues.GetSchema(""))
+			// c.EXPECT().GetSchemaById(gomock.Any()).Times(tt.mockValues.GetSchemaCalls).Return(tt.mockValues.GetSchema(""))
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
 			res, _ := Download(c, "projectName", tt.filters)
@@ -542,7 +542,7 @@ func TestDownload(t *testing.T) {
 		ListSettingsCalls int
 		GetSchemaCalls    int
 
-		EnvVars map[string]string
+		EnvVars map[featureflags.FeatureFlag]string
 	}
 	tests := []struct {
 		name       string
@@ -649,7 +649,7 @@ func TestDownload(t *testing.T) {
 					return dtclient.Schema{SchemaId: "builtin:host.monitoring.mode"}, nil
 				},
 				GetSchemaCalls: 1,
-				EnvVars: map[string]string{
+				EnvVars: map[featureflags.FeatureFlag]string{
 					featureflags.DownloadFilter: "false",
 				},
 
@@ -690,7 +690,7 @@ func TestDownload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for k, v := range tt.mockValues.EnvVars {
-				t.Setenv(k, v)
+				t.Setenv(k.EnvName(), v)
 			}
 
 			c := client.NewMockSettingsClient(gomock.NewController(t))
@@ -848,9 +848,9 @@ func Test_shouldFilterUnmodifiableSettings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// GIVEN Feature Flags
-			t.Setenv(featureflags.Permanent[featureflags.DownloadFilter].EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
-			t.Setenv(featureflags.Permanent[featureflags.DownloadFilterSettings].EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsFF))
-			t.Setenv(featureflags.Permanent[featureflags.DownloadFilterSettingsUnmodifiable].EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsUnmodifiableFF))
+			t.Setenv(featureflags.DownloadFilter.EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
+			t.Setenv(featureflags.DownloadFilterSettings.EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsFF))
+			t.Setenv(featureflags.DownloadFilterSettingsUnmodifiable.EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsUnmodifiableFF))
 
 			assert.Equalf(t, tt.want, shouldFilterUnmodifiableSettings(), "shouldFilterUnmodifableSettings()")
 		})
@@ -895,8 +895,8 @@ func Test_shouldFilterSettings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// GIVEN Feature Flags
-			t.Setenv(featureflags.Permanent[featureflags.DownloadFilter].EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
-			t.Setenv(featureflags.Permanent[featureflags.DownloadFilterSettings].EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsFF))
+			t.Setenv(featureflags.DownloadFilter.EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
+			t.Setenv(featureflags.DownloadFilterSettings.EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsFF))
 
 			assert.Equalf(t, tt.want, shouldFilterSettings(), "shouldFilterSettings()")
 		})

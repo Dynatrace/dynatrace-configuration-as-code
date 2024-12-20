@@ -18,14 +18,15 @@ package id_extraction
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	ref "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"regexp"
-	"strings"
 )
 
 // meIDRegexPattern matching a Dynatrace Monitored Entity ID which consists of a type containing characters and
@@ -64,7 +65,7 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) (project.ConfigsP
 				content = strings.ReplaceAll(content, id, paramID)
 			}
 
-			if featureflags.Permanent[featureflags.ExtractScopeAsParameter].Enabled() {
+			if featureflags.ExtractScopeAsParameter.Enabled() {
 				scopeParam := c.Parameters[config.ScopeParameter]
 				if scopeParam != nil && scopeParam.GetType() == value.ValueParameterType {
 					scopeParamResolved, err := scopeParam.ResolveValue(parameter.ResolveContext{})

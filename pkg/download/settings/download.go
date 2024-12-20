@@ -235,11 +235,11 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, projec
 }
 
 func shouldFilterSettings() bool {
-	return featureflags.Permanent[featureflags.DownloadFilter].Enabled() && featureflags.Permanent[featureflags.DownloadFilterSettings].Enabled()
+	return featureflags.DownloadFilter.Enabled() && featureflags.DownloadFilterSettings.Enabled()
 }
 
 func shouldFilterUnmodifiableSettings() bool {
-	return shouldFilterSettings() && featureflags.Permanent[featureflags.DownloadFilterSettingsUnmodifiable].Enabled()
+	return shouldFilterSettings() && featureflags.DownloadFilterSettingsUnmodifiable.Enabled()
 }
 
 func validateSpecificSchemas(schemas []schema, schemaIDs []string) (valid bool, unknownSchemas []string) {
