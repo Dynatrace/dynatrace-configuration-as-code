@@ -96,7 +96,7 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 		}
 		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
 	} else if t == "document" {
-		if featureflags.Temporary[featureflags.Documents].Enabled() && featureflags.Temporary[featureflags.DeleteDocuments].Enabled() {
+		if featureflags.Documents.Enabled() && featureflags.DeleteDocuments.Enabled() {
 			if clients.DocumentClient != nil {
 				return document.Delete(ctx, clients.DocumentClient, entries)
 			}
@@ -148,7 +148,7 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 		errCount++
 	}
 
-	if featureflags.Temporary[featureflags.Documents].Enabled() && featureflags.Temporary[featureflags.DeleteDocuments].Enabled() {
+	if featureflags.Documents.Enabled() && featureflags.DeleteDocuments.Enabled() {
 		if clients.DocumentClient == nil {
 			log.Warn("Skipped deletion of Documents configurations as appropriate client was unavailable.")
 		} else if err := document.DeleteAll(ctx, clients.DocumentClient); err != nil {

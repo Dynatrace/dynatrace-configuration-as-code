@@ -37,8 +37,8 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "true")
-	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "true")
+	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
+	t.Setenv(featureflags.Documents.EnvName(), "true")
 
 	targetEnvironment := "classic_env"
 
@@ -55,8 +55,8 @@ func TestIntegrationAllConfigsPlatform(t *testing.T) {
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "true")
-	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "true")
+	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
+	t.Setenv(featureflags.Documents.EnvName(), "true")
 
 	targetEnvironment := "platform_env"
 
@@ -90,7 +90,7 @@ func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment s
 // Tests a dry run (validation)
 func TestIntegrationValidationAllConfigs(t *testing.T) {
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
-	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "true")
+	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
 
 	fs := afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs())
 

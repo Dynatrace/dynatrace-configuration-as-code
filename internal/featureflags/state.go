@@ -18,21 +18,21 @@ package featureflags
 
 import (
 	"fmt"
-	"golang.org/x/exp/maps"
 	"slices"
 	"strings"
+
+	"golang.org/x/exp/maps"
 )
 
-// AnyModified returns true if any Permanent or Temporary feature flag value is different to its default.
+// AnyModified returns true if any feature flag value is different to its default.
 func AnyModified() bool {
-	return anyFeatureFlagModified(Permanent) || anyFeatureFlagModified(Temporary)
+	return anyFeatureFlagModified(permanent) || anyFeatureFlagModified(temporary)
 }
 
 // anyFeatureFlagModified returns true if any feature flag value is different to its default.
-func anyFeatureFlagModified[K TemporaryFlag | PermanentFlag](featureFlags map[K]FeatureFlag) bool {
-	for _, v := range featureFlags {
-		enabled, def := v.Value()
-		if enabled != def {
+func anyFeatureFlagModified(featureFlags map[FeatureFlag]defaultValue) bool {
+	for ff, d := range featureFlags {
+		if ff.Enabled() != d {
 			return true
 		}
 	}
@@ -49,26 +49,24 @@ func StateInfo() string {
 	}
 
 	s.WriteString("Feature Flags:\n\n")
-	s.WriteString(makeFeatureFlagTableString(Permanent))
+	s.WriteString(makeFeatureFlagTableString(permanent))
 
 	s.WriteString("\n\nDevelopment and Experimental Flags:\n\n")
-	s.WriteString(makeFeatureFlagTableString(Temporary))
+	s.WriteString(makeFeatureFlagTableString(temporary))
 
 	return s.String()
 }
 
-func makeFeatureFlagTableString[K TemporaryFlag | PermanentFlag](featureFlags map[K]FeatureFlag) string {
+func makeFeatureFlagTableString(featureFlags map[FeatureFlag]defaultValue) string {
 	s := strings.Builder{}
-	keys := maps.Keys(featureFlags)
-	slices.Sort(keys)
-	for _, k := range keys {
-		v := featureFlags[k]
-		enabled, def := v.Value()
+	flags := maps.Keys(featureFlags)
+	slices.Sort(flags)
+	for _, f := range flags {
 		modifiedStr := " "
-		if enabled != def {
+		if f.Enabled() != featureFlags[f] {
 			modifiedStr = "!"
 		}
-		_, _ = fmt.Fprintf(&s, "%v\t%v: %v (default:%v)\n", modifiedStr, v.envName, enabled, def)
+		_, _ = fmt.Fprintf(&s, "%v\t%v: %v (default:%v)\n", modifiedStr, f, f.Enabled(), featureFlags[f])
 	}
 	return s.String()
 }

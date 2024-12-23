@@ -17,49 +17,63 @@
 package featureflags
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
 
-// FeatureFlag represents a command line switch to turn certain features
-// ON or OFF. Values are read from environment variables defined by
-// the feature flag. The feature flag can have default values that are used
-// when the resp. environment variable does not exist
-type FeatureFlag struct {
-	// envName is the environment variable name
-	// that is used to read the value from
-	envName string
-	// defaultEnabled states whether this feature flag
-	// is enabled or disabled by default
-	defaultEnabled bool
+type (
+	// FeatureFlag represents a command line switch to turn certain features
+	// ON or OFF. Values are read from environment variables defined by
+	// the feature flag. The feature flag can have default value which is used
+	// when the resp. environment variable does not exist
+	FeatureFlag string
+
+	defaultValue = bool
+)
+
+func (ff FeatureFlag) String() string {
+	return ff.EnvName()
 }
 
-// Enabled evaluates the feature flag.
+// EnvName gives back the environment variable name for the feature flag
+func (ff FeatureFlag) EnvName() string {
+	return string(ff)
+}
+
+// Enabled look up between known temporary and permanent flags and evaluates it.
 // Feature flags are considered to be "enabled" if their resp. environment variable
 // is set to 1, t, T, TRUE, true or True.
 // Feature flags are considered to be "disabled" if their resp. environment variable
 // is set to 0, f, F, FALSE, false or False.
 func (ff FeatureFlag) Enabled() bool {
-	if val, ok := os.LookupEnv(ff.envName); ok {
-		enabled, err := strconv.ParseBool(strings.ToLower(val))
-		if err != nil {
-			log.Warn("Unsupported value %q for feature flag %q. Using default value: %v", val, ff.envName, ff.defaultEnabled)
-			return ff.defaultEnabled
-		}
-		return enabled
+	v, f := temporary[ff]
+	if f {
+		return enabled(ff, v)
 	}
-	return ff.defaultEnabled
+	v, f = permanent[ff]
+	if f {
+		return enabled(ff, v)
+	}
+	panic(fmt.Sprintf("unknown feature flag %s", ff))
 }
 
-// EnvName gives back the environment variable name for
-// the feature flag
-func (ff FeatureFlag) EnvName() string {
-	return ff.envName
-}
-
-// Value returns the current value and default value of a FeatureFlag
-func (ff FeatureFlag) Value() (enabled bool, defaultVal bool) {
-	return ff.Enabled(), ff.defaultEnabled
+// enabled evaluates the feature flag.
+// Feature flags are considered to be "enabled" if their resp. environment variable
+// is set to 1, t, T, TRUE, true or True.
+// Feature flags are considered to be "disabled" if their resp. environment variable
+// is set to 0, f, F, FALSE, false or False.
+func enabled(ff FeatureFlag, d defaultValue) bool {
+	if val, ok := os.LookupEnv(ff.EnvName()); ok {
+		value, err := strconv.ParseBool(strings.ToLower(val))
+		if err != nil {
+			log.Warn("Unsupported value %q for feature flag %q. Using default value: %v", val, ff, d)
+			return d
+		}
+		return value
+	}
+	return d
 }

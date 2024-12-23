@@ -96,7 +96,7 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 }
 
 func getEntityID(c *config.Config, e dtclient.DynatraceEntity) (string, error) {
-	if c.Coordinate.Type == "builtin:management-zones" && featureflags.Permanent[featureflags.ManagementZoneSettingsNumericIDs].Enabled() {
+	if c.Coordinate.Type == "builtin:management-zones" && featureflags.ManagementZoneSettingsNumericIDs.Enabled() {
 		numID, err := idutils.GetNumericIDForObjectID(e.Id)
 		if err != nil {
 			return "", fmt.Errorf("failed to extract numeric ID for Management Zone Setting with object ID %q: %w", e.Id, err)

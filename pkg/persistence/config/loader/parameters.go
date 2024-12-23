@@ -18,6 +18,9 @@ package loader
 
 import (
 	"fmt"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -28,7 +31,6 @@ import (
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
-	"github.com/spf13/afero"
 )
 
 var allowedScopeParameterTypes = []string{
@@ -177,7 +179,7 @@ func validateParameter(ctx *singleConfigEntryLoadContext, paramName string, para
 		for _, ref := range param.GetReferences() {
 			if _, referencesAPI := ctx.KnownApis[ref.Config.Type]; !referencesAPI &&
 				ref.Property == config.IdParameter &&
-				!(ref.Config.Type == "builtin:management-zones" && featureflags.Permanent[featureflags.ManagementZoneSettingsNumericIDs].Enabled()) { // leniently handle Management Zone numeric IDs which are the same for Settings
+				!(ref.Config.Type == "builtin:management-zones" && featureflags.ManagementZoneSettingsNumericIDs.Enabled()) { // leniently handle Management Zone numeric IDs which are the same for Settings
 				return fmt.Errorf("config api type (%s) configuration can only reference IDs of other config api types - parameter %q references %q type", ctx.Type, paramName, ref.Config.Type)
 			}
 		}
