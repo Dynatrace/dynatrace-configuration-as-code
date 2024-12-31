@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
 	"sync"
 	"time"
 
@@ -305,6 +306,13 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 	case config.OpenPipelineType:
 		if featureflags.OpenPipeline.Enabled() {
 			resolvedEntity, deployErr = openpipeline.Deploy(ctx, clientset.OpenPipelineClient, properties, renderedConfig, c)
+		} else {
+			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
+		}
+
+	case config.GrailFilterSegment:
+		if featureflags.Temporary[featureflags.GrailFilterSegment].Enabled() {
+			resolvedEntity, deployErr = segment.Deploy(ctx, clientset.GrailFilterSegmentClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
