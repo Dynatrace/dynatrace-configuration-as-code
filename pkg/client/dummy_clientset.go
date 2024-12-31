@@ -26,17 +26,19 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	buckets "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	documents "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
+	grailfiltersegment "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/grailfiltersegments"
 	openpipeline "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	dtclient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 )
 
 var DummyClientSet = ClientSet{
-	ConfigClient:       &dtclient.DummyConfigClient{},
-	SettingsClient:     &dtclient.DummySettingsClient{},
-	AutClient:          &DummyAutomationClient{},
-	BucketClient:       &DummyBucketClient{},
-	DocumentClient:     &DummyDocumentClient{},
-	OpenPipelineClient: &DummyOpenPipelineClient{},
+	ConfigClient:             &dtclient.DummyConfigClient{},
+	SettingsClient:           &dtclient.DummySettingsClient{},
+	AutClient:                &DummyAutomationClient{},
+	BucketClient:             &DummyBucketClient{},
+	DocumentClient:           &DummyDocumentClient{},
+	OpenPipelineClient:       &DummyOpenPipelineClient{},
+	GrailFilterSegmentClient: &DummySegmentsClient{},
 }
 
 var _ AutomationClient = (*DummyAutomationClient)(nil)
@@ -154,4 +156,20 @@ func (c *DummyOpenPipelineClient) GetAll(ctx context.Context) ([]coreapi.Respons
 
 func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) (openpipeline.Response, error) {
 	return openpipeline.Response{}, nil
+}
+
+type DummySegmentsClient struct{}
+
+// GetAll implements GrailFilterSegmentClient
+func (c *DummySegmentsClient) GetAll(_ context.Context) ([]coreapi.Response, error) {
+	panic("unimplemented")
+}
+
+// Upsert implements GrailFilterSegmentClient
+func (c *DummySegmentsClient) Upsert(_ context.Context, _ string, _ []byte) (grailfiltersegment.Response, error) {
+	return grailfiltersegment.Response{}, nil
+}
+
+func (c *DummySegmentsClient) Get(_ context.Context, id string) (grailfiltersegment.Response, error) {
+	return grailfiltersegment.Response{}, nil
 }
