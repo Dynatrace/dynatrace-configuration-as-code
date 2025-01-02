@@ -168,6 +168,7 @@ type OpenPipelineClient interface {
 
 type SegmentClient interface {
 	GetAll(ctx context.Context) ([]segments.Response, error)
+	Upsert(ctx context.Context, id string, data []byte) (segments.Response, error)
 }
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
