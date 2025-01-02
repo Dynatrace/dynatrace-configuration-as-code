@@ -37,6 +37,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
@@ -1088,7 +1089,7 @@ func TestDelete_Documents(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("config declared via coordinate have multiple match - delete them all", func(t *testing.T) {
+	t.Run("config declared via coordinate have multiple match - no delete, no error", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "document",
 			Identifier: "monaco_identifier",
@@ -1147,5 +1148,96 @@ func TestDelete_Documents(t *testing.T) {
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
 		err := delete.Configs(context.TODO(), client.ClientSet{DocumentClient: c}, entriesToDelete)
 		assert.Error(t, err)
+	})
+}
+
+type stubClient struct {
+	called bool
+	list   func() (segments.Response, error)
+	getAll func() ([]segments.Response, error)
+	delete func() (segments.Response, error)
+}
+
+func (c *stubClient) List(_ context.Context) (segments.Response, error) {
+	return c.list()
+}
+
+func (c *stubClient) GetAll(_ context.Context) ([]segments.Response, error) {
+	return c.getAll()
+}
+
+func (c *stubClient) Delete(_ context.Context, _ string) (segments.Response, error) {
+	c.called = true
+	return c.delete()
+}
+
+func TestDelete_Segments(t *testing.T) {
+	t.Run("simple case", func(t *testing.T) {
+		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
+
+		c := stubClient{
+			delete: func() (segments.Response, error) {
+				return segments.Response{StatusCode: http.StatusOK}, nil
+			},
+		}
+
+		given := delete.DeleteEntries{
+			"segment": {
+				{
+					Type:           "segment",
+					OriginObjectId: "originObjectID",
+				},
+			},
+		}
+		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: &c}, given)
+		assert.NoError(t, err)
+		assert.True(t, c.called, "there should be delete call")
+	})
+
+	t.Run("simple case with FF turned off", func(t *testing.T) {
+		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "false")
+
+		c := stubClient{}
+
+		given := delete.DeleteEntries{
+			"segment": {
+				{
+					Type:           "segment",
+					OriginObjectId: "originObjectID",
+				},
+			},
+		}
+		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: &c}, given)
+		assert.NoError(t, err)
+		assert.False(t, c.called, "there should NOT be delete call")
+	})
+}
+
+func TestDeleteAll_Segments(t *testing.T) {
+	t.Run("simple case", func(t *testing.T) {
+		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
+
+		c := stubClient{
+			list: func() (segments.Response, error) {
+				return segments.Response{StatusCode: http.StatusOK, Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
+			},
+			delete: func() (segments.Response, error) {
+				return segments.Response{StatusCode: http.StatusOK}, nil
+			},
+		}
+
+		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
+		assert.NoError(t, err)
+		assert.True(t, c.called, "there should be delete call")
+	})
+
+	t.Run("FF is turned off", func(t *testing.T) {
+		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "false")
+
+		c := stubClient{}
+
+		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
+		assert.NoError(t, err)
+		assert.False(t, c.called, "there should NOT be delete call")
 	})
 }

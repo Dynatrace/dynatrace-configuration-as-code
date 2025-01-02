@@ -31,6 +31,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/document"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
@@ -102,6 +103,13 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 			}
 			log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
 		}
+	} else if t == string(config.SegmentID) {
+		if featureflags.Temporary[featureflags.Segments].Enabled() {
+			if clients.SegmentClient != nil {
+				return segment.Delete(ctx, clients.SegmentClient, entries)
+			}
+			log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d %s configuration(s) as API client was unavailable.", config.SegmentID, len(entries))
+		}
 	} else {
 		if clients.SettingsClient != nil {
 			return setting.Delete(ctx, clients.SettingsClient, entries)
@@ -153,6 +161,15 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 			log.Warn("Skipped deletion of Documents configurations as appropriate client was unavailable.")
 		} else if err := document.DeleteAll(ctx, clients.DocumentClient); err != nil {
 			log.Error("Failed to delete all Document configurations: %v", err)
+			errCount++
+		}
+	}
+
+	if featureflags.Temporary[featureflags.Segments].Enabled() {
+		if clients.SegmentClient == nil {
+			log.Warn("Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
+		} else if err := segment.DeleteAll(ctx, clients.SegmentClient); err != nil {
+			log.Error("Failed to delete all %s configurations: %v", config.SegmentID, err)
 			errCount++
 		}
 	}

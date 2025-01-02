@@ -1,0 +1,12 @@
+{
+  "allowedOperations": [
+    "READ",
+    "WRITE",
+    "DELETE"
+  ],
+  "description": "some description",
+  "includes": [],
+  "isPublic": false,
+  "name": "test",
+  "owner": "{{ .ownerID }}"
+}

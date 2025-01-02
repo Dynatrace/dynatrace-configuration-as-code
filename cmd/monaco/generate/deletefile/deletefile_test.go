@@ -23,7 +23,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/deletefile"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
@@ -32,10 +38,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 )
 
 func TestInvalidCommandUsage(t *testing.T) {
@@ -76,19 +78,11 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
-
 	outputFolder := "output-folder"
-
-	cmd := deletefile.Command(fs)
-
-	cmd.SetArgs([]string{
-		"./test-resources/manifest.yaml",
-		"-o",
-		outputFolder,
-	})
-	err := cmd.Execute()
+	err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --output-folder=%s", outputFolder)
 	assert.NoError(t, err)
 
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -112,6 +106,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "workflow", "ca-jira-issue-workflow")
 	assertDeleteEntries(t, entries, "bucket", "my-bucket")
 	assertDeleteEntries(t, entries, "document", "my-dashboard", "my-notebook")
+	assertDeleteEntries(t, entries, "segment", "segmentID")
 
 	assert.Empty(t, entries[api.DashboardShareSettings])
 	assert.Empty(t, entries[string(config.OpenPipelineTypeID)])
@@ -121,19 +116,12 @@ func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
-
 	outputFolder := "output-folder"
-
-	cmd := deletefile.Command(fs)
-
-	cmd.SetArgs([]string{
-		"./test-resources/manifest.yaml",
-		"-o",
-		outputFolder,
-	})
-	err := cmd.Execute()
+	err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml  --output-folder=%s", outputFolder)
+	assert.NoError(t, err)
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -158,23 +146,11 @@ func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
-
 	outputFolder := "output-folder"
-
-	cmd := deletefile.Command(fs)
-
-	cmd.SetArgs([]string{
-		"./test-resources/manifest.yaml",
-		"-o",
-		outputFolder,
-		"--types",
-		"builtin:management-zones,notification",
-		"--exclude-types",
-		"notification",
-	})
-	err := cmd.Execute()
+	err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --output-folder=%s --types=builtin:management-zones,notification --exclude-types=notification", outputFolder)
 	assert.NoError(t, err)
 
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -193,20 +169,13 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	outputFolder := "output-folder"
 
 	t.Run("env1 includes base notification name", func(t *testing.T) {
 		fs := testutils.CreateTestFileSystem()
-		cmd := deletefile.Command(fs)
-		cmd.SetArgs([]string{
-			"./test-resources/manifest.yaml",
-			"-e",
-			"env1",
-			"-o",
-			outputFolder,
-		})
-		err := cmd.Execute()
+		err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --environment=env1 --output-folder=%s", outputFolder)
 		assert.NoError(t, err)
 
 		expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -220,15 +189,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 
 	t.Run("env2 includes over-written notification name", func(t *testing.T) {
 		fs := testutils.CreateTestFileSystem()
-		cmd := deletefile.Command(fs)
-		cmd.SetArgs([]string{
-			"./test-resources/manifest.yaml",
-			"-e",
-			"env2",
-			"-o",
-			outputFolder,
-		})
-		err := cmd.Execute()
+		err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --environment=env2 --output-folder=%s", outputFolder)
 		assert.NoError(t, err)
 
 		expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -242,13 +203,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 
 	t.Run("no specific env includes both notification names", func(t *testing.T) {
 		fs := testutils.CreateTestFileSystem()
-		cmd := deletefile.Command(fs)
-		cmd.SetArgs([]string{
-			"./test-resources/manifest.yaml",
-			"-o",
-			outputFolder,
-		})
-		err := cmd.Execute()
+		err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --output-folder=%s", outputFolder)
 		assert.NoError(t, err)
 
 		expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -267,19 +222,8 @@ func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 
 	fs := testutils.CreateTestFileSystem()
-
 	outputFolder := "output-folder"
-
-	cmd := deletefile.Command(fs)
-
-	cmd.SetArgs([]string{
-		"./test-resources/manifest.yaml",
-		"--project",
-		"other-project",
-		"-o",
-		outputFolder,
-	})
-	err := cmd.Execute()
+	err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --project=other-project --output-folder=%s", outputFolder)
 	assert.NoError(t, err)
 
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -296,19 +240,11 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
-
 	outputFolder := "output-folder"
-
-	cmd := deletefile.Command(fs)
-
-	cmd.SetArgs([]string{
-		"./test-resources/manifest_invalid_project.yaml",
-		"-o",
-		outputFolder,
-	})
-	err := cmd.Execute()
+	err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest_invalid_project.yaml --output-folder=%s", outputFolder)
 	assert.NoError(t, err)
 
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -346,6 +282,7 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	t.Run("default filename", func(t *testing.T) {
 		time := timeutils.TimeAnchor().Format("20060102-150405")
@@ -374,6 +311,8 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 }
 
 func testPreexistingFileIsNotOverwritten(t *testing.T, existingFile string, expectedNewFile string, customFileName bool) {
+	t.Helper()
+
 	// GIVEN pre-existing file overlapping with output name
 	fs := testutils.CreateTestFileSystem()
 	outputFolder := "output-folder"
@@ -388,21 +327,14 @@ func testPreexistingFileIsNotOverwritten(t *testing.T, existingFile string, expe
 	assert.NoError(t, err)
 
 	err = afero.WriteFile(fs, existingPath, []byte{}, 0777)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	// WHEN writing dependency graph
-	cmd := deletefile.Command(fs)
-	args := []string{
-		"./test-resources/manifest.yaml",
-		"-o",
-		outputFolder,
-	}
+	cmd := fmt.Sprintf("monaco generate deletefile ./test-resources/manifest.yaml --output-folder=%s", outputFolder)
 	if customFileName {
-		args = append(args, "--file", existingFile)
+		cmd = cmd + fmt.Sprintf(" --file=%s", existingFile)
 	}
-	cmd.SetArgs(args)
-	err = cmd.Execute()
-	assert.NoError(t, err)
+	err = monaco.RunWithFs(fs, cmd)
+	require.NoError(t, err)
 
 	// THEN existing file is untouched
 	assertFileExists(t, fs, existingPath)
