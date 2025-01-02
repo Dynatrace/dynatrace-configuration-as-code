@@ -310,9 +310,9 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
 
-	case config.GrailFilterSegment:
-		if featureflags.Temporary[featureflags.GrailFilterSegment].Enabled() {
-			resolvedEntity, deployErr = segment.Deploy(ctx, clientset.GrailFilterSegmentClient, properties, renderedConfig, c)
+	case config.Segment:
+		if featureflags.Temporary[featureflags.Segments].Enabled() {
+			resolvedEntity, deployErr = segment.Deploy(ctx, clientset.SegmentClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
