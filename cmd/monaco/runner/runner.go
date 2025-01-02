@@ -15,8 +15,12 @@
 package runner
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"io"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/convert"
@@ -32,8 +36,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/memory"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 )
 
 func RunCmd(fs afero.Fs, command *cobra.Command) error {
@@ -74,7 +76,7 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			fileBasedLogging := featureflags.Permanent[featureflags.LogToFile].Enabled() || support.SupportArchive
+			fileBasedLogging := featureflags.LogToFile.Enabled() || support.SupportArchive
 			log.PrepareLogging(fs, verbose, logSpy, fileBasedLogging)
 
 			// log the version except for running the main command, help command and version command
@@ -108,7 +110,7 @@ Examples:
 
 	rootCmd.AddCommand(account.Command(fs))
 
-	if featureflags.Permanent[featureflags.DangerousCommands].Enabled() {
+	if featureflags.DangerousCommands.Enabled() {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")
 		log.Warn("Use additional commands with care, they might have heavy impact on configurations or environments")
 

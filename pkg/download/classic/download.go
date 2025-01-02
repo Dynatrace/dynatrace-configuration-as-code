@@ -234,7 +234,7 @@ func skipDownload(a api.API, value dtclient.Value, filters ContentFilters) bool 
 }
 
 func shouldFilter() bool {
-	return featureflags.Permanent[featureflags.DownloadFilter].Enabled() && featureflags.Permanent[featureflags.DownloadFilterClassicConfigs].Enabled()
+	return featureflags.DownloadFilter.Enabled() && featureflags.DownloadFilterClassicConfigs.Enabled()
 }
 
 func download(client client.ConfigClient, theApi api.API, value value) ([]map[string]any, error) {

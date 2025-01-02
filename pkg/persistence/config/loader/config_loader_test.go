@@ -1171,7 +1171,7 @@ configs:
 		},
 		{
 			name:             "segment config with FF on",
-			envVars:          map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "true"},
+			envVars:          map[string]string{featureflags.Segments.EnvName(): "true"},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1199,7 +1199,7 @@ configs:
 		},
 		{
 			name:             "segment config with FF off",
-			envVars:          map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "false"},
+			envVars:          map[string]string{featureflags.Segments.EnvName(): "false"},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1453,7 +1453,7 @@ configs:
 		{
 			name: "Document dashboard config with FF on",
 			envVars: map[string]string{
-				featureflags.Temporary[featureflags.Documents].EnvName(): "true",
+				featureflags.Documents.EnvName(): "true",
 			},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -1489,7 +1489,7 @@ configs:
 		{
 			name: "Document private dashboard config with FF on",
 			envVars: map[string]string{
-				featureflags.Temporary[featureflags.Documents].EnvName(): "true",
+				featureflags.Documents.EnvName(): "true",
 			},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -1526,7 +1526,7 @@ configs:
 		{
 			name: "Document notebook config with FF on",
 			envVars: map[string]string{
-				featureflags.Temporary[featureflags.Documents].EnvName(): "true",
+				featureflags.Documents.EnvName(): "true",
 			},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -1562,7 +1562,7 @@ configs:
 		{
 			name: "Document config with invalid type with FF on",
 			envVars: map[string]string{
-				featureflags.Temporary[featureflags.Documents].EnvName(): "true",
+				featureflags.Documents.EnvName(): "true",
 			},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -1583,7 +1583,7 @@ configs:
 		{
 			name: "Document config with FF off",
 			envVars: map[string]string{
-				featureflags.Temporary[featureflags.Documents].EnvName(): "false",
+				featureflags.Documents.EnvName(): "false",
 			},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -1604,7 +1604,7 @@ configs:
 		{
 			name: "OpenPipeline config with FF off",
 			envVars: map[string]string{
-				featureflags.Temporary[featureflags.OpenPipeline].EnvName(): "false",
+				featureflags.OpenPipeline.EnvName(): "false",
 			},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -1624,7 +1624,7 @@ configs:
 		{
 			name: "OpenPipeline config with FF on",
 			envVars: map[string]string{
-				featureflags.Temporary[featureflags.OpenPipeline].EnvName(): "true",
+				featureflags.OpenPipeline.EnvName(): "true",
 			},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -1658,7 +1658,7 @@ configs:
 		{
 			name: "OpenPipeline config with FF on and missing kind",
 			envVars: map[string]string{
-				featureflags.Temporary[featureflags.OpenPipeline].EnvName(): "true",
+				featureflags.OpenPipeline.EnvName(): "true",
 			},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",

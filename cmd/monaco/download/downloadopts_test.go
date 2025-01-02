@@ -117,10 +117,8 @@ func Test_prepareAPIs(t *testing.T) {
 
 	t.Run("require to set all of listed FF", func(t *testing.T) {
 		testApi := api.API{
-			ID: "test-endpoint",
-			RequireAllFF: []featureflags.FeatureFlag{
-				featureflags.Permanent[featureflags.ExtractScopeAsParameter],
-			},
+			ID:           "test-endpoint",
+			RequireAllFF: []featureflags.FeatureFlag{featureflags.ExtractScopeAsParameter},
 		}
 		type given struct {
 			apis api.APIs
@@ -135,9 +133,7 @@ func Test_prepareAPIs(t *testing.T) {
 				name: "with set FF",
 				given: given{
 					apis: api.APIs{testApi.ID: testApi},
-					ff: []featureflags.FeatureFlag{
-						featureflags.Permanent[featureflags.ExtractScopeAsParameter],
-					},
+					ff:   []featureflags.FeatureFlag{featureflags.ExtractScopeAsParameter},
 				},
 				expected: api.APIs{testApi.ID: testApi},
 			},
@@ -165,7 +161,7 @@ func Test_prepareAPIs(t *testing.T) {
 	})
 
 	t.Run("do not skip anything when `MONACO_FEAT_DOWNLOAD_FILTER` are disabled", func(t *testing.T) {
-		t.Setenv(featureflags.Permanent[featureflags.DownloadFilter].EnvName(), "false") // by default, it is true
+		t.Setenv(featureflags.DownloadFilter.EnvName(), "false") // by default, it is true
 		tests := []struct {
 			name  string
 			given downloadConfigsOptions
