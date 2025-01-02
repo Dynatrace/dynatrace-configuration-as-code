@@ -18,52 +18,79 @@ package segment
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	segment "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/grailfiltersegments"
+	segment "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/go-logr/logr"
-	"net/http"
 	"time"
 )
 
 type DeploySegmentClient interface {
 	Upsert(ctx context.Context, id string, data []byte) (segment.Response, error)
-	Get(ctx context.Context, id string) (segment.Response, error)
+	GetAll(ctx context.Context) ([]segment.Response, error)
 }
 
 func Deploy(ctx context.Context, client DeploySegmentClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
-	externalId := c.Coordinate.String()
-	println(externalId) //@TODO remove this, as its only here for debug
-
 	//create new context to carry logger
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
+	// external id is generated from project-configType-configId
+	externalId := c.Coordinate.String()
+
+	var request map[string]any
+	err := json.Unmarshal([]byte(renderedConfig), &request)
+	request["externalId"] = externalId
+
 	//Strategy 1 if OriginObjectId is set check on remote if an object can be found and update it,
-	//also update the externalId to the computed one we generate
+	//update the externalId to the computed one we generate
 	if c.OriginObjectId != "" {
-		getResponse, err := client.Get(ctx, c.OriginObjectId)
+		request["uid"] = c.OriginObjectId
+		payload, _ := json.Marshal(request)
+		responseUpsert, err := client.Upsert(ctx, c.OriginObjectId, payload)
 		if err != nil {
 			return entities.ResolvedEntity{}, err
 		}
-		if getResponse.StatusCode != http.StatusNotFound {
-			//@TODO how to set externalId here? unmarshall and set then marshall
-			_, err := client.Upsert(ctx, c.OriginObjectId, []byte(renderedConfig))
-			if err != nil {
-				//println(updateResponse)
-			}
+		if responseUpsert.Data == nil {
+			properties[config.IdParameter] = c.OriginObjectId
 		}
+
+		return entities.ResolvedEntity{
+			EntityName: externalId,
+			Coordinate: c.Coordinate,
+			Properties: properties,
+		}, nil
 	}
 
 	//Strategy 2 is to generate external id and either update or create object
-	_, err := client.Upsert(ctx, externalId, []byte(renderedConfig))
+	segmentsResponses, err := client.GetAll(ctx)
+	if err != nil {
+		return entities.ResolvedEntity{}, err
+	}
+
+	var response map[string]interface{}
+	for _, segmentResponse := range segmentsResponses {
+		err = json.Unmarshal(segmentResponse.Data, &response)
+		if err != nil {
+			return entities.ResolvedEntity{}, err
+		}
+		//In case of a match, the put needs additional fields
+		if response["externalId"] == externalId {
+			request["uid"] = response["uid"].(string)
+			request["owner"] = response["owner"].(string)
+			externalId = response["uid"].(string)
+		}
+	}
+	payload, _ := json.Marshal(request)
+	_, err = client.Upsert(ctx, externalId, payload)
 	if err != nil {
 		var apiErr api.APIError
 		if errors.As(err, &apiErr) {
@@ -72,7 +99,7 @@ func Deploy(ctx context.Context, client DeploySegmentClient, properties paramete
 
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert segment with segmentName %q", externalId)).WithError(err)
 	}
-	// Set this to the upserte id returned by api
+
 	properties[config.IdParameter] = externalId
 
 	return entities.ResolvedEntity{
