@@ -1,0 +1,11 @@
+configs:
+- id: segmentID
+  config:
+    parameters:
+      extractedIDs:
+        type: value
+        value:
+          ownerID: 49acd30a-8a5c-4dfc-bae9-a99bbb510060
+    template: segment.json
+    skip: false
+  type: segment

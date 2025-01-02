@@ -23,7 +23,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/deletefile"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
@@ -32,10 +38,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 )
 
 func TestInvalidCommandUsage(t *testing.T) {
@@ -76,6 +78,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -112,6 +115,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "workflow", "ca-jira-issue-workflow")
 	assertDeleteEntries(t, entries, "bucket", "my-bucket")
 	assertDeleteEntries(t, entries, "document", "my-dashboard", "my-notebook")
+	assertDeleteEntries(t, entries, "segment", "segmentID")
 
 	assert.Empty(t, entries[api.DashboardShareSettings])
 	assert.Empty(t, entries[string(config.OpenPipelineTypeID)])
@@ -121,6 +125,7 @@ func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -158,6 +163,7 @@ func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -193,6 +199,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	outputFolder := "output-folder"
 
@@ -296,6 +303,7 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -346,6 +354,7 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
 	t.Setenv(featureflags.Temporary[featureflags.Documents].EnvName(), "1")
 	t.Setenv(featureflags.Temporary[featureflags.OpenPipeline].EnvName(), "1")
+	t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "1")
 
 	t.Run("default filename", func(t *testing.T) {
 		time := timeutils.TimeAnchor().Format("20060102-150405")
@@ -374,6 +383,8 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 }
 
 func testPreexistingFileIsNotOverwritten(t *testing.T, existingFile string, expectedNewFile string, customFileName bool) {
+	t.Helper()
+
 	// GIVEN pre-existing file overlapping with output name
 	fs := testutils.CreateTestFileSystem()
 	outputFolder := "output-folder"
