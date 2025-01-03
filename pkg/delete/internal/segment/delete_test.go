@@ -47,9 +47,9 @@ func (s *stubClient) Delete(_ context.Context, id string) (libSegment.Response, 
 	return s.delete(id)
 }
 
-func TestDelete(t *testing.T) {
+func TestDeleteByCoordinate(t *testing.T) {
 
-	t.Run("delete via coordinate", func(t *testing.T) {
+	t.Run("success if one segment matches generated external ID", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "segment",
 			Identifier: "monaco_identifier",
@@ -72,7 +72,7 @@ func TestDelete(t *testing.T) {
 		assert.True(t, c.called, "delete command wasn't invoked")
 	})
 
-	t.Run("config declared via coordinate doesn't exists - no error (wanted state achieved)", func(t *testing.T) {
+	t.Run("no error if no segment matches generated external ID", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "segment",
 			Identifier: "monaco_identifier",
@@ -89,7 +89,7 @@ func TestDelete(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("config declared via coordinate have multiple match - an error", func(t *testing.T) {
+	t.Run("error if multiple segments match generated external ID", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "segment",
 			Identifier: "monaco_identifier",
@@ -108,7 +108,7 @@ func TestDelete(t *testing.T) {
 		assert.False(t, c.called, "it's not known what needs to be deleted")
 	})
 
-	t.Run("config declared via coordinate failed to get externalId - an error", func(t *testing.T) {
+	t.Run("error if list fails", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "segment",
 			Identifier: "monaco_identifier",
@@ -124,8 +124,11 @@ func TestDelete(t *testing.T) {
 		err := segment.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
+}
 
-	t.Run("delete via originID", func(t *testing.T) {
+func TestDeleteByObjectId(t *testing.T) {
+
+	t.Run("sucess if segment exists", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:           "segment",
 			OriginObjectId: "originObjectID",
@@ -143,7 +146,7 @@ func TestDelete(t *testing.T) {
 		assert.True(t, c.called)
 	})
 
-	t.Run("config declared via originID doesn't exists - no error (wanted state achieved)", func(t *testing.T) {
+	t.Run("no error if segment doesn't exist", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:           "segment",
 			OriginObjectId: "originObjectID",
@@ -160,7 +163,7 @@ func TestDelete(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("error during delete - an error", func(t *testing.T) {
+	t.Run("error if delete fails", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:           "segment",
 			OriginObjectId: "originObjectID",
@@ -177,7 +180,7 @@ func TestDelete(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("server error during delete - an error", func(t *testing.T) {
+	t.Run("error if server error during delete", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:           "segment",
 			OriginObjectId: "originObjectID",
@@ -194,7 +197,7 @@ func TestDelete(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("error during delete - continue to delete, an error", func(t *testing.T) {
+	t.Run("deletion continues even if error occurs", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:           "segment",
 			OriginObjectId: "originObjectID",
@@ -231,7 +234,7 @@ func TestDeleteAll(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("error during delete - continue to delete, an error", func(t *testing.T) {
+	t.Run("deletion continues even if error occurs during delete", func(t *testing.T) {
 		c := stubClient{
 			list: func() (libSegment.Response, error) {
 				return libSegment.Response{Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
