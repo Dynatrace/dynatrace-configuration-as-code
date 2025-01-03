@@ -1191,7 +1191,7 @@ func TestDelete_Segments(t *testing.T) {
 		}
 		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: &c}, given)
 		assert.NoError(t, err)
-		assert.True(t, c.called, "there should be delete call")
+		assert.True(t, c.called, "delete should have been called")
 	})
 
 	t.Run("simple case with FF turned off", func(t *testing.T) {
@@ -1209,7 +1209,7 @@ func TestDelete_Segments(t *testing.T) {
 		}
 		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: &c}, given)
 		assert.NoError(t, err)
-		assert.False(t, c.called, "there should NOT be delete call")
+		assert.False(t, c.called, "delete should not have been called")
 	})
 }
 
@@ -1228,7 +1228,7 @@ func TestDeleteAll_Segments(t *testing.T) {
 
 		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
 		assert.NoError(t, err)
-		assert.True(t, c.called, "there should be delete call")
+		assert.True(t, c.called, "delete should have been called")
 	})
 
 	t.Run("FF is turned off", func(t *testing.T) {
@@ -1238,6 +1238,6 @@ func TestDeleteAll_Segments(t *testing.T) {
 
 		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
 		assert.NoError(t, err)
-		assert.False(t, c.called, "there should NOT be delete call")
+		assert.False(t, c.called, "delete should not have been called")
 	})
 }
