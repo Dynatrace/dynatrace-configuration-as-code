@@ -1151,22 +1151,22 @@ func TestDelete_Documents(t *testing.T) {
 	})
 }
 
-type stubClient struct {
+type segmentStubClient struct {
 	called bool
 	list   func() (segments.Response, error)
 	getAll func() ([]segments.Response, error)
 	delete func() (segments.Response, error)
 }
 
-func (c *stubClient) List(_ context.Context) (segments.Response, error) {
+func (c *segmentStubClient) List(_ context.Context) (segments.Response, error) {
 	return c.list()
 }
 
-func (c *stubClient) GetAll(_ context.Context) ([]segments.Response, error) {
+func (c *segmentStubClient) GetAll(_ context.Context) ([]segments.Response, error) {
 	return c.getAll()
 }
 
-func (c *stubClient) Delete(_ context.Context, _ string) (segments.Response, error) {
+func (c *segmentStubClient) Delete(_ context.Context, _ string) (segments.Response, error) {
 	c.called = true
 	return c.delete()
 }
@@ -1175,7 +1175,7 @@ func TestDelete_Segments(t *testing.T) {
 	t.Run("simple case", func(t *testing.T) {
 		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
 
-		c := stubClient{
+		c := segmentStubClient{
 			delete: func() (segments.Response, error) {
 				return segments.Response{StatusCode: http.StatusOK}, nil
 			},
@@ -1197,7 +1197,7 @@ func TestDelete_Segments(t *testing.T) {
 	t.Run("simple case with FF turned off", func(t *testing.T) {
 		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "false")
 
-		c := stubClient{}
+		c := segmentStubClient{}
 
 		given := delete.DeleteEntries{
 			"segment": {
@@ -1217,7 +1217,7 @@ func TestDeleteAll_Segments(t *testing.T) {
 	t.Run("simple case", func(t *testing.T) {
 		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "true")
 
-		c := stubClient{
+		c := segmentStubClient{
 			list: func() (segments.Response, error) {
 				return segments.Response{StatusCode: http.StatusOK, Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
 			},
@@ -1234,7 +1234,7 @@ func TestDeleteAll_Segments(t *testing.T) {
 	t.Run("FF is turned off", func(t *testing.T) {
 		t.Setenv(featureflags.Temporary[featureflags.Segments].EnvName(), "false")
 
-		c := stubClient{}
+		c := segmentStubClient{}
 
 		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
 		assert.NoError(t, err)
