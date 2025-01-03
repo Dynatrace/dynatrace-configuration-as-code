@@ -1027,14 +1027,14 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
-			name:    "segment",
+			name:    "Segment",
 			envVars: map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "true"},
 			configs: []config.Config{
 				{
-					Template: template.NewInMemoryTemplateWithPath("project/file-segment/template.json", "{}"),
+					Template: template.NewInMemoryTemplateWithPath("project/segment/template.json", "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "file-segment",
+						Type:     "segment",
 						ConfigId: "configId1",
 					},
 					Type: config.Segment{},
@@ -1045,7 +1045,7 @@ func TestWriteConfigs(t *testing.T) {
 				},
 			},
 			expectedConfigs: map[string]persistence.TopLevelDefinition{
-				"file-segment": {
+				"segment": {
 					Configs: []persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId1",
@@ -1064,7 +1064,7 @@ func TestWriteConfigs(t *testing.T) {
 				},
 			},
 			expectedTemplatePaths: []string{
-				"project/file-segment/template.json",
+				"project/segment/template.json",
 			},
 		},
 		{
@@ -1072,7 +1072,7 @@ func TestWriteConfigs(t *testing.T) {
 			envVars: map[string]string{featureflags.Temporary[featureflags.Segments].EnvName(): "false"},
 			configs: []config.Config{
 				{
-					Template: template.NewInMemoryTemplateWithPath("project/file-segment/template.json", "{}"),
+					Template: template.NewInMemoryTemplateWithPath("project/segment/template.json", "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "segment",
