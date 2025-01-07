@@ -300,11 +300,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		resolvedEntity, deployErr = bucket.Deploy(ctx, clientset.BucketClient, properties, renderedConfig, c)
 
 	case config.DocumentType:
-		if featureflags.Documents.Enabled() {
-			resolvedEntity, deployErr = document.Deploy(ctx, clientset.DocumentClient, properties, renderedConfig, c)
-		} else {
-			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
-		}
+		resolvedEntity, deployErr = document.Deploy(ctx, clientset.DocumentClient, properties, renderedConfig, c)
 
 	case config.OpenPipelineType:
 		if featureflags.OpenPipeline.Enabled() {

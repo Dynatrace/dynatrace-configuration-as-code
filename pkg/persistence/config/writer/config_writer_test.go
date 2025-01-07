@@ -1333,9 +1333,6 @@ func TestWriteConfigs(t *testing.T) {
 				"project/document-dashboard/b.json",
 				"project/document-notebook/a.json",
 			},
-			envVars: map[string]string{
-				featureflags.Documents.EnvName(): "true",
-			},
 		},
 		{
 			name: "OpenPipeline",

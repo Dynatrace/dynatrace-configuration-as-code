@@ -109,10 +109,7 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		"api":        c.parseApiType,
 		"settings":   c.parseSettingsType,
 		"automation": c.parseAutomation,
-	}
-
-	if featureflags.Documents.Enabled() {
-		unmarshalers["document"] = c.parseDocumentType
+		"document":   c.parseDocumentType,
 	}
 
 	if featureflags.OpenPipeline.Enabled() {
@@ -317,14 +314,12 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		return BucketType, nil
 
 	case config.DocumentType:
-		if featureflags.Documents.Enabled() {
-			return map[string]any{
-				"document": DocumentDefinition{
-					Kind:    t.Kind,
-					Private: t.Private,
-				},
-			}, nil
-		}
+		return map[string]any{
+			"document": DocumentDefinition{
+				Kind:    t.Kind,
+				Private: t.Private,
+			},
+		}, nil
 
 	case config.OpenPipelineType:
 		if featureflags.OpenPipeline.Enabled() {
