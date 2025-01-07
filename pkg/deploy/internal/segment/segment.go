@@ -36,6 +36,7 @@ import (
 type DeploySegmentClient interface {
 	Upsert(ctx context.Context, id string, data []byte) (segment.Response, error)
 	GetAll(ctx context.Context) ([]segment.Response, error)
+	Get(ctx context.Context, id string) (segment.Response, error)
 }
 
 func Deploy(ctx context.Context, client DeploySegmentClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
@@ -49,18 +50,19 @@ func Deploy(ctx context.Context, client DeploySegmentClient, properties paramete
 	externalId := c.Coordinate.String()
 	request["externalId"] = externalId
 
-	//Strategy 1 when OriginObjectId is set we try to update the object first, if the object doesn't exist we create it.
+	//Strategy 1 when OriginObjectId is set we try to get the object if it exists we update it.
 	if c.OriginObjectId != "" {
 		id, err := deployWithOriginObjectId(ctx, client, request, c)
 		if err != nil {
-			return entities.ResolvedEntity{}, fmt.Errorf("failed to deploy segment with originObjectId: %s, with error: %w", c.OriginObjectId, err)
+			return entities.ResolvedEntity{}, fmt.Errorf("failed to deploy segment with externalId: %s, with error: %w", externalId, err)
 		}
-
-		return createResolveEntity(id, externalId, properties, c), nil
+		if id != "" {
+			return createResolveEntity(id, externalId, properties, c), nil
+		}
 	}
 
-	//Strategy 2 is to try to find a match with external id and either update or create object
-	id, err := deployWithExternalId(ctx, client, request, c)
+	//Strategy 2 is to try to find a match with external id and either update or create object if no match found.
+	id, err := deployWithExternalId(ctx, client, request, c, externalId)
 	if err != nil {
 		return entities.ResolvedEntity{}, fmt.Errorf("failed to deploy segment with externalId: %s, with error: %w", externalId, err)
 	}
@@ -69,6 +71,15 @@ func Deploy(ctx context.Context, client DeploySegmentClient, properties paramete
 }
 
 func deployWithOriginObjectId(ctx context.Context, client DeploySegmentClient, request map[string]any, c *config.Config) (string, error) {
+	_, err := client.Get(ctx, c.OriginObjectId)
+	if err != nil {
+		apiError := api.APIError{}
+		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+			return "", nil
+		}
+		return "", fmt.Errorf("failed to fetch segment object: %w", err)
+	}
+
 	request["uid"] = c.OriginObjectId
 	payload, err := json.Marshal(request)
 	if err != nil {
@@ -88,15 +99,16 @@ func deployWithOriginObjectId(ctx context.Context, client DeploySegmentClient, r
 	return c.OriginObjectId, nil
 }
 
-func deployWithExternalId(ctx context.Context, client DeploySegmentClient, request map[string]any, c *config.Config) (string, error) {
+func deployWithExternalId(ctx context.Context, client DeploySegmentClient, request map[string]any, c *config.Config, externalId string) (string, error) {
 	segmentsResponses, err := client.GetAll(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to GET segments: %w", err)
 	}
 
 	var jsonResponse struct {
-		Id    string `json:"uid"`
-		Owner string `json:"owner"`
+		Id         string `json:"uid"`
+		Owner      string `json:"owner"`
+		ExternalId string `json:"externalId"`
 	}
 	for _, segmentResponse := range segmentsResponses {
 		err = json.Unmarshal(segmentResponse.Data, &jsonResponse)
@@ -104,7 +116,7 @@ func deployWithExternalId(ctx context.Context, client DeploySegmentClient, reque
 			return "", err
 		}
 		//In case of a match, the put needs additional fields
-		if jsonResponse.Id == request["externalId"] {
+		if jsonResponse.ExternalId == request["externalId"] {
 			request["uid"] = jsonResponse.Id
 			request["owner"] = jsonResponse.Owner
 			break

@@ -169,3 +169,7 @@ func (c *DummySegmentsClient) GetAll(_ context.Context) ([]coreapi.Response, err
 func (c *DummySegmentsClient) Upsert(_ context.Context, _ string, _ []byte) (segments.Response, error) {
 	return segments.Response{}, nil
 }
+
+func (c *DummySegmentsClient) Get(_ context.Context, _ string) (segments.Response, error) {
+	return segments.Response{}, nil
+}
