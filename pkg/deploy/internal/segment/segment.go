@@ -39,6 +39,12 @@ type DeploySegmentClient interface {
 	Get(ctx context.Context, id string) (segment.Response, error)
 }
 
+type jsonResponse struct {
+	UID        string `json:"uid"`
+	Owner      string `json:"owner"`
+	ExternalId string `json:"externalId"`
+}
+
 func Deploy(ctx context.Context, client DeploySegmentClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	var request map[string]any
 	err := json.Unmarshal([]byte(renderedConfig), &request)
@@ -86,14 +92,9 @@ func deployWithOriginObjectId(ctx context.Context, client DeploySegmentClient, r
 		return "", fmt.Errorf("failed to marshal segment request: %w", err)
 	}
 
-	responseUpsert, err := deploy(ctx, client, c.OriginObjectId, payload, c)
+	_, err = deploy(ctx, client, c.OriginObjectId, payload, c)
 	if err != nil {
 		return "", fmt.Errorf("failed API request: %w", err)
-	}
-
-	//When post was executed we get payload where we read the id from
-	if responseUpsert.StatusCode == http.StatusCreated {
-		return extractUidFromResponse(responseUpsert)
 	}
 
 	return c.OriginObjectId, nil
@@ -105,20 +106,16 @@ func deployWithExternalId(ctx context.Context, client DeploySegmentClient, reque
 		return "", fmt.Errorf("failed to GET segments: %w", err)
 	}
 
-	var jsonResponse struct {
-		Id         string `json:"uid"`
-		Owner      string `json:"owner"`
-		ExternalId string `json:"externalId"`
-	}
+	var responseData jsonResponse
 	for _, segmentResponse := range segmentsResponses {
-		err = json.Unmarshal(segmentResponse.Data, &jsonResponse)
+		responseData, err = getJsonResponseFromSegmentsResponse(segmentResponse)
 		if err != nil {
 			return "", err
 		}
 		//In case of a match, the put needs additional fields
-		if jsonResponse.ExternalId == request["externalId"] {
-			request["uid"] = jsonResponse.Id
-			request["owner"] = jsonResponse.Owner
+		if responseData.ExternalId == request["externalId"] {
+			request["uid"] = responseData.UID
+			request["owner"] = responseData.Owner
 			break
 		}
 	}
@@ -128,17 +125,20 @@ func deployWithExternalId(ctx context.Context, client DeploySegmentClient, reque
 		return "", fmt.Errorf("failed to marshal segment request: %w", err)
 	}
 
-	responseUpsert, err := deploy(ctx, client, jsonResponse.Id, payload, c)
+	responseUpsert, err := deploy(ctx, client, responseData.UID, payload, c)
 	if err != nil {
 		return "", fmt.Errorf("failed API request: %w", err)
 	}
 
-	//When post was executed we get payload where we read the id from
+	//For a POST we need to parse the response again to read out the ID
 	if responseUpsert.StatusCode == http.StatusCreated {
-		return extractUidFromResponse(responseUpsert)
+		responseData, err = getJsonResponseFromSegmentsResponse(responseUpsert)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	return jsonResponse.Id, nil
+	return responseData.UID, nil
 }
 
 func deploy(ctx context.Context, client DeploySegmentClient, id string, payload []byte, c *config.Config) (segment.Response, error) {
@@ -169,14 +169,12 @@ func createResolveEntity(id string, externalId string, properties parameter.Prop
 	}
 }
 
-func extractUidFromResponse(response segment.Response) (string, error) {
-	var jsonResponse struct {
-		Id string `json:"uid"`
-	}
-	err := json.Unmarshal(response.Data, &jsonResponse)
+func getJsonResponseFromSegmentsResponse(rawResponse segment.Response) (jsonResponse, error) {
+	var response jsonResponse
+	err := json.Unmarshal(rawResponse.Data, &response)
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %w", err)
+		return jsonResponse{}, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	return jsonResponse.Id, nil
+	return response, nil
 }

@@ -27,7 +27,6 @@ import (
 	buckets "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	documents "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	openpipeline "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	segments "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	dtclient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 )
 
@@ -38,7 +37,6 @@ var DummyClientSet = ClientSet{
 	BucketClient:       &DummyBucketClient{},
 	DocumentClient:     &DummyDocumentClient{},
 	OpenPipelineClient: &DummyOpenPipelineClient{},
-	SegmentClient:      &DummySegmentsClient{},
 }
 
 var _ AutomationClient = (*DummyAutomationClient)(nil)
@@ -156,20 +154,4 @@ func (c *DummyOpenPipelineClient) GetAll(ctx context.Context) ([]coreapi.Respons
 
 func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) (openpipeline.Response, error) {
 	return openpipeline.Response{}, nil
-}
-
-type DummySegmentsClient struct{}
-
-// GetAll implements GrailFilterSegmentClient
-func (c *DummySegmentsClient) GetAll(_ context.Context) ([]coreapi.Response, error) {
-	panic("unimplemented")
-}
-
-// Upsert implements GrailFilterSegmentClient
-func (c *DummySegmentsClient) Upsert(_ context.Context, _ string, _ []byte) (segments.Response, error) {
-	return segments.Response{}, nil
-}
-
-func (c *DummySegmentsClient) Get(_ context.Context, _ string) (segments.Response, error) {
-	return segments.Response{}, nil
 }

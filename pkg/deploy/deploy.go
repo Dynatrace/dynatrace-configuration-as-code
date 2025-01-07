@@ -311,7 +311,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		}
 
 	case config.Segment:
-		if featureflags.Temporary[featureflags.Segments].Enabled() {
+		if featureflags.Segments.Enabled() {
 			resolvedEntity, deployErr = segment.Deploy(ctx, clientset.SegmentClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
