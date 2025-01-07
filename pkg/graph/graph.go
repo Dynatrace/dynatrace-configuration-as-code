@@ -265,7 +265,7 @@ func buildDependencyGraph(projects []project.Project, environment string, nodeOp
 				logDependency(c, other)
 				g.SetEdge(g.NewEdge(g.Node(otherNode), g.Node(cNode)))
 			} else {
-				// TODO: to comply with the current 'continue-on-error' behaviour we can not recognize invalid references at this point but must return a dependency graph even if we know things will fail later on
+				// NOTE: to comply with the current 'continue-on-error' behaviour we can not recognize invalid references at this point but must return a dependency graph even if we know things will fail later on
 				log.Warn("Configuration %q references unknown configuration %q", c, other)
 			}
 
