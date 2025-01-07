@@ -17,9 +17,10 @@
 package classicheartbeat
 
 import (
+	"context"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"golang.org/x/net/context"
 )
 
 // TestClassic tests if the provided classicClient can actually reach a classic environment.
