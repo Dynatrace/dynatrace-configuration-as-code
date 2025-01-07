@@ -50,14 +50,20 @@ func (ff FeatureFlag) EnvName() string {
 // Feature flags are considered to be "disabled" if their resp. environment variable
 // is set to 0, f, F, FALSE, false or False.
 func (ff FeatureFlag) Enabled() bool {
-	v, f := temporaryDefaultValues[ff]
-	if f {
+	v, exists := temporaryDefaultValues[ff]
+	if exists {
+		_, exists = permanentDefaultValues[ff]
+		if exists {
+			panic(fmt.Sprintf("feature flag %s defined as temporary and permanent", ff))
+		}
 		return enabled(ff, v)
 	}
-	v, f = permanentDefaultValues[ff]
-	if f {
+
+	v, exists = permanentDefaultValues[ff]
+	if exists {
 		return enabled(ff, v)
 	}
+
 	panic(fmt.Sprintf("unknown feature flag %s", ff))
 }
 
