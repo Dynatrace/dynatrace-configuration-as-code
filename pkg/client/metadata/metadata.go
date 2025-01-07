@@ -17,12 +17,13 @@
 package metadata
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"golang.org/x/net/context"
 )
 
 const ClassicEnvironmentDomainPath = "/platform/metadata/v1/classic-environment-domain"

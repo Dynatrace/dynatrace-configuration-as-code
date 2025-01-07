@@ -17,13 +17,14 @@
 package version
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
-	"golang.org/x/net/context"
-	"strings"
 )
 
 type ApiVersionObject struct {
