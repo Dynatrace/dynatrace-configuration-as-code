@@ -29,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/go-logr/logr"
+	"net/http"
 	"time"
 )
 
@@ -38,73 +39,132 @@ type DeploySegmentClient interface {
 }
 
 func Deploy(ctx context.Context, client DeploySegmentClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
+	var request map[string]any
+	err := json.Unmarshal([]byte(renderedConfig), &request)
+	if err != nil {
+		return entities.ResolvedEntity{}, err
+	}
+
+	//externalId is generated from [project-configType-configId]
+	externalId := c.Coordinate.String()
+	request["externalId"] = externalId
+
+	//Strategy 1 when OriginObjectId is set we try to update the object first, if the object doesn't exist we create it.
+	if c.OriginObjectId != "" {
+		id, err := deployWithOriginObjectId(ctx, client, request, c)
+		if err != nil {
+			return entities.ResolvedEntity{}, fmt.Errorf("failed to deploy segment with originObjectId: %s, with error: %w", c.OriginObjectId, err)
+		}
+
+		return createResolveEntity(id, externalId, properties, c), nil
+	}
+
+	//Strategy 2 is to try to find a match with external id and either update or create object
+	id, err := deployWithExternalId(ctx, client, request, c)
+	if err != nil {
+		return entities.ResolvedEntity{}, fmt.Errorf("failed to deploy segment with externalId: %s, with error: %w", externalId, err)
+	}
+
+	return createResolveEntity(id, externalId, properties, c), nil
+}
+
+func deployWithOriginObjectId(ctx context.Context, client DeploySegmentClient, request map[string]any, c *config.Config) (string, error) {
+	request["uid"] = c.OriginObjectId
+	payload, err := json.Marshal(request)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal segment request: %w", err)
+	}
+
+	responseUpsert, err := deploy(ctx, client, c.OriginObjectId, payload, c)
+	if err != nil {
+		return "", fmt.Errorf("failed API request: %w", err)
+	}
+
+	//When post was executed we get payload where we read the id from
+	if responseUpsert.StatusCode == http.StatusCreated {
+		return extractUidFromResponse(responseUpsert)
+	}
+
+	return c.OriginObjectId, nil
+}
+
+func deployWithExternalId(ctx context.Context, client DeploySegmentClient, request map[string]any, c *config.Config) (string, error) {
+	segmentsResponses, err := client.GetAll(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to GET segments: %w", err)
+	}
+
+	var jsonResponse struct {
+		Id    string `json:"uid"`
+		Owner string `json:"owner"`
+	}
+	for _, segmentResponse := range segmentsResponses {
+		err = json.Unmarshal(segmentResponse.Data, &jsonResponse)
+		if err != nil {
+			return "", err
+		}
+		//In case of a match, the put needs additional fields
+		if jsonResponse.Id == request["externalId"] {
+			request["uid"] = jsonResponse.Id
+			request["owner"] = jsonResponse.Owner
+			break
+		}
+	}
+
+	payload, err := json.Marshal(request)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal segment request: %w", err)
+	}
+
+	responseUpsert, err := deploy(ctx, client, jsonResponse.Id, payload, c)
+	if err != nil {
+		return "", fmt.Errorf("failed API request: %w", err)
+	}
+
+	//When post was executed we get payload where we read the id from
+	if responseUpsert.StatusCode == http.StatusCreated {
+		return extractUidFromResponse(responseUpsert)
+	}
+
+	return jsonResponse.Id, nil
+}
+
+func deploy(ctx context.Context, client DeploySegmentClient, id string, payload []byte, c *config.Config) (segment.Response, error) {
 	//create new context to carry logger
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	// external id is generated from project-configType-configId
-	externalId := c.Coordinate.String()
-
-	var request map[string]any
-	err := json.Unmarshal([]byte(renderedConfig), &request)
-	request["externalId"] = externalId
-
-	//Strategy 1 if OriginObjectId is set check on remote if an object can be found and update it,
-	//update the externalId to the computed one we generate
-	if c.OriginObjectId != "" {
-		request["uid"] = c.OriginObjectId
-		payload, _ := json.Marshal(request)
-		responseUpsert, err := client.Upsert(ctx, c.OriginObjectId, payload)
-		if err != nil {
-			return entities.ResolvedEntity{}, err
-		}
-		if responseUpsert.Data == nil {
-			properties[config.IdParameter] = c.OriginObjectId
-		}
-
-		return entities.ResolvedEntity{
-			EntityName: externalId,
-			Coordinate: c.Coordinate,
-			Properties: properties,
-		}, nil
-	}
-
-	//Strategy 2 is to generate external id and either update or create object
-	segmentsResponses, err := client.GetAll(ctx)
-	if err != nil {
-		return entities.ResolvedEntity{}, err
-	}
-
-	var response map[string]interface{}
-	for _, segmentResponse := range segmentsResponses {
-		err = json.Unmarshal(segmentResponse.Data, &response)
-		if err != nil {
-			return entities.ResolvedEntity{}, err
-		}
-		//In case of a match, the put needs additional fields
-		if response["externalId"] == externalId {
-			request["uid"] = response["uid"].(string)
-			request["owner"] = response["owner"].(string)
-			externalId = response["uid"].(string)
-		}
-	}
-	payload, _ := json.Marshal(request)
-	_, err = client.Upsert(ctx, externalId, payload)
+	responseUpsert, err := client.Upsert(ctx, id, payload)
 	if err != nil {
 		var apiErr api.APIError
 		if errors.As(err, &apiErr) {
-			return entities.ResolvedEntity{}, fmt.Errorf("failed to upsert segment with segmentName %q: %w", externalId, err)
+			return api.Response{}, fmt.Errorf("failed to upsert segment with id %q: %w", id, err)
 		}
 
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert segment with segmentName %q", externalId)).WithError(err)
+		return api.Response{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert segkent with id %q", id)).WithError(err)
 	}
 
-	properties[config.IdParameter] = externalId
+	return responseUpsert, nil
+}
 
+func createResolveEntity(id string, externalId string, properties parameter.Properties, c *config.Config) entities.ResolvedEntity {
+	properties[config.IdParameter] = id
 	return entities.ResolvedEntity{
 		EntityName: externalId,
 		Coordinate: c.Coordinate,
 		Properties: properties,
-	}, nil
+	}
+}
+
+func extractUidFromResponse(response segment.Response) (string, error) {
+	var jsonResponse struct {
+		Id string `json:"uid"`
+	}
+	err := json.Unmarshal(response.Data, &jsonResponse)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return jsonResponse.Id, nil
 }
