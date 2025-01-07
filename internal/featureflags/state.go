@@ -26,7 +26,7 @@ import (
 
 // AnyModified returns true if any feature flag value is different to its default.
 func AnyModified() bool {
-	return anyFeatureFlagModified(permanent) || anyFeatureFlagModified(temporary)
+	return anyFeatureFlagModified(permanentDefaultValues) || anyFeatureFlagModified(temporaryDefaultValues)
 }
 
 // anyFeatureFlagModified returns true if any feature flag value is different to its default.
@@ -49,10 +49,10 @@ func StateInfo() string {
 	}
 
 	s.WriteString("Feature Flags:\n\n")
-	s.WriteString(makeFeatureFlagTableString(permanent))
+	s.WriteString(makeFeatureFlagTableString(permanentDefaultValues))
 
 	s.WriteString("\n\nDevelopment and Experimental Flags:\n\n")
-	s.WriteString(makeFeatureFlagTableString(temporary))
+	s.WriteString(makeFeatureFlagTableString(temporaryDefaultValues))
 
 	return s.String()
 }

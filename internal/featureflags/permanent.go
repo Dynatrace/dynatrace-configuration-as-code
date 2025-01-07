@@ -26,9 +26,9 @@ const (
 	ManagementZoneSettingsNumericIDs FeatureFlag = "MONACO_FEAT_USE_MZ_NUMERIC_ID"
 	// DangerousCommands returns the feature flag that tells whether dangerous commands for the CLI are enabled or not
 	DangerousCommands FeatureFlag = "MONACO_ENABLE_DANGEROUS_COMMANDS"
-	// FastDependencyResolver controls whether the fast (but memory intensive) Aho-Corasick
-	// algorithm based dependency resolver is used when downloading. If set to false, the old naive and CPU intensive resolver
-	// is used. This flag is permanent as the fast resolver has significant memory cost.
+	// FastDependencyResolver controls which deplenency resolver is used when downloading.
+	// When set to true, the fast (but memory intensive) Aho-Corasick algorithm based is used.
+	// whet set to false, the old naive and CPU intensive resolver is used.
 	FastDependencyResolver FeatureFlag = "MONACO_FEAT_FAST_DEPENDENCY_RESOLVER"
 	// DownloadFilter controls whether download filters out configurations that we believe can't
 	// be managed by config-as-code. Some users may still want to download everything on an environment, and turning off the
@@ -58,8 +58,9 @@ const (
 	UpdateNonUniqueByNameIfSingleOneExists FeatureFlag = "MONACO_FEAT_UPDATE_SINGLE_NON_UNIQUE_BY_NAME"
 )
 
-// permanent featureFlagOld - features we want to be able to toggle long-term, instead of removing them after a stabilization period.
-var permanent = map[FeatureFlag]defaultValue{
+// permanentDefaultValues defines permanent feature flags and their default values.
+// It is suitable for features we want to be able to toggle long-term, instead of removing them after a stabilization period.
+var permanentDefaultValues = map[FeatureFlag]defaultValue{
 	VerifyEnvironmentType:                  true,
 	ManagementZoneSettingsNumericIDs:       true,
 	DangerousCommands:                      false,

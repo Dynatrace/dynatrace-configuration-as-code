@@ -57,7 +57,7 @@ func TestDangerousCommands(t *testing.T) {
 
 func TestFeatureFlagID_Enabled(t *testing.T) {
 	t.Run("works for temporary environment variables", func(t *testing.T) {
-		ff := featureflags.Segments // any temporary FF
+		ff := featureflags.Segments // any FF from the temporaryDefaultValues
 
 		assert.NotPanics(t, func() {
 			ff.Enabled()
@@ -71,7 +71,7 @@ func TestFeatureFlagID_Enabled(t *testing.T) {
 	})
 
 	t.Run("works for permanent environment variables", func(t *testing.T) {
-		ff := featureflags.VerifyEnvironmentType // any permanent FF
+		ff := featureflags.VerifyEnvironmentType // any FF from the permanentDefaultValues
 
 		assert.NotPanics(t, func() {
 			ff.Enabled()
