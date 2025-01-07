@@ -37,7 +37,6 @@ func TestDryRun(t *testing.T) {
 
 	envVars := map[string]string{
 		featureflags.OpenPipeline.EnvName(): "true",
-		featureflags.Documents.EnvName():    "true",
 	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {

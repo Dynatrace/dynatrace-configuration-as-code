@@ -30,7 +30,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 )
 
@@ -46,12 +45,7 @@ func TestDocuments(t *testing.T) {
 	manifestPath := configFolder + "manifest.yaml"
 	environment := "platform_env"
 
-	envVars := map[string]string{
-		featureflags.Documents.EnvName():       "true",
-		featureflags.DeleteDocuments.EnvName(): "true",
-	}
-
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifestPath, environment, "Documents", envVars, func(fs afero.Fs, testContext TestContext) {
+	RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Documents", func(fs afero.Fs, testContext TestContext) {
 		// deploy
 		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=project --verbose", manifestPath)
 		assert.NoError(t, err)

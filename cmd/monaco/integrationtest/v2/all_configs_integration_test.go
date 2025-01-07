@@ -38,7 +38,6 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 
 	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
-	t.Setenv(featureflags.Documents.EnvName(), "true")
 
 	targetEnvironment := "classic_env"
 
@@ -56,7 +55,6 @@ func TestIntegrationAllConfigsPlatform(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 
 	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
-	t.Setenv(featureflags.Documents.EnvName(), "true")
 
 	targetEnvironment := "platform_env"
 

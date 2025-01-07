@@ -298,18 +298,16 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		copyConfigs(configs, bucketCfgs)
 	}
 
-	if featureflags.Documents.Enabled() {
-		if shouldDownloadDocuments(opts) {
-			if opts.auth.OAuth != nil {
-				log.Info("Downloading documents")
-				documentCfgs, err := fn.documentDownload(clientSet.DocumentClient, opts.projectName)
-				if err != nil {
-					return nil, err
-				}
-				copyConfigs(configs, documentCfgs)
-			} else if opts.onlyDocuments {
-				return nil, errors.New("can't download documents: no OAuth credentials configured")
+	if shouldDownloadDocuments(opts) {
+		if opts.auth.OAuth != nil {
+			log.Info("Downloading documents")
+			documentCfgs, err := fn.documentDownload(clientSet.DocumentClient, opts.projectName)
+			if err != nil {
+				return nil, err
 			}
+			copyConfigs(configs, documentCfgs)
+		} else if opts.onlyDocuments {
+			return nil, errors.New("can't download documents: no OAuth credentials configured")
 		}
 	}
 

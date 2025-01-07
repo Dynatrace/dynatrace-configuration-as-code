@@ -1451,10 +1451,7 @@ configs:
 			wantErrorsContain: []string{"missing property"},
 		},
 		{
-			name: "Document dashboard config with FF on",
-			envVars: map[string]string{
-				featureflags.Documents.EnvName(): "true",
-			},
+			name:             "Document dashboard config with FF on",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1487,10 +1484,7 @@ configs:
 			},
 		},
 		{
-			name: "Document private dashboard config with FF on",
-			envVars: map[string]string{
-				featureflags.Documents.EnvName(): "true",
-			},
+			name:             "Document private dashboard config with FF on",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1524,10 +1518,7 @@ configs:
 			},
 		},
 		{
-			name: "Document notebook config with FF on",
-			envVars: map[string]string{
-				featureflags.Documents.EnvName(): "true",
-			},
+			name:             "Document notebook config with FF on",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1560,10 +1551,7 @@ configs:
 			},
 		},
 		{
-			name: "Document config with invalid type with FF on",
-			envVars: map[string]string{
-				featureflags.Documents.EnvName(): "true",
-			},
+			name:             "Document config with invalid type with FF on",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1578,27 +1566,6 @@ configs:
       kind: other`,
 			wantErrorsContain: []string{
 				"unknown document kind \"other\"",
-			},
-		},
-		{
-			name: "Document config with FF off",
-			envVars: map[string]string{
-				featureflags.Documents.EnvName(): "false",
-			},
-			filePathArgument: "test-file.yaml",
-			filePathOnDisk:   "test-file.yaml",
-			fileContentOnDisk: `
-configs:
-- id: dashboard-id
-  config:
-    name: Test dashboard
-    originObjectId: ext-ID-123
-    template: 'profile.json'
-  type:
-    document:
-      kind: dashboard`,
-			wantErrorsContain: []string{
-				"unknown config-type \"document\"",
 			},
 		},
 		{

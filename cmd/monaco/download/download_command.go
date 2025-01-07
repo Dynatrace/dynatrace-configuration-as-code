@@ -87,16 +87,13 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&f.onlyAPIs, "only-apis", false, "Download only classic configuration APIs. Deprecated configuration APIs will not be included.")
 	cmd.Flags().BoolVar(&f.onlySettings, "only-settings", false, "Download only settings 2.0 objects")
 	cmd.Flags().BoolVar(&f.onlyAutomation, "only-automation", false, "Only download automation objects, skip all other configuration types")
+	cmd.Flags().BoolVar(&f.onlyDocuments, "only-documents", false, "Only download documents, skip all other configuration types")
 
 	// combinations
 	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation")
 	cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation")
-
-	if featureflags.Documents.Enabled() {
-		cmd.Flags().BoolVar(&f.onlyDocuments, "only-documents", false, "Only download documents, skip all other configuration types")
-		cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation", "only-documents")
-		cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation", "only-documents")
-	}
+	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation", "only-documents")
+	cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation", "only-documents")
 
 	if featureflags.OpenPipeline.Enabled() {
 		cmd.Flags().BoolVar(&f.onlyOpenPipeline, "only-openpipeline", false, "Only download openpipeline configurations, skip all other configuration types")
