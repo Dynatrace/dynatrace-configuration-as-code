@@ -41,9 +41,10 @@ const (
 	Segments FeatureFlag = "MONACO_FEAT_SEGMENTS"
 )
 
-// temporary FeatureFlags - for features that are hidden during development or have some uncertainty.
+// temporaryDefaultValues defines temporary feature flags and their default values.
+// It is suitable for features that are hidden during development or have some uncertainty.
 // These should always be removed after release of a feature, or some stabilization period if needed.
-var temporary = map[FeatureFlag]defaultValue{
+var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	SkipReadOnlyAccountGroupUpdates: false,
 	Documents:                       true,
 	DeleteDocuments:                 true,
