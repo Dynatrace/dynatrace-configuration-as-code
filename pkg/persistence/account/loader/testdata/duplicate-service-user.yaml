@@ -1,0 +1,13 @@
+service-users:
+  - name: Service User 1
+    description: Description
+    groups:
+      - type: reference
+        id: my-group
+      - Log viewer
+  - name: Service User 1
+    description: Description
+    groups:
+      - type: reference
+        id: my-group
+      - Log viewer

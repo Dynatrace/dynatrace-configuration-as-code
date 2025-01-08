@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -55,14 +56,15 @@ func HasAnyAccountKeyDefined(m map[string]any) bool {
 		return false
 	}
 
-	return m[persistence.KeyUsers] != nil || m[persistence.KeyGroups] != nil || m[persistence.KeyPolicies] != nil
+	return m[persistence.KeyUsers] != nil || m[persistence.KeyServiceUsers] != nil || m[persistence.KeyGroups] != nil || m[persistence.KeyPolicies] != nil
 }
 
 func findAndLoadResources(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 	resources := persistence.Resources{
-		Policies: make(map[string]persistence.Policy),
-		Groups:   make(map[string]persistence.Group),
-		Users:    make(map[string]persistence.User),
+		Policies:     make(map[string]persistence.Policy),
+		Groups:       make(map[string]persistence.Group),
+		Users:        make(map[string]persistence.User),
+		ServiceUsers: make(map[string]persistence.ServiceUser),
 	}
 
 	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
@@ -151,6 +153,15 @@ func addResourcesFromFile(res persistence.Resources, file persistence.File) erro
 			return fmt.Errorf("found duplicate user with email %q", u.Email)
 		}
 		res.Users[u.Email.Value()] = u
+	}
+
+	if featureflags.ServiceUsers.Enabled() {
+		for _, su := range file.ServiceUsers {
+			if _, exists := res.ServiceUsers[su.Name]; exists {
+				return fmt.Errorf("found duplicate service user with name %q", su.Name)
+			}
+			res.ServiceUsers[su.Name] = su
+		}
 	}
 
 	return nil

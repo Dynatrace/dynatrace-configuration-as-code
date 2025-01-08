@@ -18,15 +18,18 @@ package writer
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
+
+	"github.com/spf13/afero"
+	"golang.org/x/exp/slices"
+	"gopkg.in/yaml.v2"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
-	"github.com/spf13/afero"
-	"golang.org/x/exp/slices"
-	"gopkg.in/yaml.v2"
-	"path/filepath"
-	"strings"
 )
 
 // Context for this account resource writer, defining the filesystem and paths to create resources at
@@ -41,7 +44,7 @@ type Context struct {
 
 // Write the given account.Resources to the target filesystem and paths defined by the Context.
 // This will create a folder "filepath.Abs(<writerContext.OutputFolder>)/<writerContext.ProjectFolder>/", and create
-// individual "policies.yaml", "users.yaml" & "groups.yaml" files containing YAML representations of the given account.Resources.
+// individual "policies.yaml", "users.yaml", "service-users.yaml" & "groups.yaml" files containing YAML representations of the given account.Resources.
 //
 // Returns an error if any step of transforming or persisting resources fails, but will attempt to write as many files as
 // possible. If policies fail to be written to a file, an error is logged, but groups and users are attempted to be written
@@ -78,6 +81,14 @@ func Write(writerContext Context, resources account.Resources) error {
 		if err := persistToFile(persistence.File{Users: users}, writerContext.Fs, filepath.Join(projectFolder, "users.yaml")); err != nil {
 			errOccurred = true
 			log.Error("Failed to persist users: %w", err)
+		}
+	}
+
+	if featureflags.ServiceUsers.Enabled() && len(resources.ServiceUsers) > 0 {
+		serviceUsers := toPersistenceServiceUsers(resources.ServiceUsers)
+		if err := persistToFile(persistence.File{ServiceUsers: serviceUsers}, writerContext.Fs, filepath.Join(projectFolder, "service-users.yaml")); err != nil {
+			errOccurred = true
+			log.Error("Failed to persist service users: %w", err)
 		}
 	}
 
@@ -210,6 +221,23 @@ func toPersistenceUsers(users map[string]account.User) []persistence.User {
 	// sort users by email so that they are stable within a persisted file
 	slices.SortFunc(out, func(a, b persistence.User) int {
 		return caseInsensitiveLexicographicSmaller(a.Email.Value(), b.Email.Value())
+	})
+	return out
+}
+
+func toPersistenceServiceUsers(serviceUsers map[string]account.ServiceUser) []persistence.ServiceUser {
+	out := make([]persistence.ServiceUser, 0, len(serviceUsers))
+	for _, v := range serviceUsers {
+		out = append(out, persistence.ServiceUser{
+			Name:           v.Name,
+			Description:    v.Description,
+			Groups:         transformRefs(v.Groups),
+			OriginObjectID: v.OriginObjectID,
+		})
+	}
+	// sort service users by name so that they are stable within a persisted file
+	slices.SortFunc(out, func(a, b persistence.ServiceUser) int {
+		return caseInsensitiveLexicographicSmaller(a.Name, b.Name)
 	})
 	return out
 }

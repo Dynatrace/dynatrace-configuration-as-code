@@ -18,34 +18,63 @@
 package loader
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	"testing"
+
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/maps"
-	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 )
 
 func TestLoad(t *testing.T) {
+
+	var assertGroupLoadedValidFunc = func(t *testing.T, g account.Group) {
+		assert.Len(t, g.Account.Policies, 1)
+		assert.Len(t, g.Account.Permissions, 1)
+		assert.Len(t, g.Environment, 1)
+		assert.Len(t, g.Environment[0].Policies, 2)
+		assert.Len(t, g.Environment[0].Permissions, 1)
+		assert.Len(t, g.ManagementZone, 1)
+		assert.Len(t, g.ManagementZone[0].Permissions, 1)
+	}
+
 	t.Run("Load single file", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
 		assert.NoError(t, err)
-		assert.Len(t, loaded.Users, 1)
-		_, exists := loaded.Users["monaco@dynatrace.com"]
-		assert.True(t, exists, "expected user to exist: monaco@dynatrace.com")
-		assert.Len(t, loaded.Groups, 1)
-		_, exists = loaded.Groups["my-group"]
-		assert.True(t, exists, "expected group to exist: my-group")
-		assert.Len(t, loaded.Policies, 1)
-		_, exists = loaded.Policies["my-policy"]
-		assert.True(t, exists, "expected policy to exist: my-policy")
-		assert.Len(t, maps.Values(loaded.Groups)[0].Account.Policies, 1)
-		assert.Len(t, maps.Values(loaded.Groups)[0].Account.Permissions, 1)
-		assert.Len(t, maps.Values(loaded.Groups)[0].Environment, 1)
-		assert.Len(t, maps.Values(loaded.Groups)[0].Environment[0].Policies, 2)
-		assert.Len(t, maps.Values(loaded.Groups)[0].Environment[0].Permissions, 1)
-		assert.Len(t, maps.Values(loaded.Groups)[0].ManagementZone, 1)
-		assert.Len(t, maps.Values(loaded.Groups)[0].ManagementZone[0].Permissions, 1)
 
+		assert.Len(t, loaded.Users, 1)
+		assert.Contains(t, loaded.Users, "monaco@dynatrace.com", "expected user to exist: monaco@dynatrace.com")
+
+		assert.Len(t, loaded.Groups, 1)
+		g, exists := loaded.Groups["my-group"]
+		assert.True(t, exists, "expected group to exist: my-group")
+		assertGroupLoadedValidFunc(t, g)
+
+		assert.Len(t, loaded.Policies, 1)
+		assert.Contains(t, loaded.Policies, "my-policy", "expected policy to exist: my-policy")
+
+		assert.Len(t, loaded.ServiceUsers, 1)
+		assert.Contains(t, loaded.ServiceUsers, "Service User 1", "expected service user to exist: Service User 1")
+	})
+
+	t.Run("Load single file - service user feature flag disabled", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceUsers.EnvName(), "false")
+		loaded, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
+		assert.NoError(t, err)
+
+		assert.Len(t, loaded.Users, 1)
+		assert.Contains(t, loaded.Users, "monaco@dynatrace.com", "expected user to exist: monaco@dynatrace.com")
+
+		assert.Len(t, loaded.Groups, 1)
+		g, exists := loaded.Groups["my-group"]
+		assert.True(t, exists, "expected group to exist: my-group")
+		assertGroupLoadedValidFunc(t, g)
+
+		assert.Len(t, loaded.Policies, 1)
+		assert.Contains(t, loaded.Policies, "my-policy", "expected policy to exist: my-policy")
+		assert.Len(t, loaded.ServiceUsers, 0)
 	})
 
 	t.Run("Load single file - with refs", func(t *testing.T) {
@@ -66,35 +95,31 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Load multiple files", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/multi")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
 		assert.Len(t, loaded.Groups, 1)
 		assert.Len(t, loaded.Policies, 1)
+		assert.Len(t, loaded.ServiceUsers, 1)
 	})
 
 	t.Run("Loads origin objectIDs", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid-origin-object-id.yaml")
 		assert.NoError(t, err)
-		assert.Len(t, loaded.Users, 1)
-		_, exists := loaded.Users["monaco@dynatrace.com"]
-		assert.True(t, exists, "expected user to exist: monaco@dynatrace.com")
+		assert.Contains(t, loaded.Users, "monaco@dynatrace.com", "expected user to exist: monaco@dynatrace.com")
+
 		assert.Len(t, loaded.Groups, 1)
 		g, exists := loaded.Groups["my-group"]
 		assert.True(t, exists, "expected group to exist: my-group")
+		assertGroupLoadedValidFunc(t, g)
 		assert.Equal(t, "32952350-5e78-476d-ab1a-786dd9d4fe33", g.OriginObjectID, "expected group to be loaded with originObjectID")
+
 		assert.Len(t, loaded.Policies, 1)
 		p, exists := loaded.Policies["my-policy"]
 		assert.Equal(t, "2338ebda-4aad-4911-96a2-6f60d7c3d2cb", p.OriginObjectID, "expected policy to be loaded with originObjectID")
 		assert.True(t, exists, "expected policy to exist: my-policy")
-		assert.Len(t, maps.Values(loaded.Groups)[0].Account.Policies, 1)
-		assert.Len(t, maps.Values(loaded.Groups)[0].Account.Permissions, 1)
-		assert.Len(t, maps.Values(loaded.Groups)[0].Environment, 1)
-		assert.Len(t, maps.Values(loaded.Groups)[0].Environment[0].Policies, 2)
-		assert.Len(t, maps.Values(loaded.Groups)[0].Environment[0].Permissions, 1)
-		assert.Len(t, maps.Values(loaded.Groups)[0].ManagementZone, 1)
-		assert.Len(t, maps.Values(loaded.Groups)[0].ManagementZone[0].Permissions, 1)
-
 	})
 
 	t.Run("Load multiple files but ignore config files", func(t *testing.T) {
@@ -136,6 +161,12 @@ func TestLoad(t *testing.T) {
 		assert.Error(t, err)
 	})
 
+	t.Run("Duplicate service user produces error", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+		_, err := Load(afero.NewOsFs(), "testdata/duplicate-service-user.yaml")
+		assert.Error(t, err)
+	})
+
 	t.Run("Missing environment ID for env-level policy produces error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/policy-missing-env-id.yaml")
 		assert.Error(t, err)
@@ -156,12 +187,19 @@ func TestLoad(t *testing.T) {
 		assert.Error(t, err)
 	})
 
+	t.Run("Partial service user definition produces error", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+		_, err := Load(afero.NewOsFs(), "testdata/partial-service-user.yaml")
+		assert.Error(t, err)
+	})
+
 	t.Run("root folder not found", func(t *testing.T) {
 		result, err := Load(afero.NewOsFs(), "testdata/non-existent-folder")
 		assert.Equal(t, &account.Resources{
-			Policies: make(map[string]account.Policy, 0),
-			Groups:   make(map[string]account.Group, 0),
-			Users:    make(map[string]account.User, 0),
+			Policies:     make(map[string]account.Policy, 0),
+			Groups:       make(map[string]account.Group, 0),
+			Users:        make(map[string]account.User, 0),
+			ServiceUsers: make(map[string]account.ServiceUser, 0),
 		}, result)
 		assert.NoError(t, err)
 	})

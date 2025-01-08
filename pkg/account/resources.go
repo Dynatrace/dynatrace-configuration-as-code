@@ -28,16 +28,19 @@ func NewAccountManagementResources() *Resources {
 }
 
 type (
-	PolicyId    = string
-	GroupId     = string
-	UserId      = string
-	PolicyLevel = any // either PolicyLevelAccount or PolicyLevelEnvironment is allowed
+	PolicyId      = string
+	GroupId       = string
+	UserId        = string
+	ServiceUserId = string
+	PolicyLevel   = any // either PolicyLevelAccount or PolicyLevelEnvironment is allowed
 
 	Resources struct {
-		Policies map[PolicyId]Policy
-		Groups   map[GroupId]Group
-		Users    map[UserId]User
+		Policies     map[PolicyId]Policy
+		Groups       map[GroupId]Group
+		Users        map[UserId]User
+		ServiceUsers map[ServiceUserId]ServiceUser
 	}
+
 	Policy struct {
 		ID             string
 		Name           string
@@ -46,9 +49,11 @@ type (
 		Policy         string
 		OriginObjectID string
 	}
+
 	PolicyLevelAccount struct {
 		Type string
 	}
+
 	PolicyLevelEnvironment struct {
 		Type        string
 		Environment string
@@ -64,15 +69,18 @@ type (
 		ManagementZone           []ManagementZone
 		OriginObjectID           string
 	}
+
 	Account struct {
 		Permissions []string
 		Policies    []Ref
 	}
+
 	Environment struct {
 		Name        string
 		Permissions []string
 		Policies    []Ref
 	}
+
 	ManagementZone struct {
 		Environment    string
 		ManagementZone string
@@ -83,6 +91,14 @@ type (
 		Email  secret.Email
 		Groups []Ref
 	}
+
+	ServiceUser struct {
+		Name           string
+		Description    string
+		Groups         []Ref
+		OriginObjectID string
+	}
+
 	Reference struct {
 		Id string
 	}

@@ -23,9 +23,10 @@ import (
 
 func transformToAccountResources(resources *persistence.Resources) *account.Resources {
 	return &account.Resources{
-		Policies: transformPolicies(resources.Policies),
-		Groups:   transformGroups(resources.Groups),
-		Users:    transformUsers(resources.Users),
+		Policies:     transformPolicies(resources.Policies),
+		Groups:       transformGroups(resources.Groups),
+		Users:        transformUsers(resources.Users),
+		ServiceUsers: transformServiceUsers(resources.ServiceUsers),
 	}
 }
 
@@ -116,6 +117,18 @@ func transformUsers(pUsers map[string]persistence.User) map[account.UserId]accou
 		}
 	}
 	return users
+}
+
+func transformServiceUsers(pUsers map[string]persistence.ServiceUser) map[account.ServiceUserId]account.ServiceUser {
+	serviceUsers := make(map[account.ServiceUserId]account.ServiceUser, len(pUsers))
+	for id, su := range pUsers {
+		serviceUsers[id] = account.ServiceUser{
+			Name:        su.Name,
+			Description: su.Description,
+			Groups:      transformReferences(su.Groups),
+		}
+	}
+	return serviceUsers
 }
 
 func transformReferences(pReferences []persistence.Reference) []account.Ref {
