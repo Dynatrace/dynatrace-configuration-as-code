@@ -27,6 +27,7 @@ import (
 	buckets "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	documents "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	openpipeline "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	segments "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	dtclient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 )
 
@@ -37,6 +38,7 @@ var DummyClientSet = ClientSet{
 	BucketClient:       &DummyBucketClient{},
 	DocumentClient:     &DummyDocumentClient{},
 	OpenPipelineClient: &DummyOpenPipelineClient{},
+	SegmentClient:      &DummySegmentClient{},
 }
 
 var _ AutomationClient = (*DummyAutomationClient)(nil)
@@ -154,4 +156,26 @@ func (c *DummyOpenPipelineClient) GetAll(ctx context.Context) ([]coreapi.Respons
 
 func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) (openpipeline.Response, error) {
 	return openpipeline.Response{}, nil
+}
+
+type DummySegmentClient struct{}
+
+func (c *DummySegmentClient) List(ctx context.Context) (segments.Response, error) {
+	return segments.Response{}, fmt.Errorf("unimplemented")
+}
+
+func (c *DummySegmentClient) GetAll(ctx context.Context) ([]segments.Response, error) {
+	return []segments.Response{}, fmt.Errorf("unimplemented")
+}
+
+func (c *DummySegmentClient) Delete(ctx context.Context, id string) (segments.Response, error) {
+	return segments.Response{}, fmt.Errorf("unimplemented")
+}
+
+func (c *DummySegmentClient) Upsert(ctx context.Context, id string, data []byte) (segments.Response, error) {
+	return segments.Response{}, fmt.Errorf("unimplemented")
+}
+
+func (c *DummySegmentClient) Get(ctx context.Context, id string) (segments.Response, error) {
+	return segments.Response{}, fmt.Errorf("unimplemented")
 }
