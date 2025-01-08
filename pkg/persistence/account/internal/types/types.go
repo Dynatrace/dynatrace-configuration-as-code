@@ -18,10 +18,12 @@ package types
 
 import (
 	"fmt"
-	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
+
 	"github.com/invopop/jsonschema"
 	"github.com/mitchellh/mapstructure"
+
+	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
 
 const (
@@ -32,15 +34,19 @@ const (
 
 type (
 	Resources struct {
-		Policies map[string]Policy
-		Groups   map[string]Group
-		Users    map[string]User
+		Policies     map[string]Policy
+		Groups       map[string]Group
+		Users        map[string]User
+		ServiceUsers map[string]ServiceUser
 	}
+
 	File struct {
-		Policies []Policy `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies to configure for this account."`
-		Groups   []Group  `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups to configure for this account."`
-		Users    []User   `yaml:"users,omitempty" json:"users,omitempty" jsonschema:"description=Users to configure for this account."`
+		Policies     []Policy      `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies to configure for this account."`
+		Groups       []Group       `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups to configure for this account."`
+		Users        []User        `yaml:"users,omitempty" json:"users,omitempty" jsonschema:"description=Users to configure for this account."`
+		ServiceUsers []ServiceUser `yaml:"service-users,omitempty" json:"serviceUsers,omitempty" jsonschema:"description=Service users to configure for this account."`
 	}
+
 	Policy struct {
 		ID             string      `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this policy configuration - this can be freely defined, used by monaco."`
 		Name           string      `yaml:"name" json:"name" jsonschema:"required,description=The name of this policy."`
@@ -49,10 +55,12 @@ type (
 		Policy         string      `yaml:"policy" json:"policy" jsonschema:"required,description=The policy definition."`
 		OriginObjectID string      `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the policy this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
 	}
+
 	PolicyLevel struct {
 		Type        string `yaml:"type" json:"type" jsonschema:"required,enum=account,enum=environment,description=This defines which level this policy applies to - either the whole 'account' or a specific 'environment'. For environment level, the 'environment' field needs to contain the environment ID."`
 		Environment string `yaml:"environment,omitempty" json:"environment,omitempty" jsonschema:"The ID of the environment this policy applies to. Required if type is 'environment'."`
 	}
+
 	Group struct {
 		ID                       string   `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this group configuration - this can be freely defined, used by monaco."`
 		Name                     string   `yaml:"name" json:"name" jsonschema:"required,description=The name of this group."`
@@ -66,23 +74,34 @@ type (
 		ManagementZone []ManagementZone `yaml:"managementZones,omitempty" json:"managementZones,omitempty" jsonschema:"description=ManagementZone level permissions that apply to users in this group."`
 		OriginObjectID string           `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the group this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
 	}
+
 	Account struct {
 		Permissions []string       `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for the whole account."`
 		Policies    ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for the whole account."`
 	}
+
 	Environment struct {
 		Name        string         `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment."`
 		Permissions []string       `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for this environment."`
 		Policies    ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for this environment."`
 	}
+
 	ManagementZone struct {
 		Environment    string   `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment the management zone is in."`
 		ManagementZone string   `yaml:"managementZone" json:"managementZone" jsonschema:"required,description=Identifier of the management zone."`
 		Permissions    []string `yaml:"permissions" json:"permissions" jsonschema:"required,description=Permissions for this management zone."`
 	}
+
 	User struct {
 		Email  secret.Email   `yaml:"email" json:"email" jsonschema:"required,description=Email address of this user."`
 		Groups ReferenceSlice `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups this user is part of - either defined by name directly or as a reference to a group configuration."`
+	}
+
+	ServiceUser struct {
+		Name           string         `yaml:"name" json:"name" jsonschema:"required,description=The name of this service user."`
+		Description    string         `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"A description of this service user."`
+		Groups         ReferenceSlice `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups this user is part of - either defined by name directly or as a reference to a group configuration."`
+		OriginObjectID string         `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the service user this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
 	}
 
 	Reference struct {
@@ -149,7 +168,8 @@ func (_ ReferenceSlice) JSONSchema() *jsonschema.Schema {
 }
 
 const (
-	KeyUsers    string = "users"
-	KeyGroups   string = "groups"
-	KeyPolicies string = "policies"
+	KeyUsers        string = "users"
+	KeyServiceUsers string = "service-users"
+	KeyGroups       string = "groups"
+	KeyPolicies     string = "policies"
 )

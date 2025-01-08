@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
 )
@@ -103,12 +104,27 @@ func validateFile(file persistence.File) error {
 		}
 	}
 
+	if featureflags.ServiceUsers.Enabled() {
+		for _, su := range file.ServiceUsers {
+			if err := validateServiceUser(su); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
 func validateUser(u types.User) error {
 	if u.Email == "" {
 		return errors.New("missing required field 'email' for user")
+	}
+	return nil
+}
+
+func validateServiceUser(su types.ServiceUser) error {
+	if su.Name == "" {
+		return errors.New("missing required field 'name' for service user")
 	}
 	return nil
 }

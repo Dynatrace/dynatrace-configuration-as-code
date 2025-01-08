@@ -63,3 +63,11 @@ policies:
     policy: |-
       ALLOW a:b:c;
 
+service-users:
+  - name: Service User 1
+    description: Description
+    groups:
+      - type: reference
+        id: my-group
+      - Log viewer
+

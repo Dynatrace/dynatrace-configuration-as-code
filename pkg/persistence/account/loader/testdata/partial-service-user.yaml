@@ -1,0 +1,7 @@
+service-users:
+  - description: Description
+    groups:
+      - type: reference
+        id: my-group
+      - Log viewer
+    # missing 'name'
