@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: monaco-build
+      image: golang:bookworm
+      imagePullPolicy: IfNotPresent
+      command:
+        - sleep
+      args:
+        - "99d"
+      tty: true
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "100Mi"
+    - name: monaco-runner
+      image: alpine
+      imagePullPolicy: IfNotPresent
+      command:
+        - sleep
+      args:
+        - "99d"
+      tty: true
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "100Mi"
+        limits:
+          cpu: "2"
+          memory: "16Gi"

@@ -52,7 +52,8 @@ compile: mocks
 
 build: mocks
 	@echo "Building $(BINARY_NAME)..."
-	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY_NAME} ./cmd/monaco
+	$(eval OUTPUT ?= ./bin/${BINARY_NAME})
+	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ${OUTPUT} ./cmd/monaco
 
 build-release: clean $(RELEASES)
 	@echo Release build $(BINARY_NAME) $(VERSION)
