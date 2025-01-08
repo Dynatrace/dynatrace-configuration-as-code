@@ -33,6 +33,9 @@ const (
 	// Segments toggles whether segment configurations are downloaded and / or deployed.
 	// Introduced: v2.18.0
 	Segments FeatureFlag = "MONACO_FEAT_SEGMENTS"
+	// ServiceUsers toggles whether account service users configurations are downloaded and / or deployed.
+	// Introduced: v2.18.0
+	ServiceUsers FeatureFlag = "MONACO_FEAT_SERVICE_USERS"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
@@ -44,4 +47,5 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	OpenPipeline:                    true,
 	IgnoreSkippedConfigs:            false,
 	Segments:                        false,
+	ServiceUsers:                    false,
 }
