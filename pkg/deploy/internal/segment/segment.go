@@ -77,13 +77,22 @@ func Deploy(ctx context.Context, client DeploySegmentClient, properties paramete
 }
 
 func deployWithOriginObjectId(ctx context.Context, client DeploySegmentClient, request map[string]any, c *config.Config) (string, error) {
-	_, err := client.Get(ctx, c.OriginObjectId)
+	jsonResponse, err := client.Get(ctx, c.OriginObjectId)
 	if err != nil {
 		apiError := api.APIError{}
 		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
 			return "", nil
 		}
 		return "", fmt.Errorf("failed to fetch segment object: %w", err)
+	}
+	//Owner field is required in a PUT
+	value, ok := request["owner"]
+	if !ok || value == "" {
+		responseData, err := getJsonResponseFromSegmentsResponse(jsonResponse)
+		if err != nil {
+			return "", err
+		}
+		request["owner"] = responseData.Owner
 	}
 
 	request["uid"] = c.OriginObjectId
@@ -113,9 +122,12 @@ func deployWithExternalId(ctx context.Context, client DeploySegmentClient, reque
 			return "", err
 		}
 		//In case of a match, the put needs additional fields
-		if responseData.ExternalId == request["externalId"] {
+		if responseData.ExternalId == externalId {
 			request["uid"] = responseData.UID
-			request["owner"] = responseData.Owner
+			value, ok := request["owner"]
+			if !ok || value == "" {
+				request["owner"] = responseData.Owner
+			}
 			break
 		}
 	}
@@ -154,7 +166,7 @@ func deploy(ctx context.Context, client DeploySegmentClient, id string, payload 
 			return api.Response{}, fmt.Errorf("failed to upsert segment with id %q: %w", id, err)
 		}
 
-		return api.Response{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert segkent with id %q", id)).WithError(err)
+		return api.Response{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert segment with id %q", id)).WithError(err)
 	}
 
 	return responseUpsert, nil
