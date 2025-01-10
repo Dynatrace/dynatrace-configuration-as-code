@@ -19,6 +19,7 @@ package deploy_test
 import (
 	"context"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -1297,4 +1298,57 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 		assert.Equal(t, 1, depErr.ErrorCount, "Expected one deployment error to be counted")
 	})
 
+}
+
+func TestDeployConfigFF(t *testing.T) {
+	dummyClientSet := client.DummyClientSet
+	c := dynatrace.EnvironmentClients{
+		dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
+	}
+	tests := []struct {
+		name              string
+		projects          []project.Project
+		featureFlag       string
+		configType        config.TypeID
+		expectedErrString string
+	}{
+		{
+			name: "segments FF test",
+			projects: []project.Project{
+				{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env": project.ConfigsPerType{
+							"p1": {
+								config.Config{
+									Type:        config.Segment{},
+									Environment: "env",
+									Coordinate: coordinate.Coordinate{
+										Project:  "p1",
+										Type:     "type",
+										ConfigId: "config1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			featureFlag: featureflags.Segments.EnvName(),
+			configType:  config.SegmentID,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+" | FF Enabled", func(t *testing.T) {
+			t.Setenv(tt.featureFlag, "true")
+			err := deploy.Deploy(context.TODO(), tt.projects, c, deploy.DeployConfigsOptions{})
+			//Dummy client returns unimplemented error on every execution of any method
+			assert.Errorf(t, err, "unimplemented")
+		})
+		t.Run(tt.name+" | FF Disabled", func(t *testing.T) {
+			t.Setenv(tt.featureFlag, "false")
+			err := deploy.Deploy(context.TODO(), tt.projects, c, deploy.DeployConfigsOptions{})
+			assert.Errorf(t, err, fmt.Sprintf("unknown config-type (ID: %q)", tt.configType))
+		})
+	}
 }
