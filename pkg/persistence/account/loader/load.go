@@ -38,11 +38,11 @@ import (
 func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
 	persisted, err := load(fs, rootPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load account managment resources from %q: %w", rootPath, err)
+		return nil, fmt.Errorf("failed to load account management resources from %q: %w", rootPath, err)
 	}
 
 	if err := validateReferences(persisted); err != nil {
-		return nil, fmt.Errorf("account managment resources from %q are invalid: %w", rootPath, err)
+		return nil, fmt.Errorf("account management resources from %q are invalid: %w", rootPath, err)
 	}
 
 	return transform(persisted), nil
