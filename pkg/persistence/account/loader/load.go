@@ -18,13 +18,15 @@ package loader
 
 import (
 	"fmt"
+
+	"github.com/spf13/afero"
+	"gopkg.in/yaml.v2"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
-	"github.com/spf13/afero"
-	"gopkg.in/yaml.v2"
 )
 
 // Load loads account management resources from YAML configuration files
@@ -36,11 +38,11 @@ import (
 func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
 	persisted, err := load(fs, rootPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load account managment resources from %s: %w", rootPath, err)
+		return nil, fmt.Errorf("failed to load account managment resources from %q: %w", rootPath, err)
 	}
 
 	if err := validateReferences(persisted); err != nil {
-		return nil, fmt.Errorf("account managment resources from %s are invalid: %w", rootPath, err)
+		return nil, fmt.Errorf("account managment resources from %q are invalid: %w", rootPath, err)
 	}
 
 	return transform(persisted), nil
@@ -57,7 +59,7 @@ func HasAnyAccountKeyDefined(m map[string]any) bool {
 }
 
 func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
-	resources := &persistence.Resources{
+	resources := persistence.Resources{
 		Policies: make(map[string]persistence.Policy),
 		Groups:   make(map[string]persistence.Group),
 		Users:    make(map[string]persistence.User),
@@ -71,71 +73,100 @@ func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 	for _, yamlFilePath := range yamlFilePaths {
 		log.WithFields(field.F("file", yamlFilePaths)).Debug("Loading file %q", yamlFilePath)
 
-		bytes, err := afero.ReadFile(fs, yamlFilePath)
+		file, err := loadFile(fs, yamlFilePath)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to load file %q: %w", yamlFilePath, err)
 		}
 
-		var content map[string]any
-		if err := yaml.Unmarshal(bytes, &content); err != nil {
-			return nil, err
-		}
-
-		if _, f := content["configs"]; f {
-			if HasAnyAccountKeyDefined(content) {
-				return nil, fmt.Errorf("failed to parse file %q: %w", yamlFilePath, ErrMixingConfigs)
-			}
-
-			log.WithFields(field.F("file", yamlFilePath)).Warn("File %q appears to be an config file, skipping loading", yamlFilePath)
-			continue
-		}
-
-		if _, f := content["delete"]; f {
-			if HasAnyAccountKeyDefined(content) {
-				return nil, fmt.Errorf("failed to parse file %q: %w", yamlFilePath, ErrMixingDelete)
-			}
-
-			log.WithFields(field.F("file", yamlFilePath)).Debug("File %q appears to be an delete file, skipping loading", yamlFilePath)
-			continue
-		}
-
-		var res persistence.File
-		err = yaml.Unmarshal(bytes, &res)
+		err = addResourcesFromFile(resources, *file)
 		if err != nil {
-			return nil, err
-		}
-
-		for _, p := range res.Policies {
-			if err := validatePolicy(p); err != nil {
-				return nil, fmt.Errorf("error in file %q: %w", yamlFilePath, err)
-			}
-			if _, exists := resources.Policies[p.ID]; exists {
-				return nil, fmt.Errorf("found duplicate policy with id %q", p.ID)
-			}
-			resources.Policies[p.ID] = p
-		}
-
-		for _, g := range res.Groups {
-			if err := validateGroup(g); err != nil {
-				return nil, fmt.Errorf("error in file %q: %w", yamlFilePath, err)
-			}
-			if _, exists := resources.Groups[g.ID]; exists {
-				return nil, fmt.Errorf("found duplicate group with id %q", g.ID)
-			}
-			resources.Groups[g.ID] = g
-		}
-
-		for _, u := range res.Users {
-			if err := validateUser(u); err != nil {
-				return nil, fmt.Errorf("error in file %q: %w", yamlFilePath, err)
-			}
-			if _, exists := resources.Users[u.Email.Value()]; exists {
-				return nil, fmt.Errorf("found duplicate user with email %q", u.Email)
-			}
-			resources.Users[u.Email.Value()] = u
+			return nil, fmt.Errorf("failed to add resources from file %q: %w", yamlFilePath, err)
 		}
 	}
-	return resources, nil
+	return &resources, nil
+}
+
+func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
+	log.WithFields(field.F("file", yamlFilePath)).Debug("Loading file %q", yamlFilePath)
+
+	bytes, err := afero.ReadFile(fs, yamlFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var content map[string]any
+	if err := yaml.Unmarshal(bytes, &content); err != nil {
+		return nil, err
+	}
+
+	if _, f := content["configs"]; f {
+		if HasAnyAccountKeyDefined(content) {
+			return nil, ErrMixingConfigs
+		}
+
+		log.WithFields(field.F("file", yamlFilePath)).Warn("File %q appears to be an config file, skipping loading", yamlFilePath)
+		return &persistence.File{}, nil
+	}
+
+	if _, f := content["delete"]; f {
+		if HasAnyAccountKeyDefined(content) {
+			return nil, ErrMixingDelete
+		}
+
+		log.WithFields(field.F("file", yamlFilePath)).Debug("File %q appears to be an delete file, skipping loading", yamlFilePath)
+		return &persistence.File{}, nil
+	}
+
+	var res persistence.File
+	err = yaml.Unmarshal(bytes, &res)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range res.Policies {
+		if err := validatePolicy(p); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, g := range res.Groups {
+		if err := validateGroup(g); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, u := range res.Users {
+		if err := validateUser(u); err != nil {
+			return nil, err
+		}
+	}
+
+	return &res, nil
+}
+
+func addResourcesFromFile(res persistence.Resources, file persistence.File) error {
+	for _, p := range file.Policies {
+		if _, exists := res.Policies[p.ID]; exists {
+			return fmt.Errorf("found duplicate policy with id %q", p.ID)
+		}
+		res.Policies[p.ID] = p
+	}
+
+	for _, g := range file.Groups {
+		if _, exists := res.Groups[g.ID]; exists {
+			return fmt.Errorf("found duplicate group with id %q", g.ID)
+		}
+		res.Groups[g.ID] = g
+	}
+
+	for _, u := range file.Users {
+		if _, exists := res.Users[u.Email.Value()]; exists {
+			return fmt.Errorf("found duplicate user with email %q", u.Email)
+		}
+		res.Users[u.Email.Value()] = u
+	}
+
+	return nil
 }
 
 func transform(resources *persistence.Resources) *account.Resources {
