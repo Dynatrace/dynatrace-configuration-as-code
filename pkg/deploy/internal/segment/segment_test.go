@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -107,6 +108,48 @@ func TestDeploy(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name: "deploy with objectOriginId, no object found on remote - success POST with externalId",
+			inputConfig: config.Config{
+				Template:       template.NewInMemoryTemplate("path/file.json", "{}"),
+				Coordinate:     testCoordinate,
+				OriginObjectId: "my-object-id",
+				Type:           config.Segment{},
+				Parameters:     config.Parameters{},
+				Skip:           false,
+			},
+			upsertStub: func() (segments.Response, error) {
+				return segments.Response{
+					StatusCode: http.StatusCreated,
+					Data: marshal(map[string]any{
+						"uid":         "JMhNaJ0Zbf9",
+						"name":        "test-segment-post-match",
+						"description": "post - update from monaco - change - 2",
+						"isPublic":    false,
+						"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
+						"externalId":  "project_segment:segment:some-id",
+					}),
+				}, nil
+			},
+			getStub: func() (segments.Response, error) {
+				return segments.Response{}, api.APIError{
+					StatusCode: http.StatusNotFound,
+				}
+			},
+			getAllStub: func() ([]segments.Response, error) {
+				var response []segments.Response
+				return response, nil
+			},
+			expected: entities.ResolvedEntity{
+				EntityName: testCoordinate.String(),
+				Coordinate: testCoordinate,
+				Properties: map[string]interface{}{
+					"id": "JMhNaJ0Zbf9",
+				},
+				Skip: false,
+			},
+			expectErr: false,
+		},
+		{
 			name: "deploy with objectOriginId - error PUT",
 			inputConfig: config.Config{
 				Template:       template.NewInMemoryTemplate("path/file.json", "{}"),
@@ -138,11 +181,145 @@ func TestDeploy(t *testing.T) {
 			expectErr:      true,
 			expectedErrMsg: "failed to deploy segment with externalId",
 		},
+		{
+			name: "deploy with objectOriginId - error PUT",
+			inputConfig: config.Config{
+				Template:       template.NewInMemoryTemplate("path/file.json", "{}"),
+				Coordinate:     testCoordinate,
+				OriginObjectId: "my-object-id",
+				Type:           config.Segment{},
+				Parameters:     config.Parameters{},
+				Skip:           false,
+			},
+			upsertStub: func() (segments.Response, error) {
+				return segments.Response{}, fmt.Errorf("error")
+			},
+			getStub: func() (segments.Response, error) {
+				return segments.Response{
+					StatusCode: http.StatusOK,
+					Data: marshal(map[string]any{
+						"uid":         "JMhNaJ0Zbf9",
+						"name":        "test-segment-post-match",
+						"description": "post - update from monaco - change - 2",
+						"isPublic":    false,
+						"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
+						"externalId":  "project_segment:segment:some-id",
+					}),
+				}, nil
+			},
+			getAllStub: func() ([]segments.Response, error) {
+				panic("should not be called")
+			},
+			expectErr:      true,
+			expectedErrMsg: "failed to deploy segment with externalId",
+		},
+		{
+			name: "deploy with externalId - success PUT",
+			inputConfig: config.Config{
+				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
+				Coordinate: testCoordinate,
+				Type:       config.Segment{},
+				Parameters: config.Parameters{},
+				Skip:       false,
+			},
+			upsertStub: func() (segments.Response, error) {
+				return segments.Response{
+					StatusCode: http.StatusOK,
+				}, nil
+			},
+			getStub: func() (segments.Response, error) {
+				panic("should not be called")
+			},
+			getAllStub: func() ([]segments.Response, error) {
+				response := []segments.Response{
+					{
+						StatusCode: http.StatusOK,
+						Data: marshal(map[string]any{
+							"uid":         "JMhNaJ0Zbf9",
+							"name":        "no-match",
+							"description": "post - update from monaco - change - 2",
+							"isPublic":    false,
+							"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
+							"externalId":  "project_segment:segment:some-id-no-match",
+						}),
+					},
+					{
+						StatusCode: http.StatusOK,
+						Data: marshal(map[string]any{
+							"uid":         "JMhNaJ0Zbf9",
+							"name":        "match",
+							"description": "post - update from monaco - change - 2",
+							"isPublic":    false,
+							"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
+							"externalId":  "my-project:segment:my-config-id",
+						}),
+					},
+				}
+				return response, nil
+			},
+			expected: entities.ResolvedEntity{
+				EntityName: testCoordinate.String(),
+				Coordinate: testCoordinate,
+				Properties: map[string]interface{}{
+					"id": "JMhNaJ0Zbf9",
+				},
+				Skip: false,
+			},
+			expectErr: false,
+		},
+		{
+			name: "deploy with externalId - error PUT 400",
+			inputConfig: config.Config{
+				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
+				Coordinate: testCoordinate,
+				Type:       config.Segment{},
+				Parameters: config.Parameters{},
+				Skip:       false,
+			},
+			upsertStub: func() (segments.Response, error) {
+				return segments.Response{}, api.APIError{
+					StatusCode: http.StatusBadRequest,
+				}
+			},
+			getStub: func() (segments.Response, error) {
+				panic("should not be called")
+			},
+			getAllStub: func() ([]segments.Response, error) {
+				var response []segments.Response
+				return response, nil
+			},
+			expectErr:      true,
+			expectedErrMsg: "failed to deploy segment with externalId",
+		},
+		{
+			name: "deploy with externalId - error GET 400",
+			inputConfig: config.Config{
+				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
+				Coordinate: testCoordinate,
+				Type:       config.Segment{},
+				Parameters: config.Parameters{},
+				Skip:       false,
+			},
+			upsertStub: func() (segments.Response, error) {
+				panic("should not be called")
+			},
+			getStub: func() (segments.Response, error) {
+				panic("should not be called")
+			},
+			getAllStub: func() ([]segments.Response, error) {
+				var response []segments.Response
+				return response, api.APIError{
+					StatusCode: http.StatusBadRequest,
+				}
+			},
+			expectErr:      true,
+			expectedErrMsg: "failed to deploy segment with externalId",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := testClient{upsertStub: tt.upsertStub, getStub: tt.getStub}
+			c := testClient{upsertStub: tt.upsertStub, getStub: tt.getStub, getAllStub: tt.getAllStub}
 
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
