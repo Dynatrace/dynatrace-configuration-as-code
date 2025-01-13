@@ -36,16 +36,33 @@ import (
 //  2. validates the loaded data for correct syntax
 //  3. returns the data in the in-memory account.Resources representation
 func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
-	persisted, err := load(fs, rootPath)
+	resources := persistence.Resources{
+		Policies: make(map[string]persistence.Policy),
+		Groups:   make(map[string]persistence.Group),
+		Users:    make(map[string]persistence.User),
+	}
+	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load account management resources from %q: %w", rootPath, err)
 	}
 
-	if err := validateReferences(persisted); err != nil {
+	for _, yamlFilePath := range yamlFilePaths {
+		file, err := loadFile(fs, yamlFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load account management resources from %q: %w", rootPath, err)
+		}
+
+		err = addResourcesFromFile(&resources, *file)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add resources from file %q: %w", yamlFilePath, err)
+		}
+	}
+
+	if err := validateReferences(&resources); err != nil {
 		return nil, fmt.Errorf("account management resources from %q are invalid: %w", rootPath, err)
 	}
 
-	return transform(persisted), nil
+	return transform(&resources), nil
 }
 
 // HasAnyAccountKeyDefined checks whether the map has any AM key defined.
@@ -58,50 +75,22 @@ func HasAnyAccountKeyDefined(m map[string]any) bool {
 	return m[persistence.KeyUsers] != nil || m[persistence.KeyGroups] != nil || m[persistence.KeyPolicies] != nil
 }
 
-func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
-	resources := persistence.Resources{
-		Policies: make(map[string]persistence.Policy),
-		Groups:   make(map[string]persistence.Group),
-		Users:    make(map[string]persistence.User),
-	}
-
-	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, yamlFilePath := range yamlFilePaths {
-		log.WithFields(field.F("file", yamlFilePaths)).Debug("Loading file %q", yamlFilePath)
-
-		file, err := loadFile(fs, yamlFilePath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load file %q: %w", yamlFilePath, err)
-		}
-
-		err = addResourcesFromFile(resources, *file)
-		if err != nil {
-			return nil, fmt.Errorf("failed to add resources from file %q: %w", yamlFilePath, err)
-		}
-	}
-	return &resources, nil
-}
-
 func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 	log.WithFields(field.F("file", yamlFilePath)).Debug("Loading file %q", yamlFilePath)
 
 	bytes, err := afero.ReadFile(fs, yamlFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load file %q: %w", yamlFilePath, err)
 	}
 
 	var content map[string]any
 	if err := yaml.Unmarshal(bytes, &content); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load file %q: %w", yamlFilePath, err)
 	}
 
 	if _, f := content["configs"]; f {
 		if HasAnyAccountKeyDefined(content) {
-			return nil, ErrMixingConfigs
+			return nil, fmt.Errorf("failed to load file %q: %w", yamlFilePath, ErrMixingConfigs)
 		}
 
 		log.WithFields(field.F("file", yamlFilePath)).Warn("File %q appears to be an config file, skipping loading", yamlFilePath)
@@ -110,7 +99,7 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 
 	if _, f := content["delete"]; f {
 		if HasAnyAccountKeyDefined(content) {
-			return nil, ErrMixingDelete
+			return nil, fmt.Errorf("failed to load file %q: %w", yamlFilePath, ErrMixingDelete)
 		}
 
 		log.WithFields(field.F("file", yamlFilePath)).Debug("File %q appears to be an delete file, skipping loading", yamlFilePath)
@@ -144,7 +133,7 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 	return &res, nil
 }
 
-func addResourcesFromFile(res persistence.Resources, file persistence.File) error {
+func addResourcesFromFile(res *persistence.Resources, file persistence.File) error {
 	for _, p := range file.Policies {
 		if _, exists := res.Policies[p.ID]; exists {
 			return fmt.Errorf("found duplicate policy with id %q", p.ID)
