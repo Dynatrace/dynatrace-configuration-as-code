@@ -98,13 +98,20 @@ type DocumentType struct {
 	Private bool
 }
 
-// DocumentKind defines the type of a document. Currently, it can be a dashboard or a notebook.
+// DocumentKind defines the type of document. Currently, it can be a dashboard or a notebook.
 type DocumentKind string
 
 const (
 	DashboardKind DocumentKind = "dashboard"
 	NotebookKind  DocumentKind = "notebook"
+	LaunchpadKind DocumentKind = "launchpad"
 )
+
+var KnownDocumentKinds = []DocumentKind{
+	DashboardKind,
+	NotebookKind,
+	LaunchpadKind,
+}
 
 func (DocumentType) ID() TypeID {
 	return DocumentTypeID

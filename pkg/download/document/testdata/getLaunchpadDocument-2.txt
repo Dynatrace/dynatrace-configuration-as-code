@@ -1,0 +1,11 @@
+--7JMn-qLHCElqdRsKLhKfTjCYZPd7oJaWx4tu52bd
+Content-Disposition: form-data; name="metadata"
+Content-Type: application/json
+
+{"id":"801b0ef7-6d87-4107-9bba-b2f75b5ec290","name":"Another super cool Launchpad document","type":"launchpad","isPrivate":true,"externalId":null,"description":null,"version":2,"owner":"bbca05ed-cc44-42f4-98fc-7eef56986d45","originAppId":null,"modificationInfo":{"createdBy":"bbca05ed-cc44-42f4-98fc-7eef56986d45","createdTime":"2025-01-14T15:03:29.537Z","lastModifiedBy":"bbca05ed-cc44-42f4-98fc-7eef56986d45","lastModifiedTime":"2025-01-14T15:03:54.211Z"},"access":["read","write","delete"]}
+--7JMn-qLHCElqdRsKLhKfTjCYZPd7oJaWx4tu52bd
+Content-Disposition: form-data; name="content"; filename="Another super cool Launchpad document"
+Content-Type: application/octet-stream
+
+{}
+--7JMn-qLHCElqdRsKLhKfTjCYZPd7oJaWx4tu52bd--

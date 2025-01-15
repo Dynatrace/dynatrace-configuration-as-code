@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -32,17 +33,34 @@ import (
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-func Download(client client.DocumentClient, projectName string) (v2.ConfigsPerType, error) {
-	result := make(v2.ConfigsPerType)
-
-	dashboards := downloadDocumentsOfType(client, projectName, documents.Dashboard)
-	notebooks := downloadDocumentsOfType(client, projectName, documents.Notebook)
-	result[string(config.DocumentTypeID)] = append(result[string(config.DocumentTypeID)], dashboards...)
-	result[string(config.DocumentTypeID)] = append(result[string(config.DocumentTypeID)], notebooks...)
-	return result, nil
+var documentMapping = map[string]config.DocumentKind{
+	documents.Dashboard: config.DashboardKind,
+	documents.Notebook:  config.NotebookKind,
+	documents.Launchpad: config.LaunchpadKind,
 }
 
-func downloadDocumentsOfType(client client.DocumentClient, projectName string, documentType documents.DocumentType) []config.Config {
+func Download(client client.DocumentClient, projectName string) (v2.ConfigsPerType, error) {
+	// due to the current test setup, the types must be downloaded in order. This should be changed eventually
+	var typesToDownload = []documents.DocumentType{
+		documents.Dashboard,
+		documents.Notebook,
+		documents.Launchpad,
+	}
+
+	var allConfigs []config.Config
+	for _, docKind := range typesToDownload {
+		configs := downloadDocumentsOfType(client, projectName, docKind)
+		allConfigs = append(allConfigs, configs...)
+	}
+
+	return v2.ConfigsPerType{
+		string(config.DocumentTypeID): allConfigs,
+	}, nil
+}
+
+func downloadDocumentsOfType(client client.DocumentClient, projectName string, documentType string) []config.Config {
+	log.WithFields(field.Type("document")).Debug("Downloading documents of type '%s'", documentType)
+
 	listResponse, err := client.List(context.TODO(), fmt.Sprintf("type=='%s'", documentType))
 	if err != nil {
 		log.WithFields(field.Type("document"), field.Error(err)).Error("Failed to list all documents of type '%s': %v", documentType, err)
@@ -59,6 +77,8 @@ func downloadDocumentsOfType(client client.DocumentClient, projectName string, d
 		}
 		configs = append(configs, config)
 	}
+
+	log.WithFields(field.Type("document")).Debug("Downloaded %d documents of type '%s'", len(configs), documentType)
 
 	return configs
 }
@@ -114,12 +134,10 @@ func createTemplateFromResponse(response documents.Response) (template.Template,
 }
 
 func validateDocumentType(documentType string) (config.DocumentType, error) {
-	switch documentType {
-	case string(documents.Dashboard):
-		return config.DocumentType{Kind: config.DashboardKind}, nil
-	case string(documents.Notebook):
-		return config.DocumentType{Kind: config.NotebookKind}, nil
-	default:
+	kind, f := documentMapping[documentType]
+	if !f {
 		return config.DocumentType{}, fmt.Errorf("unsupported document type: %s", documentType)
 	}
+
+	return config.DocumentType{Kind: kind}, nil
 }

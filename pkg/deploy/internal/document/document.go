@@ -148,17 +148,22 @@ func createResolvedEntity(documentName string, id string, coordinate coordinate.
 	}
 }
 
-func getDocumentAttributesFromConfigType(t config.Type) (documents.DocumentType, bool, error) {
+var documentMapping = map[config.DocumentKind]documents.DocumentType{
+	config.DashboardKind: documents.Dashboard,
+	config.NotebookKind:  documents.Notebook,
+	config.LaunchpadKind: documents.Launchpad,
+}
+
+func getDocumentAttributesFromConfigType(t config.Type) (doctype string, private bool, err error) {
 	documentType, ok := t.(config.DocumentType)
 	if !ok {
 		return "", false, fmt.Errorf("expected document config type but found %v", t)
 	}
-	switch documentType.Kind {
-	case config.DashboardKind:
-		return documents.Dashboard, documentType.Private, nil
-	case config.NotebookKind:
-		return documents.Notebook, documentType.Private, nil
+
+	kind, f := documentMapping[documentType.Kind]
+	if !f {
+		return "", false, nil
 	}
 
-	return "", false, nil
+	return kind, documentType.Private, nil
 }

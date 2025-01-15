@@ -23,6 +23,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
@@ -30,9 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDownloader_Download(t *testing.T) {
@@ -76,7 +77,40 @@ func TestDownloader_Download(t *testing.T) {
 		Group:       "",
 	}
 
-	t.Run("download dashboard and notebook documents works", func(t *testing.T) {
+	expectedLaunchpad1Config := config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project",
+			Type:     "document",
+			ConfigId: "1d10690f-7e21-4757-a8bd-bf3a723efc4a",
+		},
+		OriginObjectId: "1d10690f-7e21-4757-a8bd-bf3a723efc4a",
+		Type:           config.DocumentType{Kind: config.LaunchpadKind, Private: true},
+		Template:       template.NewInMemoryTemplate("1d10690f-7e21-4757-a8bd-bf3a723efc4a", "{}"),
+		Parameters: config.Parameters{
+			config.NameParameter: &value.ValueParameter{Value: "My super awesome launchpad"},
+		},
+		Skip:        false,
+		Environment: "",
+		Group:       "",
+	}
+	expectedLaunchpad2Config := config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project",
+			Type:     "document",
+			ConfigId: "801b0ef7-6d87-4107-9bba-b2f75b5ec290",
+		},
+		OriginObjectId: "801b0ef7-6d87-4107-9bba-b2f75b5ec290",
+		Type:           config.DocumentType{Kind: config.LaunchpadKind, Private: true},
+		Template:       template.NewInMemoryTemplate("801b0ef7-6d87-4107-9bba-b2f75b5ec290", "{}"),
+		Parameters: config.Parameters{
+			config.NameParameter: &value.ValueParameter{Value: "Another super cool Launchpad document"},
+		},
+		Skip:        false,
+		Environment: "",
+		Group:       "",
+	}
+
+	t.Run("download of all document kinds in one go works", func(t *testing.T) {
 
 		responses := []testutils.ResponseDef{
 			{
@@ -91,12 +125,12 @@ func TestDownloader_Download(t *testing.T) {
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
 					assert.Equal(t, "/platform/document/v1/documents", request.URL.Path)
-					assert.Equal(t, "filter=type%3D%3D%27dashboard%27", request.URL.RawQuery)
+					assert.Equal(t, "type=='dashboard'", request.URL.Query().Get("filter"))
 				},
 			},
 			{
 				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					data, err := os.ReadFile("./testdata/getDashboardDocument.json")
+					data, err := os.ReadFile("./testdata/getDashboardDocument.txt")
 					assert.NoError(t, err)
 
 					return testutils.Response{
@@ -121,12 +155,12 @@ func TestDownloader_Download(t *testing.T) {
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
 					assert.Equal(t, "/platform/document/v1/documents", request.URL.Path)
-					assert.Equal(t, "filter=type%3D%3D%27notebook%27", request.URL.RawQuery)
+					assert.Equal(t, "type=='notebook'", request.URL.Query().Get("filter"))
 				},
 			},
 			{
 				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					data, err := os.ReadFile("./testdata/getNotebookDocument.json")
+					data, err := os.ReadFile("./testdata/getNotebookDocument.txt")
 					assert.NoError(t, err)
 
 					return testutils.Response{
@@ -139,6 +173,51 @@ func TestDownloader_Download(t *testing.T) {
 					assert.Equal(t, "/platform/document/v1/documents/23456781-1234-1234-1234-0123456789ab", request.URL.Path)
 				},
 			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/listLaunchpadDocuments.json")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents", request.URL.Path)
+					assert.Equal(t, "type=='launchpad'", request.URL.Query().Get("filter"))
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/getLaunchpadDocument-1.txt")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+						ContentType:  "multipart/form-data;boundary=WYwl3-IPtOFH1PoqAJPJK8NCSfoAmaYvjfxD",
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents/1d10690f-7e21-4757-a8bd-bf3a723efc4a", request.URL.Path)
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/getLaunchpadDocument-2.txt")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+						ContentType:  "multipart/form-data;boundary=7JMn-qLHCElqdRsKLhKfTjCYZPd7oJaWx4tu52bd",
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents/801b0ef7-6d87-4107-9bba-b2f75b5ec290", request.URL.Path)
+				},
+			},
 		}
 
 		server := testutils.NewHTTPTestServer(t, responses)
@@ -149,14 +228,20 @@ func TestDownloader_Download(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
-		// expect one dashboard and one notebook
-		require.Len(t, result["document"], 2)
+		// expect one dashboard and one notebook and 2 launchpads
+		require.Len(t, result["document"], 4)
 
 		dashboardConfig := result["document"][0]
 		assert.Empty(t, cmp.Diff(expectedDashboardConfig, dashboardConfig, templateComparer))
 
 		notebookConfig := result["document"][1]
 		assert.Empty(t, cmp.Diff(expectedNotebookConfig, notebookConfig, templateComparer))
+
+		launchpad1 := result["document"][2]
+		assert.Empty(t, cmp.Diff(expectedLaunchpad1Config, launchpad1, templateComparer))
+
+		launchpad2 := result["document"][3]
+		assert.Empty(t, cmp.Diff(expectedLaunchpad2Config, launchpad2, templateComparer))
 	})
 
 	t.Run("no error downloading documents with faulty client", func(t *testing.T) {
@@ -172,7 +257,7 @@ func TestDownloader_Download(t *testing.T) {
 		require.Len(t, result["document"], 0)
 	})
 
-	t.Run("notebook download still works if dashboard download fails", func(t *testing.T) {
+	t.Run("other documents are written even if one fails", func(t *testing.T) {
 
 		responses := []testutils.ResponseDef{
 			{
@@ -184,7 +269,7 @@ func TestDownloader_Download(t *testing.T) {
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
 					assert.Equal(t, "/platform/document/v1/documents", request.URL.Path)
-					assert.Equal(t, "filter=type%3D%3D%27dashboard%27", request.URL.RawQuery)
+					assert.Equal(t, "type=='dashboard'", request.URL.Query().Get("filter"))
 				},
 			},
 			{
@@ -199,12 +284,12 @@ func TestDownloader_Download(t *testing.T) {
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
 					assert.Equal(t, "/platform/document/v1/documents", request.URL.Path)
-					assert.Equal(t, "filter=type%3D%3D%27notebook%27", request.URL.RawQuery)
+					assert.Equal(t, "type=='notebook'", request.URL.Query().Get("filter"))
 				},
 			},
 			{
 				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					data, err := os.ReadFile("./testdata/getNotebookDocument.json")
+					data, err := os.ReadFile("./testdata/getNotebookDocument.txt")
 					assert.NoError(t, err)
 
 					return testutils.Response{
@@ -217,6 +302,51 @@ func TestDownloader_Download(t *testing.T) {
 					assert.Equal(t, "/platform/document/v1/documents/23456781-1234-1234-1234-0123456789ab", request.URL.Path)
 				},
 			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/listLaunchpadDocuments.json")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents", request.URL.Path)
+					assert.Equal(t, "type=='launchpad'", request.URL.Query().Get("filter"))
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/getLaunchpadDocument-1.txt")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+						ContentType:  "multipart/form-data;boundary=WYwl3-IPtOFH1PoqAJPJK8NCSfoAmaYvjfxD",
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents/1d10690f-7e21-4757-a8bd-bf3a723efc4a", request.URL.Path)
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/getLaunchpadDocument-2.txt")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+						ContentType:  "multipart/form-data;boundary=7JMn-qLHCElqdRsKLhKfTjCYZPd7oJaWx4tu52bd",
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents/801b0ef7-6d87-4107-9bba-b2f75b5ec290", request.URL.Path)
+				},
+			},
 		}
 
 		server := testutils.NewHTTPTestServer(t, responses)
@@ -227,10 +357,16 @@ func TestDownloader_Download(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
-		// expect one notebook (and no dashboard)
-		require.Len(t, result["document"], 1)
+		// expect one notebook and two launchpads (no dashboard)
+		require.Len(t, result["document"], 3)
 		notebookConfig := result["document"][0]
 		assert.Empty(t, cmp.Diff(expectedNotebookConfig, notebookConfig, templateComparer))
+
+		launchpad1 := result["document"][1]
+		assert.Empty(t, cmp.Diff(expectedLaunchpad1Config, launchpad1, templateComparer))
+
+		launchpad2 := result["document"][2]
+		assert.Empty(t, cmp.Diff(expectedLaunchpad2Config, launchpad2, templateComparer))
 	})
 
 }

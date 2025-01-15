@@ -19,6 +19,7 @@ package persistence
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/exp/maps"
@@ -229,16 +230,16 @@ func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 		}
 
 	case config.DocumentType:
-		switch t.Kind {
-		case "":
+
+		if t.Kind == "" {
 			return errors.New("missing document kind property")
-
-		case config.DashboardKind, config.NotebookKind:
-			return nil
-
-		default:
-			return fmt.Errorf("unknown document kind %q", t.Kind)
 		}
+
+		if slices.Contains(config.KnownDocumentKinds, t.Kind) {
+			return nil
+		}
+
+		return fmt.Errorf("unknown document kind %q", t.Kind)
 
 	case config.OpenPipelineType:
 		if t.Kind == "" {
