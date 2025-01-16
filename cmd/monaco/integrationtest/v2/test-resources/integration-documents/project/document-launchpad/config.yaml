@@ -1,0 +1,36 @@
+configs:
+- id: 1f75cd58-c80b-436c-91db-4817f7f5a06c
+  config:
+    name: Another super cool Launchpad document
+    parameters:
+      extractedIDs:
+        type: value
+        value:
+          id_45fe0d83_98ea_410d_8fa5_7a357fe5e66e: 45fe0d83-98ea-410d-8fa5-7a357fe5e66e
+    template: 1f75cd58-c80b-436c-91db-4817f7f5a06c.json
+    skip: false
+    originObjectId: 1f75cd58-c80b-436c-91db-4817f7f5a06c
+  type:
+    document:
+      kind: launchpad
+      private: true
+- id: 9d5e6707-0395-497b-8235-8b4150cb20fe
+  config:
+    name: My super awesome launchpad
+    parameters:
+      extractedIDs:
+        type: value
+        value:
+          id_01e31f50_9d3b_49a5_88e9_61fde53046e4: 01e31f50-9d3b-49a5-88e9-61fde53046e4
+          id_65d49e9c_465f_46fb_89f8_95711a10b18f: 65d49e9c-465f-46fb-89f8-95711a10b18f
+          id_95a68ab9_369a_4d2e_b9c8_e09de34450ab: 95a68ab9-369a-4d2e-b9c8-e09de34450ab
+          id_999ec66d_07aa_451f_8bec_32b796e05e34: 999ec66d-07aa-451f-8bec-32b796e05e34
+          id_0971615a_8019_4f24_8f10_116849ad3412: 0971615a-8019-4f24-8f10-116849ad3412
+          id_b508e17a_5213_42c3_a9f7_243fb40487b8: b508e17a-5213-42c3-a9f7-243fb40487b8
+    template: 9d5e6707-0395-497b-8235-8b4150cb20fe.json
+    skip: false
+    originObjectId: 9d5e6707-0395-497b-8235-8b4150cb20fe
+  type:
+    document:
+      kind: launchpad
+      private: true

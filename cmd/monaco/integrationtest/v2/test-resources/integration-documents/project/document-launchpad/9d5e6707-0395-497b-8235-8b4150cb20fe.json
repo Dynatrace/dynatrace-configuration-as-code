@@ -1,0 +1,76 @@
+{
+  "background": "default",
+  "containerList": {
+    "containers": [
+      {
+        "blocks": [
+          {
+            "content": "# Your Monaco Launchpad!\n\nThis dashboard is an example Launchpad used for testing in Monaco. It serves no real purpose, so please ignore it.\n\n* This is a list\n* And I am the second pullet point in this list\n\nAnd now we have some `inline` code.\n```and some block code```",
+            "id": "{{ .extractedIDs.id_95a68ab9_369a_4d2e_b9c8_e09de34450ab }}",
+            "properties": {
+              "expanded": true
+            },
+            "type": "markdown"
+          },
+          {
+            "content": [
+              {
+                "action": {
+                  "type": "openExternalLink",
+                  "url": "https://example.com"
+                },
+                "buttonName": "Example wupwup!!!!!",
+                "description": "",
+                "id": "{{ .extractedIDs.id_b508e17a_5213_42c3_a9f7_243fb40487b8 }}",
+                "imageDark": "",
+                "imageLight": "https://gravatar.com/avatar/e016d237b9139e919a77983b7ed1e17d?s=400\u0026d=robohash\u0026r=x",
+                "title": "My custom card"
+              }
+            ],
+            "id": "{{ .extractedIDs.id_65d49e9c_465f_46fb_89f8_95711a10b18f }}",
+            "properties": {
+              "expanded": true
+            },
+            "type": "cards"
+          },
+          {
+            "appearance": "list",
+            "content": [
+              {
+                "action": {
+                  "appId": "dynatrace.notebooks",
+                  "type": "openApp"
+                },
+                "categoryId": "apps",
+                "icon": "/platform/app-engine/registry/v1/app-icons/dynatrace.notebooks?appVersion=1.306.4",
+                "id": "{{ .extractedIDs.id_01e31f50_9d3b_49a5_88e9_61fde53046e4 }}",
+                "title": "Notebooks",
+                "type": "app"
+              },
+              {
+                "action": {
+                  "appId": "dynatrace.dashboards",
+                  "type": "openApp"
+                },
+                "categoryId": "apps",
+                "icon": "/platform/app-engine/registry/v1/app-icons/dynatrace.dashboards?appVersion=1.305.8",
+                "id": "{{ .extractedIDs.id_0971615a_8019_4f24_8f10_116849ad3412 }}",
+                "title": "Dashboards",
+                "type": "app"
+              }
+            ],
+            "contentType": "static",
+            "id": "{{ .extractedIDs.id_999ec66d_07aa_451f_8bec_32b796e05e34 }}",
+            "properties": {
+              "expanded": true
+            },
+            "type": "links"
+          }
+        ],
+        "horizontalLayoutWeight": 1
+      }
+    ]
+  },
+  "icon": "default",
+  "schemaVersion": 2
+}
