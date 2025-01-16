@@ -1,0 +1,21 @@
+{
+  "background": "default",
+  "containerList": {
+    "containers": [
+      {
+        "blocks": [
+          {
+            "content": [],
+            "properties": {
+              "expanded": true
+            },
+            "type": "cards"
+          }
+        ],
+        "horizontalLayoutWeight": 1
+      }
+    ]
+  },
+  "icon": "default",
+  "schemaVersion": 2
+}

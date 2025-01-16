@@ -108,5 +108,10 @@ func TestDocuments(t *testing.T) {
 		assert.Len(t, result.Responses, 1)
 		assert.False(t, result.Responses[0].IsPrivate)
 
+		// check if both launchpads were created successful
+		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("type='launchpad'"))
+		assert.NoError(t, err)
+		assert.Len(t, result.Responses, 2)
+
 	})
 }
