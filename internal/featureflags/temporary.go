@@ -33,15 +33,18 @@ const (
 	// Segments toggles whether segment configurations are downloaded and / or deployed.
 	// Introduced: v2.18.0
 	Segments FeatureFlag = "MONACO_FEAT_SEGMENTS"
+
+	CreateReferencesOnlyInStringValues FeatureFlag = "MONACO_CREATE_REFS_IN_STRINGS"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
 // It is suitable for features that are hidden during development or have some uncertainty.
 // These should always be removed after release of a feature, or some stabilization period if needed.
 var temporaryDefaultValues = map[FeatureFlag]defaultValue{
-	SkipReadOnlyAccountGroupUpdates: false,
-	PersistSettingsOrder:            true,
-	OpenPipeline:                    true,
-	IgnoreSkippedConfigs:            false,
-	Segments:                        false,
+	SkipReadOnlyAccountGroupUpdates:    false,
+	PersistSettingsOrder:               true,
+	OpenPipeline:                       true,
+	IgnoreSkippedConfigs:               false,
+	Segments:                           false,
+	CreateReferencesOnlyInStringValues: false,
 }

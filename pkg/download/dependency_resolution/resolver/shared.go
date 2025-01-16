@@ -21,6 +21,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
@@ -67,6 +69,21 @@ func sanitizeTemplateVar(templateVarName string) string {
 }
 
 func replaceAll(content string, key string, s string) string {
+	if featureflags.CreateReferencesOnlyInStringValues.Enabled() {
+		f := func(v string) string {
+			return replaceAllUsingRegEx(v, key, s)
+		}
+		result, err := json.ApplyToStringValues(content, f)
+		if err == nil {
+			return result
+		}
+
+		log.Debug("Failed to replace %q with %q in string values in %q: %s", key, s, content, err.Error())
+	}
+	return replaceAllUsingRegEx(content, key, s)
+}
+
+func replaceAllUsingRegEx(content string, key string, s string) string {
 	// The prefix and suffix we search for are alphanumerical, as well as the "-", and "_".
 	// From investigating, this character set seems to be the most basic regex that still avoids false positive substring matches.
 	str := fmt.Sprintf("([^a-zA-Z0-9_-])(%s)([^a-zA-Z0-9_-])", key)
