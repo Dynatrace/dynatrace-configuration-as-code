@@ -20,6 +20,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -28,22 +31,15 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"testing"
 )
 
 type testClient struct {
 	upsertStub func() (segments.Response, error)
-	getStub    func() (segments.Response, error)
 	getAllStub func() ([]segments.Response, error)
 }
 
 func (tc *testClient) Upsert(_ context.Context, _ string, _ []byte) (segments.Response, error) {
 	return tc.upsertStub()
-}
-
-func (tc *testClient) Get(_ context.Context, _ string) (segments.Response, error) {
-	return tc.getStub()
 }
 
 func (tc *testClient) GetAll(_ context.Context) ([]segments.Response, error) {
@@ -60,7 +56,6 @@ func TestDeploy(t *testing.T) {
 		name           string
 		inputConfig    config.Config
 		upsertStub     func() (segments.Response, error)
-		getStub        func() (segments.Response, error)
 		getAllStub     func() ([]segments.Response, error)
 		expected       entities.ResolvedEntity
 		expectErr      bool
@@ -81,19 +76,6 @@ func TestDeploy(t *testing.T) {
 					StatusCode: http.StatusOK,
 				}, nil
 			},
-			getStub: func() (segments.Response, error) {
-				return segments.Response{
-					StatusCode: http.StatusOK,
-					Data: marshal(map[string]any{
-						"uid":         "JMhNaJ0Zbf9",
-						"name":        "test-segment-post-match",
-						"description": "post - update from monaco - change - 2",
-						"isPublic":    false,
-						"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
-						"externalId":  "project_segment:segment:some-id",
-					}),
-				}, nil
-			},
 			getAllStub: func() ([]segments.Response, error) {
 				panic("should not be called")
 			},
@@ -108,7 +90,7 @@ func TestDeploy(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "deploy with objectOriginId, no object found on remote - success POST with externalId",
+			name: "deploy with objectOriginId, no object found on remote - success POST",
 			inputConfig: config.Config{
 				Template:       template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate:     testCoordinate,
@@ -130,14 +112,8 @@ func TestDeploy(t *testing.T) {
 					}),
 				}, nil
 			},
-			getStub: func() (segments.Response, error) {
-				return segments.Response{}, api.APIError{
-					StatusCode: http.StatusNotFound,
-				}
-			},
 			getAllStub: func() ([]segments.Response, error) {
-				var response []segments.Response
-				return response, nil
+				panic("should not be called")
 			},
 			expected: entities.ResolvedEntity{
 				EntityName: testCoordinate.String(),
@@ -162,19 +138,6 @@ func TestDeploy(t *testing.T) {
 			upsertStub: func() (segments.Response, error) {
 				return segments.Response{}, fmt.Errorf("error")
 			},
-			getStub: func() (segments.Response, error) {
-				return segments.Response{
-					StatusCode: http.StatusOK,
-					Data: marshal(map[string]any{
-						"uid":         "JMhNaJ0Zbf9",
-						"name":        "test-segment-post-match",
-						"description": "post - update from monaco - change - 2",
-						"isPublic":    false,
-						"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
-						"externalId":  "project_segment:segment:some-id",
-					}),
-				}, nil
-			},
 			getAllStub: func() ([]segments.Response, error) {
 				panic("should not be called")
 			},
@@ -193,19 +156,6 @@ func TestDeploy(t *testing.T) {
 			},
 			upsertStub: func() (segments.Response, error) {
 				return segments.Response{}, fmt.Errorf("error")
-			},
-			getStub: func() (segments.Response, error) {
-				return segments.Response{
-					StatusCode: http.StatusOK,
-					Data: marshal(map[string]any{
-						"uid":         "JMhNaJ0Zbf9",
-						"name":        "test-segment-post-match",
-						"description": "post - update from monaco - change - 2",
-						"isPublic":    false,
-						"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
-						"externalId":  "project_segment:segment:some-id",
-					}),
-				}, nil
 			},
 			getAllStub: func() ([]segments.Response, error) {
 				panic("should not be called")
@@ -226,9 +176,6 @@ func TestDeploy(t *testing.T) {
 				return segments.Response{
 					StatusCode: http.StatusOK,
 				}, nil
-			},
-			getStub: func() (segments.Response, error) {
-				panic("should not be called")
 			},
 			getAllStub: func() ([]segments.Response, error) {
 				response := []segments.Response{
@@ -281,9 +228,6 @@ func TestDeploy(t *testing.T) {
 					StatusCode: http.StatusBadRequest,
 				}
 			},
-			getStub: func() (segments.Response, error) {
-				panic("should not be called")
-			},
 			getAllStub: func() ([]segments.Response, error) {
 				var response []segments.Response
 				return response, nil
@@ -303,9 +247,6 @@ func TestDeploy(t *testing.T) {
 			upsertStub: func() (segments.Response, error) {
 				panic("should not be called")
 			},
-			getStub: func() (segments.Response, error) {
-				panic("should not be called")
-			},
 			getAllStub: func() ([]segments.Response, error) {
 				var response []segments.Response
 				return response, api.APIError{
@@ -319,7 +260,7 @@ func TestDeploy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := testClient{upsertStub: tt.upsertStub, getStub: tt.getStub, getAllStub: tt.getAllStub}
+			c := testClient{upsertStub: tt.upsertStub, getAllStub: tt.getAllStub}
 
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)

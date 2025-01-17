@@ -19,8 +19,9 @@ package deploy_test
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -1341,13 +1342,13 @@ func TestDeployConfigFF(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name+" | FF Enabled", func(t *testing.T) {
 			t.Setenv(tt.featureFlag, "true")
-			err := deploy.Deploy(context.TODO(), tt.projects, c, deploy.DeployConfigsOptions{})
+			err := deploy.Deploy(context.Background(), tt.projects, c, deploy.DeployConfigsOptions{})
 			//Dummy client returns unimplemented error on every execution of any method
 			assert.Errorf(t, err, "unimplemented")
 		})
 		t.Run(tt.name+" | FF Disabled", func(t *testing.T) {
 			t.Setenv(tt.featureFlag, "false")
-			err := deploy.Deploy(context.TODO(), tt.projects, c, deploy.DeployConfigsOptions{})
+			err := deploy.Deploy(context.Background(), tt.projects, c, deploy.DeployConfigsOptions{})
 			assert.Errorf(t, err, fmt.Sprintf("unknown config-type (ID: %q)", tt.configType))
 		})
 	}
