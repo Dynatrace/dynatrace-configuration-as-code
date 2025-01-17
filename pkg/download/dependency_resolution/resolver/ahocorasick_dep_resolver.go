@@ -113,10 +113,11 @@ func findAndReplaceIDs(apiName string, configToBeUpdated config.Config, c depend
 
 		parameterName := CreateParameterName(conf.Coordinate.Type, conf.Coordinate.ConfigId)
 
-		content = replaceAll(content, key, "{{."+parameterName+"}}")
-		ref := reference.NewWithCoordinate(conf.Coordinate, "id")
-		parameters[parameterName] = ref
-
+		newContent := replaceAll(content, key, "{{."+parameterName+"}}")
+		if newContent != content {
+			parameters[parameterName] = reference.NewWithCoordinate(conf.Coordinate, "id")
+			content = newContent
+		}
 	}
 
 	return content, parameters, nil
