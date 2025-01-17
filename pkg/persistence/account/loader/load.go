@@ -45,7 +45,7 @@ func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
 		return nil, fmt.Errorf("account management resources from %q are invalid: %w", rootPath, err)
 	}
 
-	return transform(persisted), nil
+	return transformToAccountResources(persisted), nil
 }
 
 // HasAnyAccountKeyDefined checks whether the map has any AM key defined.
@@ -131,28 +131,6 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 	return &file, err
 }
 
-func validateFile(file persistence.File) error {
-	for _, p := range file.Policies {
-		if err := validatePolicy(p); err != nil {
-			return err
-		}
-	}
-
-	for _, g := range file.Groups {
-		if err := validateGroup(g); err != nil {
-			return err
-		}
-	}
-
-	for _, u := range file.Users {
-		if err := validateUser(u); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func addResourcesFromFile(res persistence.Resources, file persistence.File) error {
 	for _, p := range file.Policies {
 		if _, exists := res.Policies[p.ID]; exists {
@@ -176,116 +154,4 @@ func addResourcesFromFile(res persistence.Resources, file persistence.File) erro
 	}
 
 	return nil
-}
-
-func transform(resources *persistence.Resources) *account.Resources {
-	return &account.Resources{
-		Policies: transformPolicies(resources.Policies),
-		Groups:   transformGroups(resources.Groups),
-		Users:    transformUsers(resources.Users),
-	}
-}
-
-func transformPolicies(in map[string]persistence.Policy) map[account.PolicyId]account.Policy {
-	policies := make(map[account.PolicyId]account.Policy, len(in))
-	for id, v := range in {
-		policies[id] = account.Policy{
-			ID:             v.ID,
-			Name:           v.Name,
-			Level:          transformLevel(v.Level),
-			Description:    v.Description,
-			Policy:         v.Policy,
-			OriginObjectID: v.OriginObjectID,
-		}
-	}
-	return policies
-}
-
-func transformLevel(level persistence.PolicyLevel) any {
-	switch level.Type {
-	case persistence.PolicyLevelAccount:
-		return account.PolicyLevelAccount{Type: level.Type}
-	case persistence.PolicyLevelEnvironment:
-		return account.PolicyLevelEnvironment{Type: level.Type, Environment: level.Environment}
-	default:
-		panic("unable to convert persistence model")
-	}
-}
-
-func transformGroups(in map[string]persistence.Group) map[account.GroupId]account.Group {
-	groups := make(map[account.GroupId]account.Group, len(in))
-	for id, v := range in {
-		groups[id] = account.Group{
-			ID:                       v.ID,
-			Name:                     v.Name,
-			Description:              v.Description,
-			FederatedAttributeValues: v.FederatedAttributeValues,
-			Account:                  transformAccount(v.Account),
-			Environment:              transformEnvironments(v.Environment),
-			ManagementZone:           transformManagementZones(v.ManagementZone),
-			OriginObjectID:           v.OriginObjectID,
-		}
-	}
-	return groups
-}
-
-func transformAccount(in *persistence.Account) *account.Account {
-	if in == nil {
-		return nil
-	}
-
-	return &account.Account{
-		Permissions: in.Permissions,
-		Policies:    transformReferences(in.Policies),
-	}
-}
-
-func transformEnvironments(in []persistence.Environment) []account.Environment {
-	env := make([]account.Environment, len(in))
-	for i, e := range in {
-		env[i] = account.Environment{
-			Name:        e.Name,
-			Permissions: e.Permissions,
-			Policies:    transformReferences(e.Policies),
-		}
-	}
-	return env
-}
-
-func transformManagementZones(in []persistence.ManagementZone) []account.ManagementZone {
-	managementZones := make([]account.ManagementZone, len(in))
-	for i, m := range in {
-		managementZones[i] = account.ManagementZone{
-			Environment:    m.Environment,
-			ManagementZone: m.ManagementZone,
-			Permissions:    m.Permissions,
-		}
-	}
-	return managementZones
-}
-
-func transformUsers(in map[string]persistence.User) map[account.UserId]account.User {
-	users := make(map[account.UserId]account.User, len(in))
-	for id, v := range in {
-		users[id] = account.User{
-			Email:  v.Email,
-			Groups: transformReferences(v.Groups),
-		}
-	}
-	return users
-}
-
-func transformReferences(in []persistence.Reference) []account.Ref {
-	res := make([]account.Ref, len(in))
-	for i, el := range in {
-		switch el.Type {
-		case persistence.ReferenceType:
-			res[i] = account.Reference{Id: el.Id}
-		case "":
-			res[i] = account.StrReference(el.Value)
-		default:
-			panic("unable to convert persistence model")
-		}
-	}
-	return res
 }
