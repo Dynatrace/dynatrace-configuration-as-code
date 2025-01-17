@@ -36,7 +36,7 @@ import (
 //  2. validates the loaded data for correct syntax
 //  3. returns the data in the in-memory account.Resources representation
 func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
-	persisted, err := load(fs, rootPath)
+	persisted, err := findAndLoadResources(fs, rootPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load account management resources from %q: %w", rootPath, err)
 	}
@@ -58,7 +58,7 @@ func HasAnyAccountKeyDefined(m map[string]any) bool {
 	return m[persistence.KeyUsers] != nil || m[persistence.KeyGroups] != nil || m[persistence.KeyPolicies] != nil
 }
 
-func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
+func findAndLoadResources(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 	resources := persistence.Resources{
 		Policies: make(map[string]persistence.Policy),
 		Groups:   make(map[string]persistence.Group),
@@ -76,6 +76,11 @@ func load(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
 		file, err := loadFile(fs, yamlFilePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load file %q: %w", yamlFilePath, err)
+		}
+
+		err = validateFile(*file)
+		if err != nil {
+			return nil, fmt.Errorf("invalid file %q: %w", yamlFilePath, err)
 		}
 
 		err = addResourcesFromFile(resources, *file)
@@ -117,31 +122,35 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 		return &persistence.File{}, nil
 	}
 
-	var res persistence.File
-	err = yaml.Unmarshal(bytes, &res)
+	var file persistence.File
+	err = yaml.Unmarshal(bytes, &file)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, p := range res.Policies {
+	return &file, err
+}
+
+func validateFile(file persistence.File) error {
+	for _, p := range file.Policies {
 		if err := validatePolicy(p); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	for _, g := range res.Groups {
+	for _, g := range file.Groups {
 		if err := validateGroup(g); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	for _, u := range res.Users {
+	for _, u := range file.Users {
 		if err := validateUser(u); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return &res, nil
+	return nil
 }
 
 func addResourcesFromFile(res persistence.Resources, file persistence.File) error {
