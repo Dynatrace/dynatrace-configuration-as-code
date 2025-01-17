@@ -18,16 +18,18 @@ package downloader_test
 
 import (
 	"context"
+	"testing"
+
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal/http"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func TestDownloader_DownloadConfiguration(t *testing.T) {
@@ -579,6 +581,7 @@ func newMockDownloader(d mockData, t *testing.T) *downloader.Downloader {
 	client.EXPECT().GetGroups(gomock.Any(), d.ai.AccountUUID).Return(d.groups, d.groupsError).MinTimes(0).MaxTimes(1)
 	client.EXPECT().GetUsers(gomock.Any(), d.ai.AccountUUID).Return(d.users, d.usersError).MinTimes(0).MaxTimes(1)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), userEmail(d.users), d.ai.AccountUUID).Return(d.userGroups, d.groupsForUserError).AnyTimes()
+	client.EXPECT().GetServiceUsers(gomock.Any(), d.ai.AccountUUID).Return(d.userGroups, d.groupsForUserError).AnyTimes()
 
 	return downloader.New4Test(d.ai, client)
 }

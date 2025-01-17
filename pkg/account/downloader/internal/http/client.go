@@ -41,6 +41,29 @@ func (c *Client) GetUsers(ctx context.Context, accountUUID string) ([]accountman
 	return r.Items, nil
 }
 
+func (c *Client) GetServiceUsers(ctx context.Context, accountUUID string) ([]accountmanagement.ExternalServiceUserDto, error) {
+	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
+	const pageSize = 10
+	for page := 1; ; page++ {
+		r, resp, err := c.ServiceUserManagementAPI.GetServiceUsersFromAccount(ctx, accountUUID).Page(float32(page)).PageSize(pageSize).Execute()
+		defer closeResponseBody(resp)
+		if err = getErrorMessageFromResponse(resp, err); err != nil {
+			return nil, err
+		}
+		if r == nil {
+			return nil, errors.New("the received data are empty")
+		}
+
+		serviceUsers = append(serviceUsers, r.Results...)
+
+		if r.NextPageKey == nil {
+			break
+		}
+	}
+
+	return serviceUsers, nil
+}
+
 func (c *Client) GetGroupsForUser(ctx context.Context, userEmail string, accountUUID string) (*accountmanagement.GroupUserDto, error) {
 	r, resp, err := c.UserManagementAPI.GetUserGroups(ctx, accountUUID, userEmail).Execute()
 	defer closeResponseBody(resp)

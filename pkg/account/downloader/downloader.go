@@ -19,11 +19,14 @@ package downloader
 import (
 	"context"
 	"fmt"
+
+	"github.com/go-logr/logr"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal/http"
-	"github.com/go-logr/logr"
 )
 
 type Downloader struct {
@@ -61,10 +64,19 @@ func (a *Downloader) DownloadResources(ctx context.Context) (*account.Resources,
 		return nil, fmt.Errorf("failed to fetch users: %w", err)
 	}
 
+	serviceUsers := ServiceUsers{}
+	if featureflags.ServiceUsers.Enabled() {
+		serviceUsers, err = a.serviceUsers(ctx, groups)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch service users: %w", err)
+		}
+	}
+
 	r := account.Resources{
-		Users:    users.asAccountUsers(),
-		Groups:   groups.asAccountGroups(),
-		Policies: policies.asAccountPolicies(),
+		Users:        users.asAccountUsers(),
+		ServiceUsers: serviceUsers.asAccountServiceUsers(),
+		Groups:       groups.asAccountGroups(),
+		Policies:     policies.asAccountPolicies(),
 	}
 
 	return &r, nil
