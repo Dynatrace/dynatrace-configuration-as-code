@@ -60,7 +60,7 @@ func Deploy(ctx context.Context, client DeploySegmentClient, properties paramete
 			return entities.ResolvedEntity{}, fmt.Errorf("failed to deploy segment with externalId: %s : %w", externalId, err)
 		}
 
-		return createResolveEntity(id, externalId, properties, c), nil
+		return createResolveEntity(id, properties, c), nil
 	}
 
 	//Strategy 2 is to try to find a match with external id and either update or create object if no match found.
@@ -69,7 +69,7 @@ func Deploy(ctx context.Context, client DeploySegmentClient, properties paramete
 		return entities.ResolvedEntity{}, fmt.Errorf("failed to deploy segment with externalId: %s : %w", externalId, err)
 	}
 
-	return createResolveEntity(id, externalId, properties, c), nil
+	return createResolveEntity(id, properties, c), nil
 }
 
 func addExternalId(externalId string, renderedConfig string) ([]byte, error) {
