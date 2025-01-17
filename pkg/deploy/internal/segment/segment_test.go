@@ -77,10 +77,10 @@ func TestDeploy(t *testing.T) {
 				}, nil
 			},
 			getAllStub: func() ([]segments.Response, error) {
-				panic("should not be called")
+				t.Fatalf("should not be called")
+				return nil, nil
 			},
 			expected: entities.ResolvedEntity{
-				EntityName: testCoordinate.String(),
 				Coordinate: testCoordinate,
 				Properties: map[string]interface{}{
 					"id": "my-object-id",
@@ -109,14 +109,14 @@ func TestDeploy(t *testing.T) {
 						"isPublic":    false,
 						"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
 						"externalId":  "project_segment:segment:some-id",
-					}),
+					}, t),
 				}, nil
 			},
 			getAllStub: func() ([]segments.Response, error) {
-				panic("should not be called")
+				t.Fatalf("should not be called")
+				return nil, nil
 			},
 			expected: entities.ResolvedEntity{
-				EntityName: testCoordinate.String(),
 				Coordinate: testCoordinate,
 				Properties: map[string]interface{}{
 					"id": "JMhNaJ0Zbf9",
@@ -126,7 +126,7 @@ func TestDeploy(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "deploy with objectOriginId - error PUT",
+			name: "deploy with objectOriginId - error PUT(error returned by upsert)",
 			inputConfig: config.Config{
 				Template:       template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate:     testCoordinate,
@@ -139,13 +139,14 @@ func TestDeploy(t *testing.T) {
 				return segments.Response{}, fmt.Errorf("error")
 			},
 			getAllStub: func() ([]segments.Response, error) {
-				panic("should not be called")
+				t.Fatalf("should not be called")
+				return nil, nil
 			},
 			expectErr:      true,
 			expectedErrMsg: "failed to deploy segment with externalId",
 		},
 		{
-			name: "deploy with objectOriginId - error PUT",
+			name: "deploy with objectOriginId - error PUT(invalid response payload)",
 			inputConfig: config.Config{
 				Template:       template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate:     testCoordinate,
@@ -155,10 +156,14 @@ func TestDeploy(t *testing.T) {
 				Skip:           false,
 			},
 			upsertStub: func() (segments.Response, error) {
-				return segments.Response{}, fmt.Errorf("error")
+				return segments.Response{
+					StatusCode: http.StatusCreated,
+					Data:       []byte("invalid json"),
+				}, nil
 			},
 			getAllStub: func() ([]segments.Response, error) {
-				panic("should not be called")
+				t.Fatalf("should not be called")
+				return nil, nil
 			},
 			expectErr:      true,
 			expectedErrMsg: "failed to deploy segment with externalId",
@@ -187,25 +192,24 @@ func TestDeploy(t *testing.T) {
 							"description": "post - update from monaco - change - 2",
 							"isPublic":    false,
 							"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
-							"externalId":  "project_segment:segment:some-id-no-match",
-						}),
+							"externalId":  "e2320031-d6c6-3c83-9706-b3e82b834129",
+						}, t),
 					},
 					{
 						StatusCode: http.StatusOK,
 						Data: marshal(map[string]any{
-							"uid":         "JMhNaJ0Zbf9",
+							"uid":         "should-not-be-this-id",
 							"name":        "match",
 							"description": "post - update from monaco - change - 2",
 							"isPublic":    false,
 							"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
-							"externalId":  "my-project:segment:my-config-id",
-						}),
+							"externalId":  "not-a-match",
+						}, t),
 					},
 				}
 				return response, nil
 			},
 			expected: entities.ResolvedEntity{
-				EntityName: testCoordinate.String(),
 				Coordinate: testCoordinate,
 				Properties: map[string]interface{}{
 					"id": "JMhNaJ0Zbf9",
@@ -245,7 +249,8 @@ func TestDeploy(t *testing.T) {
 				Skip:       false,
 			},
 			upsertStub: func() (segments.Response, error) {
-				panic("should not be called")
+				t.Fatalf("should not be called")
+				return segments.Response{}, nil
 			},
 			getAllStub: func() ([]segments.Response, error) {
 				var response []segments.Response
@@ -280,10 +285,10 @@ func TestDeploy(t *testing.T) {
 	}
 }
 
-func marshal(object map[string]any) []byte {
+func marshal(object map[string]any, t *testing.T) []byte {
 	payload, err := json.Marshal(object)
 	if err != nil {
-		panic(err)
+		t.Fatalf("error marshalling object: %v", err)
 	}
 	return payload
 }
