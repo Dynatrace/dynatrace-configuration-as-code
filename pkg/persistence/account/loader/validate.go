@@ -19,7 +19,9 @@ package loader
 import (
 	"errors"
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
+	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
 )
 
 // validateReferences checks the references in the provided AMResources instance to ensure
@@ -80,6 +82,28 @@ func policyExists(a *types.Resources, id string) bool {
 	_, exists := a.Policies[id]
 	return exists
 
+}
+
+func validateFile(file persistence.File) error {
+	for _, p := range file.Policies {
+		if err := validatePolicy(p); err != nil {
+			return err
+		}
+	}
+
+	for _, g := range file.Groups {
+		if err := validateGroup(g); err != nil {
+			return err
+		}
+	}
+
+	for _, u := range file.Users {
+		if err := validateUser(u); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func validateUser(u types.User) error {
