@@ -166,7 +166,7 @@ func deploy(ctx context.Context, client DeploySegmentClient, id string, requestP
 	return responseUpsert, nil
 }
 
-func createResolveEntity(id string, externalId string, properties parameter.Properties, c *config.Config) entities.ResolvedEntity {
+func createResolveEntity(id string, properties parameter.Properties, c *config.Config) entities.ResolvedEntity {
 	properties[config.IdParameter] = id
 	return entities.ResolvedEntity{
 		Coordinate: c.Coordinate,
