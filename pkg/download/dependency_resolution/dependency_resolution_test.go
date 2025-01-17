@@ -138,6 +138,41 @@ func TestDependencyResolution(t *testing.T) {
 			},
 		},
 		{
+			"no parameter created for false positive",
+			project.ConfigsPerType{
+				"api": []config.Config{
+					{
+						Type:       config.ClassicApiType{Api: "api"},
+						Template:   template.NewInMemoryTemplate("c1-id", "content"),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
+						Parameters: config.Parameters{},
+					},
+					{
+						Type:       config.ClassicApiType{Api: "api"},
+						Template:   template.NewInMemoryTemplate("c2-id", "something somethingc1-idsomething something"),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
+						Parameters: config.Parameters{},
+					},
+				},
+			},
+			project.ConfigsPerType{
+				"api": []config.Config{
+					{
+						Type:       config.ClassicApiType{Api: "api"},
+						Template:   template.NewInMemoryTemplate("c1-id", "content"),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
+						Parameters: config.Parameters{},
+					},
+					{
+						Type:       config.ClassicApiType{Api: "api"},
+						Template:   template.NewInMemoryTemplate("c2-id", "something somethingc1-idsomething something"),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
+						Parameters: config.Parameters{},
+					},
+				},
+			},
+		},
+		{
 			"referencing a Setting via objectID works",
 			project.ConfigsPerType{
 				"builtin:some-setting": []config.Config{
