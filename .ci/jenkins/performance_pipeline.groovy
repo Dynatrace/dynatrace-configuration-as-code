@@ -12,11 +12,12 @@ podTemplate(yaml: readTrusted('.ci/jenkins/agents/build-agent.yaml')) {
             }
             stage("get test data") {
                 git(credentialsId: 'bitbucket-buildmaster',
-                    url: 'https://bitbucket.lab.dynatrace.org/scm/claus/monaco-test-data.git',
-                    branch: 'main')
+                        url: 'https://bitbucket.lab.dynatrace.org/scm/claus/monaco-test-data.git',
+                        branch: 'main')
             }
             stage('purge tenant') {
-                monaco.purge()
+                echo "without purge"
+//                monaco.purge()
             }
         }
 
@@ -29,7 +30,8 @@ podTemplate(yaml: readTrusted('.ci/jenkins/agents/build-agent.yaml')) {
         } finally {
             container("monaco-build") {
                 stage('purge tenant') {
-                    monaco.purge()
+                    echo "without purge"
+//                    monaco.purge()
                 }
             }
         }
@@ -46,7 +48,7 @@ void buildMonaco() {
 void monacoBuild(String sourcePath) {
     String monacoBin = "${JENKINS_AGENT_WORKDIR}/monaco"
     sh(label: "build monaco",
-        script: """CGO_ENABLED=0
+            script: """CGO_ENABLED=0
                 go build
                   -a -tags=netgo -buildvcs=false
                   -ldflags=\"-X github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version.MonitoringAsCode=2.x -w -extldflags -static\"
@@ -59,11 +61,11 @@ void monacoBuild(String sourcePath) {
 void monacoPurge() {
     String monacoBin = "${JENKINS_AGENT_WORKDIR}/monaco"
     sh(label: "purge tenant",
-        script: "MONACO_ENABLE_DANGEROUS_COMMANDS=true ${monacoBin} purge --help")
+            script: "MONACO_ENABLE_DANGEROUS_COMMANDS=true ${monacoBin} purge --help")
 }
 
 void monacoDeploy() {
     String monacoBin = "${JENKINS_AGENT_WORKDIR}/monaco"
     sh(label: "monaco deploy",
-        script: " ${monacoBin} deploy --help")
+            script: " ${monacoBin} deploy --help")
 }
