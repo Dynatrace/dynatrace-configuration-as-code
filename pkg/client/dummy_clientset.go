@@ -17,18 +17,18 @@
 package client
 
 import (
-	context "context"
+	"context"
 	"fmt"
 	"net/http"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
-	buckets "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
-	documents "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
-	openpipeline "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	segments "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
-	dtclient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 )
 
 var DummyClientSet = ClientSet{
