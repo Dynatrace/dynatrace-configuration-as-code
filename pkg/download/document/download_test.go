@@ -252,6 +252,7 @@ func TestDownloader_Download(t *testing.T) {
 		result, err := Download(documentClient, "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
+		assert.True(t, true)
 
 		// expect no dashboards or notebooks
 		require.Len(t, result["document"], 0)
