@@ -24,7 +24,7 @@ podTemplate(yaml: readTrusted('.ci/jenkins/agents/build-agent.yaml')) {
         try {
             container("monaco-runner") {
                 stage("test") {
-                    monaco.deploy("small-set")
+                    monaco.deploy("small-set", false)
                 }
             }
         } finally {

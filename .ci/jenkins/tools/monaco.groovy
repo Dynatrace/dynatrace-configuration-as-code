@@ -23,7 +23,7 @@ secrets = [[path        : "keptn-jenkins/monaco/integration-tests/performance",
                 [envVar: 'TOKEN', vaultKey: 'TOKEN', isRequired: true]
             ]]]
 
-String build(String sourcePath) {
+void build(String sourcePath) {
     String monacoBin = "${JENKINS_AGENT_WORKDIR}/monaco"
     sh(label: "build monaco",
         script: """CGO_ENABLED=0
@@ -43,11 +43,15 @@ void purge() {
     }
 }
 
-void deploy(String project) {
+void deploy(String project, boolean ignoreReturnStatus = true) {
     String monacoBin = "${JENKINS_AGENT_WORKDIR}/monaco"
     withVault(vaultSecrets: secrets) {
-        sh(label: "monaco deploy",
+        status = sh(label: "monaco deploy",
+            returnStatus: true,
             script: " ${monacoBin} deploy manifest.yaml --project=${project}")
+        if (!ignoreReturnStatus) {
+            0 == status
+        }
     }
 }
 
