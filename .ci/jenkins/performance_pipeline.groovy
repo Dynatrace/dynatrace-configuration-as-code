@@ -1,4 +1,8 @@
-podTemplate(yaml: readTrusted('.ci/jenkins/agents/build-agent.yaml')) {
+podTemplate(
+    cloud: 'linux-amd64',
+    namespace: 'keptn-jenkins-slaves-ni',
+    yaml: readTrusted('.ci/jenkins/agents/build-agent.yaml')
+) {
     node(POD_LABEL) {
         stage("get source") {
             checkout scm
@@ -24,7 +28,7 @@ podTemplate(yaml: readTrusted('.ci/jenkins/agents/build-agent.yaml')) {
         try {
             container("monaco-runner") {
                 stage("test") {
-                    monaco.deploy("full-set", false)
+                    monaco.deploy("micro-set", false)
                 }
             }
         } finally {
