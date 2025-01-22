@@ -218,3 +218,40 @@ func TestProject_ForEveryConfigDo(t *testing.T) {
 		assert.Contains(t, actual, "config4")
 	})
 }
+
+func TestConfigsPerType_AllConfigs(t *testing.T) {
+
+	var (
+		c1 = config.Config{Coordinate: coordinate.Coordinate{Project: "project1", Type: "type1", ConfigId: "config1"}}
+		c2 = config.Config{Coordinate: coordinate.Coordinate{Project: "project1", Type: "type1", ConfigId: "config2"}}
+		c3 = config.Config{Coordinate: coordinate.Coordinate{Project: "project1", Type: "type2", ConfigId: "config1"}}
+	)
+
+	cpt := project.ConfigsPerType{
+		"type1": {c1, c2},
+		"type2": {c3},
+	}
+
+	t.Run("All items are yielded", func(t *testing.T) {
+		var result []config.Config
+		for c := range cpt.AllConfigs {
+			result = append(result, c)
+		}
+
+		assert.ElementsMatch(t, []config.Config{c1, c2, c3}, result)
+	})
+
+	t.Run("Returning after the second item does no longer iterate", func(t *testing.T) {
+		var result []config.Config
+		for c := range cpt.AllConfigs {
+			result = append(result, c)
+
+			if len(result) == 2 {
+				break
+			}
+		}
+
+		assert.Len(t, result, 2)
+	})
+
+}

@@ -21,22 +21,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"golang.org/x/exp/maps"
+
 	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	templateEscaper "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation/internal"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"golang.org/x/exp/maps"
-	"time"
 )
 
 var automationTypesToResources = map[config.AutomationType]automationAPI.ResourceType{
@@ -127,7 +129,7 @@ func Download(cl client.AutomationClient, projectName string, automationTypes ..
 func escapeJinjaTemplates(src []byte) ([]byte, error) {
 	var prettyJSON bytes.Buffer
 	err := json.Indent(&prettyJSON, src, "", "\t")
-	return internal.EscapeJinjaTemplates(prettyJSON.Bytes()), err
+	return templateEscaper.UseGoTemplatesForDoubleCurlyBraces(prettyJSON.Bytes()), err
 }
 
 func createTemplateFromRawJSON(obj automationutils.Response, configType, projectName string) (t template.Template, extractedName *string) {

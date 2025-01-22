@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package internal
+package template
 
-import "bytes"
+import (
+	"bytes"
+)
 
-// EscapeJinjaTemplates replaces each occurrence of "{{" with "{{`{{`}}" and each occurrence of "}}" with "{{`}}`}}"
-func EscapeJinjaTemplates(src []byte) []byte {
+// UseGoTemplatesForDoubleCurlyBraces replaces each occurrence of "{{" with "{{`{{`}}" and each occurrence of "}}" with "{{`}}`}}".
+// This ensures that when the returned string is used to render templates, e.g. during deployment, the "{{" and "}}" are not misinterpreted.
+func UseGoTemplatesForDoubleCurlyBraces(src []byte) []byte {
 	src = bytes.ReplaceAll(src, []byte("{{"), []byte("{{`{{`")) // replace is divided in 2 steps to avoid replacing of closing brackets in the next step
 	src = bytes.ReplaceAll(src, []byte("}}"), []byte("{{`}}`}}"))
 	src = bytes.ReplaceAll(src, []byte("{{`{{`"), []byte("{{`{{`}}"))

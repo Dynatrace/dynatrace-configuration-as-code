@@ -1099,6 +1099,66 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	assert.Equal(t, len(configs["settings-schema"]), 3, "Expected 3 settings objects")
 }
 
+func TestDownloadGoTemplateExpressionsAreEscaped(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-go-templating-expressions-are-escaped"
+	const testBasePath = "test-resources/" + projectName
+
+	// Responses
+	responses := map[string]string{
+		"/platform/classic/environment-api/v2/settings/schemas": "settings/__SCHEMAS.json",
+		"/platform/classic/environment-api/v2/settings/objects": "settings/objects.json",
+	}
+
+	// Server
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
+
+	fs := afero.NewMemMapFs()
+
+	opts := setupTestingDownloadOptions(t, server, projectName)
+	opts.onlySettings = false
+	opts.onlyAPIs = false
+
+	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
+
+	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
+	require.NoError(t, err)
+
+	err = doDownloadConfigs(fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, api.APIs{}, opts)
+	assert.NoError(t, err)
+
+	// THEN we can load the project again and verify its content
+	projects, errs := loadDownloadedProjects(fs, api.APIs{})
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
+		return
+	}
+
+	assert.Len(t, projects, 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Len(t, p.Configs, 1)
+
+	configsPerType, found := p.Configs[projectName]
+	assert.True(t, found)
+	assert.Equal(t, len(configsPerType), 1, "Expected one Settings schema to be downloaded")
+
+	settingsDownloaded, f := configsPerType["settings-schema"]
+	assert.True(t, f)
+	assert.Len(t, settingsDownloaded, 1, "Expected 1 settings object")
+
+	obj := settingsDownloaded[0]
+	content, err := obj.Template.Content()
+
+	assert.JSONEq(t, "{"+
+		"\"name\": \"SettingsTest-1\","+
+		"\"DQL\": \"fetch bizevents | FILTER like(event.type,\\\"platform.LoginEvent%\\\") | FIELDS CountryIso, Country | SUMMARIZE quantity = toDouble(count()), by:{{`{{`}}CountryIso, alias:countryIso}, {Country, alias:country{{`}}`}} | sort quantity desc\""+
+		"}", content)
+}
+
 func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 
 	// GIVEN apis, server responses, file system
