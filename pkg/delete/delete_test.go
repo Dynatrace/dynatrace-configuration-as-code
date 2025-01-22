@@ -37,7 +37,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
@@ -1149,32 +1148,8 @@ func TestDelete_Documents(t *testing.T) {
 	})
 }
 
-type fakeSegmentsClient struct{}
-
-var _ client.SegmentClient = (*fakeSegmentsClient)(nil)
-
-func (fakeSegmentsClient) List(ctx context.Context) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
-}
-
-func (fakeSegmentsClient) GetAll(ctx context.Context) ([]segments.Response, error) {
-	return []segments.Response{}, fmt.Errorf("unimplemented")
-}
-
-func (fakeSegmentsClient) Delete(ctx context.Context, id string) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
-}
-
-func (fakeSegmentsClient) Upsert(ctx context.Context, id string, data []byte) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
-}
-
-func (fakeSegmentsClient) Get(ctx context.Context, id string) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
-}
-
 func TestDelete_Segments(t *testing.T) {
-	c := fakeSegmentsClient{}
+	c := client.TestSegmentsClient{}
 	given := delete.DeleteEntries{
 		"segment": {
 			{
@@ -1201,7 +1176,7 @@ func TestDelete_Segments(t *testing.T) {
 }
 
 func TestDeleteAll_Segments(t *testing.T) {
-	c := fakeSegmentsClient{}
+	c := client.TestSegmentsClient{}
 
 	t.Run("With Enabled Segment FF", func(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "true")
