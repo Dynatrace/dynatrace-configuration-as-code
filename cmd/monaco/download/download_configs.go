@@ -26,7 +26,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -218,6 +220,20 @@ func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, apisToDownload 
 		return nil
 	}
 
+	for c := range downloadedConfigs.AllConfigs {
+		// We would need quite a huge refactoring to support Classic- and Automation-APIS here.
+		// Automation already also does what we do here, but does set custom {{.variables}} that we can't easily escape here.
+		// To fix this, it might be better do extract the variables at a later place instead of doing it before.
+		if c.Type.ID() == config.ClassicApiTypeID || c.Type.ID() == config.AutomationTypeID {
+			continue
+		}
+
+		err := escapeGoTemplating(&c)
+		if err != nil {
+			log.WithFields(field.Coordinate(c.Coordinate), field.Error(err)).Warn("Failed to escape Go templating expressions. Template needs manual adaptation: %s", err)
+		}
+	}
+
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs, err = dependency_resolution.ResolveDependencies(downloadedConfigs)
 	if err != nil {
@@ -232,6 +248,22 @@ func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, apisToDownload 
 	}
 
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
+}
+
+func escapeGoTemplating(c *config.Config) error {
+	content, err := c.Template.Content()
+	if err != nil {
+		return err
+	}
+
+	content = string(template.UseGoTemplatesForDoubleCurlyBraces([]byte(content)))
+
+	err = c.Template.UpdateContent(content)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type downloadFn struct {

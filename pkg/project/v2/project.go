@@ -134,3 +134,14 @@ func (cpt ConfigsPerType) ForEveryConfigDo(actions ...ActionOverConfig) {
 		}
 	}
 }
+
+// AllConfigs is an iterator iterating over all configs
+func (cpt ConfigsPerType) AllConfigs(yield func(config.Config) bool) {
+	for _, cs := range cpt {
+		for _, c := range cs {
+			if !yield(c) {
+				return
+			}
+		}
+	}
+}

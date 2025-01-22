@@ -1,0 +1,15 @@
+{
+    "items": [
+        {
+            "externalId": "abc",
+            "schemaVersion": "1",
+            "schemaId": "settings-schema",
+            "objectId": "so_1",
+            "scope": "test",
+            "value": {
+                "name": "SettingsTest-1",
+                "DQL": "fetch bizevents | FILTER like(event.type,\"platform.LoginEvent%\") | FIELDS CountryIso, Country | SUMMARIZE quantity = toDouble(count()), by:{{CountryIso, alias:countryIso}, {Country, alias:country}} | sort quantity desc"
+            }
+        }
+    ]
+}
