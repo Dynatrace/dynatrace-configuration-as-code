@@ -160,22 +160,22 @@ func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) 
 
 type DummySegmentClient struct{}
 
-func (c *DummySegmentClient) List(ctx context.Context) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
+func (c *DummySegmentClient) List(_ context.Context) (segments.Response, error) {
+	return segments.Response{}, nil
 }
 
-func (c *DummySegmentClient) GetAll(ctx context.Context) ([]segments.Response, error) {
-	return []segments.Response{}, fmt.Errorf("unimplemented")
+func (c *DummySegmentClient) GetAll(_ context.Context) ([]segments.Response, error) {
+	return []segments.Response{}, nil
 }
 
-func (c *DummySegmentClient) Delete(ctx context.Context, id string) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
+func (c *DummySegmentClient) Delete(_ context.Context, _ string) (segments.Response, error) {
+	return segments.Response{}, nil
 }
 
-func (c *DummySegmentClient) Upsert(ctx context.Context, id string, data []byte) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
+func (c *DummySegmentClient) Upsert(_ context.Context, _ string, _ []byte) (segments.Response, error) {
+	return segments.Response{}, nil
 }
 
-func (c *DummySegmentClient) Get(ctx context.Context, id string) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
+func (c *DummySegmentClient) Get(_ context.Context, _ string) (segments.Response, error) {
+	return segments.Response{}, nil
 }

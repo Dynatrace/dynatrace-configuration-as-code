@@ -1353,3 +1353,34 @@ func TestDeployConfigFF(t *testing.T) {
 		})
 	}
 }
+
+func TestDeployDryRun(t *testing.T) {
+	c := dynatrace.EnvironmentClients{
+		dynatrace.EnvironmentInfo{Name: "env", Group: "group"}: &client.DummyClientSet,
+	}
+	projects := []project.Project{
+		{
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"p1": {
+						config.Config{
+							Type:        config.Segment{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "segment",
+								ConfigId: "config1",
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+					},
+				},
+			},
+		},
+	}
+	t.Setenv(featureflags.Segments.EnvName(), "true")
+	t.Run("dry-run", func(t *testing.T) {
+		err := deploy.Deploy(context.Background(), projects, c, deploy.DeployConfigsOptions{DryRun: true})
+		assert.Empty(t, err)
+	})
+}
