@@ -68,7 +68,12 @@ func downloadDocumentsOfType(client client.DocumentClient, projectName string, d
 	}
 
 	var configs []config.Config
+
 	for _, response := range listResponse.Responses {
+		// skip downloading ready-made documents - these are presets that cannot be redeployed
+		if isReadyMadeByAnApp(response.Metadata) {
+			continue
+		}
 
 		config, err := convertDocumentResponse(client, projectName, response)
 		if err != nil {
@@ -81,6 +86,10 @@ func downloadDocumentsOfType(client client.DocumentClient, projectName string, d
 	log.WithFields(field.Type("document")).Debug("Downloaded %d documents of type '%s'", len(configs), documentType)
 
 	return configs
+}
+
+func isReadyMadeByAnApp(metadata documents.Metadata) bool {
+	return (metadata.OriginAppID != nil) && (len(*metadata.OriginAppID) > 0)
 }
 
 func convertDocumentResponse(client client.DocumentClient, projectName string, response documents.Response) (config.Config, error) {
