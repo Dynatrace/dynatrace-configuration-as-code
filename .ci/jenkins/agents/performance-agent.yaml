@@ -3,7 +3,7 @@ kind: Pod
 spec:
   containers:
     - name: monaco-build
-      image: golang:bookworm
+      image: golang
       imagePullPolicy: IfNotPresent
       command:
         - sleep
