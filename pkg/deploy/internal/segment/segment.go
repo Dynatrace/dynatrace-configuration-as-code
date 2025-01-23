@@ -38,6 +38,7 @@ import (
 type deploySegmentClient interface {
 	Upsert(ctx context.Context, id string, data []byte) (segment.Response, error)
 	GetAll(ctx context.Context) ([]segment.Response, error)
+	Get(ctx context.Context, id string) (segment.Response, error)
 }
 
 type jsonResponse struct {
@@ -58,12 +59,21 @@ func Deploy(ctx context.Context, client deploySegmentClient, properties paramete
 
 	//Strategy 1 when OriginObjectId is set we try to get the object if it exists we update it else we create it.
 	if c.OriginObjectId != "" {
-		id, err := deployWithOriginObjectId(ctx, client, c, requestPayload)
+		//@TODO this here is temporary code to enable deploy for segments
+		getResponse, err := client.Get(ctx, c.OriginObjectId)
 		if err != nil {
-			return entities.ResolvedEntity{}, fmt.Errorf("failed to deploy segment with externalId: %s : %w", externalId, err)
+			return entities.ResolvedEntity{}, err
 		}
 
-		return createResolveEntity(id, properties, c), nil
+		if getResponse.StatusCode != http.StatusNotFound {
+
+			id, err := deployWithOriginObjectId(ctx, client, c, requestPayload)
+			if err != nil {
+				return entities.ResolvedEntity{}, fmt.Errorf("failed to deploy segment with externalId: %s : %w", externalId, err)
+			}
+
+			return createResolveEntity(id, properties, c), nil
+		}
 	}
 
 	//Strategy 2 is to try to find a match with external id and either update or create object if no match found.

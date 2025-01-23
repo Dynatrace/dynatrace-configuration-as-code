@@ -36,6 +36,7 @@ import (
 type testClient struct {
 	upsertStub func() (segments.Response, error)
 	getAllStub func() ([]segments.Response, error)
+	getStub    func() (segments.Response, error)
 }
 
 func (tc *testClient) Upsert(_ context.Context, _ string, _ []byte) (segments.Response, error) {
@@ -44,6 +45,10 @@ func (tc *testClient) Upsert(_ context.Context, _ string, _ []byte) (segments.Re
 
 func (tc *testClient) GetAll(_ context.Context) ([]segments.Response, error) {
 	return tc.getAllStub()
+}
+
+func (tc *testClient) Get(_ context.Context, _ string) (segments.Response, error) {
+	return tc.getStub()
 }
 
 func TestDeploy(t *testing.T) {
@@ -56,6 +61,7 @@ func TestDeploy(t *testing.T) {
 		name           string
 		inputConfig    config.Config
 		upsertStub     func() (segments.Response, error)
+		getStub        func() (segments.Response, error)
 		getAllStub     func() ([]segments.Response, error)
 		expected       entities.ResolvedEntity
 		expectErr      bool
@@ -76,6 +82,11 @@ func TestDeploy(t *testing.T) {
 					StatusCode: http.StatusOK,
 				}, nil
 			},
+			getStub: func() (segments.Response, error) {
+				return segments.Response{
+					StatusCode: http.StatusOK,
+				}, nil
+			},
 			getAllStub: func() ([]segments.Response, error) {
 				t.Fatalf("should not be called")
 				return nil, nil
@@ -90,7 +101,7 @@ func TestDeploy(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "deploy with objectOriginId, no object found on remote - success POST",
+			name: "deploy with objectOriginId, no object found on remote - success PUT wia externalId",
 			inputConfig: config.Config{
 				Template:       template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate:     testCoordinate,
@@ -108,13 +119,41 @@ func TestDeploy(t *testing.T) {
 						"description": "post - update from monaco - change - 2",
 						"isPublic":    false,
 						"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
-						"externalId":  "project_segment:segment:some-id",
+						"externalId":  "monaco-e2320031-d6c6-3c83-9706-b3e82b834129",
 					}, t),
 				}, nil
 			},
+			getStub: func() (segments.Response, error) {
+				return segments.Response{
+					StatusCode: http.StatusNotFound,
+				}, nil
+			},
 			getAllStub: func() ([]segments.Response, error) {
-				t.Fatalf("should not be called")
-				return nil, nil
+				response := []segments.Response{
+					{
+						StatusCode: http.StatusOK,
+						Data: marshal(map[string]any{
+							"uid":         "JMhNaJ0Zbf9",
+							"name":        "no-match",
+							"description": "post - update from monaco - change - 2",
+							"isPublic":    false,
+							"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
+							"externalId":  "monaco-e2320031-d6c6-3c83-9706-b3e82b834129",
+						}, t),
+					},
+					{
+						StatusCode: http.StatusOK,
+						Data: marshal(map[string]any{
+							"uid":         "should-not-be-this-id",
+							"name":        "match",
+							"description": "post - update from monaco - change - 2",
+							"isPublic":    false,
+							"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
+							"externalId":  "not-a-match",
+						}, t),
+					},
+				}
+				return response, nil
 			},
 			expected: entities.ResolvedEntity{
 				Coordinate: testCoordinate,
@@ -134,6 +173,11 @@ func TestDeploy(t *testing.T) {
 				Type:           config.Segment{},
 				Parameters:     config.Parameters{},
 				Skip:           false,
+			},
+			getStub: func() (segments.Response, error) {
+				return segments.Response{
+					StatusCode: http.StatusOK,
+				}, nil
 			},
 			upsertStub: func() (segments.Response, error) {
 				return segments.Response{}, fmt.Errorf("error")
@@ -159,6 +203,11 @@ func TestDeploy(t *testing.T) {
 				return segments.Response{
 					StatusCode: http.StatusCreated,
 					Data:       []byte("invalid json"),
+				}, nil
+			},
+			getStub: func() (segments.Response, error) {
+				return segments.Response{
+					StatusCode: http.StatusOK,
 				}, nil
 			},
 			getAllStub: func() ([]segments.Response, error) {
@@ -265,7 +314,7 @@ func TestDeploy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := testClient{upsertStub: tt.upsertStub, getAllStub: tt.getAllStub}
+			c := testClient{upsertStub: tt.upsertStub, getAllStub: tt.getAllStub, getStub: tt.getStub}
 
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
