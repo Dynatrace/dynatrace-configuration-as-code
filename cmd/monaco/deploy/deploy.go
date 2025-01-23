@@ -192,28 +192,29 @@ func validateProjectsWithEnvironments(projects []project.Project, envs manifest.
 }
 
 func collectOpenPipelineCoordinatesByKind(cfgPerType v2.ConfigsPerType, dest KindCoordinates) {
-	cfgPerType.ForEveryConfigDo(func(cfg config.Config) {
+	for cfg := range cfgPerType.AllConfigs {
 		if cfg.Skip {
-			return
+			continue
 		}
 
 		if openPipelineType, ok := cfg.Type.(config.OpenPipelineType); ok {
 			dest[openPipelineType.Kind] = append(dest[openPipelineType.Kind], cfg.Coordinate)
 		}
-	})
+	}
 }
 
 func collectPlatformCoordinates(cfgPerType v2.ConfigsPerType) []coordinate.Coordinate {
 	plaformCoordinates := []coordinate.Coordinate{}
-	cfgPerType.ForEveryConfigDo(func(cfg config.Config) {
+
+	for cfg := range cfgPerType.AllConfigs {
 		if cfg.Skip {
-			return
+			continue
 		}
 
 		if configRequiresPlatform(cfg) {
 			plaformCoordinates = append(plaformCoordinates, cfg.Coordinate)
 		}
-	})
+	}
 	return plaformCoordinates
 }
 

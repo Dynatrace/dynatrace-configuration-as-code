@@ -118,17 +118,9 @@ func (p Project) ForEveryConfigInEnvironmentDo(environment string, action Action
 func (p Project) forEveryConfigDo(environment string, action ActionOverConfig) {
 	for env, cpt := range p.Configs {
 		if environment == "" || environment == env {
-			cpt.ForEveryConfigDo(action)
-		}
-	}
-}
-
-// ForEveryConfigDo executes the given ActionOverConfig actions for each configuration defined in the ConfigsPerType.
-// Actions can not modify the configs inside the ConfigsPerType.
-func (cpt ConfigsPerType) ForEveryConfigDo(action ActionOverConfig) {
-	for _, cs := range cpt {
-		for _, c := range cs {
-			action(c)
+			for c := range cpt.AllConfigs {
+				action(c)
+			}
 		}
 	}
 }
