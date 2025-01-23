@@ -35,7 +35,7 @@ import (
 	"github.com/go-logr/logr"
 )
 
-type DeploySegmentClient interface {
+type deploySegmentClient interface {
 	Upsert(ctx context.Context, id string, data []byte) (segment.Response, error)
 	GetAll(ctx context.Context) ([]segment.Response, error)
 }
@@ -46,7 +46,7 @@ type jsonResponse struct {
 	ExternalId string `json:"externalId"`
 }
 
-func Deploy(ctx context.Context, client DeploySegmentClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
+func Deploy(ctx context.Context, client deploySegmentClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	externalId, err := idutils.GenerateExternalIDForDocument(c.Coordinate)
 	if err != nil {
 		return entities.ResolvedEntity{}, err
@@ -85,7 +85,7 @@ func addExternalId(externalId string, renderedConfig string) ([]byte, error) {
 	return json.Marshal(request)
 }
 
-func deployWithExternalID(ctx context.Context, client DeploySegmentClient, externalId string, requestPayload []byte, c *config.Config) (string, error) {
+func deployWithExternalID(ctx context.Context, client deploySegmentClient, externalId string, requestPayload []byte, c *config.Config) (string, error) {
 	id := ""
 	responseData, match, err := findMatchOnRemote(ctx, client, externalId)
 	if err != nil {
@@ -109,7 +109,7 @@ func deployWithExternalID(ctx context.Context, client DeploySegmentClient, exter
 	return id, nil
 }
 
-func deployWithOriginObjectId(ctx context.Context, client DeploySegmentClient, c *config.Config, requestPayload []byte) (string, error) {
+func deployWithOriginObjectId(ctx context.Context, client deploySegmentClient, c *config.Config, requestPayload []byte) (string, error) {
 	responseUpsert, err := deploy(ctx, client, c.OriginObjectId, requestPayload, c)
 	if err != nil {
 		return "", err
@@ -130,7 +130,7 @@ func resolveIdFromResponse(responseUpsert segment.Response, id string) (string, 
 	return id, nil
 }
 
-func findMatchOnRemote(ctx context.Context, client DeploySegmentClient, externalId string) (jsonResponse, bool, error) {
+func findMatchOnRemote(ctx context.Context, client deploySegmentClient, externalId string) (jsonResponse, bool, error) {
 	segmentsResponses, err := client.GetAll(ctx)
 	if err != nil {
 		return jsonResponse{}, false, fmt.Errorf("failed to GET segments: %w", err)
@@ -150,7 +150,7 @@ func findMatchOnRemote(ctx context.Context, client DeploySegmentClient, external
 	return jsonResponse{}, false, nil
 }
 
-func deploy(ctx context.Context, client DeploySegmentClient, id string, requestPayload []byte, c *config.Config) (segment.Response, error) {
+func deploy(ctx context.Context, client deploySegmentClient, id string, requestPayload []byte, c *config.Config) (segment.Response, error) {
 	//create new context to carry logger
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
