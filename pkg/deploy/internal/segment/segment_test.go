@@ -192,7 +192,7 @@ func TestDeploy(t *testing.T) {
 							"description": "post - update from monaco - change - 2",
 							"isPublic":    false,
 							"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
-							"externalId":  "e2320031-d6c6-3c83-9706-b3e82b834129",
+							"externalId":  "monaco-e2320031-d6c6-3c83-9706-b3e82b834129",
 						}, t),
 					},
 					{

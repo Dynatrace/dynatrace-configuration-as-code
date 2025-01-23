@@ -47,7 +47,10 @@ type jsonResponse struct {
 }
 
 func Deploy(ctx context.Context, client DeploySegmentClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
-	externalId := idutils.GenerateUUIDFromCoordinate(c.Coordinate)
+	externalId, err := idutils.GenerateExternalIDForDocument(c.Coordinate)
+	if err != nil {
+		return entities.ResolvedEntity{}, err
+	}
 	requestPayload, err := addExternalId(externalId, renderedConfig)
 	if err != nil {
 		return entities.ResolvedEntity{}, fmt.Errorf("failed to add externalId to segments request payload: %w", err)
