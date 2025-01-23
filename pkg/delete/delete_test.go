@@ -1182,7 +1182,7 @@ func TestDeleteAll_Segments(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "true")
 
 		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
-		//Dummy client returns unimplemented error on every execution of any method
+		//fakeClient returns unimplemented error on every execution of any method
 		assert.Error(t, err, "unimplemented")
 	})
 
