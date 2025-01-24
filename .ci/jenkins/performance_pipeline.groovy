@@ -15,24 +15,11 @@ podTemplate(yaml: readTrusted('.ci/jenkins/agents/performance-agent.yaml')) {
                     url: 'https://bitbucket.lab.dynatrace.org/scm/claus/monaco-test-data.git',
                     branch: 'main')
             }
-            stage('purge tenant') {
-                echo "without purge"
-//                monaco.purge()
-            }
         }
 
-        try {
-            container("monaco-runner") {
-                stage("test") {
-                    monaco.deploy("full-set", false)
-                }
-            }
-        } finally {
-            container("monaco-build") {
-                stage('purge tenant') {
-                    echo "without purge"
-//                    monaco.purge()
-                }
+        container("monaco-runner") {
+            stage("test") {
+                monaco.deploy("full-set", false)
             }
         }
     }
