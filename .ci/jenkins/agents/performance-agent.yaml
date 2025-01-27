@@ -28,4 +28,4 @@ spec:
           memory: "1Gi"
         limits:
           cpu: "2"
-          memory: "16Gi"
+          memory: "4Gi"
