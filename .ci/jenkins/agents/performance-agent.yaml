@@ -3,7 +3,7 @@ kind: Pod
 spec:
   containers:
     - name: monaco-build
-      image: golang
+      image: docker-proxy.lab.dynatrace.org/library/golang
       imagePullPolicy: IfNotPresent
       command:
         - sleep
@@ -15,7 +15,7 @@ spec:
           cpu: "100m"
           memory: "100Mi"
     - name: monaco-runner
-      image: alpine
+      image: docker-proxy.lab.dynatrace.org/library/alpine
       imagePullPolicy: IfNotPresent
       command:
         - sleep
@@ -25,7 +25,7 @@ spec:
       resources:
         requests:
           cpu: "500m"
-          memory: "1Gi"
+          memory: "4Gi"
         limits:
           cpu: "2"
-          memory: "4Gi"
+          memory: "16Gi"
