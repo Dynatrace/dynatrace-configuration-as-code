@@ -170,7 +170,8 @@ type SegmentClient interface {
 	List(ctx context.Context) (segments.Response, error)
 	GetAll(ctx context.Context) ([]segments.Response, error)
 	Delete(ctx context.Context, id string) (segments.Response, error)
-	Upsert(ctx context.Context, id string, data []byte) (segments.Response, error)
+	Create(ctx context.Context, data []byte) (segments.Response, error)
+	Update(ctx context.Context, id string, data []byte) (segments.Response, error)
 	Get(ctx context.Context, id string) (segments.Response, error)
 }
 

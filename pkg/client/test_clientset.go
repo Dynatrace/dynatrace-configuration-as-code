@@ -37,8 +37,12 @@ func (TestSegmentsClient) Delete(ctx context.Context, id string) (segments.Respo
 	return segments.Response{}, fmt.Errorf("unimplemented")
 }
 
-func (TestSegmentsClient) Upsert(ctx context.Context, id string, data []byte) (segments.Response, error) {
+func (TestSegmentsClient) Update(ctx context.Context, id string, data []byte) (segments.Response, error) {
 	return segments.Response{}, fmt.Errorf("unimplemented")
+}
+
+func (TestSegmentsClient) Create(ctx context.Context, data []byte) (segments.Response, error) {
+	return segments.Response{}, nil
 }
 
 func (TestSegmentsClient) Get(ctx context.Context, id string) (segments.Response, error) {

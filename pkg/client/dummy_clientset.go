@@ -172,7 +172,11 @@ func (c *DummySegmentClient) Delete(_ context.Context, _ string) (segments.Respo
 	return segments.Response{}, nil
 }
 
-func (c *DummySegmentClient) Upsert(_ context.Context, _ string, _ []byte) (segments.Response, error) {
+func (c *DummySegmentClient) Create(_ context.Context, _ []byte) (segments.Response, error) {
+	return segments.Response{Data: []byte(`{}`)}, nil
+}
+
+func (c *DummySegmentClient) Update(_ context.Context, _ string, _ []byte) (segments.Response, error) {
 	return segments.Response{}, nil
 }
 
