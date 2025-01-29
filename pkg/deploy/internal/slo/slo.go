@@ -24,6 +24,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-logr/logr"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -31,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/go-logr/logr"
 )
 
 type deployServiceLevelObjectiveClient interface {
@@ -46,7 +47,7 @@ type sloResponse struct {
 }
 
 func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
-	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
+	ctx = logr.NewContextWithSlogLogger(ctx, log.WithCtxFields(ctx).SLogger())
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 

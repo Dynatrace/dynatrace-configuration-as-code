@@ -18,7 +18,6 @@ package logging
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
@@ -28,9 +27,8 @@ func LogProjectsInfo(projects []project.Project) {
 	for _, p := range projects {
 		log.Info("  - %s", p)
 	}
-	if log.Level() == loggers.LevelDebug {
-		logConfigInfo(projects)
-	}
+
+	logConfigInfo(projects)
 }
 
 func logConfigInfo(projects []project.Project) {
