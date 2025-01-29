@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"golang.org/x/net/context"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
@@ -29,7 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	"golang.org/x/net/context"
 )
 
 type client interface {
@@ -51,17 +52,17 @@ func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) erro
 			bucketName = idutils.GenerateBucketName(e.AsCoordinate())
 		}
 
-		logger.Debug("Deleting bucket: %s.", e, bucketName)
+		logger.Debug("Deleting bucket: %s", bucketName)
 		_, err := c.Delete(ctx, bucketName)
 		if err != nil {
 			var apiErr api.APIError
 			if errors.As(err, &apiErr) {
 				if apiErr.StatusCode != http.StatusNotFound {
-					logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration - rejected by API: %v", e, bucketName, err)
+					logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration '%s': %v", bucketName, err)
 					deleteErrs++
 				}
 			} else {
-				logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration - network error: %v", e, bucketName, err)
+				logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration '%s': %v", bucketName, err)
 				deleteErrs++
 			}
 		}

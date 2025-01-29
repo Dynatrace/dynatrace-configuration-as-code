@@ -106,7 +106,7 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 			if clients.SegmentClient != nil {
 				return segment.Delete(ctx, clients.SegmentClient, entries)
 			}
-			log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d %s configuration(s) as API client was unavailable.", config.SegmentID, len(entries))
+			log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Segment configuration(s) as API client was unavailable.", len(entries))
 		}
 	} else {
 		if clients.SettingsClient != nil {

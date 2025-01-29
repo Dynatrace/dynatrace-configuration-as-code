@@ -286,7 +286,7 @@ func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Projec
 
 		nameOfRefCfg, err := refCfgNamParamVal.ResolveValue(parameter.ResolveContext{})
 		if err != nil {
-			log.Warn("Unable to create delete entry for %s: %v", err)
+			log.Warn("Unable to create delete entry for '%s': %v", c.Coordinate, err)
 			return persistence.DeleteEntry{}, err
 		}
 
