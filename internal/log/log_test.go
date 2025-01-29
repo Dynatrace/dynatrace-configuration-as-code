@@ -22,14 +22,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
+	"fmt"
 	"os"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
 func TestPrepareLogging(t *testing.T) {
@@ -132,12 +134,15 @@ func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 
 func TestWithFields(t *testing.T) {
 	logSpy := bytes.Buffer{}
-	setDefaultLogger(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy})
+
+	t.Setenv("MONACO_LOG_FORMAT", "true")
+	PrepareLogging(afero.NewOsFs(), false, &logSpy, false)
+
 	WithFields(
-		field.Field{"Title", "Captain"},
-		field.Field{"Name", "Iglo"},
-		field.Coordinate(coordinate.Coordinate{"p1", "t1", "c1"}),
-		field.Environment("env1", "group")).Info("Logging with %s", "fields")
+		field.Field{Key: "Title", Value: "Captain"},
+		field.Field{Key: "Name", Value: "Iglo"},
+		field.Coordinate(coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}),
+		field.Environment("env1", "group")).Info(fmt.Sprintf("Logging with %s", "fields"))
 
 	var data map[string]interface{}
 	err := json.Unmarshal(logSpy.Bytes(), &data)
@@ -155,8 +160,11 @@ func TestWithFields(t *testing.T) {
 
 func TestFromCtx(t *testing.T) {
 	logSpy := bytes.Buffer{}
-	setDefaultLogger(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy})
-	c := coordinate.Coordinate{"p1", "t1", "c1"}
+
+	t.Setenv("MONACO_LOG_FORMAT", "true")
+	PrepareLogging(afero.NewOsFs(), false, &logSpy, false)
+
+	c := coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}
 	e := "e1"
 	g := "g"
 
