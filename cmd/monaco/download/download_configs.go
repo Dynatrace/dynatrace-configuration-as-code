@@ -359,13 +359,15 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 
 	if featureflags.Segments.Enabled() {
 		if shouldDownloadSegments(opts) {
-			segmentCgfs, err := fn.segmentDownload(clientSet.SegmentClient, opts.projectName)
-			if err != nil {
-				return nil, err
+			if opts.auth.OAuth != nil {
+				segmentCgfs, err := fn.segmentDownload(clientSet.SegmentClient, opts.projectName)
+				if err != nil {
+					return nil, err
+				}
+				copyConfigs(configs, segmentCgfs)
+			} else if opts.onlySegment {
+				return nil, errors.New("can't download segment resources: no OAuth credentials configured")
 			}
-			copyConfigs(configs, segmentCgfs)
-		} else if opts.onlySegment {
-			return nil, errors.New("can't download segment resources: no OAuth credentials configured")
 		}
 	}
 
