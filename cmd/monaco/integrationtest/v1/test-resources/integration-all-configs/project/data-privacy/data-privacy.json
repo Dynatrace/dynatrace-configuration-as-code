@@ -1,6 +1,0 @@
-{
- "logAuditEvents": false,
- "maskIpAddressesAndGpsCoordinates": true,
- "maskPersonalDataInUris": false,
- "maskUserActionNames": false
-}

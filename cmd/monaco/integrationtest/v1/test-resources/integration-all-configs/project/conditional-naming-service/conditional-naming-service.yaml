@@ -1,5 +1,0 @@
-config:
-  - service-naming: "service-naming.json"
-
-service-naming:
-  - name: "Prepend Namespace"

@@ -1,5 +1,0 @@
-config:
-- low-disk: low-disk.json
-
-low-disk:
-- name: low-disk

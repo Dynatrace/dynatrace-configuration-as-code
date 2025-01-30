@@ -563,11 +563,6 @@ func toConfigDefinition(context *serializerContext, cfg config.Config) (persiste
 		errs = append(errs, err)
 	}
 
-	skipParam, err := parseSkipParameter(&detailedContext, cfg)
-	if err != nil {
-		errs = append(errs, err)
-	}
-
 	params, convertErrs := convertParameters(&detailedContext, cfg.Parameters)
 
 	errs = append(errs, convertErrs...)
@@ -586,21 +581,9 @@ func toConfigDefinition(context *serializerContext, cfg config.Config) (persiste
 		Name:           nameParam,
 		Parameters:     params,
 		Template:       filepath.ToSlash(configTemplatePath),
-		Skip:           skipParam,
+		Skip:           cfg.Skip,
 		OriginObjectId: cfg.OriginObjectId,
 	}, templ, nil
-}
-
-func parseSkipParameter(d *detailedSerializerContext, cfg config.Config) (persistence.ConfigParameter, error) {
-	if cfg.SkipForConversion == nil {
-		return cfg.Skip, nil
-	}
-
-	skipDefinition, err := toParameterDefinition(d, config.SkipParameter, cfg.SkipForConversion)
-	if err != nil {
-		return nil, fmtDetailedConfigWriterError(d.serializerContext, "failed to serialize skip parameter: %w", err)
-	}
-	return skipDefinition, nil
 }
 
 func extractTemplate(context *detailedSerializerContext, cfg config.Config) (string, configTemplate, error) {

@@ -17,17 +17,20 @@
 package completion
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
-	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/spf13/pflag"
-	"golang.org/x/exp/maps"
 	"os"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/spf13/pflag"
+	"golang.org/x/exp/maps"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
 
 func DeleteCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
@@ -85,14 +88,6 @@ func listEnvVarNames() []string {
 		names[i] = strings.Split(e, "=")[0]
 	}
 	return names
-}
-
-func ConvertCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
-	if len(args) == 0 {
-		return EnvironmentFile()
-	} else {
-		return make([]string, 0), cobra.ShellCompDirectiveFilterDirs
-	}
 }
 
 func AllAvailableApis(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
@@ -162,10 +157,6 @@ func YamlFile(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellComp
 
 func DeleteFile() ([]string, cobra.ShellCompDirective) {
 	return deepFileSearch(".", "delete.yaml"), cobra.ShellCompDirectiveDefault
-}
-
-func EnvironmentFile() ([]string, cobra.ShellCompDirective) {
-	return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 }
 
 func deepFileSearch(root, ext string) []string {

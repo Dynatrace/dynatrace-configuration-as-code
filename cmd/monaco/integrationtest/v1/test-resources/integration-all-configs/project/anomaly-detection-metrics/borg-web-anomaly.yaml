@@ -1,6 +1,0 @@
-config:
-  - 5xx-errors: "5xxErrors.json"
-
-5xx-errors:
-  - name: "Borg 5xx Errors"
-  - tag: "/project/auto-tag/application-tagging.name"

@@ -19,18 +19,10 @@ package template
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/regex"
 	"reflect"
-	"strings"
-)
 
-// EscapeSpecialCharacters takes a map of config properties (some level of map (of maps...) of string) and
-// escapes any newline characters in it
-// Note: this is in use in both v1 config templating
-func EscapeSpecialCharacters(properties map[string]interface{}) (map[string]interface{}, error) {
-	return escapeSpecialCharactersInMap(properties, escapeSimpleCharacters)
-}
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+)
 
 func escapeSpecialCharactersInMap(properties map[string]interface{}, escapeFunc StringEscapeFunction) (map[string]interface{}, error) {
 	escapedProperties := make(map[string]interface{}, len(properties))
@@ -82,18 +74,8 @@ func escapeCharactersForStringMap(properties map[string]string, escapeFunc Strin
 
 type StringEscapeFunction func(string) (string, error)
 
-// SimpleStringEscapeFunction only escapes newline characters in an input string
-var SimpleStringEscapeFunction = escapeSimpleCharacters
-
 // FullStringEscapeFunction fully escapes any special characters in the input string, ensure it is valid for use in JSON
 var FullStringEscapeFunction = escapeCharactersForJson
-
-func escapeSimpleCharacters(rawString string) (string, error) {
-	if regex.IsListDefinition(rawString) {
-		return rawString, nil
-	}
-	return escapeNewlines(rawString), nil
-}
 
 // escapeCharactersForJson ensures a string can be placed into a json by just marshalling it to json.
 // This will escape anything that needs to be escaped - but explicitly excludes strings that are of string list format.
@@ -124,9 +106,4 @@ func marshalWithoutEscapeHTML(v any) ([]byte, error) {
 	buf := buffer.Bytes()
 	// Encoder.Encode adds a new \n to the bytes, which json.Marshal does not
 	return buf[:len(buf)-1], nil
-}
-
-// escapeNewlines only escapes newline characters in an input string by replacing all occurrences with a raw \n
-func escapeNewlines(rawString string) string {
-	return strings.ReplaceAll(rawString, "\n", `\n`)
 }
