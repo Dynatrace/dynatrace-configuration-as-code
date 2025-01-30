@@ -1,4 +1,0 @@
-config:
-- content-resources: content-resources.json
-content-resources:
-- name: content-resources

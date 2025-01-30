@@ -75,7 +75,6 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Empty(t, actual.Group)
 		assert.Empty(t, actual.Environment)
 		assert.Empty(t, actual.Parameters)
-		assert.Empty(t, actual.SkipForConversion)
 	})
 
 	t.Run("segment without uio is ignored", func(t *testing.T) {

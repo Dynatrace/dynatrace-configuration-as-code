@@ -22,14 +22,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"os"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestPrepareLogging(t *testing.T) {

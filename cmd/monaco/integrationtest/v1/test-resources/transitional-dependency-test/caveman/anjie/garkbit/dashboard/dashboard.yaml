@@ -1,6 +1,0 @@
-config:
-  - garkbit-dashboard: "/trillian/dashboard/overview-dashboard.json"
-
-garkbit-dashboard:
-  - name: "Garkbit dashboard"
-  - mzone: "management-zone/garkbit-zone.name"
