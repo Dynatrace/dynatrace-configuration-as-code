@@ -17,17 +17,18 @@
 package client
 
 import (
-	context "context"
+	"context"
 	"fmt"
 	"net/http"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
-	buckets "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
-	documents "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
-	openpipeline "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	dtclient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 )
 
 var DummyClientSet = ClientSet{
@@ -37,6 +38,7 @@ var DummyClientSet = ClientSet{
 	BucketClient:       &DummyBucketClient{},
 	DocumentClient:     &DummyDocumentClient{},
 	OpenPipelineClient: &DummyOpenPipelineClient{},
+	SegmentClient:      &DummySegmentClient{},
 }
 
 var _ AutomationClient = (*DummyAutomationClient)(nil)
@@ -154,4 +156,30 @@ func (c *DummyOpenPipelineClient) GetAll(ctx context.Context) ([]coreapi.Respons
 
 func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) (openpipeline.Response, error) {
 	return openpipeline.Response{}, nil
+}
+
+type DummySegmentClient struct{}
+
+func (c *DummySegmentClient) List(_ context.Context) (segments.Response, error) {
+	return segments.Response{}, nil
+}
+
+func (c *DummySegmentClient) GetAll(_ context.Context) ([]segments.Response, error) {
+	return []segments.Response{}, nil
+}
+
+func (c *DummySegmentClient) Delete(_ context.Context, _ string) (segments.Response, error) {
+	return segments.Response{}, nil
+}
+
+func (c *DummySegmentClient) Create(_ context.Context, _ []byte) (segments.Response, error) {
+	return segments.Response{Data: []byte(`{}`)}, nil
+}
+
+func (c *DummySegmentClient) Update(_ context.Context, _ string, _ []byte) (segments.Response, error) {
+	return segments.Response{}, nil
+}
+
+func (c *DummySegmentClient) Get(_ context.Context, _ string) (segments.Response, error) {
+	return segments.Response{}, nil
 }

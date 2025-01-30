@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
@@ -1297,4 +1299,88 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 		assert.Equal(t, 1, depErr.ErrorCount, "Expected one deployment error to be counted")
 	})
 
+}
+
+func TestDeployConfigFF(t *testing.T) {
+	dummyClientSet := client.ClientSet{SegmentClient: client.TestSegmentsClient{}}
+	c := dynatrace.EnvironmentClients{
+		dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
+	}
+	tests := []struct {
+		name              string
+		projects          []project.Project
+		featureFlag       string
+		configType        config.TypeID
+		expectedErrString string
+	}{
+		{
+			name: "segments FF test",
+			projects: []project.Project{
+				{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env": project.ConfigsPerType{
+							"p1": {
+								config.Config{
+									Type:        config.Segment{},
+									Environment: "env",
+									Coordinate: coordinate.Coordinate{
+										Project:  "p1",
+										Type:     "type",
+										ConfigId: "config1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			featureFlag: featureflags.Segments.EnvName(),
+			configType:  config.SegmentID,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+" | FF Enabled", func(t *testing.T) {
+			t.Setenv(tt.featureFlag, "true")
+			err := deploy.Deploy(context.Background(), tt.projects, c, deploy.DeployConfigsOptions{})
+			//fakeClient returns unimplemented error on every execution of any method
+			assert.Errorf(t, err, "unimplemented")
+		})
+		t.Run(tt.name+" | FF Disabled", func(t *testing.T) {
+			t.Setenv(tt.featureFlag, "false")
+			err := deploy.Deploy(context.Background(), tt.projects, c, deploy.DeployConfigsOptions{})
+			assert.Errorf(t, err, fmt.Sprintf("unknown config-type (ID: %q)", tt.configType))
+		})
+	}
+}
+
+func TestDeployDryRun(t *testing.T) {
+	c := dynatrace.EnvironmentClients{
+		dynatrace.EnvironmentInfo{Name: "env", Group: "group"}: &client.DummyClientSet,
+	}
+	projects := []project.Project{
+		{
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"p1": {
+						config.Config{
+							Type:        config.Segment{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "segment",
+								ConfigId: "config1",
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+					},
+				},
+			},
+		},
+	}
+	t.Setenv(featureflags.Segments.EnvName(), "true")
+	t.Run("dry-run", func(t *testing.T) {
+		err := deploy.Deploy(context.Background(), projects, c, deploy.DeployConfigsOptions{DryRun: true})
+		assert.Empty(t, err)
+	})
 }

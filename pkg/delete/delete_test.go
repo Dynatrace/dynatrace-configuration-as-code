@@ -37,7 +37,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
@@ -1149,93 +1148,48 @@ func TestDelete_Documents(t *testing.T) {
 	})
 }
 
-type segmentStubClient struct {
-	called bool
-	list   func() (segments.Response, error)
-	getAll func() ([]segments.Response, error)
-	delete func() (segments.Response, error)
-}
-
-func (c *segmentStubClient) List(_ context.Context) (segments.Response, error) {
-	return c.list()
-}
-
-func (c *segmentStubClient) GetAll(_ context.Context) ([]segments.Response, error) {
-	return c.getAll()
-}
-
-func (c *segmentStubClient) Delete(_ context.Context, _ string) (segments.Response, error) {
-	c.called = true
-	return c.delete()
-}
-
 func TestDelete_Segments(t *testing.T) {
-	t.Run("simple case", func(t *testing.T) {
+	c := client.TestSegmentsClient{}
+	given := delete.DeleteEntries{
+		"segment": {
+			{
+				Type:           "segment",
+				OriginObjectId: "originObjectID",
+			},
+		},
+	}
+
+	t.Run("With Enabled Segment FF", func(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "true")
 
-		c := segmentStubClient{
-			delete: func() (segments.Response, error) {
-				return segments.Response{StatusCode: http.StatusOK}, nil
-			},
-		}
-
-		given := delete.DeleteEntries{
-			"segment": {
-				{
-					Type:           "segment",
-					OriginObjectId: "originObjectID",
-				},
-			},
-		}
 		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: &c}, given)
-		assert.NoError(t, err)
-		assert.True(t, c.called, "delete should have been called")
+		//DummyClient returns unimplemented error on every execution of any method
+		assert.Error(t, err, "unimplemented")
 	})
 
-	t.Run("simple case with FF turned off", func(t *testing.T) {
+	t.Run("With Disabled Segment FF", func(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "false")
 
-		c := segmentStubClient{}
-
-		given := delete.DeleteEntries{
-			"segment": {
-				{
-					Type:           "segment",
-					OriginObjectId: "originObjectID",
-				},
-			},
-		}
 		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: &c}, given)
 		assert.NoError(t, err)
-		assert.False(t, c.called, "delete should not have been called")
 	})
 }
 
 func TestDeleteAll_Segments(t *testing.T) {
-	t.Run("simple case", func(t *testing.T) {
+	c := client.TestSegmentsClient{}
+
+	t.Run("With Enabled Segment FF", func(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "true")
 
-		c := segmentStubClient{
-			list: func() (segments.Response, error) {
-				return segments.Response{StatusCode: http.StatusOK, Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
-			},
-			delete: func() (segments.Response, error) {
-				return segments.Response{StatusCode: http.StatusOK}, nil
-			},
-		}
-
 		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
-		assert.NoError(t, err)
-		assert.True(t, c.called, "delete should have been called")
+		//fakeClient returns unimplemented error on every execution of any method
+		assert.Error(t, err, "unimplemented")
 	})
 
-	t.Run("FF is turned off", func(t *testing.T) {
+	t.Run("With Disabled Segment FF", func(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "false")
-
-		c := segmentStubClient{}
 
 		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
 		assert.NoError(t, err)
-		assert.False(t, c.called, "delete should not have been called")
 	})
 }
