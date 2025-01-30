@@ -19,10 +19,12 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
+
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 )
 
 type ProjectDefinition struct {
@@ -97,7 +99,7 @@ type AuthSecret struct {
 	// where the value is not resolved, but the env-name has to be kept.
 	Name string
 
-	// Value holds the actual token value for the given [Name]. It is empty when converting vom monaco-v1 to monaco-v2
+	// Value holds the actual token value for the given [Name].
 	Value secret.MaskedString
 }
 

@@ -1,6 +1,0 @@
-
-config:
-  - application-tagging-multiproject: "/cinema-infrastructure/auto-tag/application-tagging.json"
-
-application-tagging-multiproject:
-  - name: "Test Movies Multiproject"

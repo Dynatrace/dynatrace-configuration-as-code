@@ -17,15 +17,17 @@
 package deploy
 
 import (
+	"path/filepath"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
 )
 
 func Test_DoDeploy_InvalidManifest(t *testing.T) {
@@ -370,7 +372,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 func createOpenPipelineConfigForTest(configId string, kind string, project string) config.Config {
 	return config.Config{
-		Template: template.NewInMemoryTemplateWithPath("a.json", ""),
+		Template: template.NewInMemoryTemplate("a.json", ""),
 		Coordinate: coordinate.Coordinate{
 			Project:  project,
 			Type:     "openpipeline",

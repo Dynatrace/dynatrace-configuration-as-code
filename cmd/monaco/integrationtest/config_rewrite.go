@@ -1,4 +1,4 @@
-//go:build integration || integration_v1 || cleanup || download_restore || unit || nightly
+//go:build integration || cleanup || download_restore || unit || nightly
 
 /*
  * @license
@@ -26,8 +26,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
 	"github.com/spf13/afero"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
 )
 
 func GenerateTestSuffix(t *testing.T, generalSuffix string) string {
