@@ -28,6 +28,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
@@ -135,7 +136,7 @@ func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 func TestWithFields(t *testing.T) {
 	logSpy := bytes.Buffer{}
 
-	t.Setenv("MONACO_LOG_FORMAT", "true")
+	t.Setenv("MONACO_LOG_FORMAT", "json")
 	PrepareLogging(afero.NewOsFs(), false, &logSpy, false)
 
 	WithFields(
@@ -146,7 +147,7 @@ func TestWithFields(t *testing.T) {
 
 	var data map[string]interface{}
 	err := json.Unmarshal(logSpy.Bytes(), &data)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Logging with fields", data["msg"])
 	assert.Equal(t, "Captain", data["Title"])
 	assert.Equal(t, "Iglo", data["Name"])
@@ -161,7 +162,7 @@ func TestWithFields(t *testing.T) {
 func TestFromCtx(t *testing.T) {
 	logSpy := bytes.Buffer{}
 
-	t.Setenv("MONACO_LOG_FORMAT", "true")
+	t.Setenv("MONACO_LOG_FORMAT", "json")
 	PrepareLogging(afero.NewOsFs(), false, &logSpy, false)
 
 	c := coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}
@@ -173,7 +174,7 @@ func TestFromCtx(t *testing.T) {
 
 	var data map[string]interface{}
 	err := json.Unmarshal(logSpy.Bytes(), &data)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Hi with context", data["msg"])
 	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["project"])
 	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["type"])
