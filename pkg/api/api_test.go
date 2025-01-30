@@ -29,9 +29,3 @@ func Test_configEndpoints(t *testing.T) {
 		v.TestConfiguredApi(t)
 	}
 }
-
-func Test_configEndpointsV1(t *testing.T) {
-	for _, v := range api.NewV1APIs() {
-		v.TestConfiguredApi(t)
-	}
-}

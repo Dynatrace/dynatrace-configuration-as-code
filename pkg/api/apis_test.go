@@ -21,25 +21,15 @@ package api_test
 import (
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/converter/v1environment"
 	"github.com/stretchr/testify/assert"
-)
 
-var testDevEnvironment = v1environment.NewEnvironmentV1("development", "Dev", "", "https://url/to/dev/environment", "DEV")
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+)
 
 func TestNewApis(t *testing.T) {
 	apis := api.NewAPIs()
 
 	assert.Contains(t, apis, "notification", "Expected `notification` key in KnownApis")
-}
-
-func TestContains(t *testing.T) {
-	apis := api.NewAPIs()
-	assert.True(t, apis.Contains("alerting-profile"))
-	assert.False(t, apis.Contains("something"))
-
-	assert.False(t, api.APIs{}.Contains("something"))
 }
 
 func TestApiMapFilter(t *testing.T) {

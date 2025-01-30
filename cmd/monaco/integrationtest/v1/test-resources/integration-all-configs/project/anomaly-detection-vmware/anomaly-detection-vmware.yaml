@@ -1,4 +1,0 @@
-config:
-- anomaly-detection-vmware: anomaly-detection-vmware.json
-anomaly-detection-vmware:
-- name: anomaly-detection-vmware

@@ -19,34 +19,11 @@
 package timeutils
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
-
-func TestStringTimestampToHumanReadableFormatWithAValidTimestamp(t *testing.T) {
-
-	_, parsedTimestamp, err := StringTimestampToHumanReadableFormat("0") // time travel to the 70s
-
-	require.NoError(t, err)
-	assert.Equal(t, 0, int(parsedTimestamp))
-}
-
-func TestStringTimestampToHumanReadableFormatWithAnInvalidTimestampShouldProduceError(t *testing.T) {
-
-	_, _, err := StringTimestampToHumanReadableFormat("abc")
-	require.ErrorContains(t, err, "is not a valid unix timestamp")
-}
-
-func TestMicrosecondsConversionToUnixTimeResultsInSameValueAfterConversion(t *testing.T) {
-
-	unixTime := ConvertMicrosecondsToUnixTime(123456789)
-
-	assert.Equal(t, 2, unixTime.Minute()) // 120 seconds
-	assert.Equal(t, 3, unixTime.Second()) // 3 seconds (120 + 3 = 123 from above)
-	assert.Equal(t, 456789000, unixTime.Nanosecond())
-}
 
 func TestTimelineProviderReturnsUTC(t *testing.T) {
 

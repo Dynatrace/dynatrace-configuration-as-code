@@ -62,6 +62,7 @@ func NewInMemoryTemplate(id, content string) Template {
 
 // NewInMemoryTemplateWithPath creates a new InMemoryTemplate with a dedicated path it should be written to if persisted.
 // To create a simple InMemoryTemplate without filepath, use NewInMemoryTemplate.
+// Deprecated: Don't use anymore: Only used written to in tests, and used once for reading.
 func NewInMemoryTemplateWithPath(filepath, content string) Template {
 	return &InMemoryTemplate{
 		path:    &filepath,

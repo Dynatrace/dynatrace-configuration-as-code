@@ -1,6 +1,0 @@
-config:
-  - ondemand-analysis-requestid: "ondemand-analysis.json"
-
-ondemand-analysis-requestid:
-  - name: "On-Demand Analysis - requestId"
-  - enabled: "false"

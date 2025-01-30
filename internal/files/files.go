@@ -92,9 +92,3 @@ func FindYamlFiles(fs afero.Fs, root string) ([]string, error) {
 
 	return configFiles, err
 }
-
-func ReplacePathSeparators(path string) (newPath string) {
-	newPath = strings.ReplaceAll(path, "\\", string(os.PathSeparator))
-	newPath = strings.ReplaceAll(newPath, "/", string(os.PathSeparator))
-	return newPath
-}

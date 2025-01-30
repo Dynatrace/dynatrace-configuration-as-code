@@ -91,10 +91,6 @@ type Config struct {
 	// Skip flag indicates if the deployment of this configuration should be skipped. It is resolved during project loading.
 	Skip bool
 
-	// SkipForConversion is only used for converting v1-configs to v2-configs.
-	// It is required as the object itself does only store the resolved 'skip' value, not the actual parameter.
-	SkipForConversion parameter.Parameter
-
 	// OriginObjectId is the DT object ID of the object when it was downloaded from an environment
 	OriginObjectId string
 }

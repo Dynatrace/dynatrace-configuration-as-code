@@ -1,4 +1,0 @@
-config:
-- geo-ip-detection-headers: geo-ip-detection-headers.json
-geo-ip-detection-headers:
-- name: geo-ip-detection-headers

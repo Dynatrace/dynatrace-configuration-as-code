@@ -1,4 +1,0 @@
-config:
-- anomaly-detection-aws: anomaly-detection-aws.json
-anomaly-detection-aws:
-- name: anomaly-detection-aws

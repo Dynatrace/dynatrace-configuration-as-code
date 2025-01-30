@@ -1,6 +1,0 @@
-
-config:
-  - mobile-application: "mobile-application.json"
-
-mobile-application:
-  - name: "BORG Mobile Application"

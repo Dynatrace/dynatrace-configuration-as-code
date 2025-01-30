@@ -19,11 +19,6 @@ pipeline {
             }
         }
 
-        stage("🧓 Integration test (legacy)") {
-            steps {
-                executeWithSecrets(cmd: 'make integration-test-v1')
-            }
-        }
 
         stage("📥/📤 Download/Restore test") {
             steps {

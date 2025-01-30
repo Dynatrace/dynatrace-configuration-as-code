@@ -18,9 +18,9 @@ package errutils
 
 import (
 	"errors"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"os"
 )
 
 type PrettyPrintableError interface {
@@ -58,28 +58,12 @@ func PrintErrors(errors []error) {
 	}
 }
 
-func FailOnError(err error, msg string) {
-	if err != nil {
-		log.Fatal(msg + ": " + err.Error())
-		os.Exit(1)
-	}
-}
-
 func CheckError(err error, msg string) bool {
 	if err != nil {
 		log.WithFields(field.Error(err)).Error(msg + ": " + err.Error())
 		return true
 	}
 	return false
-}
-
-func CheckProperty(properties map[string]string, property string) (string, error) {
-
-	prop, ok := properties[property]
-	if !ok {
-		return "", errors.New("Property " + property + " was not available")
-	}
-	return prop, nil
 }
 
 // PrintWarning prints the error as a warning.

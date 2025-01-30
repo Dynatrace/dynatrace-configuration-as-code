@@ -1,7 +1,0 @@
-config:
-  - slack: "notification.json"
-
-slack:
-  - alertingProfileId: "/project/alerting-profile/profile.id"
-  - name: "Slack notifications"
-  - environment: "Your environment"

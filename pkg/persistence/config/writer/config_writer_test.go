@@ -33,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
@@ -751,7 +750,6 @@ func TestWriteConfigs(t *testing.T) {
 					Parameters: map[string]parameter.Parameter{
 						config.NameParameter: &value.ValueParameter{Value: "name"},
 					},
-					SkipForConversion: envParam.New("ENV_VAR_SKIP"),
 				},
 			},
 			expectedConfigs: map[string]persistence.TopLevelDefinition{
@@ -763,10 +761,7 @@ func TestWriteConfigs(t *testing.T) {
 								Name:       "name",
 								Parameters: nil,
 								Template:   "a.json",
-								Skip: map[any]any{
-									"type": "environment",
-									"name": "ENV_VAR_SKIP",
-								},
+								Skip:       false,
 							},
 							Type: persistence.TypeDefinition{
 								Type: config.ClassicApiType{
@@ -799,7 +794,6 @@ func TestWriteConfigs(t *testing.T) {
 						config.NameParameter:  &value.ValueParameter{Value: "name"},
 						config.ScopeParameter: value.New("tenant"),
 					},
-					SkipForConversion: value.New("true"),
 				},
 			},
 			expectedConfigs: map[string]persistence.TopLevelDefinition{
@@ -811,7 +805,7 @@ func TestWriteConfigs(t *testing.T) {
 								Name:       "name",
 								Parameters: nil,
 								Template:   "somethingTooLongaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json",
-								Skip:       "true",
+								Skip:       false,
 							},
 							Type: persistence.TypeDefinition{
 								Type: config.SettingsType{
@@ -1464,15 +1458,15 @@ func TestWriteConfigs(t *testing.T) {
 			}
 
 			// check all api-folders config file
-			for apiType, definition := range tc.expectedConfigs {
+			for apiType, expectedDefinition := range tc.expectedConfigs {
 				content, err := afero.ReadFile(fs, "test/project/"+apiType+"/config.yaml")
 				assert.NoError(t, err, "reading config file should not produce an error")
 
-				var s persistence.TopLevelDefinition
-				err = yaml.Unmarshal(content, &s)
+				var actual persistence.TopLevelDefinition
+				err = yaml.Unmarshal(content, &actual)
 				assert.NoError(t, err, "unmarshalling config file should not produce an error")
 
-				assert.Equal(t, s, definition)
+				assert.Equal(t, expectedDefinition, actual)
 			}
 
 			// check that templates have been created

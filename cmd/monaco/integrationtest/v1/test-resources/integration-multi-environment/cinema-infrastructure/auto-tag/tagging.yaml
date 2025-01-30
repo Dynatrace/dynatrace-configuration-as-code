@@ -1,6 +1,0 @@
-
-config:
-  - application-tagging: "application-tagging.json"
-
-application-tagging:
-  - name: "Test Application"

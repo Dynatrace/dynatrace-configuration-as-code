@@ -22,7 +22,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/convert"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download"
@@ -102,7 +101,6 @@ Examples:
 
 	// commands
 	rootCmd.AddCommand(download.GetDownloadCommand(fs, &download.DefaultCommand{}))
-	rootCmd.AddCommand(convert.GetConvertCommand(fs))
 	rootCmd.AddCommand(deploy.GetDeployCommand(fs))
 	rootCmd.AddCommand(delete.GetDeleteCommand(fs))
 	rootCmd.AddCommand(versionCommand.GetVersionCommand())

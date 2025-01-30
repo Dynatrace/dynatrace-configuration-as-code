@@ -16,10 +16,6 @@
 
 package persistence
 
-import (
-	"reflect"
-)
-
 type GroupOverride struct {
 	Group    string           `yaml:"group" json:"group" jsonschema:"required,description=Name of the group this override applies for."`
 	Override ConfigDefinition `yaml:"override" json:"override" jsonschema:"required,description=May contain any fields the base config definition does and overwrites their values for any environment in this group."`
@@ -53,7 +49,3 @@ type TopLevelDefinition struct {
 }
 
 type ConfigParameter interface{}
-
-func GetTopLevelDefinitionYamlTypeName() string {
-	return reflect.ValueOf(TopLevelDefinition{}).Type().String()
-}

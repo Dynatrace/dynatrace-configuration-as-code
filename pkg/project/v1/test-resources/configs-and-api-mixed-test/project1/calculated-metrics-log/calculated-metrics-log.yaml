@@ -1,6 +1,0 @@
-config:
-  - log-errors: "metrics.json"
-
-log-errors:
-  - displayName: "Error Metrics"
-  - name: "calc:log.errormetrics"
