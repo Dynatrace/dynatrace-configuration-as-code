@@ -373,7 +373,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 func createOpenPipelineConfigForTest(configId string, kind string, project string) config.Config {
 	return config.Config{
-		Template: template.NewInMemoryTemplateWithPath("a.json", ""),
+		Template: template.NewInMemoryTemplate("a.json", ""),
 		Coordinate: coordinate.Coordinate{
 			Project:  project,
 			Type:     "openpipeline",

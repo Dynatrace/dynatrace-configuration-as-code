@@ -1,4 +1,4 @@
-//go:build integration || integration_v1 || cleanup || download_restore || unit || nightly
+//go:build integration || cleanup || download_restore || unit || nightly
 
 /*
  * @license
@@ -63,7 +63,7 @@ func ReplaceName(line string, idChange func(string) string) string {
 		}
 
 		// Dependencies are not substituted
-		if isV1Dependency(name) || isV2Dependency(name) {
+		if isV2Dependency(name) {
 			return line
 		}
 
@@ -114,19 +114,6 @@ func ReplaceId(line string, idChange func(string) string) string {
 		return line
 	}
 
-	if property := strings.Trim(property, ` "'`); isV1Dependency(property) {
-		ref := strings.Split(property, "/")
-		configRef := strings.Split(ref[len(ref)-1], ".")
-		if len(configRef) != 2 { //unexpected format
-			return line
-		}
-		config := configRef[0]
-		cfgType := configRef[1]
-
-		config = idChange(config)
-		ref[len(ref)-1] = config + "." + cfgType
-		return fmt.Sprintf(`%s: "%s"`, key, strings.Join(ref, "/"))
-	}
 	if isV2Dependency(property) {
 		property := strings.TrimSpace(property)
 		property = strings.Trim(property, "[]")
@@ -140,10 +127,6 @@ func ReplaceId(line string, idChange func(string) string) string {
 		return fmt.Sprintf("%s: [%s]", key, strings.Join(ref, ","))
 	}
 	return line
-}
-
-func isV1Dependency(name string) bool {
-	return strings.HasSuffix(name, ".id") || strings.HasSuffix(name, ".name")
 }
 
 func isV2Dependency(name string) bool {

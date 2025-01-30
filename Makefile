@@ -2,7 +2,7 @@ BINARY_NAME ?= monaco
 VERSION ?= 2.x
 RELEASES = $(BINARY_NAME)-windows-amd64.exe $(BINARY_NAME)-windows-386.exe $(BINARY_NAME)-linux-arm64 $(BINARY_NAME)-linux-amd64 $(BINARY_NAME)-linux-386 $(BINARY_NAME)-darwin-amd64 $(BINARY_NAME)-darwin-arm64
 
-.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers compile build-release $(RELEASES) docker-container sign-image install-ko
+.PHONY: lint format mocks build install clean test integration-test test-package default add-license-headers compile build-release $(RELEASES) docker-container sign-image install-ko
 
 default: build
 
@@ -94,9 +94,6 @@ test: mocks install-gotestsum
 
 integration-test: mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=integration -timeout=30m -v -race ./cmd/monaco/integrationtest/v2
-
-integration-test-v1: mocks install-gotestsum
-	@gotestsum ${testopts} --format testdox -- -tags=integration_v1 -timeout=30m -v -race ./cmd/monaco/integrationtest/v1
 
 download-restore-test: mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=download_restore -timeout=30m -v -race ./...

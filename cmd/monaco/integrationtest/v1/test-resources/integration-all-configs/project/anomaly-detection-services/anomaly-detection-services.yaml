@@ -1,4 +1,0 @@
-config:
-- anomaly-detection-services: anomaly-detection-services.json
-anomaly-detection-services:
-- name: anomaly-detection-services

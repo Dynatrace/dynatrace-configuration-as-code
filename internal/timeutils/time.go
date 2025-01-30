@@ -17,8 +17,6 @@
 package timeutils
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 )
 
@@ -52,29 +50,4 @@ func (d *defaultTimelineProvider) Now() time.Time {
 
 func (d *defaultTimelineProvider) Sleep(duration time.Duration) {
 	time.Sleep(duration)
-}
-
-// StringTimestampToHumanReadableFormat parses and sanity-checks a unix timestamp as string and returns it
-// as int64 and a human-readable representation of it
-func StringTimestampToHumanReadableFormat(unixTimestampAsString string) (humanReadable string, parsedTimestamp int64, err error) {
-
-	result, err := strconv.ParseInt(unixTimestampAsString, 10, 64)
-	if err != nil {
-		return "", 0, fmt.Errorf(
-			"%s is not a valid unix timestamp",
-			unixTimestampAsString,
-		)
-	}
-
-	unixTimeUTC := time.Unix(result, 0)
-	return unixTimeUTC.Format(time.RFC3339), result, nil
-}
-
-// ConvertMicrosecondsToUnixTime converts the UTC time in microseconds to a time.Time struct (unix time)
-func ConvertMicrosecondsToUnixTime(timeInMicroseconds int64) time.Time {
-
-	resetTimeInSeconds := timeInMicroseconds / 1000000
-	resetTimeRemainderInNanoseconds := (timeInMicroseconds % 1000000) * 1000
-
-	return time.Unix(resetTimeInSeconds, resetTimeRemainderInNanoseconds)
 }

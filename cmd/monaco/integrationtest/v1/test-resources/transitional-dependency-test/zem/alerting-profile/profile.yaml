@@ -1,7 +1,0 @@
-
-config:
-  - profile: "profile.json"
-
-profile:
-  - name: "Star Trek Service"
-  - dep: "/caveman/eddie/synthetic-monitor/synthetic-monitor.name"

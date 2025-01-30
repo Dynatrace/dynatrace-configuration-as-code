@@ -1,4 +1,4 @@
-//go:build integration || integration_v1 || cleanup || download_restore || nightly
+//go:build integration || cleanup || download_restore || nightly
 
 /*
  * @license
@@ -20,13 +20,12 @@ package integrationtest
 
 import (
 	"context"
+	"path/filepath"
+	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"path/filepath"
-	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"

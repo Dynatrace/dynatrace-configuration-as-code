@@ -1,7 +1,0 @@
-
-config:
-  - profile: "profile.json"
-
-profile:
-  - name: "Star Trek Service"
-  - managementZoneId: "/cinema-infrastructure/management-zone/zone.id"
