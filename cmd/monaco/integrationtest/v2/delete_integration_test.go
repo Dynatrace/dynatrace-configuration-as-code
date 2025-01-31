@@ -19,18 +19,18 @@
 package v2
 
 import (
+	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -114,6 +114,8 @@ func TestDelete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t1 *testing.T) {
+			ctx := context.TODO()
+
 			configFolder := "test-resources/delete-test-configs/"
 			deployManifestPath := configFolder + "deploy-manifest.yaml"
 
@@ -143,20 +145,21 @@ func TestDelete(t *testing.T) {
 			assert.NoError(t1, err)
 
 			// DEPLOY Config
-			err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
+			err = monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", deployManifestPath)
 			assert.NoError(t1, err)
-			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", true)
+			integrationtest.AssertAllConfigsAvailability(ctx, t1, fs, deployManifestPath, []string{}, "", true)
 
 			// DELETE Config
-			err = monaco.RunWithFSf(fs, "monaco delete %s --verbose", tt.cmdFlag)
+			err = monaco.RunWithFSf(ctx, fs, "monaco delete %s --verbose", tt.cmdFlag)
 			assert.NoError(t1, err)
-			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", false)
+			integrationtest.AssertAllConfigsAvailability(ctx, t1, fs, deployManifestPath, []string{}, "", false)
 
 		})
 	}
 }
 
 func TestDeleteSkipsPlatformTypesWhenDeletingFromClassicEnv(t *testing.T) {
+	ctx := context.TODO()
 
 	configFolder := "test-resources/delete-test-configs/"
 	deployManifestPath := configFolder + "deploy-manifest.yaml"
@@ -233,16 +236,16 @@ environmentGroups:
 	assert.NoError(t, err)
 
 	// DEPLOY Config
-	err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
+	err = monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", deployManifestPath)
 	assert.NoError(t, err)
-	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+	integrationtest.AssertAllConfigsAvailability(ctx, t, fs, deployManifestPath, []string{}, "", true)
 	// ensure test resources are removed after test is done
 	t.Cleanup(func() {
-		monaco.RunWithFs(fs, "monaco delete --manifest=test-resources/delete-test-configs/deploy-manifest.yaml --verbose")
+		monaco.RunWithFs(ctx, fs, "monaco delete --manifest=test-resources/delete-test-configs/deploy-manifest.yaml --verbose")
 	})
 
 	// DELETE Configs - with API Token only Manifest
-	err = monaco.RunWithFs(fs, "monaco delete --verbose")
+	err = monaco.RunWithFs(ctx, fs, "monaco delete --verbose")
 	assert.NoError(t, err)
 
 	// Assert expected deletions
@@ -255,10 +258,10 @@ environmentGroups:
 
 	envName := "environment"
 	env := man.Environments[envName]
-	clientSet := integrationtest.CreateDynatraceClients(t, env)
+	clientSet := integrationtest.CreateDynatraceClients(ctx, t, env)
 
 	// check the setting was deleted
-	integrationtest.AssertSetting(t, context.TODO(), clientSet.SettingsClient, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
+	integrationtest.AssertSetting(ctx, t, clientSet.SettingsClient, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "builtin:tags.auto-tagging",
@@ -267,7 +270,7 @@ environmentGroups:
 	})
 
 	// check the workflow still exists after deletion was skipped without error
-	integrationtest.AssertAutomation(t, clientSet.AutClient, env, true, config.Workflow, config.Config{
+	integrationtest.AssertAutomation(ctx, t, clientSet.AutClient, env, true, config.Workflow, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "workflow",
@@ -276,7 +279,7 @@ environmentGroups:
 	})
 
 	// check the bucket still exists after deletion was skipped without error
-	integrationtest.AssertBucket(t, clientSet.BucketClient, env, true, config.Config{
+	integrationtest.AssertBucket(ctx, t, clientSet.BucketClient, env, true, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "bucket",
@@ -286,6 +289,8 @@ environmentGroups:
 }
 
 func TestDeleteSubPathAPIConfigurations(t *testing.T) {
+	ctx := context.TODO()
+
 	configFolder := "test-resources/delete-test-configs/"
 	deployManifestPath := configFolder + "deploy-manifest.yaml"
 
@@ -323,9 +328,9 @@ configs:
 	assert.NoError(t, err)
 
 	// DEPLOY Config
-	err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
+	err = monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", deployManifestPath)
 	require.NoError(t, err)
-	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+	integrationtest.AssertAllConfigsAvailability(ctx, t, fs, deployManifestPath, []string{}, "", true)
 
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
@@ -336,14 +341,14 @@ configs:
 
 	envName := "environment"
 	env := man.Environments[envName]
-	clientSet := integrationtest.CreateDynatraceClients(t, env)
+	clientSet := integrationtest.CreateDynatraceClients(ctx, t, env)
 	apis := api.NewAPIs()
 
 	// ASSERT test configs exist
-	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+	integrationtest.AssertAllConfigsAvailability(ctx, t, fs, deployManifestPath, []string{}, "", true)
 
 	// get application ID
-	v, err := clientSet.ConfigClient.List(context.TODO(), apis["application-mobile"])
+	v, err := clientSet.ConfigClient.List(ctx, apis["application-mobile"])
 	assert.NoError(t, err)
 
 	var appID string
@@ -366,11 +371,11 @@ configs:
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
 	assert.NoError(t, err)
 
-	err = monaco.RunWithFSf(fs, "monaco delete --manifest %s --verbose", deployManifestPath)
+	err = monaco.RunWithFSf(ctx, fs, "monaco delete --manifest %s --verbose", deployManifestPath)
 	require.NoError(t, err)
 
 	// Assert key-user-action is deleted
-	integrationtest.AssertConfig(t, context.TODO(), clientSet.ConfigClient, apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
+	integrationtest.AssertConfig(t, ctx, clientSet.ConfigClient, apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "key-user-actions-mobile",
@@ -391,11 +396,11 @@ configs:
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
 	assert.NoError(t, err)
 
-	err = monaco.RunWithFSf(fs, "monaco delete --manifest %s --verbose", deployManifestPath)
+	err = monaco.RunWithFSf(ctx, fs, "monaco delete --manifest %s --verbose", deployManifestPath)
 	require.NoError(t, err)
 
 	// Assert expected deletions
-	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", false)
+	integrationtest.AssertAllConfigsAvailability(ctx, t, fs, deployManifestPath, []string{}, "", false)
 }
 
 func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
@@ -403,10 +408,12 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 	fs := testutils.CreateTestFileSystem()
 
 	t.Run("OAuth only should not throw error but skip delete for Classic API", func(t *testing.T) {
+		ctx := context.TODO()
+
 		// DELETE Config
 		deleteFileName := configFolder + "oauth-delete.yaml"
 		cmdFlag := "--manifest=" + configFolder + "oauth-only-manifest.yaml --file=" + deleteFileName
-		err := monaco.RunWithFSf(fs, "monaco delete %s --verbose", cmdFlag)
+		err := monaco.RunWithFSf(ctx, fs, "monaco delete %s --verbose", cmdFlag)
 		assert.NoError(t, err)
 
 		logFile := log.LogFilePath()
@@ -420,10 +427,12 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 	})
 
 	t.Run("Token only should not throw error but skip delete for Automation API", func(t *testing.T) {
+		ctx := context.TODO()
+
 		// DELETE Config
 		deleteFileName := configFolder + "token-delete.yaml"
 		cmdFlag := "--manifest=" + configFolder + "token-only-manifest.yaml --file=" + deleteFileName
-		err := monaco.RunWithFSf(fs, "monaco delete %s --verbose", cmdFlag)
+		err := monaco.RunWithFSf(ctx, fs, "monaco delete %s --verbose", cmdFlag)
 		assert.NoError(t, err)
 
 		logFile := log.LogFilePath()

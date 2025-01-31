@@ -19,15 +19,19 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
+	"context"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
 func TestAllDuplicateErrorsAreReported(t *testing.T) {
+	ctx := context.TODO()
 
 	configFolder := "test-resources/configs-with-duplicate-ids/"
 	manifest := filepath.Join(configFolder, "manifest.yaml")
@@ -35,7 +39,7 @@ func TestAllDuplicateErrorsAreReported(t *testing.T) {
 	logOutput := strings.Builder{}
 	cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
-	err := cmd.Execute()
+	err := cmd.ExecuteContext(ctx)
 
 	assert.ErrorContains(t, err, "failed to load projects")
 

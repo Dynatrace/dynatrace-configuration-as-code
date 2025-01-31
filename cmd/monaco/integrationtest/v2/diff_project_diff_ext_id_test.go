@@ -41,9 +41,10 @@ var diffProjectDiffExtIDFolderManifest = diffProjectDiffExtIDFolder + "manifest.
 // the exact same settings 2.0 object and verifies that deploying such a monaco configuration results in
 // two different settings objects deployed on the environment
 func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
+	ctx := context.TODO()
 
-	RunIntegrationWithCleanup(t, diffProjectDiffExtIDFolder, diffProjectDiffExtIDFolderManifest, "", "DifferentProjectsGetDifferentExternalID", func(fs afero.Fs, _ TestContext) {
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", diffProjectDiffExtIDFolderManifest)
+	RunIntegrationWithCleanup(ctx, t, diffProjectDiffExtIDFolder, diffProjectDiffExtIDFolderManifest, "", "DifferentProjectsGetDifferentExternalID", func(_ context.Context, fs afero.Fs) {
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", diffProjectDiffExtIDFolderManifest)
 		assert.NoError(t, err)
 
 		var manifestPath = diffProjectDiffExtIDFolderManifest
@@ -55,10 +56,10 @@ func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 		extIDProject1, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
 		extIDProject2, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][1].Coordinate)
 
-		clientSet, err := client.CreateClientSet(context.TODO(), environment.URL.Value, environment.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+		clientSet, err := client.CreateClientSet(ctx, environment.URL.Value, environment.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 		assert.NoError(t, err)
 		c := clientSet.SettingsClient
-		settings, _ := c.List(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+		settings, _ := c.List(ctx, "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 			return object.ExternalId == extIDProject1 || object.ExternalId == extIDProject2
 		}})
 		assert.Len(t, settings, 2)

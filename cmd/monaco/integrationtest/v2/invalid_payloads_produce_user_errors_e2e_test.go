@@ -19,25 +19,30 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
+	"context"
 	"strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+
 	"github.com/spf13/afero"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 )
 
 func TestAPIErrorsAreReported(t *testing.T) {
+	ctx := context.TODO()
 	configFolder := "test-resources/configs-with-invalid-payload/"
 	manifest := configFolder + "manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, "", "InvalidJSON", func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithCleanup(ctx, t, configFolder, manifest, "", "InvalidJSON", func(_ context.Context, fs afero.Fs) {
 
 		logOutput := strings.Builder{}
 		cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--continue-on-error"})
-		err := cmd.Execute()
+		err := cmd.ExecuteContext(ctx)
 
 		assert.ErrorContains(t, err, "Deployment failed")
 		assert.ErrorContains(t, err, "2 environment(s)")

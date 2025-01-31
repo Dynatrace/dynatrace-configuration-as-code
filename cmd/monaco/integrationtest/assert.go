@@ -66,7 +66,7 @@ func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (entities.
 }
 
 // AssertAllConfigsAvailability checks all configurations of a given project with given availability.
-func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool) {
+func AssertAllConfigsAvailability(ctx context.Context, t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool) {
 	loadedManifest := LoadManifest(t, fs, manifestPath, specificEnvironment)
 
 	projects := LoadProjects(t, fs, manifestPath, loadedManifest)
@@ -102,14 +102,14 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 		env := loadedManifest.Environments[envName]
 
-		clients := CreateDynatraceClients(t, env)
+		clients := CreateDynatraceClients(ctx, t, env)
 
 		lookup := entityLookup{}
 
 		for _, theConfig := range configs {
 			coord := theConfig.Coordinate
 
-			ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, coord)
+			ctx := context.WithValue(ctx, log.CtxKeyCoord{}, coord)
 			ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: theConfig.Environment, Group: theConfig.Group})
 
 			if theConfig.Skip {
@@ -142,7 +142,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 				var foundID string
 				switch typ := theConfig.Type.(type) {
 				case config.SettingsType:
-					foundID = AssertSetting(t, ctx, clients.SettingsClient, typ, env.Name, available, theConfig)
+					foundID = AssertSetting(ctx, t, clients.SettingsClient, typ, env.Name, available, theConfig)
 				case config.ClassicApiType:
 					assert.NotEmpty(t, configName, "classic API config %v is missing name, can not assert if it exists", theConfig.Coordinate)
 
@@ -161,13 +161,13 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
 						return
 					}
-					foundID = AssertAutomation(t, clients.AutClient, env, available, typ.Resource, theConfig)
+					foundID = AssertAutomation(ctx, t, clients.AutClient, env, available, typ.Resource, theConfig)
 				case config.BucketType:
 					if clients.BucketClient == nil {
 						t.Errorf("can not assert existience of Bucket config %q) because no BucketClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
 						return
 					}
-					foundID = AssertBucket(t, clients.BucketClient, env, available, theConfig)
+					foundID = AssertBucket(ctx, t, clients.BucketClient, env, available, theConfig)
 				case config.DocumentType:
 					if clients.DocumentClient == nil {
 						t.Errorf("can not assert existience of Document config %q) because no DocumentClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
@@ -215,7 +215,7 @@ func AssertConfig(t *testing.T, ctx context.Context, client client.ConfigClient,
 	return id
 }
 
-func AssertSetting(t *testing.T, ctx context.Context, c client.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config) (id string) {
+func AssertSetting(ctx context.Context, t *testing.T, c client.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config) (id string) {
 	expectedExtId, err := idutils.GenerateExternalIDForSettingsObject(config.Coordinate)
 	if err != nil {
 		t.Errorf("Unable to generate external id: %v", err)
@@ -250,7 +250,7 @@ func AssertSetting(t *testing.T, ctx context.Context, c client.SettingsClient, t
 
 }
 
-func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) (id string) {
+func AssertAutomation(ctx context.Context, t *testing.T, c client.AutomationClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) (id string) {
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(resource)
 	assert.NoError(t, err, "failed to get resource type for: %s", cfg.Coordinate)
 
@@ -261,7 +261,7 @@ func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.Envi
 		expectedId = idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
 	}
 
-	_, err = c.Get(context.TODO(), resourceType, expectedId)
+	_, err = c.Get(ctx, resourceType, expectedId)
 	exists := err == nil
 
 	if cfg.Skip {
@@ -277,7 +277,7 @@ func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.Envi
 	return expectedId
 }
 
-func AssertBucket(t *testing.T, client client.BucketClient, env manifest.EnvironmentDefinition, available bool, cfg config.Config) (id string) {
+func AssertBucket(ctx context.Context, t *testing.T, client client.BucketClient, env manifest.EnvironmentDefinition, available bool, cfg config.Config) (id string) {
 
 	var expectedId string
 	if cfg.OriginObjectId != "" {
@@ -286,7 +286,7 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 		expectedId = idutils.GenerateBucketName(cfg.Coordinate)
 	}
 
-	resp, err := getBucketWithRetry(client, expectedId, 0, 5)
+	resp, err := getBucketWithRetry(ctx, client, expectedId, 0, 5)
 
 	exists := true
 
@@ -314,12 +314,12 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 	return expectedId
 }
 
-func getBucketWithRetry(client client.BucketClient, bucketName string, try, maxTries int) (buckets.Response, error) {
-	resp, err := client.Get(context.TODO(), bucketName)
+func getBucketWithRetry(ctx context.Context, client client.BucketClient, bucketName string, try, maxTries int) (buckets.Response, error) {
+	resp, err := client.Get(ctx, bucketName)
 	if try < maxTries && resp.StatusCode == http.StatusNotFound {
 		try++
 		time.Sleep(time.Second)
-		return getBucketWithRetry(client, bucketName, try, maxTries)
+		return getBucketWithRetry(ctx, client, bucketName, try, maxTries)
 	}
 
 	return resp, err

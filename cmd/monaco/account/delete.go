@@ -15,7 +15,15 @@
 package account
 
 import (
+	"context"
 	"fmt"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
+	"golang.org/x/oauth2/clientcredentials"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
@@ -26,12 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2/clientcredentials"
-	"path/filepath"
 )
 
 func deleteCommand(fs afero.Fs) *cobra.Command {

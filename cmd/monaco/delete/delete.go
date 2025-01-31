@@ -36,10 +36,10 @@ import (
 // Returns:
 //   - error: If an error occurs during the deletion process, an error is returned, describing the issue.
 //     If no errors occur, nil is returned.
-func Delete(environments manifest.Environments, entriesToDelete delete.DeleteEntries) error {
+func Delete(ctx context.Context, environments manifest.Environments, entriesToDelete delete.DeleteEntries) error {
 	var envsWithDeleteErrs []string
 	for _, env := range environments {
-		ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
+		ctx := context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 		if containsPlatformTypes(entriesToDelete) && env.Auth.OAuth == nil {
 			log.WithCtxFields(ctx).Warn("Delete file contains Dynatrace Platform specific types, but no oAuth credentials are defined for environment %q - Dynatrace Platform configurations won't be deleted.", env.Name)
 		}

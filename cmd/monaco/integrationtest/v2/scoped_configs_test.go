@@ -34,32 +34,42 @@ import (
 )
 
 func TestDeployScopedConfigurations(t *testing.T) {
+	ctx := context.TODO()
 
 	dashboardSharedEnvName := "DASHBOARD_SHARED"
 	configFolder := "test-resources/scoped-configs/"
 	environment := "classic_env"
 	manifestPath := configFolder + "manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "ScopedConfigs", func(fs afero.Fs, testContext TestContext) {
+	RunIntegrationWithCleanup(ctx, t, configFolder, manifestPath, environment, "ScopedConfigs", func(ctx context.Context, fs afero.Fs) {
+		s, ok := ctx.Value(suffix{}).(suffix)
+		if !ok {
+			require.Fail(t, "context doesn't contain suffix")
+		}
 
 		// deploy with sharing turned off and assert state
-		setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.suffix)
-		err := monaco.RunWithFSf(fs, "monaco deploy --verbose %s --environment %s", manifestPath, environment)
+		setTestEnvVar(t, dashboardSharedEnvName, "false", s.suffix)
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy --verbose %s --environment %s", manifestPath, environment)
 		require.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, nil, environment, true)
-		assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, false)
+		integrationtest.AssertAllConfigsAvailability(ctx, t, fs, manifestPath, nil, environment, true)
+		assertOverallDashboardSharedState(ctx, t, fs, manifestPath, environment, false)
 
 		// deploy with sharing turned on and assert state
-		setTestEnvVar(t, dashboardSharedEnvName, "true", testContext.suffix)
-		err = monaco.RunWithFSf(fs, "monaco deploy --verbose %s --environment %s", manifestPath, environment)
+		setTestEnvVar(t, dashboardSharedEnvName, "true", s.suffix)
+		err = monaco.RunWithFSf(ctx, fs, "monaco deploy --verbose %s --environment %s", manifestPath, environment)
 		require.NoError(t, err)
 
-		assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, true)
+		assertOverallDashboardSharedState(ctx, t, fs, manifestPath, environment, true)
 	})
 }
 
-func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext TestContext, manifestPath string, environment string, expectShared bool) {
+func assertOverallDashboardSharedState(ctx context.Context, t *testing.T, fs afero.Fs, manifestPath string, environment string, expectShared bool) {
+	s, ok := ctx.Value(suffix{}).(suffix)
+	if !ok {
+		require.Fail(t, "context doesn't contain suffix")
+	}
+
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: manifestPath,
@@ -68,22 +78,22 @@ func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext Te
 	assert.Empty(t, errs)
 
 	environmentDefinition := man.Environments[environment]
-	clientSet := integrationtest.CreateDynatraceClients(t, environmentDefinition)
+	clientSet := integrationtest.CreateDynatraceClients(ctx, t, environmentDefinition)
 	apis := api.NewAPIs()
 
 	dashboardAPI := apis[api.Dashboard]
-	dashboardName := integrationtest.AddSuffix("Application monitoring", testContext.suffix)
-	exists, dashboardID, err := clientSet.ConfigClient.ExistsWithName(context.TODO(), dashboardAPI, dashboardName)
+	dashboardName := integrationtest.AddSuffix("Application monitoring", s.suffix)
+	exists, dashboardID, err := clientSet.ConfigClient.ExistsWithName(ctx, dashboardAPI, dashboardName)
 
 	require.NoError(t, err, "expect to be able to get dashboard by name")
 	require.True(t, exists, "dashboard must exist")
 
-	dashboardJSONBytes, err := clientSet.ConfigClient.Get(context.TODO(), dashboardAPI, dashboardID)
+	dashboardJSONBytes, err := clientSet.ConfigClient.Get(ctx, dashboardAPI, dashboardID)
 	require.NoError(t, err, "expect to be able to get dashboard by ID")
 	assertDashboardSharedState(t, dashboardJSONBytes, expectShared)
 
 	dashboardShareSettingsAPI := apis[api.DashboardShareSettings].ApplyParentObjectID(dashboardID)
-	dashboardShareSettingsJSONBytes, err := clientSet.ConfigClient.Get(context.TODO(), dashboardShareSettingsAPI, "")
+	dashboardShareSettingsJSONBytes, err := clientSet.ConfigClient.Get(ctx, dashboardShareSettingsAPI, "")
 	require.NoError(t, err, "expect to be able to get dashboard shared settings by ID")
 	assertDashboardShareSettingsEnabledState(t, dashboardShareSettingsJSONBytes, expectShared)
 }

@@ -18,12 +18,14 @@ package purge
 
 import (
 	"fmt"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 )
 
 func GetPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
@@ -40,6 +42,7 @@ func GetPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
 		Args:    cobra.ExactArgs(1),
 		PreRun:  cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
 
 			manifestName = args[0]
 
@@ -48,7 +51,7 @@ func GetPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
 				return err
 			}
 
-			return purge(fs, manifestName, environment, specificApis)
+			return purge(ctx, fs, manifestName, environment, specificApis)
 		},
 		ValidArgsFunction: completion.PurgeCompletion,
 	}

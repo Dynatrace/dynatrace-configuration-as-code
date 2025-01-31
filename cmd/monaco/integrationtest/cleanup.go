@@ -19,19 +19,22 @@
 package integrationtest
 
 import (
+	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/require"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/require"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 )
 
 // CleanupIntegrationTest deletes all configs that are defined in a test manifest. It uses the CLI runner, to call the
 // deletefile.Command to generate a delete file for the test manifest, and delete.GetDeleteCommand to remove configs using
 // the generated file.
-func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, environment string, suffix string) {
+func CleanupIntegrationTest(ctx context.Context, t *testing.T, fs afero.Fs, manifestPath string, environment string, suffix string) {
 	var env string
 	if len(environment) > 0 {
 		env = fmt.Sprintf("--environment %s", environment)
@@ -42,7 +45,7 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, envi
 	absManifestPath, err := filepath.Abs(manifestPath)
 	require.NoError(t, err)
 
-	err = monaco.RunWithFSf(fs, "monaco generate deletefile %s --file %s --exclude-types builtin:networkzones %s", absManifestPath, deleteFile, env)
+	err = monaco.RunWithFSf(ctx, fs, "monaco generate deletefile %s --file %s --exclude-types builtin:networkzones %s", absManifestPath, deleteFile, env)
 	require.NoError(t, err)
 	if df, err := filepath.Abs(deleteFile); err == nil {
 		if b, err := afero.ReadFile(fs, df); err == nil {
@@ -50,7 +53,7 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, envi
 		}
 	}
 
-	err = monaco.RunWithFSf(fs, "monaco delete --manifest %s --file %s %s", manifestPath, deleteFile, env)
+	err = monaco.RunWithFSf(ctx, fs, "monaco delete --manifest %s --file %s %s", manifestPath, deleteFile, env)
 	if err != nil {
 		t.Log(err)
 		t.Log("Failed to cleanup all test configurations, manual/nightly cleanup needed.")

@@ -19,9 +19,14 @@
 package v2
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
@@ -29,9 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 func TestSkip(t *testing.T) {
@@ -104,19 +106,24 @@ func TestSkip(t *testing.T) {
 	clients := make(map[string]client.SettingsClient)
 
 	for name, def := range loadedManifest.Environments {
-		set := integrationtest.CreateDynatraceClients(t, def)
+		set := integrationtest.CreateDynatraceClients(context.TODO(), t, def)
 		clients[name] = set.SettingsClient
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.TODO()
 
-			RunIntegrationWithCleanup(t, projectFolder, manifest, tt.given.environment, "SkipTest", func(fs afero.Fs, tc TestContext) {
+			RunIntegrationWithCleanup(ctx, t, projectFolder, manifest, tt.given.environment, "SkipTest", func(ctx context.Context, fs afero.Fs) {
+				s, ok := ctx.Value(suffix{}).(suffix)
+				if !ok {
+					require.Fail(t, "context doesn't contain suffix")
+				}
 
-				testCaseVar := "SKIPPED_VAR_" + tc.suffix
+				testCaseVar := "SKIPPED_VAR_" + s.suffix
 				t.Setenv(testCaseVar, strconv.FormatBool(tt.given.skipVarValue))
 
-				err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
+				err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", manifest)
 				assert.NoError(t, err)
 
 				client, ok := clients[tt.given.environment]
@@ -124,12 +131,12 @@ func TestSkip(t *testing.T) {
 
 				log.Info("Asserting configs were deployed: %v", tt.want.deployedConfigIDs)
 				for _, id := range tt.want.deployedConfigIDs {
-					assertTestConfig(t, tc, client, tt.given.environment, id, true)
+					assertTestConfig(ctx, t, client, tt.given.environment, id, true)
 				}
 
 				log.Info("Asserting configs were skipped: %v", tt.want.skippedConfigIDs)
 				for _, id := range tt.want.skippedConfigIDs {
-					assertTestConfig(t, tc, client, tt.given.environment, id, false)
+					assertTestConfig(ctx, t, client, tt.given.environment, id, false)
 				}
 
 			})
@@ -137,10 +144,15 @@ func TestSkip(t *testing.T) {
 	}
 }
 
-func assertTestConfig(t *testing.T, tc TestContext, client client.SettingsClient, envName string, configID string, shouldExist bool) {
-	configID = fmt.Sprintf("%s_%s", configID, tc.suffix)
+func assertTestConfig(ctx context.Context, t *testing.T, client client.SettingsClient, envName string, configID string, shouldExist bool) {
+	s, ok := ctx.Value(suffix{}).(suffix)
+	if !ok {
+		require.Fail(t, "context doesn't contain suffix")
+	}
 
-	integrationtest.AssertSetting(t, context.TODO(), client, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, shouldExist, config.Config{
+	configID = fmt.Sprintf("%s_%s", configID, s.suffix)
+
+	integrationtest.AssertSetting(ctx, t, client, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, shouldExist, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "builtin:tags.auto-tagging",

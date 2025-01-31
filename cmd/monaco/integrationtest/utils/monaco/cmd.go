@@ -17,12 +17,14 @@
 package monaco
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 )
 
 // The Monaco is the entry point for integration tests. It accepts a command in a way it would be called via a CLI. `monaco` keyword can be omitted from the command.
@@ -30,21 +32,21 @@ import (
 //
 // monaco.Monaco("monaco download manifest.yaml --enviroment=my_env").Run()
 
-func Run(command string) error {
-	return RunWithFs(newFs(), command)
+func Run(ctx context.Context, command string) error {
+	return RunWithFs(ctx, newFs(), command)
 }
 
-func Runf(command string, args ...any) error {
-	return RunWithFSf(newFs(), command, args...)
+func Runf(ctx context.Context, command string, args ...any) error {
+	return RunWithFSf(ctx, newFs(), command, args...)
 }
 
 func newFs() afero.Fs { return afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()) }
 
-func RunWithFSf(fs afero.Fs, command string, args ...any) error {
-	return RunWithFs(fs, fmt.Sprintf(command, args...))
+func RunWithFSf(ctx context.Context, fs afero.Fs, command string, args ...any) error {
+	return RunWithFs(ctx, fs, fmt.Sprintf(command, args...))
 }
 
-func RunWithFs(fs afero.Fs, command string) error {
+func RunWithFs(ctx context.Context, fs afero.Fs, command string) error {
 	// remove multiple spaces
 	c := regexp.MustCompile(`\s+`).ReplaceAllString(command, " ")
 	c = strings.Trim(c, " ")
@@ -59,5 +61,5 @@ func RunWithFs(fs afero.Fs, command string) error {
 
 	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs(args)
-	return runner.RunCmd(fs, cmd)
+	return runner.RunCmd(ctx, fs, cmd)
 }

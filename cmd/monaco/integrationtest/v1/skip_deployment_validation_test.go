@@ -19,32 +19,38 @@
 package v1
 
 import (
+	"context"
 	"strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 )
 
 var skipDeploymentFolder = AbsOrPanicFromSlash("test-resources/skip-deployment-project/")
 var skipDeploymentEnvironmentsFile = AbsOrPanicFromSlash("test-resources/test-environments.yaml")
 
 func TestValidationSkipDeployment(t *testing.T) {
+	ctx := context.TODO()
+
 	t.Setenv("TEST_TOKEN", "mock test token")
 
-	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=projectA --dry-run --verbose", manifest)
+	RunLegacyIntegrationWithoutCleanup(ctx, t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --project=projectA --dry-run --verbose", manifest)
 		assert.NoError(t, err)
 	})
 
 }
 
 func TestValidationSkipDeploymentWithBrokenDependency_GraphBasedDoesNotReturnErrorAsDependenciesAreIgnored(t *testing.T) {
+	ctx := context.TODO()
+
 	t.Setenv("TEST_TOKEN", "mock test token")
 
-	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, "SkipDeployment", func(fs afero.Fs, manifest string) {
+	RunLegacyIntegrationWithoutCleanup(ctx, t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, "SkipDeployment", func(fs afero.Fs, manifest string) {
 
 		logOutput := strings.Builder{}
 		cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
@@ -55,7 +61,7 @@ func TestValidationSkipDeploymentWithBrokenDependency_GraphBasedDoesNotReturnErr
 			"--dry-run",
 			"--project", "projectB",
 		})
-		err := cmd.Execute()
+		err := cmd.ExecuteContext(ctx)
 		assert.NoError(t, err, "children of skipped configs should not result in an error")
 
 		runLog := logOutput.String()
@@ -64,27 +70,33 @@ func TestValidationSkipDeploymentWithBrokenDependency_GraphBasedDoesNotReturnErr
 }
 
 func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
+	ctx := context.TODO()
+
 	t.Setenv("TEST_TOKEN", "mock test token")
 
-	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=projectC --dry-run --verbose", manifest)
+	RunLegacyIntegrationWithoutCleanup(ctx, t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --project=projectC --dry-run --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }
 
 func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
+	ctx := context.TODO()
+
 	t.Setenv("TEST_TOKEN", "mock test token")
 
-	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=projectE --dry-run --verbose", manifest)
+	RunLegacyIntegrationWithoutCleanup(ctx, t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --project=projectE --dry-run --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }
 
 func TestValidationSkipDeploymentInterProjectWithMissingDependency_GraphBasedDoesNotReturnErrorAsDependenciesAreIgnored(t *testing.T) {
+	ctx := context.TODO()
+
 	t.Setenv("TEST_TOKEN", "mock test token")
 
-	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
+	RunLegacyIntegrationWithoutCleanup(ctx, t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
 		logOutput := strings.Builder{}
 		cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
 		cmd.SetArgs([]string{
@@ -94,7 +106,7 @@ func TestValidationSkipDeploymentInterProjectWithMissingDependency_GraphBasedDoe
 			"--dry-run",
 			"--project", "projectD",
 		})
-		err := cmd.Execute()
+		err := cmd.ExecuteContext(ctx)
 
 		assert.NoError(t, err)
 

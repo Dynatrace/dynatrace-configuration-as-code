@@ -19,9 +19,15 @@
 package v2
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
@@ -31,10 +37,6 @@ import (
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/maps"
 )
 
 func TestReferencesAreResolvedOnDownload(t *testing.T) {
@@ -44,65 +46,92 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 	tests := []struct {
 		project      string
 		downloadOpts string
-		validate     func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType)
+		validate     func(ctx context.Context, t *testing.T, confsPerType project.ConfigsPerType)
 	}{
 		{
 			project:      "classic-apis",
 			downloadOpts: "--api=alerting-profile,notification,management-zone",
-			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
-				managementZone := findConfig(t, confsPerType, "management-zone", "zone-ca_"+ctx.suffix)
-				profile := findConfig(t, confsPerType, "alerting-profile", "profile-ca_"+ctx.suffix)
-				notification := findConfig(t, confsPerType, "notification", "notification-ca_"+ctx.suffix)
+			validate: func(ctx context.Context, t *testing.T, confsPerType project.ConfigsPerType) {
+				s, ok := ctx.Value(suffix{}).(suffix)
+				if !ok {
+					require.Fail(t, "context doesn't contain suffix")
+				}
 
-				assertRefParamFromTo(t, profile, managementZone)
-				assertRefParamFromTo(t, notification, profile)
+				managementZone := findConfig(t, confsPerType, "management-zone", "zone-ca_"+s.suffix)
+				profile := findConfig(t, confsPerType, "alerting-profile", "profile-ca_"+s.suffix)
+				notification := findConfig(t, confsPerType, "notification", "notification-ca_"+s.suffix)
+
+				assert.Contains(t, profile.References(), managementZone.Coordinate)
+				assert.Contains(t, notification.References(), profile.Coordinate)
+				// TODO: clean me
+				// assertRefParamFromTo(t, profile, managementZone)
+				// assertRefParamFromTo(t, notification, profile)
 			},
 		},
 		{
 			project:      "settings",
 			downloadOpts: "--settings-schema=builtin:problem.notifications,builtin:management-zones,builtin:alerting.profile",
-			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
-				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.suffix, "name")
-				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.suffix, "name")
-				notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.suffix, "displayName")
+			validate: func(ctx context.Context, t *testing.T, confsPerType project.ConfigsPerType) {
+				s, ok := ctx.Value(suffix{}).(suffix)
+				if !ok {
+					require.Fail(t, "context doesn't contain suffix")
+				}
 
-				assertRefParamFromTo(t, profile, managementZone)
-				assertRefParamFromTo(t, notification, profile)
+				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+s.suffix, "name")
+				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+s.suffix, "name")
+				notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+s.suffix, "displayName")
+
+				assert.Contains(t, profile.References(), managementZone.Coordinate)
+				assert.Contains(t, notification.References(), profile.Coordinate)
+				// TODO: clean me
+				// assertRefParamFromTo(t, profile, managementZone)
+				// assertRefParamFromTo(t, notification, profile)
 			},
 		},
 		{
 			project:      "classic-with-settings-mngt-zone",
 			downloadOpts: "--api=notification,alerting-profile --settings-schema=builtin:management-zones",
-			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
-				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone-cws_"+ctx.suffix, "name")
-				profile := findConfig(t, confsPerType, "alerting-profile", "profile-cws_"+ctx.suffix)
-				notification := findConfig(t, confsPerType, "notification", "notification-cws_"+ctx.suffix)
+			validate: func(ctx context.Context, t *testing.T, confsPerType project.ConfigsPerType) {
+				s, ok := ctx.Value(suffix{}).(suffix)
+				if !ok {
+					require.Fail(t, "context doesn't contain suffix")
+				}
 
-				assertRefParamFromTo(t, profile, managementZone)
-				assertRefParamFromTo(t, notification, profile)
+				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone-cws_"+s.suffix, "name")
+				profile := findConfig(t, confsPerType, "alerting-profile", "profile-cws_"+s.suffix)
+				notification := findConfig(t, confsPerType, "notification", "notification-cws_"+s.suffix)
+
+				assert.Contains(t, profile.References(), managementZone.Coordinate)
+				assert.Contains(t, notification.References(), profile.Coordinate)
+				// TODO: clean me
+				// assertRefParamFromTo(t, profile, managementZone)
+				// assertRefParamFromTo(t, notification, profile)
 			},
 		},
 	}
 
 	for _, env := range envs {
 		for _, tt := range tests {
+
 			testName := env + "_" + tt.project
 
 			t.Run(testName, func(t *testing.T) {
+				ctx := context.TODO()
+
 				configFolder := "test-resources/references/"
 				manifestFile := configFolder + "manifest.yaml"
 				proj := tt.project
 
 				fs := testutils.CreateTestFileSystem()
 
-				RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, testName, func(fs afero.Fs, ctx TestContext) {
+				RunIntegrationWithCleanupOnGivenFs(ctx, t, fs, configFolder, manifestFile, env, testName, func(ctx context.Context, fs afero.Fs) {
 
 					// upsert
-					err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj)
+					err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj)
 					require.NoError(t, err, "create: did not expect error")
 
 					// download
-					err = monaco.RunWithFSf(fs, "monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, tt.downloadOpts)
+					err = monaco.RunWithFSf(ctx, fs, "monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, tt.downloadOpts)
 					require.NoError(t, err, "download: did not expect error")
 
 					// assert
@@ -125,7 +154,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 
 					confsPerType := findConfigs(t, projects, projectAndEnvName)
 
-					tt.validate(t, ctx, confsPerType)
+					tt.validate(ctx, t, confsPerType)
 				})
 			})
 		}
@@ -133,14 +162,18 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 }
 
 func TestReferencesAreValid(t *testing.T) {
+	ctx := context.TODO()
+
 	configFolder := "test-resources/references/"
 	manifestFile := configFolder + "manifest.yaml"
 
-	err := monaco.Runf("monaco deploy %s --environment=platform_env --dry-run --verbose", manifestFile)
+	err := monaco.Runf(ctx, "monaco deploy %s --environment=platform_env --dry-run --verbose", manifestFile)
 	assert.NoError(t, err, "expected configurations to be valid")
 }
 
 func TestReferencesFromClassicConfigsToSettingsResultInError(t *testing.T) {
+	ctx := context.TODO()
+
 	configFolder := "test-resources/references/"
 	manifestFile := configFolder + "invalid-configs-manifest.yaml"
 
@@ -149,7 +182,7 @@ func TestReferencesFromClassicConfigsToSettingsResultInError(t *testing.T) {
 
 	cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
 	cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", "platform_env", "--dry-run"})
-	err := cmd.Execute()
+	err := cmd.ExecuteContext(ctx)
 	assert.Error(t, err, "expected invalid configurations to result in user error")
 
 	runLog := strings.ToLower(logOutput.String())
@@ -157,9 +190,10 @@ func TestReferencesFromClassicConfigsToSettingsResultInError(t *testing.T) {
 	assert.Contains(t, runLog, "parameter \"alertingprofileid\" references \"builtin:alerting.profile\" type")
 }
 
-func assertRefParamFromTo(t *testing.T, from config.Config, to config.Config) {
-	assert.Contains(t, from.References(), to.Coordinate)
-}
+// TODO: delete me
+// func assertRefParamFromTo(t *testing.T, from config.Config, to config.Config) {
+// 	assert.Contains(t, from.References(), to.Coordinate)
+// }
 
 func findConfigs(t *testing.T, projects []project.Project, id string) project.ConfigsPerType {
 	var proj *project.Project

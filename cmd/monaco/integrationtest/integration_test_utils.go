@@ -20,13 +20,12 @@ package integrationtest
 
 import (
 	"context"
+	"path/filepath"
+	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"path/filepath"
-	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
@@ -42,9 +41,9 @@ import (
 // Note, that the caching mechanism in the client is disabled to eliminate the risk of getting
 // wrong information from the cache in cases where we want to get
 // resources immediately after they've been created (e.g. to assert that they exist)
-func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefinition) *client.ClientSet {
+func CreateDynatraceClients(ctx context.Context, t *testing.T, environment manifest.EnvironmentDefinition) *client.ClientSet {
 	clients, err := client.CreateClientSet(
-		context.TODO(),
+		ctx,
 		environment.URL.Value,
 		environment.Auth,
 		client.ClientOptions{

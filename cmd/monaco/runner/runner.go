@@ -15,9 +15,8 @@
 package runner
 
 import (
+	"context"
 	"io"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -35,10 +34,11 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/memory"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
 
-func RunCmd(fs afero.Fs, command *cobra.Command) error {
+func RunCmd(ctx context.Context, fs afero.Fs, command *cobra.Command) error {
 	defer func() { // writing the support archive is a deferred function call in order to guarantee that a support archive is also written in case of a panic
 		if support.SupportArchive {
 			if err := trafficlogs.GetInstance().Sync(); err != nil {
@@ -49,7 +49,7 @@ func RunCmd(fs afero.Fs, command *cobra.Command) error {
 			}
 		}
 	}()
-	err := command.Execute()
+	err := command.ExecuteContext(ctx)
 	if err != nil {
 		log.WithFields(field.Error(err)).Error("Error: %v", err)
 		log.WithFields(field.F("errorLogFilePath", log.ErrorFilePath())).Error("error logs written to %s", log.ErrorFilePath())

@@ -21,6 +21,7 @@ package v2
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -41,15 +42,17 @@ import (
 )
 
 func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
+	ctx := context.TODO()
+
 	configFolder := "test-resources/support-archive/"
 	manifest := configFolder + "manifest.yaml"
 	fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "SupportArchive", func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithCleanup(ctx, t, configFolder, manifest, "valid_env", "SupportArchive", func(ctx context.Context, fs afero.Fs) {
 		err := cleanupLogsDir()
 		assert.NoError(t, err)
 
-		_ = monaco.RunWithFSf(fs, "monaco deploy %s --environment=valid_env --verbose --support-archive", manifest)
+		_ = monaco.RunWithFSf(ctx, fs, "monaco deploy %s --environment=valid_env --verbose --support-archive", manifest)
 
 		archive := "support-archive-" + fixedTime + ".zip"
 		expectedFiles := []string{
@@ -107,13 +110,15 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.TODO()
+
 			fs := testutils.CreateTestFileSystem()
 
 			err := cleanupLogsDir()
 			assert.NoError(t, err)
 
 			manifest := configFolder + tt.manifestFile
-			monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --support-archive", manifest, tt.environment)
+			monaco.RunWithFSf(ctx, fs, "monaco deploy %s --environment=%s --verbose --support-archive", manifest, tt.environment)
 
 			fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
 			archive := "support-archive-" + fixedTime + ".zip"
@@ -129,6 +134,8 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 
 func TestDeployReport(t *testing.T) {
 	t.Run("report is generated", func(t *testing.T) {
+		ctx := context.TODO()
+
 		const (
 			configFolder = "test-resources/support-archive/"
 			manifest     = configFolder + "manifest.yaml"
@@ -137,8 +144,8 @@ func TestDeployReport(t *testing.T) {
 
 		t.Setenv(environment.DeploymentReportFilename, reportFile)
 
-		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, _ TestContext) {
-			err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=valid_env --verbose", manifest)
+		RunIntegrationWithCleanup(ctx, t, configFolder, manifest, "valid_env", "", func(ctx context.Context, fs afero.Fs) {
+			err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --environment=valid_env --verbose", manifest)
 			require.NoError(t, err)
 
 			assertReport(t, fs, reportFile, true)
@@ -146,12 +153,14 @@ func TestDeployReport(t *testing.T) {
 	})
 
 	t.Run("ensure that monaco runs without generating report", func(t *testing.T) {
+		ctx := context.TODO()
+
 		const (
 			configFolder = "test-resources/support-archive/"
 			manifest     = configFolder + "manifest.yaml"
 		)
-		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, _ TestContext) {
-			err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=valid_env --verbose", manifest)
+		RunIntegrationWithCleanup(ctx, t, configFolder, manifest, "valid_env", "", func(ctx context.Context, fs afero.Fs) {
+			err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --environment=valid_env --verbose", manifest)
 			require.NoError(t, err)
 		})
 	})

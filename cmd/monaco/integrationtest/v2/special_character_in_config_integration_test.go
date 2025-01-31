@@ -19,24 +19,27 @@
 package v2
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 )
 
 func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
+	ctx := context.TODO()
 
 	specialCharConfigFolder := "test-resources/special-character-in-config/"
 	specialCharManifest := filepath.Join(specialCharConfigFolder, "manifest.yaml")
 
-	RunIntegrationWithCleanup(t, specialCharConfigFolder, specialCharManifest, "", "SpecialCharacterInConfig", func(fs afero.Fs, _ TestContext) {
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", specialCharManifest)
+	RunIntegrationWithCleanup(ctx, t, specialCharConfigFolder, specialCharManifest, "", "SpecialCharacterInConfig", func(ctx context.Context, fs afero.Fs) {
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", specialCharManifest)
 		assert.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, specialCharManifest, []string{}, "", true)
+		integrationtest.AssertAllConfigsAvailability(ctx, t, fs, specialCharManifest, []string{}, "", true)
 	})
 }

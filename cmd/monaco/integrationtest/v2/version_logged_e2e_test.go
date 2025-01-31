@@ -19,11 +19,14 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
+	"context"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
 func TestMonacoVersionLogging(t *testing.T) {
@@ -80,13 +83,14 @@ func TestMonacoVersionLogging(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.TODO()
 
 			fs := testutils.CreateTestFileSystem()
 			logOutput := strings.Builder{}
 
 			cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
 			cmd.SetArgs(tt.args)
-			_ = cmd.Execute()
+			_ = cmd.ExecuteContext(ctx)
 
 			runLog := logOutput.String()
 			const versionLogMessage = "Monaco version"

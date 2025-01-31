@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
@@ -28,8 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 )
 
 func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
@@ -80,7 +81,7 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 				return fmt.Errorf("encountered errors while parsing %s: %w", deleteFile, err)
 			}
 
-			return Delete(manifest.Environments, entriesToDelete)
+			return Delete(cmd.Context(), manifest.Environments, entriesToDelete)
 		},
 		ValidArgsFunction: completion.DeleteCompletion,
 	}

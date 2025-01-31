@@ -22,14 +22,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"os"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestPrepareLogging(t *testing.T) {
@@ -154,13 +156,15 @@ func TestWithFields(t *testing.T) {
 }
 
 func TestFromCtx(t *testing.T) {
+	ctx := context.TODO()
+
 	logSpy := bytes.Buffer{}
 	setDefaultLogger(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy})
 	c := coordinate.Coordinate{"p1", "t1", "c1"}
 	e := "e1"
 	g := "g"
 
-	logger := WithCtxFields(context.WithValue(context.WithValue(context.TODO(), CtxKeyCoord{}, c), CtxKeyEnv{}, CtxValEnv{Name: e, Group: g}))
+	logger := WithCtxFields(context.WithValue(context.WithValue(ctx, CtxKeyCoord{}, c), CtxKeyEnv{}, CtxValEnv{Name: e, Group: g}))
 	logger.Info("Hi with context")
 
 	var data map[string]interface{}

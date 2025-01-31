@@ -19,27 +19,30 @@
 package v1
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
 // tests all configs for a single environment
 func TestIntegrationContinueDeploymentOnError(t *testing.T) {
+	ctx := context.TODO()
 
 	allConfigsFolder := AbsOrPanicFromSlash("test-resources/integration-configs-with-errors/")
 	allConfigsEnvironmentsFile := filepath.Join(allConfigsFolder, "environments.yaml")
 
-	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose --continue-on-error", manifest)
+	RunLegacyIntegrationWithCleanup(ctx, t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose --continue-on-error", manifest)
 		// deployment should fail
 		assert.Error(t, err, "deployment should fail")
 
 		deployedConfig := coordinate.Coordinate{Project: "project", Type: "dashboard", ConfigId: "dashboard"}
-		AssertConfigAvailability(t, fs, manifest, deployedConfig, "environment1", "project", true)
+		AssertConfigAvailability(ctx, t, fs, manifest, deployedConfig, "environment1", "project", true)
 	})
 }

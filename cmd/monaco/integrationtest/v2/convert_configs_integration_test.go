@@ -19,18 +19,19 @@
 package v2
 
 import (
+	"context"
 	"path"
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/spf13/afero"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
-func setupConvertedConfig(t *testing.T) (testFs afero.Fs, convertedFolder string) {
+func setupConvertedConfig(ctx context.Context, t *testing.T) (testFs afero.Fs, convertedFolder string) {
 	configV1Folder := "../v1/test-resources/integration-all-configs/"
 	env := path.Join(configV1Folder, "environments.yaml")
 
@@ -39,14 +40,16 @@ func setupConvertedConfig(t *testing.T) (testFs afero.Fs, convertedFolder string
 
 	fs := testutils.CreateTestFileSystem()
 
-	err = monaco.RunWithFSf(fs, "monaco convert %s %s --output-folder=%s ", env, configV1Folder, convertedConfigV2Folder)
+	err = monaco.RunWithFSf(ctx, fs, "monaco convert %s %s --output-folder=%s ", env, configV1Folder, convertedConfigV2Folder)
 	assert.NoError(t, err)
 
 	return fs, convertedConfigV2Folder
 }
 
 func TestV1ConfigurationCanBeConverted(t *testing.T) {
-	fs, convertedConfigV2Folder := setupConvertedConfig(t)
+	ctx := context.TODO()
+
+	fs, convertedConfigV2Folder := setupConvertedConfig(ctx, t)
 
 	assertExpectedPathExists(t, fs, convertedConfigV2Folder)
 	assertExpectedPathExists(t, fs, path.Join(convertedConfigV2Folder, "manifest.yaml"))
@@ -62,16 +65,17 @@ func assertExpectedPathExists(t *testing.T, fs afero.Fs, path string) {
 
 // tests conversion from v1 by converting v1 test-resources before deploying as v2
 func TestV1ConfigurationCanBeConvertedAndDeployedAfterConversion(t *testing.T) {
+	ctx := context.TODO()
 
-	fs, convertedConfigV2Folder := setupConvertedConfig(t)
+	fs, convertedConfigV2Folder := setupConvertedConfig(ctx, t)
 	assertExpectedPathExists(t, fs, convertedConfigV2Folder)
 
 	manifest := path.Join(convertedConfigV2Folder, "manifest.yaml")
 	assertExpectedPathExists(t, fs, manifest)
 
-	RunIntegrationWithCleanupOnGivenFs(t, fs, convertedConfigV2Folder, manifest, "", "AllConfigs", func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithCleanupOnGivenFs(ctx, t, fs, convertedConfigV2Folder, manifest, "", "AllConfigs", func(_ context.Context, fs afero.Fs) {
 		// This causes a POST for all configs:
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }
