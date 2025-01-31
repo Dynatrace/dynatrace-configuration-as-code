@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lmittmann/tint"
 	"github.com/spf13/afero"
 )
 
@@ -51,26 +52,15 @@ func PrepareLogging(fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging 
 
 	handlers := []slog.Handler{}
 	if logFile != nil {
-		handlers = append(handlers, getHandler(logFile, &slog.HandlerOptions{
-			AddSource:   shouldAddSource(),
-			Level:       getLevelFromVerbose(verbose),
-			ReplaceAttr: getReplaceAttrFunc(),
-		}))
+		handlers = append(handlers, getHandler(logFile, verbose, false))
 	}
 
 	if errorFile != nil {
-		handlers = append(handlers, getHandler(errorFile, &slog.HandlerOptions{
-			Level:       slog.LevelError,
-			ReplaceAttr: getReplaceAttrFunc(),
-		}))
+		handlers = append(handlers, getHandler(errorFile, verbose, false))
 	}
 
 	if loggerSpy != nil {
-		handlers = append(handlers, getHandler(loggerSpy, &slog.HandlerOptions{
-			AddSource:   shouldAddSource(),
-			Level:       getLevelFromVerbose(verbose),
-			ReplaceAttr: getReplaceAttrFunc(),
-		}))
+		handlers = append(handlers, getHandler(loggerSpy, verbose, false))
 	}
 
 	otelHandler := initOpenTelemetryHandler()
@@ -78,16 +68,7 @@ func PrepareLogging(fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging 
 		handlers = append(handlers, otelHandler)
 	}
 
-	consoleHandler := getHandler(os.Stderr, &slog.HandlerOptions{
-		AddSource:   shouldAddSource(),
-		Level:       getLevelFromVerbose(verbose),
-		ReplaceAttr: getReplaceAttrFunc(),
-	})
-
-	if shouldAddColor() {
-		consoleHandler = NewColorHandler(consoleHandler)
-	}
-
+	consoleHandler := getHandler(os.Stderr, verbose, shouldAddColor())
 	handlers = append(handlers, consoleHandler)
 
 	var handler slog.Handler = NewTeeHandler(handlers...)
@@ -107,27 +88,39 @@ func getLevelFromVerbose(verbose bool) slog.Level {
 	return slog.LevelInfo
 }
 
-func getHandler(w io.Writer, opts *slog.HandlerOptions) slog.Handler {
+func getHandler(w io.Writer, verbose bool, color bool) slog.Handler {
 	if shouldUseJSON() {
-		return slog.NewJSONHandler(w, opts)
+		return slog.NewJSONHandler(w, &slog.HandlerOptions{
+			AddSource:   shouldAddSource(),
+			Level:       getLevelFromVerbose(verbose),
+			ReplaceAttr: getReplaceAttrFunc(),
+		})
 	}
 
-	return slog.NewTextHandler(w, opts)
+	if color {
+		return tint.NewHandler(w, &tint.Options{
+			AddSource:   shouldAddSource(),
+			Level:       getLevelFromVerbose(verbose),
+			ReplaceAttr: getReplaceAttrFunc(),
+		})
+	}
+
+	return slog.NewTextHandler(w, &slog.HandlerOptions{
+		AddSource:   shouldAddSource(),
+		Level:       getLevelFromVerbose(verbose),
+		ReplaceAttr: getReplaceAttrFunc(),
+	})
 }
 
 func getReplaceAttrFunc() func(groups []string, a slog.Attr) slog.Attr {
 	useUTC := shouldUseUTC()
 	return func(groups []string, a slog.Attr) slog.Attr {
-		if a.Key != slog.TimeKey {
-			return a
-		}
-
-		t := a.Value.Time()
-		if useUTC {
+		if a.Key == slog.TimeKey && useUTC {
+			t := a.Value.Time()
 			t = t.UTC()
+			return slog.Attr{Key: slog.TimeKey, Value: slog.StringValue(t.Format(time.RFC3339))}
 		}
 
-		a.Value = slog.StringValue(t.Format(time.RFC3339))
 		return a
 	}
 }
