@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"golang.org/x/net/context"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
@@ -30,7 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	"golang.org/x/net/context"
 )
 
 type client interface {
@@ -102,7 +103,7 @@ func DeleteAll(ctx context.Context, c client) error {
 
 		t, err := automationutils.ClientResourceTypeFromConfigType(resource)
 		if err != nil {
-			logger.Error("Failed to delete Automation objects of type %q: %v", err)
+			logger.Error("Failed to delete Automation objects of type '%s': %v", resource, err)
 			errs++
 			continue
 		}

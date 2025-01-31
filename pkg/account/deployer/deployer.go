@@ -3,15 +3,16 @@ package deployer
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sync"
+
+	"github.com/go-logr/logr"
+
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/go-logr/logr"
-	"strings"
-	"sync"
 )
 
 /*
@@ -72,7 +73,7 @@ type client interface {
 type AccountDeployer struct {
 	accClient            client
 	idMap                idMap
-	logger               loggers.Logger
+	logger               *log.WrappedLogger
 	maxConcurrentDeploys int
 }
 
@@ -510,5 +511,5 @@ func (d *AccountDeployer) managementZoneIdLookup(envName, mzName string) remoteI
 }
 
 func (d *AccountDeployer) logCtx() context.Context {
-	return logr.NewContext(context.TODO(), d.logger.GetLogr())
+	return logr.NewContextWithSlogLogger(context.TODO(), d.logger.SLogger())
 }
