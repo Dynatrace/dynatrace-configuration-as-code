@@ -21,21 +21,27 @@ import (
 	"errors"
 	"log/slog"
 	"slices"
+	"sync"
 )
 
 var _ slog.Handler = (*TeeHandler)(nil)
 
 type TeeHandler struct {
+	mu       *sync.Mutex
 	handlers []slog.Handler
 }
 
 func NewTeeHandler(h ...slog.Handler) *TeeHandler {
 	return &TeeHandler{
 		handlers: h,
+		mu:       &sync.Mutex{},
 	}
 }
 
 func (t *TeeHandler) Enabled(ctx context.Context, l slog.Level) bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	e := false
 	for _, h := range t.handlers {
 		e = e || h.Enabled(ctx, l)
@@ -44,6 +50,9 @@ func (t *TeeHandler) Enabled(ctx context.Context, l slog.Level) bool {
 }
 
 func (t *TeeHandler) Handle(ctx context.Context, r slog.Record) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	errs := []error{}
 	for _, h := range t.handlers {
 		errs = append(errs, h.Handle(ctx, r))
