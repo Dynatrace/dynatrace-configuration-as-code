@@ -10,7 +10,12 @@ configs:
         configId: profile
         property: id
         type: reference
-      environment: Env1
+      environment:
+        type: reference
+        property: _global:environment
+      owner:
+        type: reference
+        property: _global:hansi
     template: subfolder/slack.json
     skip: false
 - id: email
