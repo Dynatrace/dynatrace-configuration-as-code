@@ -19,13 +19,16 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+
 	"github.com/spf13/afero"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 )
 
 func TestDeprecatedSettingsSchemasProduceWarnings(t *testing.T) {
@@ -42,7 +45,7 @@ func TestDeprecatedSettingsSchemasProduceWarnings(t *testing.T) {
 		assert.NoError(t, err)
 
 		runLog := strings.ToLower(logOutput.String())
-		assert.Regexp(t, `.*?warn.*?project:builtin:span-attribute:span-attr.*?schema "builtin:span-attribute" is deprecated.*`, runLog)
-		assert.Regexp(t, `.*?warn.*?project:builtin:span-event-attribute:span-event.*?schema "builtin:span-event-attribute" is deprecated.*`, runLog)
+		assert.Regexp(t, `.*?warn.*?schema \\"builtin:span-attribute\\" is deprecated.*?project:builtin:span-attribute:span-attr.*`, runLog)
+		assert.Regexp(t, `.*?warn.*?schema \\"builtin:span-event-attribute\\" is deprecated.*?project:builtin:span-event-attribute:span-event.*`, runLog)
 	})
 }

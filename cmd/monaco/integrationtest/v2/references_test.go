@@ -238,7 +238,7 @@ func TestReferencesFromClassicConfigsToSettingsResultInError(t *testing.T) {
 
 	runLog := strings.ToLower(logOutput.String())
 	assert.Contains(t, runLog, "can only reference ids of other config api types")
-	assert.Contains(t, runLog, "parameter \"alertingprofileid\" references \"builtin:alerting.profile\" type")
+	assert.Contains(t, runLog, "parameter \\\"alertingprofileid\\\" references \\\"builtin:alerting.profile\\\" type")
 }
 
 func assertRefParamFromTo(t *testing.T, from config.Config, to config.Config) {
