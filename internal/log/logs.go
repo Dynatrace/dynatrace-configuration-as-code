@@ -33,21 +33,17 @@ const envVarLogTime = "MONACO_LOG_TIME"
 const envVarLogSource = "MONACO_LOG_SOURCE"
 const envVarLogColor = "MONACO_LOG_COLOR"
 
-//const envVarLogToFile = "MONACO_LOG_FILE_ENABLED"
-
-var logFile afero.File
-var errorFile afero.File
-
 func PrepareLogging(fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging bool) {
+	var logFile afero.File
+	var errorFile afero.File
+
 	if fileLogging && fs != nil {
-		if logFile == nil {
-			lf, ef, err := prepareLogFiles(fs)
-			if err != nil {
-				Warn("Error preparing log files: %s", err.Error())
-			}
-			logFile = lf
-			errorFile = ef
+		lf, ef, err := prepareLogFiles(fs)
+		if err != nil {
+			Warn("Error preparing log files: %s", err.Error())
 		}
+		logFile = lf
+		errorFile = ef
 	}
 
 	handlers := []slog.Handler{}
