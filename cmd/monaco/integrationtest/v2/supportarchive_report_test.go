@@ -65,11 +65,12 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 
 		zipReader := readZipArchive(t, fs, archive)
 		logFile, err := zipReader.Open(fixedTime + ".log")
-		defer logFile.Close()
 		assert.NoError(t, err)
+		defer logFile.Close()
+
 		content, err := io.ReadAll(logFile)
 		assert.NoError(t, err)
-		assert.Contains(t, string(content), "debug", "expected log file to contain debug log entries")
+		assert.Contains(t, string(content), "DEBUG", "expected log file to contain debug log entries")
 	})
 }
 

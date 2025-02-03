@@ -16,7 +16,11 @@
 
 package version
 
-import "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+import (
+	"log/slog"
+)
+
+var ApplicationName = ""
 
 var MonitoringAsCode = "2.x"
 
@@ -24,5 +28,5 @@ const ManifestVersion = "1.0"
 const MinManifestVersion = "1.0"
 
 func LogVersionAsInfo() {
-	log.Info("Monaco version %s", MonitoringAsCode)
+	slog.Info("Monaco version " + MonitoringAsCode)
 }

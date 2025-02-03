@@ -20,9 +20,10 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"path/filepath"
 	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -433,6 +434,8 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 		// assert log for skipped deletion
 		log, err := afero.ReadFile(fs, logFile)
 		assert.NoError(t, err)
-		assert.Contains(t, string(log), "Skipped deletion of 1 Automation configuration(s)")
+
+		s := string(log)
+		assert.Contains(t, s, "Skipped deletion of 1 Automation configuration(s)")
 	})
 }

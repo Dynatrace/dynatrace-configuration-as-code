@@ -23,6 +23,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
@@ -31,10 +36,6 @@ import (
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/maps"
 )
 
 func TestReferencesAreResolvedOnDownload(t *testing.T) {
@@ -154,7 +155,7 @@ func TestReferencesFromClassicConfigsToSettingsResultInError(t *testing.T) {
 
 	runLog := strings.ToLower(logOutput.String())
 	assert.Contains(t, runLog, "can only reference ids of other config api types")
-	assert.Contains(t, runLog, "parameter \"alertingprofileid\" references \"builtin:alerting.profile\" type")
+	assert.Contains(t, runLog, "parameter \\\"alertingprofileid\\\" references \\\"builtin:alerting.profile\\\" type")
 }
 
 func assertRefParamFromTo(t *testing.T, from config.Config, to config.Config) {

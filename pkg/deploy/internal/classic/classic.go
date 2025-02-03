@@ -37,7 +37,7 @@ import (
 
 func Deploy(ctx context.Context, configClient client.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (entities.ResolvedEntity, error) {
 	// create new context to carry logger
-	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
+	ctx = logr.NewContextWithSlogLogger(ctx, log.WithCtxFields(ctx).SLogger())
 
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
