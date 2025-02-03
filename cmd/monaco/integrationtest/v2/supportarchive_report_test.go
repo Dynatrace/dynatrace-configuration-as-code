@@ -69,7 +69,7 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 		assert.NoError(t, err)
 		content, err := io.ReadAll(logFile)
 		assert.NoError(t, err)
-		assert.Contains(t, string(content), "debug", "expected log file to contain debug log entries")
+		assert.Contains(t, string(content), "DEBUG", "expected log file to contain debug log entries")
 	})
 }
 
