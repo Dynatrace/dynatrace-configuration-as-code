@@ -17,6 +17,7 @@
 package log
 
 import (
+	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
@@ -135,7 +136,7 @@ func writeCsv(file afero.File, location string, stats extendedStats) { // nolint
 	_, _ = file.WriteString(line)
 }
 
-func createMemStatFile(fs afero.Fs, name string) error {
+func createMemStatFile(ctx context.Context, fs afero.Fs, name string) error {
 	memStatFile, err := fs.Create(name)
 	if err != nil {
 		return err
@@ -148,8 +149,13 @@ func createMemStatFile(fs afero.Fs, name string) error {
 
 	go func() {
 		for {
-			time.Sleep(60 * time.Second)
-			writeCsv(memStatFile, "periodic", getStats())
+			select {
+			case <-ctx.Done():
+				_ = memStatFile.Close()
+				return
+			case <-time.After(60 * time.Second):
+				writeCsv(memStatFile, "periodic", getStats())
+			}
 		}
 	}()
 

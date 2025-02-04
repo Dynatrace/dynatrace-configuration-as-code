@@ -15,6 +15,7 @@
 package runner
 
 import (
+	"context"
 	"io"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -76,7 +77,7 @@ Examples:
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			fileBasedLogging := featureflags.LogToFile.Enabled() || support.SupportArchive
-			log.PrepareLogging(fs, verbose, logSpy, fileBasedLogging)
+			log.PrepareLogging(context.TODO(), fs, verbose, logSpy, fileBasedLogging)
 
 			// log the version except for running the main command, help command and version command
 			if (cmd.Name() != "monaco") && (cmd.Name() != "help") && (cmd.Name() != "version") {
