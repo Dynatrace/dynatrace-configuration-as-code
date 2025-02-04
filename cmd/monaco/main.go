@@ -35,7 +35,7 @@ func main() {
 	// furthermore it should honor the desired format, such as JSON
 	// full logging is set up in PreRunE method of the root command, created with runner.BuildCli
 	// that is the earliest point calls to log will be also written into files and adhere to user controlled verbosity
-	log.PrepareLogging(nil, true, nil, false)
+	log.PrepareLogging(context.TODO(), nil, true, nil, false)
 	ctx := context.Background()
 
 	var versionNotification string
