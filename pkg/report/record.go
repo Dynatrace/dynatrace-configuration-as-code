@@ -97,6 +97,7 @@ func ReadReportFile(fs afero.Fs, filename string) ([]Record, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 	var records []Record
 	s := bufio.NewScanner(f)
 	for s.Scan() {
