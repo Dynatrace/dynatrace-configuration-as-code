@@ -19,10 +19,12 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
+
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 )
 
 type ProjectDefinition struct {
@@ -93,11 +95,11 @@ type URLDefinition struct {
 
 // AuthSecret contains a resolved secret value. It is used for the API-Token, ClientID, and ClientSecret.
 type AuthSecret struct {
-	// Name is the name of the environment-variable of the token. It is used for converting monaco-v1 to monaco-v2 environments
-	// where the value is not resolved, but the env-name has to be kept.
+	// Name is the name of the environment-variable of the token.
+	// It is used in download to store the name of the OAuth token in the new created manifest.
 	Name string
 
-	// Value holds the actual token value for the given [Name]. It is empty when converting vom monaco-v1 to monaco-v2
+	// Value holds the actual token value for the given [AuthSecret.Name].
 	Value secret.MaskedString
 }
 

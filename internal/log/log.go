@@ -120,7 +120,7 @@ var (
 	std loggers.Logger = console.Instance
 )
 
-func PrepareLogging(fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging bool) {
+func PrepareLogging(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging bool) {
 	loglevel := loggers.LevelInfo
 	if verbose {
 		loglevel = loggers.LevelDebug
@@ -129,7 +129,7 @@ func PrepareLogging(fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging 
 	var logFile, errFile afero.File
 	var err error
 	if fileLogging && fs != nil {
-		logFile, errFile, err = prepareLogFiles(fs)
+		logFile, errFile, err = prepareLogFiles(ctx, fs)
 	}
 
 	logFormat := loggers.ParseLogFormat(os.Getenv(loggers.EnvVarLogFormat))
@@ -172,7 +172,7 @@ func MemStatFilePath() string {
 // may be returned in case of errors.
 // If log directory or logFile creation fails, no log files are returned.
 // If errLog creation fails, a valid logFile is still being returned with an error.
-func prepareLogFiles(fs afero.Fs) (logFile afero.File, errFile afero.File, err error) {
+func prepareLogFiles(ctx context.Context, fs afero.Fs) (logFile afero.File, errFile afero.File, err error) {
 	if err := fs.MkdirAll(LogDirectory, 0777); err != nil {
 		return nil, nil, fmt.Errorf("unable to prepare log directory %s: %w", LogDirectory, err)
 	}
@@ -189,7 +189,7 @@ func prepareLogFiles(fs afero.Fs) (logFile afero.File, errFile afero.File, err e
 		return logFile, nil, fmt.Errorf("unable to prepare error file in %s directory: %w", LogDirectory, err)
 	}
 
-	err = createMemStatFile(fs, MemStatFilePath())
+	err = createMemStatFile(ctx, fs, MemStatFilePath())
 	if err != nil {
 		return logFile, errFile, fmt.Errorf("unable to prepare memory statistics file in %s directory: %w", LogDirectory, err)
 	}

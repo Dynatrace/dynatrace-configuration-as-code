@@ -1,8 +1,0 @@
-
-config:
-  - rule: "rule.json"
-
-rule:
-  - name: "/project/application-web/application.name"
-  - applicationId: "/project/application-web/application.id"
-  - pattern: "pattern"

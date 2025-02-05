@@ -1,8 +1,0 @@
-
-config:
-  - credentials: "aws.json"
-
-credentials:
-  - name: "Enterprise AWS Credentials"
-  - accountId: "1234"
-  - iamRoleName: "yes-the-enterprise-runs-on-AWS"

@@ -15,6 +15,7 @@
 package runner
 
 import (
+	"context"
 	"io"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -23,7 +24,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/convert"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download"
@@ -77,7 +77,7 @@ Examples:
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			fileBasedLogging := featureflags.LogToFile.Enabled() || support.SupportArchive
-			log.PrepareLogging(fs, verbose, logSpy, fileBasedLogging)
+			log.PrepareLogging(context.TODO(), fs, verbose, logSpy, fileBasedLogging)
 
 			// log the version except for running the main command, help command and version command
 			if (cmd.Name() != "monaco") && (cmd.Name() != "help") && (cmd.Name() != "version") {
@@ -102,7 +102,6 @@ Examples:
 
 	// commands
 	rootCmd.AddCommand(download.GetDownloadCommand(fs, &download.DefaultCommand{}))
-	rootCmd.AddCommand(convert.GetConvertCommand(fs))
 	rootCmd.AddCommand(deploy.GetDeployCommand(fs))
 	rootCmd.AddCommand(delete.GetDeleteCommand(fs))
 	rootCmd.AddCommand(versionCommand.GetVersionCommand())

@@ -20,10 +20,13 @@ package integrationtest
 
 import (
 	"bytes"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 
 	"github.com/spf13/afero"
 )
@@ -100,11 +103,6 @@ func TestReplaceNameMatchingConfigV2(t *testing.T) {
 	assert.Equal(t, configV2ConfigExpected, result)
 }
 
-func TestReplaceNameDependency(t *testing.T) {
-	assert.Equal(t, "- name: test_postfix.id", nameReplacingPostfixFunc("- name: test_postfix.id"))
-	assert.Equal(t, "- name: test_postfix.name", nameReplacingPostfixFunc("- name: test_postfix.name"))
-}
-
 func TestReplaceNameDependencyV2(t *testing.T) {
 	assert.Equal(t, " name: [ \"project\",\"api\",\"test_postfix\",\"id\" ]", nameReplacingPostfixFunc(" name: [ \"project\",\"api\",\"test_postfix\",\"id\" ]"))
 	assert.Equal(t, " name: [ \"project\",\"api\",\"test_postfix\",\"name\" ]", nameReplacingPostfixFunc(" name: [ \"project\",\"api\",\"test_postfix\",\"name\" ]"))
@@ -150,7 +148,9 @@ func TestRewriteConfigNames(t *testing.T) {
 			assert.NoError(t, err)
 			want = bytes.ReplaceAll(want, []byte{'\r'}, []byte{})
 
-			assert.Equal(t, string(want), string(got))
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("RewriteConfigNames() mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
@@ -241,21 +241,6 @@ func TestReplaceId(t *testing.T) {
 			"does not replace in values (list type) array #2",
 			` values  : [ some_val, some_val2, some_val3]`,
 			` values  : [ some_val, some_val2, some_val3]`,
-		},
-		{
-			"replaces configId in v1 reference #1",
-			"someRef: \"/project/type/theConfigId.id\"",
-			"someRef: \"/project/type/theConfigId_postfix.id\"",
-		},
-		{
-			"replaces configId in v1 reference #2",
-			"someRef: 'type/theConfigId.id'",
-			"someRef: \"type/theConfigId_postfix.id\"",
-		},
-		{
-			"replaces configId in v1 reference #3",
-			"someRef: \"project/type/theConfigId.name\"",
-			"someRef: \"project/type/theConfigId_postfix.name\"",
 		},
 	}
 	for _, tt := range tests {
