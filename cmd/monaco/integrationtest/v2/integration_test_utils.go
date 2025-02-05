@@ -19,12 +19,14 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/spf13/afero"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/afero"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
 type TestContext struct {
@@ -54,6 +56,20 @@ func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specifi
 		specificEnvironment: specificEnvironment,
 		suffix:              suffixTest,
 		envVars:             nil,
+	}
+
+	runIntegrationWithCleanup(t, opts, testFunc)
+}
+
+func RunIntegrationWithoutCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
+	opts := TestOptions{
+		fs:                  testutils.CreateTestFileSystem(),
+		configFolder:        configFolder,
+		manifestPath:        manifestPath,
+		specificEnvironment: specificEnvironment,
+		suffix:              suffixTest,
+		envVars:             nil,
+		skipCleanup:         true,
 	}
 
 	runIntegrationWithCleanup(t, opts, testFunc)
@@ -90,6 +106,10 @@ type TestOptions struct {
 	fs                                                      afero.Fs
 	configFolder, manifestPath, specificEnvironment, suffix string
 	envVars                                                 map[string]string
+
+	// skipCleanup skips the Monaco cleanup that generates the delete file and deletes all created resources.
+	// It is false by default, thus the cleanup must be disabled intentionally
+	skipCleanup bool
 }
 
 func runIntegrationWithCleanup(t *testing.T, opts TestOptions, testFunc TestFunc) {
@@ -101,9 +121,11 @@ func runIntegrationWithCleanup(t *testing.T, opts TestOptions, testFunc TestFunc
 		setTestEnvVar(t, k, v, suffix)
 	}
 
-	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, opts.specificEnvironment, suffix)
-	})
+	if !opts.skipCleanup {
+		t.Cleanup(func() {
+			integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, opts.specificEnvironment, suffix)
+		})
+	}
 
 	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)
 

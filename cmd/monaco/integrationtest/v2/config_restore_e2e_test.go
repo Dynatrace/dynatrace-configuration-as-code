@@ -25,13 +25,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
 type downloadFunction func(*testing.T, afero.Fs, string, string, string, string, bool) error
@@ -106,6 +108,8 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withPlatformConfigs
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_automations"
+
+	t.Setenv(featureflags.Segments.EnvName(), "true")
 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }
