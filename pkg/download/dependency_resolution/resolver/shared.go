@@ -69,7 +69,7 @@ func sanitizeTemplateVar(templateVarName string) string {
 }
 
 func replaceAll(content string, key string, s string) string {
-	if featureflags.CreateReferencesOnlyInStringValues.Enabled() {
+	if featureflags.OnlyCreateReferencesInStringValues.Enabled() {
 		f := func(v string) string {
 			return replaceAllUsingRegEx(v, key, s)
 		}

@@ -37,7 +37,7 @@ const (
 	// Introduced: v2.18.0
 	ServiceUsers FeatureFlag = "MONACO_FEAT_SERVICE_USERS"
 
-	CreateReferencesOnlyInStringValues FeatureFlag = "MONACO_CREATE_REFS_IN_STRINGS"
+	OnlyCreateReferencesInStringValues FeatureFlag = "MONACO_FEAT_ONLY_CREATE_REFERENCES_IN_STRINGS"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
@@ -50,5 +50,5 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	IgnoreSkippedConfigs:               false,
 	Segments:                           true,
 	ServiceUsers:                       false,
-	CreateReferencesOnlyInStringValues: false,
+	OnlyCreateReferencesInStringValues: false,
 }
