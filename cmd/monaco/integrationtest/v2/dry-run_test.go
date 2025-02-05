@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -31,6 +32,8 @@ import (
 )
 
 func TestDryRun(t *testing.T) {
+	ctx := context.TODO()
+
 	specificEnvironment := "platform_env"
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
@@ -39,7 +42,7 @@ func TestDryRun(t *testing.T) {
 		featureflags.OpenPipeline.EnvName(): "true",
 	}
 
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithCleanupGivenEnvs(ctx, t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(_ context.Context, fs afero.Fs) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			t.Fatalf("unexpected HTTP request made during dry run: %s", req.RequestURI)
 		}))
@@ -49,11 +52,11 @@ func TestDryRun(t *testing.T) {
 		setAllURLEnvironmentVariables(t, server.URL)
 
 		// This causes a POST for all configs:
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
 		assert.NoError(t, err)
 
 		// This causes a PUT for all configs:
-		err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
+		err = monaco.RunWithFSf(ctx, fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
 		assert.NoError(t, err)
 	})
 }

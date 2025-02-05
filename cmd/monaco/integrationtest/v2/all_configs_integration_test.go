@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -34,6 +35,8 @@ import (
 
 // tests all configs for a single environment
 func TestIntegrationAllConfigsClassic(t *testing.T) {
+	ctx := context.TODO()
+
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
@@ -41,16 +44,18 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 
 	targetEnvironment := "classic_env"
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, targetEnvironment, "AllConfigs", func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithCleanup(ctx, t, configFolder, manifest, targetEnvironment, "AllConfigs", func(_ context.Context, fs afero.Fs) {
 		// This causes a POST for all configs:
-		runDeployCommand(t, fs, manifest, targetEnvironment)
+		runDeployCommand(ctx, t, fs, manifest, targetEnvironment)
 
 		// This causes a PUT for all configs:
-		runDeployCommand(t, fs, manifest, targetEnvironment)
+		runDeployCommand(ctx, t, fs, manifest, targetEnvironment)
 	})
 }
 
 func TestIntegrationAllConfigsPlatform(t *testing.T) {
+	ctx := context.TODO()
+
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
@@ -58,16 +63,16 @@ func TestIntegrationAllConfigsPlatform(t *testing.T) {
 
 	targetEnvironment := "platform_env"
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, targetEnvironment, "AllConfigs", func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithCleanup(ctx, t, configFolder, manifest, targetEnvironment, "AllConfigs", func(_ context.Context, fs afero.Fs) {
 		// This causes a POST for all configs:
-		runDeployCommand(t, fs, manifest, targetEnvironment)
+		runDeployCommand(ctx, t, fs, manifest, targetEnvironment)
 
 		// This causes a PUT for all configs:
-		runDeployCommand(t, fs, manifest, targetEnvironment)
+		runDeployCommand(ctx, t, fs, manifest, targetEnvironment)
 	})
 }
 
-func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment string) {
+func runDeployCommand(ctx context.Context, t *testing.T, fs afero.Fs, manifest, specificEnvironment string) {
 	t.Helper()
 
 	reportFile := fmt.Sprintf("report%s.jsonl", time.Now().Format(trafficlogs.TrafficLogFilePrefixFormat))
@@ -75,7 +80,7 @@ func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment s
 	t.Setenv(environment.DeploymentReportFilename, reportFile)
 
 	// This causes a POST for all configs:
-	err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment)
+	err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment)
 	assert.NoError(t, err)
 
 	if err == nil {
@@ -87,6 +92,8 @@ func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment s
 
 // Tests a dry run (validation)
 func TestIntegrationValidationAllConfigs(t *testing.T) {
+	ctx := context.TODO()
+
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
 	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
 
@@ -96,7 +103,7 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 	fs.Remove(reportFile)
 	t.Setenv(environment.DeploymentReportFilename, reportFile)
 
-	err := monaco.RunWithFSf(fs, "monaco deploy %s --dry-run --verbose", "test-resources/integration-all-configs/manifest.yaml")
+	err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --dry-run --verbose", "test-resources/integration-all-configs/manifest.yaml")
 	assert.NoError(t, err)
 
 	if err == nil {

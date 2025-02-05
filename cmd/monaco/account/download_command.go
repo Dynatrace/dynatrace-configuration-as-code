@@ -17,11 +17,13 @@
 package account
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"log"
+
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"log"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 )
 
 type downloadOpts struct {
@@ -48,7 +50,7 @@ func downloadCommand(fs afero.Fs) *cobra.Command {
 		ValidArgsFunction: completion.SingleArgumentManifestFileCompletion,
 		PreRun:            cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return downloadAll(fs, &opts)
+			return downloadAll(cmd.Context(), fs, &opts)
 		},
 	}
 

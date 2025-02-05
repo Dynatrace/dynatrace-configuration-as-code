@@ -44,14 +44,14 @@ import (
 )
 
 // AssertConfigAvailability checks specific configuration for availability
-func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, coord coordinate.Coordinate, env, projName string, available bool) {
+func AssertConfigAvailability(ctx context.Context, t *testing.T, fs afero.Fs, manifestFile string, coord coordinate.Coordinate, env, projName string, available bool) {
 
 	mani := integrationtest.LoadManifest(t, fs, manifestFile, "")
 
 	envDefinition, found := mani.Environments[env]
 	assert.True(t, found, "environment %s not found", env)
 
-	clients := integrationtest.CreateDynatraceClients(t, envDefinition)
+	clients := integrationtest.CreateDynatraceClients(ctx, t, envDefinition)
 
 	projects := integrationtest.LoadProjects(t, fs, manifestFile, mani)
 	project := findProjectByName(t, projects, projName)
@@ -69,7 +69,7 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 
 	assert.True(t, conf != nil, "config %s not found", coord)
 
-	ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, coord)
+	ctx = context.WithValue(ctx, log.CtxKeyCoord{}, coord)
 	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: conf.Environment, Group: conf.Group})
 
 	assertConfigAvailable(t, ctx, clients.ConfigClient, envDefinition, available, *conf)
@@ -164,8 +164,8 @@ func wait(description string, maxPollCount int, condition func() bool) error {
 //
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
-func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string)) {
-	runLegacyIntegration(t, configFolder, envFile, suffixTest, testFunc, true)
+func RunLegacyIntegrationWithCleanup(ctx context.Context, t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string)) {
+	runLegacyIntegration(ctx, t, configFolder, envFile, suffixTest, testFunc, true)
 }
 
 // RunLegacyIntegrationWithoutCleanup runs an integration test and cleans up the created configs afterwards
@@ -178,11 +178,11 @@ func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffix
 //
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
-func RunLegacyIntegrationWithoutCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string)) {
-	runLegacyIntegration(t, configFolder, envFile, suffixTest, testFunc, false)
+func RunLegacyIntegrationWithoutCleanup(ctx context.Context, t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string)) {
+	runLegacyIntegration(ctx, t, configFolder, envFile, suffixTest, testFunc, false)
 }
 
-func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string), doCleanup bool) {
+func runLegacyIntegration(ctx context.Context, t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string), doCleanup bool) {
 	configFolder, _ = filepath.Abs(configFolder)
 	envFile, _ = filepath.Abs(envFile)
 
@@ -195,7 +195,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	manifestPath := path.Join(targetDir, "manifest.yaml")
 
 	t.Log("Converting monaco-v1 to monaco-v2")
-	err = monaco.RunWithFSf(fs, "monaco convert %s %s --output-folder=%s --verbose", envFile, configFolder, targetDir)
+	err = monaco.RunWithFSf(ctx, fs, "monaco convert %s %s --output-folder=%s --verbose", envFile, configFolder, targetDir)
 	assert.NoError(t, err, "Conversion should had happened without errors")
 
 	exists, err := afero.Exists(fs, manifestPath)
@@ -205,7 +205,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	if doCleanup {
 		t.Cleanup(func() {
 			t.Log("Cleaning up environment")
-			integrationtest.CleanupIntegrationTest(t, fs, manifestPath, "", suffix)
+			integrationtest.CleanupIntegrationTest(ctx, t, fs, manifestPath, "", suffix)
 		})
 	}
 

@@ -17,6 +17,7 @@
 package download
 
 import (
+	"context"
 	"io"
 	"strings"
 	"testing"
@@ -28,11 +29,15 @@ import (
 
 func TestGetDownloadCommand(t *testing.T) {
 	t.Run("url and token are mutually exclusive", func(t *testing.T) {
-		err := newMonaco(t).download("--url http://some.url --manifest my-manifest.yaml")
+		ctx := context.TODO()
+
+		err := newMonaco(t).download(ctx, "--url http://some.url --manifest my-manifest.yaml")
 		assert.EqualError(t, err, "'url' and 'manifest' are mutually exclusive")
 	})
 
 	t.Run("Download via manifest - manifest set explicitly", func(t *testing.T) {
+		ctx := context.TODO()
+
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
@@ -40,14 +45,16 @@ func TestGetDownloadCommand(t *testing.T) {
 			specificEnvironmentName: "my-environment1",
 			projectName:             "project",
 		}
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(ctx, gomock.Any(), expected).Return(nil)
 
-		err := m.download("--manifest path/to/my-manifest.yaml --environment my-environment1")
+		err := m.download(ctx, "--manifest path/to/my-manifest.yaml --environment my-environment1")
 
 		assert.NoError(t, err)
 	})
 
 	t.Run("Download via manifest - manifest is not set (will take default value)", func(t *testing.T) {
+		ctx := context.TODO()
+
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
@@ -55,19 +62,21 @@ func TestGetDownloadCommand(t *testing.T) {
 			specificEnvironmentName: "my-environment",
 			projectName:             "project",
 		}
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(ctx, gomock.Any(), expected).Return(nil)
 
-		err := m.download("--environment my-environment")
+		err := m.download(ctx, "--environment my-environment")
 
 		assert.NoError(t, err)
 	})
 
 	t.Run("Download via manifest.yaml - environment missing", func(t *testing.T) {
-		err := newMonaco(t).download("")
+		err := newMonaco(t).download(context.TODO(), "")
 		assert.EqualError(t, err, "to download with manifest, 'environment' needs to be specified")
 	})
 
 	t.Run("Download w/o manifest.yaml - authorization via token", func(t *testing.T) {
+		ctx := context.TODO()
+
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
@@ -75,14 +84,16 @@ func TestGetDownloadCommand(t *testing.T) {
 			auth:           auth{token: "TOKEN"},
 			projectName:    "project",
 		}
-		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigs(ctx, gomock.Any(), expected).Return(nil)
 
-		err := m.download("--url http://some.url --token TOKEN")
+		err := m.download(ctx, "--url http://some.url --token TOKEN")
 
 		assert.NoError(t, err)
 	})
 
 	t.Run("Download w/o manifest.yaml - authorization via OAuth", func(t *testing.T) {
+		ctx := context.TODO()
+
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
@@ -94,28 +105,30 @@ func TestGetDownloadCommand(t *testing.T) {
 			},
 			projectName: "project",
 		}
-		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigs(ctx, gomock.Any(), expected).Return(nil)
 
-		err := m.download("--url http://some.url --token TOKEN --oauth-client-id CLIENT_ID --oauth-client-secret CLIENT_SECRET")
+		err := m.download(ctx, "--url http://some.url --token TOKEN --oauth-client-id CLIENT_ID --oauth-client-secret CLIENT_SECRET")
 		assert.NoError(t, err)
 	})
 
 	t.Run("Download w/o manifest.yaml - token missing", func(t *testing.T) {
-		err := newMonaco(t).download("--url http://some.url")
+		err := newMonaco(t).download(context.TODO(), "--url http://some.url")
 		assert.EqualError(t, err, "if 'url' is set, 'token' also must be set")
 	})
 
 	t.Run("Download w/o manifest.yaml - clint ID for OAuth authorization is missing", func(t *testing.T) {
-		err := newMonaco(t).download("--url http://some.url --token TOKEN --oauth-client-secret CLIENT_SECRET")
+		err := newMonaco(t).download(context.TODO(), "--url http://some.url --token TOKEN --oauth-client-secret CLIENT_SECRET")
 		assert.EqualError(t, err, "'oauth-client-id' and 'oauth-client-secret' must always be set together")
 	})
 
 	t.Run("Download w/o manifest.yaml - clint secret for OAuth authorization is missing", func(t *testing.T) {
-		err := newMonaco(t).download("--url http://some.url --token TOKEN --oauth-client-id CLIENT_ID")
+		err := newMonaco(t).download(context.TODO(), "--url http://some.url --token TOKEN --oauth-client-id CLIENT_ID")
 		assert.EqualError(t, err, "'oauth-client-id' and 'oauth-client-secret' must always be set together")
 	})
 
 	t.Run("All non conflicting flags", func(t *testing.T) {
+		ctx := context.TODO()
+
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
@@ -125,14 +138,16 @@ func TestGetDownloadCommand(t *testing.T) {
 			outputFolder:            "path/to/my-folder",
 			forceOverwrite:          true,
 		}
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(ctx, gomock.Any(), expected).Return(nil)
 
-		err := m.download("--manifest path/my-manifest.yaml --environment my-environment --project my-project --output-folder path/to/my-folder --force true")
+		err := m.download(ctx, "--manifest path/my-manifest.yaml --environment my-environment --project my-project --output-folder path/to/my-folder --force true")
 
 		assert.NoError(t, err)
 	})
 
 	t.Run("If not provided, default project name is 'project'", func(t *testing.T) {
+		ctx := context.TODO()
+
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
@@ -140,28 +155,31 @@ func TestGetDownloadCommand(t *testing.T) {
 			specificEnvironmentName: "my_environment",
 			projectName:             "project",
 		}
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(ctx, gomock.Any(), expected).Return(nil)
 
-		err := m.download("--environment my_environment")
+		err := m.download(ctx, "--environment my_environment")
 		assert.NoError(t, err)
 	})
 
 	t.Run("Api selection - set of wanted api", func(t *testing.T) {
-		m := newMonaco(t)
+		ctx := context.TODO()
 
+		m := newMonaco(t)
 		expected := downloadCmdOptions{
 			manifestFile:            "manifest.yaml",
 			specificEnvironmentName: "myEnvironment",
 			projectName:             "project",
 			specificAPIs:            []string{"test", "test2", "test3", "test4"},
 		}
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(ctx, gomock.Any(), expected).Return(nil)
 
-		err := m.download("--environment myEnvironment --api test --api test2 --api test3,test4")
+		err := m.download(ctx, "--environment myEnvironment --api test --api test2 --api test3,test4")
 		assert.NoError(t, err)
 	})
 
 	t.Run("Api selection - download all api", func(t *testing.T) {
+		ctx := context.TODO()
+
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
 			auth:           auth{token: "token"},
@@ -170,27 +188,31 @@ func TestGetDownloadCommand(t *testing.T) {
 		}
 
 		m := newMonaco(t)
-		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigs(ctx, gomock.Any(), expected).Return(nil)
 
-		err := m.download("--url test.url --token token --only-apis")
+		err := m.download(ctx, "--url test.url --token token --only-apis")
 		assert.NoError(t, err)
 	})
 
 	t.Run("Api selection - mutually exclusive combination", func(t *testing.T) {
+		ctx := context.TODO()
+
 		m := newMonaco(t)
 		var err error
 
-		err = m.download("--environment myEnvironment --api test,test2 --only-apis")
+		err = m.download(ctx, "--environment myEnvironment --api test,test2 --only-apis")
 		assert.Error(t, err)
 
-		err = m.download("--environment myEnvironment --api test,test2 --only-settings")
+		err = m.download(ctx, "--environment myEnvironment --api test,test2 --only-settings")
 		assert.Error(t, err)
 
-		err = m.download("--environment myEnvironment --only-apis --only-settings")
+		err = m.download(ctx, "--environment myEnvironment --only-apis --only-settings")
 		assert.Error(t, err)
 	})
 
 	t.Run("Settings schema selection - set of wanted settings schema", func(t *testing.T) {
+		ctx := context.TODO()
+
 		expected := downloadCmdOptions{
 			manifestFile:            "manifest.yaml",
 			specificEnvironmentName: "myEnvironment",
@@ -198,13 +220,15 @@ func TestGetDownloadCommand(t *testing.T) {
 			specificSchemas:         []string{"settings:schema:1", "settings:schema:2", "settings:schema:3", "settings:schema:4"},
 		}
 		m := newMonaco(t)
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(ctx, gomock.Any(), expected).Return(nil)
 
-		err := m.download("--environment myEnvironment --settings-schema settings:schema:1 --settings-schema settings:schema:2 --settings-schema settings:schema:3,settings:schema:4")
+		err := m.download(ctx, "--environment myEnvironment --settings-schema settings:schema:1 --settings-schema settings:schema:2 --settings-schema settings:schema:3,settings:schema:4")
 		assert.NoError(t, err)
 	})
 
 	t.Run("Settings schema selection - download all settings schema", func(t *testing.T) {
+		ctx := context.TODO()
+
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
 			auth:           auth{token: "token"},
@@ -213,23 +237,25 @@ func TestGetDownloadCommand(t *testing.T) {
 		}
 
 		m := newMonaco(t)
-		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigs(ctx, gomock.Any(), expected).Return(nil)
 
-		err := m.download("--url test.url --token token --only-settings")
+		err := m.download(ctx, "--url test.url --token token --only-settings")
 		assert.NoError(t, err)
 	})
 
 	t.Run("Settings schema selection - mutually exclusive combination", func(t *testing.T) {
+		ctx := context.TODO()
+
 		m := newMonaco(t)
 		var err error
 
-		err = m.download("--environment myEnvironment --settings-schema schema:1,schema:2 --only-apis")
+		err = m.download(ctx, "--environment myEnvironment --settings-schema schema:1,schema:2 --only-apis")
 		assert.Error(t, err)
 
-		err = m.download("--environment myEnvironment --settings-schema schema:1,schema:2 --only-settings")
+		err = m.download(ctx, "--environment myEnvironment --settings-schema schema:1,schema:2 --only-settings")
 		assert.Error(t, err)
 
-		err = m.download("--environment myEnvironment --only-apis --only-settings")
+		err = m.download(ctx, "--environment myEnvironment --only-apis --only-settings")
 		assert.Error(t, err)
 	})
 }
@@ -242,10 +268,10 @@ func newMonaco(t *testing.T) *monaco {
 	return &monaco{NewMockCommand(gomock.NewController(t))}
 }
 
-func (monaco monaco) download(bashCmd string) error {
+func (monaco monaco) download(ctx context.Context, bashCmd string) error {
 	cmd := GetDownloadCommand(afero.NewOsFs(), monaco.MockCommand)
 	cmd.SetArgs(strings.Split(bashCmd, " "))
 	cmd.SetOut(io.Discard) // skip output to ensure that the error message contains the error, not the help message
 
-	return cmd.Execute()
+	return cmd.ExecuteContext(ctx)
 }

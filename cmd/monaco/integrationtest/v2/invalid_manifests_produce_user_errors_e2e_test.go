@@ -19,13 +19,15 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
-
+	"context"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInvalidManifest_ReportsError(t *testing.T) {
@@ -58,12 +60,14 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.TODO()
+
 			manifest := filepath.Join("test-resources/invalid-manifests/", tt.manifestFileName)
 
 			logOutput := strings.Builder{}
 			cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 			cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
-			err := cmd.Execute()
+			err := cmd.ExecuteContext(ctx)
 
 			assert.ErrorContains(t, err, "error while loading manifest")
 
@@ -75,12 +79,14 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 }
 
 func TestNonExistentProjectInManifestReturnsError(t *testing.T) {
+	ctx := context.TODO()
+
 	manifest := filepath.Join("test-resources/invalid-manifests/", "manifest_non_existent_project.yaml")
 
 	logOutput := strings.Builder{}
 	cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
-	err := cmd.Execute()
+	err := cmd.ExecuteContext(ctx)
 
 	assert.ErrorContains(t, err, "failed to load projects")
 

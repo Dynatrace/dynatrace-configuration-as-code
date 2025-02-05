@@ -27,6 +27,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
@@ -40,14 +41,15 @@ import (
 // 3. documents are deployed again
 // 4. check whether the document is private
 func TestDocuments(t *testing.T) {
+	ctx := context.TODO()
 
 	configFolder := "test-resources/integration-documents/"
 	manifestPath := configFolder + "manifest.yaml"
 	environment := "platform_env"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Documents", func(fs afero.Fs, testContext TestContext) {
+	RunIntegrationWithCleanup(ctx, t, configFolder, manifestPath, environment, "Documents", func(ctx context.Context, fs afero.Fs) {
 		// deploy
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --project=project --verbose", manifestPath)
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --project=project --verbose", manifestPath)
 		assert.NoError(t, err)
 
 		man, errs := manifestloader.Load(&manifestloader.Context{
@@ -57,15 +59,20 @@ func TestDocuments(t *testing.T) {
 		})
 		assert.Empty(t, errs)
 
+		s, ok := ctx.Value(suffix{}).(suffix)
+		if !ok {
+			require.Fail(t, "context doesn't contain suffix")
+		}
+
 		// check isPrivate == false
-		clientSet := integrationtest.CreateDynatraceClients(t, man.Environments[environment])
-		result, err := clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+		clientSet := integrationtest.CreateDynatraceClients(ctx, t, man.Environments[environment])
+		result, err := clientSet.DocumentClient.List(ctx, fmt.Sprintf("name='my-notebook_%s'", s.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.False(t, result.Responses[0].IsPrivate)
 
 		// check isPrivate == true
-		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+		result, err = clientSet.DocumentClient.List(ctx, fmt.Sprintf("name='my-dashboard_%s'", s.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.True(t, result.Responses[0].IsPrivate)
@@ -93,23 +100,23 @@ func TestDocuments(t *testing.T) {
 		assert.NoError(t, err)
 
 		// deploy again
-		err = monaco.RunWithFSf(fs, "monaco deploy %s --project=project --verbose", manifestPath)
+		err = monaco.RunWithFSf(ctx, fs, "monaco deploy %s --project=project --verbose", manifestPath)
 		assert.NoError(t, err)
 
 		// check if isPrivate was changed to true
-		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+		result, err = clientSet.DocumentClient.List(ctx, fmt.Sprintf("name='my-notebook_%s'", s.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.True(t, result.Responses[0].IsPrivate)
 
 		// check if isPrivate was changed to false
-		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+		result, err = clientSet.DocumentClient.List(ctx, fmt.Sprintf("name='my-dashboard_%s'", s.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.False(t, result.Responses[0].IsPrivate)
 
 		// check if both launchpads were created successful
-		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("type='launchpad'"))
+		result, err = clientSet.DocumentClient.List(ctx, fmt.Sprintf("type='launchpad'"))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 2)
 

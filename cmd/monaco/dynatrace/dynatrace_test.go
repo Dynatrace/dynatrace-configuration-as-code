@@ -19,25 +19,30 @@
 package dynatrace
 
 import (
+	"context"
 	"encoding/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/oauth2"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/oauth2"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
 
 func TestVerifyEnvironmentGeneration_TurnedOffByFF(t *testing.T) {
+	ctx := context.TODO()
+
 	t.Setenv("MONACO_FEAT_VERIFY_ENV_TYPE", "0")
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(404)
 	}))
 	defer server.Close()
 
-	ok := VerifyEnvironmentGeneration(manifest.Environments{
+	ok := VerifyEnvironmentGeneration(ctx, manifest.Environments{
 		"env": manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
@@ -50,6 +55,7 @@ func TestVerifyEnvironmentGeneration_TurnedOffByFF(t *testing.T) {
 	assert.True(t, ok)
 }
 func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
+	ctx := context.TODO()
 
 	envCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -63,7 +69,7 @@ func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ok := VerifyEnvironmentGeneration(manifest.Environments{
+	ok := VerifyEnvironmentGeneration(ctx, manifest.Environments{
 		"env": manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
@@ -113,20 +119,24 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if ok := VerifyEnvironmentGeneration(tt.args.envs); ok == tt.wantErr {
+			ctx := context.TODO()
+
+			if ok := VerifyEnvironmentGeneration(ctx, tt.args.envs); ok == tt.wantErr {
 				t.Errorf("VerifyEnvironmentGeneration() error = %v, wantErr %v", ok, tt.wantErr)
 			}
 		})
 	}
 
 	t.Run("Call classic Version EP - ok", func(t *testing.T) {
+		ctx := context.TODO()
+
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(200)
 			_, _ = rw.Write([]byte(`{"version" : "1.262.0.20230303"}`))
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(manifest.Environments{
+		ok := VerifyEnvironmentGeneration(ctx, manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				URL: manifest.URLDefinition{
@@ -141,6 +151,8 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 	})
 
 	t.Run("Call Platform Version EP - ok", func(t *testing.T) {
+		ctx := context.TODO()
+
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if strings.HasSuffix(req.URL.Path, "sso") {
 				token := &oauth2.Token{
@@ -159,7 +171,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(manifest.Environments{
+		ok := VerifyEnvironmentGeneration(ctx, manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				URL: manifest.URLDefinition{
@@ -180,6 +192,8 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 	})
 
 	t.Run("version EP not available ", func(t *testing.T) {
+		ctx := context.TODO()
+
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if strings.HasSuffix(req.URL.Path, "sso") {
 				token := &oauth2.Token{
@@ -198,7 +212,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(manifest.Environments{
+		ok := VerifyEnvironmentGeneration(ctx, manifest.Environments{
 			"env1": manifest.EnvironmentDefinition{
 				Name: "env1",
 				URL: manifest.URLDefinition{
@@ -210,7 +224,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		})
 		assert.False(t, ok)
 
-		ok = VerifyEnvironmentGeneration(manifest.Environments{
+		ok = VerifyEnvironmentGeneration(ctx, manifest.Environments{
 			"env2": manifest.EnvironmentDefinition{
 				Name: "env2",
 				URL: manifest.URLDefinition{

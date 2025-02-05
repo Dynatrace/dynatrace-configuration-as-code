@@ -19,22 +19,26 @@
 package v2
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestManifestErrorsAreWrittenToFile(t *testing.T) {
+	ctx := context.TODO()
+
 	manifest := filepath.Join("test-resources/invalid-manifests/", "manifest_non_existent_project.yaml")
 
 	fs := testutils.CreateTestFileSystem()
 
-	err := monaco.RunWithFSf(fs, "monaco deploy %s --dry-run --verbose", manifest)
+	err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --dry-run --verbose", manifest)
 	assert.Error(t, err)
 
 	expectedErrFile := log.ErrorFilePath()
@@ -52,13 +56,14 @@ func TestManifestErrorsAreWrittenToFile(t *testing.T) {
 }
 
 func TestConfigErrorsAreWrittenToFile(t *testing.T) {
+	ctx := context.TODO()
 
 	configFolder := "test-resources/configs-with-duplicate-ids/"
 	manifest := filepath.Join(configFolder, "manifest.yaml")
 
 	fs := testutils.CreateTestFileSystem()
 
-	err := monaco.RunWithFSf(fs, "monaco deploy %s --dry-run --verbose", manifest)
+	err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --dry-run --verbose", manifest)
 	assert.Error(t, err)
 
 	expectedErrFile := log.ErrorFilePath()

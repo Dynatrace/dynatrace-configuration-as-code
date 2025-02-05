@@ -57,13 +57,15 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 			return preRunChecks(f)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			cmd.SilenceUsage = true
 
 			if f.environmentURL != "" {
 				f.manifestFile = ""
-				return command.DownloadConfigs(fs, f)
+				return command.DownloadConfigs(ctx, fs, f)
 			}
-			return command.DownloadConfigsBasedOnManifest(fs, f)
+			return command.DownloadConfigsBasedOnManifest(ctx, fs, f)
 		},
 	}
 
@@ -162,7 +164,7 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 // printUploadToSameEnvironmentWarning function may display a warning message on the console,
 // notifying the user that downloaded objects cannot be uploaded to the same environment.
 // It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
-func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
+func printUploadToSameEnvironmentWarning(ctx context.Context, env manifest.EnvironmentDefinition) {
 	var serverVersion version.Version
 	var err error
 
@@ -175,7 +177,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
 			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 		}
-		httpClient = clientAuth.NewOAuthClient(context.TODO(), credentials)
+		httpClient = clientAuth.NewOAuthClient(ctx, credentials)
 	}
 
 	url, err := url.Parse(env.URL.Value)
@@ -184,7 +186,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 		return
 	}
 
-	serverVersion, err = versionClient.GetDynatraceVersion(context.TODO(), corerest.NewClient(url, httpClient, corerest.WithRateLimiter(), corerest.WithRetryOptions(&client.DefaultRetryOptions)))
+	serverVersion, err = versionClient.GetDynatraceVersion(ctx, corerest.NewClient(url, httpClient, corerest.WithRateLimiter(), corerest.WithRetryOptions(&client.DefaultRetryOptions)))
 	if err != nil {
 		log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Warn("Unable to determine server version %q: %v", env.URL.Value, err)
 		return

@@ -19,28 +19,33 @@
 package v2
 
 import (
+	"context"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 )
 
 const multiTypeProjectFolder = "test-resources/integration-multi-type-configs/"
 const multiTypeManifest = multiTypeProjectFolder + "manifest.yaml"
 
 func TestMultiTypeConfigsDeployment(t *testing.T) {
+	ctx := context.TODO()
 
-	RunIntegrationWithCleanup(t, multiTypeProjectFolder, multiTypeManifest, "", "MultiType", func(fs afero.Fs, _ TestContext) {
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", multiTypeManifest)
+	RunIntegrationWithCleanup(ctx, t, multiTypeProjectFolder, multiTypeManifest, "", "MultiType", func(_ context.Context, fs afero.Fs) {
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", multiTypeManifest)
 		assert.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, multiTypeManifest, []string{}, "", true)
+		integrationtest.AssertAllConfigsAvailability(ctx, t, fs, multiTypeManifest, []string{}, "", true)
 	})
 }
 
 func TestMultiTypeConfigsValidation(t *testing.T) {
-	err := monaco.Runf("monaco deploy %s --dry-run --verbose", multiTypeManifest)
+	ctx := context.TODO()
+
+	err := monaco.Runf(ctx, "monaco deploy %s --dry-run --verbose", multiTypeManifest)
 	assert.NoError(t, err)
 }

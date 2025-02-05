@@ -19,19 +19,22 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/spf13/afero"
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/afero"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
-type TestContext struct {
+type suffix struct {
 	suffix string
 }
 
-type TestFunc func(fs afero.Fs, ctx TestContext)
+type TestFunc func(ctx context.Context, fs afero.Fs)
 
 // RunIntegrationWithCleanup runs an integration test and cleans up the created configs afterwards
 // This is done by using InMemoryFileReader, which rewrites the names of the read configs internally. It ready all the
@@ -46,7 +49,7 @@ type TestFunc func(fs afero.Fs, ctx TestContext)
 //
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
-func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
+func RunIntegrationWithCleanup(ctx context.Context, t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
 	opts := TestOptions{
 		fs:                  testutils.CreateTestFileSystem(),
 		configFolder:        configFolder,
@@ -56,10 +59,10 @@ func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specifi
 		envVars:             nil,
 	}
 
-	runIntegrationWithCleanup(t, opts, testFunc)
+	runIntegrationWithCleanup(ctx, t, opts, testFunc)
 }
 
-func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
+func RunIntegrationWithCleanupOnGivenFs(ctx context.Context, t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
 	opts := TestOptions{
 		fs:                  testFs,
 		configFolder:        configFolder,
@@ -69,10 +72,10 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 		envVars:             nil,
 	}
 
-	runIntegrationWithCleanup(t, opts, testFunc)
+	runIntegrationWithCleanup(ctx, t, opts, testFunc)
 }
 
-func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
+func RunIntegrationWithCleanupGivenEnvs(ctx context.Context, t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
 	opts := TestOptions{
 		fs:                  testutils.CreateTestFileSystem(),
 		configFolder:        configFolder,
@@ -82,7 +85,7 @@ func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath
 		envVars:             envVars,
 	}
 
-	runIntegrationWithCleanup(t, opts, testFunc)
+	runIntegrationWithCleanup(ctx, t, opts, testFunc)
 
 }
 
@@ -92,24 +95,22 @@ type TestOptions struct {
 	envVars                                                 map[string]string
 }
 
-func runIntegrationWithCleanup(t *testing.T, opts TestOptions, testFunc TestFunc) {
+func runIntegrationWithCleanup(ctx context.Context, t *testing.T, opts TestOptions, testFunc TestFunc) {
 	configFolder, _ := filepath.Abs(opts.configFolder)
 
-	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
+	s := appendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
 
 	for k, v := range opts.envVars {
-		setTestEnvVar(t, k, v, suffix)
+		setTestEnvVar(t, k, v, s)
 	}
 
 	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, opts.specificEnvironment, suffix)
+		integrationtest.CleanupIntegrationTest(ctx, t, opts.fs, opts.manifestPath, opts.specificEnvironment, s)
 	})
 
-	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)
+	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", s, s)
 
-	testFunc(opts.fs, TestContext{
-		suffix: suffix,
-	})
+	testFunc(context.WithValue(ctx, suffix{}, suffix{suffix: s}), opts.fs)
 }
 
 func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {

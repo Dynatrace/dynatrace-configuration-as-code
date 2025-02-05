@@ -19,23 +19,27 @@
 package account
 
 import (
+	"context"
 	"fmt"
+	"math/rand"
+	"strconv"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"math/rand"
-	"strconv"
-	"testing"
 )
 
 func TestIdempotenceOfDeployment(t *testing.T) {
+	ctx := context.TODO()
 
-	deploy := func(project string, fs afero.Fs) *account.Resources {
-		err := monaco.RunWithFSf(fs, "monaco account deploy --project %s --verbose", project)
+	deploy := func(ctx context.Context, project string, fs afero.Fs) *account.Resources {
+		err := monaco.RunWithFSf(ctx, fs, "monaco account deploy --project %s --verbose", project)
 
 		require.NoError(t, err)
 
@@ -44,8 +48,8 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 
 		return r
 	}
-	download := func(project string, fs afero.Fs) *account.Resources {
-		err := monaco.RunWithFSf(fs, "monaco account download --project %s --output-folder output --verbose", project)
+	download := func(ctx context.Context, project string, fs afero.Fs) *account.Resources {
+		err := monaco.RunWithFSf(ctx, fs, "monaco account download --project %s --output-folder output --verbose", project)
 		require.NoError(t, err)
 
 		r, err := loader.Load(fs, fmt.Sprintf("%s/%s/%s", "output", project, "test-account"))
@@ -56,7 +60,7 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	toID := stringutils.Sanitize
 	project := "add_user"
 
-	createMZone(t)
+	createMZone(ctx, t)
 	baseFs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(afero.NewOsFs(), "resources/deploy-download"), afero.NewMemMapFs())
 
 	randomString := strconv.Itoa(rand.Int())
@@ -64,8 +68,8 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	randomizeConfiguration(t, baseFs, "delete.yaml", randomString)
 	baseFs = afero.NewReadOnlyFs(baseFs)
 
-	deploy1st := deploy(project, baseFs)
-	download1st := download(project, afero.NewCopyOnWriteFs(baseFs, afero.NewMemMapFs()))
+	deploy1st := deploy(ctx, project, baseFs)
+	download1st := download(ctx, project, afero.NewCopyOnWriteFs(baseFs, afero.NewMemMapFs()))
 
 	for _, u := range deploy1st.Users {
 		assert.Contains(t, download1st.Users, u.Email.Value())
@@ -77,8 +81,8 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 		assert.Contains(t, download1st.Groups, toID(g.Name)) // when downloading, ID is generated from name
 	}
 
-	deploy2nd := deploy(project, baseFs)
-	download2nd := download(project, afero.NewCopyOnWriteFs(baseFs, afero.NewMemMapFs()))
+	deploy2nd := deploy(ctx, project, baseFs)
+	download2nd := download(ctx, project, afero.NewCopyOnWriteFs(baseFs, afero.NewMemMapFs()))
 	assert.Equal(t, deploy2nd, deploy1st)
 
 	for _, u := range deploy1st.Users {
@@ -93,6 +97,6 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 		assert.Equal(t, deploy1st.Groups[g.ID], deploy2nd.Groups[g.ID])
 	}
 
-	err := monaco.RunWithFSf(baseFs, "monaco account delete --manifest manifest.yaml --file delete.yaml")
+	err := monaco.RunWithFSf(ctx, baseFs, "monaco account delete --manifest manifest.yaml --file delete.yaml")
 	require.NoError(t, err)
 }

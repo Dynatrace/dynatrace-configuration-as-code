@@ -19,14 +19,18 @@
 package v2
 
 import (
+	"context"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 )
 
 func TestIntegrationScopeParameters(t *testing.T) {
+	ctx := context.TODO()
+
 	configFolder := "test-resources/integration-scope-parameters/"
 	manifest := configFolder + "/manifest.yaml"
 	specificEnvironment := ""
@@ -35,19 +39,20 @@ func TestIntegrationScopeParameters(t *testing.T) {
 		"SCOPE_TEST_ENV_VAR": "environment",
 	}
 
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "ScopeParameters", envVars, func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithCleanupGivenEnvs(ctx, t, configFolder, manifest, specificEnvironment, "ScopeParameters", envVars, func(ctx context.Context, fs afero.Fs) {
 		// This causes Creation of all Settings
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 
 		// This causes an Update of all Settings
-		err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
+		err = monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }
 
 // Tests a dry run (validation)
 func TestIntegrationScopeParameterValidation(t *testing.T) {
+	ctx := context.TODO()
 
 	configFolder := "test-resources/integration-scope-parameters/"
 	manifest := configFolder + "manifest.yaml"
@@ -55,6 +60,6 @@ func TestIntegrationScopeParameterValidation(t *testing.T) {
 	envVar := "SCOPE_TEST_ENV_VAR"
 	t.Setenv(envVar, "environment")
 
-	err := monaco.Runf("monaco deploy %s --dry-run --verbose", manifest)
+	err := monaco.Runf(ctx, "monaco deploy %s --dry-run --verbose", manifest)
 	assert.NoError(t, err)
 }

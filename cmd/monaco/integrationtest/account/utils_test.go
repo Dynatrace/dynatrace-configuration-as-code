@@ -18,23 +18,25 @@ package account
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 )
 
-func createMZone(t *testing.T) {
+func createMZone(ctx context.Context, t *testing.T) {
 	command := "deploy resources/mzones/manifest.yaml"
 	printCommand(command)
 
 	cli := runner.BuildCmd(afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()))
 	cli.SetArgs(strings.Split(command, " "))
-	err := cli.Execute()
+	err := cli.ExecuteContext(ctx)
 	require.NoError(t, err)
 
 }

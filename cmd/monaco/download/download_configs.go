@@ -105,7 +105,7 @@ func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
 	return manifest.AuthSecret{Name: envVar, Value: secret.MaskedString(content)}, nil
 }
 
-func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions downloadCmdOptions) error {
+func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs afero.Fs, cmdOptions downloadCmdOptions) error {
 
 	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
@@ -123,12 +123,12 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		return fmt.Errorf("environment %q was not available in manifest %q", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
-	ok := dynatrace.VerifyEnvironmentGeneration(manifest.Environments{env.Name: env})
+	ok := dynatrace.VerifyEnvironmentGeneration(ctx, manifest.Environments{env.Name: env})
 	if !ok {
 		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
 
-	printUploadToSameEnvironmentWarning(env)
+	printUploadToSameEnvironmentWarning(ctx, env)
 
 	if !cmdOptions.forceOverwrite {
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
@@ -157,7 +157,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		return err
 	}
 
-	clientSet, err := client.CreateClientSet(context.TODO(), options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 	return doDownloadConfigs(fs, clientSet, prepareAPIs(api.NewAPIs(), options), options)
 }
 
-func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptions) error {
+func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOptions downloadCmdOptions) error {
 	a, errs := cmdOptions.auth.mapToAuth()
 	errs = append(errs, validateParameters(cmdOptions.environmentURL, cmdOptions.projectName)...)
 
@@ -195,7 +195,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		return err
 	}
 
-	clientSet, err := client.CreateClientSet(context.TODO(), options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {
 		return err
 	}

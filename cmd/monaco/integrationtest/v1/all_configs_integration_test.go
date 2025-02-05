@@ -22,8 +22,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 
 	"github.com/spf13/afero"
 )
@@ -32,14 +34,15 @@ import (
 func TestIntegrationAllConfigs(t *testing.T) {
 	allConfigsFolder := AbsOrPanicFromSlash("test-resources/integration-all-configs/")
 	allConfigsEnvironmentsFile := filepath.Join(allConfigsFolder, "environments.yaml")
+	ctx := context.TODO()
 
-	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
+	RunLegacyIntegrationWithCleanup(ctx, t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
 		// This causes a POST for all configs:
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
+		err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 
 		// This causes a PUT for all configs:
-		err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
+		err = monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", manifest)
 		assert.NoError(t, err)
 	})
 }

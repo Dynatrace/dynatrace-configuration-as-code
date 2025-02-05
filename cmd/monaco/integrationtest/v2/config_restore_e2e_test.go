@@ -19,22 +19,24 @@
 package v2
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-type downloadFunction func(*testing.T, afero.Fs, string, string, string, string, bool) error
+type downloadFunction func(context.Context, *testing.T, afero.Fs, string, string, string, string, bool) error
 
 // TestRestoreConfigs validates if the configurations can be restore from the downloaded version after being deleted
 // It has 5 stages:
@@ -48,25 +50,29 @@ type downloadFunction func(*testing.T, afero.Fs, string, string, string, string,
 // As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
 // Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigs_FromDownloadWithManifestFile(t *testing.T) {
+	ctx := context.TODO()
+
 	initialConfigsFolder := "test-resources/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_manifest"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
+	testRestoreConfigs(ctx, t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }
 
 // TestRestoreConfigs_FromDownloadWithPlatformManifestFile works like TestRestoreConfigs_FromDownloadWithManifestFile but
 // has a platform environment defined in the used manifest, rather than a Classic env.
 func TestRestoreConfigs_FromDownloadWithPlatformManifestFile(t *testing.T) {
+	ctx := context.TODO()
+
 	initialConfigsFolder := "test-resources/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_manifest"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
+	testRestoreConfigs(ctx, t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }
 
 // TestRestoreConfigs_FromDownloadWithCLIParameters deploys, download and re-deploys from download the download-configs test-resources
@@ -77,19 +83,23 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
+	ctx := context.TODO()
+
 	initialConfigsFolder := "test-resources/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_cli-only"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigsWithCLIParameters)
+	testRestoreConfigs(ctx, t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigsWithCLIParameters)
 }
 
 func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) {
 	if isHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
+
 	}
+	ctx := context.TODO()
 
 	initialConfigsFolder := "test-resources/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
@@ -97,17 +107,19 @@ func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) 
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_cli-only"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, true, execution_downloadConfigsWithCLIParameters)
+	testRestoreConfigs(ctx, t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, true, execution_downloadConfigsWithCLIParameters)
 }
 
 func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withPlatformConfigs(t *testing.T) {
+	ctx := context.TODO()
+
 	initialConfigsFolder := "test-resources/integration-download-configs-platform/"
 	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_automations"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
+	testRestoreConfigs(ctx, t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }
 
 func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
@@ -207,12 +219,14 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			RunIntegrationWithCleanup(t, configsFolder, configsFolderManifest, "", "", func(fs afero.Fs, _ TestContext) {
-				err := monaco.RunWithFSf(fs, "monaco deploy %s", configsFolderManifest)
+			ctx := context.TODO()
+
+			RunIntegrationWithCleanup(ctx, t, configsFolder, configsFolderManifest, "", "", func(ctx context.Context, fs afero.Fs) {
+				err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s", configsFolderManifest)
 				require.NoError(t, err)
 
 				t.Log("Downloading configs")
-				err = tc.downloadFunc(t, tc.fs, downloadFolder, tc.manifest, tc.apisToDownload, tc.settingsToDownload, false)
+				err = tc.downloadFunc(ctx, t, tc.fs, downloadFolder, tc.manifest, tc.apisToDownload, tc.settingsToDownload, false)
 				assert.Equal(t, tc.wantErr, err != nil)
 				for _, f := range tc.expectedFolders {
 					folderExists, _ := afero.DirExists(tc.fs, f)
@@ -230,6 +244,8 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 // As this downloads all configs from all APIs other tests and their cleanup are likely to interfere
 // Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigsFull(t *testing.T) {
+	ctx := context.TODO()
+
 	t.Skipf("Test skipped as not all configurations can currently successfully be re-uploaded automatically after download")
 
 	initialConfigsFolder := "test-resources/integration-all-configs/"
@@ -238,34 +254,34 @@ func TestRestoreConfigsFull(t *testing.T) {
 	subsetOfConfigsToDownload := "all" // value only for testing
 	suffixTest := "_download_all"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
+	testRestoreConfigs(ctx, t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }
 
-func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, manifestFile string, apisToDownload string, oauthEnabled bool, downloadFunc downloadFunction) {
+func testRestoreConfigs(ctx context.Context, t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, manifestFile string, apisToDownload string, oauthEnabled bool, downloadFunc downloadFunction) {
 	initialConfigsFolder, _ = filepath.Abs(initialConfigsFolder)
 	downloadFolder, _ = filepath.Abs(downloadFolder)
 	manifestFile, _ = filepath.Abs(manifestFile)
 
 	fs := testutils.CreateTestFileSystem()
-	suffix, err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, manifestFile)
+	suffix, err := preparation_uploadConfigs(ctx, t, fs, suffixTest, initialConfigsFolder, manifestFile)
 
 	assert.NoError(t, err, "Error during download preparation stage")
 
-	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload, "", oauthEnabled)
+	err = downloadFunc(ctx, t, fs, downloadFolder, manifestFile, apisToDownload, "", oauthEnabled)
 	assert.NoError(t, err, "Error during download execution stage")
 
-	integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix) // remove previously deployed configs
+	integrationtest.CleanupIntegrationTest(ctx, t, fs, manifestFile, "", suffix) // remove previously deployed configs
 
 	downloadedManifestPath := filepath.Join(downloadFolder, "manifest.yaml")
 
 	t.Cleanup(func() { // cleanup uploaded configs after test run
-		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
+		integrationtest.CleanupIntegrationTest(ctx, t, fs, manifestFile, "", suffix)
 	})
 
-	validation_uploadDownloadedConfigs(t, fs, downloadFolder, downloadedManifestPath) // re-deploy from download
+	validation_uploadDownloadedConfigs(ctx, t, fs, downloadFolder, downloadedManifestPath) // re-deploy from download
 }
 
-func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, manifestFile string) (suffix string, err error) {
+func preparation_uploadConfigs(ctx context.Context, t *testing.T, fs afero.Fs, suffixTest string, configFolder string, manifestFile string) (suffix string, err error) {
 	log.Info("BEGIN PREPARATION PROCESS")
 	suffix = appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
@@ -281,16 +297,17 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 	}
 
 	t.Cleanup(func() { // register extra cleanup in case test fails after deployment
-		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
+		integrationtest.CleanupIntegrationTest(ctx, t, fs, manifestFile, "", suffix)
 	})
 
-	err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifestFile)
+	err = monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", manifestFile)
 	assert.NoError(t, err)
 
 	return suffix, nil
 }
 
 func execution_downloadConfigsWithCLIParameters(
+	ctx context.Context,
 	t *testing.T,
 	fs afero.Fs,
 	downloadFolder string,
@@ -326,12 +343,13 @@ func execution_downloadConfigsWithCLIParameters(
 		command += fmt.Sprintf(" --url=%s --token=%s", os.Getenv("URL_ENVIRONMENT_1"), "TOKEN_ENVIRONMENT_1")
 	}
 
-	err = monaco.RunWithFSf(fs, command)
+	err = monaco.RunWithFSf(ctx, fs, command)
 	assert.NoError(t, err)
 	return nil
 }
 
 func execution_downloadConfigs(
+	ctx context.Context,
 	t *testing.T,
 	fs afero.Fs,
 	downloadFolder string,
@@ -360,12 +378,12 @@ func execution_downloadConfigs(
 		}
 	}
 
-	err = monaco.RunWithFs(fs, command)
+	err = monaco.RunWithFs(ctx, fs, command)
 	assert.NoError(t, err)
 	return nil
 }
 
-func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
+func validation_uploadDownloadedConfigs(ctx context.Context, t *testing.T, fs afero.Fs, downloadFolder string,
 	manifestFile string) {
 	log.Info("BEGIN VALIDATION PROCESS")
 	// Shows you the downloaded files list in the command line
@@ -375,6 +393,6 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 		return nil
 	})
 
-	err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifestFile)
+	err := monaco.RunWithFSf(ctx, fs, "monaco deploy %s --verbose", manifestFile)
 	assert.NoError(t, err)
 }
