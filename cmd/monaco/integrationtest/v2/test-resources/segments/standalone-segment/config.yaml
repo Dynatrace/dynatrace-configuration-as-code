@@ -1,0 +1,5 @@
+configs:
+- id: my-segment
+  type: segment
+  config:
+    template: './segment.json'
