@@ -1,0 +1,19 @@
+configs:
+- id: segment
+  config:
+    template: segment.json
+  type: segment
+- id: dashbaord
+  config:
+    name: Dashboard
+    parameters:
+      segment_id:
+        configId: segment
+        configType: segment
+        property: id
+        type: reference
+    template: dashboard.json
+  type:
+    document:
+      kind: dashboard
+      private: true

@@ -20,12 +20,14 @@ package integrationtest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/require"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/require"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 )
 
 // CleanupIntegrationTest deletes all configs that are defined in a test manifest. It uses the CLI runner, to call the
@@ -50,7 +52,7 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, envi
 		}
 	}
 
-	err = monaco.RunWithFSf(fs, "monaco delete --manifest %s --file %s %s", manifestPath, deleteFile, env)
+	err = monaco.RunWithFSf(fs, "monaco --verbose delete --manifest %s --file %s %s", manifestPath, deleteFile, env)
 	if err != nil {
 		t.Log(err)
 		t.Log("Failed to cleanup all test configurations, manual/nightly cleanup needed.")

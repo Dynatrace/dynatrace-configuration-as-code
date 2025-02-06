@@ -1,0 +1,72 @@
+{
+  "allowedOperations": [
+    "READ",
+    "WRITE",
+    "DELETE",
+    "SHARE"
+  ],
+  "description": "This is my segment",
+  "includes": [
+    {
+      "applyTo": [],
+      "dataObject": "_all_data_object",
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":15},\"logicalOperator\":\"AND\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":15},\"key\":{\"type\":\"Key\",\"textValue\":\"\\\"test\\\"\",\"value\":\"test\",\"range\":{\"from\":0,\"to\":6},\"isEscaped\":true},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":7,\"to\":8{{`}}`}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"test\\\"\",\"value\":\"test\",\"range\":{\"from\":9,\"to\":15},\"isEscaped\":true{{`}}`}}]}"
+    },
+    {
+      "applyTo": [],
+      "dataObject": "bizevents",
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":21},\"logicalOperator\":\"AND\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":21},\"key\":{\"type\":\"Key\",\"textValue\":\"browser.name\",\"value\":\"browser.name\",\"range\":{\"from\":0,\"to\":12{{`}}`}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":13,\"to\":14{{`}}`}},\"value\":{\"type\":\"String\",\"textValue\":\"Chrome\",\"value\":\"Chrome\",\"range\":{\"from\":15,\"to\":21{{`}}`}}}]}"
+    },
+    {
+      "applyTo": [],
+      "dataObject": "dt.entity.container_group_instance",
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":21},\"logicalOperator\":\"AND\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":20},\"key\":{\"type\":\"Key\",\"textValue\":\"tags\",\"value\":\"tags\",\"range\":{\"from\":0,\"to\":4{{`}}`}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":5,\"to\":6{{`}}`}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"mytag:mytag\\\"\",\"value\":\"mytag:mytag\",\"range\":{\"from\":7,\"to\":20},\"isEscaped\":true{{`}}`}}]}",
+      "relationship": {
+        "name": "belongs_to",
+        "target": "dt.entity.kubernetes_cluster"
+      }
+    },
+    {
+      "applyTo": [
+        "bizevents",
+        "events",
+        "spans"
+      ],
+      "dataObject": "dt.entity.host",
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":22},\"logicalOperator\":\"AND\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":22},\"key\":{\"type\":\"Key\",\"textValue\":\"osArchitecture\",\"value\":\"osArchitecture\",\"range\":{\"from\":0,\"to\":14{{`}}`}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":15,\"to\":16{{`}}`}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"osx\\\"\",\"value\":\"osx\",\"range\":{\"from\":17,\"to\":22},\"isEscaped\":true{{`}}`}}]}",
+      "relationship": {
+        "name": "clustered_by",
+        "target": "dt.entity.kubernetes_cluster"
+      }
+    },
+    {
+      "applyTo": [
+        "logs",
+        "metrics"
+      ],
+      "dataObject": "dt.entity.kubernetes_cluster",
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":34},\"logicalOperator\":\"AND\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":34},\"key\":{\"type\":\"Key\",\"textValue\":\"entity.name\",\"value\":\"entity.name\",\"range\":{\"from\":0,\"to\":11{{`}}`}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":12,\"to\":13{{`}}`}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"This is an example\\\"\",\"value\":\"This is an example\",\"range\":{\"from\":14,\"to\":34},\"isEscaped\":true{{`}}`}}]}"
+    },
+    {
+      "applyTo": [],
+      "dataObject": "events",
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":25},\"logicalOperator\":\"AND\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":25},\"key\":{\"type\":\"Key\",\"textValue\":\"\\\"`Event source`\\\"\",\"value\":\"`Event source`\",\"range\":{\"from\":0,\"to\":16},\"isEscaped\":true},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":17,\"to\":18{{`}}`}},\"value\":{\"type\":\"String\",\"textValue\":\"Monaco\",\"value\":\"Monaco\",\"range\":{\"from\":19,\"to\":25{{`}}`}}}]}"
+    },
+    {
+      "applyTo": [],
+      "dataObject": "metrics",
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":34},\"logicalOperator\":\"AND\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":34},\"key\":{\"type\":\"Key\",\"textValue\":\"k8s.namespace.name\",\"value\":\"k8s.namespace.name\",\"range\":{\"from\":0,\"to\":18{{`}}`}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":19,\"to\":20{{`}}`}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"hello-world\\\"\",\"value\":\"hello-world\",\"range\":{\"from\":21,\"to\":34},\"isEscaped\":true{{`}}`}}]}"
+    },
+    {
+      "applyTo": [],
+      "dataObject": "spans",
+      "filter": "{\"type\":\"Group\",\"range\":{\"from\":0,\"to\":29},\"logicalOperator\":\"AND\",\"explicit\":false,\"children\":[{\"type\":\"Statement\",\"range\":{\"from\":0,\"to\":29},\"key\":{\"type\":\"Key\",\"textValue\":\"code.function\",\"value\":\"code.function\",\"range\":{\"from\":0,\"to\":13{{`}}`}},\"operator\":{\"type\":\"ComparisonOperator\",\"textValue\":\"=\",\"value\":\"=\",\"range\":{\"from\":14,\"to\":15{{`}}`}},\"value\":{\"type\":\"String\",\"textValue\":\"\\\"My function\\\"\",\"value\":\"My function\",\"range\":{\"from\":16,\"to\":29},\"isEscaped\":true{{`}}`}}]}"
+    }
+  ],
+  "isPublic": false,
+  "name": "My Segment",
+  "variables": {
+    "type": "query",
+    "value": "describe logs"
+  }
+}
