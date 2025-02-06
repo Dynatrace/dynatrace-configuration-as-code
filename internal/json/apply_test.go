@@ -76,7 +76,19 @@ func TestApplyToStringValues_Success(t *testing.T) {
 			name:           "string value is not replaced if not found in object",
 			content:        `{"key": "nope"}`,
 			f:              func(s string) string { return strings.ReplaceAll(s, "find", "replace") },
-			expectedResult: `{"key":"nope"}`,
+			expectedResult: `{"key": "nope"}`,
+		},
+		{
+			name:           "string value is replaced if found in array",
+			content:        `["find"]`,
+			f:              func(s string) string { return strings.ReplaceAll(s, "find", "replace") },
+			expectedResult: `["replace"]`,
+		},
+		{
+			name:           "string value is not replaced if not found in array",
+			content:        `["nope"]`,
+			f:              func(s string) string { return strings.ReplaceAll(s, "find", "replace") },
+			expectedResult: `["nope"]`,
 		},
 		{
 			name:           "string value is replaced if found in object in array",
@@ -88,7 +100,17 @@ func TestApplyToStringValues_Success(t *testing.T) {
 			name:           "string value is not replaced if not found in object in array",
 			content:        `[{"key": "nope"}]`,
 			f:              func(s string) string { return strings.ReplaceAll(s, "find", "replace") },
-			expectedResult: `[{"key":"nope"}]`,
+			expectedResult: `[{"key": "nope"}]`,
+		},
+		{
+			name: "json formatting preserved if no change occurs",
+			content: `[
+  "nope"
+]`,
+			f: func(s string) string { return strings.ReplaceAll(s, "find", "replace") },
+			expectedResult: `[
+  "nope"
+]`,
 		},
 	}
 	for _, tt := range tests {

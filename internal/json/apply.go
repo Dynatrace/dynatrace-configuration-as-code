@@ -21,7 +21,7 @@ import (
 )
 
 // ApplyToStringValues unmarshals a JSON string and applies the specified transformation function to each string value before remarshaling and returning the result.
-// If no transformation is actually performed, the original JSON string is returned.
+// If no transformation actually occurs, the original JSON string is returned.
 func ApplyToStringValues(jsonString string, applyFunc func(v string) string) (string, error) {
 	var val any
 	if err := json.Unmarshal([]byte(jsonString), &val); err != nil {
@@ -40,6 +40,8 @@ func ApplyToStringValues(jsonString string, applyFunc func(v string) string) (st
 	return string(newJson), nil
 }
 
+// walkAnyAndApplyToStringValues recursively visits each node and applies the specified transformation to each string value.
+// The updated value is returned as a well as a boolean indicating if the value was changed.
 func walkAnyAndApplyToStringValues(v any, applyFunc func(v string) string) (any, bool) {
 	switch typ := v.(type) {
 	case string:
