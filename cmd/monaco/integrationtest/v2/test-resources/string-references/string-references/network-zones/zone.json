@@ -1,0 +1,5 @@
+{
+  "description": "Evil network zone",
+  "alternativeZones": [],
+  "fallbackMode": "ANY_ACTIVE_GATE"
+}

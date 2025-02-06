@@ -1,0 +1,8 @@
+configs:
+- id: dashboard1
+  type:
+    api: dashboard
+  config:
+    name: Dashboard 0
+    template: dashboard.json
+

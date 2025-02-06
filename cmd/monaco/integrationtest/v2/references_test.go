@@ -23,19 +23,70 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/maps"
 )
+
+func TestOnlyStringReferences(t *testing.T) {
+
+	configFolder := "test-resources/string-references/"
+	manifestFile := configFolder + "manifest.yaml"
+
+	fs := testutils.CreateTestFileSystem()
+
+	proj := "string-references"
+	env := "classic_env"
+
+	RunIntegrationWithCleanupOnGivenFsAndEnvs(t, fs, configFolder, manifestFile, env, "string_references", map[string]string{featureflags.OnlyCreateReferencesInStringValues.EnvName(): "true"}, func(fs afero.Fs, ctx TestContext) {
+
+		// upsert
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj)
+		require.NoError(t, err, "create: did not expect error")
+
+		// download
+		err = monaco.RunWithFSf(fs, "monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, "--api=dashboard,network-zone")
+		require.NoError(t, err, "download: did not expect error")
+
+		// assert
+		mani, errs := manifestloader.Load(&manifestloader.Context{
+			Fs:           fs,
+			ManifestPath: "download/manifest.yaml",
+			Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
+		})
+		assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
+
+		projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+			KnownApis:       api.NewAPIs().GetApiNameLookup(),
+			WorkingDir:      "download",
+			Manifest:        mani,
+			ParametersSerde: config.DefaultParameterParsers,
+		}, nil)
+		assert.Empty(t, errs, "load project: did not expect do get error(s)")
+
+		projectAndEnvName := "proj_" + env // for manifest downloads proj + env name
+
+		confsPerType := findConfigs(t, projects, projectAndEnvName)
+
+		dashboard := findConfig(t, confsPerType, "dashboard", "Dashboard 0_"+ctx.suffix)
+		assert.Len(t, dashboard.Parameters, 1)
+
+		_, ok := dashboard.Parameters["name"]
+		assert.True(t, ok, "dashboard should have a name")
+	})
+
+}
 
 func TestReferencesAreResolvedOnDownload(t *testing.T) {
 

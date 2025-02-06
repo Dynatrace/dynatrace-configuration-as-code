@@ -88,6 +88,19 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 	runIntegrationWithCleanup(t, opts, testFunc)
 }
 
+func RunIntegrationWithCleanupOnGivenFsAndEnvs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
+	opts := TestOptions{
+		fs:                  testFs,
+		configFolder:        configFolder,
+		manifestPath:        manifestPath,
+		specificEnvironment: specificEnvironment,
+		suffix:              suffixTest,
+		envVars:             envVars,
+	}
+
+	runIntegrationWithCleanup(t, opts, testFunc)
+}
+
 func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
 	opts := TestOptions{
 		fs:                  testutils.CreateTestFileSystem(),

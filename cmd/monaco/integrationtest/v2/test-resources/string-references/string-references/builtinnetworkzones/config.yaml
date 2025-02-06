@@ -1,0 +1,10 @@
+configs:
+- id: network-zones-enabled
+  config:
+    template: network-zones-enabled.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:networkzones
+      schemaVersion: 1.0.2
+      scope: environment

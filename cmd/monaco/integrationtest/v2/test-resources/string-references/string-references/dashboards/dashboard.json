@@ -1,0 +1,23 @@
+{
+    "dashboardMetadata": {
+      "name": "{{.name}}",
+      "shared": true,
+      "owner": "nobody@dynatrace.com"
+    },
+    "tiles": [
+      {
+        "name": "Markdown",
+        "tileType": "MARKDOWN",
+        "configured": true,
+        "bounds": {
+          "top": 0,
+          "left": 0,
+          "width": 304,
+          "height": 152
+        },
+        "tileFilter": {},
+        "isAutoRefreshDisabled": false,
+        "markdown": "0"
+      }
+    ]
+  }
