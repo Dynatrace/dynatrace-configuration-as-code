@@ -36,7 +36,9 @@ const (
 	// ServiceUsers toggles whether account service users configurations are downloaded and / or deployed.
 	// Introduced: v2.18.0
 	ServiceUsers FeatureFlag = "MONACO_FEAT_SERVICE_USERS"
-
+	// OnlyCreateReferencesInStringValues toggles whether references are created arbitarily in JSON templates
+	// or when enabled only in string values within the JSON.
+	// Introduced: v2.19.0
 	OnlyCreateReferencesInStringValues FeatureFlag = "MONACO_FEAT_ONLY_CREATE_REFERENCES_IN_STRINGS"
 )
 
