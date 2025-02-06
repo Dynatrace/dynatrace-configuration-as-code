@@ -46,6 +46,6 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	PersistSettingsOrder:            true,
 	OpenPipeline:                    true,
 	IgnoreSkippedConfigs:            false,
-	Segments:                        false,
+	Segments:                        true,
 	ServiceUsers:                    false,
 }
