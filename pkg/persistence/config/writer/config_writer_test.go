@@ -1087,6 +1087,67 @@ func TestWriteConfigs(t *testing.T) {
 			},
 			expectedErrs: []string{"config.Segment"},
 		},
+		{
+			name:    "SLO resource",
+			envVars: map[string]string{featureflags.ServiceLevelObjective.EnvName(): "true"},
+			configs: []config.Config{
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/slo/template.json", "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "slo",
+						ConfigId: "configId1",
+					},
+					Type: config.ServiceLevelObjective{},
+					Parameters: map[string]parameter.Parameter{
+						"some param": &value.ValueParameter{Value: "some value"},
+					},
+					Skip: false,
+				},
+			},
+			expectedConfigs: map[string]persistence.TopLevelDefinition{
+				"slo": {
+					Configs: []persistence.TopLevelConfigDefinition{
+						{
+							Id: "configId1",
+							Config: persistence.ConfigDefinition{
+								Parameters: map[string]persistence.ConfigParameter{
+									"some param": "some value",
+								},
+								Template: "template.json",
+								Skip:     false,
+							},
+							Type: persistence.TypeDefinition{
+								Type: config.ServiceLevelObjective{},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/slo/template.json",
+			},
+		},
+		{
+			name:    "SLO with FF off, should return error",
+			envVars: map[string]string{featureflags.ServiceLevelObjective.EnvName(): "false"},
+			configs: []config.Config{
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/slo/template.json", "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "slo",
+						ConfigId: "configId1",
+					},
+					Type: config.ServiceLevelObjective{},
+					Parameters: map[string]parameter.Parameter{
+						"some param": &value.ValueParameter{Value: "some value"},
+					},
+					Skip: false,
+				},
+			},
+			expectedErrs: []string{"config.ServiceLevelObjective"},
+		},
 
 		{
 			name: "Reference scope",
