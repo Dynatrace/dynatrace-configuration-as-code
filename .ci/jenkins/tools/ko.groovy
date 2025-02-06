@@ -28,10 +28,13 @@ private def registrySecret(String registry) {
 
     return [[path        : "${path}",
              secretValues: [
-                 [envVar: 'registry', vaultKey: 'registry', isRequired: true],
-                 [envVar: 'repo', vaultKey: 'repo', isRequired: true],
-                 [envVar: 'username', vaultKey: 'username', isRequired: true],
-                 [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
+                 [envVar: 'registry',        vaultKey: 'registry',        isRequired: true],
+                 [envVar: 'repo',            vaultKey: 'repo',            isRequired: true],
+                 [envVar: 'username',        vaultKey: 'username',        isRequired: true],
+                 [envVar: 'password',        vaultKey: 'password',        isRequired: true]
+                 [envVar: 'base_image_path', vaultKey: 'base_image_path', isRequired: true]
+             ]
+         ]]
 }
 
 
@@ -49,7 +52,7 @@ String buildContainer(Map args = [tags: null, registry: null]) {
     withEnv(["tags=${args.tags.join(",")}", "version=${args.tags[0]}"]) { //, "vaultPath=${args.registrySecretsPath}"
         withVault(vaultSecrets: registrySecret(args.registry)) {
             sh(label: "build and publish container",
-                script: 'make docker-container REPO_PATH=$registry/$repo VERSION=$version TAGS=$tags')
+                script: 'make docker-container REPO_PATH=$registry/$repo VERSION=$version TAGS=$tags KO_BASE_IMAGE_PATH=$base_image_path' )
             return "$registry/$repo/dynatrace-configuration-as-code:$version"
         }
     }
