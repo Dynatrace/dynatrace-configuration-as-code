@@ -22,52 +22,52 @@ import (
 
 // ApplyToStringValues unmarshals a JSON string and applies the specified transformation function to each string value before remarshaling and returning the result.
 // If no transformation is actually performed, the original JSON string is returned.
-func ApplyToStringValues(jsonString string, f func(v string) string) (string, error) {
-	var v interface{}
-	if err := json.Unmarshal([]byte(jsonString), &v); err != nil {
+func ApplyToStringValues(jsonString string, applyFunc func(v string) string) (string, error) {
+	var val any
+	if err := json.Unmarshal([]byte(jsonString), &val); err != nil {
 		return "", err
 	}
 
-	v, changed := walkAnyAndApplyToStringValues(v, f)
+	val, changed := walkAnyAndApplyToStringValues(val, applyFunc)
 	if !changed {
 		return jsonString, nil
 	}
 
-	b, err := json.Marshal(v)
+	newJson, err := json.Marshal(val)
 	if err != nil {
 		return "", err
 	}
-	return string(b), nil
+	return string(newJson), nil
 }
 
-func walkAnyAndApplyToStringValues(v any, f func(v string) string) (any, bool) {
-	switch vv := v.(type) {
+func walkAnyAndApplyToStringValues(v any, applyFunc func(v string) string) (any, bool) {
+	switch typ := v.(type) {
 	case string:
-		if f == nil {
-			return vv, false
+		if applyFunc == nil {
+			return typ, false
 		}
-		fNew := f(vv)
-		return fNew, vv != fNew
+		fNew := applyFunc(typ)
+		return fNew, typ != fNew
 
-	case []interface{}:
+	case []any:
 		changed := false
-		for i, u := range vv {
-			uNew, c := walkAnyAndApplyToStringValues(u, f)
-			vv[i] = uNew
+		for i, u := range typ {
+			uNew, c := walkAnyAndApplyToStringValues(u, applyFunc)
+			typ[i] = uNew
 			changed = changed || c
 		}
-		return vv, changed
+		return typ, changed
 
-	case map[string]interface{}:
+	case map[string]any:
 		changed := false
-		for k, u := range vv {
-			uNew, c := walkAnyAndApplyToStringValues(u, f)
-			vv[k] = uNew
+		for k, u := range typ {
+			uNew, c := walkAnyAndApplyToStringValues(u, applyFunc)
+			typ[k] = uNew
 			changed = changed || c
 		}
-		return vv, changed
+		return typ, changed
 
 	default:
-		return vv, false
+		return typ, false
 	}
 }
