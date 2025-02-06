@@ -36,16 +36,21 @@ const (
 	// ServiceUsers toggles whether account service users configurations are downloaded and / or deployed.
 	// Introduced: v2.18.0
 	ServiceUsers FeatureFlag = "MONACO_FEAT_SERVICE_USERS"
+	// OnlyCreateReferencesInStringValues toggles whether references are created arbitarily in JSON templates
+	// or when enabled only in string values within the JSON.
+	// Introduced: v2.19.0
+	OnlyCreateReferencesInStringValues FeatureFlag = "MONACO_FEAT_ONLY_CREATE_REFERENCES_IN_STRINGS"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
 // It is suitable for features that are hidden during development or have some uncertainty.
 // These should always be removed after release of a feature, or some stabilization period if needed.
 var temporaryDefaultValues = map[FeatureFlag]defaultValue{
-	SkipReadOnlyAccountGroupUpdates: false,
-	PersistSettingsOrder:            true,
-	OpenPipeline:                    true,
-	IgnoreSkippedConfigs:            false,
-	Segments:                        true,
-	ServiceUsers:                    false,
+	SkipReadOnlyAccountGroupUpdates:    false,
+	PersistSettingsOrder:               true,
+	OpenPipeline:                       true,
+	IgnoreSkippedConfigs:               false,
+	Segments:                           true,
+	ServiceUsers:                       false,
+	OnlyCreateReferencesInStringValues: false,
 }

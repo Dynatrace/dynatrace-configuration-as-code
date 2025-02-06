@@ -1,0 +1,5 @@
+{
+  "description": "Network zone",
+  "alternativeZones": [],
+  "fallbackMode": "ANY_ACTIVE_GATE"
+}

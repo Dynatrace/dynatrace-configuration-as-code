@@ -23,19 +23,103 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/maps"
 )
+
+// TestOnlyStringReferences explicitly tests the "only create references in string values" feature.
+// The test creates an network zone with the ID "0", and when the feature flag is turned off, Monaco creates references to it often such as in coordinates for dashboard tiles.
+// When turned on, such references are not created.
+func TestOnlyStringReferences(t *testing.T) {
+	tests := []struct {
+		name     string
+		envVars  map[string]string
+		validate func(t *testing.T, dashboardParameters config.Parameters)
+	}{
+		{
+			name:    "With feature flag enabled",
+			envVars: map[string]string{featureflags.OnlyCreateReferencesInStringValues.EnvName(): "true"},
+			validate: func(t *testing.T, dashboardParameters config.Parameters) {
+				assert.Len(t, dashboardParameters, 1, "dashboard should only have one parameter")
+				_, ok := dashboardParameters["name"]
+				assert.True(t, ok, "dashboard should only have a name parameter")
+			},
+		},
+		{
+			name:    "With feature flag disabled",
+			envVars: map[string]string{featureflags.OnlyCreateReferencesInStringValues.EnvName(): "false"},
+			validate: func(t *testing.T, dashboardParameters config.Parameters) {
+				assert.Len(t, dashboardParameters, 2, "dashboard should have two parameters")
+				_, ok := dashboardParameters["name"]
+				assert.True(t, ok, "dashboard should have a name parameter")
+
+				_, ok = dashboardParameters["networkzone__0__id"]
+				assert.True(t, ok, "dashboard should reference a network zone")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			configFolder := "test-resources/string-references/"
+			manifestFile := configFolder + "manifest.yaml"
+
+			fs := testutils.CreateTestFileSystem()
+
+			proj := "string-references"
+			env := "classic_env"
+
+			RunIntegrationWithCleanupOnGivenFsAndEnvs(t, fs, configFolder, manifestFile, env, "string_references", tt.envVars, func(fs afero.Fs, ctx TestContext) {
+
+				// upsert
+				err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj)
+				require.NoError(t, err, "create: did not expect error")
+
+				// download
+				err = monaco.RunWithFSf(fs, "monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, "--api=dashboard,network-zone")
+				require.NoError(t, err, "download: did not expect error")
+
+				// load downloaded project
+				mani, errs := manifestloader.Load(&manifestloader.Context{
+					Fs:           fs,
+					ManifestPath: "download/manifest.yaml",
+					Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
+				})
+				assert.Empty(t, errs, "unexpected error loading manifest")
+
+				projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+					KnownApis:       api.NewAPIs().GetApiNameLookup(),
+					WorkingDir:      "download",
+					Manifest:        mani,
+					ParametersSerde: config.DefaultParameterParsers,
+				}, nil)
+				assert.Empty(t, errs, "unexpected error loading project")
+
+				// find dashboard
+				projectAndEnvName := "proj_" + env // for manifest downloads proj + env name
+				confsPerType := findConfigs(t, projects, projectAndEnvName)
+				dashboard := findConfig(t, confsPerType, "dashboard", "Dashboard 0_"+ctx.suffix)
+
+				require.NotEmpty(t, dashboard.Coordinate.ConfigId)
+
+				tt.validate(t, dashboard.Parameters)
+			})
+		})
+	}
+}
 
 func TestReferencesAreResolvedOnDownload(t *testing.T) {
 

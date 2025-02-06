@@ -1,0 +1,13 @@
+configs:
+- id: "0" #monaco-test:no-replace
+  config:
+    name: "0" #monaco-test:no-replace
+    template: zone.json
+    parameters:
+      networkZoneFeatEnabled:
+        configType: builtin:networkzones
+        configId: network-zones-enabled
+        property: name
+        type: reference
+  type:
+    api: network-zone
