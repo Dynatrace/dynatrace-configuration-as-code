@@ -3,6 +3,7 @@ manifestVersion: 1.0
 projects:
 - name: standalone-segment
 - name: two-segments
+- name: referenced-segment
 
 environmentGroups:
 - name: default

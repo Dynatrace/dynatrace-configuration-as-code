@@ -136,6 +136,26 @@ func TestSegments(t *testing.T) {
 			assertSegmentIsInResponse(t, false, result, coord)
 		})
 	})
+
+	t.Run("Segments can be referenced from other configs", func(t *testing.T) {
+
+		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
+			// when deploying once
+			err := monaco.RunWithFSf(fs, "monaco deploy %s --project=referenced-segment --verbose", manifestPath)
+			assert.NoError(t, err)
+
+			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
+			result, err := segmentsClient.GetAll(context.Background())
+			assert.NoError(t, err)
+
+			coord := coordinate.Coordinate{
+				Project:  "referenced-segment",
+				Type:     "segment",
+				ConfigId: "segment_" + testContext.suffix,
+			}
+			assertSegmentIsInResponse(t, true, result, coord)
+		})
+	})
 }
 
 func createSegmentsClient(t *testing.T, fs afero.Fs, manifestPath string, environment string) client.SegmentClient {
