@@ -1226,6 +1226,62 @@ configs:
 			wantErrorsContain: []string{"unknown API: segment"},
 		},
 		{
+			name:             "SLO config with FF on",
+			envVars:          map[string]string{featureflags.ServiceLevelObjective.EnvName(): "true"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: slo-config-id
+  config:
+    template: 'profile.json'
+  type: slo
+`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "slo",
+						ConfigId: "slo-config-id",
+					},
+					Type:        config.ServiceLevelObjective{},
+					Template:    template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters:  config.Parameters{},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
+			name:             "SLO config with FF off",
+			envVars:          map[string]string{featureflags.ServiceLevelObjective.EnvName(): "false"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: slo-config-id
+  config:
+    template: 'profile.json'
+  type: slo
+`,
+			wantErrorsContain: []string{"unknown config-type \"slo\""},
+		},
+		{
+			name:             "SLO written as api config",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: slo-config-id
+  config:
+    template: 'profile.json'
+  type:
+    api: slo
+`,
+			wantErrorsContain: []string{"unknown API: slo"},
+		},
+		{
 			name:             "API without scope",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",

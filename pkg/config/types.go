@@ -17,14 +17,15 @@
 package config
 
 const (
-	SettingsTypeID     TypeID = "settings"
-	ClassicApiTypeID   TypeID = "classic"
-	EntityTypeID       TypeID = "entity"
-	AutomationTypeID   TypeID = "automation"
-	BucketTypeID       TypeID = "bucket"
-	DocumentTypeID     TypeID = "document"
-	OpenPipelineTypeID TypeID = "openpipeline"
-	SegmentID          TypeID = "segment"
+	SettingsTypeID          TypeID = "settings"
+	ClassicApiTypeID        TypeID = "classic"
+	EntityTypeID            TypeID = "entity"
+	AutomationTypeID        TypeID = "automation"
+	BucketTypeID            TypeID = "bucket"
+	DocumentTypeID          TypeID = "document"
+	OpenPipelineTypeID      TypeID = "openpipeline"
+	SegmentID               TypeID = "segment"
+	ServiceLevelObjectiveID TypeID = "slo"
 )
 
 var _ Type = SettingsType{}
@@ -135,4 +136,10 @@ type Segment struct{}
 
 func (Segment) ID() TypeID {
 	return SegmentID
+}
+
+type ServiceLevelObjective struct{}
+
+func (ServiceLevelObjective) ID() TypeID {
+	return ServiceLevelObjectiveID
 }
