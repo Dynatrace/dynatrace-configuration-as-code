@@ -1235,7 +1235,7 @@ configs:
 - id: slo-config-id
   config:
     template: 'profile.json'
-  type: slo
+  type: slo-v2
 `,
 			wantConfigs: []config.Config{
 				{
@@ -1263,9 +1263,9 @@ configs:
 - id: slo-config-id
   config:
     template: 'profile.json'
-  type: slo
+  type: slo-v2
 `,
-			wantErrorsContain: []string{"unknown config-type \"slo\""},
+			wantErrorsContain: []string{"unknown config-type \"slo-v2\""},
 		},
 		{
 			name:             "SLO written as api config",
@@ -1277,7 +1277,7 @@ configs:
   config:
     template: 'profile.json'
   type:
-    api: slo
+    api: slo-v2
 `,
 			wantErrorsContain: []string{"unknown API: slo"},
 		},

@@ -31,7 +31,7 @@ import (
 const (
 	BucketType                = "bucket"
 	SegmentType               = "segment"
-	ServiceLevelObjectiveType = "slo"
+	ServiceLevelObjectiveType = "slo-v2"
 )
 
 type TypeDefinition struct {
