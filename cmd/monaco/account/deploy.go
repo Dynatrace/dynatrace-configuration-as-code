@@ -17,8 +17,15 @@
 package account
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
@@ -29,10 +36,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
-	"path/filepath"
 )
 
 type deployOpts struct {
@@ -59,7 +62,7 @@ func deployCommand(fs afero.Fs) *cobra.Command {
 
 			opts.workingDir = filepath.Dir(opts.manifestName)
 
-			return deploy(fs, opts)
+			return deploy(cmd.Context(), fs, opts)
 		},
 	}
 
@@ -71,7 +74,7 @@ func deployCommand(fs afero.Fs) *cobra.Command {
 	return command
 }
 
-func deploy(fs afero.Fs, opts deployOpts) error {
+func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
 
 	mani, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
@@ -118,7 +121,7 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 		return nil
 	}
 
-	accountClients, err := dynatrace.CreateAccountClients(accounts)
+	accountClients, err := dynatrace.CreateAccountClients(ctx, accounts)
 	if err != nil {
 		return fmt.Errorf("failed to create account clients: %w", err)
 	}

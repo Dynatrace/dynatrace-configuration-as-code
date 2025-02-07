@@ -34,6 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -194,7 +195,6 @@ type ClientSet struct {
 
 type ClientOptions struct {
 	CustomUserAgent string
-	SupportArchive  bool
 	CachingDisabled bool
 }
 
@@ -248,7 +248,7 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts C
 		WithRetryOptions(&DefaultRetryOptions).
 		WithRateLimiter(true)
 
-	if opts.SupportArchive {
+	if v := ctx.Value(support.SupportArchive{}); v != nil && v.(*support.SupportArchive).Value {
 		cFactory = cFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
 

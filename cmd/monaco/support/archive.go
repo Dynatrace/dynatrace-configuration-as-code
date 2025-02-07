@@ -17,17 +17,21 @@
 package support
 
 import (
+	"os"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/zip"
-	"github.com/spf13/afero"
-	"os"
-	"path/filepath"
 )
 
-var SupportArchive bool
+type SupportArchive struct {
+	Value bool
+}
 
 func Archive(fs afero.Fs) error {
 	timeAnchorStr := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat)

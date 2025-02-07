@@ -19,18 +19,21 @@
 package account
 
 import (
+	"context"
 	"errors"
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/require"
-	"os"
-	"strings"
-	"testing"
 )
 
 type options struct {
@@ -57,7 +60,7 @@ func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name
 func createAccountClientsFromManifest(t *testing.T, fs afero.Fs, manifestFileName string) map[account.AccountInfo]*accounts.Client {
 	m, errs := manifestloader.Load(&manifestloader.Context{Fs: fs, ManifestPath: manifestFileName, Opts: manifestloader.Options{RequireAccounts: true}})
 	require.NoError(t, errors.Join(errs...))
-	accClients, err := dynatrace.CreateAccountClients(m.Accounts)
+	accClients, err := dynatrace.CreateAccountClients(context.TODO(), m.Accounts)
 	require.NoError(t, err)
 	return accClients
 }

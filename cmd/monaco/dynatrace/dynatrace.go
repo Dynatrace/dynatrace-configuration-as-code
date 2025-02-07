@@ -114,7 +114,7 @@ func isPlatformEnvironment(ctx context.Context, env manifest.EnvironmentDefiniti
 }
 
 // CreateAccountClients gives back clients to use for specific accounts
-func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[account.AccountInfo]*accounts.Client, error) {
+func CreateAccountClients(ctx context.Context, manifestAccounts map[string]manifest.Account) (map[account.AccountInfo]*accounts.Client, error) {
 	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	accClients := make(map[account.AccountInfo]*accounts.Client, len(manifestAccounts))
 	for _, acc := range manifestAccounts {
@@ -132,7 +132,7 @@ func CreateAccountClients(manifestAccounts map[string]manifest.Account) (map[acc
 			WithRetryOptions(&client.DefaultRetryOptions).
 			WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl))
 
-		if support.SupportArchive {
+		if v := ctx.Value(support.SupportArchive{}); v != nil && v.(*support.SupportArchive).Value {
 			factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 		}
 
@@ -189,7 +189,7 @@ func CreateEnvironmentClients(ctx context.Context, environments manifest.Environ
 			continue
 		}
 
-		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{})
 		if err != nil {
 			return EnvironmentClients{}, err
 		}
