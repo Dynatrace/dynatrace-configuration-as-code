@@ -20,6 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/google/uuid"
+	"github.com/spf13/afero"
+	"golang.org/x/exp/maps"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
@@ -32,14 +39,9 @@ import (
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	manifestwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/writer"
 	presistance "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
-	"github.com/google/uuid"
-	"github.com/spf13/afero"
-	"golang.org/x/exp/maps"
-	"os"
-	"path/filepath"
 )
 
-func downloadAll(fs afero.Fs, opts *downloadOpts) error {
+func downloadAll(ctx context.Context, fs afero.Fs, opts *downloadOpts) error {
 	if opts.outputFolder == "" {
 		opts.outputFolder = fmt.Sprintf("download_account_%s", timeutils.TimeAnchor().Format(log.LogFileTimestampPrefixFormat))
 	}
@@ -65,7 +67,7 @@ func downloadAll(fs afero.Fs, opts *downloadOpts) error {
 
 	var failedDownloads []account.AccountInfo
 	for acc, accClient := range accountClients {
-		err := downloadAndPersist(fs, opts, acc, accClient)
+		err := downloadAndPersist(ctx, fs, opts, acc, accClient)
 		if err != nil {
 			log.Error("Failed to download account resources for account %q: %s", acc, err)
 			failedDownloads = append(failedDownloads, acc)
@@ -143,10 +145,10 @@ func loadAccountsFromManifest(fs afero.Fs, opts *downloadOpts) (map[string]manif
 	return m.Accounts, nil
 }
 
-func downloadAndPersist(fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accClient *accounts.Client) error {
+func downloadAndPersist(ctx context.Context, fs afero.Fs, opts *downloadOpts, accInfo account.AccountInfo, accClient *accounts.Client) error {
 	downloader := downloader.New(&accInfo, accClient)
 
-	ctx := context.WithValue(context.TODO(), log.CtxKeyAccount{}, accInfo.Name)
+	ctx = context.WithValue(ctx, log.CtxKeyAccount{}, accInfo.Name)
 	resources, err := downloader.DownloadResources(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to download resources: %w", err)
