@@ -61,6 +61,8 @@ func Download(client client.ConfigClient, projectName string, apisToDownload api
 				return
 			}
 
+			foundValues = checkAndRemoveValuesWithDuplicateIDs(currentApi, foundValues)
+
 			foundValues = filterConfigsToSkip(currentApi, foundValues, filters)
 			if len(foundValues) == 0 {
 				log.WithFields(field.Type(currentApi.ID)).Debug("No configs of type '%s' to download", currentApi.ID)
@@ -80,6 +82,22 @@ func Download(client client.ConfigClient, projectName string, apisToDownload api
 	log.Debug("Finished fetching all configs in %v", duration)
 
 	return results, nil
+}
+
+func checkAndRemoveValuesWithDuplicateIDs(api api.API, originalValues values) values {
+	seenIDs := make(map[string]struct{}, len(originalValues))
+	filteredValues := make(values, 0, len(originalValues))
+
+	for _, v := range originalValues {
+		if _, alreadySeen := seenIDs[v.value.Id]; alreadySeen {
+			log.Warn("Received multiple '%s' configs with the same ID '%s'; skipping duplicate named '%s'", api.ID, v.value.Id, v.value.Name)
+			continue
+		}
+
+		seenIDs[v.value.Id] = struct{}{}
+		filteredValues = append(filteredValues, v)
+	}
+	return filteredValues
 }
 
 func downloadConfigs(client client.ConfigClient, api api.API, configsToDownload values, projectName string, filters ContentFilters) []config.Config {

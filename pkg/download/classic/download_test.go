@@ -280,6 +280,18 @@ func Test_generalCases(t *testing.T) {
 			expectedKeys: []string{"API_1"},
 		},
 		{
+			name: "List returns same value twice, only one get is performed for each API type",
+			mockList: []listMockData{
+				{api: api1, response: []dtclient.Value{{Id: "ID_1", Name: "NAME_1"}, {Id: "ID_1", Name: "NAME_1"}}},
+				{api: api2, response: []dtclient.Value{{Id: "ID_2", Name: "NAME_2"}, {Id: "ID_2", Name: "NAME_2"}}},
+			},
+			mockConfigByID: []getData{
+				{id: "ID_1", response: "{}"},
+				{id: "ID_2", response: "{}"},
+			},
+			expectedKeys: []string{"API_1", "API_2"},
+		},
+		{
 			name: "malformed response from an API - ignored",
 			mockList: []listMockData{
 				{api: api1, response: []dtclient.Value{{Id: "ID_1", Name: "NAME_1"}}},
