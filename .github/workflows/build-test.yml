@@ -43,7 +43,7 @@ jobs:
         run: make compile
 
       - name: 🧪 Unit test
-        run: make test testopts="-coverprofile=./cover.out -covermode=atomic -coverpkg=./.."
+        run: go test -race -tags=unit ./... -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
 
       - name: check test coverage
         uses: vladopajic/go-test-coverage@v2
