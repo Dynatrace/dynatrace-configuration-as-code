@@ -43,32 +43,32 @@ import (
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
 // using the configured credentials
-func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
+func VerifyEnvironmentGeneration(ctx context.Context, envs manifest.Environments) bool {
 	if !featureflags.VerifyEnvironmentType.Enabled() {
 		return true
 	}
 	for _, env := range envs {
-		if !isValidEnvironment(env) {
+		if !isValidEnvironment(ctx, env) {
 			return false
 		}
 	}
 	return true
 }
 
-func isValidEnvironment(env manifest.EnvironmentDefinition) bool {
+func isValidEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) bool {
 	if env.Auth.Token == nil && env.Auth.OAuth == nil {
 		log.Error("No token and oAuth provided in manifest")
 		return false
 	}
 
 	if env.Auth.OAuth == nil {
-		return isClassicEnvironment(env)
+		return isClassicEnvironment(ctx, env)
 	}
 
-	return isPlatformEnvironment(env)
+	return isPlatformEnvironment(ctx, env)
 }
 
-func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
+func isClassicEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) bool {
 	client, err := clients.Factory().
 		WithClassicURL(env.URL.Value).
 		WithAccessToken(env.Auth.Token.Value.Value()).
@@ -80,7 +80,7 @@ func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
 		return false
 	}
 
-	if _, err := version.GetDynatraceVersion(context.TODO(), client); err != nil {
+	if _, err := version.GetDynatraceVersion(ctx, client); err != nil {
 		var apiErr coreapi.APIError
 		if errors.As(err, &apiErr) {
 			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using token authorization: %v", env.Name, env.URL.Value, err)
@@ -93,14 +93,14 @@ func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
 	return true
 }
 
-func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
+func isPlatformEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) bool {
 	oauthCreds := clientcredentials.Config{
 		ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
 		ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
 		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
 
-	if _, err := getDynatraceClassicURL(context.TODO(), env.URL.Value, oauthCreds); err != nil {
+	if _, err := getDynatraceClassicURL(ctx, env.URL.Value, oauthCreds); err != nil {
 		var apiError coreapi.APIError
 		if errors.As(err, &apiError) {
 			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using oAuth authorization: %v", env.Name, env.URL.Value, err)

@@ -17,15 +17,18 @@
 package deploy
 
 import (
+	"context"
+	"path/filepath"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
 )
 
 func Test_DoDeploy_InvalidManifest(t *testing.T) {
@@ -52,7 +55,7 @@ func Test_DoDeploy_InvalidManifest(t *testing.T) {
 	manifestPath, _ := filepath.Abs("manifest.yaml")
 	_ = afero.WriteFile(testFs, manifestPath, []byte(manifestYaml), 0644)
 
-	err := deployConfigs(testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
+	err := deployConfigs(context.TODO(), testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
 	assert.Error(t, err)
 }
 
@@ -93,26 +96,26 @@ environmentGroups:
 	_ = afero.WriteFile(testFs, manifestPath, []byte(manifestYaml), 0644)
 
 	t.Run("Wrong environment group", func(t *testing.T) {
-		err := deployConfigs(testFs, manifestPath, []string{"NOT_EXISTING_GROUP"}, []string{}, []string{}, true, true)
+		err := deployConfigs(context.TODO(), testFs, manifestPath, []string{"NOT_EXISTING_GROUP"}, []string{}, []string{}, true, true)
 		assert.Error(t, err)
 	})
 	t.Run("Wrong environment name", func(t *testing.T) {
-		err := deployConfigs(testFs, manifestPath, []string{"default"}, []string{"NOT_EXISTING_ENV"}, []string{}, true, true)
+		err := deployConfigs(context.TODO(), testFs, manifestPath, []string{"default"}, []string{"NOT_EXISTING_ENV"}, []string{}, true, true)
 		assert.Error(t, err)
 	})
 
 	t.Run("Wrong project name", func(t *testing.T) {
-		err := deployConfigs(testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"NON_EXISTING_PROJECT"}, true, true)
+		err := deployConfigs(context.TODO(), testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"NON_EXISTING_PROJECT"}, true, true)
 		assert.Error(t, err)
 	})
 
 	t.Run("no parameters", func(t *testing.T) {
-		err := deployConfigs(testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
+		err := deployConfigs(context.TODO(), testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
 		assert.NoError(t, err)
 	})
 
 	t.Run("correct parameters", func(t *testing.T) {
-		err := deployConfigs(testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"project"}, true, true)
+		err := deployConfigs(context.TODO(), testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"project"}, true, true)
 		assert.NoError(t, err)
 	})
 

@@ -41,8 +41,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
-func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
-	ctx := createDeploymentContext(fs)
+func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
+	ctx = createDeploymentContext(ctx, fs)
 	err := deployConfigsWithContext(ctx, fs, manifestPath, environmentGroups, specificEnvironments, specificProjects, continueOnErr, dryRun)
 
 	r := report.GetReporterFromContextOrDiscard(ctx)
@@ -65,7 +65,7 @@ func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath str
 		return err
 	}
 
-	ok := verifyEnvironmentGen(loadedManifest.Environments, dryRun)
+	ok := verifyEnvironmentGen(ctx, loadedManifest.Environments, dryRun)
 	if !ok {
 		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
@@ -101,12 +101,12 @@ func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath str
 	return nil
 }
 
-func createDeploymentContext(fs afero.Fs) context.Context {
+func createDeploymentContext(ctx context.Context, fs afero.Fs) context.Context {
 	if reportFilename, ok := os.LookupEnv(environment.DeploymentReportFilename); ok && len(reportFilename) > 0 {
-		return report.NewContextWithReporter(context.TODO(), report.NewDefaultReporter(fs, reportFilename))
+		return report.NewContextWithReporter(ctx, report.NewDefaultReporter(fs, reportFilename))
 	}
 
-	return context.TODO()
+	return ctx
 }
 
 func absPath(manifestPath string) (string, error) {
@@ -131,9 +131,9 @@ func loadManifest(fs afero.Fs, manifestPath string, groups []string, environment
 	return &m, nil
 }
 
-func verifyEnvironmentGen(environments manifest.Environments, dryRun bool) bool {
+func verifyEnvironmentGen(ctx context.Context, environments manifest.Environments, dryRun bool) bool {
 	if !dryRun {
-		return dynatrace.VerifyEnvironmentGeneration(environments)
+		return dynatrace.VerifyEnvironmentGeneration(ctx, environments)
 
 	}
 	return true
