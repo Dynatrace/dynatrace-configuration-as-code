@@ -47,7 +47,6 @@ func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefini
 		environment.URL.Value,
 		environment.Auth,
 		client.ClientOptions{
-			SupportArchive:  support.SupportArchive,
 			CachingDisabled: true, // disabled to avoid wrong cache reads
 		},
 	)

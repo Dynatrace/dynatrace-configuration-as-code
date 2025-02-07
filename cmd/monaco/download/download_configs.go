@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -157,7 +156,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 		return err
 	}
 
-	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth, client.ClientOptions{})
 	if err != nil {
 		return err
 	}
@@ -195,7 +194,7 @@ func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOpt
 		return err
 	}
 
-	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth, client.ClientOptions{})
 	if err != nil {
 		return err
 	}

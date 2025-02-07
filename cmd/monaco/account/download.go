@@ -60,7 +60,7 @@ func downloadAll(ctx context.Context, fs afero.Fs, opts *downloadOpts) error {
 		}
 	}
 
-	accountClients, err := dynatrace.CreateAccountClients(accs)
+	accountClients, err := dynatrace.CreateAccountClients(ctx, accs)
 	if err != nil {
 		return fmt.Errorf("failed to create account clients: %w", err)
 	}

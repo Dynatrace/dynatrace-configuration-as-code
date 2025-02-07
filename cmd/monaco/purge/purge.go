@@ -25,7 +25,6 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/exp/maps"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -76,7 +75,7 @@ func purgeConfigs(ctx context.Context, environments []manifest.EnvironmentDefini
 func purgeForEnvironment(ctx context.Context, env manifest.EnvironmentDefinition, apis api.APIs) error {
 	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
-	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
+	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create a client for env `%s`: %w", env.Name, err)
 	}

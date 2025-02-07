@@ -37,9 +37,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
 
-func RunCmd(ctx context.Context, fs afero.Fs, command *cobra.Command) error {
+func RunCmd(ctx context.Context, fs afero.Fs, cmd *cobra.Command) error {
+	supportArchivePtr := &(support.SupportArchive{})
 	defer func() { // writing the support archive is a deferred function call in order to guarantee that a support archive is also written in case of a panic
-		if support.SupportArchive {
+		if supportArchivePtr.Value {
 			if err := trafficlogs.GetInstance().Sync(); err != nil {
 				log.WithFields(field.Error(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
 			}
@@ -48,7 +49,9 @@ func RunCmd(ctx context.Context, fs afero.Fs, command *cobra.Command) error {
 			}
 		}
 	}()
-	err := command.ExecuteContext(ctx)
+
+	ctx = context.WithValue(ctx, support.SupportArchive{}, supportArchivePtr)
+	err := cmd.ExecuteContext(ctx)
 	if err != nil {
 		log.WithFields(field.Error(err)).Error("Error: %v", err)
 		log.WithFields(field.F("errorLogFilePath", log.ErrorFilePath())).Error("error logs written to %s", log.ErrorFilePath())
@@ -62,6 +65,7 @@ func BuildCmd(fs afero.Fs) *cobra.Command {
 
 func BuildCmdWithLogSpy(fs afero.Fs, logSpy io.Writer) *cobra.Command {
 	var verbose bool
+	var supportArchive bool
 
 	var rootCmd = &cobra.Command{
 		Use:   "monaco <command>",
@@ -75,7 +79,9 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			fileBasedLogging := featureflags.LogToFile.Enabled() || support.SupportArchive
+			cmd.Context().Value(support.SupportArchive{}).(*support.SupportArchive).Value = supportArchive
+
+			fileBasedLogging := featureflags.LogToFile.Enabled() || supportArchive
 			log.PrepareLogging(fs, verbose, logSpy, fileBasedLogging)
 
 			// log the version except for running the main command, help command and version command
@@ -97,7 +103,7 @@ Examples:
 
 	// global flags
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable debug logging")
-	rootCmd.PersistentFlags().BoolVar(&support.SupportArchive, "support-archive", false, "Create support archive")
+	rootCmd.PersistentFlags().BoolVar(&supportArchive, "support-archive", false, "Create support archive")
 
 	// commands
 	rootCmd.AddCommand(download.GetDownloadCommand(fs, &download.DefaultCommand{}))
