@@ -43,7 +43,12 @@ jobs:
         run: make compile
 
       - name: 🧪 Unit test
-        run: make test testopts="--junitfile test-result-ubuntu-latest-unit.xml"
+        run: make test testopts="-coverprofile=./cover.out -covermode=atomic -coverpkg=./.."
+
+      - name: check test coverage
+        uses: vladopajic/go-test-coverage@v2
+        with:
+          config: ./.testcoverage.yml
 
       - name: ⬆️ Upload Test Results
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 #v4.6.0
