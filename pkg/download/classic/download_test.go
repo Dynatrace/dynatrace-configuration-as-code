@@ -102,7 +102,7 @@ func TestDownload_KeyUserActionWeb(t *testing.T) {
 	assert.False(t, gotConfig.Skip)
 }
 
-func TestDownload_KeyUserActionWeb_Uniqnes(t *testing.T) {
+func TestDownload_KeyUserActionWeb_Uniqness(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
 	ctx := context.TODO()
 	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
@@ -221,7 +221,7 @@ func Test_generalCases(t *testing.T) {
 		name           string
 		mockList       []listMockData
 		mockConfigByID []getData
-		expectedKeys   []string // the tick is to have only one entry per an api, and to check which API is present in resulut
+		expectedKeys   []string // the trick is to have only one entry per an api, and to check which API is present in result
 	}{
 		{
 			name: "Get (GET by ID) returns empty configuration - works",
