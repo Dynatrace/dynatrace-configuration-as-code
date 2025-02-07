@@ -18,12 +18,14 @@ package deploy
 
 import (
 	"fmt"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 )
 
 func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
@@ -39,7 +41,6 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 		ValidArgsFunction: completion.DeployCompletion,
 		PreRun:            cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			manifestName = args[0]
 
 			if !files.IsYamlFileExtension(manifestName) {
@@ -47,7 +48,7 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 				return err
 			}
 
-			return deployConfigs(fs, manifestName, groups, environment, project, continueOnError, dryRun)
+			return deployConfigs(cmd.Context(), fs, manifestName, groups, environment, project, continueOnError, dryRun)
 		},
 	}
 

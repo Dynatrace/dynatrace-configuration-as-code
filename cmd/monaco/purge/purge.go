@@ -35,7 +35,7 @@ import (
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 )
 
-func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string, apiNames []string) error {
+func purge(ctx context.Context, fs afero.Fs, deploymentManifestPath string, environmentNames []string, apiNames []string) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
 	deploymentManifestPath, manifestErr := filepath.Abs(deploymentManifestPath)
@@ -58,13 +58,13 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 		return errors.New("error while loading manifest")
 	}
 
-	return purgeConfigs(maps.Values(mani.Environments), apis)
+	return purgeConfigs(ctx, maps.Values(mani.Environments), apis)
 }
 
-func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) error {
+func purgeConfigs(ctx context.Context, environments []manifest.EnvironmentDefinition, apis api.APIs) error {
 
 	for _, env := range environments {
-		err := purgeForEnvironment(env, apis)
+		err := purgeForEnvironment(ctx, env, apis)
 		if err != nil {
 			return err
 		}
@@ -73,8 +73,8 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) 
 	return nil
 }
 
-func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) error {
-	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
+func purgeForEnvironment(ctx context.Context, env manifest.EnvironmentDefinition, apis api.APIs) error {
+	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
 	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{SupportArchive: support.SupportArchive})
 	if err != nil {

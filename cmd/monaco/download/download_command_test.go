@@ -40,7 +40,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			specificEnvironmentName: "my-environment1",
 			projectName:             "project",
 		}
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
 		err := m.download("--manifest path/to/my-manifest.yaml --environment my-environment1")
 
@@ -55,7 +55,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			specificEnvironmentName: "my-environment",
 			projectName:             "project",
 		}
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
 		err := m.download("--environment my-environment")
 
@@ -75,7 +75,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			auth:           auth{token: "TOKEN"},
 			projectName:    "project",
 		}
-		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
 
 		err := m.download("--url http://some.url --token TOKEN")
 
@@ -94,7 +94,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			},
 			projectName: "project",
 		}
-		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
 
 		err := m.download("--url http://some.url --token TOKEN --oauth-client-id CLIENT_ID --oauth-client-secret CLIENT_SECRET")
 		assert.NoError(t, err)
@@ -125,7 +125,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			outputFolder:            "path/to/my-folder",
 			forceOverwrite:          true,
 		}
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
 		err := m.download("--manifest path/my-manifest.yaml --environment my-environment --project my-project --output-folder path/to/my-folder --force true")
 
@@ -140,7 +140,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			specificEnvironmentName: "my_environment",
 			projectName:             "project",
 		}
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
 		err := m.download("--environment my_environment")
 		assert.NoError(t, err)
@@ -155,7 +155,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			projectName:             "project",
 			specificAPIs:            []string{"test", "test2", "test3", "test4"},
 		}
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
 		err := m.download("--environment myEnvironment --api test --api test2 --api test3,test4")
 		assert.NoError(t, err)
@@ -170,7 +170,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		}
 
 		m := newMonaco(t)
-		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
 
 		err := m.download("--url test.url --token token --only-apis")
 		assert.NoError(t, err)
@@ -198,7 +198,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			specificSchemas:         []string{"settings:schema:1", "settings:schema:2", "settings:schema:3", "settings:schema:4"},
 		}
 		m := newMonaco(t)
-		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
 		err := m.download("--environment myEnvironment --settings-schema settings:schema:1 --settings-schema settings:schema:2 --settings-schema settings:schema:3,settings:schema:4")
 		assert.NoError(t, err)
@@ -213,7 +213,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		}
 
 		m := newMonaco(t)
-		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
 
 		err := m.download("--url test.url --token token --only-settings")
 		assert.NoError(t, err)

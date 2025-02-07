@@ -15,6 +15,7 @@
 package download
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"path"
@@ -37,8 +38,8 @@ import (
 //
 // The actual implementations are in the [DefaultCommand] struct.
 type Command interface {
-	DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions downloadCmdOptions) error
-	DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptions) error
+	DownloadConfigsBasedOnManifest(ctx context.Context, fs afero.Fs, cmdOptions downloadCmdOptions) error
+	DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOptions downloadCmdOptions) error
 }
 
 // DefaultCommand is used to implement the [Command] interface.

@@ -36,15 +36,16 @@ func main() {
 	// full logging is set up in PreRunE method of the root command, created with runner.BuildCli
 	// that is the earliest point calls to log will be also written into files and adhere to user controlled verbosity
 	log.PrepareLogging(nil, true, nil, false)
+	ctx := context.Background()
 
 	var versionNotification string
 	if !featureflags.SkipVersionCheck.Enabled() {
-		go setVersionNotificationStr(&versionNotification)
+		go setVersionNotificationStr(ctx, &versionNotification)
 	}
 
 	fs := afero.NewOsFs()
 	cmd := runner.BuildCmd(fs)
-	err := runner.RunCmd(fs, cmd)
+	err := runner.RunCmd(ctx, fs, cmd)
 	notifyUser(versionNotification)
 
 	if err != nil {
@@ -53,14 +54,14 @@ func main() {
 	os.Exit(0)
 }
 
-func setVersionNotificationStr(msg *string) {
+func setVersionNotificationStr(ctx context.Context, msg *string) {
 	currentVersion, err := version.ParseVersion(monacoVersion.MonitoringAsCode)
 	if err != nil {
 		log.WithFields(field.Error(err)).Debug("Can't parse current monaco version: %s", err)
 		return
 	}
 
-	latestVersion, err := version.GetLatestVersion(context.TODO(), &http.Client{}, "https://api.github.com/repos/dynatrace/dynatrace-configuration-as-code/releases/latest")
+	latestVersion, err := version.GetLatestVersion(ctx, &http.Client{}, "https://api.github.com/repos/dynatrace/dynatrace-configuration-as-code/releases/latest")
 	if err != nil {
 		log.WithFields(field.Error(err)).Debug("Could not perform version check: %s", err)
 		return
