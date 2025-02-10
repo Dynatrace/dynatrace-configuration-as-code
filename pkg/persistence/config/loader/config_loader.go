@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
+
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
@@ -80,6 +82,7 @@ func LoadConfigFile(ctx context.Context, fs afero.Fs, context *LoaderContext, fi
 			return nil, []error{newLoadError(filePath, ErrMixingConfigs)}
 		}
 
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateWarn, nil, fmt.Sprintf("File %q appears to be an account resource file, skipping loading", filePath), nil)
 		log.WithFields(field.F("file", filePath)).Warn("File %q appears to be an account resource file, skipping loading", filePath)
 		return []config.Config{}, nil
 	}
