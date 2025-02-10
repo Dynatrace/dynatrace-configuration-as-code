@@ -73,7 +73,7 @@ type Record struct {
 	Details []Detail `json:"details,omitempty"`
 
 	// Error optionally provides the string representation of any error associated with the Record.
-	Error *string `json:"error,omitempty"`
+	Error string `json:"error,omitempty"`
 
 	// Message optionally info message
 	Message string `json:"message,omitempty"`

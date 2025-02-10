@@ -180,12 +180,11 @@ func (d *defaultReporter) ReportLoading(state RecordState, err error, message st
 	}
 }
 
-func convertErrorToString(err error) *string {
+func convertErrorToString(err error) string {
 	if err == nil {
-		return nil
+		return ""
 	}
-	errString := err.Error()
-	return &errString
+	return err.Error()
 }
 
 // GetSummary returns a summary of all seen events as a string.

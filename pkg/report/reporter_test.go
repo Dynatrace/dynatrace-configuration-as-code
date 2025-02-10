@@ -75,8 +75,8 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 
 	require.Len(t, records, 4)
 	anError := "an error"
-	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS", Details: nil, Error: nil}, records[0])
-	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, State: "ERROR", Details: []report.Detail{{Type: report.DetailTypeError, Message: "error"}}, Error: &anError}, records[1])
-	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, State: "SKIPPED", Details: []report.Detail{{Type: report.DetailTypeInfo, Message: "skipped"}}, Error: nil}, records[2])
-	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, State: "EXCLUDED", Details: nil, Error: nil}, records[3])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS", Details: nil, Error: ""}, records[0])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, State: "ERROR", Details: []report.Detail{{Type: report.DetailTypeError, Message: "error"}}, Error: anError}, records[1])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, State: "SKIPPED", Details: []report.Detail{{Type: report.DetailTypeInfo, Message: "skipped"}}, Error: ""}, records[2])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, State: "EXCLUDED", Details: nil, Error: ""}, records[3])
 }
