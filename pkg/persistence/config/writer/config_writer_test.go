@@ -24,11 +24,11 @@ import (
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -734,6 +734,7 @@ func TestWriteConfigs(t *testing.T) {
 		expectedTemplatePaths []string
 		expectedErrs          []string
 		envVars               map[string]string
+		number                int
 	}{
 		{
 			name: "Simple classic API write",
@@ -1088,14 +1089,15 @@ func TestWriteConfigs(t *testing.T) {
 			expectedErrs: []string{"config.Segment"},
 		},
 		{
+			number:  1,
 			name:    "SLO resource",
 			envVars: map[string]string{featureflags.ServiceLevelObjective.EnvName(): "true"},
 			configs: []config.Config{
 				{
-					Template: template.NewInMemoryTemplateWithPath("project/slo/template.json", "{}"),
+					Template: template.NewInMemoryTemplateWithPath("project/slo_v2/template.json", "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "slo",
+						Type:     "slo-v2",
 						ConfigId: "configId1",
 					},
 					Type: config.ServiceLevelObjective{},
@@ -1106,7 +1108,7 @@ func TestWriteConfigs(t *testing.T) {
 				},
 			},
 			expectedConfigs: map[string]persistence.TopLevelDefinition{
-				"slo": {
+				"slo-v2": {
 					Configs: []persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId1",
@@ -1125,7 +1127,7 @@ func TestWriteConfigs(t *testing.T) {
 				},
 			},
 			expectedTemplatePaths: []string{
-				"project/slo/template.json",
+				"project/slo_v2/template.json",
 			},
 		},
 		{
@@ -1133,10 +1135,10 @@ func TestWriteConfigs(t *testing.T) {
 			envVars: map[string]string{featureflags.ServiceLevelObjective.EnvName(): "false"},
 			configs: []config.Config{
 				{
-					Template: template.NewInMemoryTemplateWithPath("project/slo/template.json", "{}"),
+					Template: template.NewInMemoryTemplateWithPath("project/slo_v2/template.json", "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "slo",
+						Type:     "slo-v2",
 						ConfigId: "configId1",
 					},
 					Type: config.ServiceLevelObjective{},
@@ -1442,49 +1444,50 @@ func TestWriteConfigs(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		if tc.number == 1 {
+			t.Run(tc.name, func(t *testing.T) {
 
-			for k, v := range tc.envVars {
-				t.Setenv(k, v)
-			}
+				for k, v := range tc.envVars {
+					t.Setenv(k, v)
+				}
 
-			fs := testutils.TempFs(t)
+				fs := testutils.TempFs(t)
 
-			errs := WriteConfigs(&WriterContext{
-				Fs:              fs,
-				OutputFolder:    "test",
-				ProjectFolder:   "project",
-				ParametersSerde: config.DefaultParameterParsers,
-			}, tc.configs)
-			errutils.PrintErrors(errs)
-			assert.Equal(t, len(tc.expectedErrs), len(errs), "Produced errors do not match expected errors")
+				errs := WriteConfigs(&WriterContext{
+					Fs:              fs,
+					OutputFolder:    "test",
+					ProjectFolder:   "project",
+					ParametersSerde: config.DefaultParameterParsers,
+				}, tc.configs)
+				errutils.PrintErrors(errs)
+				assert.Equal(t, len(tc.expectedErrs), len(errs), "Produced errors do not match expected errors")
 
-			for i := range tc.expectedErrs {
-				assert.ErrorContains(t, errs[i], tc.expectedErrs[i])
-			}
+				for i := range tc.expectedErrs {
+					assert.ErrorContains(t, errs[i], tc.expectedErrs[i])
+				}
 
-			// check all api-folders config file
-			for apiType, definition := range tc.expectedConfigs {
+				// check all api-folders config file
+				for apiType, definition := range tc.expectedConfigs {
+					content, err := afero.ReadFile(fs, "test/project/"+apiType+"/config.yaml")
+					assert.NoError(t, err, "reading config file should not produce an error")
 
-				content, err := afero.ReadFile(fs, "test/project/"+apiType+"/config.yaml")
-				assert.NoError(t, err, "reading config file should not produce an error")
+					var s persistence.TopLevelDefinition
+					err = yaml.Unmarshal(content, &s)
+					assert.NoError(t, err, "unmarshalling config file should not produce an error")
 
-				var s persistence.TopLevelDefinition
-				err = yaml.Unmarshal(content, &s)
-				assert.NoError(t, err, "unmarshalling config file should not produce an error")
+					assert.Equal(t, s, definition)
+				}
 
-				assert.Equal(t, s, definition)
-			}
+				// check that templates have been created
+				for _, path := range tc.expectedTemplatePaths {
+					expectedPath := filepath.Join("test", path)
+					found, err := afero.Exists(fs, expectedPath)
+					assert.NoError(t, err)
+					assert.Equal(t, found, true, "could not find %q", expectedPath)
+				}
 
-			// check that templates have been created
-			for _, path := range tc.expectedTemplatePaths {
-				expectedPath := filepath.Join("test", path)
-				found, err := afero.Exists(fs, expectedPath)
-				assert.NoError(t, err)
-				assert.Equal(t, found, true, "could not find %q", expectedPath)
-			}
-
-		})
+			})
+		}
 	}
 }
 

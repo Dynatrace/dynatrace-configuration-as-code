@@ -1241,7 +1241,7 @@ configs:
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
-						Type:     "slo",
+						Type:     "slo-v2",
 						ConfigId: "slo-config-id",
 					},
 					Type:        config.ServiceLevelObjective{},

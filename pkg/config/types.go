@@ -25,7 +25,7 @@ const (
 	DocumentTypeID          TypeID = "document"
 	OpenPipelineTypeID      TypeID = "openpipeline"
 	SegmentID               TypeID = "segment"
-	ServiceLevelObjectiveID TypeID = "slo"
+	ServiceLevelObjectiveID TypeID = "slo-v2"
 )
 
 var _ Type = SettingsType{}
