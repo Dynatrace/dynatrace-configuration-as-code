@@ -17,6 +17,7 @@
 package download
 
 import (
+	"context"
 	"encoding/json"
 	"net/http/httptest"
 	"path/filepath"
@@ -988,7 +989,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 		}
 	}
 
-	projects, errs := projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
+	projects, errs := projectLoader.LoadProjects(context.TODO(), fs, projectLoader.ProjectLoaderContext{
 		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      testBasePath,
 		Manifest:        man,
@@ -1369,7 +1370,7 @@ func loadDownloadedProjects(fs afero.Fs, apis api.APIs) ([]projectLoader.Project
 		return nil, errs
 	}
 
-	return projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
+	return projectLoader.LoadProjects(context.TODO(), fs, projectLoader.ProjectLoaderContext{
 		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      "out",
 		Manifest:        man,

@@ -15,7 +15,12 @@
 package v2
 
 import (
+	"context"
 	"fmt"
+	"slices"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -28,8 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
-	"github.com/spf13/afero"
-	"slices"
 )
 
 type ProjectLoaderContext struct {
@@ -70,22 +73,22 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 }
 
 // Tries to load the specified projects. If no project names are specified, all projects are loaded.
-func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectNames []string) ([]Project, []error) {
+func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, specificProjectNames []string) ([]Project, []error) {
 	var workingDirFs afero.Fs
 
-	if context.WorkingDir == "." {
+	if loaderContext.WorkingDir == "." {
 		workingDirFs = fs
 	} else {
-		workingDirFs = afero.NewBasePathFs(fs, context.WorkingDir)
+		workingDirFs = afero.NewBasePathFs(fs, loaderContext.WorkingDir)
 	}
 
-	if len(context.Manifest.Projects) == 0 {
+	if len(loaderContext.Manifest.Projects) == 0 {
 		return nil, []error{fmt.Errorf("no projects defined in manifest")}
 	}
 
-	environments := toEnvironmentSlice(context.Manifest.Environments)
+	environments := toEnvironmentSlice(loaderContext.Manifest.Environments)
 
-	projectNamesToLoad, errors := getProjectNamesToLoad(context.Manifest.Projects, specificProjectNames)
+	projectNamesToLoad, errors := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
 
 	seenProjectNames := make(map[string]struct{}, len(projectNamesToLoad))
 	var loadedProjects []Project
@@ -98,12 +101,13 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectName
 		}
 		seenProjectNames[projectNameToLoad] = struct{}{}
 
-		projectDefinition, found := context.Manifest.Projects[projectNameToLoad]
+		projectDefinition, found := loaderContext.Manifest.Projects[projectNameToLoad]
 		if !found {
 			continue
 		}
 
-		project, errs := loadProject(workingDirFs, context, projectDefinition, environments)
+		project, errs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, environments)
+
 		if len(errs) > 0 {
 			errors = append(errors, errs...)
 			continue
@@ -170,18 +174,16 @@ func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) 
 	return result
 }
 
-func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
-	exists, err := afero.Exists(fs, projectDefinition.Path)
-	if err != nil {
+func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
+	if exists, err := afero.Exists(fs, projectDefinition.Path); err != nil {
 		return Project{}, []error{fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)}
-	}
-	if !exists {
+	} else if !exists {
 		return Project{}, []error{fmt.Errorf("failed to load project `%s`: filepath `%s` does not exist", projectDefinition.Name, projectDefinition.Path)}
 	}
 
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
-	configs, errors := loadConfigsOfProject(fs, context, projectDefinition, environments)
+	configs, errors := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
 	errors = append(errors, findDuplicatedConfigIdentifiers(configs)...)
 	errors = append(errors, checkKeyUserActionScope(configs)...)
 
@@ -286,7 +288,7 @@ func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 	return configMap
 }
 
-func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
+func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
 	environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
 
 	configFiles, err := files.FindYamlFiles(fs, projectDefinition.Path)
@@ -297,7 +299,7 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 	var configs []config.Config
 	var errs []error
 
-	ctx := &loader.LoaderContext{
+	loaderContext := &loader.LoaderContext{
 		ProjectId:       projectDefinition.Name,
 		Environments:    environments,
 		Path:            projectDefinition.Path,
@@ -307,7 +309,7 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 
 	for _, file := range configFiles {
 		log.WithFields(field.F("file", file)).Debug("Loading configuration file %s", file)
-		loadedConfigs, configErrs := loader.LoadConfigFile(fs, ctx, file)
+		loadedConfigs, configErrs := loader.LoadConfigFile(ctx, fs, loaderContext, file)
 
 		errs = append(errs, configErrs...)
 		configs = append(configs, loadedConfigs...)

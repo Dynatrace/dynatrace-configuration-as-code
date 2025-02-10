@@ -147,6 +147,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("defined environment in project succeeds", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
+			context.TODO(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -163,6 +164,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("undefined environment in project fails", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
+			context.TODO(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -179,6 +181,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("platform config with platform environment succeeds", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
+			context.TODO(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -197,6 +200,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("platform config without platform environment fails", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
+			context.TODO(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -215,6 +219,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two different openpipeline configs in same project succceed", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
+			context.TODO(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -234,6 +239,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two different openpipeline configs in different projects succceed", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
+			context.TODO(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -262,6 +268,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two identical openpipeline configs in same project but different environments succceed", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
+			context.TODO(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -288,6 +295,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two identical openpipeline configs in different projects and environments succceed", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
+			context.TODO(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -319,6 +327,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two identical openpipeline configs in same project and environments fail", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
+			context.TODO(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -341,6 +350,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two identical openpipeline configs in different projects and same environments fail", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
+			context.TODO(),
 			[]project.Project{
 				{
 					Id: project1Id,

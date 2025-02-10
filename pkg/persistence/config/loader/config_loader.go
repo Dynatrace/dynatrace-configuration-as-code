@@ -17,6 +17,7 @@
 package loader
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -55,7 +56,7 @@ type singleConfigEntryLoadContext struct {
 
 // LoadConfigFile loads a single configuration file and returns all configs defined in that file.
 // The returned configs contain all variants for project/environment overwrites passed in the [LoaderContext]
-func LoadConfigFile(fs afero.Fs, context *LoaderContext, filePath string) ([]config.Config, []error) {
+func LoadConfigFile(ctx context.Context, fs afero.Fs, context *LoaderContext, filePath string) ([]config.Config, []error) {
 	data, err := afero.ReadFile(fs, filePath)
 	if err != nil {
 		return nil, []error{newLoadError(filePath, err)}
@@ -100,7 +101,7 @@ func LoadConfigFile(fs afero.Fs, context *LoaderContext, filePath string) ([]con
 
 	for _, cgf := range loadedConfigEntries {
 
-		result, definitionErrors := parseConfigEntry(fs, configLoaderContext, cgf.Id, cgf)
+		result, definitionErrors := parseConfigEntry(ctx, fs, configLoaderContext, cgf.Id, cgf)
 
 		if len(definitionErrors) > 0 {
 			errs = append(errs, definitionErrors...)
