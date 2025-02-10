@@ -189,7 +189,7 @@ func CreateEnvironmentClients(ctx context.Context, environments manifest.Environ
 			continue
 		}
 
-		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{})
+		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth)
 		if err != nil {
 			return EnvironmentClients{}, err
 		}

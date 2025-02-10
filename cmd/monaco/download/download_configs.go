@@ -156,7 +156,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 		return err
 	}
 
-	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth, client.ClientOptions{})
+	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth)
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOpt
 		return err
 	}
 
-	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth, client.ClientOptions{})
+	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth)
 	if err != nil {
 		return err
 	}
