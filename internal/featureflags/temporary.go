@@ -40,6 +40,9 @@ const (
 	// or when enabled only in string values within the JSON.
 	// Introduced: v2.19.0
 	OnlyCreateReferencesInStringValues FeatureFlag = "MONACO_FEAT_ONLY_CREATE_REFERENCES_IN_STRINGS"
+	// ServiceLevelObjective toggles whether slo configurations are downloaded and / or deployed.
+	// Introduced: v2.19.0
+	ServiceLevelObjective FeatureFlag = "MONACO_FEAT_SLO"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
@@ -53,4 +56,5 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	Segments:                           true,
 	ServiceUsers:                       false,
 	OnlyCreateReferencesInStringValues: false,
+	ServiceLevelObjective:              false,
 }

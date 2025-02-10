@@ -29,8 +29,9 @@ import (
 )
 
 const (
-	BucketType  = "bucket"
-	SegmentType = "segment"
+	BucketType                = "bucket"
+	SegmentType               = "segment"
+	ServiceLevelObjectiveType = "slo-v2"
 )
 
 type TypeDefinition struct {
@@ -81,6 +82,11 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 				return fmt.Errorf("unknown config-type %q", str)
 			}
 			c.Type = config.Segment{}
+		case ServiceLevelObjectiveType:
+			if !featureflags.ServiceLevelObjective.Enabled() {
+				return fmt.Errorf("unknown config-type %q", str)
+			}
+			c.Type = config.ServiceLevelObjective{}
 		default:
 			c.Type = config.ClassicApiType{Api: str}
 		}
@@ -266,6 +272,8 @@ func (c *TypeDefinition) GetApiType() string {
 		return string(t.ID())
 	case config.Segment:
 		return string(t.ID())
+	case config.ServiceLevelObjective:
+		return string(t.ID())
 	}
 
 	return ""
@@ -334,6 +342,11 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 	case config.Segment:
 		if featureflags.Segments.Enabled() {
 			return SegmentType, nil
+		}
+
+	case config.ServiceLevelObjective:
+		if featureflags.ServiceLevelObjective.Enabled() {
+			return ServiceLevelObjectiveType, nil
 		}
 	}
 	return nil, fmt.Errorf("unknown type: %T", c.Type)
