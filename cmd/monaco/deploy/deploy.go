@@ -60,7 +60,7 @@ func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath str
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
 	}
 
-	loadedManifest, err := loadManifest(fs, absManifestPath, environmentGroups, specificEnvironments)
+	loadedManifest, err := loadManifest(ctx, fs, absManifestPath, environmentGroups, specificEnvironments)
 	if err != nil {
 		return err
 	}
@@ -70,12 +70,12 @@ func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath str
 		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
 
-	loadedProjects, err := loadProjects(fs, absManifestPath, loadedManifest, specificProjects)
+	loadedProjects, err := loadProjects(ctx, fs, absManifestPath, loadedManifest, specificProjects)
 	if err != nil {
 		return err
 	}
 
-	if err := validateProjectsWithEnvironments(loadedProjects, loadedManifest.Environments); err != nil {
+	if err := validateProjectsWithEnvironments(ctx, loadedProjects, loadedManifest.Environments); err != nil {
 		return err
 	}
 
@@ -114,7 +114,7 @@ func absPath(manifestPath string) (string, error) {
 	return filepath.Abs(manifestPath)
 }
 
-func loadManifest(fs afero.Fs, manifestPath string, groups []string, environments []string) (*manifest.Manifest, error) {
+func loadManifest(ctx context.Context, fs afero.Fs, manifestPath string, groups []string, environments []string) (*manifest.Manifest, error) {
 	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: manifestPath,
@@ -139,8 +139,8 @@ func verifyEnvironmentGen(ctx context.Context, environments manifest.Environment
 	return true
 }
 
-func loadProjects(fs afero.Fs, manifestPath string, man *manifest.Manifest, specificProjects []string) ([]project.Project, error) {
-	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+func loadProjects(ctx context.Context, fs afero.Fs, manifestPath string, man *manifest.Manifest, specificProjects []string) ([]project.Project, error) {
+	projects, errs := project.LoadProjects(ctx, fs, project.ProjectLoaderContext{
 		KnownApis:       api.NewAPIs().Filter(api.RemoveDisabled).GetApiNameLookup(),
 		WorkingDir:      filepath.Dir(manifestPath),
 		Manifest:        *man,
@@ -162,7 +162,7 @@ type KindCoordinates map[string][]coordinate.Coordinate
 type KindCoordinatesPerEnvironment map[string]KindCoordinates
 type CoordinatesPerEnvironment map[string][]coordinate.Coordinate
 
-func validateProjectsWithEnvironments(projects []project.Project, envs manifest.Environments) error {
+func validateProjectsWithEnvironments(ctx context.Context, projects []project.Project, envs manifest.Environments) error {
 	undefinedEnvironments := map[string]struct{}{}
 	openPipelineKindCoordinatesPerEnvironment := KindCoordinatesPerEnvironment{}
 	platformCoordinatesPerEnvironment := CoordinatesPerEnvironment{}

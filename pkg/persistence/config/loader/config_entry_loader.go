@@ -17,6 +17,7 @@
 package loader
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -37,8 +38,9 @@ import (
 
 // parseConfigEntry parses a single config entry
 func parseConfigEntry(
+	ctx context.Context,
 	fs afero.Fs,
-	context *configFileLoaderContext,
+	loaderContext *configFileLoaderContext,
 	configId string,
 	definition persistence.TopLevelConfigDefinition,
 ) ([]config.Config, []error) {
@@ -48,11 +50,11 @@ func parseConfigEntry(
 	}
 
 	singleConfigContext := &singleConfigEntryLoadContext{
-		configFileLoaderContext: context,
+		configFileLoaderContext: loaderContext,
 		Type:                    definition.Type.GetApiType(),
 	}
 
-	if err := definition.Type.Validate(context.KnownApis); err != nil {
+	if err := definition.Type.Validate(loaderContext.KnownApis); err != nil {
 		return nil, []error{newDefinitionParserError(configId, singleConfigContext, err.Error())}
 	}
 
@@ -61,7 +63,7 @@ func parseConfigEntry(
 
 	var results []config.Config
 	var errs []error
-	for _, env := range context.Environments {
+	for _, env := range loaderContext.Environments {
 
 		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env, definition, groupOverrideMap, environmentOverrideMap)
 

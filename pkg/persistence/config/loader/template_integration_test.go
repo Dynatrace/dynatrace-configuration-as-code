@@ -19,15 +19,18 @@
 package loader
 
 import (
+	"context"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 const test_yaml = "testdata/templating-integration-test-config.yaml"
@@ -35,7 +38,7 @@ const test_yaml = "testdata/templating-integration-test-config.yaml"
 func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewOsFs())
 
-	context := LoaderContext{
+	loaderContext := LoaderContext{
 		Environments: []manifest.EnvironmentDefinition{
 			{Name: "testEnv"},
 		},
@@ -43,7 +46,7 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 		ParametersSerDe: config.DefaultParameterParsers,
 	}
 
-	cfgs, errs := LoadConfigFile(fs, &context, test_yaml)
+	cfgs, errs := LoadConfigFile(context.TODO(), fs, &loaderContext, test_yaml)
 	require.Empty(t, errs, "Expected test config to load without error")
 	require.Len(t, cfgs, 1, "Expected test config to contain a single definition")
 

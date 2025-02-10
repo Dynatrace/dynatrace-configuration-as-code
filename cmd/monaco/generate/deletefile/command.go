@@ -68,7 +68,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 			}
 
 			apis := api.NewAPIs().Filter(api.RemoveDisabled)
-			loadedProjects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+			loadedProjects, errs := project.LoadProjects(cmd.Context(), fs, project.ProjectLoaderContext{
 				KnownApis:       apis.GetApiNameLookup(),
 				WorkingDir:      filepath.Dir(manifestName),
 				Manifest:        m,
