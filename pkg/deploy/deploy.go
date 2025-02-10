@@ -18,9 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
 	"sync"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
@@ -194,12 +195,12 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 
 	if err != nil {
 		if errors.Is(err, skipError) {
-			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateDeployExcluded, details, nil)
+			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateExcluded, details, nil)
 		} else {
-			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateDeployError, details, err)
+			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateError, details, err)
 		}
 	} else {
-		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateDeploySuccess, details, nil)
+		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateSuccess, details, nil)
 	}
 
 	if err != nil {
@@ -246,7 +247,7 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 			l.Warn("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
 		}
 
-		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.StateDeploySkipped, nil, nil)
+		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.StateSkipped, nil, nil)
 
 		removeChildren(ctx, child, root, configGraph, failed)
 
@@ -338,7 +339,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	if responseErr.StatusCode >= 400 && responseErr.StatusCode <= 499 {
 		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
-		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: "ERROR", Message: fmt.Sprintf("Dynatrace API rejected request: : %v", responseErr)})
+		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Dynatrace API rejected request: : %v", responseErr)})
 		return
 	}
 
