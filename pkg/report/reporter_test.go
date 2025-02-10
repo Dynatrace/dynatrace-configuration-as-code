@@ -39,7 +39,7 @@ func TestReporter_ContextWithNoReporterDiscards(t *testing.T) {
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
 	require.NotNil(t, reporter)
 
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard"}, report.StateDeploySuccess, nil, nil)
+	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard"}, report.StateSuccess, nil, nil)
 	reporter.Stop()
 	assert.Empty(t, reporter.GetSummary(), "discarding Reporter should not return a summary")
 }
@@ -58,10 +58,10 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
 	require.NotNil(t, reporter)
 
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, report.StateDeploySuccess, nil, nil)
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, report.StateDeployError, []report.Detail{report.Detail{Type: report.DetailTypeError, Message: "error"}}, errors.New("an error"))
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, report.StateDeploySkipped, []report.Detail{report.Detail{Type: report.DetailTypeInfo, Message: "skipped"}}, nil)
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, report.StateDeployExcluded, nil, nil)
+	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, report.StateSuccess, nil, nil)
+	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, report.StateError, []report.Detail{report.Detail{Type: report.DetailTypeError, Message: "error"}}, errors.New("an error"))
+	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, report.StateSkipped, []report.Detail{report.Detail{Type: report.DetailTypeInfo, Message: "skipped"}}, nil)
+	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, report.StateExcluded, nil, nil)
 
 	reporter.Stop()
 
@@ -75,8 +75,8 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 
 	require.Len(t, records, 4)
 	anError := "an error"
-	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS", Details: nil, Error: nil}, records[0])
-	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, State: "ERROR", Details: []report.Detail{{Type: report.DetailTypeError, Message: "error"}}, Error: &anError}, records[1])
-	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, State: "SKIPPED", Details: []report.Detail{{Type: report.DetailTypeInfo, Message: "skipped"}}, Error: nil}, records[2])
-	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, State: "EXCLUDED", Details: nil, Error: nil}, records[3])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS", Details: nil, Error: nil}, records[0])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, State: "ERROR", Details: []report.Detail{{Type: report.DetailTypeError, Message: "error"}}, Error: &anError}, records[1])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, State: "SKIPPED", Details: []report.Detail{{Type: report.DetailTypeInfo, Message: "skipped"}}, Error: nil}, records[2])
+	assert.Equal(t, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, State: "EXCLUDED", Details: nil, Error: nil}, records[3])
 }

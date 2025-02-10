@@ -209,8 +209,8 @@ func assertReport(t *testing.T, fs afero.Fs, path string, succeed bool) {
 
 	require.NotEmpty(t, records)
 	if succeed {
-		for _, r := range records {
-			assert.Containsf(t, []string{"SUCCESS", "EXCLUDED", "SKIPPED"}, r.State, "config %s is with status %s", r.Config.String(), r.State)
+		for index, r := range records {
+			assert.Containsf(t, []report.RecordState{report.StateSuccess, report.StateExcluded, report.StateSkipped, report.StateInfo}, r.State, "config at %d is with status %s", index, r.State)
 		}
 	}
 

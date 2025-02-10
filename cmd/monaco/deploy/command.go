@@ -18,14 +18,18 @@ package deploy
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
+	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
 
 func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
@@ -42,13 +46,15 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 		PreRun:            cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			manifestName = args[0]
+			ctx := createDeploymentContext(cmd.Context(), fs)
+			defer finishReport(ctx)
 
 			if !files.IsYamlFileExtension(manifestName) {
 				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
 				return err
 			}
 
-			return deployConfigs(cmd.Context(), fs, manifestName, groups, environment, project, continueOnError, dryRun)
+			return deployConfigs(ctx, fs, manifestName, groups, environment, project, continueOnError, dryRun)
 		},
 	}
 
@@ -78,4 +84,22 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd.MarkFlagsMutuallyExclusive("environment", "group")
 
 	return deployCmd
+}
+
+func createDeploymentContext(ctx context.Context, fs afero.Fs) context.Context {
+	if reportFilename, ok := os.LookupEnv(environment.DeploymentReportFilename); ok && len(reportFilename) > 0 {
+		reporter := report.NewDefaultReporter(fs, reportFilename)
+		return report.NewContextWithReporter(ctx, reporter)
+	}
+
+	return ctx
+}
+
+func finishReport(ctx context.Context) {
+	r := report.GetReporterFromContextOrDiscard(ctx)
+	r.Stop()
+
+	if summary := r.GetSummary(); len(summary) > 0 {
+		log.Info(summary)
+	}
 }

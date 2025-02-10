@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -26,7 +25,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/internal/logging"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -38,23 +36,9 @@ import (
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
 func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
-	ctx = createDeploymentContext(ctx, fs)
-	err := deployConfigsWithContext(ctx, fs, manifestPath, environmentGroups, specificEnvironments, specificProjects, continueOnErr, dryRun)
-
-	r := report.GetReporterFromContextOrDiscard(ctx)
-	r.Stop()
-	if summary := r.GetSummary(); len(summary) > 0 {
-		log.Info(summary)
-	}
-
-	return err
-}
-
-func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
 	absManifestPath, err := absPath(manifestPath)
 	if err != nil {
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
@@ -99,14 +83,6 @@ func deployConfigsWithContext(ctx context.Context, fs afero.Fs, manifestPath str
 
 	log.Info("%s finished without errors", logging.GetOperationNounForLogging(dryRun))
 	return nil
-}
-
-func createDeploymentContext(ctx context.Context, fs afero.Fs) context.Context {
-	if reportFilename, ok := os.LookupEnv(environment.DeploymentReportFilename); ok && len(reportFilename) > 0 {
-		return report.NewContextWithReporter(ctx, report.NewDefaultReporter(fs, reportFilename))
-	}
-
-	return ctx
 }
 
 func absPath(manifestPath string) (string, error) {

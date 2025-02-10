@@ -56,7 +56,7 @@ func GetReporterFromContextOrDiscard(ctx context.Context) Reporter {
 // Reporter is a minimal interface for reporting events and retrieving summaries.
 type Reporter interface {
 	// ReportDeployment reports the result of deploying a config.
-	ReportDeployment(config coordinate.Coordinate, state string, details []Detail, err error)
+	ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error)
 
 	// GetSummary returns a summary of all seen events as a string.
 	GetSummary() string
@@ -108,8 +108,6 @@ func (d *defaultReporter) runRecorder(fs afero.Fs, reportFilePath string) error 
 
 	writer := bufio.NewWriter(file)
 	for r := range d.queue {
-		d.updateSummaryFromRecord(r)
-
 		b, err := json.Marshal(r)
 		if err != nil {
 			return fmt.Errorf("unable to convert record: %w", err)
@@ -140,13 +138,13 @@ func (d *defaultReporter) updateSummaryFromRecord(r Record) {
 
 	d.ended = time.Time(r.Time)
 	switch r.State {
-	case StateDeploySuccess:
+	case StateSuccess:
 		d.deploymentsSuccessCount++
-	case StateDeployExcluded:
+	case StateExcluded:
 		d.deploymentsExcludedCount++
-	case StateDeploySkipped:
+	case StateSkipped:
 		d.deploymentsSkippedCount++
-	case StateDeployError:
+	case StateError:
 		d.deploymentsErrorCount++
 	default:
 		panic(fmt.Sprintf("unexpected state for deployment event: %s", r.State))
@@ -154,15 +152,18 @@ func (d *defaultReporter) updateSummaryFromRecord(r Record) {
 }
 
 // ReportDeployment reports the result of deploying a config.
-func (d *defaultReporter) ReportDeployment(config coordinate.Coordinate, state string, details []Detail, err error) {
-	d.queue <- Record{
+func (d *defaultReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error) {
+	record := Record{
 		Type:    TypeDeploy,
 		Time:    JSONTime(d.clockFunc()),
-		Config:  config,
+		Config:  &config,
 		State:   state,
 		Details: details,
 		Error:   convertErrorToString(err),
 	}
+
+	d.updateSummaryFromRecord(record)
+	d.queue <- record
 }
 
 func convertErrorToString(err error) *string {
@@ -197,7 +198,7 @@ func (d *defaultReporter) Stop() {
 
 type discardReporter struct{}
 
-func (_ *discardReporter) ReportDeployment(config coordinate.Coordinate, state string, details []Detail, err error) {
+func (_ *discardReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error) {
 }
 func (_ *discardReporter) GetSummary() string { return "" }
 func (_ *discardReporter) Stop()              {}

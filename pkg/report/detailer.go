@@ -21,21 +21,23 @@ import (
 	"fmt"
 )
 
+type DetailType = string
+
 const (
 	// DetailTypeInfo indicates a detail of type info.
-	DetailTypeInfo = "INFO"
+	DetailTypeInfo DetailType = "INFO"
 
 	// DetailTypeWarn indicates a detail of type warning.
-	DetailTypeWarn = "WARN"
+	DetailTypeWarn DetailType = "WARN"
 
 	// DetailTypeError indicates a detail of type error.
-	DetailTypeError = "ERROR"
+	DetailTypeError DetailType = "ERROR"
 )
 
 // Detail represents additional information produced during the deployment of an configuration.
 type Detail struct {
 	// Type is the type of detail: info, warning or error.
-	Type string `json:"type"`
+	Type DetailType `json:"type"`
 
 	// Message is the message of the detail.
 	Message string `json:"msg"`
