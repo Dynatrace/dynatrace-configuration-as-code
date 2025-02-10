@@ -109,7 +109,7 @@ func TestCreateClientSet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := CreateClientSet(context.TODO(), tt.url, tt.auth, ClientOptions{})
+			_, err := CreateClientSet(context.TODO(), tt.url, tt.auth)
 			assert.NoError(t, err)
 		})
 	}

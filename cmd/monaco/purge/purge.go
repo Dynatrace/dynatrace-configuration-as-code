@@ -75,7 +75,7 @@ func purgeConfigs(ctx context.Context, environments []manifest.EnvironmentDefini
 func purgeForEnvironment(ctx context.Context, env manifest.EnvironmentDefinition, apis api.APIs) error {
 	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
-	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{})
+	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth)
 	if err != nil {
 		return fmt.Errorf("failed to create a client for env `%s`: %w", env.Name, err)
 	}

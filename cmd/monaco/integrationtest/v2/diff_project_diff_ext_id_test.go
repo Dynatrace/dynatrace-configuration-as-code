@@ -54,7 +54,7 @@ func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 		extIDProject1, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
 		extIDProject2, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][1].Coordinate)
 
-		clientSet, err := client.CreateClientSet(context.TODO(), environment.URL.Value, environment.Auth, client.ClientOptions{})
+		clientSet, err := client.CreateClientSet(context.TODO(), environment.URL.Value, environment.Auth)
 		assert.NoError(t, err)
 		c := clientSet.SettingsClient
 		settings, _ := c.List(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {

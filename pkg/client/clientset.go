@@ -226,7 +226,11 @@ func validateURL(dtURL string) error {
 	return nil
 }
 
-func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
+func CreateClientSet(ctx context.Context, url string, auth manifest.Auth) (*ClientSet, error) {
+	return CreateClientSetWithOptions(ctx, url, auth, ClientOptions{})
+}
+
+func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
 	var (
 		configClient       ConfigClient
 		settingsClient     SettingsClient

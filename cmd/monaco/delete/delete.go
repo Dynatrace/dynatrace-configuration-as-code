@@ -43,7 +43,7 @@ func Delete(ctx context.Context, environments manifest.Environments, entriesToDe
 			log.WithCtxFields(ctx).Warn("Delete file contains Dynatrace Platform specific types, but no oAuth credentials are defined for environment %q - Dynatrace Platform configurations won't be deleted.", env.Name)
 		}
 
-		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, client.ClientOptions{})
+		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth)
 		if err != nil {
 			return fmt.Errorf("failed to create API client for environment %q due to the following error: %w", env.Name, err)
 		}
