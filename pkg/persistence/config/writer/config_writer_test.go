@@ -24,11 +24,11 @@ import (
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -1087,6 +1087,67 @@ func TestWriteConfigs(t *testing.T) {
 			},
 			expectedErrs: []string{"config.Segment"},
 		},
+		{
+			name:    "SLO resource",
+			envVars: map[string]string{featureflags.ServiceLevelObjective.EnvName(): "true"},
+			configs: []config.Config{
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/slo_v2/template.json", "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "slo-v2",
+						ConfigId: "configId1",
+					},
+					Type: config.ServiceLevelObjective{},
+					Parameters: map[string]parameter.Parameter{
+						"some param": &value.ValueParameter{Value: "some value"},
+					},
+					Skip: false,
+				},
+			},
+			expectedConfigs: map[string]persistence.TopLevelDefinition{
+				"slo-v2": {
+					Configs: []persistence.TopLevelConfigDefinition{
+						{
+							Id: "configId1",
+							Config: persistence.ConfigDefinition{
+								Parameters: map[string]persistence.ConfigParameter{
+									"some param": "some value",
+								},
+								Template: "../slo_v2/template.json",
+								Skip:     false,
+							},
+							Type: persistence.TypeDefinition{
+								Type: config.ServiceLevelObjective{},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/slo_v2/template.json",
+			},
+		},
+		{
+			name:    "SLO with FF off, should return error",
+			envVars: map[string]string{featureflags.ServiceLevelObjective.EnvName(): "false"},
+			configs: []config.Config{
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/slo_v2/template.json", "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "slo-v2",
+						ConfigId: "configId1",
+					},
+					Type: config.ServiceLevelObjective{},
+					Parameters: map[string]parameter.Parameter{
+						"some param": &value.ValueParameter{Value: "some value"},
+					},
+					Skip: false,
+				},
+			},
+			expectedErrs: []string{"config.ServiceLevelObjective"},
+		},
 
 		{
 			name: "Reference scope",
@@ -1404,7 +1465,6 @@ func TestWriteConfigs(t *testing.T) {
 
 			// check all api-folders config file
 			for apiType, definition := range tc.expectedConfigs {
-
 				content, err := afero.ReadFile(fs, "test/project/"+apiType+"/config.yaml")
 				assert.NoError(t, err, "reading config file should not produce an error")
 
