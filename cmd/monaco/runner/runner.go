@@ -27,7 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/purge"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	versionCommand "github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -38,19 +38,19 @@ import (
 )
 
 func RunCmd(ctx context.Context, fs afero.Fs, cmd *cobra.Command) error {
-	supportArchivePtr := &(support.SupportArchive{})
-	defer func() { // writing the support archive is a deferred function call in order to guarantee that a support archive is also written in case of a panic
-		if supportArchivePtr.Value {
+	ctx = supportarchive.ContextWithSupportArchive(ctx)
+
+	defer func(ctx context.Context) { // writing the support archive is a deferred function call in order to guarantee that a support archive is also written in case of a panic
+		if supportarchive.IsEnabled(ctx) {
 			if err := trafficlogs.GetInstance().Sync(); err != nil {
 				log.WithFields(field.Error(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
 			}
-			if err := support.Archive(fs); err != nil {
+			if err := supportarchive.Write(fs); err != nil {
 				log.WithFields(field.Error(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
 			}
 		}
-	}()
+	}(ctx)
 
-	ctx = context.WithValue(ctx, support.SupportArchive{}, supportArchivePtr)
 	err := cmd.ExecuteContext(ctx)
 	if err != nil {
 		log.WithFields(field.Error(err)).Error("Error: %v", err)
@@ -79,7 +79,9 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			cmd.Context().Value(support.SupportArchive{}).(*support.SupportArchive).Value = supportArchive
+			if supportArchive {
+				supportarchive.Enable(cmd.Context())
+			}
 
 			fileBasedLogging := featureflags.LogToFile.Enabled() || supportArchive
 			log.PrepareLogging(fs, verbose, logSpy, fileBasedLogging)

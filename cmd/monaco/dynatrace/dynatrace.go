@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -132,7 +132,7 @@ func CreateAccountClients(ctx context.Context, manifestAccounts map[string]manif
 			WithRetryOptions(&client.DefaultRetryOptions).
 			WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl))
 
-		if v := ctx.Value(support.SupportArchive{}); v != nil && v.(*support.SupportArchive).Value {
+		if supportarchive.IsEnabled(ctx) {
 			factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 		}
 

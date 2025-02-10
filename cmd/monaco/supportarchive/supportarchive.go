@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package support
+package supportarchive
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -29,11 +30,43 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/zip"
 )
 
-type SupportArchive struct {
-	Value bool
+type (
+	ctxKey   struct{}
+	ctxValue struct {
+		value bool
+	}
+)
+
+// ContextWithSupportArchive creates a new child context that has a signal that the support archive is required.
+// If the command has already been called, it returns the given context.
+// Enableing it in any child context will also enable it in parent one.
+func ContextWithSupportArchive(ctx context.Context) context.Context {
+	if ctx.Value(ctxKey{}) != nil {
+		return ctx
+	}
+
+	value := &ctxValue{}
+	return context.WithValue(ctx, ctxKey{}, value)
 }
 
-func Archive(fs afero.Fs) error {
+func IsEnabled(ctx context.Context) bool {
+	v := ctx.Value(ctxKey{})
+	return v != nil && v.(*ctxValue).value
+}
+
+// Enable sets the support archive as enabled in the given context.
+// Prior to this, ContextWithSupportArchive needs to be called
+func Enable(ctx context.Context) {
+	v := ctx.Value(ctxKey{})
+
+	if v == nil {
+		panic("support archive not created")
+	}
+
+	v.(*ctxValue).value = true
+}
+
+func Write(fs afero.Fs) error {
 	timeAnchorStr := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat)
 	zipFileName := "support-archive-" + timeAnchorStr + ".zip"
 	ffState, err := writeFeatureFlagStateFile(fs, timeAnchorStr)
