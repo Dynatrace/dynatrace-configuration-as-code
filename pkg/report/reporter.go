@@ -57,6 +57,8 @@ func GetReporterFromContextOrDiscard(ctx context.Context) Reporter {
 type Reporter interface {
 	// ReportDeployment reports the result of deploying a config.
 	ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error)
+	// ReportLoading reports the result of a load config
+	ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate)
 
 	// GetSummary returns a summary of all seen events as a string.
 	GetSummary() string
@@ -166,6 +168,18 @@ func (d *defaultReporter) ReportDeployment(config coordinate.Coordinate, state R
 	d.queue <- record
 }
 
+// ReportLoading reports the result of validating a config (manifest, project, config).
+func (d *defaultReporter) ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate) {
+	d.queue <- Record{
+		Type:    TypeLoad,
+		Time:    JSONTime(d.clockFunc()),
+		Error:   convertErrorToString(err),
+		State:   state,
+		Message: message,
+		Config:  config,
+	}
+}
+
 func convertErrorToString(err error) *string {
 	if err == nil {
 		return nil
@@ -199,6 +213,8 @@ func (d *defaultReporter) Stop() {
 type discardReporter struct{}
 
 func (_ *discardReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error) {
+}
+func (_ *discardReporter) ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate) {
 }
 func (_ *discardReporter) GetSummary() string { return "" }
 func (_ *discardReporter) Stop()              {}

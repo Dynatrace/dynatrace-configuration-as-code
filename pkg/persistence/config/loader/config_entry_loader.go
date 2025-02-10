@@ -24,6 +24,8 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
+
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -71,6 +73,8 @@ func parseConfigEntry(
 			errs = append(errs, definitionErrors...)
 			continue
 		}
+
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, "", &result.Coordinate)
 
 		results = append(results, result)
 	}

@@ -19,7 +19,10 @@ package dynatrace
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
@@ -57,6 +60,7 @@ func VerifyEnvironmentGeneration(ctx context.Context, envs manifest.Environments
 
 func isValidEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) bool {
 	if env.Auth.Token == nil && env.Auth.OAuth == nil {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, errors.New("no token and oAuth provided in manifest"), "", nil)
 		log.Error("No token and oAuth provided in manifest")
 		return false
 	}
@@ -76,17 +80,13 @@ func isClassicEnvironment(ctx context.Context, env manifest.EnvironmentDefinitio
 		WithRetryOptions(&client.DefaultRetryOptions).
 		CreateClassicClient()
 	if err != nil {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, fmt.Errorf("could not create client %q (%s): %w", env.Name, env.URL.Value, err), "", nil)
 		log.Error("Could not create client %q (%s): %v", env.Name, env.URL.Value, err)
 		return false
 	}
 
 	if _, err := version.GetDynatraceVersion(ctx, client); err != nil {
-		var apiErr coreapi.APIError
-		if errors.As(err, &apiErr) {
-			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using token authorization: %v", env.Name, env.URL.Value, err)
-		} else {
-			log.WithFields(field.Error(err)).Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
-		}
+		handleAuthError(ctx, env, err)
 		log.Error("Please verify that this environment is a Dynatrace Classic environment.")
 		return false
 	}
@@ -101,16 +101,22 @@ func isPlatformEnvironment(ctx context.Context, env manifest.EnvironmentDefiniti
 	}
 
 	if _, err := getDynatraceClassicURL(ctx, env.URL.Value, oauthCreds); err != nil {
-		var apiError coreapi.APIError
-		if errors.As(err, &apiError) {
-			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using oAuth authorization: %v", env.Name, env.URL.Value, err)
-		} else {
-			log.WithFields(field.Error(err)).Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
-		}
+		handleAuthError(ctx, env, err)
 		log.Error("Please verify that this environment is a Dynatrace Platform environment.")
 		return false
 	}
 	return true
+}
+
+func handleAuthError(ctx context.Context, env manifest.EnvironmentDefinition, err error) {
+	var apiErr coreapi.APIError
+	if errors.As(err, &apiErr) {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, fmt.Errorf("could not authorize against the environment with name %q (%s) using token authorization: %w", env.Name, env.URL.Value, err), "", nil)
+		log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using token authorization: %v", env.Name, env.URL.Value, err)
+	} else {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, fmt.Errorf("could not connect to environment %q (%s): %w", env.Name, env.URL.Value, err), "", nil)
+		log.WithFields(field.Error(err)).Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
+	}
 }
 
 // CreateAccountClients gives back clients to use for specific accounts

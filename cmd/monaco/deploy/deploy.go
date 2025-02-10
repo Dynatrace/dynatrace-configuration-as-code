@@ -36,12 +36,15 @@ import (
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
 func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
 	absManifestPath, err := absPath(manifestPath)
 	if err != nil {
-		return fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
+		formattedError := fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedError, "", nil)
+		return formattedError
 	}
 
 	loadedManifest, err := loadManifest(ctx, fs, absManifestPath, environmentGroups, specificEnvironments)
@@ -68,12 +71,16 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 
 	err = validateAuthenticationWithProjectConfigs(loadedProjects, loadedManifest.Environments)
 	if err != nil {
-		return fmt.Errorf("manifest auth field misconfigured: %w", err)
+		formattedError := fmt.Errorf("manifest auth field misconfigured: %w", err)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedError, "", nil)
+		return formattedError
 	}
 
 	clientSets, err := dynatrace.CreateEnvironmentClients(ctx, loadedManifest.Environments, dryRun)
 	if err != nil {
-		return fmt.Errorf("failed to create API clients: %w", err)
+		formattedError := fmt.Errorf("failed to create API clients: %w", err)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedError, "", nil)
+		return formattedError
 	}
 
 	err = deploy.Deploy(ctx, loadedProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun})
@@ -101,6 +108,10 @@ func loadManifest(ctx context.Context, fs afero.Fs, manifestPath string, groups 
 
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)
+		reporter := report.GetReporterFromContextOrDiscard(ctx)
+		for _, err := range errs {
+			reporter.ReportLoading(report.StateError, err, "", nil)
+		}
 		return nil, errors.New("error while loading manifest")
 	}
 
@@ -164,6 +175,12 @@ func validateProjectsWithEnvironments(ctx context.Context, projects []project.Pr
 	errs := collectUndefinedEnvironmentErrors(undefinedEnvironments)
 	errs = append(errs, collectRequiresPlatformErrors(platformCoordinatesPerEnvironment, envs)...)
 	errs = append(errs, collectOpenPipelineCoordinateErrors(openPipelineKindCoordinatesPerEnvironment)...)
+	reporter := report.GetReporterFromContextOrDiscard(ctx)
+
+	for _, err := range errs {
+		reporter.ReportLoading(report.StateError, err, "", nil)
+	}
+
 	return errors.Join(errs...)
 }
 

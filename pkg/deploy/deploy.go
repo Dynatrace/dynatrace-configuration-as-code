@@ -81,11 +81,18 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 
 	// note: Currently the validation works 'environment-independent', but that might be something we should reconsider to improve error messages
 	if validationErrs := validate.Validate(projects); validationErrs != nil {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, validationErrs, "", nil)
 		if !opts.ContinueOnErr && !opts.DryRun {
 			return validationErrs
 		}
 		errors.As(validationErrs, &deploymentErrors)
 	}
+	projectString := "project"
+	if len(projects) > 1 {
+		projectString = "projects"
+	}
+	reporter := report.GetReporterFromContextOrDiscard(ctx)
+	reporter.ReportLoading(report.StateSuccess, nil, fmt.Sprintf("%d %v validated", len(projects), projectString), nil)
 
 	preloadCaches(ctx, projects, environmentClients)
 	g := graph.New(projects, environmentClients.Names())

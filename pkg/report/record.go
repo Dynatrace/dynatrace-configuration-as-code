@@ -30,6 +30,7 @@ type RecordType = string
 
 const (
 	TypeDeploy RecordType = "DEPLOY"
+	TypeLoad   RecordType = "LOAD"
 )
 
 type RecordState = string
@@ -40,6 +41,9 @@ const (
 
 	// StateSuccess indicates a config was successfully deployed/validated.
 	StateSuccess RecordState = "SUCCESS"
+
+	// StateWarn indicates a config warning, e.g., "account resource file skipped".
+	StateWarn RecordState = "WARNING"
 
 	// StateError indicates a config could not be validated or deployed due to an error.
 	StateError RecordState = "ERROR"
@@ -53,7 +57,7 @@ const (
 
 // Record is a single entry in a report.
 type Record struct {
-	// Type is the type of record, currently TypeDeploy.
+	// Type is the type of record, currently TypeDeploy and TypeLoad.
 	Type RecordType `json:"type"`
 
 	// Time is the time associated with the Record.
@@ -70,6 +74,9 @@ type Record struct {
 
 	// Error optionally provides the string representation of any error associated with the Record.
 	Error *string `json:"error,omitempty"`
+
+	// Message optionally info message
+	Message string `json:"message,omitempty"`
 }
 
 // JSONTime represents a time.Time value that is serialized as a string in RFC3339 format.

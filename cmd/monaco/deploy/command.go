@@ -26,6 +26,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
@@ -51,6 +52,7 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 
 			if !files.IsYamlFileExtension(manifestName) {
 				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
+				report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, err, "", nil)
 				return err
 			}
 
@@ -89,6 +91,7 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 func createDeploymentContext(ctx context.Context, fs afero.Fs) context.Context {
 	if reportFilename, ok := os.LookupEnv(environment.DeploymentReportFilename); ok && len(reportFilename) > 0 {
 		reporter := report.NewDefaultReporter(fs, reportFilename)
+		reporter.ReportLoading(report.StateInfo, nil, fmt.Sprintf("Monaco version %v", monacoVersion.MonitoringAsCode), nil)
 		return report.NewContextWithReporter(ctx, reporter)
 	}
 

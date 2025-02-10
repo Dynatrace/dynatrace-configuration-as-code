@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
@@ -33,6 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
 type ProjectLoaderContext struct {
@@ -88,10 +90,12 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 
 	environments := toEnvironmentSlice(loaderContext.Manifest.Environments)
 
-	projectNamesToLoad, errors := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
+	projectNamesToLoad, projectErrors := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
 
 	seenProjectNames := make(map[string]struct{}, len(projectNamesToLoad))
 	var loadedProjects []Project
+	reporter := report.GetReporterFromContextOrDiscard(ctx)
+
 	for len(projectNamesToLoad) > 0 {
 		projectNameToLoad := projectNamesToLoad[0]
 		projectNamesToLoad = projectNamesToLoad[1:]
@@ -109,9 +113,23 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 		project, errs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, environments)
 
 		if len(errs) > 0 {
-			errors = append(errors, errs...)
+			for _, err := range errs {
+				duplicateError := DuplicateConfigIdentifierError{}
+				keysError := KeyUserActionScopeError{}
+				var configCoordinate *coordinate.Coordinate
+
+				if errors.As(err, &duplicateError) {
+					configCoordinate = &duplicateError.Location
+				} else if errors.As(err, &keysError) {
+					configCoordinate = &keysError.Coordinate
+				}
+
+				reporter.ReportLoading(report.StateError, err, "", configCoordinate)
+			}
+			projectErrors = append(projectErrors, errs...)
 			continue
 		}
+		reporter.ReportLoading(report.StateSuccess, nil, fmt.Sprintf("project %q loaded", project.String()), nil)
 
 		loadedProjects = append(loadedProjects, project)
 
@@ -120,8 +138,8 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 		}
 	}
 
-	if len(errors) > 0 {
-		return nil, errors
+	if len(projectErrors) > 0 {
+		return nil, projectErrors
 	}
 
 	return loadedProjects, nil
@@ -139,7 +157,7 @@ func getProjectNamesToLoad(allProjectsDefinitions manifest.ProjectDefinitionByPr
 		return projectNamesToLoad, nil
 	}
 
-	var errors []error
+	var errs []error
 	for _, projectName := range specificProjectNames {
 		// try to find a project with the given name
 		if _, found := allProjectsDefinitions[projectName]; found {
@@ -157,11 +175,11 @@ func getProjectNamesToLoad(allProjectsDefinitions manifest.ProjectDefinitionByPr
 		}
 
 		if !found {
-			errors = append(errors, fmt.Errorf("no project named `%s` could be found in the manifest", projectName))
+			errs = append(errs, fmt.Errorf("no project named `%s` could be found in the manifest", projectName))
 		}
 	}
 
-	return projectNamesToLoad, errors
+	return projectNamesToLoad, errs
 }
 
 func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) []manifest.EnvironmentDefinition {
@@ -183,12 +201,12 @@ func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderCo
 
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
-	configs, errors := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
-	errors = append(errors, findDuplicatedConfigIdentifiers(configs)...)
-	errors = append(errors, checkKeyUserActionScope(configs)...)
+	configs, errs := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
+	errs = append(errs, findDuplicatedConfigIdentifiers(configs)...)
+	errs = append(errs, checkKeyUserActionScope(configs)...)
 
-	if len(errors) > 0 {
-		return Project{}, errors
+	if len(errs) > 0 {
+		return Project{}, errs
 	}
 
 	insertNetworkZoneParameter(configs)
@@ -229,20 +247,28 @@ func insertNetworkZoneParameter(configs []config.Config) {
 	}
 }
 
+type KeyUserActionScopeError struct {
+	Coordinate coordinate.Coordinate
+}
+
+func (k KeyUserActionScopeError) Error() string {
+	return fmt.Sprintf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
+		"parameter to another web-application config", api.KeyUserActionsWeb, k.Coordinate.ConfigId)
+}
+
 func checkKeyUserActionScope(configs []config.Config) []error {
-	var errors []error
+	var errs []error
 	for _, c := range configs {
 		// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
 		// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
 		// sub graph (independent component) later on as
 		if c.Coordinate.Type == api.KeyUserActionsWeb {
 			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
-				errors = append(errors, fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
-					"parameter to another web-application config", api.KeyUserActionsWeb, c.Coordinate.ConfigId))
+				errs = append(errs, KeyUserActionScopeError{c.Coordinate})
 			}
 		}
 	}
-	return errors
+	return errs
 }
 
 func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
@@ -318,16 +344,16 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 }
 
 func findDuplicatedConfigIdentifiers(configs []config.Config) []error {
-	var errors []error
+	var errs []error
 	coordinates := make(map[string]struct{})
 	for _, c := range configs {
 		id := toFullyQualifiedConfigIdentifier(c)
 		if _, found := coordinates[id]; found {
-			errors = append(errors, newDuplicateConfigIdentifierError(c))
+			errs = append(errs, newDuplicateConfigIdentifierError(c))
 		}
 		coordinates[id] = struct{}{}
 	}
-	return errors
+	return errs
 }
 
 // toFullyUniqueConfigIdentifier returns a configs coordinate as well as environment,
