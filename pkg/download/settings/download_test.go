@@ -48,17 +48,21 @@ func TestDownloadAll(t *testing.T) {
 	uuid3 := idutils.GenerateUUIDFromString("oid3")
 
 	type mockValues struct {
-		Schemas           func() (dtclient.SchemaList, error)
-		ListSchemasCalls  int
+		Schemas          func() (dtclient.SchemaList, error)
+		ListSchemasCalls int
+
 		Settings          func() ([]dtclient.DownloadSettingsObject, error)
 		ListSettingsCalls int
-		GetSchema         func(schemaID string) (dtclient.Schema, error)
-		GetSchemaCalls    int
+
+		GetSchema      func(schemaID string) (dtclient.Schema, error)
+		GetSchemaCalls int
 	}
 	tests := []struct {
 		name       string
 		mockValues mockValues
 		filters    map[string]Filter
+		schemas    []config.SettingsType
+		envVars    map[string]string
 		want       v2.ConfigsPerType
 	}{
 		{
@@ -634,49 +638,12 @@ func TestDownloadAll(t *testing.T) {
 				},
 			}},
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 
-			c := client.NewMockSettingsClient(gomock.NewController(t))
-			schemas, err := tt.mockValues.Schemas()
-			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
-
-			settings, err := tt.mockValues.Settings()
-			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			res, _ := Download(c, "projectName", tt.filters)
-
-			assert.Equal(t, tt.want, res)
-		})
-	}
-}
-
-func TestDownload(t *testing.T) {
-	uuid := idutils.GenerateUUIDFromString("oid1")
-
-	type mockValues struct {
-		Schemas        func() (dtclient.SchemaList, error)
-		Settings       func() ([]dtclient.DownloadSettingsObject, error)
-		FetchedSchemas func(schemaID string) (dtclient.Schema, error)
-
-		ListSchemasCalls  int
-		ListSettingsCalls int
-		GetSchemaCalls    int
-
-		EnvVars map[featureflags.FeatureFlag]string
-	}
-	tests := []struct {
-		name       string
-		Schemas    []config.SettingsType
-		mockValues mockValues
-		want       v2.ConfigsPerType
-	}{
 		{
 			name: "DownloadSettings - empty list of schemas",
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) { return dtclient.SchemaList{}, nil },
-				FetchedSchemas: func(schemaID string) (dtclient.Schema, error) {
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
 					return dtclient.Schema{}, nil
 				},
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
@@ -690,12 +657,12 @@ func TestDownload(t *testing.T) {
 		},
 		{
 			name:    "DownloadSettings - Settings found",
-			Schemas: []config.SettingsType{{SchemaId: "builtin:alerting-profile"}},
+			schemas: []config.SettingsType{{SchemaId: "builtin:alerting-profile"}},
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "builtin:alerting-profile"}}, nil
 				},
-				FetchedSchemas: func(schemaID string) (dtclient.Schema, error) {
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
 					return dtclient.Schema{SchemaId: "builtin:alerting-profile"}, nil
 				},
 				GetSchemaCalls: 1,
@@ -715,11 +682,11 @@ func TestDownload(t *testing.T) {
 			},
 			want: v2.ConfigsPerType{"builtin:alerting-profile": {
 				{
-					Template: template.NewInMemoryTemplate(uuid, "{}"),
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "projectName",
 						Type:     "sid1",
-						ConfigId: uuid,
+						ConfigId: uuid1,
 					},
 					Type: config.SettingsType{
 						SchemaId:      "sid1",
@@ -735,12 +702,12 @@ func TestDownload(t *testing.T) {
 		},
 		{
 			name:    "Downloading builtin:host.monitoring.mode discards all by default",
-			Schemas: []config.SettingsType{{SchemaId: "builtin:host.monitoring.mode"}},
+			schemas: []config.SettingsType{{SchemaId: "builtin:host.monitoring.mode"}},
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "builtin:host.monitoring.mode"}}, nil
 				},
-				FetchedSchemas: func(schemaID string) (dtclient.Schema, error) {
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
 					return dtclient.Schema{SchemaId: "builtin:host.monitoring.mode"}, nil
 				},
 				GetSchemaCalls: 1,
@@ -762,19 +729,18 @@ func TestDownload(t *testing.T) {
 		},
 		{
 			name:    "Downloading builtin:host.monitoring.mode does not discard them if the DownloadFilter FF is inactive",
-			Schemas: []config.SettingsType{{SchemaId: "builtin:host.monitoring.mode"}},
+			schemas: []config.SettingsType{{SchemaId: "builtin:host.monitoring.mode"}},
+			envVars: map[string]string{
+				featureflags.DownloadFilter.EnvName(): "false",
+			},
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "builtin:host.monitoring.mode"}}, nil
 				},
-				FetchedSchemas: func(schemaID string) (dtclient.Schema, error) {
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
 					return dtclient.Schema{SchemaId: "builtin:host.monitoring.mode"}, nil
 				},
 				GetSchemaCalls: 1,
-				EnvVars: map[featureflags.FeatureFlag]string{
-					featureflags.DownloadFilter: "false",
-				},
-
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
@@ -790,11 +756,11 @@ func TestDownload(t *testing.T) {
 			},
 			want: v2.ConfigsPerType{"builtin:host.monitoring.mode": {
 				{
-					Template: template.NewInMemoryTemplate(uuid, "{}"),
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "projectName",
 						Type:     "builtin:host.monitoring.mode",
-						ConfigId: uuid,
+						ConfigId: uuid1,
 					},
 					Type: config.SettingsType{
 						SchemaId:      "builtin:host.monitoring.mode",
@@ -811,16 +777,23 @@ func TestDownload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for k, v := range tt.mockValues.EnvVars {
-				t.Setenv(k.EnvName(), v)
+
+			for k, v := range tt.envVars {
+				t.Setenv(k, v)
+			}
+
+			if tt.filters == nil {
+				tt.filters = DefaultSettingsFilters
 			}
 
 			c := client.NewMockSettingsClient(gomock.NewController(t))
-			schemas, err1 := tt.mockValues.Schemas()
-			settings, err2 := tt.mockValues.Settings()
-			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err1)
-			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err2)
-			res, _ := Download(c, "projectName", DefaultSettingsFilters, tt.Schemas...)
+			schemas, err := tt.mockValues.Schemas()
+			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
+
+			settings, err := tt.mockValues.Settings()
+			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
+			res, _ := Download(c, "projectName", tt.filters, tt.schemas...)
+
 			assert.Equal(t, tt.want, res)
 		})
 	}
