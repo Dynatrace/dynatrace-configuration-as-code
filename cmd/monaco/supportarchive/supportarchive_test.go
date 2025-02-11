@@ -26,59 +26,17 @@ import (
 )
 
 func TestIsEnabled(t *testing.T) {
-	t.Run("New created support-archive is disabled by default", func(t *testing.T) {
+	t.Run("If support archive is set, it's enabled", func(t *testing.T) {
 		ctx := context.TODO()
 
 		ctx = supportarchive.ContextWithSupportArchive(ctx)
-
-		assert.False(t, supportarchive.IsEnabled(ctx))
-	})
-
-	t.Run("Enabled support-archive returns true", func(t *testing.T) {
-		ctx := context.TODO()
-
-		ctx = supportarchive.ContextWithSupportArchive(ctx)
-		supportarchive.Enable(ctx)
 
 		assert.True(t, supportarchive.IsEnabled(ctx))
-
 	})
 
-	t.Run("Not created support-archive is same as disabled", func(t *testing.T) {
+	t.Run("If support archive isn't set, it's disabled", func(t *testing.T) {
 		ctx := context.TODO()
 
 		assert.False(t, supportarchive.IsEnabled(ctx))
-	})
-}
-
-func TestNewContextWithSupportArchive(t *testing.T) {
-	t.Run("support-archive is alreadit created - panic", func(t *testing.T) {
-		ctx := context.TODO()
-
-		ctx = supportarchive.ContextWithSupportArchive(ctx)
-
-		assert.Equal(t, ctx, supportarchive.ContextWithSupportArchive(ctx))
-	})
-}
-
-func TestEnable(t *testing.T) {
-	t.Run("If support-archive is already not created - panic", func(t *testing.T) {
-		ctx := context.TODO()
-
-		assert.Panics(t, func() {
-			supportarchive.Enable(ctx)
-		})
-	})
-
-	t.Run("enabling support-archive enables it in everywhere", func(t *testing.T) {
-		var ctx = context.TODO()
-		ctx = supportarchive.ContextWithSupportArchive(ctx)
-
-		ctx1 := context.WithValue(ctx, "first child", "")
-		ctx2 := context.WithValue(ctx, "first child", "")
-
-		assert.False(t, supportarchive.IsEnabled(ctx2))
-		supportarchive.Enable(ctx1)
-		assert.True(t, supportarchive.IsEnabled(ctx2))
 	})
 }

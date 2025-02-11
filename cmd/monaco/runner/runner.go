@@ -37,20 +37,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
 
-func RunCmd(ctx context.Context, fs afero.Fs, cmd *cobra.Command) error {
-	ctx = supportarchive.ContextWithSupportArchive(ctx)
-
-	defer func(ctx context.Context) { // writing the support archive is a deferred function call in order to guarantee that a support archive is also written in case of a panic
-		if supportarchive.IsEnabled(ctx) {
-			if err := trafficlogs.GetInstance().Sync(); err != nil {
-				log.WithFields(field.Error(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
-			}
-			if err := supportarchive.Write(fs); err != nil {
-				log.WithFields(field.Error(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
-			}
-		}
-	}(ctx)
-
+func RunCmd(ctx context.Context, cmd *cobra.Command) error {
 	err := cmd.ExecuteContext(ctx)
 	if err != nil {
 		log.WithFields(field.Error(err)).Error("Error: %v", err)
@@ -61,6 +48,17 @@ func RunCmd(ctx context.Context, fs afero.Fs, cmd *cobra.Command) error {
 
 func BuildCmd(fs afero.Fs) *cobra.Command {
 	return BuildCmdWithLogSpy(fs, nil)
+}
+
+func writeSupportArchive(fs afero.Fs) func() {
+	return func() {
+		if err := trafficlogs.GetInstance().Sync(); err != nil {
+			log.WithFields(field.Error(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
+		}
+		if err := supportarchive.Write(fs); err != nil {
+			log.WithFields(field.Error(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
+		}
+	}
 }
 
 func BuildCmdWithLogSpy(fs afero.Fs, logSpy io.Writer) *cobra.Command {
@@ -80,7 +78,8 @@ Examples:
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if supportArchive {
-				supportarchive.Enable(cmd.Context())
+				cobra.OnFinalize(writeSupportArchive(fs))
+				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
 
 			fileBasedLogging := featureflags.LogToFile.Enabled() || supportArchive

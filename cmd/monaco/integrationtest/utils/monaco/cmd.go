@@ -61,5 +61,5 @@ func RunWithFs(fs afero.Fs, command string) error {
 
 	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs(args)
-	return runner.RunCmd(context.TODO(), fs, cmd)
+	return runner.RunCmd(context.TODO(), cmd)
 }
