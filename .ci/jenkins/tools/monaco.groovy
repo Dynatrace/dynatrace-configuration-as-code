@@ -54,7 +54,7 @@ void deploy(String project, boolean ignoreReturnStatus = true) {
         // to provoke memory leak remove MONACO_CONCURENT_DEPLOYMENT flag. The default value is MONACO_CONCURENT_DEPLOYMENT=100
         status = sh(label: "monaco deploy",
             returnStatus: true,
-            script: "MONACO_CONCURENT_DEPLOYMENT=30 MONACO_LOG_FORMAT=json ${monacoBin} deploy manifest.yaml --project=${project} | ${logForwarderBin} LOG_FWD_URL LOG_FWD_TOKEN")
+            script: "MONACO_CONCURENT_DEPLOYMENT=30 MONACO_LOG_FORMAT=json ${monacoBin} deploy manifest.yaml --project=${project} --verbose | ${logForwarderBin} LOG_FWD_URL LOG_FWD_TOKEN")
         if (!ignoreReturnStatus) {
             0 == status
         }
@@ -65,6 +65,7 @@ void buildForwarder() {
     String logForwarderBin = "${JENKINS_AGENT_WORKDIR}/logForwarder"
     sh(label: "build monaco-log-forwarder",
         script: """go build -buildvcs=false -o ${logForwarderBin}""")
+    sh "ls -alF ${JENKINS_AGENT_WORKDIR}"
 }
 
 return this
