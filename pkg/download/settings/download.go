@@ -184,7 +184,9 @@ func asConcurrentErrMsg(err coreapi.APIError) string {
 
 func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, projectName string, ordered bool, filters Filters) []config.Config {
 	result := make([]config.Config, 0, len(settingsObjects))
-	var previousConfig *config.Config = nil
+
+	var previousConfigForScope = make(map[string]*config.Config)
+
 	for _, settingsObject := range settingsObjects {
 		if shouldFilterUnmodifiableSettings() && !settingsObject.IsModifiable() && len(settingsObject.GetModifiablePaths()) == 0 {
 			log.WithFields(field.Type(settingsObject.SchemaId), field.F("object", settingsObject)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", settingsObject.ObjectId, settingsObject.SchemaId)
@@ -206,6 +208,7 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, projec
 		indentedJson := jsonutils.MarshalIndent(settingsObject.Value)
 		// construct config object with generated config ID
 		configId := idutils.GenerateUUIDFromString(settingsObject.ObjectId)
+		scope := settingsObject.Scope
 		c := config.Config{
 			Template: template.NewInMemoryTemplate(configId, string(indentedJson)),
 			Coordinate: coordinate.Coordinate{
@@ -218,17 +221,18 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, projec
 				SchemaVersion: settingsObject.SchemaVersion,
 			},
 			Parameters: map[string]parameter.Parameter{
-				config.ScopeParameter: &value.ValueParameter{Value: settingsObject.Scope},
+				config.ScopeParameter: &value.ValueParameter{Value: scope},
 			},
 			Skip:           false,
 			OriginObjectId: settingsObject.ObjectId,
 		}
 
-		if settingsObject.IsMovable() && ordered && (previousConfig != nil) {
-			c.Parameters[config.InsertAfterParameter] = reference.NewWithCoordinate(previousConfig.Coordinate, "id")
+		insertAfterConfig, found := previousConfigForScope[scope]
+		if settingsObject.IsMovable() && ordered && found {
+			c.Parameters[config.InsertAfterParameter] = reference.NewWithCoordinate(insertAfterConfig.Coordinate, "id")
 		}
 		result = append(result, c)
-		previousConfig = &c
+		previousConfigForScope[scope] = &c
 
 	}
 	return result

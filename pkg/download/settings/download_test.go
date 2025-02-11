@@ -399,6 +399,125 @@ func TestDownloadAll(t *testing.T) {
 			}},
 		},
 		{
+			// 3 configs, oid1 (scope A), oid2 (scope B), oid3 (scope A)
+			// oid2 should not insertAfter anything, oid3 should insertAfter oid1
+			name: "Ordered settings with different scopes should not insertAfter cross-scope",
+			mockValues: mockValues{
+				ListSchemasCalls: 1,
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "id1", Ordered: true}}, nil
+				},
+				GetSchema: func(schemaID string) (dtclient.Schema, error) {
+					return dtclient.Schema{SchemaId: "id1", Ordered: true}, nil
+				},
+				GetSchemaCalls: 1,
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{
+						{
+							ExternalId:    "ex1",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid1",
+							Scope:         "scope-A",
+							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable: true,
+								Movable:    true,
+							},
+						},
+						{
+							ExternalId:    "ex2",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid2",
+							Scope:         "scope-B",
+							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable: true,
+								Movable:    true,
+							},
+						},
+						{
+							ExternalId:    "ex3",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid3",
+							Scope:         "scope-A",
+							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable: true,
+								Movable:    true,
+							},
+						},
+					}, nil
+				},
+				ListSettingsCalls: 1,
+			},
+			want: v2.ConfigsPerType{"id1": {
+				{
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid1,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "scope-A"},
+					},
+					Skip:           false,
+					OriginObjectId: "oid1",
+				},
+				{
+					Template: template.NewInMemoryTemplate(uuid2, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid2,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "scope-B"},
+					},
+					Skip:           false,
+					OriginObjectId: "oid2",
+				},
+				{
+					Template: template.NewInMemoryTemplate(uuid3, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid3,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "scope-A"},
+						config.InsertAfterParameter: &reference.ReferenceParameter{
+							ParameterReference: parameter.ParameterReference{
+								Config: coordinate.Coordinate{
+									Project:  "projectName",
+									Type:     "sid1",
+									ConfigId: uuid1,
+								},
+								Property: "id",
+							},
+						},
+					},
+					Skip:           false,
+					OriginObjectId: "oid3",
+				},
+			}},
+		},
+		{
 			name: "DownloadSettings - non-movable ordered settings should not receive insertAfter param",
 			mockValues: mockValues{
 				ListSchemasCalls: 1,
@@ -518,13 +637,16 @@ func TestDownloadAll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			c := client.NewMockSettingsClient(gomock.NewController(t))
 			schemas, err := tt.mockValues.Schemas()
 			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
-			// c.EXPECT().GetSchemaById(gomock.Any()).Times(tt.mockValues.GetSchemaCalls).Return(tt.mockValues.GetSchema(""))
+
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
 			res, _ := Download(c, "projectName", tt.filters)
+
 			assert.Equal(t, tt.want, res)
 		})
 	}
