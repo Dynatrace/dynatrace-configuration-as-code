@@ -20,7 +20,10 @@ secrets = [[path        : "keptn-jenkins/monaco/integration-tests/performance",
                 [envVar: 'OAUTH_CLIENT_SECRET', vaultKey: 'OAUTH_CLIENT_SECRET', isRequired: true],
                 [envVar: 'OAUTH_TOKEN_ENDPOINT', vaultKey: 'OAUTH_TOKEN_ENDPOINT', isRequired: true],
                 [envVar: 'TENANT_URL', vaultKey: 'TENANT_URL', isRequired: true],
-                [envVar: 'TOKEN', vaultKey: 'TOKEN', isRequired: true]
+                [envVar: 'TOKEN', vaultKey: 'TOKEN', isRequired: true],
+                [envVar: 'LOG_FWD_URL', vaultKey: 'LOG_FWD_URL', isRequired: true],
+                [envVar: 'LOG_FWD_TOKEN', vaultKey: 'LOG_FWD_TOKEN', isRequired: true]
+
             ]]]
 
 void build(String sourcePath) {
@@ -45,11 +48,13 @@ void purge() {
 
 void deploy(String project, boolean ignoreReturnStatus = true) {
     String monacoBin = "${JENKINS_AGENT_WORKDIR}/monaco"
+    String logForwarderBin = "${JENKINS_AGENT_WORKDIR}/logForwarder"
+
     withVault(vaultSecrets: secrets) {
         // to provoke memory leak remove MONACO_CONCURENT_DEPLOYMENT flag. The default value is MONACO_CONCURENT_DEPLOYMENT=100
         status = sh(label: "monaco deploy",
             returnStatus: true,
-            script: "MONACO_CONCURENT_DEPLOYMENT=30 ${monacoBin} deploy manifest.yaml --project=${project}")
+            script: "MONACO_CONCURENT_DEPLOYMENT=30 MONACO_LOG_FORMAT=json ${monacoBin} deploy manifest.yaml --project=${project} | ${logForwarderBin} LOG_FWD_URL LOG_FWD_TOKEN")
         if (!ignoreReturnStatus) {
             0 == status
         }
