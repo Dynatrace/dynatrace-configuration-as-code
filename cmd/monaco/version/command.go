@@ -18,13 +18,14 @@ package version
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/cobra"
 )
 
-func GetVersionCommand() (convertCmd *cobra.Command) {
-	versionCmd := &cobra.Command{
+func GetVersionCommand() (versionCmd *cobra.Command) {
+	return &cobra.Command{
 		Use:     "version",
 		Short:   "Prints out the version of the monaco cli",
 		Example: "monaco version",
@@ -33,5 +34,4 @@ func GetVersionCommand() (convertCmd *cobra.Command) {
 			fmt.Println("monaco version " + version.MonitoringAsCode)
 		},
 	}
-	return versionCmd
 }
