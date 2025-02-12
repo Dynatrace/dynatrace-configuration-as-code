@@ -330,7 +330,7 @@ func execution_downloadConfigsWithCLIParameters(
 		command += fmt.Sprintf(" --url=%s --token=%s", os.Getenv("URL_ENVIRONMENT_1"), "TOKEN_ENVIRONMENT_1")
 	}
 
-	err = monaco.RunWithFSf(fs, command)
+	err = monaco.RunWithFs(fs, command)
 	assert.NoError(t, err)
 	return nil
 }
