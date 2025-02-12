@@ -56,7 +56,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 #v5.3.0
       with:
-        go-version: '~1.23'
+        go-version: '~1.24'
 
     - name: 🏁 Build release binaries
       run: make build-release
@@ -80,7 +80,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 #v5.3.0
       with:
-        go-version: '~1.23'
+        go-version: '~1.24'
 
     - name: 🌎 Integration test
       run: make integration-test testopts="--junitfile test-result-integration.xml"
@@ -120,7 +120,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 #v5.3.0
       with:
-        go-version: '~1.23'
+        go-version: '~1.24'
 
     - name: 📥/📤 Download/Restore test
       run: make download-restore-test testopts="--junitfile test-result-integration-download-restore.xml"
@@ -160,7 +160,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 #v5.3.0
         with:
-          go-version: '~1.23'
+          go-version: '~1.24'
 
       - name: 🗂️ Account Management E2E tests
         run: make account-management-test testopts="--junitfile test-result-aim.xml"
@@ -199,7 +199,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 #v5.3.0
       with:
-        go-version: '~1.23'
+        go-version: '~1.24'
 
     - name: 🧪 Unit test
       run: make test testopts="--junitfile test-result-windows-latest-unit.xml"
@@ -226,7 +226,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 #v5.3.0
       with:
-        go-version: '~1.23'
+        go-version: '~1.24'
 
     - name: 🌜 Nightly Tests
       run: make nightly-test testopts="--junitfile test-result-integration-nightly.xml"
