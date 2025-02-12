@@ -91,7 +91,7 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 func createDeploymentContext(ctx context.Context, fs afero.Fs) context.Context {
 	if reportFilename, ok := os.LookupEnv(environment.DeploymentReportFilename); ok && len(reportFilename) > 0 {
 		reporter := report.NewDefaultReporter(fs, reportFilename)
-		reporter.ReportLoading(report.StateInfo, nil, fmt.Sprintf("Monaco version %v", monacoVersion.MonitoringAsCode), nil)
+		reporter.ReportInfo(fmt.Sprintf("Monaco version %v", monacoVersion.MonitoringAsCode))
 		return report.NewContextWithReporter(ctx, reporter)
 	}
 

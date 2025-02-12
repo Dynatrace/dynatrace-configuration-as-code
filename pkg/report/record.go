@@ -31,6 +31,7 @@ type RecordType = string
 const (
 	TypeDeploy RecordType = "DEPLOY"
 	TypeLoad   RecordType = "LOAD"
+	TypeInfo   RecordType = "INFO"
 )
 
 type RecordState = string

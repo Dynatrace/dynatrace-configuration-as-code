@@ -92,7 +92,7 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 		projectString = "projects"
 	}
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
-	reporter.ReportLoading(report.StateSuccess, nil, fmt.Sprintf("%d %v validated", len(projects), projectString), nil)
+	reporter.ReportInfo(fmt.Sprintf("%d %v validated", len(projects), projectString))
 
 	preloadCaches(ctx, projects, environmentClients)
 	g := graph.New(projects, environmentClients.Names())
@@ -116,6 +116,7 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 			log.WithFields(field.Environment(env.Name, env.Group)).Info("Deployment successful for environment %q", env.Name)
 		}
 	}
+	reporter.ReportInfo("Deployment finished")
 
 	if len(deploymentErrors) != 0 {
 		return deploymentErrors
