@@ -1337,6 +1337,30 @@ func TestDeployConfigFF(t *testing.T) {
 			featureFlag: featureflags.Segments.EnvName(),
 			configType:  config.SegmentID,
 		},
+		{
+			name: "SLO FF test",
+			projects: []project.Project{
+				{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env": project.ConfigsPerType{
+							"p1": {
+								config.Config{
+									Type:        config.ServiceLevelObjective{},
+									Environment: "env",
+									Coordinate: coordinate.Coordinate{
+										Project:  "p1",
+										Type:     "type",
+										ConfigId: "config1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			featureFlag: featureflags.ServiceLevelObjective.EnvName(),
+			configType:  config.ServiceLevelObjectiveID,
+		},
 	}
 
 	for _, tt := range tests {
