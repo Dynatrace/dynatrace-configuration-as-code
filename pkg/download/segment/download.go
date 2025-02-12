@@ -18,16 +18,14 @@ package segment
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/templatetools"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/config_creation"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
@@ -46,48 +44,25 @@ func Download(client DownloadSegmentClient, projectName string) (project.Configs
 
 	var configs []config.Config
 	for _, downloadedConfig := range downloadedConfigs {
-		c, err := createConfig(projectName, downloadedConfig)
+		id, jsonString, err := config_creation.PrepareConfig(downloadedConfig.Data, "uid", "uid", "version", "externalId")
 		if err != nil {
 			log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to convert segment: %v", err)
 			continue
+		}
+		c := config.Config{
+			Template: template.NewInMemoryTemplate(id, jsonString),
+			Coordinate: coordinate.Coordinate{
+				Project:  projectName,
+				Type:     string(config.SegmentID),
+				ConfigId: id,
+			},
+			OriginObjectId: id,
+			Type:           config.Segment{},
+			Parameters:     make(config.Parameters),
 		}
 		configs = append(configs, c)
 	}
 	result[string(config.SegmentID)] = configs
 
 	return result, nil
-}
-
-func createConfig(projectName string, response openpipeline.Response) (config.Config, error) {
-	jsonObj, err := templatetools.NewJSONObject(response.Data)
-	if err != nil {
-		return config.Config{}, fmt.Errorf("failed to unmarshal payload: %w", err)
-	}
-
-	id, ok := jsonObj.Get("uid").(string)
-	if !ok {
-		return config.Config{}, fmt.Errorf("API payload is missing 'uid'")
-	}
-
-	// delete fields that prevent a re-upload of the configuration
-	jsonObj.Delete("uid")
-	jsonObj.Delete("version")
-	jsonObj.Delete("externalId")
-
-	jsonRaw, err := jsonObj.ToJSON(true)
-	if err != nil {
-		return config.Config{}, fmt.Errorf("failed to marshal payload: %w", err)
-	}
-
-	return config.Config{
-		Template: template.NewInMemoryTemplate(id, string(jsonRaw)),
-		Coordinate: coordinate.Coordinate{
-			Project:  projectName,
-			Type:     string(config.SegmentID),
-			ConfigId: id,
-		},
-		OriginObjectId: id,
-		Type:           config.Segment{},
-		Parameters:     make(config.Parameters),
-	}, nil
 }

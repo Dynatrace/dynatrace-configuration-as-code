@@ -18,7 +18,6 @@ package slo
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -26,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/templatetools"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/config_creation"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
@@ -45,48 +44,25 @@ func Download(client DownloadSloClient, projectName string) (project.ConfigsPerT
 
 	var configs []config.Config
 	for _, downloadedConfig := range downloadedConfigs.All() {
-		c, err := createConfig(projectName, downloadedConfig)
+		id, jsonString, err := config_creation.PrepareConfig(downloadedConfig, "id", "id", "version", "externalId")
 		if err != nil {
 			log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to convert SLO: %v", err)
 			continue
+		}
+		c := config.Config{
+			Template: template.NewInMemoryTemplate(id, jsonString),
+			Coordinate: coordinate.Coordinate{
+				Project:  projectName,
+				Type:     string(config.ServiceLevelObjectiveID),
+				ConfigId: id,
+			},
+			OriginObjectId: id,
+			Type:           config.ServiceLevelObjective{},
+			Parameters:     make(config.Parameters),
 		}
 		configs = append(configs, c)
 	}
 	result[string(config.ServiceLevelObjectiveID)] = configs
 
 	return result, nil
-}
-
-func createConfig(projectName string, data []byte) (config.Config, error) {
-	jsonObj, err := templatetools.NewJSONObject(data)
-	if err != nil {
-		return config.Config{}, fmt.Errorf("failed to unmarshal payload: %w", err)
-	}
-
-	id, ok := jsonObj.Get("id").(string)
-	if !ok {
-		return config.Config{}, fmt.Errorf("API payload is missing 'id'")
-	}
-
-	// delete fields that prevent a re-upload of the configuration
-	jsonObj.Delete("id")
-	jsonObj.Delete("version")
-	jsonObj.Delete("externalId")
-
-	jsonRaw, err := jsonObj.ToJSON(true)
-	if err != nil {
-		return config.Config{}, fmt.Errorf("failed to marshal payload: %w", err)
-	}
-
-	return config.Config{
-		Template: template.NewInMemoryTemplate(id, string(jsonRaw)),
-		Coordinate: coordinate.Coordinate{
-			Project:  projectName,
-			Type:     string(config.ServiceLevelObjectiveID),
-			ConfigId: id,
-		},
-		OriginObjectId: id,
-		Type:           config.ServiceLevelObjective{},
-		Parameters:     make(config.Parameters),
-	}, nil
 }
