@@ -101,6 +101,10 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 		cmd.Flags().BoolVar(&f.onlySegments, "only-segments", false, "Only download segment configurations, skip all other configuration types")
 	}
 
+	if featureflags.ServiceLevelObjective.Enabled() {
+		cmd.Flags().BoolVar(&f.onlySLOsV2, "only-slo-v2", false, "Only download SLO-V2, skip all other configuration types")
+	}
+
 	err := errors.Join(
 		cmd.RegisterFlagCompletionFunc("token", completion.EnvVarName),
 		cmd.RegisterFlagCompletionFunc("oauth-client-id", completion.EnvVarName),

@@ -40,6 +40,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -62,6 +63,7 @@ type downloadCmdOptions struct {
 	onlyDocuments           bool
 	onlyOpenPipeline        bool
 	onlySegments            bool
+	onlySLOsV2              bool
 }
 
 type auth struct {
@@ -149,6 +151,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 		onlyDocuments:    cmdOptions.onlyDocuments,
 		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
 		onlySegment:      cmdOptions.onlySegments,
+		onlySLOV2:        cmdOptions.onlySLOsV2,
 	}
 
 	if errs := options.valid(); len(errs) != 0 {
@@ -273,6 +276,7 @@ type downloadFn struct {
 	documentDownload     func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
 	openPipelineDownload func(client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
 	segmentDownload      func(segment.DownloadSegmentClient, string) (projectv2.ConfigsPerType, error)
+	sloDownload          func(slo.DownloadSloClient, string) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
@@ -283,6 +287,7 @@ var defaultDownloadFn = downloadFn{
 	documentDownload:     document.Download,
 	openPipelineDownload: openpipeline.Download,
 	segmentDownload:      segment.Download,
+	sloDownload:          slo.Download,
 }
 
 func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
@@ -370,6 +375,20 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 		}
 	}
 
+	if featureflags.ServiceLevelObjective.Enabled() {
+		if shouldDownloadSLOsV2(opts) {
+			if opts.auth.OAuth != nil {
+				sloCgfs, err := fn.sloDownload(clientSet.ServiceLevelObjectiveClient, opts.projectName)
+				if err != nil {
+					return nil, err
+				}
+				copyConfigs(configs, sloCgfs)
+			} else if opts.onlySLOV2 {
+				return nil, errors.New("can't download SLO-v2 resources: no OAuth credentials configured")
+			}
+		}
+	}
+
 	return configs, nil
 }
 
@@ -394,7 +413,8 @@ func shouldDownloadConfigs(opts downloadConfigsOptions) bool {
 		!opts.onlySettings &&
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline &&
-		!opts.onlySegment
+		!opts.onlySegment &&
+		!opts.onlySLOV2
 }
 
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
@@ -404,7 +424,8 @@ func shouldDownloadSettings(opts downloadConfigsOptions) bool {
 		!opts.onlyAutomation &&
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline &&
-		!opts.onlySegment
+		!opts.onlySegment &&
+		!opts.onlySLOV2
 }
 
 // shouldDownloadAutomationResources returns true unless download is limited to settings or config API types
@@ -413,7 +434,8 @@ func shouldDownloadAutomationResources(opts downloadConfigsOptions) bool {
 		!opts.onlySettings && len(opts.specificAPIs) == 0 &&
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline &&
-		!opts.onlySegment
+		!opts.onlySegment &&
+		!opts.onlySLOV2
 }
 
 // shouldDownloadBuckets returns true if download is not limited to another specific type
@@ -423,7 +445,8 @@ func shouldDownloadBuckets(opts downloadConfigsOptions) bool {
 		!opts.onlyAutomation &&
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline &&
-		!opts.onlySegment
+		!opts.onlySegment &&
+		!opts.onlySLOV2
 }
 
 func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
@@ -431,7 +454,8 @@ func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
 		!opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
 		!opts.onlyAutomation &&
 		!opts.onlyOpenPipeline &&
-		!opts.onlySegment
+		!opts.onlySegment &&
+		!opts.onlySLOV2
 }
 
 func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
@@ -439,7 +463,8 @@ func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
 		!opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
 		!opts.onlyAutomation &&
 		!opts.onlyDocuments &&
-		!opts.onlySegment
+		!opts.onlySegment &&
+		!opts.onlySLOV2
 }
 
 func shouldDownloadSegments(opts downloadConfigsOptions) bool {
@@ -447,5 +472,15 @@ func shouldDownloadSegments(opts downloadConfigsOptions) bool {
 		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
 		!opts.onlyAutomation &&
 		!opts.onlyDocuments &&
-		!opts.onlyOpenPipeline
+		!opts.onlyOpenPipeline &&
+		!opts.onlySLOV2
+}
+
+func shouldDownloadSLOsV2(opts downloadConfigsOptions) bool {
+	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
+		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
+		!opts.onlyAutomation &&
+		!opts.onlyDocuments &&
+		!opts.onlyOpenPipeline &&
+		!opts.onlySegment
 }

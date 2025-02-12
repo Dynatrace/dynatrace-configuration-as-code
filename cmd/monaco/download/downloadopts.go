@@ -34,6 +34,7 @@ type downloadConfigsOptions struct {
 	onlyDocuments    bool
 	onlyOpenPipeline bool
 	onlySegment      bool
+	onlySLOV2        bool
 }
 
 func (opts downloadConfigsOptions) valid() []error {
