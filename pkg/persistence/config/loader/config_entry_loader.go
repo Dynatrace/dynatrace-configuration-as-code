@@ -229,20 +229,12 @@ func getConfigFromDefinition(
 		parameters[config.ScopeParameter] = scopeParam
 	}
 
-	// if we have an insertAfter field, we should parse it
+	// if we have an insertAfter field, we need to parse the field as a parameter
 	if configType.InsertAfter != nil {
+
 		insertAfterParam, err := parseParameter(fs, context, environment, configId, config.InsertAfterParameter, configType.InsertAfter)
 		if err != nil {
-			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter: %w", err)}
-		}
-
-		r, isRef := insertAfterParam.(*reference.ReferenceParameter)
-		if !isRef {
-			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter: cannot use parameter-type %q. Allowed types: %v", insertAfterParam.GetType(), reference.ReferenceParameterType)}
-		}
-
-		if r.Property != "id" {
-			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter: property field of reference parameter %q must be %q", insertAfterParam, "id")}
+			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter parameter: %w", err)}
 		}
 
 		parameters[config.InsertAfterParameter] = insertAfterParam
@@ -262,6 +254,19 @@ func getConfigFromDefinition(
 		Skip:           skipConfig,
 		OriginObjectId: definition.OriginObjectId,
 	}, nil
+}
+
+func validateInsertAfterParameter(insertAfterParam parameter.Parameter) (parameter.Parameter, error) {
+
+	r, isRef := insertAfterParam.(*reference.ReferenceParameter)
+	if !isRef {
+		return nil, fmt.Errorf("failed to parse insertAfter: cannot use parameter-type %q. Allowed types: %v", insertAfterParam.GetType(), reference.ReferenceParameterType)
+	}
+
+	if r.Property != "id" {
+		return nil, fmt.Errorf("failed to parse insertAfter: property field of reference parameter %q must be %q", insertAfterParam, "id")
+	}
+	return insertAfterParam, nil
 }
 
 func parseSkip(fs afero.Fs,
