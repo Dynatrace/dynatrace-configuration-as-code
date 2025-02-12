@@ -59,6 +59,8 @@ type Reporter interface {
 	ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error)
 	// ReportLoading reports the result of a load config
 	ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate)
+	// ReportInfo reports info messages like monaco version or that the deployment succeeded
+	ReportInfo(message string)
 
 	// GetSummary returns a summary of all seen events as a string.
 	GetSummary() string
@@ -180,6 +182,16 @@ func (d *defaultReporter) ReportLoading(state RecordState, err error, message st
 	}
 }
 
+// ReportInfo reports the result of validating a config (manifest, project, config).
+func (d *defaultReporter) ReportInfo(message string) {
+	d.queue <- Record{
+		Type:    TypeInfo,
+		Time:    JSONTime(d.clockFunc()),
+		Message: message,
+		State:   StateInfo,
+	}
+}
+
 func convertErrorToString(err error) string {
 	if err == nil {
 		return ""
@@ -215,5 +227,6 @@ func (_ *discardReporter) ReportDeployment(config coordinate.Coordinate, state R
 }
 func (_ *discardReporter) ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate) {
 }
-func (_ *discardReporter) GetSummary() string { return "" }
-func (_ *discardReporter) Stop()              {}
+func (_ *discardReporter) ReportInfo(message string) {}
+func (_ *discardReporter) GetSummary() string        { return "" }
+func (_ *discardReporter) Stop()                     {}

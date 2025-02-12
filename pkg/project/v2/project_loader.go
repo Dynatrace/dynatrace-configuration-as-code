@@ -129,7 +129,7 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 			projectErrors = append(projectErrors, errs...)
 			continue
 		}
-		reporter.ReportLoading(report.StateSuccess, nil, fmt.Sprintf("project %q loaded", project.String()), nil)
+		reporter.ReportInfo(fmt.Sprintf("project %q loaded", project.String()))
 
 		loadedProjects = append(loadedProjects, project)
 
