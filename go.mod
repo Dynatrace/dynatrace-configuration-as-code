@@ -1,5 +1,7 @@
 module github.com/dynatrace/dynatrace-configuration-as-code/v2
 
+go 1.24.0
+
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
 	github.com/dynatrace/dynatrace-configuration-as-code-core v0.7.1-0.20250211150749-1391cd8fbd8b
@@ -38,6 +40,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-go 1.23
 
-toolchain go1.23.2
