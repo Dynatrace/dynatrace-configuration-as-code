@@ -51,7 +51,7 @@ type deploymentClient interface {
 }
 
 type Handler interface {
-	SetNext(handler Handler)
+	Next(handler Handler) Handler
 	Handle(data *HandlerData) (entities.ResolvedEntity, error)
 }
 
@@ -59,8 +59,9 @@ type BaseHandler struct {
 	next Handler
 }
 
-func (b *BaseHandler) SetNext(handler Handler) {
+func (b *BaseHandler) Next(handler Handler) Handler {
 	b.next = handler
+	return handler
 }
 
 type AddExternalIDHandler struct {
