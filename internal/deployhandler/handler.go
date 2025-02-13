@@ -127,11 +127,15 @@ func (h *MatchWithExternalIDHandler) Handle(data *HandlerData) (entities.Resolve
 		if err := json.Unmarshal(payload, &response); err != nil {
 			return entities.ResolvedEntity{}, err
 		}
-		value, ok := response[h.ExternalIDKey]
-		if ok && value == data.externalID {
+		value, ok := response[h.ExternalIDKey].(string)
+		if ok && value == *data.externalID {
 			id = response[h.IDKey].(string)
 			break
 		}
+	}
+	//If no match is found we call the next handler
+	if id == "" {
+		return h.next.Handle(data)
 	}
 
 	_, err = data.client.Update(data.ctx, id, data.payload)
