@@ -24,69 +24,48 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/config_creation"
 )
 
-func TestCreateConfig_Error(t *testing.T) {
-	testcases := []struct {
-		Name  string
-		IdKey string
-		Data  []byte
-		Error string
-	}{
-		{
-			Name:  "Returns an error if JSON is invalid",
-			IdKey: "id",
-			Data:  []byte(`{"id": "my-id","name": "my-resource"`), // missing "}" at the end
-			Error: "failed to unmarshal payload: unexpected end of JSON input",
-		},
-		{
-			Name:  "Returns an error if the given ID is missing",
-			IdKey: "uid",
-			Data:  []byte(`{"id": "my-id", "name": "my-resource"}`),
-			Error: "API payload is missing 'uid'",
-		},
-	}
-
-	for _, testcase := range testcases {
-		t.Run(testcase.Name, func(t *testing.T) {
-			id, jsonString, err := config_creation.PrepareConfig(testcase.Data, testcase.IdKey, testcase.IdKey, "version", "externalId")
-
-			assert.Equal(t, "", id)
-			assert.Equal(t, "", jsonString)
-			assert.EqualError(t, err, testcase.Error)
-		})
-	}
+type uidStruct struct {
+	Uid string `json:"uid"`
 }
 
-func TestCreateConfig_Result(t *testing.T) {
-	testcases := []struct {
-		Name       string
-		IdKey      string
-		Data       []byte
-		ResultId   string
-		ResultJSON string
-	}{
-		{
-			Name:       "Returns a valid SLO configuration without externalId, id and version",
-			IdKey:      "id",
-			Data:       []byte(`{"id": "my-id", "externalId": "e-id", "version": "xy", "name": "my-resource"}`),
-			ResultId:   "my-id",
-			ResultJSON: "{\n  \"name\": \"my-resource\"\n}",
-		},
-		{
-			Name:       "Returns a valid segment configuration without uid, version and externalId",
-			IdKey:      "uid",
-			Data:       []byte(`{"uid": "my-uid", "version": "xy", "externalId": "e-id", "name": "my-resource"}`),
-			ResultId:   "my-uid",
-			ResultJSON: "{\n  \"name\": \"my-resource\"\n}",
-		},
-	}
+type idStruct struct {
+	Id string `json:"id"`
+}
 
-	for _, testcase := range testcases {
-		t.Run(testcase.Name, func(t *testing.T) {
-			id, resultJson, err := config_creation.PrepareConfig(testcase.Data, testcase.IdKey, testcase.IdKey, "version", "externalId")
+func TestCreateConfig(t *testing.T) {
+	t.Run("it returns an error if JSON is invalid", func(t *testing.T) {
+		myStruct := uidStruct{}
+		preparedConfig, err := config_creation.PrepareConfig([]byte(`{"uid": "my-id","name": "my-resource"`) /*missing "}" at the end*/, &myStruct, []string{"version", "externalId"}, "")
 
-			assert.NoError(t, err)
-			assert.Equal(t, testcase.ResultId, id)
-			assert.Equal(t, testcase.ResultJSON, resultJson)
-		})
-	}
+		assert.Equal(t, "", myStruct.Uid)
+		assert.Equal(t, "", preparedConfig.JSONString)
+		assert.EqualError(t, err, "failed to unmarshal payload: unexpected end of JSON input")
+	})
+
+	t.Run("it returns a valid SLO configuration without externalId, id and version", func(t *testing.T) {
+		myStruct := idStruct{}
+		preparedConfig, err := config_creation.PrepareConfig([]byte(`{"id": "my-id", "externalId": "e-id", "version": "xy", "name": "my-resource"}`), &myStruct, []string{"id", "version", "externalId"}, "")
+
+		assert.NoError(t, err)
+		assert.Equal(t, "my-id", myStruct.Id)
+		assert.Equal(t, "{\n  \"name\": \"my-resource\"\n}", preparedConfig.JSONString)
+	})
+	t.Run("it returns a valid segment configuration without uid, version and externalId", func(t *testing.T) {
+		myStruct := uidStruct{}
+
+		preparedConfig, err := config_creation.PrepareConfig([]byte(`{"uid": "my-uid", "version": "xy", "externalId": "e-id", "name": "my-resource"}`), &myStruct, []string{"uid", "version", "externalId"}, "")
+
+		assert.NoError(t, err)
+		assert.Equal(t, "my-uid", myStruct.Uid)
+		assert.Equal(t, "{\n  \"name\": \"my-resource\"\n}", preparedConfig.JSONString)
+	})
+	t.Run("it returns and replaces parameters if given", func(t *testing.T) {
+		myStruct := uidStruct{}
+
+		preparedConfig, err := config_creation.PrepareConfig([]byte(`{"uid": "my-uid", "version": "xy", "externalId": "e-id", "name": "my-resource"}`), &myStruct, []string{"uid", "version", "externalId"}, "name")
+
+		assert.NoError(t, err)
+		assert.Equal(t, "my-uid", myStruct.Uid)
+		assert.Equal(t, "{\n  \"name\": \"{{.name}}\"\n}", preparedConfig.JSONString)
+	})
 }

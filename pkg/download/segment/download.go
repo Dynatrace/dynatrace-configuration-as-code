@@ -18,6 +18,7 @@ package segment
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -28,6 +29,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/config_creation"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
+
+type requiredSegmentProps struct {
+	UId string `json:"uid"`
+}
 
 type DownloadSegmentClient interface {
 	GetAll(ctx context.Context) ([]segments.Response, error)
@@ -44,19 +49,25 @@ func Download(client DownloadSegmentClient, projectName string) (project.Configs
 
 	var configs []config.Config
 	for _, downloadedConfig := range downloadedConfigs {
-		id, jsonString, err := config_creation.PrepareConfig(downloadedConfig.Data, "uid", "uid", "version", "externalId")
+		var requiredProps requiredSegmentProps
+		preparedConfig, err := config_creation.PrepareConfig(downloadedConfig.Data, &requiredProps, []string{"uid", "version", "externalId"}, "")
 		if err != nil {
 			log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to convert segment: %v", err)
 			continue
 		}
+		if requiredProps.UId == "" {
+			err = fmt.Errorf("API payload is missing 'uid'")
+			log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to convert SLO: %v", err)
+			continue
+		}
 		c := config.Config{
-			Template: template.NewInMemoryTemplate(id, jsonString),
+			Template: template.NewInMemoryTemplate(requiredProps.UId, preparedConfig.JSONString),
 			Coordinate: coordinate.Coordinate{
 				Project:  projectName,
 				Type:     string(config.SegmentID),
-				ConfigId: id,
+				ConfigId: requiredProps.UId,
 			},
-			OriginObjectId: id,
+			OriginObjectId: requiredProps.UId,
 			Type:           config.Segment{},
 			Parameters:     make(config.Parameters),
 		}

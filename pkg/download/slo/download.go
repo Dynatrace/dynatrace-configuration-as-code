@@ -18,6 +18,7 @@ package slo
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -28,6 +29,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/config_creation"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
+
+type requiredSloProps struct {
+	Id string `json:"id"`
+}
 
 type DownloadSloClient interface {
 	List(ctx context.Context) (api.PagedListResponse, error)
@@ -42,21 +47,27 @@ func Download(client DownloadSloClient, projectName string) (project.ConfigsPerT
 		return nil, nil
 	}
 
-	var configs []config.Config
+	configs := make([]config.Config, 0)
 	for _, downloadedConfig := range downloadedConfigs.All() {
-		id, jsonString, err := config_creation.PrepareConfig(downloadedConfig, "id", "id", "version", "externalId")
+		var requiredProps requiredSloProps
+		preparedConfig, err := config_creation.PrepareConfig(downloadedConfig, &requiredProps, []string{"id", "version", "externalId"}, "")
 		if err != nil {
 			log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to convert SLO: %v", err)
 			continue
 		}
+		if requiredProps.Id == "" {
+			err = fmt.Errorf("API payload is missing 'id'")
+			log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to convert SLO: %v", err)
+			continue
+		}
 		c := config.Config{
-			Template: template.NewInMemoryTemplate(id, jsonString),
+			Template: template.NewInMemoryTemplate(requiredProps.Id, preparedConfig.JSONString),
 			Coordinate: coordinate.Coordinate{
 				Project:  projectName,
 				Type:     string(config.ServiceLevelObjectiveID),
-				ConfigId: id,
+				ConfigId: requiredProps.Id,
 			},
-			OriginObjectId: id,
+			OriginObjectId: requiredProps.Id,
 			Type:           config.ServiceLevelObjective{},
 			Parameters:     make(config.Parameters),
 		}

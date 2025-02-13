@@ -17,21 +17,28 @@
 package config_creation
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/templatetools"
 )
 
-// PrepareConfig returns the given id (idPropertyKey) and the JSON string without the given properties
-func PrepareConfig(data []byte, idPropertyKey string, deletedProperties ...string) (string, string, error) {
-	jsonObj, err := templatetools.NewJSONObject(data)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to unmarshal payload: %w", err)
-	}
+type PreparedConfig struct {
+	JSONString string
+	Parameters map[string]parameter.Parameter
+}
 
-	id, ok := jsonObj.Get(idPropertyKey).(string)
-	if !ok {
-		return "", "", fmt.Errorf("API payload is missing '%s'", idPropertyKey)
+// PrepareConfig returns the given id (idPropertyKey) and the JSON string without the given properties
+func PrepareConfig(data []byte, structPointer any, deletedProperties []string, replaceParam string) (PreparedConfig, error) {
+	if err := json.Unmarshal(data, structPointer); err != nil {
+		return PreparedConfig{}, fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+	jsonObj, err := templatetools.NewJSONObject(data)
+	parameters := map[string]parameter.Parameter{}
+
+	if err != nil {
+		return PreparedConfig{}, fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
 	// delete fields that prevent a re-upload of the configuration
@@ -39,10 +46,16 @@ func PrepareConfig(data []byte, idPropertyKey string, deletedProperties ...strin
 		jsonObj.Delete(propertyKey)
 	}
 
-	jsonRaw, err := jsonObj.ToJSON(true)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to marshal payload: %w", err)
+	if replaceParam != "" {
+		if p := jsonObj.Parameterize(replaceParam); p != nil {
+			parameters[replaceParam] = p
+		}
 	}
 
-	return id, string(jsonRaw), nil
+	jsonRaw, err := jsonObj.ToJSON(true)
+	if err != nil {
+		return PreparedConfig{}, fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	return PreparedConfig{string(jsonRaw), parameters}, nil
 }
