@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 )
 
@@ -47,4 +48,18 @@ func (TestSegmentsClient) Create(ctx context.Context, data []byte) (segments.Res
 
 func (TestSegmentsClient) Get(ctx context.Context, id string) (segments.Response, error) {
 	return segments.Response{}, fmt.Errorf("unimplemented")
+}
+
+type TestServiceLevelObjectsClient struct{}
+
+func (TestServiceLevelObjectsClient) List(ctx context.Context) (api.PagedListResponse, error) {
+	return api.PagedListResponse{}, fmt.Errorf("unimplemented")
+}
+
+func (TestServiceLevelObjectsClient) Update(ctx context.Context, id string, data []byte) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
+}
+
+func (TestServiceLevelObjectsClient) Create(ctx context.Context, data []byte) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
 }
