@@ -41,12 +41,9 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	defer cancel()
 
 	data := deployhandler.NewHandlerData(ctx, client, properties, []byte(renderedConfig), c)
-	//PreStrategy adding externalID to payload
-	eHandler := deployhandler.AddExternalIDHandler{}
-	//Strategy 1 OriginObjectID
-	oHandler := deployhandler.OriginObjectIDHandler{}
-	//Strategy 2 ExternalID matching
-	exHandler := deployhandler.MatchWithExternalIDHandler{
+	addExternalIdHandler := deployhandler.AddExternalIDHandler{}
+	deployWithOriginObjectID := deployhandler.OriginObjectIDHandler{}
+	matchWithExternalIDHandler := deployhandler.MatchWithExternalIDHandler{
 		ExternalIDKey: "externalId",
 		IDKey:         "id",
 		RemoteCall: func() ([][]byte, error) {
@@ -58,14 +55,8 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 			return apiResponse.All(), nil
 		},
 	}
-	//Strategy 3 Create on remote
-	cHandler := deployhandler.CreateHandler{
-		IDKey: "id",
-	}
+	createHandler := deployhandler.CreateHandler{IDKey: "id"}
+	addExternalIdHandler.Next(&deployWithOriginObjectID).Next(&matchWithExternalIDHandler).Next(&createHandler)
 
-	exHandler.SetNext(&cHandler)
-	oHandler.SetNext(&exHandler)
-	eHandler.SetNext(&oHandler)
-
-	return eHandler.Handle(data)
+	return addExternalIdHandler.Handle(data)
 }
