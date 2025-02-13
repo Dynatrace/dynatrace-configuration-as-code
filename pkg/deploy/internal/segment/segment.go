@@ -35,10 +35,6 @@ type deploySegmentClient interface {
 	Create(ctx context.Context, data []byte) (segment.Response, error)
 	GetAll(ctx context.Context) ([]segment.Response, error)
 }
-type jsonResponse struct {
-	UID        string `json:"uid"`
-	ExternalId string `json:"externalId"`
-}
 
 func Deploy(ctx context.Context, client deploySegmentClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
