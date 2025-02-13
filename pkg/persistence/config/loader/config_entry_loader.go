@@ -17,14 +17,11 @@
 package loader
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
 	"strconv"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 
 	"github.com/spf13/afero"
 
@@ -38,9 +35,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
 )
 
-// parseConfigEntry parses a single config entry
+// parseConfigEntry parses a single config entry and returns the (partial if error) loaded data and the error
 func parseConfigEntry(
-	ctx context.Context,
 	fs afero.Fs,
 	loaderContext *configFileLoaderContext,
 	configId string,
@@ -74,13 +70,11 @@ func parseConfigEntry(
 			continue
 		}
 
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, "", &result.Coordinate)
-
 		results = append(results, result)
 	}
 
 	if len(errs) != 0 {
-		return nil, errs
+		return results, errs
 	}
 
 	return results, nil

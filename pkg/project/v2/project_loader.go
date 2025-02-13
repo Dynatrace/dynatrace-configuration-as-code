@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
@@ -90,7 +89,7 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 
 	environments := toEnvironmentSlice(loaderContext.Manifest.Environments)
 
-	projectNamesToLoad, projectErrors := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
+	projectNamesToLoad, errors := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
 
 	seenProjectNames := make(map[string]struct{}, len(projectNamesToLoad))
 	var loadedProjects []Project
@@ -113,20 +112,7 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 		project, errs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, environments)
 
 		if len(errs) > 0 {
-			for _, err := range errs {
-				duplicateError := DuplicateConfigIdentifierError{}
-				keysError := KeyUserActionScopeError{}
-				var configCoordinate *coordinate.Coordinate
-
-				if errors.As(err, &duplicateError) {
-					configCoordinate = &duplicateError.Location
-				} else if errors.As(err, &keysError) {
-					configCoordinate = &keysError.Coordinate
-				}
-
-				reporter.ReportLoading(report.StateError, err, "", configCoordinate)
-			}
-			projectErrors = append(projectErrors, errs...)
+			errors = append(errors, errs...)
 			continue
 		}
 		reporter.ReportInfo(fmt.Sprintf("project %q loaded", project.String()))
@@ -138,8 +124,8 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 		}
 	}
 
-	if len(projectErrors) > 0 {
-		return nil, projectErrors
+	if len(errors) > 0 {
+		return nil, errors
 	}
 
 	return loadedProjects, nil
@@ -194,19 +180,36 @@ func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) 
 
 func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
 	if exists, err := afero.Exists(fs, projectDefinition.Path); err != nil {
-		return Project{}, []error{fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)}
+		formattedError := fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedError, "", nil)
+		return Project{}, []error{formattedError}
 	} else if !exists {
-		return Project{}, []error{fmt.Errorf("failed to load project `%s`: filepath `%s` does not exist", projectDefinition.Name, projectDefinition.Path)}
+		formattedError := fmt.Errorf("failed to load project `%s`: filepath `%s` does not exist", projectDefinition.Name, projectDefinition.Path)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedError, "", nil)
+		return Project{}, []error{formattedError}
 	}
 
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
-	configs, errs := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
-	errs = append(errs, findDuplicatedConfigIdentifiers(configs)...)
-	errs = append(errs, checkKeyUserActionScope(configs)...)
+	configs, errors := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
+	for _, err := range errors {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, err, "", nil)
+	}
+	configsWithErrors := make(map[coordinate.Coordinate]error)
+	errors = append(errors, findDuplicatedConfigIdentifiers(configs, configsWithErrors)...)
+	errors = append(errors, checkKeyUserActionScope(configs, configsWithErrors)...)
 
-	if len(errs) > 0 {
-		return Project{}, errs
+	for _, loadedConfig := range configs {
+		//report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, "", &loadedConfig.Coordinate)
+		if err, ok := configsWithErrors[loadedConfig.Coordinate]; ok {
+			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, err, "", &loadedConfig.Coordinate)
+		} else {
+			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, "", &loadedConfig.Coordinate)
+		}
+	}
+
+	if len(errors) > 0 {
+		return Project{}, errors
 	}
 
 	insertNetworkZoneParameter(configs)
@@ -247,28 +250,22 @@ func insertNetworkZoneParameter(configs []config.Config) {
 	}
 }
 
-type KeyUserActionScopeError struct {
-	Coordinate coordinate.Coordinate
-}
-
-func (k KeyUserActionScopeError) Error() string {
-	return fmt.Sprintf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
-		"parameter to another web-application config", api.KeyUserActionsWeb, k.Coordinate.ConfigId)
-}
-
-func checkKeyUserActionScope(configs []config.Config) []error {
-	var errs []error
+func checkKeyUserActionScope(configs []config.Config, configErrorMap map[coordinate.Coordinate]error) []error {
+	var errors []error
 	for _, c := range configs {
 		// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
 		// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
 		// sub graph (independent component) later on as
 		if c.Coordinate.Type == api.KeyUserActionsWeb {
 			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
-				errs = append(errs, KeyUserActionScopeError{c.Coordinate})
+				newError := fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
+					"parameter to another web-application config", api.KeyUserActionsWeb, c.Coordinate.ConfigId)
+				configErrorMap[c.Coordinate] = newError
+				errors = append(errors, newError)
 			}
 		}
 	}
-	return errs
+	return errors
 }
 
 func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
@@ -314,6 +311,7 @@ func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 	return configMap
 }
 
+// loadConfigsOfProject returns the (partial if errors) loaded configs and the errors
 func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
 	environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
 
@@ -343,17 +341,19 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 	return configs, errs
 }
 
-func findDuplicatedConfigIdentifiers(configs []config.Config) []error {
-	var errs []error
+func findDuplicatedConfigIdentifiers(configs []config.Config, configErrorMap map[coordinate.Coordinate]error) []error {
+	var errors []error
 	coordinates := make(map[string]struct{})
 	for _, c := range configs {
 		id := toFullyQualifiedConfigIdentifier(c)
 		if _, found := coordinates[id]; found {
-			errs = append(errs, newDuplicateConfigIdentifierError(c))
+			newError := newDuplicateConfigIdentifierError(c)
+			configErrorMap[c.Coordinate] = newError
+			errors = append(errors, newError)
 		}
 		coordinates[id] = struct{}{}
 	}
-	return errs
+	return errors
 }
 
 // toFullyUniqueConfigIdentifier returns a configs coordinate as well as environment,

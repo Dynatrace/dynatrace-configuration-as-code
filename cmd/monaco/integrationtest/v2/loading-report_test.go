@@ -20,18 +20,16 @@ package v2
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
@@ -113,7 +111,7 @@ func TestLoadingReport(t *testing.T) {
 			},
 		},
 		{
-			Name:     "duplicated keys error message is logged",
+			Name:     "missing key-user-action scope is logged",
 			Manifest: "test-resources/key-user-action-without-scope/manifest.yaml",
 			WantRecord: []report.Record{
 				{
@@ -139,28 +137,17 @@ func TestLoadingReport(t *testing.T) {
 			require.NoError(t, err, "report file must exists and be readable")
 
 			for _, wantedRecord := range testcase.WantRecord {
-				assertContainsRecord(t, records, wantedRecord)
+				matcher.ContainsRecord(t, records, wantedRecord, true)
+				// there should not be a success and an error record (e.g., loading worked, but it is a duplicate)
+				if wantedRecord.State == report.StateError && wantedRecord.Config != nil {
+					matcher.ContainsRecord(t, records, report.Record{
+						Type:   report.TypeLoad,
+						Time:   report.JSONTime{},
+						Config: wantedRecord.Config,
+						State:  report.StateSuccess,
+					}, false)
+				}
 			}
 		})
 	}
-}
-
-func isRecord(record, wanted report.Record) bool {
-	if !cmp.Equal(record, wanted, cmpopts.IgnoreFields(report.Record{}, "Time", "Error")) {
-		return false
-	}
-
-	return strings.Contains(record.Error, wanted.Error)
-}
-
-func assertContainsRecord(t *testing.T, records []report.Record, wantedRecord report.Record) {
-	t.Helper()
-
-	for _, record := range records {
-		if isRecord(record, wantedRecord) {
-			return
-		}
-	}
-
-	t.Errorf("Record %v does not exist in %v", wantedRecord, records)
 }
