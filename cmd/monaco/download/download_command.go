@@ -102,7 +102,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	}
 
 	if featureflags.ServiceLevelObjective.Enabled() {
-		cmd.Flags().BoolVar(&f.onlySLOsv2, "only-slo-v2", false, "Only download SLOs, skip all other configuration types")
+		cmd.Flags().BoolVar(&f.onlySLOsV2, "only-slo-v2", false, "Only download SLOs, skip all other configuration types")
 	}
 
 	err := errors.Join(

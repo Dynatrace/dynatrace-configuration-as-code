@@ -25,7 +25,6 @@ import (
 
 	"golang.org/x/oauth2/clientcredentials"
 
-	coreApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
@@ -178,7 +177,7 @@ type SegmentClient interface {
 }
 
 type ServiceLevelObjectiveClient interface {
-	List(ctx context.Context) (coreApi.PagedListResponse, error)
+	List(ctx context.Context) (coreapi.PagedListResponse, error)
 }
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)

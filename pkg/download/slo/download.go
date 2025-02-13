@@ -26,12 +26,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/config_creation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/configcreation"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
 type requiredSloProps struct {
-	Id string `json:"id"`
+	ID string `json:"id"`
 }
 
 type DownloadSloClient interface {
@@ -43,31 +43,31 @@ func Download(client DownloadSloClient, projectName string) (project.ConfigsPerT
 	downloadedConfigs, err := client.List(context.TODO())
 	if err != nil {
 		log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to fetch the list of existing SLOs: %v", err)
-		// error is ignored
 		return nil, nil
 	}
 
-	configs := make([]config.Config, 0)
-	for _, downloadedConfig := range downloadedConfigs.All() {
+	allConfigs := downloadedConfigs.All()
+	configs := make([]config.Config, 0, len(allConfigs))
+	for _, downloadedConfig := range allConfigs {
 		var requiredProps requiredSloProps
-		preparedConfig, err := config_creation.PrepareConfig(downloadedConfig, &requiredProps, []string{"id", "version", "externalId"}, "")
+		preparedConfig, err := configcreation.PrepareConfig(downloadedConfig, &requiredProps, []string{"id", "version", "externalId"}, "")
 		if err != nil {
 			log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to convert SLO: %v", err)
 			continue
 		}
-		if requiredProps.Id == "" {
+		if requiredProps.ID == "" {
 			err = fmt.Errorf("API payload is missing 'id'")
 			log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to convert SLO: %v", err)
 			continue
 		}
 		c := config.Config{
-			Template: template.NewInMemoryTemplate(requiredProps.Id, preparedConfig.JSONString),
+			Template: template.NewInMemoryTemplate(requiredProps.ID, preparedConfig.JSONString),
 			Coordinate: coordinate.Coordinate{
 				Project:  projectName,
 				Type:     string(config.ServiceLevelObjectiveID),
-				ConfigId: requiredProps.Id,
+				ConfigId: requiredProps.ID,
 			},
-			OriginObjectId: requiredProps.Id,
+			OriginObjectId: requiredProps.ID,
 			Type:           config.ServiceLevelObjective{},
 			Parameters:     make(config.Parameters),
 		}

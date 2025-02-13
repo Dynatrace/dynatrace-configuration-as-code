@@ -269,7 +269,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only slo requested with FF on",
 			given: downloadConfigsOptions{
-				onlySLOv2: true,
+				onlySLOV2: true,
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
@@ -279,7 +279,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only slo requested with FF off",
 			given: downloadConfigsOptions{
-				onlySLOv2: true,
+				onlySLOV2: true,
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
