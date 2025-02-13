@@ -140,7 +140,7 @@ func (h *MatchWithExternalIDHandler) Handle(data *HandlerData) (entities.Resolve
 
 	_, err = data.client.Update(data.ctx, id, data.payload)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, fmt.Sprintf("error finding object with externalID: %s", data.externalID)).WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, fmt.Sprintf("error finding object with externalID: %s", *data.externalID)).WithError(err)
 	}
 
 	return createResolveEntity(id, data.properties, data.c), nil
@@ -154,12 +154,12 @@ type CreateHandler struct {
 func (h *CreateHandler) Handle(data *HandlerData) (entities.ResolvedEntity, error) {
 	createResponse, err := data.client.Create(data.ctx, data.payload)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, fmt.Sprintf("failed to create object with externalID: %s", data.externalID)).WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, fmt.Sprintf("failed to create object with externalID: %s", *data.externalID)).WithError(err)
 	}
 
 	id, err := getIDFromResponse(createResponse, h.IDKey)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, fmt.Sprintf("failed to unmarshal object with externalID: %s", data.externalID)).WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, fmt.Sprintf("failed to unmarshal object with externalID: %s", *data.externalID)).WithError(err)
 	}
 
 	return createResolveEntity(id, data.properties, data.c), nil
