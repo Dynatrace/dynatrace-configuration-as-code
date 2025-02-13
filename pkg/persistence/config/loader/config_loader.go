@@ -104,18 +104,17 @@ func LoadConfigFile(ctx context.Context, fs afero.Fs, context *LoaderContext, fi
 
 	for _, cgf := range loadedConfigEntries {
 
-		result, definitionErrors := parseConfigEntry(ctx, fs, configLoaderContext, cgf.Id, cgf)
+		result, definitionErrors := parseConfigEntry(fs, configLoaderContext, cgf.Id, cgf)
+
+		configs = append(configs, result...)
 
 		if len(definitionErrors) > 0 {
 			errs = append(errs, definitionErrors...)
-			continue
 		}
-
-		configs = append(configs, result...)
 	}
 
 	if errs != nil {
-		return nil, errs
+		return configs, errs
 	}
 
 	return configs, nil

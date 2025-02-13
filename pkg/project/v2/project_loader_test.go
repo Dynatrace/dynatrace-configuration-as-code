@@ -31,6 +31,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
@@ -40,19 +42,22 @@ const testFileFileMode = fs.FileMode(0644)
 
 func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 	tests := []struct {
-		name  string
-		input []config.Config
-		want  []error
+		name         string
+		input        []config.Config
+		want         []error
+		wantErrorMap int
 	}{
 		{
 			"nil input produces empty output",
 			nil,
 			nil,
+			0,
 		},
 		{
 			"no duplicates in single config",
 			[]config.Config{{Coordinate: coordinate.Coordinate{ConfigId: "id"}}},
 			nil,
+			0,
 		},
 		{
 			"no duplicates if project differs",
@@ -61,6 +66,7 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 				{Coordinate: coordinate.Coordinate{Project: "project1", Type: "api", ConfigId: "id"}},
 			},
 			nil,
+			0,
 		},
 		{
 			"no duplicates if api differs",
@@ -69,6 +75,7 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 				{Coordinate: coordinate.Coordinate{Project: "project", Type: "azure-credentials", ConfigId: "id"}},
 			},
 			nil,
+			0,
 		},
 		{
 			"no duplicates in list of disparate configs",
@@ -77,6 +84,7 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 				{Coordinate: coordinate.Coordinate{Project: "project1", Type: "api1", ConfigId: "id1"}},
 			},
 			nil,
+			0,
 		},
 		{
 			"finds duplicate configs",
@@ -86,6 +94,7 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"}},
 			},
 			[]error{newDuplicateConfigIdentifierError(config.Config{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}})},
+			1,
 		},
 		{
 			"finds each duplicate",
@@ -99,15 +108,90 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 				newDuplicateConfigIdentifierError(config.Config{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}}),
 				newDuplicateConfigIdentifierError(config.Config{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"}}),
 			},
+			1,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := findDuplicatedConfigIdentifiers(tt.input)
+			errorMap := make(map[coordinate.Coordinate]error)
+			got := findDuplicatedConfigIdentifiers(tt.input, errorMap)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("findDuplicatedConfigIdentifiers() got = %v, want %v", got, tt.want)
 			}
+			index := 0
+			for _, err := range errorMap {
+				assert.Contains(t, tt.want, err)
+				index++
+			}
+			assert.Equal(t, tt.wantErrorMap, index)
+		})
+	}
+}
+
+func Test_checkKeyUserActionScope(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []config.Config
+		want  []error
+	}{
+		{
+			"nil input produces empty output",
+			nil,
+			nil,
+		},
+		{
+			"does not return any errors if valid",
+			[]config.Config{
+				{
+					Coordinate: coordinate.Coordinate{Project: "project", Type: "key-user-actions-web", ConfigId: "id"},
+					Parameters: config.Parameters{
+						"scope": &reference.ReferenceParameter{
+							ParameterReference: parameter.ParameterReference{
+								Config: coordinate.Coordinate{
+									Project:  "project",
+									Type:     "key-user-actions-web",
+									ConfigId: "id",
+								},
+								Property: "prop",
+							},
+						},
+					},
+				},
+			},
+			nil,
+		},
+		{
+			"errors with missing or wrong scope",
+			[]config.Config{
+				{
+					Coordinate: coordinate.Coordinate{Project: "project", Type: "key-user-actions-web", ConfigId: "id1"},
+					Parameters: config.Parameters{
+						"scope": &value.ValueParameter{Value: "some-value"},
+					},
+				},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "key-user-actions-web", ConfigId: "id2"}},
+			},
+			[]error{
+				fmt.Errorf("scope parameter of config of type 'key-user-actions-web' with ID 'id1' needs to be a reference parameter to another web-application config"),
+				fmt.Errorf("scope parameter of config of type 'key-user-actions-web' with ID 'id2' needs to be a reference parameter to another web-application config"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errorMap := make(map[coordinate.Coordinate]error)
+			got := checkKeyUserActionScope(tt.input, errorMap)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("checkKeyUserActionScope() got = %v, want %v", got, tt.want)
+			}
+			index := 0
+			for _, err := range errorMap {
+				assert.Contains(t, tt.want, err)
+				index++
+			}
+			assert.Equal(t, index, len(tt.want))
 		})
 	}
 }
