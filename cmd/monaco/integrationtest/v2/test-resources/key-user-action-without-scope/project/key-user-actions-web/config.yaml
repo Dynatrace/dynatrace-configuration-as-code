@@ -1,0 +1,15 @@
+configs:
+- id: action
+  config:
+    name: first-kua
+    template: kuaweb.json
+    skip: false
+    parameters:
+      domain:
+        name: domain
+        type: environment
+        default: "domain.com"
+  type:
+    api:
+      name: key-user-actions-web
+      scope:

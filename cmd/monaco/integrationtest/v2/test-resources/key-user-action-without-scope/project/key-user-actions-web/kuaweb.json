@@ -1,0 +1,5 @@
+{
+  "actionType": "Load",
+  "domain": "{{ .domain }}",
+  "name": "{{.name}}"
+}

@@ -53,7 +53,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 			writeJSONIDs := idEncoding == jsonEncoding
 
-			err := writeGraphFiles(fs, manifestName, environments, groups, outputFolder, writeJSONIDs)
+			err := writeGraphFiles(cmd.Context(), fs, manifestName, environments, groups, outputFolder, writeJSONIDs)
 			if err != nil {
 				log.WithFields(field.Error(err), field.F("manifestFile", manifestName), field.F("outputFolder", outputFolder)).Error("Failed to create dependency graph files: %v", err)
 			}

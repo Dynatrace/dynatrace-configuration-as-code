@@ -17,6 +17,7 @@
 package dependencygraph
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
@@ -50,7 +51,7 @@ func (e ExportError) Error() string {
 	return fmt.Sprintf("%s: %v", e.message, e.Reason)
 }
 
-func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string, environmentGroups []string, outputFolder string, writeJSONIDs bool) error {
+func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, environmentNames []string, environmentGroups []string, outputFolder string, writeJSONIDs bool) error {
 
 	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
@@ -71,7 +72,7 @@ func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string
 		}
 	}
 
-	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+	projects, errs := project.LoadProjects(ctx, fs, project.ProjectLoaderContext{
 		KnownApis:       api.NewAPIs().GetApiNameLookup(),
 		WorkingDir:      filepath.Dir(manifestPath),
 		Manifest:        m,
