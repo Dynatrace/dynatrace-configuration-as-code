@@ -23,6 +23,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
@@ -55,6 +56,9 @@ func Write(fs afero.Fs) error {
 		log.ErrorFilePath(),
 		ffState,
 		log.MemStatFilePath(),
+	}
+	if reportFilename := os.Getenv(environment.DeploymentReportFilename); len(reportFilename) > 0 {
+		files = append(files, reportFilename)
 	}
 
 	workingDir, err := os.Getwd()

@@ -45,6 +45,8 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 	configFolder := "test-resources/support-archive/"
 	manifest := configFolder + "manifest.yaml"
 	fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
+	reportFile := fmt.Sprintf("%s-report.jsonl", fixedTime)
+	t.Setenv(environment.DeploymentReportFilename, reportFile)
 
 	RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "SupportArchive", func(fs afero.Fs, _ TestContext) {
 		err := cleanupLogsDir()
@@ -60,6 +62,7 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 			fixedTime + "-errors.log",
 			fixedTime + "-featureflag_state.log",
 			fixedTime + "-memstat.log",
+			reportFile,
 		}
 
 		assertSupportArchive(t, fs, archive, expectedFiles)
