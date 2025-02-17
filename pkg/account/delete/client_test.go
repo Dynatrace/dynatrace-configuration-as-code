@@ -19,16 +19,17 @@
 package delete_test
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
 
 func TestAccountAPIClient_DeleteGroup(t *testing.T) {
@@ -78,7 +79,7 @@ func TestAccountAPIClient_DeleteGroup(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteGroup(context.Background(), "test-group")
+		err = accountClient.DeleteGroup(t.Context(), "test-group")
 		assert.NoError(t, err)
 	})
 	t.Run("does nothing if name is not found", func(t *testing.T) {
@@ -115,7 +116,7 @@ func TestAccountAPIClient_DeleteGroup(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteGroup(context.Background(), "test-group")
+		err = accountClient.DeleteGroup(t.Context(), "test-group")
 		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns NotFoundError if delete result is a 404", func(t *testing.T) {
@@ -164,7 +165,7 @@ func TestAccountAPIClient_DeleteGroup(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteGroup(context.Background(), "test-group")
+		err = accountClient.DeleteGroup(t.Context(), "test-group")
 		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns an error if finding ID failed", func(t *testing.T) {
@@ -187,7 +188,7 @@ func TestAccountAPIClient_DeleteGroup(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteGroup(context.Background(), "test-group")
+		err = accountClient.DeleteGroup(t.Context(), "test-group")
 		assert.Error(t, err)
 	})
 	t.Run("returns an error if delete failed", func(t *testing.T) {
@@ -236,7 +237,7 @@ func TestAccountAPIClient_DeleteGroup(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteGroup(context.Background(), "test-group")
+		err = accountClient.DeleteGroup(t.Context(), "test-group")
 		assert.Error(t, err)
 	})
 }
@@ -280,7 +281,7 @@ func TestAccountAPIClient_DeleteAccountPolicy(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteAccountPolicy(context.Background(), "test-policy")
+		err = accountClient.DeleteAccountPolicy(t.Context(), "test-policy")
 		assert.NoError(t, err)
 	})
 	t.Run("does nothing if name is not found", func(t *testing.T) {
@@ -312,7 +313,7 @@ func TestAccountAPIClient_DeleteAccountPolicy(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteAccountPolicy(context.Background(), "test-policy")
+		err = accountClient.DeleteAccountPolicy(t.Context(), "test-policy")
 		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns NotFoundError if delete result is a 404", func(t *testing.T) {
@@ -352,7 +353,7 @@ func TestAccountAPIClient_DeleteAccountPolicy(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteAccountPolicy(context.Background(), "test-policy")
+		err = accountClient.DeleteAccountPolicy(t.Context(), "test-policy")
 		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns an error if finding ID failed", func(t *testing.T) {
@@ -375,7 +376,7 @@ func TestAccountAPIClient_DeleteAccountPolicy(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteAccountPolicy(context.Background(), "test-policy")
+		err = accountClient.DeleteAccountPolicy(t.Context(), "test-policy")
 		assert.Error(t, err)
 	})
 	t.Run("returns an error if delete failed", func(t *testing.T) {
@@ -415,7 +416,7 @@ func TestAccountAPIClient_DeleteAccountPolicy(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteAccountPolicy(context.Background(), "test-policy")
+		err = accountClient.DeleteAccountPolicy(t.Context(), "test-policy")
 		assert.Error(t, err)
 	})
 }
@@ -459,7 +460,7 @@ func TestAccountAPIClient_DeleteEnvironmentPolicy(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteEnvironmentPolicy(context.Background(), "abc1234", "test-policy")
+		err = accountClient.DeleteEnvironmentPolicy(t.Context(), "abc1234", "test-policy")
 		assert.NoError(t, err)
 	})
 	t.Run("does nothing if name is not found", func(t *testing.T) {
@@ -491,7 +492,7 @@ func TestAccountAPIClient_DeleteEnvironmentPolicy(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteEnvironmentPolicy(context.Background(), "abc1234", "test-policy")
+		err = accountClient.DeleteEnvironmentPolicy(t.Context(), "abc1234", "test-policy")
 		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns NotFoundError if delete result is a 404", func(t *testing.T) {
@@ -531,7 +532,7 @@ func TestAccountAPIClient_DeleteEnvironmentPolicy(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteEnvironmentPolicy(context.Background(), "abc1234", "test-policy")
+		err = accountClient.DeleteEnvironmentPolicy(t.Context(), "abc1234", "test-policy")
 		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns an error if finding ID failed", func(t *testing.T) {
@@ -554,7 +555,7 @@ func TestAccountAPIClient_DeleteEnvironmentPolicy(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteEnvironmentPolicy(context.Background(), "abc1234", "test-policy")
+		err = accountClient.DeleteEnvironmentPolicy(t.Context(), "abc1234", "test-policy")
 		assert.Error(t, err)
 	})
 	t.Run("returns an error if delete failed", func(t *testing.T) {
@@ -594,7 +595,7 @@ func TestAccountAPIClient_DeleteEnvironmentPolicy(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteEnvironmentPolicy(context.Background(), "abc1234", "test-policy")
+		err = accountClient.DeleteEnvironmentPolicy(t.Context(), "abc1234", "test-policy")
 		assert.Error(t, err)
 	})
 }
@@ -620,7 +621,7 @@ func TestAccountAPIClient_DeleteUser(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteUser(context.Background(), "user@test.com")
+		err = accountClient.DeleteUser(t.Context(), "user@test.com")
 		assert.NoError(t, err)
 	})
 	t.Run("returns NotFoundError if delete result is a 404", func(t *testing.T) {
@@ -643,7 +644,7 @@ func TestAccountAPIClient_DeleteUser(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteUser(context.Background(), "user@test.com")
+		err = accountClient.DeleteUser(t.Context(), "user@test.com")
 		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns an error if delete failed", func(t *testing.T) {
@@ -666,7 +667,7 @@ func TestAccountAPIClient_DeleteUser(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteUser(context.Background(), "user@test.com")
+		err = accountClient.DeleteUser(t.Context(), "user@test.com")
 		assert.Error(t, err)
 	})
 }

@@ -17,17 +17,18 @@
 package downloader_test
 
 import (
-	"context"
+	"testing"
+
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal/http"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func TestDownloader_DownloadConfiguration(t *testing.T) {
@@ -455,7 +456,7 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := newMockDownloader(tc.given, t).DownloadResources(context.TODO())
+			actual, err := newMockDownloader(tc.given, t).DownloadResources(t.Context())
 
 			if !tc.expectErr {
 				assert.NoError(t, err)
@@ -507,7 +508,7 @@ func TestDownloader_DownloadConfiguration(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				d := newMockDownloader(tc.given, t)
 
-				_, actualErr := d.DownloadResources(context.TODO())
+				_, actualErr := d.DownloadResources(t.Context())
 
 				assert.Error(t, actualErr)
 				assert.ErrorContains(t, actualErr, givenErr.Error(), "Returned error must contain original error")

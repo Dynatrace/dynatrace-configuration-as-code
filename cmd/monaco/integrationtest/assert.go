@@ -109,7 +109,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		for _, theConfig := range configs {
 			coord := theConfig.Coordinate
 
-			ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, coord)
+			ctx := context.WithValue(t.Context(), log.CtxKeyCoord{}, coord)
 			ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: theConfig.Environment, Group: theConfig.Group})
 
 			if theConfig.Skip {
@@ -261,7 +261,7 @@ func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.Envi
 		expectedId = idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
 	}
 
-	_, err = c.Get(context.TODO(), resourceType, expectedId)
+	_, err = c.Get(t.Context(), resourceType, expectedId)
 	exists := err == nil
 
 	if cfg.Skip {
@@ -286,7 +286,7 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 		expectedId = idutils.GenerateBucketName(cfg.Coordinate)
 	}
 
-	resp, err := getBucketWithRetry(client, expectedId, 0, 5)
+	resp, err := getBucketWithRetry(t.Context(), client, expectedId, 0, 5)
 
 	exists := true
 
@@ -314,12 +314,12 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 	return expectedId
 }
 
-func getBucketWithRetry(client client.BucketClient, bucketName string, try, maxTries int) (buckets.Response, error) {
-	resp, err := client.Get(context.TODO(), bucketName)
+func getBucketWithRetry(ctx context.Context, client client.BucketClient, bucketName string, try, maxTries int) (buckets.Response, error) {
+	resp, err := client.Get(ctx, bucketName)
 	if try < maxTries && resp.StatusCode == http.StatusNotFound {
 		try++
 		time.Sleep(time.Second)
-		return getBucketWithRetry(client, bucketName, try, maxTries)
+		return getBucketWithRetry(ctx, client, bucketName, try, maxTries)
 	}
 
 	return resp, err

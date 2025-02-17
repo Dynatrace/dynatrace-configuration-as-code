@@ -19,7 +19,6 @@
 package dtclient
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -149,7 +148,7 @@ func Test_schemaDetails(t *testing.T) {
 	t.Run("unmarshall data", func(t *testing.T) {
 		expected := Schema{SchemaId: "builtin:span-attribute", UniqueProperties: [][]string{{"key0", "key1"}, {"key2", "key3"}}}
 
-		actual, err := d.GetSchema(context.TODO(), "builtin:span-attribute")
+		actual, err := d.GetSchema(t.Context(), "builtin:span-attribute")
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)
@@ -174,13 +173,13 @@ func Test_GetSchemaUsesCache(t *testing.T) {
 	d, err := NewPlatformSettingsClient(restClient)
 	require.NoError(t, err)
 
-	_, err = d.GetSchema(context.TODO(), "builtin:span-attribute")
+	_, err = d.GetSchema(t.Context(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, apiHits)
-	_, err = d.GetSchema(context.TODO(), "builtin:alerting.profile")
+	_, err = d.GetSchema(t.Context(), "builtin:alerting.profile")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
-	_, err = d.GetSchema(context.TODO(), "builtin:span-attribute")
+	_, err = d.GetSchema(t.Context(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
 }
@@ -900,7 +899,7 @@ func TestUpsertSettings(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			resp, err := c.Upsert(context.TODO(), SettingsObject{
+			resp, err := c.Upsert(t.Context(), SettingsObject{
 				OriginObjectId: "anObjectID",
 				Coordinate:     coord,
 				SchemaId:       "builtin:alerting.profile",
@@ -947,7 +946,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	_, err = client.Upsert(context.TODO(), SettingsObject{
+	_, err = client.Upsert(t.Context(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -989,7 +988,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	_, err = client.Upsert(context.TODO(), SettingsObject{
+	_, err = client.Upsert(t.Context(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -999,7 +998,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	assert.Equal(t, 1, numAPIGetCalls)
 	assert.Equal(t, 1, numAPIPostCalls)
 
-	_, err = client.Upsert(context.TODO(), SettingsObject{
+	_, err = client.Upsert(t.Context(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -1040,21 +1039,21 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	client.Upsert(context.TODO(), SettingsObject{
+	client.Upsert(t.Context(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
 	}, UpsertSettingsOptions{})
 	assert.Equal(t, 1, numGetAPICalls)
 
-	client.Upsert(context.TODO(), SettingsObject{
+	client.Upsert(t.Context(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
 	}, UpsertSettingsOptions{})
 	assert.Equal(t, 2, numGetAPICalls)
 
-	client.Upsert(context.TODO(), SettingsObject{
+	client.Upsert(t.Context(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -1452,7 +1451,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			_, err = c.Upsert(context.TODO(), tt.given.settingsObject, UpsertSettingsOptions{})
+			_, err = c.Upsert(t.Context(), tt.given.settingsObject, UpsertSettingsOptions{})
 			if tt.want.error {
 				assert.Error(t, err)
 			} else {
@@ -1738,7 +1737,7 @@ func TestListKnownSettings(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			res, err1 := client.List(context.TODO(), tt.givenSchemaID, tt.givenListSettingsOpts)
+			res, err1 := client.List(t.Context(), tt.givenSchemaID, tt.givenListSettingsOpts)
 
 			if tt.wantError {
 				assert.Error(t, err1)
@@ -1853,7 +1852,7 @@ func TestSettingsClientGet(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			settingsObj, err := client.Get(context.TODO(), tt.args.objectID)
+			settingsObj, err := client.Get(t.Context(), tt.args.objectID)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -1951,7 +1950,7 @@ func TestDeleteSettings(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			if err := client.Delete(context.TODO(), tt.args.objectID); (err != nil) != tt.wantErr {
+			if err := client.Delete(t.Context(), tt.args.objectID); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteSettings() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

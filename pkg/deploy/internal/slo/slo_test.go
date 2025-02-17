@@ -187,7 +187,7 @@ func TestDeploySuccess(t *testing.T) {
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
 
-			resolvedEntity, err := slo.Deploy(context.Background(), &c, props, "{}", &tt.inputConfig)
+			resolvedEntity, err := slo.Deploy(t.Context(), &c, props, "{}", &tt.inputConfig)
 
 			assert.NoError(t, err)
 			assert.Equal(t, resolvedEntity, tt.expected)
@@ -392,7 +392,7 @@ func TestDeployErrors(t *testing.T) {
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
 
-			_, err := slo.Deploy(context.Background(), &c, props, "{}", &tt.inputConfig)
+			_, err := slo.Deploy(t.Context(), &c, props, "{}", &tt.inputConfig)
 			assert.Error(t, err)
 		})
 	}

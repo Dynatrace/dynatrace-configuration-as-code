@@ -19,7 +19,6 @@
 package integrationtest
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -42,7 +41,7 @@ import (
 // resources immediately after they've been created (e.g. to assert that they exist)
 func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefinition) *client.ClientSet {
 	clients, err := client.CreateClientSetWithOptions(
-		context.TODO(),
+		t.Context(),
 		environment.URL.Value,
 		environment.Auth,
 		client.ClientOptions{

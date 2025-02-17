@@ -19,7 +19,6 @@
 package openpipeline
 
 import (
-	"context"
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -67,5 +66,5 @@ func TestDeployOpenPipelineConfig(t *testing.T) {
 func runDeployTest(t *testing.T, client Client, c *config.Config) (entities.ResolvedEntity, error) {
 	parameters, errs := c.ResolveParameterValues(entities.New())
 	require.Empty(t, errs)
-	return Deploy(context.TODO(), client, parameters, "{}", c)
+	return Deploy(t.Context(), client, parameters, "{}", c)
 }

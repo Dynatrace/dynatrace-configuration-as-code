@@ -21,9 +21,11 @@ package delete_test
 import (
 	"context"
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
 
 type testClient struct {
@@ -106,7 +108,7 @@ func TestDeletesResources(t *testing.T) {
 		UUID:      "1234",
 		APIClient: &c,
 	}
-	err := delete.AccountResources(context.TODO(), acc, entriesToDelete)
+	err := delete.AccountResources(t.Context(), acc, entriesToDelete)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 1, groupDeleteCalled)
@@ -166,7 +168,7 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 		UUID:      "1234",
 		APIClient: &c,
 	}
-	err := delete.AccountResources(context.TODO(), acc, entriesToDelete)
+	err := delete.AccountResources(t.Context(), acc, entriesToDelete)
 	assert.Error(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 1, accountPolicyDeleteCalled)
@@ -249,7 +251,7 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 		UUID:      "1234",
 		APIClient: &c,
 	}
-	err := delete.AccountResources(context.TODO(), acc, entriesToDelete)
+	err := delete.AccountResources(t.Context(), acc, entriesToDelete)
 	assert.Error(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 2, groupDeleteCalled)
