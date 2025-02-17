@@ -42,7 +42,7 @@ const (
 	OnlyCreateReferencesInStringValues FeatureFlag = "MONACO_FEAT_ONLY_CREATE_REFERENCES_IN_STRINGS"
 	// ServiceLevelObjective toggles whether slo configurations are downloaded and / or deployed.
 	// Introduced: v2.19.0
-	ServiceLevelObjective FeatureFlag = "MONACO_FEAT_SLO"
+	ServiceLevelObjective FeatureFlag = "MONACO_FEAT_SLO_V2"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
