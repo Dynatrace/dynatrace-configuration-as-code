@@ -628,6 +628,98 @@ func TestDownloader_GroupsWithPermissions(t *testing.T) {
 	assert.Empty(t, result.ServiceUsers)
 }
 
+func TestDownloader_OnlyServiceUser(t *testing.T) {
+	client := http.NewMockhttpClient(gomock.NewController(t))
+	downloader := downloader.New4Test(&account.AccountInfo{
+		Name:        "test",
+		AccountUUID: accountUUID,
+	}, client)
+
+	client.EXPECT().GetEnvironmentsAndMZones(gomock.Any(), accountUUID).Return([]accountmanagement.TenantResourceDto{}, []accountmanagement.ManagementZoneResourceDto{}, nil)
+	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{}, nil)
+	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
+	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: "A service user"}}, nil)
+	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "service.user@some.org"}, nil)
+
+	result, err := downloader.DownloadResources(context.TODO())
+	assert.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.Empty(t, result.Policies)
+	assert.Empty(t, result.Groups)
+	assert.Empty(t, result.Users)
+	assert.Equal(t, map[account.UserId]account.ServiceUser{
+		"service_user": {Name: "service_user", Description: "A service user"},
+	}, result.ServiceUsers)
+}
+
+func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
+	client := http.NewMockhttpClient(gomock.NewController(t))
+	downloader := downloader.New4Test(&account.AccountInfo{
+		Name:        "test",
+		AccountUUID: accountUUID,
+	}, client)
+
+	client.EXPECT().GetEnvironmentsAndMZones(gomock.Any(), accountUUID).Return([]accountmanagement.TenantResourceDto{}, []accountmanagement.ManagementZoneResourceDto{}, nil)
+	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{}, nil)
+	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{{
+		Uuid: &groupUUID1,
+		Name: "test_group",
+	}}, nil)
+
+	client.EXPECT().GetPolicyGroupBindings(gomock.Any(), gomock.Any(), gomock.Any()).Return(&accountmanagement.LevelPolicyBindingDto{}, nil)
+	client.EXPECT().GetPermissionFor(gomock.Any(), accountUUID, gomock.Any()).Return(&accountmanagement.PermissionsGroupDto{}, nil)
+
+	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return(nil, nil)
+
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: "A service user"}}, nil)
+	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{
+		Email:  "service.user@some.org",
+		Groups: []accountmanagement.AccountGroupDto{{Uuid: groupUUID1}},
+	}, nil)
+
+	result, err := downloader.DownloadResources(context.TODO())
+	assert.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.Empty(t, result.Policies)
+	assert.Equal(t, map[account.GroupId]account.Group{
+		toID("test_group"): {
+			ID:             toID("test_group"),
+			Name:           "test_group",
+			OriginObjectID: groupUUID1,
+		}}, result.Groups)
+	assert.Empty(t, result.Users)
+
+	assert.Equal(t, map[account.UserId]account.ServiceUser{
+		"service_user": {Name: "service_user", Description: "A service user",
+			Groups: []account.Ref{account.Reference{Id: toID("test_group")}},
+		},
+	}, result.ServiceUsers)
+
+}
+
+func TestDownloader_NoRequestedServiceUserDetails(t *testing.T) {
+	client := http.NewMockhttpClient(gomock.NewController(t))
+	downloader := downloader.New4Test(&account.AccountInfo{
+		Name:        "test",
+		AccountUUID: accountUUID,
+	}, client)
+
+	client.EXPECT().GetEnvironmentsAndMZones(gomock.Any(), accountUUID).Return([]accountmanagement.TenantResourceDto{}, []accountmanagement.ManagementZoneResourceDto{}, nil)
+	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{}, nil)
+	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
+
+	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: "A service user"}}, nil)
+	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(nil, nil)
+
+	result, err := downloader.DownloadResources(context.TODO())
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
 func TestDownloader_GetEnvironmentsAndMZonesErrors(t *testing.T) {
 
 	client := http.NewMockhttpClient(gomock.NewController(t))
@@ -713,4 +805,23 @@ func TestDownloader_GetGroupsForUserErrors(t *testing.T) {
 	assert.Nil(t, result)
 	assert.ErrorContains(t, err, originalErr.Error(), "Returned error must contain original error")
 	assert.ErrorContains(t, err, "failed to get a list of bind groups for user", "Return error must contain additional information")
+}
+
+func TestDownloader_GetServiceUsersErrors(t *testing.T) {
+	client := http.NewMockhttpClient(gomock.NewController(t))
+	downloader := downloader.New4Test(&account.AccountInfo{
+		Name:        "test",
+		AccountUUID: accountUUID,
+	}, client)
+
+	client.EXPECT().GetEnvironmentsAndMZones(gomock.Any(), accountUUID).Return([]accountmanagement.TenantResourceDto{}, []accountmanagement.ManagementZoneResourceDto{}, nil)
+	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{}, nil)
+	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
+	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return(nil, originalErr)
+
+	result, err := downloader.DownloadResources(context.TODO())
+	assert.Nil(t, result)
+	assert.ErrorContains(t, err, originalErr.Error(), "Returned error must contain original error")
+	assert.ErrorContains(t, err, "failed to get a list of service users for account", "Return error must contain additional information")
 }
