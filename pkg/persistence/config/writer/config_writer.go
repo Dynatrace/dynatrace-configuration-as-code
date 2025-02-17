@@ -265,7 +265,7 @@ func toTopLevelConfigDefinition(context *serializerContext, configs []config.Con
 	ct, err := extractConfigType(context, configs[0])
 	if err != nil {
 		return persistence.TopLevelConfigDefinition{}, nil, []error{
-			fmtDetailedConfigWriterError(context, fmt.Errorf("failed to extract config type: %w", err)),
+			newDetailedConfigWriterError(context, fmt.Errorf("failed to extract config type: %w", err)),
 		}
 	}
 
@@ -313,7 +313,7 @@ func getSerializedParam(context *serializerContext, cfg config.Config, paramName
 	param, found := cfg.Parameters[paramName]
 	if !found {
 		if required {
-			return nil, fmtDetailedConfigWriterError(context, fmt.Errorf("'%s' parameter not found. This is likely a bug", paramName))
+			return nil, newDetailedConfigWriterError(context, fmt.Errorf("'%s' parameter not found. This is likely a bug", paramName))
 		}
 		return nil, nil
 	}
@@ -322,7 +322,7 @@ func getSerializedParam(context *serializerContext, cfg config.Config, paramName
 		serializerContext: context,
 	}, paramName, param)
 	if err != nil {
-		return nil, fmtDetailedConfigWriterError(context, fmt.Errorf("failed to serialize '%s' parameter: %w", paramName, err))
+		return nil, newDetailedConfigWriterError(context, fmt.Errorf("failed to serialize '%s' parameter: %w", paramName, err))
 	}
 	return serializedScope, nil
 }
@@ -665,7 +665,7 @@ func toParameterDefinition(context *detailedSerializerContext, parameterName str
 	serde, found := context.ParametersSerde[param.GetType()]
 
 	if !found {
-		return nil, fmtDetailedConfigWriterError(context.serializerContext,
+		return nil, newDetailedConfigWriterError(context.serializerContext,
 			fmt.Errorf("%s:%s: no serde found for type `%s`", context.config, parameterName, param.GetType()))
 	}
 
@@ -690,7 +690,7 @@ func toValueShorthandDefinition(context *detailedSerializerContext, parameterNam
 		valueParam, ok := param.(*value.ValueParameter)
 
 		if !ok {
-			return nil, fmtDetailedConfigWriterError(context.serializerContext,
+			return nil, newDetailedConfigWriterError(context.serializerContext,
 				fmt.Errorf("%s:%s: parameter of type `%s` is no value param", context.config, parameterName, param.GetType()))
 		}
 
@@ -711,7 +711,7 @@ func toValueShorthandDefinition(context *detailedSerializerContext, parameterNam
 		}
 	}
 
-	return nil, fmtDetailedConfigWriterError(context.serializerContext, fmt.Errorf("%s:%s: unknown special type `%s`", context.config, parameterName, param.GetType()))
+	return nil, newDetailedConfigWriterError(context.serializerContext, fmt.Errorf("%s:%s: unknown special type `%s`", context.config, parameterName, param.GetType()))
 }
 
 type extendedCoordinate struct {
@@ -765,15 +765,6 @@ func newConfigWriterError(context *WriterContext, err error) configError.Detaile
 }
 
 func newDetailedConfigWriterError(context *serializerContext, err error) configError.DetailedConfigWriterError {
-	return configError.DetailedConfigWriterError{
-		Path:     context.configFolder,
-		Location: context.config,
-		Err:      err,
-	}
-}
-
-func fmtDetailedConfigWriterError(context *serializerContext, err error) configError.DetailedConfigWriterError {
-
 	return configError.DetailedConfigWriterError{
 		Path:     context.configFolder,
 		Location: context.config,
