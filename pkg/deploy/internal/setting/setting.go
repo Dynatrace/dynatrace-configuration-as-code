@@ -34,10 +34,15 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
 )
 
-func Deploy(ctx context.Context, settingsClient client.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config, insertAfter string) (entities.ResolvedEntity, error) {
+func Deploy(ctx context.Context, settingsClient client.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	t, ok := c.Type.(config.SettingsType)
 	if !ok {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeID, c.Type.ID()))
+	}
+
+	insertAfter, err := parseInsertAfter(properties)
+	if err != nil {
+		return entities.ResolvedEntity{}, err
 	}
 
 	scope, err := extract.Scope(properties)
@@ -93,6 +98,24 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		Skip:       false,
 	}, nil
 
+}
+
+// parseInsertAfter finds and parses the `insertAfter parameter.
+//
+// If the parameter is not set, [dtclient.InsertPositionFront] is returned to indicate that the settings object should be added to the front of all configs.
+// This behavior is to stay compatible with earlier version
+func parseInsertAfter(properties parameter.Properties) (*string, error) {
+	param, found := properties[config.InsertAfterParameter]
+	if !found {
+		return nil, nil
+	}
+
+	insertAfter, ok := param.(string)
+	if !ok {
+		return nil, fmt.Errorf("insertAfter parameter must be an ID, '%s', or '%s' , got '%v'", dtclient.InsertPositionFront, dtclient.InsertPositionBack, param)
+	}
+
+	return &insertAfter, nil
 }
 
 func getEntityID(c *config.Config, e dtclient.DynatraceEntity) (string, error) {

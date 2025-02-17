@@ -1,4 +1,4 @@
-//go:build download_restore
+//go:build Fdownload_restore
 
 /**
  * @license

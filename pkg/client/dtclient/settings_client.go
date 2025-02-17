@@ -124,8 +124,20 @@ type SettingsResourceContext struct {
 
 type UpsertSettingsOptions struct {
 	OverrideRetry *RetrySetting
-	InsertAfter   string
+
+	// InsertAfter is the ID after which the configuration should be inserted.
+	// It must only be set iff the schema is an 'ordered' schema.
+	//
+	// It supports the following magic value to insert at the TOP and BOTTOM of the list:
+	//   - FRONT (InsertPositionFront) -> insert at the front of the list
+	//   - BACK (InsertPositionBack) -> insert at the back of the list
+	InsertAfter *string
 }
+
+const (
+	InsertPositionFront = "FRONT"
+	InsertPositionBack  = "BACK"
+)
 
 // defaultListSettingsFields  are the fields we are interested in when getting setting objects
 const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schemaId,scope,modificationInfo"
@@ -214,13 +226,13 @@ type (
 	}
 
 	settingsRequest struct {
-		SchemaId      string `json:"schemaId"`
-		ExternalId    string `json:"externalId,omitempty"`
-		Scope         string `json:"scope"`
-		Value         any    `json:"value"`
-		SchemaVersion string `json:"schemaVersion,omitempty"`
-		ObjectId      string `json:"objectId,omitempty"`
-		InsertAfter   string `json:"insertAfter,omitempty"`
+		SchemaId      string  `json:"schemaId"`
+		ExternalId    string  `json:"externalId,omitempty"`
+		Scope         string  `json:"scope"`
+		Value         any     `json:"value"`
+		SchemaVersion string  `json:"schemaVersion,omitempty"`
+		ObjectId      string  `json:"objectId,omitempty"`
+		InsertAfter   *string `json:"insertAfter,omitempty"`
 	}
 
 	schemaConstraint struct {
@@ -506,8 +518,13 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 	}
 
 	if schema, ok := d.schemaCache.Get(obj.SchemaId); ok {
-		if upsertOptions.InsertAfter != "" && !schema.Ordered {
+		if upsertOptions.InsertAfter != nil && !schema.Ordered {
 			return DynatraceEntity{}, fmt.Errorf("'%s' is not an ordered setting, hence 'insertAfter' is not supported for this type of setting object", obj.SchemaId)
+		}
+
+		if schema.Ordered && upsertOptions.InsertAfter == nil {
+			f := InsertPositionFront
+			upsertOptions.InsertAfter = &f
 		}
 	}
 
@@ -674,11 +691,13 @@ func explodePath(targetPath string) []string {
 // To do this, we have to wrap the template in another object and send this object to the server.
 // Currently, we only encode one object into an array of objects, but we can optimize it to contain multiple elements to update.
 // Note payload limitations: https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit#payload-limit
-func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj SettingsObject, externalID string, insertAfter string) ([]byte, error) {
+func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj SettingsObject, externalID string, insertAfter *string) ([]byte, error) {
 	var value any
 	if err := json.Unmarshal(obj.Content, &value); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal rendered config: %w", err)
 	}
+
+	insertPosition := insertAfterToPayloadValue(insertAfter)
 
 	data := settingsRequest{
 		SchemaId:      obj.SchemaId,
@@ -687,7 +706,7 @@ func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj Set
 		Value:         value,
 		SchemaVersion: obj.SchemaVersion,
 		ObjectId:      remoteObjectId,
-		InsertAfter:   insertAfter,
+		InsertAfter:   insertPosition,
 	}
 
 	// Create json obj. We currently marshal everything into an array, but we can optimize it to include multiple objects in the
@@ -705,6 +724,22 @@ func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj Set
 	}
 
 	return dest.Bytes(), nil
+}
+
+func insertAfterToPayloadValue(insertAfter *string) *string {
+	if insertAfter == nil {
+		return nil
+	}
+
+	switch *insertAfter {
+	case InsertPositionBack:
+		return nil
+	case InsertPositionFront:
+		var empty = ""
+		return &empty
+	default:
+		return insertAfter
+	}
 }
 
 // parsePostResponse unmarshalls and parses the settings response for the post request

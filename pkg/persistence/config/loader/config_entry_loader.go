@@ -29,7 +29,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
@@ -254,19 +253,6 @@ func getConfigFromDefinition(
 		Skip:           skipConfig,
 		OriginObjectId: definition.OriginObjectId,
 	}, nil
-}
-
-func validateInsertAfterParameter(insertAfterParam parameter.Parameter) (parameter.Parameter, error) {
-
-	r, isRef := insertAfterParam.(*reference.ReferenceParameter)
-	if !isRef {
-		return nil, fmt.Errorf("failed to parse insertAfter: cannot use parameter-type %q. Allowed types: %v", insertAfterParam.GetType(), reference.ReferenceParameterType)
-	}
-
-	if r.Property != "id" {
-		return nil, fmt.Errorf("failed to parse insertAfter: property field of reference parameter %q must be %q", insertAfterParam, "id")
-	}
-	return insertAfterParam, nil
 }
 
 func parseSkip(fs afero.Fs,

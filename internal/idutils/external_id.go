@@ -19,6 +19,7 @@ package idutils
 import (
 	"encoding/base64"
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
