@@ -17,7 +17,6 @@
 package monaco
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -61,5 +60,5 @@ func RunWithFs(fs afero.Fs, command string) error {
 
 	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs(args)
-	return runner.RunCmd(context.TODO(), cmd)
+	return runner.RunCmd(cmd.Context(), cmd)
 }

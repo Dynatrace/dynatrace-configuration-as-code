@@ -332,7 +332,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		}
 
 		if settingsClient == nil {
-			settingsClient, err = dtclient.NewClassicSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled), dtclient.WithAutoServerVersion())
+			settingsClient, err = dtclient.NewClassicSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled), dtclient.WithAutoServerVersion(ctx))
 			if err != nil {
 				return nil, err
 			}
