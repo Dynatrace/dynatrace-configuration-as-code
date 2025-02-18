@@ -34,7 +34,7 @@ const multiTypeManifest = multiTypeProjectFolder + "manifest.yaml"
 func TestMultiTypeConfigsDeployment(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, multiTypeProjectFolder, multiTypeManifest, "", "MultiType", func(fs afero.Fs, _ TestContext) {
-		err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --verbose", multiTypeManifest))
+		err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --verbose", multiTypeManifest))
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, multiTypeManifest, []string{}, "", true)
@@ -42,6 +42,6 @@ func TestMultiTypeConfigsDeployment(t *testing.T) {
 }
 
 func TestMultiTypeConfigsValidation(t *testing.T) {
-	err := monaco.RunWithFs(monaco.NewTestFs(), fmt.Sprintf("monaco deploy %s --dry-run --verbose", multiTypeManifest))
+	err := monaco.RunWithFs(t, monaco.NewTestFs(), fmt.Sprintf("monaco deploy %s --dry-run --verbose", multiTypeManifest))
 	assert.NoError(t, err)
 }

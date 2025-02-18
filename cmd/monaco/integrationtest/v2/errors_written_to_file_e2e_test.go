@@ -23,11 +23,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestManifestErrorsAreWrittenToFile(t *testing.T) {
@@ -35,7 +36,7 @@ func TestManifestErrorsAreWrittenToFile(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 
-	err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", manifest))
+	err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", manifest))
 	assert.Error(t, err)
 
 	expectedErrFile := log.ErrorFilePath()
@@ -59,7 +60,7 @@ func TestConfigErrorsAreWrittenToFile(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 
-	err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", manifest))
+	err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", manifest))
 	assert.Error(t, err)
 
 	expectedErrFile := log.ErrorFilePath()

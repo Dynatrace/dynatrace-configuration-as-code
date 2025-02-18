@@ -26,6 +26,6 @@ import (
 
 func TestMonacoRun(t *testing.T) {
 	assert.Panics(t, func() {
-		monaco.RunWithFs(monaco.NewTestFs(), "deploy")
+		monaco.RunWithFs(t, monaco.NewTestFs(), "deploy")
 	}, "command must begin with 'monaco'")
 }
