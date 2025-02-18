@@ -1302,7 +1302,10 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 }
 
 func TestDeployConfigFF(t *testing.T) {
-	dummyClientSet := client.ClientSet{SegmentClient: client.TestSegmentsClient{}}
+	dummyClientSet := client.ClientSet{
+		SegmentClient:               client.TestSegmentsClient{},
+		ServiceLevelObjectiveClient: client.TestServiceLevelObjectiveClient{},
+	}
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
 	}
@@ -1336,6 +1339,30 @@ func TestDeployConfigFF(t *testing.T) {
 			},
 			featureFlag: featureflags.Segments.EnvName(),
 			configType:  config.SegmentID,
+		},
+		{
+			name: "SLO FF test",
+			projects: []project.Project{
+				{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env": project.ConfigsPerType{
+							"p1": {
+								config.Config{
+									Type:        config.ServiceLevelObjective{},
+									Environment: "env",
+									Coordinate: coordinate.Coordinate{
+										Project:  "p1",
+										Type:     "type",
+										ConfigId: "config1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			featureFlag: featureflags.ServiceLevelObjective.EnvName(),
+			configType:  config.ServiceLevelObjectiveID,
 		},
 	}
 
@@ -1377,8 +1404,27 @@ func TestDeployDryRun(t *testing.T) {
 				},
 			},
 		},
+		{
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"p1": {
+						config.Config{
+							Type:        config.ServiceLevelObjective{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "segment",
+								ConfigId: "config1",
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+					},
+				},
+			},
+		},
 	}
 	t.Setenv(featureflags.Segments.EnvName(), "true")
+	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 	t.Run("dry-run", func(t *testing.T) {
 		err := deploy.Deploy(context.Background(), projects, c, deploy.DeployConfigsOptions{DryRun: true})
 		assert.Empty(t, err)

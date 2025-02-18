@@ -32,13 +32,14 @@ import (
 )
 
 var DummyClientSet = ClientSet{
-	ConfigClient:       &dtclient.DummyConfigClient{},
-	SettingsClient:     &dtclient.DummySettingsClient{},
-	AutClient:          &DummyAutomationClient{},
-	BucketClient:       &DummyBucketClient{},
-	DocumentClient:     &DummyDocumentClient{},
-	OpenPipelineClient: &DummyOpenPipelineClient{},
-	SegmentClient:      &DummySegmentClient{},
+	ConfigClient:                &dtclient.DummyConfigClient{},
+	SettingsClient:              &dtclient.DummySettingsClient{},
+	AutClient:                   &DummyAutomationClient{},
+	BucketClient:                &DummyBucketClient{},
+	DocumentClient:              &DummyDocumentClient{},
+	OpenPipelineClient:          &DummyOpenPipelineClient{},
+	SegmentClient:               &DummySegmentClient{},
+	ServiceLevelObjectiveClient: &DummyServiceLevelObjectClient{},
 }
 
 var _ AutomationClient = (*DummyAutomationClient)(nil)
@@ -182,4 +183,18 @@ func (c *DummySegmentClient) Update(_ context.Context, _ string, _ []byte) (segm
 
 func (c *DummySegmentClient) Get(_ context.Context, _ string) (segments.Response, error) {
 	return segments.Response{}, nil
+}
+
+type DummyServiceLevelObjectClient struct{}
+
+func (c *DummyServiceLevelObjectClient) List(_ context.Context) (coreapi.PagedListResponse, error) {
+	return coreapi.PagedListResponse{}, nil
+}
+
+func (c *DummyServiceLevelObjectClient) Update(_ context.Context, _ string, _ []byte) (coreapi.Response, error) {
+	return coreapi.Response{}, nil
+}
+
+func (c *DummyServiceLevelObjectClient) Create(_ context.Context, _ []byte) (coreapi.Response, error) {
+	return coreapi.Response{Data: []byte(`{}`)}, nil
 }

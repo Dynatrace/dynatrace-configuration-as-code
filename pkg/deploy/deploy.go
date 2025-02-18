@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
 	"sync"
 	"time"
 
@@ -44,7 +43,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -313,6 +314,13 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 	case config.Segment:
 		if featureflags.Segments.Enabled() {
 			resolvedEntity, deployErr = segment.Deploy(ctx, clientset.SegmentClient, properties, renderedConfig, c)
+		} else {
+			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
+		}
+
+	case config.ServiceLevelObjective:
+		if featureflags.ServiceLevelObjective.Enabled() {
+			resolvedEntity, deployErr = slo.Deploy(ctx, clientset.ServiceLevelObjectiveClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
