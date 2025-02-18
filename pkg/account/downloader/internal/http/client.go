@@ -45,13 +45,9 @@ func (c *Client) GetServiceUsers(ctx context.Context, accountUUID string) ([]acc
 	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
 	const pageSize = 10
 	for page := 1; ; page++ {
-		r, resp, err := c.ServiceUserManagementAPI.GetServiceUsersFromAccount(ctx, accountUUID).Page(float32(page)).PageSize(pageSize).Execute()
-		defer closeResponseBody(resp)
-		if err = getErrorMessageFromResponse(resp, err); err != nil {
+		r, err := c.getServiceUsersPage(ctx, accountUUID, page, pageSize)
+		if err != nil {
 			return nil, err
-		}
-		if r == nil {
-			return nil, errors.New("the received data are empty")
 		}
 
 		serviceUsers = append(serviceUsers, r.Results...)
@@ -62,6 +58,18 @@ func (c *Client) GetServiceUsers(ctx context.Context, accountUUID string) ([]acc
 	}
 
 	return serviceUsers, nil
+}
+
+func (c *Client) getServiceUsersPage(ctx context.Context, accountUUID string, page int, pageSize int) (*accountmanagement.ExternalServiceUsersPageDto, error) {
+	r, resp, err := c.ServiceUserManagementAPI.GetServiceUsersFromAccount(ctx, accountUUID).Page(float32(page)).PageSize(float32(pageSize)).Execute()
+	defer closeResponseBody(resp)
+	if err = getErrorMessageFromResponse(resp, err); err != nil {
+		return nil, err
+	}
+	if r == nil {
+		return nil, errors.New("the received data are empty")
+	}
+	return r, nil
 }
 
 func (c *Client) GetGroupsForUser(ctx context.Context, userEmail string, accountUUID string) (*accountmanagement.GroupUserDto, error) {
