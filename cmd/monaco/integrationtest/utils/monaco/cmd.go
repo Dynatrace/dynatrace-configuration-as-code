@@ -1,3 +1,5 @@
+//go:build unit || integration || download_restore || cleanup || nightly
+
 /*
  * @license
  * Copyright 2024 Dynatrace LLC
@@ -17,10 +19,10 @@
 package monaco
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"strings"
+	"testing"
 
 	"github.com/spf13/afero"
 
@@ -31,7 +33,7 @@ func NewTestFs() afero.Fs { return afero.NewCopyOnWriteFs(afero.NewOsFs(), afero
 
 // RunWithFs is the entrypoint to run monaco for all integration tests.
 // It requires to specify the full command (`monaco [deploy]....`) and sets up the runner.
-func RunWithFs(fs afero.Fs, command string) error {
+func RunWithFs(t *testing.T, fs afero.Fs, command string) error {
 	// remove multiple spaces
 	c := regexp.MustCompile(`\s+`).ReplaceAllString(command, " ")
 	c = strings.Trim(c, " ")
@@ -46,5 +48,5 @@ func RunWithFs(fs afero.Fs, command string) error {
 
 	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs(args)
-	return runner.RunCmd(context.TODO(), cmd)
+	return runner.RunCmd(t.Context(), cmd)
 }

@@ -130,7 +130,7 @@ func TestLoadingReport(t *testing.T) {
 			fs := testutils.CreateTestFileSystem()
 
 			fmt.Println(testcase.Manifest)
-			deployError := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", testcase.Manifest, targetEnvironment)
+			deployError := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", testcase.Manifest, targetEnvironment))
 			assert.Error(t, deployError)
 
 			records, err := report.ReadReportFile(fs, reportFile)
