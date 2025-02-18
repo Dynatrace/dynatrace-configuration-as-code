@@ -44,11 +44,11 @@ func TestIntegrationAutomation(t *testing.T) {
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "Automation", envs, func(fs afero.Fs, _ TestContext) {
 		// This causes Creation of all automation objects
-		err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 		assert.NoError(t, err)
 
 		// This causes an Update of all automation objects
-		err = monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)

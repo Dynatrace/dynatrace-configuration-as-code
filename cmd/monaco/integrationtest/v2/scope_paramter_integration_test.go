@@ -38,11 +38,11 @@ func TestIntegrationScopeParameters(t *testing.T) {
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "ScopeParameters", envVars, func(fs afero.Fs, _ TestContext) {
 		// This causes Creation of all Settings
-		err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 		assert.NoError(t, err)
 
 		// This causes an Update of all Settings
-		err = monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 		assert.NoError(t, err)
 	})
 }
@@ -56,6 +56,6 @@ func TestIntegrationScopeParameterValidation(t *testing.T) {
 	envVar := "SCOPE_TEST_ENV_VAR"
 	t.Setenv(envVar, "environment")
 
-	err := monaco.RunWithFs(t, monaco.NewTestFs(), fmt.Sprintf("monaco deploy %s --dry-run --verbose", manifest))
+	err := monaco.Run(t, monaco.NewTestFs(), fmt.Sprintf("monaco deploy %s --dry-run --verbose", manifest))
 	assert.NoError(t, err)
 }

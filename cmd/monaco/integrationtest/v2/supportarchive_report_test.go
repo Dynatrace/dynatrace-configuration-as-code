@@ -52,7 +52,7 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 		err := cleanupLogsDir()
 		assert.NoError(t, err)
 
-		_ = monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose --support-archive", manifest))
+		_ = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose --support-archive", manifest))
 
 		archive := "support-archive-" + fixedTime + ".zip"
 		expectedFiles := []string{
@@ -117,7 +117,7 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 			assert.NoError(t, err)
 
 			manifest := configFolder + tt.manifestFile
-			monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --support-archive", manifest, tt.environment))
+			monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --support-archive", manifest, tt.environment))
 
 			fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
 			archive := "support-archive-" + fixedTime + ".zip"
@@ -142,7 +142,7 @@ func TestDeployReport(t *testing.T) {
 		t.Setenv(environment.DeploymentReportFilename, reportFile)
 
 		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, _ TestContext) {
-			err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
 			require.NoError(t, err)
 
 			assertReport(t, fs, reportFile, true)
@@ -155,7 +155,7 @@ func TestDeployReport(t *testing.T) {
 			manifest     = configFolder + "manifest.yaml"
 		)
 		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, _ TestContext) {
-			err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
 			require.NoError(t, err)
 		})
 	})

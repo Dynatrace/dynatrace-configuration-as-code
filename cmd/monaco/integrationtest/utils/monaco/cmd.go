@@ -34,9 +34,9 @@ func NewTestFs() afero.Fs { return afero.NewCopyOnWriteFs(afero.NewOsFs(), afero
 // spacesRegex finds all sequential spaces
 var spacesRegex = regexp.MustCompile(`\s+`)
 
-// RunWithFs is the entrypoint to run monaco for all integration tests.
+// Run is the entrypoint to run monaco for all integration tests.
 // It requires to specify the full command (`monaco [deploy]....`) and sets up the runner.
-func RunWithFs(t *testing.T, fs afero.Fs, command string) error {
+func Run(t *testing.T, fs afero.Fs, command string) error {
 	// remove multiple spaces
 	c := spacesRegex.ReplaceAllString(command, " ")
 	c = strings.Trim(c, " ")

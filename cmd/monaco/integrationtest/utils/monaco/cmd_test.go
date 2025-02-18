@@ -27,6 +27,6 @@ import (
 )
 
 func TestMonacoRun(t *testing.T) {
-	err := monaco.RunWithFs(t, monaco.NewTestFs(), "deploy")
+	err := monaco.Run(t, monaco.NewTestFs(), "deploy")
 	assert.ErrorContains(t, err, "command must start with 'monaco '")
 }
