@@ -190,14 +190,14 @@ var DefaultRetryOptions = corerest.RetryOptions{MaxRetries: 10, ShouldRetryFunc:
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
 type ClientSet struct {
-	ConfigClient          ConfigClient
-	SettingsClient        SettingsClient
-	AutClient             AutomationClient
-	BucketClient          BucketClient
-	DocumentClient        DocumentClient
-	OpenPipelineClient    OpenPipelineClient
-	SegmentClient         SegmentClient
-	ServiceLevelObjective ServiceLevelObjectiveClient
+	ConfigClient                ConfigClient
+	SettingsClient              SettingsClient
+	AutClient                   AutomationClient
+	BucketClient                BucketClient
+	DocumentClient              DocumentClient
+	OpenPipelineClient          OpenPipelineClient
+	SegmentClient               SegmentClient
+	ServiceLevelObjectiveClient ServiceLevelObjectiveClient
 }
 
 type ClientOptions struct {
@@ -340,14 +340,14 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	}
 
 	return &ClientSet{
-		ConfigClient:          configClient,
-		SettingsClient:        settingsClient,
-		AutClient:             autClient,
-		BucketClient:          bucketClient,
-		DocumentClient:        documentClient,
-		OpenPipelineClient:    openPipelineClient,
-		SegmentClient:         segmentClient,
-		ServiceLevelObjective: serviceLevelObjectiveClient,
+		ConfigClient:                configClient,
+		SettingsClient:              settingsClient,
+		AutClient:                   autClient,
+		BucketClient:                bucketClient,
+		DocumentClient:              documentClient,
+		OpenPipelineClient:          openPipelineClient,
+		SegmentClient:               segmentClient,
+		ServiceLevelObjectiveClient: serviceLevelObjectiveClient,
 	}, nil
 }
 

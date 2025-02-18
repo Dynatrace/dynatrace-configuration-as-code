@@ -72,17 +72,17 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	}
 
 	//Strategy 2 is to try to find a match with external id and update it
-	matchData, match, err := findMatchOnRemote(ctx, client, externalID)
+	matchID, match, err := findMatchOnRemote(ctx, client, externalID)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("error finding slo with externalID: %s", externalID)).WithError(err)
 	}
 
 	if match {
-		_, err := client.Update(ctx, matchData.ID, requestPayload)
+		_, err := client.Update(ctx, matchID, requestPayload)
 		if err != nil {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update slo with externalID: %s", externalID)).WithError(err)
 		}
-		return createResolveEntity(matchData.ID, properties, c), nil
+		return createResolveEntity(matchID, properties, c), nil
 	}
 
 	//Strategy 3 is to create a new slo
@@ -136,21 +136,21 @@ func isAPIErrorStatusNotFound(err error) bool {
 	return apiErr.StatusCode == http.StatusNotFound
 }
 
-func findMatchOnRemote(ctx context.Context, client deployServiceLevelObjectiveClient, externalId string) (sloResponse, bool, error) {
+func findMatchOnRemote(ctx context.Context, client deployServiceLevelObjectiveClient, externalId string) (string, bool, error) {
 	apiResponse, err := client.List(ctx)
 	if err != nil {
-		return sloResponse{}, false, err
+		return "", false, err
 	}
 
 	res := sloResponse{}
 	for _, raw := range apiResponse.All() {
 		if err := json.Unmarshal(raw, &res); err != nil {
-			return sloResponse{}, false, err
+			return "", false, err
 		}
 		if res.ExternalID == externalId {
-			return res, true, nil
+			return res.ID, true, nil
 		}
 	}
 
-	return sloResponse{}, false, nil
+	return "", false, nil
 }

@@ -23,13 +23,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/slo"
-	"github.com/stretchr/testify/assert"
 )
 
 type testClient struct {
@@ -63,7 +64,6 @@ func TestDeploySuccess(t *testing.T) {
 		createStub  func() (api.Response, error)
 		listStub    func() (api.PagedListResponse, error)
 		expected    entities.ResolvedEntity
-		expectErr   bool
 	}{
 		{
 			name: "deploy with objectOriginId",
@@ -95,7 +95,6 @@ func TestDeploySuccess(t *testing.T) {
 				},
 				Skip: false,
 			},
-			expectErr: false,
 		},
 		{
 			name: "deploy with externalId",
@@ -137,7 +136,6 @@ func TestDeploySuccess(t *testing.T) {
 				},
 				Skip: false,
 			},
-			expectErr: false,
 		},
 		{
 			name: "create new object on remote",
@@ -179,7 +177,6 @@ func TestDeploySuccess(t *testing.T) {
 				},
 				Skip: false,
 			},
-			expectErr: false,
 		},
 	}
 
@@ -190,10 +187,7 @@ func TestDeploySuccess(t *testing.T) {
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
 
-			renderedConfig, err := tt.inputConfig.Render(props)
-			assert.NoError(t, err)
-
-			resolvedEntity, err := slo.Deploy(context.Background(), &c, props, renderedConfig, &tt.inputConfig)
+			resolvedEntity, err := slo.Deploy(context.Background(), &c, props, "{}", &tt.inputConfig)
 
 			assert.NoError(t, err)
 			assert.Equal(t, resolvedEntity, tt.expected)
@@ -398,10 +392,7 @@ func TestDeployErrors(t *testing.T) {
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
 
-			renderedConfig, err := tt.inputConfig.Render(props)
-			assert.NoError(t, err)
-
-			_, err = slo.Deploy(context.Background(), &c, props, renderedConfig, &tt.inputConfig)
+			_, err := slo.Deploy(context.Background(), &c, props, "{}", &tt.inputConfig)
 			assert.Error(t, err)
 		})
 	}

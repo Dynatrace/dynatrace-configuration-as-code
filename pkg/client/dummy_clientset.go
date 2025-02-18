@@ -32,14 +32,14 @@ import (
 )
 
 var DummyClientSet = ClientSet{
-	ConfigClient:          &dtclient.DummyConfigClient{},
-	SettingsClient:        &dtclient.DummySettingsClient{},
-	AutClient:             &DummyAutomationClient{},
-	BucketClient:          &DummyBucketClient{},
-	DocumentClient:        &DummyDocumentClient{},
-	OpenPipelineClient:    &DummyOpenPipelineClient{},
-	SegmentClient:         &DummySegmentClient{},
-	ServiceLevelObjective: &DummyServiceLevelObjectClient{},
+	ConfigClient:                &dtclient.DummyConfigClient{},
+	SettingsClient:              &dtclient.DummySettingsClient{},
+	AutClient:                   &DummyAutomationClient{},
+	BucketClient:                &DummyBucketClient{},
+	DocumentClient:              &DummyDocumentClient{},
+	OpenPipelineClient:          &DummyOpenPipelineClient{},
+	SegmentClient:               &DummySegmentClient{},
+	ServiceLevelObjectiveClient: &DummyServiceLevelObjectClient{},
 }
 
 var _ AutomationClient = (*DummyAutomationClient)(nil)

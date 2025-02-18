@@ -320,7 +320,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 
 	case config.ServiceLevelObjective:
 		if featureflags.ServiceLevelObjective.Enabled() {
-			resolvedEntity, deployErr = slo.Deploy(ctx, clientset.ServiceLevelObjective, properties, renderedConfig, c)
+			resolvedEntity, deployErr = slo.Deploy(ctx, clientset.ServiceLevelObjectiveClient, properties, renderedConfig, c)
 		} else {
 			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 		}
