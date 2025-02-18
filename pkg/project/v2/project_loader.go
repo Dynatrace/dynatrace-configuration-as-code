@@ -191,25 +191,22 @@ func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderCo
 
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
-	configs, errors := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
-	for _, err := range errors {
+	configs, errs := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
+	for _, err := range errs {
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, err, "", nil)
 	}
-	configsWithErrors := make(map[coordinate.Coordinate]error)
-	errors = append(errors, findDuplicatedConfigIdentifiers(configs, configsWithErrors)...)
-	errors = append(errors, checkKeyUserActionScope(configs, configsWithErrors)...)
+	configsWithErrors := make(map[coordinate.Coordinate]struct{})
+	errs = append(errs, findDuplicatedConfigIdentifiers(ctx, configs, configsWithErrors)...)
+	errs = append(errs, checkKeyUserActionScope(ctx, configs, configsWithErrors)...)
 
 	for _, loadedConfig := range configs {
-		//report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, "", &loadedConfig.Coordinate)
-		if err, ok := configsWithErrors[loadedConfig.Coordinate]; ok {
-			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, err, "", &loadedConfig.Coordinate)
-		} else {
+		if _, ok := configsWithErrors[loadedConfig.Coordinate]; !ok {
 			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, "", &loadedConfig.Coordinate)
 		}
 	}
 
-	if len(errors) > 0 {
-		return Project{}, errors
+	if len(errs) > 0 {
+		return Project{}, errs
 	}
 
 	insertNetworkZoneParameter(configs)
@@ -250,7 +247,7 @@ func insertNetworkZoneParameter(configs []config.Config) {
 	}
 }
 
-func checkKeyUserActionScope(configs []config.Config, configErrorMap map[coordinate.Coordinate]error) []error {
+func checkKeyUserActionScope(ctx context.Context, configs []config.Config, configErrorMap map[coordinate.Coordinate]struct{}) []error {
 	var errors []error
 	for _, c := range configs {
 		// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
@@ -260,8 +257,10 @@ func checkKeyUserActionScope(configs []config.Config, configErrorMap map[coordin
 			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
 				newError := fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
 					"parameter to another web-application config", api.KeyUserActionsWeb, c.Coordinate.ConfigId)
-				configErrorMap[c.Coordinate] = newError
+				configErrorMap[c.Coordinate] = struct{}{}
 				errors = append(errors, newError)
+
+				report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, newError, "", &c.Coordinate)
 			}
 		}
 	}
@@ -341,15 +340,16 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 	return configs, errs
 }
 
-func findDuplicatedConfigIdentifiers(configs []config.Config, configErrorMap map[coordinate.Coordinate]error) []error {
+func findDuplicatedConfigIdentifiers(ctx context.Context, configs []config.Config, configErrorMap map[coordinate.Coordinate]struct{}) []error {
 	var errors []error
 	coordinates := make(map[string]struct{})
 	for _, c := range configs {
 		id := toFullyQualifiedConfigIdentifier(c)
 		if _, found := coordinates[id]; found {
 			newError := newDuplicateConfigIdentifierError(c)
-			configErrorMap[c.Coordinate] = newError
+			configErrorMap[c.Coordinate] = struct{}{}
 			errors = append(errors, newError)
+			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, newError, "", &c.Coordinate)
 		}
 		coordinates[id] = struct{}{}
 	}

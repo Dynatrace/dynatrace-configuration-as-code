@@ -114,17 +114,12 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			errorMap := make(map[coordinate.Coordinate]error)
-			got := findDuplicatedConfigIdentifiers(tt.input, errorMap)
+			errorMap := make(map[coordinate.Coordinate]struct{})
+			got := findDuplicatedConfigIdentifiers(t.Context(), tt.input, errorMap)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("findDuplicatedConfigIdentifiers() got = %v, want %v", got, tt.want)
 			}
-			index := 0
-			for _, err := range errorMap {
-				assert.Contains(t, tt.want, err)
-				index++
-			}
-			assert.Equal(t, tt.wantErrorMap, index)
+			assert.Equal(t, len(errorMap), tt.wantErrorMap)
 		})
 	}
 }
@@ -181,17 +176,12 @@ func Test_checkKeyUserActionScope(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			errorMap := make(map[coordinate.Coordinate]error)
-			got := checkKeyUserActionScope(tt.input, errorMap)
+			errorMap := make(map[coordinate.Coordinate]struct{})
+			got := checkKeyUserActionScope(t.Context(), tt.input, errorMap)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("checkKeyUserActionScope() got = %v, want %v", got, tt.want)
 			}
-			index := 0
-			for _, err := range errorMap {
-				assert.Contains(t, tt.want, err)
-				index++
-			}
-			assert.Equal(t, index, len(tt.want))
+			assert.Equal(t, len(errorMap), len(tt.want))
 		})
 	}
 }
