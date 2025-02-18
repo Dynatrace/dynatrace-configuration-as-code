@@ -42,7 +42,7 @@ var diffProjectDiffExtIDFolderManifest = diffProjectDiffExtIDFolder + "manifest.
 func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 
 	RunIntegrationWithCleanup(t, diffProjectDiffExtIDFolder, diffProjectDiffExtIDFolderManifest, "", "DifferentProjectsGetDifferentExternalID", func(fs afero.Fs, _ TestContext) {
-		err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --verbose", diffProjectDiffExtIDFolderManifest))
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", diffProjectDiffExtIDFolderManifest))
 		assert.NoError(t, err)
 
 		var manifestPath = diffProjectDiffExtIDFolderManifest

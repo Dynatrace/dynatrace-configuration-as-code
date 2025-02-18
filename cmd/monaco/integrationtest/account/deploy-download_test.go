@@ -37,7 +37,7 @@ import (
 func TestIdempotenceOfDeployment(t *testing.T) {
 
 	deploy := func(project string, fs afero.Fs) *account.Resources {
-		err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco account deploy --project %s --verbose", project))
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco account deploy --project %s --verbose", project))
 
 		require.NoError(t, err)
 
@@ -47,7 +47,7 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 		return r
 	}
 	download := func(project string, fs afero.Fs) *account.Resources {
-		err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco account download --project %s --output-folder output --verbose", project))
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco account download --project %s --output-folder output --verbose", project))
 		require.NoError(t, err)
 
 		r, err := loader.Load(fs, fmt.Sprintf("%s/%s/%s", "output", project, "test-account"))
@@ -95,6 +95,6 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 		assert.Equal(t, deploy1st.Groups[g.ID], deploy2nd.Groups[g.ID])
 	}
 
-	err := monaco.RunWithFs(t, baseFs, "monaco account delete --manifest manifest.yaml --file delete.yaml")
+	err := monaco.Run(t, baseFs, "monaco account delete --manifest manifest.yaml --file delete.yaml")
 	require.NoError(t, err)
 }

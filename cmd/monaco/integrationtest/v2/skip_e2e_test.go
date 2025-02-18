@@ -116,7 +116,7 @@ func TestSkip(t *testing.T) {
 				testCaseVar := "SKIPPED_VAR_" + tc.suffix
 				t.Setenv(testCaseVar, strconv.FormatBool(tt.given.skipVarValue))
 
-				err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 				assert.NoError(t, err)
 
 				client, ok := clients[tt.given.environment]
