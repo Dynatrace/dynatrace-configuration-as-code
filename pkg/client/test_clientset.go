@@ -50,16 +50,16 @@ func (TestSegmentsClient) Get(ctx context.Context, id string) (segments.Response
 	return segments.Response{}, fmt.Errorf("unimplemented")
 }
 
-type TestServiceLevelObjectsClient struct{}
+type TestServiceLevelObjectiveClient struct{}
 
-func (TestServiceLevelObjectsClient) List(ctx context.Context) (api.PagedListResponse, error) {
+func (TestServiceLevelObjectiveClient) List(ctx context.Context) (api.PagedListResponse, error) {
 	return api.PagedListResponse{}, fmt.Errorf("unimplemented")
 }
 
-func (TestServiceLevelObjectsClient) Update(ctx context.Context, id string, data []byte) (api.Response, error) {
+func (TestServiceLevelObjectiveClient) Update(ctx context.Context, id string, data []byte) (api.Response, error) {
 	return api.Response{}, fmt.Errorf("unimplemented")
 }
 
-func (TestServiceLevelObjectsClient) Create(ctx context.Context, data []byte) (api.Response, error) {
+func (TestServiceLevelObjectiveClient) Create(ctx context.Context, data []byte) (api.Response, error) {
 	return api.Response{}, fmt.Errorf("unimplemented")
 }

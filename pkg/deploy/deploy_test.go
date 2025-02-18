@@ -1304,7 +1304,7 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 func TestDeployConfigFF(t *testing.T) {
 	dummyClientSet := client.ClientSet{
 		SegmentClient:               client.TestSegmentsClient{},
-		ServiceLevelObjectiveClient: client.TestServiceLevelObjectsClient{},
+		ServiceLevelObjectiveClient: client.TestServiceLevelObjectiveClient{},
 	}
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
