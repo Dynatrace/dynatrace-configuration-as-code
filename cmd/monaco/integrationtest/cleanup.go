@@ -44,7 +44,7 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, envi
 	absManifestPath, err := filepath.Abs(manifestPath)
 	require.NoError(t, err)
 
-	err = monaco.RunWithFSf(fs, "monaco generate deletefile %s --file %s --exclude-types builtin:networkzones %s", absManifestPath, deleteFile, env)
+	err = monaco.RunWithFs(fs, fmt.Sprintf("monaco generate deletefile %s --file %s --exclude-types builtin:networkzones %s", absManifestPath, deleteFile, env))
 	require.NoError(t, err)
 	if df, err := filepath.Abs(deleteFile); err == nil {
 		if b, err := afero.ReadFile(fs, df); err == nil {
@@ -52,7 +52,7 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, envi
 		}
 	}
 
-	err = monaco.RunWithFSf(fs, "monaco --verbose delete --manifest %s --file %s %s", manifestPath, deleteFile, env)
+	err = monaco.RunWithFs(fs, fmt.Sprintf("monaco --verbose delete --manifest %s --file %s %s", manifestPath, deleteFile, env))
 	if err != nil {
 		t.Log(err)
 		t.Log("Failed to cleanup all test configurations, manual/nightly cleanup needed.")
