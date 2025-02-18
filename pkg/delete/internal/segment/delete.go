@@ -79,7 +79,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 }
 
 func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePointer) (string, error) {
-	items, err := list(c, ctx)
+	items, err := list(ctx, c)
 	if err != nil {
 		return "", err
 	}
@@ -89,20 +89,20 @@ func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePoi
 		return "", fmt.Errorf("unable to generate externalID: %w", err)
 	}
 
-	var foundUid []string
+	var foundUUIDs []string
 	for _, i := range items {
-		if i.ExternalId == extID {
-			foundUid = append(foundUid, i.Uid)
+		if i.ExternalID == extID {
+			foundUUIDs = append(foundUUIDs, i.UID)
 		}
 	}
 
 	switch {
-	case len(foundUid) == 0:
+	case len(foundUUIDs) == 0:
 		return "", nil
-	case len(foundUid) > 1:
-		return "", fmt.Errorf("found more than one %s with same externalId (%s); matching IDs: %s", config.SegmentID, extID, foundUid)
+	case len(foundUUIDs) > 1:
+		return "", fmt.Errorf("found more than one %s with same externalId (%s); matching IDs: %s", config.SegmentID, extID, foundUUIDs)
 	default:
-		return foundUid[0], nil
+		return foundUUIDs[0], nil
 	}
 }
 
@@ -116,14 +116,14 @@ func isAPIErrorStatusNotFound(err error) bool {
 }
 
 func DeleteAll(ctx context.Context, c client) error {
-	items, err := list(c, ctx)
+	items, err := list(ctx, c)
 	if err != nil {
 		return err
 	}
 
 	var retErr error
 	for _, i := range items {
-		err := deleteSingle(ctx, c, pointer.DeletePointer{Type: string(config.SegmentID), OriginObjectId: i.Uid})
+		err := deleteSingle(ctx, c, pointer.DeletePointer{Type: string(config.SegmentID), OriginObjectId: i.UID})
 		if err != nil {
 			retErr = errors.Join(retErr, err)
 		}
@@ -132,11 +132,11 @@ func DeleteAll(ctx context.Context, c client) error {
 }
 
 type items []struct {
-	Uid        string `json:"uid"`
-	ExternalId string `json:"externalId"`
+	UID        string `json:"uid"`
+	ExternalID string `json:"externalId"`
 }
 
-func list(c client, ctx context.Context) (items, error) {
+func list(ctx context.Context, c client) (items, error) {
 	listResp, err := c.List(ctx)
 	if err != nil {
 		return nil, err
