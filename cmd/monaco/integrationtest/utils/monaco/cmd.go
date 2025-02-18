@@ -31,18 +31,23 @@ import (
 
 func NewTestFs() afero.Fs { return afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()) }
 
+// spacesRegex finds all sequential spaces
+var spacesRegex = regexp.MustCompile(`\s+`)
+
 // RunWithFs is the entrypoint to run monaco for all integration tests.
 // It requires to specify the full command (`monaco [deploy]....`) and sets up the runner.
 func RunWithFs(t *testing.T, fs afero.Fs, command string) error {
 	// remove multiple spaces
-	c := regexp.MustCompile(`\s+`).ReplaceAllString(command, " ")
+	c := spacesRegex.ReplaceAllString(command, " ")
 	c = strings.Trim(c, " ")
 
-	if !strings.HasPrefix(c, "monaco ") {
-		panic("Command must start with 'monaco'")
+	const prefix = "monaco "
+
+	if !strings.HasPrefix(c, prefix) {
+		return fmt.Errorf("command must start with '%s'", prefix)
 	}
-	fmt.Println(c)
-	c = strings.TrimPrefix(c, "monaco ")
+	t.Logf("Running command: %s", command)
+	c = strings.TrimPrefix(c, prefix)
 
 	args := strings.Split(c, " ")
 

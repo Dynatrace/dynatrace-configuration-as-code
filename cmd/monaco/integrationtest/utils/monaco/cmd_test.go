@@ -1,3 +1,5 @@
+//go:build integration
+
 /*
  * @license
  * Copyright 2024 Dynatrace LLC
@@ -25,7 +27,6 @@ import (
 )
 
 func TestMonacoRun(t *testing.T) {
-	assert.Panics(t, func() {
-		monaco.RunWithFs(t, monaco.NewTestFs(), "deploy")
-	}, "command must begin with 'monaco'")
+	err := monaco.RunWithFs(t, monaco.NewTestFs(), "deploy")
+	assert.ErrorContains(t, err, "command must start with 'monaco '")
 }
