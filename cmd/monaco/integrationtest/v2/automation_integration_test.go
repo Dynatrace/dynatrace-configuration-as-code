@@ -23,10 +23,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 )
 
 // tests all configs for a single environment
@@ -43,11 +44,11 @@ func TestIntegrationAutomation(t *testing.T) {
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "Automation", envs, func(fs afero.Fs, _ TestContext) {
 		// This causes Creation of all automation objects
-		err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+		err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 		assert.NoError(t, err)
 
 		// This causes an Update of all automation objects
-		err = monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+		err = monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 		assert.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
