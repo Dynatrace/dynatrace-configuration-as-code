@@ -37,6 +37,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
@@ -183,7 +184,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 func TestDownload_Options(t *testing.T) {
 	type wantDownload struct {
-		config, settings, bucket, automation, document, openpipeline, segment bool
+		config, settings, bucket, automation, document, openpipeline, segment, slo bool
 	}
 	tests := []struct {
 		name         string
@@ -206,6 +207,7 @@ func TestDownload_Options(t *testing.T) {
 				document:     true,
 				openpipeline: true,
 				segment:      true,
+				slo:          true,
 			},
 		},
 		{
@@ -262,6 +264,26 @@ func TestDownload_Options(t *testing.T) {
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
 			featureFlags: map[featureflags.FeatureFlag]bool{featureflags.Segments: false},
+			want:         wantDownload{},
+		},
+		{
+			name: "only slo-v2 requested with FF on",
+			given: downloadConfigsOptions{
+				onlySLOV2: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
+				}},
+			featureFlags: map[featureflags.FeatureFlag]bool{featureflags.ServiceLevelObjective: true},
+			want:         wantDownload{slo: true},
+		},
+		{
+			name: "only slo-v2 requested with FF off",
+			given: downloadConfigsOptions{
+				onlySLOV2: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
+				}},
+			featureFlags: map[featureflags.FeatureFlag]bool{featureflags.ServiceLevelObjective: false},
 			want:         wantDownload{},
 		},
 		{
@@ -350,6 +372,12 @@ func TestDownload_Options(t *testing.T) {
 				segmentDownload: func(b segment.DownloadSegmentClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.segment {
 						t.Fatalf("segment download was not meant to be called but was")
+					}
+					return nil, nil
+				},
+				sloDownload: func(b slo.DownloadSloClient, s string) (projectv2.ConfigsPerType, error) {
+					if !tt.want.slo {
+						t.Fatalf("slo-v2 download was not meant to be called but was")
 					}
 					return nil, nil
 				},

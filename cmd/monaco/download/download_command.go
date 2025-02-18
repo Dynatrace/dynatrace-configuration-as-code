@@ -17,6 +17,7 @@ package download
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -32,6 +33,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	versionClient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
 
@@ -99,6 +101,10 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 
 	if featureflags.Segments.Enabled() {
 		cmd.Flags().BoolVar(&f.onlySegments, "only-segments", false, "Only download segment configurations, skip all other configuration types")
+	}
+
+	if featureflags.ServiceLevelObjective.Enabled() {
+		cmd.Flags().BoolVar(&f.onlySLOsV2, "only-slo-v2", false, fmt.Sprintf("Only download %s, skip all other configuration types", config.ServiceLevelObjectiveID))
 	}
 
 	err := errors.Join(
