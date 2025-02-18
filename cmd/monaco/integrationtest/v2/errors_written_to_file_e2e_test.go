@@ -36,7 +36,7 @@ func TestManifestErrorsAreWrittenToFile(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 
-	err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", manifest))
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", manifest))
 	assert.Error(t, err)
 
 	expectedErrFile := log.ErrorFilePath()
@@ -60,7 +60,7 @@ func TestConfigErrorsAreWrittenToFile(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 
-	err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", manifest))
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", manifest))
 	assert.Error(t, err)
 
 	expectedErrFile := log.ErrorFilePath()

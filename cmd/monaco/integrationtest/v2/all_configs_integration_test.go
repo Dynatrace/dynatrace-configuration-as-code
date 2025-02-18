@@ -75,7 +75,7 @@ func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment s
 	t.Setenv(environment.DeploymentReportFilename, reportFile)
 
 	// This causes a POST for all configs:
-	err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment))
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment))
 	assert.NoError(t, err)
 
 	if err == nil {
@@ -96,7 +96,7 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 	fs.Remove(reportFile)
 	t.Setenv(environment.DeploymentReportFilename, reportFile)
 
-	err := monaco.RunWithFs(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", "test-resources/integration-all-configs/manifest.yaml"))
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", "test-resources/integration-all-configs/manifest.yaml"))
 	assert.NoError(t, err)
 
 	if err == nil {
