@@ -180,6 +180,7 @@ type ServiceLevelObjectiveClient interface {
 	List(ctx context.Context) (libAPI.PagedListResponse, error)
 	Update(ctx context.Context, id string, body []byte) (libAPI.Response, error)
 	Create(ctx context.Context, body []byte) (libAPI.Response, error)
+	Delete(ctx context.Context, id string) (libAPI.Response, error)
 }
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)

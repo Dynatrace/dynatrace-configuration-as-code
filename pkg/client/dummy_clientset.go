@@ -198,3 +198,7 @@ func (c *DummyServiceLevelObjectClient) Update(_ context.Context, _ string, _ []
 func (c *DummyServiceLevelObjectClient) Create(_ context.Context, _ []byte) (api.Response, error) {
 	return api.Response{Data: []byte(`{}`)}, nil
 }
+
+func (c *DummyServiceLevelObjectClient) Delete(_ context.Context, _ string) (api.Response, error) {
+	return api.Response{}, nil
+}

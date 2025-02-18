@@ -63,3 +63,7 @@ func (TestServiceLevelObjectiveClient) Update(ctx context.Context, id string, da
 func (TestServiceLevelObjectiveClient) Create(ctx context.Context, data []byte) (api.Response, error) {
 	return api.Response{}, fmt.Errorf("unimplemented")
 }
+
+func (TestServiceLevelObjectiveClient) Delete(ctx context.Context, id string) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
+}
