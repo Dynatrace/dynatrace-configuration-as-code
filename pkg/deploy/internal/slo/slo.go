@@ -52,7 +52,7 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 
 	externalID, err := idutils.GenerateExternalIDForDocument(c.Coordinate)
 	if err != nil {
-		return entities.ResolvedEntity{}, err
+		return entities.ResolvedEntity{}, fmt.Errorf("failed to generate externalID: %w", err)
 	}
 	requestPayload, err := addExternalId(externalID, renderedConfig)
 	if err != nil {
@@ -136,7 +136,7 @@ func isAPIErrorStatusNotFound(err error) bool {
 	return apiErr.StatusCode == http.StatusNotFound
 }
 
-func findMatchOnRemote(ctx context.Context, client deployServiceLevelObjectiveClient, externalId string) (string, bool, error) {
+func findMatchOnRemote(ctx context.Context, client deployServiceLevelObjectiveClient, externalId string) (id string, match bool, err error) {
 	apiResponse, err := client.List(ctx)
 	if err != nil {
 		return "", false, err
