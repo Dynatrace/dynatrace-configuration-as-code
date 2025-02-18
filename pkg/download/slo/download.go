@@ -38,7 +38,7 @@ func Download(client DownloadSloClient, projectName string) (project.ConfigsPerT
 	result := project.ConfigsPerType{}
 	downloadedConfigs, err := client.List(context.TODO())
 	if err != nil {
-		log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to fetch the list of existing SLO-v2 configs: %v", err)
+		log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to fetch the list of existing %s configs: %v", config.ServiceLevelObjectiveID, err)
 		// error is ignored
 		return nil, nil
 	}
@@ -47,7 +47,7 @@ func Download(client DownloadSloClient, projectName string) (project.ConfigsPerT
 	for _, downloadedConfig := range downloadedConfigs.All() {
 		c, err := createConfig(projectName, downloadedConfig)
 		if err != nil {
-			log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to convert SLO-v2: %v", err)
+			log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to convert %s: %v", config.ServiceLevelObjectiveID, err)
 			continue
 		}
 		configs = append(configs, c)

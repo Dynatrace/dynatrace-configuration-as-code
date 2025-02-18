@@ -384,7 +384,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 				}
 				copyConfigs(configs, sloCgfs)
 			} else if opts.onlySLOV2 {
-				return nil, errors.New("can't download SLO-v2 resources: no OAuth credentials configured")
+				return nil, fmt.Errorf("can't download %s resources: no OAuth credentials configured", config.ServiceLevelObjectiveID)
 			}
 		}
 	}
