@@ -1,3 +1,5 @@
+//go:build unit
+
 /*
  * @license
  * Copyright 2024 Dynatrace LLC
@@ -48,7 +50,6 @@ func (s *stubClient) Delete(_ context.Context, id string) (libSegment.Response, 
 }
 
 func TestDeleteByCoordinate(t *testing.T) {
-
 	t.Run("success if one segment matches generated external ID", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       "segment",
@@ -127,8 +128,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 }
 
 func TestDeleteByObjectId(t *testing.T) {
-
-	t.Run("sucess if segment exists", func(t *testing.T) {
+	t.Run("success if segment exists", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:           "segment",
 			OriginObjectId: "originObjectID",
