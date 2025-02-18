@@ -20,6 +20,7 @@ package v2
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -48,7 +49,7 @@ func TestSegments(t *testing.T) {
 
 		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
 			// when deploying once
-			err := monaco.RunWithFSf(fs, "monaco deploy %s --project=standalone-segment --verbose", manifestPath)
+			err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
 			assert.NoError(t, err)
 
 			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
@@ -67,10 +68,10 @@ func TestSegments(t *testing.T) {
 	t.Run("Deploying the config twice does not create a second segment", func(t *testing.T) {
 		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
 			// when deploying twice
-			err := monaco.RunWithFSf(fs, "monaco deploy %s --project=standalone-segment --verbose", manifestPath)
+			err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
 			assert.NoError(t, err)
 
-			err = monaco.RunWithFSf(fs, "monaco deploy %s --project=standalone-segment --verbose", manifestPath)
+			err = monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
 			assert.NoError(t, err)
 
 			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
@@ -89,10 +90,10 @@ func TestSegments(t *testing.T) {
 	t.Run("When deploying two configs, two configs exist", func(t *testing.T) {
 		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
 			// when deploying twice, just to make sure
-			err := monaco.RunWithFSf(fs, "monaco deploy %s --project=two-segments --verbose", manifestPath)
+			err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --project=two-segments --verbose", manifestPath))
 			assert.NoError(t, err)
 
-			err = monaco.RunWithFSf(fs, "monaco deploy %s --project=two-segments --verbose", manifestPath)
+			err = monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --project=two-segments --verbose", manifestPath))
 			assert.NoError(t, err)
 
 			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
@@ -120,7 +121,7 @@ func TestSegments(t *testing.T) {
 
 		RunIntegrationWithoutCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
 			// when deploying once
-			err := monaco.RunWithFSf(fs, "monaco deploy %s --project=standalone-segment --verbose", manifestPath)
+			err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
 			assert.Error(t, err)
 
 			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
@@ -140,7 +141,7 @@ func TestSegments(t *testing.T) {
 
 		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
 			// when deploying once
-			err := monaco.RunWithFSf(fs, "monaco deploy %s --project=referenced-segment --verbose", manifestPath)
+			err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --project=referenced-segment --verbose", manifestPath))
 			assert.NoError(t, err)
 
 			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)

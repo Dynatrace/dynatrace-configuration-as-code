@@ -27,25 +27,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 )
 
-// The Monaco is the entry point for integration tests. It accepts a command in a way it would be called via a CLI. `monaco` keyword can be omitted from the command.
-// To execute command invoke Run() method
-//
-// monaco.Monaco("monaco download manifest.yaml --enviroment=my_env").Run()
+func NewTestFs() afero.Fs { return afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()) }
 
-func Run(command string) error {
-	return RunWithFs(newFs(), command)
-}
-
-func Runf(command string, args ...any) error {
-	return RunWithFSf(newFs(), command, args...)
-}
-
-func newFs() afero.Fs { return afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()) }
-
-func RunWithFSf(fs afero.Fs, command string, args ...any) error {
-	return RunWithFs(fs, fmt.Sprintf(command, args...))
-}
-
+// RunWithFs is the entrypoint to run monaco for all integration tests.
+// It requires to specify the full command (`monaco [deploy]....`) and sets up the runner.
 func RunWithFs(fs afero.Fs, command string) error {
 	// remove multiple spaces
 	c := regexp.MustCompile(`\s+`).ReplaceAllString(command, " ")

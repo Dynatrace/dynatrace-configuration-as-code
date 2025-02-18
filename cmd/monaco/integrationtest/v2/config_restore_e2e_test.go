@@ -212,7 +212,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			RunIntegrationWithCleanup(t, configsFolder, configsFolderManifest, "", "", func(fs afero.Fs, _ TestContext) {
-				err := monaco.RunWithFSf(fs, "monaco deploy %s", configsFolderManifest)
+				err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s", configsFolderManifest))
 				require.NoError(t, err)
 
 				t.Log("Downloading configs")
@@ -288,7 +288,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
 	})
 
-	err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifestFile)
+	err = monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --verbose", manifestFile))
 	assert.NoError(t, err)
 
 	return suffix, nil
@@ -379,6 +379,6 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 		return nil
 	})
 
-	err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifestFile)
+	err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy %s --verbose", manifestFile))
 	assert.NoError(t, err)
 }
