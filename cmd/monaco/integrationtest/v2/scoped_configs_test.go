@@ -20,6 +20,7 @@ package v2
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -43,7 +44,7 @@ func TestDeployScopedConfigurations(t *testing.T) {
 
 		// deploy with sharing turned off and assert state
 		setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.suffix)
-		err := monaco.RunWithFSf(fs, "monaco deploy --verbose %s --environment %s", manifestPath, environment)
+		err := monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
 		require.NoError(t, err)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, nil, environment, true)
@@ -51,7 +52,7 @@ func TestDeployScopedConfigurations(t *testing.T) {
 
 		// deploy with sharing turned on and assert state
 		setTestEnvVar(t, dashboardSharedEnvName, "true", testContext.suffix)
-		err = monaco.RunWithFSf(fs, "monaco deploy --verbose %s --environment %s", manifestPath, environment)
+		err = monaco.RunWithFs(fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
 		require.NoError(t, err)
 
 		assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, true)
