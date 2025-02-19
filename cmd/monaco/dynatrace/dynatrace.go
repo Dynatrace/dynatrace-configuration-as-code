@@ -60,8 +60,8 @@ func VerifyEnvironmentGeneration(ctx context.Context, envs manifest.Environments
 
 func isValidEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) bool {
 	if env.Auth.Token == nil && env.Auth.OAuth == nil {
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, errors.New("no token and oAuth provided in manifest"), "", nil)
-		log.Error("No token and oAuth provided in manifest")
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, errors.New("no token or oAuth credentials provided in the manifest"), "", nil)
+		log.Error("No token or oAuth credentials provided in the manifest")
 		return false
 	}
 

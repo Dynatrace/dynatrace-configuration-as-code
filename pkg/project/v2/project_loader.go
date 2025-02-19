@@ -180,13 +180,13 @@ func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) 
 
 func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
 	if exists, err := afero.Exists(fs, projectDefinition.Path); err != nil {
-		formattedError := fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedError, "", nil)
-		return Project{}, []error{formattedError}
+		formattedErr := fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
+		return Project{}, []error{formattedErr}
 	} else if !exists {
-		formattedError := fmt.Errorf("failed to load project `%s`: filepath `%s` does not exist", projectDefinition.Name, projectDefinition.Path)
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedError, "", nil)
-		return Project{}, []error{formattedError}
+		formattedErr := fmt.Errorf("failed to load project `%s`: filepath `%s` does not exist", projectDefinition.Name, projectDefinition.Path)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
+		return Project{}, []error{formattedErr}
 	}
 
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
@@ -200,12 +200,13 @@ func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderCo
 	errs = append(errs, checkKeyUserActionScope(ctx, configs, configsWithErrors)...)
 
 	for _, loadedConfig := range configs {
-		if _, ok := configsWithErrors[loadedConfig.Coordinate]; !ok {
+		if _, found := configsWithErrors[loadedConfig.Coordinate]; !found {
 			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, "", &loadedConfig.Coordinate)
 		}
 	}
 
 	if len(errs) > 0 {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, fmt.Errorf("failed to load project `%s`", projectDefinition.Name), "", nil)
 		return Project{}, errs
 	}
 

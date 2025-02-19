@@ -92,9 +92,7 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 	}
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
 	reporter.ReportInfo(fmt.Sprintf("%d %v validated", len(projects), projectString))
-	defer func() {
-		reporter.ReportInfo("Deployment finished")
-	}()
+	defer reporter.ReportInfo("Deployment finished")
 
 	preloadCaches(ctx, projects, environmentClients)
 	g := graph.New(projects, environmentClients.Names())

@@ -100,6 +100,7 @@ func createDeploymentContext(ctx context.Context, fs afero.Fs) context.Context {
 
 func finishReport(ctx context.Context) {
 	r := report.GetReporterFromContextOrDiscard(ctx)
+	r.ReportInfo("Report finished")
 	r.Stop()
 
 	if summary := r.GetSummary(); len(summary) > 0 {

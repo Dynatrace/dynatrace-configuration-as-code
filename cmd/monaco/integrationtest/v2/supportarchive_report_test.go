@@ -215,6 +215,7 @@ func assertReport(t *testing.T, fs afero.Fs, path string, succeed bool) {
 		}
 		matcher.ContainsInfoRecord(t, records, "Monaco version")
 		matcher.ContainsInfoRecord(t, records, "Deployment finished")
+		matcher.ContainsInfoRecord(t, records, "Report finished")
 	}
 
 	if !succeed {
