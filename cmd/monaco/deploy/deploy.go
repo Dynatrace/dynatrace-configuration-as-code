@@ -42,9 +42,9 @@ import (
 func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
 	absManifestPath, err := absPath(manifestPath)
 	if err != nil {
-		formattedError := fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedError, "", nil)
-		return formattedError
+		formattedErr := fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
+		return formattedErr
 	}
 
 	loadedManifest, err := loadManifest(ctx, fs, absManifestPath, environmentGroups, specificEnvironments)
@@ -71,16 +71,16 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 
 	err = validateAuthenticationWithProjectConfigs(loadedProjects, loadedManifest.Environments)
 	if err != nil {
-		formattedError := fmt.Errorf("manifest auth field misconfigured: %w", err)
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedError, "", nil)
-		return formattedError
+		formattedErr := fmt.Errorf("manifest auth field misconfigured: %w", err)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
+		return formattedErr
 	}
 
 	clientSets, err := dynatrace.CreateEnvironmentClients(ctx, loadedManifest.Environments, dryRun)
 	if err != nil {
-		formattedError := fmt.Errorf("failed to create API clients: %w", err)
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedError, "", nil)
-		return formattedError
+		formattedErr := fmt.Errorf("failed to create API clients: %w", err)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
+		return formattedErr
 	}
 
 	err = deploy.Deploy(ctx, loadedProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun})

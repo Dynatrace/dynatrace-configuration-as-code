@@ -1710,16 +1710,16 @@ configs:
 			_ = afero.WriteFile(testFs, tt.filePathOnDisk, []byte(tt.fileContentOnDisk), 0644)
 			_ = afero.WriteFile(testFs, "profile.json", []byte("{}"), 0644)
 
-			gotConfigs, gotErrors := LoadConfigFile(context.TODO(), testFs, testLoaderContext, tt.filePathArgument)
+			gotConfigs, gotErrs := LoadConfigFile(context.TODO(), testFs, testLoaderContext, tt.filePathArgument)
 			if len(tt.wantErrorsContain) != 0 {
-				assert.Equal(t, len(tt.wantErrorsContain), len(gotErrors), "expected %v errors but got %v", len(tt.wantErrorsContain), len(gotErrors))
+				assert.Equal(t, len(tt.wantErrorsContain), len(gotErrs), "expected %v errors but got %v", len(tt.wantErrorsContain), len(gotErrs))
 
-				for i, err := range gotErrors {
+				for i, err := range gotErrs {
 					assert.ErrorContains(t, err, tt.wantErrorsContain[i])
 				}
 				return
 			}
-			assert.Empty(t, gotErrors, "expected no errors but got: %v", gotErrors)
+			assert.Empty(t, gotErrs, "expected no errors but got: %v", gotErrs)
 
 			// compare template contents
 			assert.Empty(t, cmp.Diff(tt.wantConfigs, gotConfigs, cmp.Comparer(func(a, b template.Template) bool {

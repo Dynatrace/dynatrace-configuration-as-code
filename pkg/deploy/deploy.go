@@ -76,7 +76,7 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
 		concurrentDeploymentsLimiter = rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
 	}
-	deploymentErrors := make(deployErrors.EnvironmentDeploymentErrors)
+	deploymentErrs := make(deployErrors.EnvironmentDeploymentErrors)
 
 	// note: Currently the validation works 'environment-independent', but that might be something we should reconsider to improve error messages
 	if validationErrs := validate.Validate(projects); validationErrs != nil {
@@ -84,7 +84,7 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 		if !opts.ContinueOnErr && !opts.DryRun {
 			return validationErrs
 		}
-		errors.As(validationErrs, &deploymentErrors)
+		errors.As(validationErrs, &deploymentErrs)
 	}
 	projectString := "project"
 	if len(projects) > 1 {
@@ -107,9 +107,9 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 
 		if err = deployComponents(ctx, sortedConfigs, clientset); err != nil {
 			log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Error("Deployment failed for environment %q: %v", env.Name, err)
-			deploymentErrors = deploymentErrors.Append(env.Name, err)
+			deploymentErrs = deploymentErrs.Append(env.Name, err)
 			if !opts.ContinueOnErr && !opts.DryRun {
-				return deploymentErrors
+				return deploymentErrs
 			}
 		} else {
 			log.WithFields(field.Environment(env.Name, env.Group)).Info("Deployment successful for environment %q", env.Name)
@@ -117,8 +117,8 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 	}
 	reporter.ReportInfo("Deployment finished")
 
-	if len(deploymentErrors) != 0 {
-		return deploymentErrors
+	if len(deploymentErrs) != 0 {
+		return deploymentErrs
 	}
 
 	return nil

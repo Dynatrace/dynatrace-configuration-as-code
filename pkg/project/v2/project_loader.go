@@ -89,7 +89,7 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 
 	environments := toEnvironmentSlice(loaderContext.Manifest.Environments)
 
-	projectNamesToLoad, errors := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
+	projectNamesToLoad, errs := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
 
 	seenProjectNames := make(map[string]struct{}, len(projectNamesToLoad))
 	var loadedProjects []Project
@@ -109,10 +109,10 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 			continue
 		}
 
-		project, errs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, environments)
+		project, loadProjectErrs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, environments)
 
-		if len(errs) > 0 {
-			errors = append(errors, errs...)
+		if len(loadProjectErrs) > 0 {
+			errs = append(errs, loadProjectErrs...)
 			continue
 		}
 		reporter.ReportInfo(fmt.Sprintf("project %q loaded", project.String()))
@@ -124,8 +124,8 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 		}
 	}
 
-	if len(errors) > 0 {
-		return nil, errors
+	if len(errs) > 0 {
+		return nil, errs
 	}
 
 	return loadedProjects, nil
@@ -248,23 +248,23 @@ func insertNetworkZoneParameter(configs []config.Config) {
 }
 
 func checkKeyUserActionScope(ctx context.Context, configs []config.Config, configErrorMap map[coordinate.Coordinate]struct{}) []error {
-	var errors []error
+	var errs []error
 	for _, c := range configs {
 		// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
 		// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
 		// sub graph (independent component) later on as
 		if c.Coordinate.Type == api.KeyUserActionsWeb {
 			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
-				newError := fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
+				scopeErr := fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
 					"parameter to another web-application config", api.KeyUserActionsWeb, c.Coordinate.ConfigId)
 				configErrorMap[c.Coordinate] = struct{}{}
-				errors = append(errors, newError)
+				errs = append(errs, scopeErr)
 
-				report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, newError, "", &c.Coordinate)
+				report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, scopeErr, "", &c.Coordinate)
 			}
 		}
 	}
-	return errors
+	return errs
 }
 
 func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
@@ -341,19 +341,19 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 }
 
 func findDuplicatedConfigIdentifiers(ctx context.Context, configs []config.Config, configErrorMap map[coordinate.Coordinate]struct{}) []error {
-	var errors []error
+	var errs []error
 	coordinates := make(map[string]struct{})
 	for _, c := range configs {
 		id := toFullyQualifiedConfigIdentifier(c)
 		if _, found := coordinates[id]; found {
-			newError := newDuplicateConfigIdentifierError(c)
+			dplErr := newDuplicateConfigIdentifierError(c)
 			configErrorMap[c.Coordinate] = struct{}{}
-			errors = append(errors, newError)
-			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, newError, "", &c.Coordinate)
+			errs = append(errs, dplErr)
+			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, dplErr, "", &c.Coordinate)
 		}
 		coordinates[id] = struct{}{}
 	}
-	return errors
+	return errs
 }
 
 // toFullyUniqueConfigIdentifier returns a configs coordinate as well as environment,
