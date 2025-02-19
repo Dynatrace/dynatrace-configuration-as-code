@@ -25,9 +25,9 @@ import (
 
 	"golang.org/x/oauth2/clientcredentials"
 
-	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	automationApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
-	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	libAutomation "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
@@ -137,12 +137,12 @@ type SettingsClient interface {
 }
 
 type AutomationClient interface {
-	Get(ctx context.Context, resourceType automationApi.ResourceType, id string) (automation.Response, error)
-	Create(ctx context.Context, resourceType automationApi.ResourceType, data []byte) (result automation.Response, err error)
-	Update(ctx context.Context, resourceType automationApi.ResourceType, id string, data []byte) (automation.Response, error)
-	List(ctx context.Context, resourceType automationApi.ResourceType) (automation.ListResponse, error)
-	Upsert(ctx context.Context, resourceType automationApi.ResourceType, id string, data []byte) (result automation.Response, err error)
-	Delete(ctx context.Context, resourceType automationApi.ResourceType, id string) (automation.Response, error)
+	Get(ctx context.Context, resourceType libAutomation.ResourceType, id string) (automation.Response, error)
+	Create(ctx context.Context, resourceType libAutomation.ResourceType, data []byte) (result automation.Response, err error)
+	Update(ctx context.Context, resourceType libAutomation.ResourceType, id string, data []byte) (automation.Response, error)
+	List(ctx context.Context, resourceType libAutomation.ResourceType) (automation.ListResponse, error)
+	Upsert(ctx context.Context, resourceType libAutomation.ResourceType, id string, data []byte) (result automation.Response, err error)
+	Delete(ctx context.Context, resourceType libAutomation.ResourceType, id string) (automation.Response, error)
 }
 
 type BucketClient interface {
@@ -157,9 +157,9 @@ type BucketClient interface {
 type DocumentClient interface {
 	Get(ctx context.Context, id string) (documents.Response, error)
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
-	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (coreapi.Response, error)
-	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (coreapi.Response, error)
-	Delete(ctx context.Context, id string) (coreapi.Response, error)
+	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
+	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
+	Delete(ctx context.Context, id string) (libAPI.Response, error)
 }
 
 type OpenPipelineClient interface {
@@ -177,14 +177,14 @@ type SegmentClient interface {
 }
 
 type ServiceLevelObjectiveClient interface {
-	List(ctx context.Context) (coreapi.PagedListResponse, error)
-	Update(ctx context.Context, id string, body []byte) (coreapi.Response, error)
-	Create(ctx context.Context, body []byte) (coreapi.Response, error)
+	List(ctx context.Context) (libAPI.PagedListResponse, error)
+	Update(ctx context.Context, id string, body []byte) (libAPI.Response, error)
+	Create(ctx context.Context, body []byte) (libAPI.Response, error)
 }
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
-var DefaultRetryOptions = corerest.RetryOptions{MaxRetries: 10, ShouldRetryFunc: corerest.RetryIfNotSuccess}
+var DefaultRetryOptions = rest.RetryOptions{MaxRetries: 10, ShouldRetryFunc: rest.RetryIfNotSuccess}
 
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
@@ -261,7 +261,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		WithRateLimiter(true)
 
 	if supportarchive.IsEnabled(ctx) {
-		cFactory = cFactory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
+		cFactory = cFactory.WithHTTPListener(&rest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
 
 	classicURL := url
@@ -351,7 +351,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	}, nil
 }
 
-func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth, client *corerest.Client) (string, error) {
+func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth, client *rest.Client) (string, error) {
 	classicUrl := url
 	if auth != nil && client != nil {
 		return metadata.GetDynatraceClassicURL(ctx, *client)

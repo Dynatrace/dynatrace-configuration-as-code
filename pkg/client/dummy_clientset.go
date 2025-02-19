@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"net/http"
 
-	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	automationApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	libAutomation "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
@@ -48,32 +48,32 @@ type DummyAutomationClient struct {
 }
 
 // Create implements AutomationClient.
-func (d *DummyAutomationClient) Create(ctx context.Context, resourceType automationApi.ResourceType, data []byte) (result coreapi.Response, err error) {
+func (d *DummyAutomationClient) Create(ctx context.Context, resourceType libAutomation.ResourceType, data []byte) (result api.Response, err error) {
 	panic("unimplemented")
 }
 
 // Delete implements AutomationClient.
-func (d *DummyAutomationClient) Delete(ctx context.Context, resourceType automationApi.ResourceType, id string) (coreapi.Response, error) {
+func (d *DummyAutomationClient) Delete(ctx context.Context, resourceType libAutomation.ResourceType, id string) (api.Response, error) {
 	panic("unimplemented")
 }
 
 // Get implements AutomationClient.
-func (d *DummyAutomationClient) Get(ctx context.Context, resourceType automationApi.ResourceType, id string) (coreapi.Response, error) {
+func (d *DummyAutomationClient) Get(ctx context.Context, resourceType libAutomation.ResourceType, id string) (api.Response, error) {
 	panic("unimplemented")
 }
 
 // List implements AutomationClient.
-func (d *DummyAutomationClient) List(ctx context.Context, resourceType automationApi.ResourceType) (coreapi.PagedListResponse, error) {
+func (d *DummyAutomationClient) List(ctx context.Context, resourceType libAutomation.ResourceType) (api.PagedListResponse, error) {
 	panic("unimplemented")
 }
 
 // Update implements AutomationClient.
-func (d *DummyAutomationClient) Update(ctx context.Context, resourceType automationApi.ResourceType, id string, data []byte) (coreapi.Response, error) {
+func (d *DummyAutomationClient) Update(ctx context.Context, resourceType libAutomation.ResourceType, id string, data []byte) (api.Response, error) {
 	panic("unimplemented")
 }
 
 // Upsert implements AutomationClient.
-func (d *DummyAutomationClient) Upsert(ctx context.Context, resourceType automationApi.ResourceType, id string, data []byte) (result coreapi.Response, err error) {
+func (d *DummyAutomationClient) Upsert(ctx context.Context, resourceType libAutomation.ResourceType, id string, data []byte) (result api.Response, err error) {
 	return automation.Response{
 		StatusCode: 200,
 		Data:       []byte(fmt.Sprintf(`{"id" : "%s"}`, id)),
@@ -85,32 +85,32 @@ var _ BucketClient = (*DummyBucketClient)(nil)
 type DummyBucketClient struct{}
 
 // Create implements BucketClient.
-func (d *DummyBucketClient) Create(ctx context.Context, bucketName string, data []byte) (coreapi.Response, error) {
+func (d *DummyBucketClient) Create(ctx context.Context, bucketName string, data []byte) (api.Response, error) {
 	panic("unimplemented")
 }
 
 // Delete implements BucketClient.
-func (d *DummyBucketClient) Delete(ctx context.Context, bucketName string) (coreapi.Response, error) {
+func (d *DummyBucketClient) Delete(ctx context.Context, bucketName string) (api.Response, error) {
 	panic("unimplemented")
 }
 
 // Get implements BucketClient.
-func (d *DummyBucketClient) Get(ctx context.Context, bucketName string) (coreapi.Response, error) {
+func (d *DummyBucketClient) Get(ctx context.Context, bucketName string) (api.Response, error) {
 	panic("unimplemented")
 }
 
 // List implements BucketClient.
-func (d *DummyBucketClient) List(ctx context.Context) (coreapi.PagedListResponse, error) {
+func (d *DummyBucketClient) List(ctx context.Context) (api.PagedListResponse, error) {
 	panic("unimplemented")
 }
 
 // Update implements BucketClient.
-func (d *DummyBucketClient) Update(ctx context.Context, bucketName string, data []byte) (coreapi.Response, error) {
+func (d *DummyBucketClient) Update(ctx context.Context, bucketName string, data []byte) (api.Response, error) {
 	panic("unimplemented")
 }
 
 // Upsert implements BucketClient.
-func (d *DummyBucketClient) Upsert(ctx context.Context, bucketName string, data []byte) (coreapi.Response, error) {
+func (d *DummyBucketClient) Upsert(ctx context.Context, bucketName string, data []byte) (api.Response, error) {
 	return buckets.Response{
 		StatusCode: http.StatusOK,
 		Data:       data,
@@ -122,8 +122,8 @@ var _ DocumentClient = (*DummyDocumentClient)(nil)
 type DummyDocumentClient struct{}
 
 // Create implements Client.
-func (c *DummyDocumentClient) Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (coreapi.Response, error) {
-	return coreapi.Response{Data: []byte(`{}`)}, nil
+func (c *DummyDocumentClient) Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (api.Response, error) {
+	return api.Response{Data: []byte(`{}`)}, nil
 }
 
 // Get implements Client.
@@ -137,12 +137,12 @@ func (c *DummyDocumentClient) List(ctx context.Context, filter string) (document
 }
 
 // Update implements Client.
-func (c *DummyDocumentClient) Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (coreapi.Response, error) {
-	return coreapi.Response{Data: []byte(`{}`)}, nil
+func (c *DummyDocumentClient) Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (api.Response, error) {
+	return api.Response{Data: []byte(`{}`)}, nil
 }
 
 // Delete implements DocumentClient.
-func (c *DummyDocumentClient) Delete(ctx context.Context, id string) (coreapi.Response, error) {
+func (c *DummyDocumentClient) Delete(ctx context.Context, id string) (api.Response, error) {
 	panic("unimplemented")
 }
 
@@ -151,7 +151,7 @@ var _ OpenPipelineClient = (*DummyOpenPipelineClient)(nil)
 type DummyOpenPipelineClient struct{}
 
 // GetAll implements OpenPipelineClient.
-func (c *DummyOpenPipelineClient) GetAll(ctx context.Context) ([]coreapi.Response, error) {
+func (c *DummyOpenPipelineClient) GetAll(ctx context.Context) ([]api.Response, error) {
 	panic("unimplemented")
 }
 
@@ -187,14 +187,14 @@ func (c *DummySegmentClient) Get(_ context.Context, _ string) (segments.Response
 
 type DummyServiceLevelObjectClient struct{}
 
-func (c *DummyServiceLevelObjectClient) List(_ context.Context) (coreapi.PagedListResponse, error) {
-	return coreapi.PagedListResponse{}, nil
+func (c *DummyServiceLevelObjectClient) List(_ context.Context) (api.PagedListResponse, error) {
+	return api.PagedListResponse{}, nil
 }
 
-func (c *DummyServiceLevelObjectClient) Update(_ context.Context, _ string, _ []byte) (coreapi.Response, error) {
-	return coreapi.Response{}, nil
+func (c *DummyServiceLevelObjectClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
+	return api.Response{}, nil
 }
 
-func (c *DummyServiceLevelObjectClient) Create(_ context.Context, _ []byte) (coreapi.Response, error) {
-	return coreapi.Response{Data: []byte(`{}`)}, nil
+func (c *DummyServiceLevelObjectClient) Create(_ context.Context, _ []byte) (api.Response, error) {
+	return api.Response{Data: []byte(`{}`)}, nil
 }
