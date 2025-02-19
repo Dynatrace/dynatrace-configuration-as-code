@@ -17,8 +17,11 @@
 package loader
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -55,7 +58,7 @@ type singleConfigEntryLoadContext struct {
 
 // LoadConfigFile loads a single configuration file and returns all configs defined in that file.
 // The returned configs contain all variants for project/environment overwrites passed in the [LoaderContext]
-func LoadConfigFile(fs afero.Fs, context *LoaderContext, filePath string) ([]config.Config, []error) {
+func LoadConfigFile(ctx context.Context, fs afero.Fs, context *LoaderContext, filePath string) ([]config.Config, []error) {
 	data, err := afero.ReadFile(fs, filePath)
 	if err != nil {
 		return nil, []error{newLoadError(filePath, err)}
@@ -79,6 +82,7 @@ func LoadConfigFile(fs afero.Fs, context *LoaderContext, filePath string) ([]con
 			return nil, []error{newLoadError(filePath, ErrMixingConfigs)}
 		}
 
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateWarn, nil, fmt.Sprintf("File %q appears to be an account resource file, skipping loading", filePath), nil)
 		log.WithFields(field.F("file", filePath)).Warn("File %q appears to be an account resource file, skipping loading", filePath)
 		return []config.Config{}, nil
 	}
@@ -102,16 +106,15 @@ func LoadConfigFile(fs afero.Fs, context *LoaderContext, filePath string) ([]con
 
 		result, definitionErrors := parseConfigEntry(fs, configLoaderContext, cgf.Id, cgf)
 
+		configs = append(configs, result...)
+
 		if len(definitionErrors) > 0 {
 			errs = append(errs, definitionErrors...)
-			continue
 		}
-
-		configs = append(configs, result...)
 	}
 
 	if errs != nil {
-		return nil, errs
+		return configs, errs
 	}
 
 	return configs, nil

@@ -26,43 +26,58 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
+type RecordType = string
+
 const (
-	TypeDeploy = "DEPLOY"
+	TypeDeploy RecordType = "DEPLOY"
+	TypeLoad   RecordType = "LOAD"
+	TypeInfo   RecordType = "INFO"
 )
 
+type RecordState = string
+
 const (
-	// StateDeploySuccess indicates a config was successfully deployed.
-	StateDeploySuccess = "SUCCESS"
+	// StateInfo indicates some debug information (e.g., used Monaco version)
+	StateInfo RecordState = "INFO"
 
-	// StateDeployError indicates a config could not be deployed due to an error.
-	StateDeployError = "ERROR"
+	// StateSuccess indicates a config was successfully deployed/validated.
+	StateSuccess RecordState = "SUCCESS"
 
-	// StateDeployExcluded indicates no attempt was made to deploy a config because it was marked by the user to skip.
-	StateDeployExcluded = "EXCLUDED"
+	// StateWarn indicates a config warning, e.g., "account resource file skipped".
+	StateWarn RecordState = "WARNING"
 
-	// StateDeploySkipped indicates no attempt was made to deploy a config because one or mored dependencies were skipped or excluded.
-	StateDeploySkipped = "SKIPPED"
+	// StateError indicates a config could not be validated or deployed due to an error.
+	StateError RecordState = "ERROR"
+
+	// StateExcluded indicates no attempt was made to deploy a config because it was marked by the user to skip.
+	StateExcluded RecordState = "EXCLUDED"
+
+	// StateSkipped indicates no attempt was made to deploy a config because one or more dependencies were skipped or excluded.
+	StateSkipped RecordState = "SKIPPED"
 )
 
 // Record is a single entry in a report.
 type Record struct {
-	// Type is the type of record, currently TypeDeploy.
-	Type string `json:"type"`
+	// Type is the type of record, currently TypeDeploy and TypeLoad.
+	Type RecordType `json:"type"`
 
 	// Time is the time associated with the Record.
 	Time JSONTime `json:"time"`
 
 	// Config provides the config ID, project and type of the config associated with the Record.
-	Config coordinate.Coordinate `json:"config"`
+	Config *coordinate.Coordinate `json:"config,omitempty"`
 
-	// State is the result of the deployment of the config, currently StateDeploySuccess, StateDeployError, StateDeployExcluded, StateDeploySkipped.
-	State string `json:"state"`
+	// State is the result of the deployment of the config, currently StateSuccess, StateInfo, StateError, StateExcluded, StateSkipped.
+	State RecordState `json:"state"`
 
 	// Details optionally provides Detail log entries associated with the record.
 	Details []Detail `json:"details,omitempty"`
 
 	// Error optionally provides the string representation of any error associated with the Record.
-	Error *string `json:"error,omitempty"`
+	Error string `json:"error,omitempty"`
+
+	// Message optionally info message
+	Message string `json:"message,omitempty"`
 }
 
 // JSONTime represents a time.Time value that is serialized as a string in RFC3339 format.

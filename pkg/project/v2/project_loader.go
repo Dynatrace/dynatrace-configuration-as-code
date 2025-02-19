@@ -15,7 +15,12 @@
 package v2
 
 import (
+	"context"
 	"fmt"
+	"slices"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -28,8 +33,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
-	"github.com/spf13/afero"
-	"slices"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
 type ProjectLoaderContext struct {
@@ -70,25 +74,27 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 }
 
 // Tries to load the specified projects. If no project names are specified, all projects are loaded.
-func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectNames []string) ([]Project, []error) {
+func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, specificProjectNames []string) ([]Project, []error) {
 	var workingDirFs afero.Fs
 
-	if context.WorkingDir == "." {
+	if loaderContext.WorkingDir == "." {
 		workingDirFs = fs
 	} else {
-		workingDirFs = afero.NewBasePathFs(fs, context.WorkingDir)
+		workingDirFs = afero.NewBasePathFs(fs, loaderContext.WorkingDir)
 	}
 
-	if len(context.Manifest.Projects) == 0 {
+	if len(loaderContext.Manifest.Projects) == 0 {
 		return nil, []error{fmt.Errorf("no projects defined in manifest")}
 	}
 
-	environments := toEnvironmentSlice(context.Manifest.Environments)
+	environments := toEnvironmentSlice(loaderContext.Manifest.Environments)
 
-	projectNamesToLoad, errors := getProjectNamesToLoad(context.Manifest.Projects, specificProjectNames)
+	projectNamesToLoad, errs := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
 
 	seenProjectNames := make(map[string]struct{}, len(projectNamesToLoad))
 	var loadedProjects []Project
+	reporter := report.GetReporterFromContextOrDiscard(ctx)
+
 	for len(projectNamesToLoad) > 0 {
 		projectNameToLoad := projectNamesToLoad[0]
 		projectNamesToLoad = projectNamesToLoad[1:]
@@ -98,16 +104,18 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectName
 		}
 		seenProjectNames[projectNameToLoad] = struct{}{}
 
-		projectDefinition, found := context.Manifest.Projects[projectNameToLoad]
+		projectDefinition, found := loaderContext.Manifest.Projects[projectNameToLoad]
 		if !found {
 			continue
 		}
 
-		project, errs := loadProject(workingDirFs, context, projectDefinition, environments)
-		if len(errs) > 0 {
-			errors = append(errors, errs...)
+		project, loadProjectErrs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, environments)
+
+		if len(loadProjectErrs) > 0 {
+			errs = append(errs, loadProjectErrs...)
 			continue
 		}
+		reporter.ReportInfo(fmt.Sprintf("project %q loaded", project.String()))
 
 		loadedProjects = append(loadedProjects, project)
 
@@ -116,8 +124,8 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext, specificProjectName
 		}
 	}
 
-	if len(errors) > 0 {
-		return nil, errors
+	if len(errs) > 0 {
+		return nil, errs
 	}
 
 	return loadedProjects, nil
@@ -135,7 +143,7 @@ func getProjectNamesToLoad(allProjectsDefinitions manifest.ProjectDefinitionByPr
 		return projectNamesToLoad, nil
 	}
 
-	var errors []error
+	var errs []error
 	for _, projectName := range specificProjectNames {
 		// try to find a project with the given name
 		if _, found := allProjectsDefinitions[projectName]; found {
@@ -153,11 +161,11 @@ func getProjectNamesToLoad(allProjectsDefinitions manifest.ProjectDefinitionByPr
 		}
 
 		if !found {
-			errors = append(errors, fmt.Errorf("no project named `%s` could be found in the manifest", projectName))
+			errs = append(errs, fmt.Errorf("no project named `%s` could be found in the manifest", projectName))
 		}
 	}
 
-	return projectNamesToLoad, errors
+	return projectNamesToLoad, errs
 }
 
 func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) []manifest.EnvironmentDefinition {
@@ -170,23 +178,36 @@ func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) 
 	return result
 }
 
-func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
-	exists, err := afero.Exists(fs, projectDefinition.Path)
-	if err != nil {
-		return Project{}, []error{fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)}
-	}
-	if !exists {
-		return Project{}, []error{fmt.Errorf("failed to load project `%s`: filepath `%s` does not exist", projectDefinition.Name, projectDefinition.Path)}
+func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
+	if exists, err := afero.Exists(fs, projectDefinition.Path); err != nil {
+		formattedErr := fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
+		return Project{}, []error{formattedErr}
+	} else if !exists {
+		formattedErr := fmt.Errorf("failed to load project `%s`: filepath `%s` does not exist", projectDefinition.Name, projectDefinition.Path)
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
+		return Project{}, []error{formattedErr}
 	}
 
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
-	configs, errors := loadConfigsOfProject(fs, context, projectDefinition, environments)
-	errors = append(errors, findDuplicatedConfigIdentifiers(configs)...)
-	errors = append(errors, checkKeyUserActionScope(configs)...)
+	configs, errs := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
+	for _, err := range errs {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, err, "", nil)
+	}
+	configsWithErrors := make(map[coordinate.Coordinate]struct{})
+	errs = append(errs, findDuplicatedConfigIdentifiers(ctx, configs, configsWithErrors)...)
+	errs = append(errs, checkKeyUserActionScope(ctx, configs, configsWithErrors)...)
 
-	if len(errors) > 0 {
-		return Project{}, errors
+	for _, loadedConfig := range configs {
+		if _, found := configsWithErrors[loadedConfig.Coordinate]; !found {
+			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, "", &loadedConfig.Coordinate)
+		}
+	}
+
+	if len(errs) > 0 {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, fmt.Errorf("failed to load project `%s`", projectDefinition.Name), "", nil)
+		return Project{}, errs
 	}
 
 	insertNetworkZoneParameter(configs)
@@ -227,20 +248,24 @@ func insertNetworkZoneParameter(configs []config.Config) {
 	}
 }
 
-func checkKeyUserActionScope(configs []config.Config) []error {
-	var errors []error
+func checkKeyUserActionScope(ctx context.Context, configs []config.Config, configErrorMap map[coordinate.Coordinate]struct{}) []error {
+	var errs []error
 	for _, c := range configs {
 		// The scope parameter of a key user actions web configuration needs to be a reference to another application-web config
 		// The reference parameter makes sure that rely on the fact that kua web configs are loaded/deployed within the same
 		// sub graph (independent component) later on as
 		if c.Coordinate.Type == api.KeyUserActionsWeb {
 			if _, ok := c.Parameters[config.ScopeParameter].(*ref.ReferenceParameter); !ok {
-				errors = append(errors, fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
-					"parameter to another web-application config", api.KeyUserActionsWeb, c.Coordinate.ConfigId))
+				scopeErr := fmt.Errorf("scope parameter of config of type '%s' with ID '%s' needs to be a reference "+
+					"parameter to another web-application config", api.KeyUserActionsWeb, c.Coordinate.ConfigId)
+				configErrorMap[c.Coordinate] = struct{}{}
+				errs = append(errs, scopeErr)
+
+				report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, scopeErr, "", &c.Coordinate)
 			}
 		}
 	}
-	return errors
+	return errs
 }
 
 func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
@@ -286,7 +311,8 @@ func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 	return configMap
 }
 
-func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
+// loadConfigsOfProject returns the (partial if errors) loaded configs and the errors
+func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
 	environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
 
 	configFiles, err := files.FindYamlFiles(fs, projectDefinition.Path)
@@ -297,7 +323,7 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 	var configs []config.Config
 	var errs []error
 
-	ctx := &loader.LoaderContext{
+	loaderContext := &loader.LoaderContext{
 		ProjectId:       projectDefinition.Name,
 		Environments:    environments,
 		Path:            projectDefinition.Path,
@@ -307,7 +333,7 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 
 	for _, file := range configFiles {
 		log.WithFields(field.F("file", file)).Debug("Loading configuration file %s", file)
-		loadedConfigs, configErrs := loader.LoadConfigFile(fs, ctx, file)
+		loadedConfigs, configErrs := loader.LoadConfigFile(ctx, fs, loaderContext, file)
 
 		errs = append(errs, configErrs...)
 		configs = append(configs, loadedConfigs...)
@@ -315,17 +341,20 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 	return configs, errs
 }
 
-func findDuplicatedConfigIdentifiers(configs []config.Config) []error {
-	var errors []error
+func findDuplicatedConfigIdentifiers(ctx context.Context, configs []config.Config, configErrorMap map[coordinate.Coordinate]struct{}) []error {
+	var errs []error
 	coordinates := make(map[string]struct{})
 	for _, c := range configs {
 		id := toFullyQualifiedConfigIdentifier(c)
 		if _, found := coordinates[id]; found {
-			errors = append(errors, newDuplicateConfigIdentifierError(c))
+			dplErr := newDuplicateConfigIdentifierError(c)
+			configErrorMap[c.Coordinate] = struct{}{}
+			errs = append(errs, dplErr)
+			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, dplErr, "", &c.Coordinate)
 		}
 		coordinates[id] = struct{}{}
 	}
-	return errors
+	return errs
 }
 
 // toFullyUniqueConfigIdentifier returns a configs coordinate as well as environment,

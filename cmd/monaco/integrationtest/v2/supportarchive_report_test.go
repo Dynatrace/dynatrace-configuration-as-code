@@ -35,6 +35,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
@@ -209,9 +210,12 @@ func assertReport(t *testing.T, fs afero.Fs, path string, succeed bool) {
 
 	require.NotEmpty(t, records)
 	if succeed {
-		for _, r := range records {
-			assert.Containsf(t, []string{"SUCCESS", "EXCLUDED", "SKIPPED"}, r.State, "config %s is with status %s", r.Config.String(), r.State)
+		for index, r := range records {
+			assert.Containsf(t, []report.RecordState{report.StateSuccess, report.StateExcluded, report.StateSkipped, report.StateInfo}, r.State, "config at %d is with status %s", index, r.State)
 		}
+		matcher.ContainsInfoRecord(t, records, "Monaco version")
+		matcher.ContainsInfoRecord(t, records, "Deployment finished")
+		matcher.ContainsInfoRecord(t, records, "Report finished")
 	}
 
 	if !succeed {

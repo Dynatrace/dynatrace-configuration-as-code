@@ -1,0 +1,21 @@
+manifestVersion: 1.0
+
+projects:
+  - name: project
+
+environmentGroups:
+  - name: default
+    environments:
+      - name: platform_env
+        url:
+          type: environment
+          value: PLATFORM_URL_ENVIRONMENT_1
+        auth:
+          oAuth:
+            clientId:
+              name: OAUTH_CLIENT_ID
+            clientSecret:
+              name: OAUTH_CLIENT_SECRET
+            tokenEndpoint:
+              type: environment
+              value: OAUTH_TOKEN_ENDPOINT

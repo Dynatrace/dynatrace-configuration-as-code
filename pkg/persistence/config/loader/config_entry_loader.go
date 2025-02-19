@@ -35,10 +35,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
 )
 
-// parseConfigEntry parses a single config entry
+// parseConfigEntry parses a single config entry and returns the (partial if error) loaded data and the error
 func parseConfigEntry(
 	fs afero.Fs,
-	context *configFileLoaderContext,
+	loaderContext *configFileLoaderContext,
 	configId string,
 	definition persistence.TopLevelConfigDefinition,
 ) ([]config.Config, []error) {
@@ -48,11 +48,11 @@ func parseConfigEntry(
 	}
 
 	singleConfigContext := &singleConfigEntryLoadContext{
-		configFileLoaderContext: context,
+		configFileLoaderContext: loaderContext,
 		Type:                    definition.Type.GetApiType(),
 	}
 
-	if err := definition.Type.Validate(context.KnownApis); err != nil {
+	if err := definition.Type.Validate(loaderContext.KnownApis); err != nil {
 		return nil, []error{newDefinitionParserError(configId, singleConfigContext, err.Error())}
 	}
 
@@ -61,7 +61,7 @@ func parseConfigEntry(
 
 	var results []config.Config
 	var errs []error
-	for _, env := range context.Environments {
+	for _, env := range loaderContext.Environments {
 
 		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env, definition, groupOverrideMap, environmentOverrideMap)
 
@@ -74,7 +74,7 @@ func parseConfigEntry(
 	}
 
 	if len(errs) != 0 {
-		return nil, errs
+		return results, errs
 	}
 
 	return results, nil
