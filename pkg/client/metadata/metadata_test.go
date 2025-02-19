@@ -19,12 +19,13 @@
 package metadata
 
 import (
-	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 )
 
 func TestGetDynatraceClassicURL(t *testing.T) {
@@ -33,7 +34,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{})
 		defer server.Close()
 
-		classicURL, err := GetDynatraceClassicURL(context.TODO(), *corerest.NewClient(server.URL(), server.FaultyClient()))
+		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.FaultyClient()))
 		assert.Empty(t, classicURL)
 		assert.Error(t, err)
 	})
@@ -51,7 +52,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		})
 		defer server.Close()
 
-		classicURL, err := GetDynatraceClassicURL(context.TODO(), *corerest.NewClient(server.URL(), server.Client()))
+		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.Client()))
 		assert.Empty(t, classicURL)
 		assert.Error(t, err)
 	})
@@ -69,7 +70,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		})
 		defer server.Close()
 
-		classicURL, err := GetDynatraceClassicURL(context.TODO(), *corerest.NewClient(server.URL(), server.Client()))
+		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.Client()))
 		assert.Empty(t, classicURL)
 		assert.Error(t, err)
 	})
@@ -87,7 +88,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		})
 		defer server.Close()
 
-		classicURL, err := GetDynatraceClassicURL(context.TODO(), *corerest.NewClient(server.URL(), server.Client()))
+		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.Client()))
 		assert.Empty(t, classicURL)
 		assert.Error(t, err)
 	})
@@ -105,7 +106,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		})
 		defer server.Close()
 
-		classicURL, err := GetDynatraceClassicURL(context.TODO(), *corerest.NewClient(server.URL(), server.Client()))
+		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.Client()))
 		assert.EqualValues(t, "https://classic.env.com", classicURL)
 		assert.NoError(t, err)
 	})
