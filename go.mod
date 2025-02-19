@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/dynatrace/dynatrace-configuration-as-code-core v0.7.1-0.20250218115521-77fab564c444
+	github.com/dynatrace/dynatrace-configuration-as-code-core v0.7.1-0.20250219150214-9874b8b0ebdb
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/go-cmp v0.6.0
