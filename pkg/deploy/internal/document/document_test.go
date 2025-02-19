@@ -19,7 +19,6 @@
 package document
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -59,7 +58,7 @@ func TestDeployDocumentWrongType(t *testing.T) {
 		Template: testutils.GenerateFaultyTemplate(t),
 	}
 
-	_, errors := Deploy(context.TODO(), client, nil, "", conf)
+	_, errors := Deploy(t.Context(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -225,5 +224,5 @@ func runDeployTest(t *testing.T, client Client, c *config.Config) (entities.Reso
 	parameters, errs := c.ResolveParameterValues(entities.New())
 	require.Empty(t, errs)
 
-	return Deploy(context.TODO(), client, parameters, "", c)
+	return Deploy(t.Context(), client, parameters, "", c)
 }

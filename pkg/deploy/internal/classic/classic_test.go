@@ -19,7 +19,6 @@
 package classic
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,7 +61,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	}
 	entityMap := entities.New()
 	entityMap.Put(entities.ResolvedEntity{EntityName: name, Coordinate: coordinate.Coordinate{Type: "dashboard"}})
-	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
+	_, errors := Deploy(t.Context(), client, testApiMap, nil, "", &conf)
 
 	assert.NotEmpty(t, errors)
 }
@@ -114,7 +113,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
+	_, errors := Deploy(t.Context(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -135,7 +134,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
+	_, errors := Deploy(t.Context(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -172,7 +171,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
+	_, errors := Deploy(t.Context(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -211,6 +210,6 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
+	_, errors := Deploy(t.Context(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }

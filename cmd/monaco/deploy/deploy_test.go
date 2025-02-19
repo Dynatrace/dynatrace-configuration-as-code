@@ -17,7 +17,6 @@
 package deploy
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -55,7 +54,7 @@ func Test_DoDeploy_InvalidManifest(t *testing.T) {
 	manifestPath, _ := filepath.Abs("manifest.yaml")
 	_ = afero.WriteFile(testFs, manifestPath, []byte(manifestYaml), 0644)
 
-	err := deployConfigs(context.TODO(), testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
+	err := deployConfigs(t.Context(), testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
 	assert.Error(t, err)
 }
 
@@ -96,26 +95,26 @@ environmentGroups:
 	_ = afero.WriteFile(testFs, manifestPath, []byte(manifestYaml), 0644)
 
 	t.Run("Wrong environment group", func(t *testing.T) {
-		err := deployConfigs(context.TODO(), testFs, manifestPath, []string{"NOT_EXISTING_GROUP"}, []string{}, []string{}, true, true)
+		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"NOT_EXISTING_GROUP"}, []string{}, []string{}, true, true)
 		assert.Error(t, err)
 	})
 	t.Run("Wrong environment name", func(t *testing.T) {
-		err := deployConfigs(context.TODO(), testFs, manifestPath, []string{"default"}, []string{"NOT_EXISTING_ENV"}, []string{}, true, true)
+		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"default"}, []string{"NOT_EXISTING_ENV"}, []string{}, true, true)
 		assert.Error(t, err)
 	})
 
 	t.Run("Wrong project name", func(t *testing.T) {
-		err := deployConfigs(context.TODO(), testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"NON_EXISTING_PROJECT"}, true, true)
+		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"NON_EXISTING_PROJECT"}, true, true)
 		assert.Error(t, err)
 	})
 
 	t.Run("no parameters", func(t *testing.T) {
-		err := deployConfigs(context.TODO(), testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
+		err := deployConfigs(t.Context(), testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
 		assert.NoError(t, err)
 	})
 
 	t.Run("correct parameters", func(t *testing.T) {
-		err := deployConfigs(context.TODO(), testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"project"}, true, true)
+		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"project"}, true, true)
 		assert.NoError(t, err)
 	})
 
@@ -147,7 +146,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("defined environment in project succeeds", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
-			context.TODO(),
+			t.Context(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -164,7 +163,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("undefined environment in project fails", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
-			context.TODO(),
+			t.Context(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -181,7 +180,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("platform config with platform environment succeeds", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
-			context.TODO(),
+			t.Context(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -200,7 +199,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("platform config without platform environment fails", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
-			context.TODO(),
+			t.Context(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -219,7 +218,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two different openpipeline configs in same project succceed", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
-			context.TODO(),
+			t.Context(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -239,7 +238,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two different openpipeline configs in different projects succceed", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
-			context.TODO(),
+			t.Context(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -268,7 +267,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two identical openpipeline configs in same project but different environments succceed", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
-			context.TODO(),
+			t.Context(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -295,7 +294,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two identical openpipeline configs in different projects and environments succceed", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
-			context.TODO(),
+			t.Context(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -327,7 +326,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two identical openpipeline configs in same project and environments fail", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
-			context.TODO(),
+			t.Context(),
 			[]project.Project{
 				{
 					Id: project1Id,
@@ -350,7 +349,7 @@ func Test_checkEnvironments(t *testing.T) {
 
 	t.Run("two identical openpipeline configs in different projects and same environments fail", func(t *testing.T) {
 		err := validateProjectsWithEnvironments(
-			context.TODO(),
+			t.Context(),
 			[]project.Project{
 				{
 					Id: project1Id,

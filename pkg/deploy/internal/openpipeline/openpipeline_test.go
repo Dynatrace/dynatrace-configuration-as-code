@@ -19,17 +19,18 @@
 package openpipeline
 
 import (
-	"context"
 	"errors"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 var opConfigCoordinate = coordinate.Coordinate{
@@ -67,5 +68,5 @@ func TestDeployOpenPipelineConfig(t *testing.T) {
 func runDeployTest(t *testing.T, client Client, c *config.Config) (entities.ResolvedEntity, error) {
 	parameters, errs := c.ResolveParameterValues(entities.New())
 	require.Empty(t, errs)
-	return Deploy(context.TODO(), client, parameters, "{}", c)
+	return Deploy(t.Context(), client, parameters, "{}", c)
 }

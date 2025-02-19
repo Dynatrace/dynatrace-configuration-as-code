@@ -25,6 +25,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -32,7 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
-	"github.com/stretchr/testify/assert"
 )
 
 type testClient struct {
@@ -267,7 +268,7 @@ func TestDeploy(t *testing.T) {
 			renderedConfig, err := tt.inputConfig.Render(props)
 			assert.NoError(t, err)
 
-			resolvedEntity, err := segment.Deploy(context.Background(), &c, props, renderedConfig, &tt.inputConfig)
+			resolvedEntity, err := segment.Deploy(t.Context(), &c, props, renderedConfig, &tt.inputConfig)
 			if tt.expectErr {
 				assert.Error(t, err)
 			}
