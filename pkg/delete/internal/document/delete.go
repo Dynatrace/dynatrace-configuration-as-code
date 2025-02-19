@@ -58,7 +58,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 		id = dp.OriginObjectId
 	}
 	if id == "" {
-		extID, err := idutils.GenerateExternalIDForDocument(dp.AsCoordinate())
+		extID, err := idutils.GenerateExternalID(dp.AsCoordinate())
 		if err != nil {
 			return fmt.Errorf("unable to generate externalID: %w", err)
 		}

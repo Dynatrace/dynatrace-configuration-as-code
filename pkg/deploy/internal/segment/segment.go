@@ -50,7 +50,7 @@ func Deploy(ctx context.Context, client deploySegmentClient, properties paramete
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	externalId, err := idutils.GenerateExternalIDForDocument(c.Coordinate)
+	externalId, err := idutils.GenerateExternalID(c.Coordinate)
 	if err != nil {
 		return entities.ResolvedEntity{}, err
 	}

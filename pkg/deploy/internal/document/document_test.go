@@ -80,7 +80,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 		}}),
 	}
 
-	expectedExternalId, err := idutils.GenerateExternalIDForDocument(documentConfigCoordinate)
+	expectedExternalId, err := idutils.GenerateExternalID(documentConfigCoordinate)
 	require.NoError(t, err)
 
 	expectedFilterString := fmt.Sprintf("externalId=='%s'", expectedExternalId)
@@ -172,7 +172,7 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 		}}),
 	}
 
-	expectedExternalId, err := idutils.GenerateExternalIDForDocument(documentConfigCoordinate)
+	expectedExternalId, err := idutils.GenerateExternalID(documentConfigCoordinate)
 	require.NoError(t, err)
 
 	expectedFilterString := fmt.Sprintf("externalId=='%s'", expectedExternalId)
