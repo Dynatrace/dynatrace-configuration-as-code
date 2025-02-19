@@ -224,7 +224,7 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		documentClient := documents.NewClient(rest.NewClient(server.URL(), server.Client()))
-		result, err := Download(documentClient, "project")
+		result, err := Download(t.Context(), documentClient, "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
@@ -249,7 +249,7 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		documentClient := documents.NewClient(rest.NewClient(server.URL(), server.FaultyClient()))
-		result, err := Download(documentClient, "project")
+		result, err := Download(t.Context(), documentClient, "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 		assert.True(t, true)
@@ -354,7 +354,7 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		documentClient := documents.NewClient(rest.NewClient(server.URL(), server.Client()))
-		result, err := Download(documentClient, "project")
+		result, err := Download(t.Context(), documentClient, "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 

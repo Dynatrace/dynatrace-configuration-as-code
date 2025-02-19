@@ -792,7 +792,7 @@ func TestDownloadAll(t *testing.T) {
 
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			res, _ := Download(c, "projectName", tt.filters, tt.schemas...)
+			res, _ := Download(t.Context(), c, "projectName", tt.filters, tt.schemas...)
 
 			assert.Equal(t, tt.want, res)
 		})

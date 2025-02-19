@@ -19,17 +19,19 @@
 package automation
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 )
 
 func TestDownloader_Download(t *testing.T) {
@@ -53,7 +55,7 @@ func TestDownloader_Download(t *testing.T) {
 		serverURL, err := url.Parse(server.URL)
 		assert.NoError(t, err)
 		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-		result, err := Download(httpClient, "projectName")
+		result, err := Download(t.Context(), httpClient, "projectName")
 		assert.Len(t, result, 3)
 		assert.Len(t, result[string(config.Workflow)], 3)
 		assert.Len(t, result[string(config.SchedulingRule)], 6)
@@ -81,7 +83,7 @@ func TestDownloader_Download(t *testing.T) {
 		serverURL, err := url.Parse(server.URL)
 		assert.NoError(t, err)
 		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-		result, err := Download(httpClient, "projectName",
+		result, err := Download(t.Context(), httpClient, "projectName",
 			config.AutomationType{Resource: config.Workflow}, config.AutomationType{Resource: config.BusinessCalendar})
 		assert.Len(t, result, 2)
 		assert.Len(t, result[string(config.Workflow)], 3)
@@ -105,7 +107,7 @@ func TestDownloader_Download(t *testing.T) {
 		assert.NoError(t, err)
 		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 
-		result, err := Download(httpClient, "projectName", config.AutomationType{Resource: config.Workflow})
+		result, err := Download(t.Context(), httpClient, "projectName", config.AutomationType{Resource: config.Workflow})
 		assert.NoError(t, err)
 
 		assert.Len(t, result, 1)
@@ -139,7 +141,7 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(t, err)
 	httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-	result, err := Download(httpClient, "projectName")
+	result, err := Download(t.Context(), httpClient, "projectName")
 	assert.Len(t, result, 2)
 	assert.Len(t, result[string(config.Workflow)], 3)
 	assert.Len(t, result[string(config.SchedulingRule)], 6)

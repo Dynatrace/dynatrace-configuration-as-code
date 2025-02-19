@@ -17,7 +17,6 @@
 package classic_test
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"testing"
@@ -48,12 +47,12 @@ func TestDownload_KeyUserActionMobile(t *testing.T) {
 	applicationId := "some-application-id"
 
 	c := client.NewMockConfigClient(gomock.NewController(t))
-	c.EXPECT().List(context.TODO(), apiMap[api.ApplicationMobile]).Return([]dtclient.Value{{Id: applicationId, Name: "some-application-name"}}, nil).Times(2)
-	c.EXPECT().List(context.TODO(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId)).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil).Times(1)
-	c.EXPECT().Get(context.TODO(), apiMap[api.ApplicationMobile], applicationId).Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil).Times(1)
-	c.EXPECT().Get(context.TODO(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId), "").Return([]byte(`{}`), nil).Times(1)
+	c.EXPECT().List(t.Context(), apiMap[api.ApplicationMobile]).Return([]dtclient.Value{{Id: applicationId, Name: "some-application-name"}}, nil).Times(2)
+	c.EXPECT().List(t.Context(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId)).Return([]dtclient.Value{{Id: "abc", Name: "abc"}}, nil).Times(1)
+	c.EXPECT().Get(t.Context(), apiMap[api.ApplicationMobile], applicationId).Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil).Times(1)
+	c.EXPECT().Get(t.Context(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId), "").Return([]byte(`{}`), nil).Times(1)
 
-	configurations, err := classic.Download(c, "project", apiMap, classic.ApiContentFilters)
+	configurations, err := classic.Download(t.Context(), c, "project", apiMap, classic.ApiContentFilters)
 	require.NoError(t, err)
 	assert.Len(t, configurations, 2, "Expected two configurations downloaded")
 
@@ -82,14 +81,14 @@ func toAPIs(apis ...api.API) api.APIs {
 
 func TestDownload_KeyUserActionWeb(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
-	ctx := context.TODO()
+	ctx := t.Context()
 	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
 	c.EXPECT().List(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
 	c.EXPECT().Get(ctx, gomock.Any(), "").Return([]byte(`{"keyUserActionList":[{"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"}]}`), nil)
 
 	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{api.KeyUserActionsWeb}))
 
-	configurations, err := classic.Download(c, "project", apiMap, map[string]classic.ContentFilter{})
+	configurations, err := classic.Download(t.Context(), c, "project", apiMap, map[string]classic.ContentFilter{})
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 	gotConfig := configurations[api.KeyUserActionsWeb][0]
@@ -104,7 +103,7 @@ func TestDownload_KeyUserActionWeb(t *testing.T) {
 
 func TestDownload_KeyUserActionWeb_Uniqness(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
-	ctx := context.TODO()
+	ctx := t.Context()
 	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
 	c.EXPECT().List(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID2", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID3", Name: "the_name"}}, nil)
 	c.EXPECT().Get(ctx, matcher.EqAPI(apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")), "").Return([]byte(`{
@@ -116,7 +115,7 @@ func TestDownload_KeyUserActionWeb_Uniqness(t *testing.T) {
 
 	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{api.KeyUserActionsWeb}))
 
-	configurations, err := classic.Download(c, "project", apiMap, map[string]classic.ContentFilter{})
+	configurations, err := classic.Download(t.Context(), c, "project", apiMap, map[string]classic.ContentFilter{})
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 	assert.Len(t, configurations[api.KeyUserActionsWeb], 3)
@@ -137,7 +136,7 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 		},
 	}}
 
-	configurations, err := classic.Download(c, "project", toAPIs(api1, api2), filters)
+	configurations, err := classic.Download(t.Context(), c, "project", toAPIs(api1, api2), filters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
@@ -186,7 +185,7 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 			t.Setenv(featureflags.DownloadFilterClassicConfigs.EnvName(), strconv.FormatBool(tt.withFiltering))
 			t.Setenv(featureflags.DownloadFilter.EnvName(), strconv.FormatBool(tt.withFiltering))
 
-			configurations, err := classic.Download(c, "project", toAPIs(api1, api2), filters)
+			configurations, err := classic.Download(t.Context(), c, "project", toAPIs(api1, api2), filters)
 			assert.NoError(t, err)
 			assert.Len(t, configurations, tt.wantDownloadedConfigs)
 		})
@@ -208,7 +207,7 @@ func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 		},
 	}}
 
-	configurations, err := classic.Download(c, "project", toAPIs(api1, api2), filters)
+	configurations, err := classic.Download(t.Context(), c, "project", toAPIs(api1, api2), filters)
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
@@ -314,7 +313,7 @@ func Test_generalCases(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), m.id).Return([]byte(m.response), m.err)
 			}
 
-			actual, err := classic.Download(c, "project", toAPIs(api1, api2), classic.ApiContentFilters)
+			actual, err := classic.Download(t.Context(), c, "project", toAPIs(api1, api2), classic.ApiContentFilters)
 
 			require.NoError(t, err)
 			require.Len(t, actual, len(tc.expectedKeys))
@@ -359,7 +358,7 @@ func TestDownload_SkippedParentsSkipChildren(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
 	c.EXPECT().List(gomock.Any(), matcher.EqAPI(parentAPI)).Return([]dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil).Times(2)
 
-	configurations, err := classic.Download(c, "project", apiMap, contentFilters)
+	configurations, err := classic.Download(t.Context(), c, "project", apiMap, contentFilters)
 	require.NoError(t, err)
 	assert.Len(t, configurations, 0, "Expected no configurations as everything is skipped")
 }

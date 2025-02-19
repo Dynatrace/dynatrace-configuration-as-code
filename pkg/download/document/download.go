@@ -39,7 +39,7 @@ var documentMapping = map[string]config.DocumentKind{
 	documents.Launchpad: config.LaunchpadKind,
 }
 
-func Download(client client.DocumentClient, projectName string) (v2.ConfigsPerType, error) {
+func Download(ctx context.Context, client client.DocumentClient, projectName string) (v2.ConfigsPerType, error) {
 	// due to the current test setup, the types must be downloaded in order. This should be changed eventually
 	var typesToDownload = []documents.DocumentType{
 		documents.Dashboard,
@@ -49,7 +49,7 @@ func Download(client client.DocumentClient, projectName string) (v2.ConfigsPerTy
 
 	var allConfigs []config.Config
 	for _, docKind := range typesToDownload {
-		configs := downloadDocumentsOfType(client, projectName, docKind)
+		configs := downloadDocumentsOfType(ctx, client, projectName, docKind)
 		allConfigs = append(allConfigs, configs...)
 	}
 
@@ -58,10 +58,10 @@ func Download(client client.DocumentClient, projectName string) (v2.ConfigsPerTy
 	}, nil
 }
 
-func downloadDocumentsOfType(client client.DocumentClient, projectName string, documentType string) []config.Config {
+func downloadDocumentsOfType(ctx context.Context, client client.DocumentClient, projectName string, documentType string) []config.Config {
 	log.WithFields(field.Type("document")).Debug("Downloading documents of type '%s'", documentType)
 
-	listResponse, err := client.List(context.TODO(), fmt.Sprintf("type=='%s'", documentType))
+	listResponse, err := client.List(ctx, fmt.Sprintf("type=='%s'", documentType))
 	if err != nil {
 		log.WithFields(field.Type("document"), field.Error(err)).Error("Failed to list all documents of type '%s': %v", documentType, err)
 		return nil
@@ -75,7 +75,7 @@ func downloadDocumentsOfType(client client.DocumentClient, projectName string, d
 			continue
 		}
 
-		config, err := convertDocumentResponse(client, projectName, response)
+		config, err := convertDocumentResponse(ctx, client, projectName, response)
 		if err != nil {
 			log.WithFields(field.Type("document"), field.Error(err)).Error("Failed to convert document '%s' of type '%s': %v", response.ID, documentType, err)
 			continue
@@ -92,7 +92,7 @@ func isReadyMadeByAnApp(metadata documents.Metadata) bool {
 	return (metadata.OriginAppID != nil) && (len(*metadata.OriginAppID) > 0)
 }
 
-func convertDocumentResponse(client client.DocumentClient, projectName string, response documents.Response) (config.Config, error) {
+func convertDocumentResponse(ctx context.Context, client client.DocumentClient, projectName string, response documents.Response) (config.Config, error) {
 	documentType, err := validateDocumentType(response.Type)
 	if err != nil {
 		return config.Config{}, err
@@ -100,7 +100,7 @@ func convertDocumentResponse(client client.DocumentClient, projectName string, r
 
 	documentType.Private = response.IsPrivate
 
-	documentResponse, err := client.Get(context.TODO(), response.ID)
+	documentResponse, err := client.Get(ctx, response.ID)
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to get document: %w", err)
 	}

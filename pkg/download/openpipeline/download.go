@@ -31,11 +31,11 @@ import (
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-func Download(client client.OpenPipelineClient, projectName string) (v2.ConfigsPerType, error) {
+func Download(ctx context.Context, client client.OpenPipelineClient, projectName string) (v2.ConfigsPerType, error) {
 
 	result := v2.ConfigsPerType{string(config.OpenPipelineTypeID): nil}
 
-	all, err := client.GetAll(context.TODO())
+	all, err := client.GetAll(ctx)
 	if err != nil {
 		log.WithFields(field.Type(config.OpenPipelineTypeID), field.Error(err)).Error("Failed to get all configs of type '%s': %v", config.OpenPipelineTypeID, err)
 		return result, nil

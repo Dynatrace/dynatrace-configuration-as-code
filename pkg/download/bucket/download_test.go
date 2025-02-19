@@ -19,18 +19,20 @@
 package bucket
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"os"
-	"testing"
 )
 
 func TestDownloader_Download(t *testing.T) {
@@ -50,7 +52,7 @@ func TestDownloader_Download(t *testing.T) {
 		baseUrl, err := url.Parse(server.URL)
 		assert.NoError(t, err)
 		bucketClient := buckets.NewClient(rest.NewClient(baseUrl, server.Client()))
-		result, err := Download(bucketClient, "projectName")
+		result, err := Download(t.Context(), bucketClient, "projectName")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 		assert.Len(t, result["bucket"], 2) // there should be 2 buckets (default bucket shall be skipped)
@@ -83,7 +85,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		baseUrl, _ := url.Parse(server.URL)
 		bucketClient := buckets.NewClient(rest.NewClient(baseUrl, server.Client()))
-		result, err := Download(bucketClient, "projectName")
+		result, err := Download(t.Context(), bucketClient, "projectName")
 		assert.Len(t, result, 0)
 		assert.NoError(t, err)
 	})
@@ -102,7 +104,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		baseUrl, _ := url.Parse(server.URL)
 		bucketClient := buckets.NewClient(rest.NewClient(baseUrl, server.Client()))
-		result, err := Download(bucketClient, "projectName")
+		result, err := Download(t.Context(), bucketClient, "projectName")
 		assert.Len(t, result, 0)
 		assert.NoError(t, err)
 	})

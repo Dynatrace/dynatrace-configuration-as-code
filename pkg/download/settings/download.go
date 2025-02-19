@@ -47,29 +47,29 @@ type schema struct {
 	ordered bool
 }
 
-func Download(client client.SettingsClient, projectName string, filters Filters, schemaIDs ...config.SettingsType) (v2.ConfigsPerType, error) {
+func Download(ctx context.Context, client client.SettingsClient, projectName string, filters Filters, schemaIDs ...config.SettingsType) (v2.ConfigsPerType, error) {
 	if len(schemaIDs) == 0 {
-		return downloadAll(client, projectName, filters)
+		return downloadAll(ctx, client, projectName, filters)
 	}
 	var schemas []string
 	for _, s := range schemaIDs {
 		schemas = append(schemas, s.SchemaId)
 	}
-	return downloadSpecific(client, projectName, schemas, filters)
+	return downloadSpecific(ctx, client, projectName, schemas, filters)
 }
 
-func downloadAll(client client.SettingsClient, projectName string, filters Filters) (v2.ConfigsPerType, error) {
+func downloadAll(ctx context.Context, client client.SettingsClient, projectName string, filters Filters) (v2.ConfigsPerType, error) {
 	log.Debug("Fetching all schemas to download")
-	schemas, err := fetchAllSchemas(client)
+	schemas, err := fetchAllSchemas(ctx, client)
 	if err != nil {
 		return nil, err
 	}
 
-	return download(client, schemas, projectName, filters), nil
+	return download(ctx, client, schemas, projectName, filters), nil
 }
 
-func downloadSpecific(client client.SettingsClient, projectName string, schemaIDs []string, filters Filters) (v2.ConfigsPerType, error) {
-	schemas, err := fetchSchemas(client, schemaIDs)
+func downloadSpecific(ctx context.Context, client client.SettingsClient, projectName string, schemaIDs []string, filters Filters) (v2.ConfigsPerType, error) {
+	schemas, err := fetchSchemas(ctx, client, schemaIDs)
 	if err != nil {
 		return v2.ConfigsPerType{}, err
 	}
@@ -81,12 +81,12 @@ func downloadSpecific(client client.SettingsClient, projectName string, schemaID
 	}
 
 	log.Debug("Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
-	result := download(client, schemas, projectName, filters)
+	result := download(ctx, client, schemas, projectName, filters)
 	return result, nil
 }
 
-func fetchAllSchemas(cl client.SettingsClient) ([]schema, error) {
-	dlSchemas, err := cl.ListSchemas(context.TODO())
+func fetchAllSchemas(ctx context.Context, cl client.SettingsClient) ([]schema, error) {
+	dlSchemas, err := cl.ListSchemas(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +102,8 @@ func fetchAllSchemas(cl client.SettingsClient) ([]schema, error) {
 	return schemas, nil
 }
 
-func fetchSchemas(cl client.SettingsClient, schemaIds []string) ([]schema, error) {
-	dlSchemas, err := cl.ListSchemas(context.TODO())
+func fetchSchemas(ctx context.Context, cl client.SettingsClient, schemaIds []string) ([]schema, error) {
+	dlSchemas, err := cl.ListSchemas(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func fetchSchemas(cl client.SettingsClient, schemaIds []string) ([]schema, error
 	return schemas, nil
 }
 
-func download(client client.SettingsClient, schemas []schema, projectName string, filters Filters) v2.ConfigsPerType {
+func download(ctx context.Context, client client.SettingsClient, schemas []schema, projectName string, filters Filters) v2.ConfigsPerType {
 	results := make(v2.ConfigsPerType, len(schemas))
 	downloadMutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
@@ -138,7 +138,7 @@ func download(client client.SettingsClient, schemas []schema, projectName string
 			lg := log.WithFields(field.Type(s.id))
 
 			lg.Debug("Downloading all settings for schema '%s'", s.id)
-			objects, err := client.List(context.TODO(), s.id, dtclient.ListSettingsOptions{})
+			objects, err := client.List(ctx, s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string
 				var apiErr coreapi.APIError

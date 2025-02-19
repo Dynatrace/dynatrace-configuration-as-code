@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -41,9 +42,9 @@ func (s skipErr) Error() string {
 	return s.msg
 }
 
-func Download(client client.BucketClient, projectName string) (v2.ConfigsPerType, error) {
+func Download(ctx context.Context, client client.BucketClient, projectName string) (v2.ConfigsPerType, error) {
 	result := make(v2.ConfigsPerType)
-	response, err := client.List(context.TODO())
+	response, err := client.List(ctx)
 	if err != nil {
 		log.WithFields(field.Type("bucket"), field.Error(err)).Error("Failed to fetch all bucket definitions: %v", err)
 		return nil, nil

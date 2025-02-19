@@ -35,10 +35,10 @@ type DownloadSegmentClient interface {
 	GetAll(ctx context.Context) ([]segments.Response, error)
 }
 
-func Download(client DownloadSegmentClient, projectName string) (project.ConfigsPerType, error) {
+func Download(ctx context.Context, client DownloadSegmentClient, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{}
 
-	downloadedConfigs, err := client.GetAll(context.TODO())
+	downloadedConfigs, err := client.GetAll(ctx)
 	if err != nil {
 		log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to fetch the list of existing segments: %v", err)
 		return nil, nil
