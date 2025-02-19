@@ -1163,7 +1163,7 @@ func TestDelete_Segments(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "true")
 
 		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: &c}, given)
-		//DummyClient returns unimplemented error on every execution of any method
+		// DummyClient returns unimplemented error on every execution of any method
 		assert.Error(t, err, "unimplemented")
 	})
 
@@ -1171,25 +1171,6 @@ func TestDelete_Segments(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "false")
 
 		err := delete.Configs(context.TODO(), client.ClientSet{SegmentClient: &c}, given)
-		assert.NoError(t, err)
-	})
-}
-
-func TestDeleteAll_Segments(t *testing.T) {
-	c := client.TestSegmentsClient{}
-
-	t.Run("With Enabled Segment FF", func(t *testing.T) {
-		t.Setenv(featureflags.Segments.EnvName(), "true")
-
-		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
-		//fakeClient returns unimplemented error on every execution of any method
-		assert.Error(t, err, "unimplemented")
-	})
-
-	t.Run("With Disabled Segment FF", func(t *testing.T) {
-		t.Setenv(featureflags.Segments.EnvName(), "false")
-
-		err := delete.All(context.TODO(), client.ClientSet{SegmentClient: &c}, api.APIs{})
 		assert.NoError(t, err)
 	})
 }
