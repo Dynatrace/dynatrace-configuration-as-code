@@ -20,17 +20,16 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -258,7 +257,7 @@ environmentGroups:
 	clientSet := integrationtest.CreateDynatraceClients(t, env)
 
 	// check the setting was deleted
-	integrationtest.AssertSetting(t, context.TODO(), clientSet.SettingsClient, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
+	integrationtest.AssertSetting(t.Context(), t, clientSet.SettingsClient, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "builtin:tags.auto-tagging",
@@ -343,7 +342,7 @@ configs:
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
 	// get application ID
-	v, err := clientSet.ConfigClient.List(context.TODO(), apis["application-mobile"])
+	v, err := clientSet.ConfigClient.List(t.Context(), apis["application-mobile"])
 	assert.NoError(t, err)
 
 	var appID string
@@ -370,7 +369,7 @@ configs:
 	require.NoError(t, err)
 
 	// Assert key-user-action is deleted
-	integrationtest.AssertConfig(t, context.TODO(), clientSet.ConfigClient, apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
+	integrationtest.AssertConfig(t.Context(), t, clientSet.ConfigClient, apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "key-user-actions-mobile",
