@@ -56,7 +56,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		}
 
 		// get current management zone id for later assertions
-		mzones, _, err := check.Client.EnvironmentManagementAPI.GetEnvironmentResources(context.TODO(), accountUUID).Execute()
+		mzones, _, err := check.Client.EnvironmentManagementAPI.GetEnvironmentResources(t.Context(), accountUUID).Execute()
 		require.NoError(t, err)
 		var mzoneID string
 		for _, mz := range mzones.ManagementZoneResources {
@@ -164,8 +164,8 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 	})
 }
 
-func getPolicyIdByName(cl *accounts.Client, name, level, levelId string) (string, bool) {
-	all, _, _ := cl.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelId, level).Execute()
+func getPolicyIdByName(ctx context.Context, cl *accounts.Client, name, level, levelId string) (string, bool) {
+	all, _, _ := cl.PolicyManagementAPI.GetLevelPolicies(ctx, levelId, level).Execute()
 
 	p, found := getElementInSlice(all.Policies, func(el accountmanagement.PolicyDto) bool {
 		return el.Name == name
@@ -177,8 +177,8 @@ func getPolicyIdByName(cl *accounts.Client, name, level, levelId string) (string
 	return "", false
 }
 
-func getGroupIdByName(cl *accounts.Client, accountUUID, name string) (string, bool) {
-	all, _, _ := cl.GroupManagementAPI.GetGroups(context.TODO(), accountUUID).Execute()
+func getGroupIdByName(ctx context.Context, cl *accounts.Client, accountUUID, name string) (string, bool) {
+	all, _, _ := cl.GroupManagementAPI.GetGroups(ctx, accountUUID).Execute()
 	p, found := getElementInSlice(all.GetItems(), func(el accountmanagement.GetGroupDto) bool {
 		return el.Name == name
 	})
@@ -196,7 +196,7 @@ type AccountResourceChecker struct {
 
 func (a AccountResourceChecker) UserAvailable(t *testing.T, accountUUID, email string) {
 	expectedEmail := a.randomize(email)
-	deployedUser, _, err := a.Client.UserManagementAPI.GetUserGroups(context.TODO(), accountUUID, expectedEmail).Execute()
+	deployedUser, _, err := a.Client.UserManagementAPI.GetUserGroups(t.Context(), accountUUID, expectedEmail).Execute()
 	require.NotNil(t, deployedUser)
 	require.NoError(t, err)
 	assert.Equal(t, expectedEmail, deployedUser.Email)
@@ -204,14 +204,14 @@ func (a AccountResourceChecker) UserAvailable(t *testing.T, accountUUID, email s
 
 func (a AccountResourceChecker) UserNotAvailable(t *testing.T, accountUUID, email string) {
 	expectedEmail := a.randomize(email)
-	_, res, _ := a.Client.UserManagementAPI.GetUserGroups(context.TODO(), accountUUID, expectedEmail).Execute()
+	_, res, _ := a.Client.UserManagementAPI.GetUserGroups(t.Context(), accountUUID, expectedEmail).Execute()
 	require.NotNil(t, res)
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
 
 func (a AccountResourceChecker) GetGroupByName(t *testing.T, accountUUID, groupName string) *accountmanagement.GetGroupDto {
 	expectedGroupName := a.randomize(groupName)
-	all, _, err := a.Client.GroupManagementAPI.GetGroups(context.TODO(), accountUUID).Execute()
+	all, _, err := a.Client.GroupManagementAPI.GetGroups(t.Context(), accountUUID).Execute()
 	require.NotNil(t, all)
 	require.NoError(t, err)
 	group, _ := assertElementInSlice(t, all.GetItems(), func(el accountmanagement.GetGroupDto) bool { return el.Name == expectedGroupName })
@@ -224,7 +224,7 @@ func (a AccountResourceChecker) GroupAvailable(t *testing.T, accountUUID, groupN
 
 func (a AccountResourceChecker) PolicyAvailable(t *testing.T, levelType, levelId, policyName string) {
 	expectedPolicyName := a.randomize(policyName)
-	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelId, levelType).Name(expectedPolicyName).Execute()
+	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(t.Context(), levelId, levelType).Name(expectedPolicyName).Execute()
 	require.NoError(t, err)
 	require.NotNil(t, policies)
 	_, found := getElementInSlice(policies.Policies, func(el accountmanagement.PolicyDto) bool { return el.Name == expectedPolicyName })
@@ -233,7 +233,7 @@ func (a AccountResourceChecker) PolicyAvailable(t *testing.T, levelType, levelId
 
 func (a AccountResourceChecker) PolicyNotAvailable(t *testing.T, levelType, levelId, policyName string) {
 	expectedPolicyName := a.randomize(policyName)
-	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(context.TODO(), levelId, levelType).Execute()
+	policies, _, err := a.Client.PolicyManagementAPI.GetLevelPolicies(t.Context(), levelId, levelType).Execute()
 	require.NotNil(t, policies)
 	require.NoError(t, err)
 	assertElementNotInSlice(t, policies.Policies, func(el accountmanagement.PolicyDto) bool { return el.Name == expectedPolicyName })
@@ -241,7 +241,7 @@ func (a AccountResourceChecker) PolicyNotAvailable(t *testing.T, levelType, leve
 
 func (a AccountResourceChecker) GroupNotAvailable(t *testing.T, accountUUID, groupName string) {
 	expectedGroupName := a.randomize(groupName)
-	groups, _, err := a.Client.GroupManagementAPI.GetGroups(context.TODO(), accountUUID).Execute()
+	groups, _, err := a.Client.GroupManagementAPI.GetGroups(t.Context(), accountUUID).Execute()
 	require.NotNil(t, groups)
 	require.NoError(t, err)
 	assertElementNotInSlice(t, groups.GetItems(), func(el accountmanagement.GetGroupDto) bool { return el.Name == expectedGroupName })
@@ -250,20 +250,20 @@ func (a AccountResourceChecker) GroupNotAvailable(t *testing.T, accountUUID, gro
 func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUUID, groupName, policyName, environmentID string) {
 	expectedPolicyName := a.randomize(policyName)
 	var pid string
-	pid, found := getPolicyIdByName(a.Client, expectedPolicyName, "environment", environmentID)
+	pid, found := getPolicyIdByName(t.Context(), a.Client, expectedPolicyName, "environment", environmentID)
 	if !found {
-		pid, found = getPolicyIdByName(a.Client, expectedPolicyName, "account", accountUUID)
+		pid, found = getPolicyIdByName(t.Context(), a.Client, expectedPolicyName, "account", accountUUID)
 	}
 	if !found {
-		pid, found = getPolicyIdByName(a.Client, expectedPolicyName, "global", "global")
+		pid, found = getPolicyIdByName(t.Context(), a.Client, expectedPolicyName, "global", "global")
 	}
 	require.True(t, found)
 
 	expectedGroupName := a.randomize(groupName)
-	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
+	gid, found := getGroupIdByName(t.Context(), a.Client, accountUUID, expectedGroupName)
 	require.True(t, found)
 
-	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), environmentID, "environment").Execute()
+	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(t.Context(), environmentID, "environment").Execute()
 	require.NoError(t, err)
 	require.NotNil(t, envPolBindings)
 	assertElementInSlice(t, envPolBindings.PolicyBindings, func(el accountmanagement.Binding) bool {
@@ -273,10 +273,10 @@ func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUU
 
 func (a AccountResourceChecker) PolicyBindingsCount(t *testing.T, accountUUID string, levelType string, levelId string, groupName string, number int) {
 	expectedGroupName := a.randomize(groupName)
-	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
+	gid, found := getGroupIdByName(t.Context(), a.Client, accountUUID, expectedGroupName)
 	require.True(t, found)
 
-	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), levelId, levelType).Execute()
+	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(t.Context(), levelId, levelType).Execute()
 	require.NoError(t, err)
 	require.NotNil(t, envPolBindings)
 
@@ -290,17 +290,17 @@ func (a AccountResourceChecker) PolicyBindingsCount(t *testing.T, accountUUID st
 func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, groupName, policyName string) {
 	expectedPolicyName := a.randomize(policyName)
 	var pid string
-	pid, found := getPolicyIdByName(a.Client, expectedPolicyName, "account", accountUUID)
+	pid, found := getPolicyIdByName(t.Context(), a.Client, expectedPolicyName, "account", accountUUID)
 	if !found {
-		pid, found = getPolicyIdByName(a.Client, expectedPolicyName, "global", "global")
+		pid, found = getPolicyIdByName(t.Context(), a.Client, expectedPolicyName, "global", "global")
 	}
 	require.True(t, found)
 
 	expectedGroupName := a.randomize(groupName)
-	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
+	gid, found := getGroupIdByName(t.Context(), a.Client, accountUUID, expectedGroupName)
 	require.True(t, found)
 
-	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(context.TODO(), accountUUID, "account").Execute()
+	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(t.Context(), accountUUID, "account").Execute()
 	require.NoError(t, err)
 	require.NotNil(t, envPolBindings)
 	assertElementInSlice(t, envPolBindings.PolicyBindings, func(el accountmanagement.Binding) bool {
@@ -310,10 +310,10 @@ func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, 
 
 func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, scopeType, scope, permissionName, groupName string) {
 	expectedGroupName := a.randomize(groupName)
-	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
+	gid, found := getGroupIdByName(t.Context(), a.Client, accountUUID, expectedGroupName)
 	require.True(t, found)
 
-	permissions, _, err := a.Client.PermissionManagementAPI.GetGroupPermissions(context.TODO(), accountUUID, gid).Execute()
+	permissions, _, err := a.Client.PermissionManagementAPI.GetGroupPermissions(t.Context(), accountUUID, gid).Execute()
 	require.NoError(t, err)
 	require.NotNil(t, permissions)
 	assertElementInSlice(t, permissions.Permissions, func(el accountmanagement.PermissionsDto) bool {
@@ -326,10 +326,10 @@ func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, sco
 
 func (a AccountResourceChecker) PermissionBindingsCount(t *testing.T, accountUUID, groupName string, count int) {
 	expectedGroupName := a.randomize(groupName)
-	gid, found := getGroupIdByName(a.Client, accountUUID, expectedGroupName)
+	gid, found := getGroupIdByName(t.Context(), a.Client, accountUUID, expectedGroupName)
 	require.True(t, found)
 
-	permissions, _, err := a.Client.PermissionManagementAPI.GetGroupPermissions(context.TODO(), accountUUID, gid).Execute()
+	permissions, _, err := a.Client.PermissionManagementAPI.GetGroupPermissions(t.Context(), accountUUID, gid).Execute()
 	require.NoError(t, err)
 	require.NotNil(t, permissions)
 	assert.Equal(t, count, len(permissions.Permissions))

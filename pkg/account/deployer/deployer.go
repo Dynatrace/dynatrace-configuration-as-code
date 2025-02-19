@@ -3,15 +3,17 @@ package deployer
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sync"
+
+	"github.com/go-logr/logr"
+
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/go-logr/logr"
-	"strings"
-	"sync"
 )
 
 /*
@@ -94,18 +96,18 @@ func NewAccountDeployer(client client, opts ...func(*AccountDeployer)) *AccountD
 	return ac
 }
 
-func (d *AccountDeployer) Deploy(res *account.Resources) error {
-	err := d.fetchExistingResources()
+func (d *AccountDeployer) Deploy(ctx context.Context, res *account.Resources) error {
+	err := d.fetchExistingResources(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = d.deployResources(res)
+	err = d.deployResources(ctx, res)
 	if err != nil {
 		return err
 	}
 
-	err = d.updateBindings(res)
+	err = d.updateBindings(ctx, res)
 	if err != nil {
 		return err
 	}
@@ -113,21 +115,21 @@ func (d *AccountDeployer) Deploy(res *account.Resources) error {
 	return nil
 }
 
-func (d *AccountDeployer) fetchExistingResources() error {
+func (d *AccountDeployer) fetchExistingResources(ctx context.Context) error {
 	dispatcher := NewDispatcher(d.maxConcurrentDeploys)
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
 	fetchResourcesJob := func(wg *sync.WaitGroup, errCh chan error) {
-		fetchResources(d.fetchGlobalPolicies, wg, errCh)
+		fetchResources(ctx, d.fetchGlobalPolicies, wg, errCh)
 
 	}
 	fetchMZonesJob := func(wg *sync.WaitGroup, errCh chan error) {
-		fetchResources(d.fetchManagementZones, wg, errCh)
+		fetchResources(ctx, d.fetchManagementZones, wg, errCh)
 	}
 
 	fetchGroupsJob := func(wg *sync.WaitGroup, errCh chan error) {
-		fetchResources(d.fetchGroups, wg, errCh)
+		fetchResources(ctx, d.fetchGroups, wg, errCh)
 	}
 
 	dispatcher.AddJob(fetchResourcesJob)
@@ -138,33 +140,33 @@ func (d *AccountDeployer) fetchExistingResources() error {
 
 }
 
-func (d *AccountDeployer) deployResources(res *account.Resources) error {
+func (d *AccountDeployer) deployResources(ctx context.Context, res *account.Resources) error {
 	dispatcher := NewDispatcher(d.maxConcurrentDeploys)
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
-	d.deployPolicies(res.Policies, dispatcher)
-	d.deployGroups(res.Groups, dispatcher)
-	d.deployUsers(res.Users, dispatcher)
+	d.deployPolicies(ctx, res.Policies, dispatcher)
+	d.deployGroups(ctx, res.Groups, dispatcher)
+	d.deployUsers(ctx, res.Users, dispatcher)
 
 	return dispatcher.Wait()
 
 }
 
-func (d *AccountDeployer) updateBindings(res *account.Resources) error {
+func (d *AccountDeployer) updateBindings(ctx context.Context, res *account.Resources) error {
 	dispatcher := NewDispatcher(d.maxConcurrentDeploys)
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
-	d.deployGroupBindings(res.Groups, dispatcher)
-	d.deployUserBindings(res.Users, dispatcher)
+	d.deployGroupBindings(ctx, res.Groups, dispatcher)
+	d.deployUserBindings(ctx, res.Users, dispatcher)
 	return dispatcher.Wait()
 
 }
 
-func (d *AccountDeployer) fetchGlobalPolicies() error {
+func (d *AccountDeployer) fetchGlobalPolicies(ctx context.Context) error {
 	d.logger.Debug("Getting existing global policies")
-	deployedPolicies, err := d.accClient.getGlobalPolicies(d.logCtx())
+	deployedPolicies, err := d.accClient.getGlobalPolicies(d.logCtx(ctx))
 	if err != nil {
 		return err
 	}
@@ -172,9 +174,9 @@ func (d *AccountDeployer) fetchGlobalPolicies() error {
 	return nil
 }
 
-func (d *AccountDeployer) fetchManagementZones() error {
+func (d *AccountDeployer) fetchManagementZones(ctx context.Context) error {
 	d.logger.Debug("Getting existing management zones")
-	deployedMgmtZones, err := d.accClient.getManagementZones(d.logCtx())
+	deployedMgmtZones, err := d.accClient.getManagementZones(d.logCtx(ctx))
 	if err != nil {
 		return err
 	}
@@ -182,9 +184,9 @@ func (d *AccountDeployer) fetchManagementZones() error {
 	return nil
 }
 
-func (d *AccountDeployer) fetchGroups() error {
+func (d *AccountDeployer) fetchGroups(ctx context.Context) error {
 	d.logger.Debug("Getting existing groups")
-	deployedGroups, err := d.accClient.getAllGroups(d.logCtx())
+	deployedGroups, err := d.accClient.getAllGroups(d.logCtx(ctx))
 	if err != nil {
 		return err
 	}
@@ -193,18 +195,18 @@ func (d *AccountDeployer) fetchGroups() error {
 
 }
 
-func fetchResources(fetchFunc func() error, wg *sync.WaitGroup, errCh chan<- error) {
+func fetchResources(ctx context.Context, fetchFunc func(ctx context.Context) error, wg *sync.WaitGroup, errCh chan<- error) {
 	defer wg.Done()
-	errCh <- fetchFunc()
+	errCh <- fetchFunc(ctx)
 }
 
-func (d *AccountDeployer) deployPolicies(policies map[string]account.Policy, dispatcher *Dispatcher) { // nolint:dupl
+func (d *AccountDeployer) deployPolicies(ctx context.Context, policies map[string]account.Policy, dispatcher *Dispatcher) { // nolint:dupl
 	for _, policy := range policies {
 		policy := policy
 		deployPolicyJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
 			d.logger.Info("Deploying policy %s", policy.Name)
-			pUuid, err := d.upsertPolicy(d.logCtx(), policy)
+			pUuid, err := d.upsertPolicy(d.logCtx(ctx), policy)
 			if err != nil {
 				errCh <- fmt.Errorf("unable to deploy policy for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
@@ -214,13 +216,13 @@ func (d *AccountDeployer) deployPolicies(policies map[string]account.Policy, dis
 	}
 }
 
-func (d *AccountDeployer) deployGroups(groups map[string]account.Group, dispatcher *Dispatcher) { // nolint:dupl
+func (d *AccountDeployer) deployGroups(ctx context.Context, groups map[string]account.Group, dispatcher *Dispatcher) { // nolint:dupl
 	for _, group := range groups {
 		group := group
 		deployGroupJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
 			d.logger.Info("Deploying group %s", group.Name)
-			gUuid, err := d.upsertGroup(d.logCtx(), group)
+			gUuid, err := d.upsertGroup(d.logCtx(ctx), group)
 			if err != nil {
 				errCh <- fmt.Errorf("unable to deploy group for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
@@ -232,13 +234,13 @@ func (d *AccountDeployer) deployGroups(groups map[string]account.Group, dispatch
 	}
 }
 
-func (d *AccountDeployer) deployUsers(users map[string]account.User, dispatcher *Dispatcher) {
+func (d *AccountDeployer) deployUsers(ctx context.Context, users map[string]account.User, dispatcher *Dispatcher) {
 	for _, user := range users {
 		user := user
 		deployUserJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
 			d.logger.Info("Deploying user %s", user.Email)
-			if _, err := d.upsertUser(d.logCtx(), user); err != nil {
+			if _, err := d.upsertUser(d.logCtx(ctx), user); err != nil {
 				errCh <- fmt.Errorf("unable to deploy user for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
 		}
@@ -247,18 +249,18 @@ func (d *AccountDeployer) deployUsers(users map[string]account.User, dispatcher 
 	}
 }
 
-func (d *AccountDeployer) deployGroupBindings(groups map[account.GroupId]account.Group, dispatcher *Dispatcher) {
+func (d *AccountDeployer) deployGroupBindings(ctx context.Context, groups map[account.GroupId]account.Group, dispatcher *Dispatcher) {
 	for _, group := range groups {
 		group := group
 		d.logger.Info("Updating policy bindings and permissions for group %s", group.Name)
 
 		updateBindingsJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			if err := d.updateGroupPolicyBindings(d.logCtx(), group); err != nil {
+			if err := d.updateGroupPolicyBindings(d.logCtx(ctx), group); err != nil {
 				errCh <- fmt.Errorf("unable to deploy policy binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
 
-			if err := d.updateGroupPermissions(d.logCtx(), group); err != nil {
+			if err := d.updateGroupPermissions(d.logCtx(ctx), group); err != nil {
 				errCh <- fmt.Errorf("unable to deploy permissions for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 			}
 		}
@@ -268,14 +270,14 @@ func (d *AccountDeployer) deployGroupBindings(groups map[account.GroupId]account
 	}
 }
 
-func (d *AccountDeployer) deployUserBindings(users map[account.UserId]account.User, dispatcher *Dispatcher) {
+func (d *AccountDeployer) deployUserBindings(ctx context.Context, users map[account.UserId]account.User, dispatcher *Dispatcher) {
 	for _, user := range users {
 		user := user
 		deployUserBindingsJob :=
 			func(wg *sync.WaitGroup, errCh chan error) {
 				defer wg.Done()
 				d.logger.Info("Updating group bindings for user %s", user.Email)
-				if err := d.updateUserGroupBindings(d.logCtx(), user); err != nil {
+				if err := d.updateUserGroupBindings(d.logCtx(ctx), user); err != nil {
 					errCh <- fmt.Errorf("unable to deploy user binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
 				}
 			}
@@ -509,6 +511,6 @@ func (d *AccountDeployer) managementZoneIdLookup(envName, mzName string) remoteI
 	return d.idMap.getMZoneUUID(envName, mzName)
 }
 
-func (d *AccountDeployer) logCtx() context.Context {
-	return logr.NewContext(context.TODO(), d.logger.GetLogr())
+func (d *AccountDeployer) logCtx(ctx context.Context) context.Context {
+	return logr.NewContext(ctx, d.logger.GetLogr())
 }

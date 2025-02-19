@@ -135,7 +135,7 @@ func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
 		logger.Info("Number of users to deploy: %d", len(resources.Users))
 		logger.Info("Number of groups to deploy: %d", len(resources.Groups))
 		logger.Info("Number of policies to deploy: %d", len(resources.Policies))
-		if err = accountDeployer.Deploy(resources); err != nil {
+		if err = accountDeployer.Deploy(ctx, resources); err != nil {
 			return err
 		}
 	}

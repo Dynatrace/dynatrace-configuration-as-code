@@ -16,6 +16,14 @@ package account
 
 import (
 	"fmt"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2/clientcredentials"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
@@ -26,12 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2/clientcredentials"
-	"path/filepath"
 )
 
 func deleteCommand(fs afero.Fs) *cobra.Command {
@@ -68,7 +70,7 @@ func deleteCommand(fs afero.Fs) *cobra.Command {
 					errOccurred = true
 				}
 
-				if err := deleteFromAccount(account, resourcesToDelete); err != nil {
+				if err := deleteFromAccount(cmd.Context(), account, resourcesToDelete); err != nil {
 					errOccurred = true
 				}
 			}
@@ -130,13 +132,13 @@ func loadResourcesToDelete(fs afero.Fs, deleteFile string) (delete.Resources, er
 	return resources, nil
 }
 
-func deleteFromAccount(account manifest.Account, resourcesToDelete delete.Resources) error {
+func deleteFromAccount(ctx context.Context, account manifest.Account, resourcesToDelete delete.Resources) error {
 	accountAccess, err := createAccountDeleteClient(account)
 	if err != nil {
 		log.Error("Failed to create API client for account %q: %v", account.Name, err)
 		return err
 	}
-	err = delete.AccountResources(context.Background(), accountAccess, resourcesToDelete)
+	err = delete.AccountResources(ctx, accountAccess, resourcesToDelete)
 	if err != nil {
 		log.Error("Failed to delete resources for account %q", account.Name)
 		return err
