@@ -26,10 +26,11 @@ import (
 	"strings"
 	"testing"
 
-	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 )
 
 func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
@@ -45,7 +46,7 @@ func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 		}, nil
 	})
 
-	gotResp, err := SendWithRetry(context.TODO(), mockCall, "some/path", corerest.RequestOptions{}, []byte("Success"), RetrySetting{MaxRetries: 5})
+	gotResp, err := SendWithRetry(t.Context(), mockCall, "some/path", corerest.RequestOptions{}, []byte("Success"), RetrySetting{MaxRetries: 5})
 	require.NoError(t, err)
 	assert.Equal(t, 200, gotResp.StatusCode)
 	assert.Equal(t, "Success", string(gotResp.Data))
@@ -65,7 +66,7 @@ func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 		}, nil
 	})
 
-	_, err := SendWithRetry(context.TODO(), mockCall, "some/path", corerest.RequestOptions{}, []byte("body"), RetrySetting{MaxRetries: maxRetries})
+	_, err := SendWithRetry(t.Context(), mockCall, "some/path", corerest.RequestOptions{}, []byte("body"), RetrySetting{MaxRetries: maxRetries})
 	require.Error(t, err)
 	assert.Equal(t, 2, i)
 }
@@ -84,7 +85,7 @@ func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 		}, nil
 	})
 
-	_, err := SendWithRetry(context.TODO(), mockCall, "some/path", corerest.RequestOptions{}, []byte("body"), RetrySetting{MaxRetries: maxRetries})
+	_, err := SendWithRetry(t.Context(), mockCall, "some/path", corerest.RequestOptions{}, []byte("body"), RetrySetting{MaxRetries: maxRetries})
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "Something wrong")
 }
@@ -106,7 +107,7 @@ func Test_sendWithRetryReturnsIfNotSuccess(t *testing.T) {
 		}, nil
 	})
 
-	_, err := SendWithRetry(context.TODO(), mockCall, "some/path", corerest.RequestOptions{}, []byte("body"), RetrySetting{MaxRetries: maxRetries})
+	_, err := SendWithRetry(t.Context(), mockCall, "some/path", corerest.RequestOptions{}, []byte("body"), RetrySetting{MaxRetries: maxRetries})
 	apiError := coreapi.APIError{}
 	require.ErrorAs(t, err, &apiError)
 	assert.Equal(t, 400, apiError.StatusCode)

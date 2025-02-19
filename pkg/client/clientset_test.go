@@ -17,7 +17,6 @@
 package client
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -109,7 +108,7 @@ func TestCreateClientSet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := CreateClientSet(context.TODO(), tt.url, tt.auth)
+			_, err := CreateClientSet(t.Context(), tt.url, tt.auth)
 			assert.NoError(t, err)
 		})
 	}

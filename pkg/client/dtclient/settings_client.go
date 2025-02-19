@@ -266,7 +266,7 @@ func WithServerVersion(serverVersion version.Version) func(client *SettingsClien
 // WithAutoServerVersion can be used to let the client automatically determine the Dynatrace server version
 // during creation using newDynatraceClient. If the server version is already known WithServerVersion should be used.
 // Do not use this with NewPlatformSettingsClient() as the client will not work and cause an error to be logged.
-func WithAutoServerVersion() func(client *SettingsClient) {
+func WithAutoServerVersion(ctx context.Context) func(client *SettingsClient) {
 	return func(d *SettingsClient) {
 		var serverVersion version.Version
 		var err error
@@ -276,7 +276,7 @@ func WithAutoServerVersion() func(client *SettingsClient) {
 			return
 		}
 
-		serverVersion, err = dtVersion.GetDynatraceVersion(context.TODO(), d.client) //this will send the default user-agent
+		serverVersion, err = dtVersion.GetDynatraceVersion(ctx, d.client) //this will send the default user-agent
 		if err != nil {
 			log.WithFields(field.Error(err)).Warn("Unable to determine Dynatrace server version: %v", err)
 			return

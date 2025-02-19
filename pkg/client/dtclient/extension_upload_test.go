@@ -19,7 +19,6 @@
 package dtclient
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -65,7 +64,7 @@ func TestCorrectlyIdentifiesLowerLocalVersion(t *testing.T) {
 			defer server.Close()
 
 			dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-			status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(tt.localPayload))
+			status, err := dtClient.validateIfExtensionShouldBeUploaded(t.Context(), server.URL, "name", []byte(tt.localPayload))
 			require.Error(t, err)
 			assert.Equal(t, extensionConfigOutdated, status)
 		})
@@ -83,7 +82,7 @@ func TestCorrectlyIdentifiesEqualVersion(t *testing.T) {
 	defer server.Close()
 
 	dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
+	status, err := dtClient.validateIfExtensionShouldBeUploaded(t.Context(), server.URL, "name", []byte(localPayload))
 	require.NoError(t, err)
 	assert.Equal(t, extensionUpToDate, status)
 }
@@ -123,7 +122,7 @@ func TestCorrectlyIdentifiesNecessaryUpdate(t *testing.T) {
 			}))
 			defer server.Close()
 			dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-			status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(tt.localPayload))
+			status, err := dtClient.validateIfExtensionShouldBeUploaded(t.Context(), server.URL, "name", []byte(tt.localPayload))
 			require.NoError(t, err)
 			assert.Equal(t, extensionNeedsUpdate, status)
 		})
@@ -137,7 +136,7 @@ func TestCorrectlyIdentifiesMissingExtension(t *testing.T) {
 	defer server.Close()
 
 	dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", nil)
+	status, err := dtClient.validateIfExtensionShouldBeUploaded(t.Context(), server.URL, "name", nil)
 	require.NoError(t, err)
 	assert.Equal(t, extensionNeedsUpdate, status)
 }
@@ -152,7 +151,7 @@ func TestThrowsErrorOnRemoteParsingProblems(t *testing.T) {
 	defer server.Close()
 
 	dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
+	status, err := dtClient.validateIfExtensionShouldBeUploaded(t.Context(), server.URL, "name", []byte(localPayload))
 	require.Error(t, err)
 	assert.Equal(t, extensionValidationError, status)
 }
@@ -168,7 +167,7 @@ func TestThrowsErrorOnLocalParsingProblems(t *testing.T) {
 
 	dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
 
-	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
+	status, err := dtClient.validateIfExtensionShouldBeUploaded(t.Context(), server.URL, "name", []byte(localPayload))
 	require.Error(t, err)
 	assert.Equal(t, extensionValidationError, status)
 }
@@ -183,7 +182,7 @@ func TestThrowsErrorOnRemoteMissingVersions(t *testing.T) {
 	defer server.Close()
 
 	dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
+	status, err := dtClient.validateIfExtensionShouldBeUploaded(t.Context(), server.URL, "name", []byte(localPayload))
 	require.Error(t, err)
 	assert.Equal(t, extensionValidationError, status)
 }
@@ -198,7 +197,7 @@ func TestThrowsErrorOnLocalMissingVersions(t *testing.T) {
 	defer server.Close()
 
 	dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
+	status, err := dtClient.validateIfExtensionShouldBeUploaded(t.Context(), server.URL, "name", []byte(localPayload))
 	require.Error(t, err)
 	assert.Equal(t, extensionValidationError, status)
 }
@@ -212,7 +211,7 @@ func TestThrowsErrorOnRemoteNilReturn(t *testing.T) {
 	defer server.Close()
 
 	dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", []byte(localPayload))
+	status, err := dtClient.validateIfExtensionShouldBeUploaded(t.Context(), server.URL, "name", []byte(localPayload))
 	require.Error(t, err)
 	assert.Equal(t, extensionValidationError, status)
 }
@@ -226,7 +225,7 @@ func TestThrowsErrorOnLocalNilPayload(t *testing.T) {
 	defer server.Close()
 
 	dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-	status, err := dtClient.validateIfExtensionShouldBeUploaded(context.TODO(), server.URL, "name", nil)
+	status, err := dtClient.validateIfExtensionShouldBeUploaded(t.Context(), server.URL, "name", nil)
 	require.Error(t, err)
 	assert.Equal(t, extensionValidationError, status)
 }

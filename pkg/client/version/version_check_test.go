@@ -19,16 +19,17 @@
 package version
 
 import (
-	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 	"net/http"
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 )
 
 func TestGetDynatraceVersion(t *testing.T) {
@@ -114,7 +115,7 @@ func TestGetDynatraceVersion(t *testing.T) {
 			})
 			defer server.Close()
 
-			got, err := GetDynatraceVersion(context.TODO(), corerest.NewClient(server.URL(), server.Client()))
+			got, err := GetDynatraceVersion(t.Context(), corerest.NewClient(server.URL(), server.Client()))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetDynatraceVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -148,7 +149,7 @@ func TestGetDynatraceVersionWorksWithTrailingSlash(t *testing.T) {
 	urlWithSlash, err := url.Parse(server.URL().String() + "/")
 	require.NoError(t, err)
 
-	got, err := GetDynatraceVersion(context.TODO(), corerest.NewClient(urlWithSlash, server.Client()))
+	got, err := GetDynatraceVersion(t.Context(), corerest.NewClient(urlWithSlash, server.Client()))
 	assert.Equal(t, version.Version{Major: 1, Minor: 236, Patch: 5}, got)
 	assert.NoError(t, err)
 }
