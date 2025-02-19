@@ -44,7 +44,7 @@ func (c *Client) GetUsers(ctx context.Context, accountUUID string) ([]accountman
 
 func (c *Client) GetServiceUsers(ctx context.Context, accountUUID string) ([]accountmanagement.ExternalServiceUserDto, error) {
 	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
-	const pageSize = 10
+	const pageSize = 100
 	for page := (int32)(1); page < math.MaxInt32; page++ {
 		r, err := c.getServiceUsersPage(ctx, accountUUID, page, pageSize)
 		if err != nil {
