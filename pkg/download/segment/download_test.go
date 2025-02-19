@@ -55,7 +55,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		result, err := segment.Download(c, "project")
+		result, err := segment.Download(t.Context(), c, "project")
 
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
@@ -91,7 +91,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		result, err := segment.Download(c, "project")
+		result, err := segment.Download(t.Context(), c, "project")
 
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
@@ -108,7 +108,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		actual, err := segment.Download(c, "project")
+		actual, err := segment.Download(t.Context(), c, "project")
 
 		assert.NoError(t, err)
 		assert.Len(t, actual, 1)
@@ -121,7 +121,7 @@ func TestDownloader_Download(t *testing.T) {
 			return []coreLib.Response{}, errors.New("some unexpected error")
 		}}
 
-		result, err := segment.Download(c, "project")
+		result, err := segment.Download(t.Context(), c, "project")
 		assert.NoError(t, err)
 		assert.Empty(t, result)
 	})
@@ -183,7 +183,7 @@ func TestDownloader_Download(t *testing.T) {
 			return []coreLib.Response{{StatusCode: http.StatusOK, Data: []byte(given)}}, nil
 		}}
 
-		result, err := segment.Download(c, "project")
+		result, err := segment.Download(t.Context(), c, "project")
 		assert.NoError(t, err)
 
 		actual := result[string(config.SegmentID)][0].Template

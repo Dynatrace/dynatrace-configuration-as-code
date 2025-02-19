@@ -49,7 +49,7 @@ var automationTypesToResources = map[config.AutomationType]automationAPI.Resourc
 
 // Download downloads all automation resources for a given project
 // If automationTypes is given it will just download those types of automation resources
-func Download(cl client.AutomationClient, projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
+func Download(ctx context.Context, cl client.AutomationClient, projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
 	if len(automationTypes) == 0 {
 		automationTypes = maps.Keys(automationTypesToResources)
 	}
@@ -64,7 +64,7 @@ func Download(cl client.AutomationClient, projectName string, automationTypes ..
 			continue
 		}
 		response, err := func() (automation.ListResponse, error) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			ctx, cancel := context.WithTimeout(ctx, time.Minute)
 			defer cancel()
 			return cl.List(ctx, resource)
 		}()

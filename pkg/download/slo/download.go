@@ -34,9 +34,9 @@ type DownloadSloClient interface {
 	List(ctx context.Context) (api.PagedListResponse, error)
 }
 
-func Download(client DownloadSloClient, projectName string) (project.ConfigsPerType, error) {
+func Download(ctx context.Context, client DownloadSloClient, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{}
-	downloadedConfigs, err := client.List(context.TODO())
+	downloadedConfigs, err := client.List(ctx)
 	if err != nil {
 		log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to fetch the list of existing %s configs: %v", config.ServiceLevelObjectiveID, err)
 		// error is ignored

@@ -19,6 +19,7 @@
 package download
 
 import (
+	"context"
 	"errors"
 	"strconv"
 	"testing"
@@ -176,7 +177,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			settingsClient := client.NewMockSettingsClient(gomock.NewController(t))
 			tt.expectedSettingsBehaviour(settingsClient)
 
-			_, err := downloadConfigs(&client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, api.NewAPIs(), tt.givenOpts, defaultDownloadFn)
+			_, err := downloadConfigs(t.Context(), &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, api.NewAPIs(), tt.givenOpts, defaultDownloadFn)
 			assert.NoError(t, err)
 		})
 	}
@@ -333,49 +334,49 @@ func TestDownload_Options(t *testing.T) {
 			}
 
 			fn := downloadFn{
-				classicDownload: func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
+				classicDownload: func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
 					if !tt.want.config {
 						t.Fatalf("classic config download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				settingsDownload: func(settingsClient client.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (projectv2.ConfigsPerType, error) {
+				settingsDownload: func(ctx context.Context, settingsClient client.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (projectv2.ConfigsPerType, error) {
 					if !tt.want.settings {
 						t.Fatalf("settings download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				automationDownload: func(a client.AutomationClient, s string, automationType ...config.AutomationType) (projectv2.ConfigsPerType, error) {
+				automationDownload: func(ctx context.Context, a client.AutomationClient, s string, automationType ...config.AutomationType) (projectv2.ConfigsPerType, error) {
 					if !tt.want.automation {
 						t.Fatalf("automation download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				bucketDownload: func(b client.BucketClient, s string) (projectv2.ConfigsPerType, error) {
+				bucketDownload: func(ctx context.Context, b client.BucketClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.bucket {
 						t.Fatalf("automation download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				documentDownload: func(b client.DocumentClient, s string) (projectv2.ConfigsPerType, error) {
+				documentDownload: func(ctx context.Context, b client.DocumentClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.document {
 						t.Fatalf("document download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				openPipelineDownload: func(b client.OpenPipelineClient, s string) (projectv2.ConfigsPerType, error) {
+				openPipelineDownload: func(ctx context.Context, b client.OpenPipelineClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.openpipeline {
 						t.Fatalf("openpipeline download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				segmentDownload: func(b segment.DownloadSegmentClient, s string) (projectv2.ConfigsPerType, error) {
+				segmentDownload: func(ctx context.Context, b segment.DownloadSegmentClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.segment {
 						t.Fatalf("segment download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				sloDownload: func(b slo.DownloadSloClient, s string) (projectv2.ConfigsPerType, error) {
+				sloDownload: func(ctx context.Context, b slo.DownloadSloClient, s string) (projectv2.ConfigsPerType, error) {
 					if !tt.want.slo {
 						t.Fatalf("slo-v2 download was not meant to be called but was")
 					}
@@ -384,7 +385,7 @@ func TestDownload_Options(t *testing.T) {
 			}
 
 			c := client.NewMockConfigClient(gomock.NewController(t))
-			_, err := downloadConfigs(&client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
+			_, err := downloadConfigs(t.Context(), &client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
 			assert.NoError(t, err)
 		})
 	}
@@ -492,7 +493,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().ListSchemas(gomock.Any()).Return(dtclient.SchemaList{{SchemaId: "builtin:some.schema"}}, nil)
 
-	err := doDownloadConfigs(afero.NewMemMapFs(), &client.ClientSet{SettingsClient: c}, nil, givenOpts)
+	err := doDownloadConfigs(t.Context(), afero.NewMemMapFs(), &client.ClientSet{SettingsClient: c}, nil, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
 }
@@ -558,7 +559,7 @@ func TestDownloadConfigs_OnlyAutomationWithoutAutomationCredentials(t *testing.T
 		onlyAutomation: true,
 	}
 
-	err := doDownloadConfigs(testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
+	err := doDownloadConfigs(t.Context(), testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
 	assert.ErrorContains(t, err, "no OAuth credentials configured")
 }
 
@@ -569,7 +570,7 @@ func TestDownloadConfigs_OnlySettings(t *testing.T) {
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().ListSchemas(gomock.Any()).Return(dtclient.SchemaList{{SchemaId: "builtin:auto.schema"}}, nil)
 	c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.DownloadSettingsObject{}, nil)
-	err := doDownloadConfigs(testutils.CreateTestFileSystem(), &client.ClientSet{SettingsClient: c}, nil, opts)
+	err := doDownloadConfigs(t.Context(), testutils.CreateTestFileSystem(), &client.ClientSet{SettingsClient: c}, nil, opts)
 	assert.NoError(t, err)
 }
 

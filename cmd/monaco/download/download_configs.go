@@ -164,7 +164,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 		return err
 	}
 
-	return doDownloadConfigs(fs, clientSet, prepareAPIs(api.NewAPIs(), options), options)
+	return doDownloadConfigs(ctx, fs, clientSet, prepareAPIs(api.NewAPIs(), options), options)
 }
 
 func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOptions downloadCmdOptions) error {
@@ -202,17 +202,17 @@ func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOpt
 		return err
 	}
 
-	return doDownloadConfigs(fs, clientSet, prepareAPIs(api.NewAPIs(), options), options)
+	return doDownloadConfigs(ctx, fs, clientSet, prepareAPIs(api.NewAPIs(), options), options)
 }
 
-func doDownloadConfigs(fs afero.Fs, clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions) error {
+func doDownloadConfigs(ctx context.Context, fs afero.Fs, clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
 	}
 
 	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentURL, opts.projectName)
-	downloadedConfigs, err := downloadConfigs(clientSet, apisToDownload, opts, defaultDownloadFn)
+	downloadedConfigs, err := downloadConfigs(ctx, clientSet, apisToDownload, opts, defaultDownloadFn)
 	if err != nil {
 		return err
 	}
@@ -269,14 +269,14 @@ func escapeGoTemplating(c *config.Config) error {
 }
 
 type downloadFn struct {
-	classicDownload      func(client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
-	settingsDownload     func(client.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
-	automationDownload   func(client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
-	bucketDownload       func(client.BucketClient, string) (projectv2.ConfigsPerType, error)
-	documentDownload     func(client.DocumentClient, string) (projectv2.ConfigsPerType, error)
-	openPipelineDownload func(client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
-	segmentDownload      func(segment.DownloadSegmentClient, string) (projectv2.ConfigsPerType, error)
-	sloDownload          func(slo.DownloadSloClient, string) (projectv2.ConfigsPerType, error)
+	classicDownload      func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
+	settingsDownload     func(context.Context, client.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
+	automationDownload   func(context.Context, client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
+	bucketDownload       func(context.Context, client.BucketClient, string) (projectv2.ConfigsPerType, error)
+	documentDownload     func(context.Context, client.DocumentClient, string) (projectv2.ConfigsPerType, error)
+	openPipelineDownload func(context.Context, client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
+	segmentDownload      func(context.Context, segment.DownloadSegmentClient, string) (projectv2.ConfigsPerType, error)
+	sloDownload          func(context.Context, slo.DownloadSloClient, string) (projectv2.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{
@@ -290,13 +290,13 @@ var defaultDownloadFn = downloadFn{
 	sloDownload:          slo.Download,
 }
 
-func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
+func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
 	configs := make(project.ConfigsPerType)
 	if shouldDownloadConfigs(opts) {
 		if opts.auth.Token == nil {
 			return nil, errors.New("classic client config requires token")
 		}
-		classicCfgs, err := fn.classicDownload(clientSet.ConfigClient, opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
+		classicCfgs, err := fn.classicDownload(ctx, clientSet.ConfigClient, opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
 		if err != nil {
 			return nil, err
 		}
@@ -305,7 +305,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 
 	if shouldDownloadSettings(opts) {
 		log.Info("Downloading settings objects")
-		settingCfgs, err := fn.settingsDownload(clientSet.SettingsClient, opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
+		settingCfgs, err := fn.settingsDownload(ctx, clientSet.SettingsClient, opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
 		if err != nil {
 			return nil, err
 		}
@@ -315,7 +315,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 	if shouldDownloadAutomationResources(opts) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading automation resources")
-			automationCfgs, err := fn.automationDownload(clientSet.AutClient, opts.projectName)
+			automationCfgs, err := fn.automationDownload(ctx, clientSet.AutClient, opts.projectName)
 			if err != nil {
 				return nil, err
 			}
@@ -327,7 +327,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 
 	if shouldDownloadBuckets(opts) && opts.auth.OAuth != nil {
 		log.Info("Downloading Grail buckets")
-		bucketCfgs, err := fn.bucketDownload(clientSet.BucketClient, opts.projectName)
+		bucketCfgs, err := fn.bucketDownload(ctx, clientSet.BucketClient, opts.projectName)
 		if err != nil {
 			return nil, err
 		}
@@ -337,7 +337,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 	if shouldDownloadDocuments(opts) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading documents")
-			documentCfgs, err := fn.documentDownload(clientSet.DocumentClient, opts.projectName)
+			documentCfgs, err := fn.documentDownload(ctx, clientSet.DocumentClient, opts.projectName)
 			if err != nil {
 				return nil, err
 			}
@@ -350,7 +350,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 	if featureflags.OpenPipeline.Enabled() {
 		if shouldDownloadOpenPipeline(opts) {
 			if opts.auth.OAuth != nil {
-				openPipelineCfgs, err := fn.openPipelineDownload(clientSet.OpenPipelineClient, opts.projectName)
+				openPipelineCfgs, err := fn.openPipelineDownload(ctx, clientSet.OpenPipelineClient, opts.projectName)
 				if err != nil {
 					return nil, err
 				}
@@ -364,7 +364,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 	if featureflags.Segments.Enabled() {
 		if shouldDownloadSegments(opts) {
 			if opts.auth.OAuth != nil {
-				segmentCgfs, err := fn.segmentDownload(clientSet.SegmentClient, opts.projectName)
+				segmentCgfs, err := fn.segmentDownload(ctx, clientSet.SegmentClient, opts.projectName)
 				if err != nil {
 					return nil, err
 				}
@@ -378,7 +378,7 @@ func downloadConfigs(clientSet *client.ClientSet, apisToDownload api.APIs, opts 
 	if featureflags.ServiceLevelObjective.Enabled() {
 		if shouldDownloadSLOsV2(opts) {
 			if opts.auth.OAuth != nil {
-				sloCgfs, err := fn.sloDownload(clientSet.ServiceLevelObjectiveClient, opts.projectName)
+				sloCgfs, err := fn.sloDownload(ctx, clientSet.ServiceLevelObjectiveClient, opts.projectName)
 				if err != nil {
 					return nil, err
 				}
