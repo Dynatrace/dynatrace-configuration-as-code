@@ -47,7 +47,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		},
 	}
 
-	client := &dtclient.DummyConfigClient{}
+	client := &dtclient.DryRunConfigClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: testutils.GenerateDummyTemplate(t),
@@ -100,7 +100,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		},
 	}
 
-	client := &dtclient.DummyConfigClient{}
+	client := &dtclient.DryRunConfigClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: testutils.GenerateDummyTemplate(t),
@@ -121,7 +121,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 	parameters := []parameter.NamedParameter{}
 
-	client := &dtclient.DummyConfigClient{}
+	client := &dtclient.DryRunConfigClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: testutils.GenerateDummyTemplate(t),
@@ -158,7 +158,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		},
 	}
 
-	client := &dtclient.DummyConfigClient{}
+	client := &dtclient.DryRunConfigClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: testutils.GenerateDummyTemplate(t),
@@ -197,7 +197,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		},
 	}
 
-	client := &dtclient.DummyConfigClient{}
+	client := &dtclient.DryRunConfigClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: testutils.GenerateDummyTemplate(t),

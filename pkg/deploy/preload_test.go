@@ -33,10 +33,10 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-var dummyConfigClient = &dtclient.DummyConfigClient{}
-var dummySettingsClient = &dtclient.DummySettingsClient{}
-var clientsetEnv1 = &client.ClientSet{ConfigClient: dummyConfigClient, SettingsClient: dummySettingsClient}
-var clientsetEnv2 = &client.ClientSet{ConfigClient: dummyConfigClient, SettingsClient: dummySettingsClient}
+var dryRunConfigClient = &dtclient.DryRunConfigClient{}
+var dryRunSettingsClient = &dtclient.DryRunSettingsClient{}
+var clientSetEnv1 = &client.ClientSet{ConfigClient: dryRunConfigClient, SettingsClient: dryRunSettingsClient}
+var clientSetEnv2 = &client.ClientSet{ConfigClient: dryRunConfigClient, SettingsClient: dryRunSettingsClient}
 
 func Test_gatherPreloadConfigTypeEntries_OneEntryPerConfigType(t *testing.T) {
 	entries := gatherPreloadConfigTypeEntries(
@@ -64,11 +64,11 @@ func Test_gatherPreloadConfigTypeEntries_OneEntryPerConfigType(t *testing.T) {
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1},
+		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientSetEnv1},
 	)
 
 	require.Len(t, entries, 1)
-	assert.Equal(t, entries[0].clientset, clientsetEnv1)
+	assert.Equal(t, entries[0].clientset, clientSetEnv1)
 	assert.Equal(t, entries[0].configType, config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	})
@@ -101,14 +101,14 @@ func Test_gatherPreloadConfigTypeEntries_OneEntryForEachConfigType(t *testing.T)
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1},
+		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientSetEnv1},
 	)
 
 	require.Len(t, entries, 2)
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.SettingsType{
+	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientSetEnv1, configType: config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	}})
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.ClassicApiType{
+	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientSetEnv1, configType: config.ClassicApiType{
 		Api: "management-zone",
 	}})
 }
@@ -140,11 +140,11 @@ func Test_gatherPreloadConfigTypeEntries_EntriesOnlyForSupportedConfigTypes(t *t
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1},
+		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientSetEnv1},
 	)
 
 	require.Len(t, entries, 1)
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.SettingsType{
+	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientSetEnv1, configType: config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	}})
 }
@@ -180,16 +180,16 @@ func Test_gatherPreloadConfigTypeEntries_OneEntryForEachEnvironmentInSameProject
 			},
 		},
 		dynatrace.EnvironmentClients{
-			dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1,
-			dynatrace.EnvironmentInfo{Name: "env2"}: clientsetEnv2,
+			dynatrace.EnvironmentInfo{Name: "env1"}: clientSetEnv1,
+			dynatrace.EnvironmentInfo{Name: "env2"}: clientSetEnv2,
 		},
 	)
 
 	require.Len(t, entries, 2)
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.SettingsType{
+	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientSetEnv1, configType: config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	}})
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv2, configType: config.SettingsType{
+	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientSetEnv2, configType: config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	}})
 }
@@ -231,16 +231,16 @@ func Test_gatherPreloadConfigTypeEntries_OneEntryForEachEnvironmentInDifferentPr
 			},
 		},
 		dynatrace.EnvironmentClients{
-			dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1,
-			dynatrace.EnvironmentInfo{Name: "env2"}: clientsetEnv2,
+			dynatrace.EnvironmentInfo{Name: "env1"}: clientSetEnv1,
+			dynatrace.EnvironmentInfo{Name: "env2"}: clientSetEnv2,
 		},
 	)
 
 	require.Len(t, entries, 2)
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.SettingsType{
+	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientSetEnv1, configType: config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	}})
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv2, configType: config.SettingsType{
+	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientSetEnv2, configType: config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	}})
 }
@@ -282,12 +282,12 @@ func Test_gatherPreloadConfigTypeEntries_OneEntryForSameEnvironmentInDifferentPr
 			},
 		},
 		dynatrace.EnvironmentClients{
-			dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1,
+			dynatrace.EnvironmentInfo{Name: "env1"}: clientSetEnv1,
 		},
 	)
 
 	require.Len(t, entries, 1)
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.SettingsType{
+	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientSetEnv1, configType: config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	}})
 }
@@ -403,17 +403,17 @@ func Test_gatherPreloadConfigTypeEntries_WithSkipParam(t *testing.T) {
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1},
+		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientSetEnv1},
 	)
 
 	expectedEntries := []preloadConfigTypeEntry{
 		{
 			configType: config.ClassicApiType{Api: "dashboard-share-settings"},
-			clientset:  clientsetEnv1,
+			clientset:  clientSetEnv1,
 		},
 		{
 			configType: config.ClassicApiType{Api: "management-zone"},
-			clientset:  clientsetEnv1,
+			clientset:  clientSetEnv1,
 		},
 	}
 

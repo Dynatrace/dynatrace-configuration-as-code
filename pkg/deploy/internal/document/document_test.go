@@ -52,7 +52,7 @@ var documentConfigCoordinate = coordinate.Coordinate{
 }
 
 func TestDeployDocumentWrongType(t *testing.T) {
-	client := &client.DummyDocumentClient{}
+	client := &client.DryRunDocumentClient{}
 
 	conf := &config.Config{
 		Type:     config.ClassicApiType{},

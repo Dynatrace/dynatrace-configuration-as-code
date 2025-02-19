@@ -185,7 +185,7 @@ func CreateEnvironmentClients(ctx context.Context, environments manifest.Environ
 			clients[EnvironmentInfo{
 				Name:  env.Name,
 				Group: env.Group,
-			}] = &client.DummyClientSet
+			}] = &client.DryRunClientSet
 			continue
 		}
 

@@ -97,8 +97,8 @@ func TestDeployConfigGraph_SingleConfig(t *testing.T) {
 		},
 	}
 
-	dummyClient := dtclient.DummyConfigClient{}
-	clientSet := &client.ClientSet{ConfigClient: &dummyClient, SettingsClient: &dtclient.DummySettingsClient{}}
+	dryRunConfigClient := dtclient.DryRunConfigClient{}
+	clientSet := &client.ClientSet{ConfigClient: &dryRunConfigClient, SettingsClient: &dtclient.DryRunSettingsClient{}}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: clientSet,
@@ -108,8 +108,8 @@ func TestDeployConfigGraph_SingleConfig(t *testing.T) {
 
 	assert.Emptyf(t, errors, "errors: %v", errors)
 
-	createdEntities, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
-	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
+	createdEntities, found := dryRunConfigClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.True(t, found, "expected entries for dashboard API to exist in dry-run client after deployment")
 	assert.Len(t, createdEntities, 1)
 
 	entity := createdEntities[0]
@@ -185,7 +185,7 @@ func TestDeployConfigGraph_DoesNotFailOnEmptyConfigs(t *testing.T) {
 		},
 	}
 
-	clientSet := client.ClientSet{ConfigClient: &dtclient.DummyConfigClient{}, SettingsClient: &dtclient.DummySettingsClient{}}
+	clientSet := client.ClientSet{ConfigClient: &dtclient.DryRunConfigClient{}, SettingsClient: &dtclient.DryRunSettingsClient{}}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
@@ -199,7 +199,7 @@ func TestDeployConfigGraph_DoesNotFailOnEmptyProject(t *testing.T) {
 
 	var p []project.Project
 
-	clientSet := client.ClientSet{ConfigClient: &dtclient.DummyConfigClient{}, SettingsClient: &dtclient.DummySettingsClient{}}
+	clientSet := client.ClientSet{ConfigClient: &dtclient.DryRunConfigClient{}, SettingsClient: &dtclient.DryRunSettingsClient{}}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
@@ -234,8 +234,8 @@ func TestDeployConfigGraph_DoesNotDeploySkippedConfig(t *testing.T) {
 		},
 	}
 
-	dummyClient := dtclient.DummyConfigClient{}
-	clientSet := client.ClientSet{ConfigClient: &dummyClient, SettingsClient: &dtclient.DummySettingsClient{}}
+	dryRunConfigClient := dtclient.DryRunConfigClient{}
+	clientSet := client.ClientSet{ConfigClient: &dryRunConfigClient, SettingsClient: &dtclient.DryRunSettingsClient{}}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
@@ -243,7 +243,7 @@ func TestDeployConfigGraph_DoesNotDeploySkippedConfig(t *testing.T) {
 
 	errors := deploy.Deploy(context.TODO(), p, c, deploy.DeployConfigsOptions{})
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
-	createdEntities, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	createdEntities, found := dryRunConfigClient.GetEntries(api.NewAPIs()["dashboard"])
 	assert.False(t, found, "expected NO entries for dashboard API to exist")
 	assert.Len(t, createdEntities, 0)
 }
@@ -431,7 +431,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 		},
 	}
 
-	clientSet := client.ClientSet{ConfigClient: &dtclient.DummyConfigClient{}, SettingsClient: &dtclient.SettingsClient{}}
+	clientSet := client.ClientSet{ConfigClient: &dtclient.DryRunConfigClient{}, SettingsClient: &dtclient.SettingsClient{}}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: env}: &clientSet,
@@ -559,8 +559,8 @@ func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *test
 	assert.NoError(t, err)
 	assert.Len(t, components, 1)
 
-	dummyClient := dtclient.DummyConfigClient{}
-	clientSet := client.ClientSet{ConfigClient: &dummyClient, SettingsClient: &dtclient.DummySettingsClient{}}
+	dryRunConfigClient := dtclient.DryRunConfigClient{}
+	clientSet := client.ClientSet{ConfigClient: &dryRunConfigClient, SettingsClient: &dtclient.DryRunSettingsClient{}}
 
 	clients := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: environmentName}: &clientSet,
@@ -568,7 +568,7 @@ func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *test
 
 	errs := deploy.Deploy(context.TODO(), projects, clients, deploy.DeployConfigsOptions{})
 	assert.NoError(t, errs)
-	assert.Zero(t, dummyClient.CreatedObjects())
+	assert.Zero(t, dryRunConfigClient.CreatedObjects())
 }
 
 func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {
@@ -674,8 +674,8 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, components, 2)
 
-	dummyClient := dtclient.DummyConfigClient{}
-	clientSet := client.ClientSet{ConfigClient: &dummyClient, SettingsClient: &dtclient.DummySettingsClient{}}
+	dryRunConfigClient := dtclient.DryRunConfigClient{}
+	clientSet := client.ClientSet{ConfigClient: &dryRunConfigClient, SettingsClient: &dtclient.DryRunSettingsClient{}}
 	clients := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: environmentName}: &clientSet,
 	}
@@ -683,8 +683,8 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {
 	errs := deploy.Deploy(context.TODO(), projects, clients, deploy.DeployConfigsOptions{})
 	assert.NoError(t, errs)
 
-	dashboards, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
-	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
+	dashboards, found := dryRunConfigClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.True(t, found, "expected entries for dashboard API to exist in dry-run client after deployment")
 	assert.Len(t, dashboards, 1)
 
 	assert.Equal(t, dashboards[0].Name, individualConfigName)
@@ -792,8 +792,8 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations_IfContinuingAfterFai
 	assert.NoError(t, err)
 	assert.Len(t, components, 2)
 
-	dummyClient := dtclient.DummyConfigClient{}
-	clientSet := client.ClientSet{ConfigClient: &dummyClient, SettingsClient: &dtclient.DummySettingsClient{}}
+	dryRunConfigClient := dtclient.DryRunConfigClient{}
+	clientSet := client.ClientSet{ConfigClient: &dryRunConfigClient, SettingsClient: &dtclient.DryRunSettingsClient{}}
 
 	clients := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: environmentName}: &clientSet,
@@ -802,8 +802,8 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations_IfContinuingAfterFai
 	errs := deploy.Deploy(context.TODO(), projects, clients, deploy.DeployConfigsOptions{ContinueOnErr: true})
 	assert.Len(t, errs, 1)
 
-	dashboards, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
-	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
+	dashboards, found := dryRunConfigClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.True(t, found, "expected entries for dashboard API to exist in dry-run client after deployment")
 	assert.Len(t, dashboards, 1)
 
 	assert.Equal(t, dashboards[0].Name, individualConfigName)
@@ -1177,8 +1177,8 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 
-			dummyClient := dtclient.DummyConfigClient{}
-			clientSet := client.ClientSet{ConfigClient: &dummyClient, SettingsClient: &dtclient.DummySettingsClient{}}
+			dryRunConfigClient := dtclient.DryRunConfigClient{}
+			clientSet := client.ClientSet{ConfigClient: &dryRunConfigClient, SettingsClient: &dtclient.DryRunSettingsClient{}}
 
 			c := dynatrace.EnvironmentClients{
 				dynatrace.EnvironmentInfo{Name: "env1"}: &clientSet,
@@ -1268,8 +1268,8 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 		},
 	}
 
-	dummyClient := dtclient.DummyConfigClient{}
-	clientSet := client.ClientSet{ConfigClient: &dummyClient, SettingsClient: &dtclient.DummySettingsClient{}}
+	dryRunConfigClient := dtclient.DryRunConfigClient{}
+	clientSet := client.ClientSet{ConfigClient: &dryRunConfigClient, SettingsClient: &dtclient.DryRunSettingsClient{}}
 
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
@@ -1302,12 +1302,12 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 }
 
 func TestDeployConfigFF(t *testing.T) {
-	dummyClientSet := client.ClientSet{
+	testClientSet := client.ClientSet{
 		SegmentClient:               client.TestSegmentsClient{},
 		ServiceLevelObjectiveClient: client.TestServiceLevelObjectiveClient{},
 	}
 	c := dynatrace.EnvironmentClients{
-		dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
+		dynatrace.EnvironmentInfo{Name: "env"}: &testClientSet,
 	}
 	tests := []struct {
 		name              string
@@ -1383,7 +1383,7 @@ func TestDeployConfigFF(t *testing.T) {
 
 func TestDeployDryRun(t *testing.T) {
 	c := dynatrace.EnvironmentClients{
-		dynatrace.EnvironmentInfo{Name: "env", Group: "group"}: &client.DummyClientSet,
+		dynatrace.EnvironmentInfo{Name: "env", Group: "group"}: &client.DryRunClientSet,
 	}
 	projects := []project.Project{
 		{

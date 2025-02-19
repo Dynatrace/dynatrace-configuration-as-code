@@ -48,8 +48,8 @@ import (
 var (
 	_ SettingsClient = (*dtclient.SettingsClient)(nil)
 	_ ConfigClient   = (*dtclient.ConfigClient)(nil)
-	_ SettingsClient = (*dtclient.DummySettingsClient)(nil)
-	_ ConfigClient   = (*dtclient.DummyConfigClient)(nil)
+	_ SettingsClient = (*dtclient.DryRunSettingsClient)(nil)
+	_ ConfigClient   = (*dtclient.DryRunConfigClient)(nil)
 )
 
 //go:generate mockgen -source=clientset.go -destination=client_mock.go -package=client ConfigClient

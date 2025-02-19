@@ -36,7 +36,7 @@ import (
 )
 
 func TestDeployAutomation_WrongType(t *testing.T) {
-	client := &client.DummyAutomationClient{}
+	client := &client.DryRunAutomationClient{}
 
 	conf := &config.Config{
 		Type:     config.ClassicApiType{},
@@ -48,7 +48,7 @@ func TestDeployAutomation_WrongType(t *testing.T) {
 }
 
 func TestDeployAutomation_UnknownResourceType(t *testing.T) {
-	client := &client.DummyAutomationClient{}
+	client := &client.DryRunAutomationClient{}
 	conf := &config.Config{
 		Type: config.AutomationType{
 			Resource: config.AutomationResource("unkown"),

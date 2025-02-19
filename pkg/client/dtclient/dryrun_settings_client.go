@@ -23,17 +23,17 @@ import (
 	"github.com/google/uuid"
 )
 
-type DummySettingsClient struct{}
+type DryRunSettingsClient struct{}
 
-func (c *DummySettingsClient) Cache(context.Context, string) error {
+func (c *DryRunSettingsClient) Cache(context.Context, string) error {
 	return nil
 }
 
-func (c *DummySettingsClient) Upsert(_ context.Context, obj SettingsObject, _ UpsertSettingsOptions) (DynatraceEntity, error) {
+func (c *DryRunSettingsClient) Upsert(_ context.Context, obj SettingsObject, _ UpsertSettingsOptions) (DynatraceEntity, error) {
 
 	id := obj.Coordinate.ConfigId
 
-	// to ensure decoding of Management Zone Numeric IDs works for dry-runs the dummy client needs to produce a fake but validly formated objectID
+	// to ensure decoding of Management Zone Numeric IDs works for dry-runs the dry-run client needs to produce a fake but validly formated objectID
 	if obj.SchemaId == "builtin:management-zones" {
 		uuid := uuid.New().String()
 		id = base64.RawURLEncoding.EncodeToString([]byte(uuid))
@@ -45,21 +45,21 @@ func (c *DummySettingsClient) Upsert(_ context.Context, obj SettingsObject, _ Up
 	}, nil
 }
 
-func (c *DummySettingsClient) ListSchemas(_ context.Context) (SchemaList, error) {
+func (c *DryRunSettingsClient) ListSchemas(_ context.Context) (SchemaList, error) {
 	return make(SchemaList, 0), nil
 }
 
-func (c *DummySettingsClient) GetSchema(_ context.Context, _ string) (schema Schema, err error) {
+func (c *DryRunSettingsClient) GetSchema(_ context.Context, _ string) (schema Schema, err error) {
 	return Schema{}, nil
 }
 
-func (c *DummySettingsClient) Get(_ context.Context, _ string) (*DownloadSettingsObject, error) {
+func (c *DryRunSettingsClient) Get(_ context.Context, _ string) (*DownloadSettingsObject, error) {
 	return &DownloadSettingsObject{}, nil
 }
-func (c *DummySettingsClient) List(_ context.Context, _ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
+func (c *DryRunSettingsClient) List(_ context.Context, _ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	return make([]DownloadSettingsObject, 0), nil
 }
 
-func (c *DummySettingsClient) Delete(_ context.Context, _ string) error {
+func (c *DryRunSettingsClient) Delete(_ context.Context, _ string) error {
 	return nil
 }
