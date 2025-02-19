@@ -17,7 +17,9 @@
 package slo_test
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -34,20 +36,33 @@ import (
 )
 
 type testClient struct {
-	listStub   func() (api.PagedListResponse, error)
-	updateStub func() (api.Response, error)
-	createStub func() (api.Response, error)
+	expectedPayload []byte
+	listStub        func() (api.PagedListResponse, error)
+	updateStub      func() (api.Response, error)
+	createStub      func() (api.Response, error)
 }
 
 func (tc *testClient) List(_ context.Context) (api.PagedListResponse, error) {
 	return tc.listStub()
 }
 
-func (tc *testClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
+func (tc *testClient) Update(_ context.Context, _ string, actualPayload []byte) (api.Response, error) {
+	if tc.expectedPayload != nil {
+		if !bytes.Equal(tc.expectedPayload, actualPayload) {
+			return api.Response{}, fmt.Errorf("expected payload '%s' but got '%s'", string(tc.expectedPayload), string(actualPayload))
+		}
+	}
+
 	return tc.updateStub()
 }
 
-func (tc *testClient) Create(_ context.Context, _ []byte) (api.Response, error) {
+func (tc *testClient) Create(_ context.Context, actualPayload []byte) (api.Response, error) {
+	if tc.expectedPayload != nil {
+		if !bytes.Equal(tc.expectedPayload, actualPayload) {
+			return api.Response{}, fmt.Errorf("expected payload '%s' but got '%s'", string(tc.expectedPayload), string(actualPayload))
+		}
+	}
+
 	return tc.createStub()
 }
 
@@ -58,12 +73,13 @@ func TestDeploySuccess(t *testing.T) {
 		ConfigId: "config-id",
 	}
 	tests := []struct {
-		name        string
-		inputConfig config.Config
-		updateStub  func() (api.Response, error)
-		createStub  func() (api.Response, error)
-		listStub    func() (api.PagedListResponse, error)
-		expected    entities.ResolvedEntity
+		name                   string
+		inputConfig            config.Config
+		updateStub             func() (api.Response, error)
+		createStub             func() (api.Response, error)
+		listStub               func() (api.PagedListResponse, error)
+		expected               entities.ResolvedEntity
+		expectedRequestPayload []byte
 	}{
 		{
 			name: "deploy with objectOriginId",
@@ -95,6 +111,7 @@ func TestDeploySuccess(t *testing.T) {
 				},
 				Skip: false,
 			},
+			expectedRequestPayload: []byte("{\"externalId\":\"monaco-614c832a-b2c4-30c0-8e5b-f017366a4b1a\"}"),
 		},
 		{
 			name: "deploy with externalId",
@@ -136,6 +153,7 @@ func TestDeploySuccess(t *testing.T) {
 				},
 				Skip: false,
 			},
+			expectedRequestPayload: []byte("{\"externalId\":\"monaco-614c832a-b2c4-30c0-8e5b-f017366a4b1a\"}"),
 		},
 		{
 			name: "create new object on remote",
@@ -177,12 +195,13 @@ func TestDeploySuccess(t *testing.T) {
 				},
 				Skip: false,
 			},
+			expectedRequestPayload: []byte("{\"externalId\":\"monaco-614c832a-b2c4-30c0-8e5b-f017366a4b1a\"}"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := testClient{updateStub: tt.updateStub, listStub: tt.listStub, createStub: tt.createStub}
+			c := testClient{updateStub: tt.updateStub, listStub: tt.listStub, createStub: tt.createStub, expectedPayload: tt.expectedRequestPayload}
 
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
