@@ -52,11 +52,11 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 
 	externalID, err := idutils.GenerateExternalIDForDocument(c.Coordinate)
 	if err != nil {
-		return entities.ResolvedEntity{}, fmt.Errorf("failed to generate externalID: %w", err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "failed to generate externalID").WithError(err)
 	}
 	requestPayload, err := addExternalId(externalID, renderedConfig)
 	if err != nil {
-		return entities.ResolvedEntity{}, fmt.Errorf("failed to add externalID to slo request payload: %w", err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "failed to add externalID to slo request payload").WithError(err)
 	}
 
 	//Strategy 1 when OriginObjectId is set we update the object
