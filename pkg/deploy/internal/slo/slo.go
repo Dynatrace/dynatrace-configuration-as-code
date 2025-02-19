@@ -50,7 +50,7 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	externalID, err := idutils.GenerateExternalIDForDocument(c.Coordinate)
+	externalID, err := idutils.GenerateExternalID(c.Coordinate)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "failed to generate externalID").WithError(err)
 	}

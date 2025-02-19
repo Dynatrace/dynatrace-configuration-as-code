@@ -84,7 +84,7 @@ func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePoi
 		return "", err
 	}
 
-	extID, err := idutils.GenerateExternalIDForDocument(dp.AsCoordinate())
+	extID, err := idutils.GenerateExternalID(dp.AsCoordinate())
 	if err != nil {
 		return "", fmt.Errorf("unable to generate externalID: %w", err)
 	}

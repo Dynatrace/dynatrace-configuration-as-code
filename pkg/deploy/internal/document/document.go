@@ -75,7 +75,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	}
 
 	// strategy 2: find and update document via external id
-	externalId, err := idutils.GenerateExternalIDForDocument(c.Coordinate)
+	externalId, err := idutils.GenerateExternalID(c.Coordinate)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error generating external id").WithError(err)
 	}
