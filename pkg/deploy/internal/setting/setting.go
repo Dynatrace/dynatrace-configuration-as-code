@@ -34,11 +34,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
 )
 
-func Deploy(ctx context.Context, settingsClient client.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config, insertAfter string) (entities.ResolvedEntity, error) {
+func Deploy(ctx context.Context, settingsClient client.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	t, ok := c.Type.(config.SettingsType)
 	if !ok {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeID, c.Type.ID()))
 	}
+
+	insertAfter := extractInsertAfter(properties)
 
 	scope, err := extract.Scope(properties)
 	if err != nil {
@@ -93,6 +95,16 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		Skip:       false,
 	}, nil
 
+}
+
+func extractInsertAfter(properties parameter.Properties) string {
+	var insertAfter string
+
+	if ia, ok := properties[config.InsertAfterParameter]; ok {
+		insertAfter = ia.(string)
+	}
+
+	return insertAfter
 }
 
 func getEntityID(c *config.Config, e dtclient.DynatraceEntity) (string, error) {

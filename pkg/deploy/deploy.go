@@ -21,14 +21,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
-
-	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-
 	gonum "gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
@@ -45,6 +42,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
@@ -295,11 +293,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 	var deployErr error
 	switch c.Type.(type) {
 	case config.SettingsType:
-		var insertAfter string
-		if ia, ok := properties[config.InsertAfterParameter]; ok {
-			insertAfter = ia.(string)
-		}
-		resolvedEntity, deployErr = setting.Deploy(ctx, clientset.SettingsClient, properties, renderedConfig, c, insertAfter)
+		resolvedEntity, deployErr = setting.Deploy(ctx, clientset.SettingsClient, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
 		resolvedEntity, deployErr = classic.Deploy(ctx, clientset.ConfigClient, api.NewAPIs(), properties, renderedConfig, c)
