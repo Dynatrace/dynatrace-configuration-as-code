@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/dynatrace/dynatrace-configuration-as-code-core v0.7.1-0.20250211150749-1391cd8fbd8b
+	github.com/dynatrace/dynatrace-configuration-as-code-core v0.7.1-0.20250218115521-77fab564c444
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/go-cmp v0.6.0
@@ -39,5 +39,3 @@ require (
 	golang.org/x/time v0.10.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-

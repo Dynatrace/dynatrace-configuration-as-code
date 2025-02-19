@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
@@ -39,6 +40,37 @@ func (c *Client) GetUsers(ctx context.Context, accountUUID string) ([]accountman
 		return nil, errors.New("the received data are empty")
 	}
 	return r.Items, nil
+}
+
+func (c *Client) GetServiceUsers(ctx context.Context, accountUUID string) ([]accountmanagement.ExternalServiceUserDto, error) {
+	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
+	const pageSize = 100
+	for page := (int32)(1); page < math.MaxInt32; page++ {
+		r, err := c.getServiceUsersPage(ctx, accountUUID, page, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		serviceUsers = append(serviceUsers, r.Results...)
+
+		if r.NextPageKey == nil {
+			break
+		}
+	}
+
+	return serviceUsers, nil
+}
+
+func (c *Client) getServiceUsersPage(ctx context.Context, accountUUID string, page int32, pageSize int32) (*accountmanagement.ExternalServiceUsersPageDto, error) {
+	r, resp, err := c.ServiceUserManagementAPI.GetServiceUsersFromAccount(ctx, accountUUID).Page(page).PageSize(pageSize).Execute()
+	defer closeResponseBody(resp)
+	if err = getErrorMessageFromResponse(resp, err); err != nil {
+		return nil, err
+	}
+	if r == nil {
+		return nil, errors.New("the received data are empty")
+	}
+	return r, nil
 }
 
 func (c *Client) GetGroupsForUser(ctx context.Context, userEmail string, accountUUID string) (*accountmanagement.GroupUserDto, error) {
