@@ -19,7 +19,6 @@
 package setting
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,7 +69,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap(parameters),
 	}
-	_, errors := Deploy(context.TODO(), client, nil, "", conf, "")
+	_, errors := Deploy(t.Context(), client, nil, "", conf, "")
 	assert.NotEmpty(t, errors)
 }
 
@@ -82,7 +81,7 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 		Template: testutils.GenerateFaultyTemplate(t),
 	}
 
-	_, errors := Deploy(context.TODO(), client, nil, "", conf, "")
+	_, errors := Deploy(t.Context(), client, nil, "", conf, "")
 	assert.NotEmpty(t, errors)
 }
 
@@ -101,7 +100,7 @@ func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 	props := map[string]interface{}{"scope": "environment"}
-	resolvedEntity, err := Deploy(context.TODO(), c, props, "", conf, "")
+	resolvedEntity, err := Deploy(t.Context(), c, props, "", conf, "")
 	assert.Equal(t, entities.ResolvedEntity{
 		EntityName: "[UNKNOWN NAME]vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
 		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:management-zones", ConfigId: "abcde"},
@@ -126,7 +125,7 @@ func TestDeploySetting_ManagementZone_NameGetsExtracted_ifPresent(t *testing.T) 
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 	props := map[string]interface{}{"scope": "environment", "name": "the-name"}
-	resolvedEntity, err := Deploy(context.TODO(), c, props, "", conf, "")
+	resolvedEntity, err := Deploy(t.Context(), c, props, "", conf, "")
 	assert.Equal(t, entities.ResolvedEntity{
 		EntityName: "the-name",
 		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:some-setting", ConfigId: "abcde"},
@@ -151,7 +150,7 @@ func TestDeploySetting_ManagementZone_FailToDecodeMZoneID(t *testing.T) {
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 	props := map[string]interface{}{"scope": "environment"}
-	resolvedEntity, err := Deploy(context.TODO(), c, props, "", conf, "")
+	resolvedEntity, err := Deploy(t.Context(), c, props, "", conf, "")
 	assert.Zero(t, resolvedEntity)
 	assert.Error(t, err)
 }

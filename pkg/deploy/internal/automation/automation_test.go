@@ -19,7 +19,6 @@
 package automation
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -43,7 +42,7 @@ func TestDeployAutomation_WrongType(t *testing.T) {
 		Template: testutils.GenerateFaultyTemplate(t),
 	}
 
-	_, errors := Deploy(context.TODO(), client, nil, "", conf)
+	_, errors := Deploy(t.Context(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -56,7 +55,7 @@ func TestDeployAutomation_UnknownResourceType(t *testing.T) {
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 	}
-	_, errors := Deploy(context.TODO(), client, nil, "", conf)
+	_, errors := Deploy(t.Context(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -72,7 +71,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		resp, err := Deploy(context.TODO(), client, nil, "", conf)
+		resp, err := Deploy(t.Context(), client, nil, "", conf)
 		assert.Zero(t, resp)
 		assert.Error(t, err)
 	})
@@ -87,7 +86,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := Deploy(context.TODO(), client, nil, "", conf)
+		_, err := Deploy(t.Context(), client, nil, "", conf)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - BusinessCalendar Upsert fails", func(t *testing.T) {
@@ -101,7 +100,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := Deploy(context.TODO(), client, nil, "", conf)
+		_, err := Deploy(t.Context(), client, nil, "", conf)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - BusinessCalendar Upsert fails - HTTP Error", func(t *testing.T) {
@@ -115,7 +114,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := Deploy(context.TODO(), client, nil, "", conf)
+		_, err := Deploy(t.Context(), client, nil, "", conf)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails", func(t *testing.T) {
@@ -129,7 +128,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := Deploy(context.TODO(), client, nil, "", conf)
+		_, err := Deploy(t.Context(), client, nil, "", conf)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails - HTTP Error", func(t *testing.T) {
@@ -143,7 +142,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := Deploy(context.TODO(), client, nil, "", conf)
+		_, err := Deploy(t.Context(), client, nil, "", conf)
 		assert.Error(t, err)
 	})
 }
@@ -164,7 +163,7 @@ func TestDeployAutomation(t *testing.T) {
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 	}
-	resolvedEntity, errors := Deploy(context.TODO(), client, parameter.Properties{}, "{}", conf)
+	resolvedEntity, errors := Deploy(t.Context(), client, parameter.Properties{}, "{}", conf)
 	assert.NotNil(t, resolvedEntity)
 	assert.Equal(t, "[UNKNOWN NAME]config-id", resolvedEntity.EntityName)
 	assert.Equal(t, "config-id", resolvedEntity.Properties[config.IdParameter])
