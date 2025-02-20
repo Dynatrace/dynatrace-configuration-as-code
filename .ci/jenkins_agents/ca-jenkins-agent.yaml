@@ -3,7 +3,7 @@ kind: Pod
 spec:
   containers:
     - name: ca-jenkins-agent
-      image: docker-proxy.lab.dynatrace.org/library/ubuntu:22.04
+      image: docker-proxy.lab.dynatrace.org/library/golang:1.24.0-bookworm
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000

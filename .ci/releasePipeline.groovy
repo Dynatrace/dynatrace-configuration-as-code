@@ -16,10 +16,6 @@ pipeline {
             steps {
                 script {
                     Context ctx
-                    stage("setup container") {
-                        tools = load(".ci/jenkins/tools/tools.groovy")
-                        tools.installGo("1.24.0")
-                    }
 
                     stage("Pre-build steps") {
                         ctx = new Context(newGithubRelease())
