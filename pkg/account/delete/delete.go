@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
@@ -27,6 +29,11 @@ import (
 type User struct {
 	Email secret.Email
 }
+
+type ServiceUser struct {
+	Name string
+}
+
 type Group struct {
 	Name string
 }
@@ -41,6 +48,7 @@ type EnvironmentPolicy struct {
 // Resources defines which account resources to delete. Each field defines the information required to delete that type.
 type Resources struct {
 	Users               []User
+	ServiceUsers        []ServiceUser
 	Groups              []Group
 	AccountPolicies     []AccountPolicy
 	EnvironmentPolicies []EnvironmentPolicy
@@ -76,6 +84,20 @@ func AccountResources(ctx context.Context, account Account, resourcesToDelete Re
 			log.Info("Deleted user %q from account %s", user.Email, account)
 		}
 	}
+
+	if featureflags.ServiceUsers.Enabled() {
+		for _, serviceUser := range resourcesToDelete.ServiceUsers {
+			if err := account.APIClient.DeleteServiceUser(ctx, serviceUser.Name); err != nil && errors.Is(err, NotFoundErr) {
+				log.Info("Service user %q does not exist for account %s", serviceUser.Name, account)
+			} else if err != nil {
+				log.Error("Failed to delete service user %q from account %s: %v", serviceUser.Name, account, err)
+				deleteErrors++
+			} else {
+				log.Info("Deleted service user %q from account %s", serviceUser.Name, account)
+			}
+		}
+	}
+
 	for _, group := range resourcesToDelete.Groups {
 		if err := account.APIClient.DeleteGroup(ctx, group.Name); err != nil && errors.Is(err, NotFoundErr) {
 			log.Info("Group %q does not exist for account %s", group.Name, account)

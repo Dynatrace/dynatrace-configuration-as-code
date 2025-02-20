@@ -19,10 +19,11 @@
 package delete_test
 
 import (
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
@@ -101,7 +102,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 		{
 			"unknown type produces error",
 			`delete:
-  - type: service-user
+  - type: magic
     email: there-are-no-service-users@yet.com`,
 			delete.Resources{},
 			true,

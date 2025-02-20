@@ -21,14 +21,17 @@ package delete_test
 import (
 	"context"
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
 
 type testClient struct {
 	AccountUUID           string
 	userFunc              func(ctx context.Context, accountUUID, email string) error
+	serviceUserFunc       func(ctx context.Context, accountUUID, name string) error
 	groupFunc             func(ctx context.Context, accountUUID, name string) error
 	accountPolicyFunc     func(ctx context.Context, name string) error
 	environmentPolicyFunc func(ctx context.Context, environmentID, name string) error
@@ -38,6 +41,10 @@ var _ delete.Client = (*testClient)(nil)
 
 func (c *testClient) DeleteUser(ctx context.Context, email string) error {
 	return c.userFunc(ctx, c.AccountUUID, email)
+}
+
+func (c *testClient) DeleteServiceUser(ctx context.Context, name string) error {
+	return c.serviceUserFunc(ctx, c.AccountUUID, name)
 }
 
 func (c *testClient) DeleteGroup(ctx context.Context, name string) error {
