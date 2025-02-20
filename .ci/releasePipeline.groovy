@@ -2,9 +2,9 @@ pipeline {
     agent {
         kubernetes {
             cloud 'linux-amd64'
-            nodeSelector 'kubernetes.io/arch=amd64,kubernetes.io/os=linux'
             instanceCap '2'
             yamlFile '.ci/jenkins_agents/ca-jenkins-agent.yaml'
+            defaultContainer "ca-jenkins-agent"
         }
     }
 
@@ -16,10 +16,6 @@ pipeline {
             steps {
                 script {
                     Context ctx
-                    stage("setup container") {
-                        tools = load(".ci/jenkins/tools/tools.groovy")
-                        tools.installGo("1.24.0")
-                    }
 
                     stage("Pre-build steps") {
                         ctx = new Context(newGithubRelease())
