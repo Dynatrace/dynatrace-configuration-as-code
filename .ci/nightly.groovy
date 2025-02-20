@@ -1,13 +1,11 @@
 pipeline {
     agent {
         kubernetes {
-            label 'ca-jenkins-agent'
             cloud 'linux-amd64'
-            namespace 'keptn-jenkins-slaves-ni'
-            nodeSelector 'kubernetes.io/arch=amd64,kubernetes.io/os=linux'
             instanceCap '2'
             idleMinutes '2'
             yamlFile '.ci/jenkins_agents/ca-jenkins-agent.yaml'
+            defaultContainer "ca-jenkins-agent"
         }
     }
 
