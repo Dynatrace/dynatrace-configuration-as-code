@@ -140,7 +140,7 @@ func TestSkip(t *testing.T) {
 func assertTestConfig(t *testing.T, tc TestContext, client client.SettingsClient, envName string, configID string, shouldExist bool) {
 	configID = fmt.Sprintf("%s_%s", configID, tc.suffix)
 
-	integrationtest.AssertSetting(t.Context(), t, client, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, shouldExist, config.Config{
+	integrationtest.AssertSetting(t, client, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, shouldExist, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "builtin:tags.auto-tagging",

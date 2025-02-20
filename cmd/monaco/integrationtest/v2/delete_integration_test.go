@@ -257,7 +257,7 @@ environmentGroups:
 	clientSet := integrationtest.CreateDynatraceClients(t, env)
 
 	// check the setting was deleted
-	integrationtest.AssertSetting(t.Context(), t, clientSet.SettingsClient, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
+	integrationtest.AssertSetting(t, clientSet.SettingsClient, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "builtin:tags.auto-tagging",
@@ -369,7 +369,7 @@ configs:
 	require.NoError(t, err)
 
 	// Assert key-user-action is deleted
-	integrationtest.AssertConfig(t.Context(), t, clientSet.ConfigClient, apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
+	integrationtest.AssertConfig(t, clientSet.ConfigClient, apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "key-user-actions-mobile",
