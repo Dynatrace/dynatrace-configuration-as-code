@@ -268,7 +268,7 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 
 		WithPlatformURL(env.URL.Value)
 
-	client, err := clientFactory.CreatePlatformClient()
+	client, err := clientFactory.CreatePlatformClient(t.Context())
 	require.NoError(t, err)
 
 	classicURL, err := metadata.GetDynatraceClassicURL(t.Context(), *client)
