@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
@@ -68,69 +67,116 @@ func (a Account) String() string {
 	return fmt.Sprintf("%q (%s)", a.Name, a.UUID)
 }
 
-// AccountResources removes all given Resources from the given Account
+// DeleteAccountResources removes all given Resources from the given Account
 // Returns an error if any resource fails to be deleted, but attempts to delete as many resources as possible and only returns an error at the end.
-func AccountResources(ctx context.Context, account Account, resourcesToDelete Resources) error {
+func DeleteAccountResources(ctx context.Context, account Account, resourcesToDelete Resources) error {
+	totalErrorCount := deleteUsers(ctx, account, resourcesToDelete.Users) +
+		deleteServiceUsers(ctx, account, resourcesToDelete.ServiceUsers) +
+		deleteGroups(ctx, account, resourcesToDelete.Groups) +
+		deleteAccountPolicies(ctx, account, resourcesToDelete.AccountPolicies) +
+		deleteEnvironmentPolicies(ctx, account, resourcesToDelete.EnvironmentPolicies)
 
-	deleteErrors := 0
-
-	for _, user := range resourcesToDelete.Users {
-		if err := account.APIClient.DeleteUser(ctx, user.Email.Value()); err != nil && errors.Is(err, NotFoundErr) {
-			log.Info("User %q does not exist for account %s", user.Email, account)
-		} else if err != nil {
-			log.Error("Failed to delete user %q from account %s: %v", user.Email, account, err)
-			deleteErrors++
-		} else {
-			log.Info("Deleted user %q from account %s", user.Email, account)
-		}
-	}
-
-	if featureflags.ServiceUsers.Enabled() {
-		for _, serviceUser := range resourcesToDelete.ServiceUsers {
-			if err := account.APIClient.DeleteServiceUser(ctx, serviceUser.Name); err != nil && errors.Is(err, NotFoundErr) {
-				log.Info("Service user %q does not exist for account %s", serviceUser.Name, account)
-			} else if err != nil {
-				log.Error("Failed to delete service user %q from account %s: %v", serviceUser.Name, account, err)
-				deleteErrors++
-			} else {
-				log.Info("Deleted service user %q from account %s", serviceUser.Name, account)
-			}
-		}
-	}
-
-	for _, group := range resourcesToDelete.Groups {
-		if err := account.APIClient.DeleteGroup(ctx, group.Name); err != nil && errors.Is(err, NotFoundErr) {
-			log.Info("Group %q does not exist for account %s", group.Name, account)
-		} else if err != nil {
-			log.Error("Failed to delete group %q from account %s: %v", group.Name, account, err)
-			deleteErrors++
-		} else {
-			log.Info("Deleted group %q from account %s", group.Name, account)
-		}
-	}
-	for _, policy := range resourcesToDelete.AccountPolicies {
-		if err := account.APIClient.DeleteAccountPolicy(ctx, policy.Name); err != nil && errors.Is(err, NotFoundErr) {
-			log.Info("Policy %q does not exist for account %s", policy.Name, account)
-		} else if err != nil {
-			log.Error("Failed to delete policy %q from account %s: %v", policy.Name, account, err)
-			deleteErrors++
-		} else {
-			log.Info("Deleted policy %q from account %s", policy.Name, account)
-		}
-	}
-	for _, policy := range resourcesToDelete.EnvironmentPolicies {
-		if err := account.APIClient.DeleteEnvironmentPolicy(ctx, policy.Environment, policy.Name); err != nil && errors.Is(err, NotFoundErr) {
-			log.Info("Policy %q does not exist for environment %s", policy.Name, policy.Environment)
-		} else if err != nil {
-			log.Error("Failed to delete policy %q for environment %s: %v", policy.Name, policy.Environment, err)
-			deleteErrors++
-		} else {
-			log.Info("Deleted policy %q for environment %q", policy.Name, policy.Environment)
-		}
-	}
-
-	if deleteErrors > 0 {
-		return fmt.Errorf("encountered %d errors - please check logs for details", deleteErrors)
+	if totalErrorCount > 0 {
+		return fmt.Errorf("encountered %d errors - please check logs for details", totalErrorCount)
 	}
 	return nil
+}
+
+func deleteUsers(ctx context.Context, account Account, users []User) int {
+	errCount := 0
+	for _, user := range users {
+		err := account.APIClient.DeleteUser(ctx, user.Email.Value())
+		if err == nil {
+			log.Info("Deleted user %q from account %s", user.Email, account)
+			continue
+		}
+
+		if errors.Is(err, NotFoundErr) {
+			log.Info("User %q does not exist for account %s", user.Email, account)
+			continue
+		}
+
+		log.Error("Failed to delete user %q from account %s: %v", user.Email, account, err)
+		errCount++
+	}
+	return errCount
+}
+
+func deleteServiceUsers(ctx context.Context, account Account, serviceUsers []ServiceUser) int {
+	errCount := 0
+	for _, user := range serviceUsers {
+		err := account.APIClient.DeleteServiceUser(ctx, user.Name)
+		if err == nil {
+			log.Info("Deleted service user %q from account %s", user.Name, account)
+			continue
+		}
+
+		if errors.Is(err, NotFoundErr) {
+			log.Info("Service user %q does not exist for account %s", user.Name, account)
+			continue
+		}
+
+		log.Error("Failed to delete service user %q from account %s: %v", user.Name, account, err)
+		errCount++
+	}
+	return errCount
+}
+
+func deleteGroups(ctx context.Context, account Account, groups []Group) int {
+	errCount := 0
+	for _, group := range groups {
+		err := account.APIClient.DeleteGroup(ctx, group.Name)
+		if err == nil {
+			log.Info("Deleted group %q from account %s", group.Name, account)
+			continue
+		}
+
+		if errors.Is(err, NotFoundErr) {
+			log.Info("Group %q does not exist for account %s", group.Name, account)
+			continue
+		}
+
+		log.Error("Failed to delete group %q from account %s: %v", group.Name, account, err)
+		errCount++
+	}
+	return errCount
+}
+
+func deleteAccountPolicies(ctx context.Context, account Account, accountPolicies []AccountPolicy) int {
+	errCount := 0
+	for _, policy := range accountPolicies {
+		err := account.APIClient.DeleteAccountPolicy(ctx, policy.Name)
+		if err == nil {
+			log.Info("Deleted policy %q from account %s", policy.Name, account)
+			continue
+		}
+
+		if errors.Is(err, NotFoundErr) {
+			log.Info("Policy %q does not exist for account %s", policy.Name, account)
+		}
+
+		log.Error("Failed to delete policy %q from account %s: %v", policy.Name, account, err)
+		errCount++
+	}
+	return errCount
+}
+
+func deleteEnvironmentPolicies(ctx context.Context, account Account, environmentPolicies []EnvironmentPolicy) int {
+	errCount := 0
+	for _, policy := range environmentPolicies {
+		err := account.APIClient.DeleteEnvironmentPolicy(ctx, policy.Environment, policy.Name)
+		if err == nil {
+			log.Info("Deleted policy %q for environment %q", policy.Name, policy.Environment)
+			continue
+		}
+
+		if errors.Is(err, NotFoundErr) {
+			log.Info("Policy %q does not exist for environment %s", policy.Name, policy.Environment)
+			continue
+		}
+
+		log.Error("Failed to delete policy %q for environment %s: %v", policy.Name, policy.Environment, err)
+		errCount++
+	}
+	return errCount
 }

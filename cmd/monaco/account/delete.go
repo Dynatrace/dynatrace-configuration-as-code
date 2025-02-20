@@ -138,7 +138,7 @@ func deleteFromAccount(ctx context.Context, account manifest.Account, resourcesT
 		log.Error("Failed to create API client for account %q: %v", account.Name, err)
 		return err
 	}
-	err = delete.AccountResources(ctx, accountAccess, resourcesToDelete)
+	err = delete.DeleteAccountResources(ctx, accountAccess, resourcesToDelete)
 	if err != nil {
 		log.Error("Failed to delete resources for account %q", account.Name)
 		return err
