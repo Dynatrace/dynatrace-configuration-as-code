@@ -25,6 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
 
@@ -60,13 +61,20 @@ func (c *testClient) DeleteEnvironmentPolicy(ctx context.Context, environmentID,
 }
 
 func TestDeletesResources(t *testing.T) {
+	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+
 	userDeleteCalled := 0
+	serviceUserDeleteCalled := 0
 	groupDeleteCalled := 0
 	accountPolicyDeleteCalled := 0
 	environmentPolicyDeleteCalled := 0
 	c := testClient{
 		userFunc: func(ctx context.Context, accountUUID, email string) error {
 			userDeleteCalled++
+			return nil
+		},
+		serviceUserFunc: func(ctx context.Context, accountUUID, name string) error {
+			serviceUserDeleteCalled++
 			return nil
 		},
 		groupFunc: func(ctx context.Context, accountUUID, name string) error {
@@ -89,6 +97,14 @@ func TestDeletesResources(t *testing.T) {
 			},
 			{
 				Email: "another@user.com",
+			},
+		},
+		ServiceUsers: []delete.ServiceUser{
+			{
+				Name: "su1",
+			},
+			{
+				Name: "su2",
 			},
 		},
 		Groups: []delete.Group{
@@ -116,18 +132,26 @@ func TestDeletesResources(t *testing.T) {
 	err := delete.DeleteAccountResources(t.Context(), acc, entriesToDelete)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
+	assert.Equal(t, 2, serviceUserDeleteCalled)
 	assert.Equal(t, 1, groupDeleteCalled)
 	assert.Equal(t, 1, accountPolicyDeleteCalled)
 	assert.Equal(t, 1, environmentPolicyDeleteCalled)
 }
 
 func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
+	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+
 	userDeleteCalled := 0
+	serviceUserCalled := 0
 	accountPolicyDeleteCalled := 0
 	environmentPolicyDeleteCalled := 0
 	c := testClient{
 		userFunc: func(ctx context.Context, accountUUID, email string) error {
 			userDeleteCalled++
+			return nil
+		},
+		serviceUserFunc: func(ctx context.Context, accountUUID, name string) error {
+			serviceUserCalled++
 			return nil
 		},
 		groupFunc: func(ctx context.Context, accountUUID, name string) error {
@@ -149,6 +173,11 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 			},
 			{
 				Email: "another@user.com",
+			},
+		},
+		ServiceUsers: []delete.ServiceUser{
+			{
+				Name: "su1",
 			},
 		},
 		Groups: []delete.Group{
@@ -176,12 +205,16 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 	err := delete.DeleteAccountResources(t.Context(), acc, entriesToDelete)
 	assert.Error(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
+	assert.Equal(t, 1, serviceUserCalled)
 	assert.Equal(t, 1, accountPolicyDeleteCalled)
 	assert.Equal(t, 1, environmentPolicyDeleteCalled)
 }
 
 func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
+	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+
 	userDeleteCalled := 0
+	serviceUserDeleteCalled := 0
 	groupDeleteCalled := 0
 	accountPolicyDeleteCalled := 0
 	environmentPolicyDeleteCalled := 0
@@ -189,6 +222,13 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 		userFunc: func(ctx context.Context, accountUUID, email string) error {
 			userDeleteCalled++
 			if userDeleteCalled > 1 {
+				return errors.New("fail")
+			}
+			return nil
+		},
+		serviceUserFunc: func(ctx context.Context, accountUUID, name string) error {
+			serviceUserDeleteCalled++
+			if serviceUserDeleteCalled > 1 {
 				return errors.New("fail")
 			}
 			return nil
@@ -222,6 +262,14 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 			},
 			{
 				Email: "another@user.com",
+			},
+		},
+		ServiceUsers: []delete.ServiceUser{
+			{
+				Name: "su1",
+			},
+			{
+				Name: "su2",
 			},
 		},
 		Groups: []delete.Group{
@@ -259,6 +307,7 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 	err := delete.DeleteAccountResources(t.Context(), acc, entriesToDelete)
 	assert.Error(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
+	assert.Equal(t, 2, serviceUserDeleteCalled)
 	assert.Equal(t, 2, groupDeleteCalled)
 	assert.Equal(t, 2, accountPolicyDeleteCalled)
 	assert.Equal(t, 2, environmentPolicyDeleteCalled)

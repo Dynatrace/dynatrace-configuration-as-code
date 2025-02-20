@@ -70,8 +70,9 @@ func (c *AccountAPIClient) DeleteUser(ctx context.Context, email string) error {
 	return nil
 }
 
-// DeleteServiceUser removes the service user with the given name from the account.
-// Returns error if any API call fails unless the user is already not present (HTTP 404)
+// DeleteServiceUser retrieves all service users, looks up the service user by name and removes it from the account.
+// Returns error if any API call fails unless the user is already not present, either in the list when looking by name or during the subsequent delete call.
+// In addition, an error is returned if multiple service users are found with the same name.
 func (c *AccountAPIClient) DeleteServiceUser(ctx context.Context, name string) error {
 	uid, err := c.getServiceUserIDByName(ctx, c.accountUUID, name)
 	if err != nil {

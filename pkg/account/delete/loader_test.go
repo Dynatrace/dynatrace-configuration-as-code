@@ -25,21 +25,17 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
 
-func TestLoadEntriesToDelete(t *testing.T) {
-	tests := []struct {
-		name                   string
-		givenDeleteFileContent string
-		want                   delete.Resources
-		wantErr                bool
-	}{
-		{
-			"basic all types file",
-			`delete:
+func TestLoader_BasicAllTypesSucceeds(t *testing.T) {
+	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
   - type: user
-    email: test.account.1@ruxitlabs.com
+    email: test.account.1@user.com
+  - type: service-user
+    name: my-service-user
   - type: group
     name: Log viewer
   - type: policy
@@ -50,82 +46,90 @@ func TestLoadEntriesToDelete(t *testing.T) {
     name: AppEngine - Admin
     level:
       type: environment
-      environment: vuc`,
-			delete.Resources{
-				Users: []delete.User{
-					{
-						Email: "test.account.1@ruxitlabs.com",
-					},
-				},
-				Groups: []delete.Group{
-					{
-						Name: "Log viewer",
-					},
-				},
-				AccountPolicies: []delete.AccountPolicy{
-					{
-						Name: "AppEngine - Admin",
-					},
-				},
-				EnvironmentPolicies: []delete.EnvironmentPolicy{
-					{
-						Name:        "AppEngine - Admin",
-						Environment: "vuc",
-					},
-				},
+      environment: vuc`)
+
+	resources, err := delete.LoadResourcesToDelete(fs, deleteFilename)
+	assert.NoError(t, err)
+	expectedResources := delete.Resources{
+		Users: []delete.User{
+			{
+				Email: "test.account.1@user.com",
 			},
-			false,
 		},
-		{
-			"empty delete entries are ok",
-			"delete:",
-			delete.Resources{},
-			false,
+		ServiceUsers: []delete.ServiceUser{
+			delete.ServiceUser{
+				Name: "my-service-user",
+			},
 		},
-		{
-			"empty delete file is wrong",
-			"",
-			delete.Resources{},
-			true,
+		Groups: []delete.Group{
+			{
+				Name: "Log viewer",
+			},
 		},
-		{
-			"config delete file produces error",
-			`delete:
+		AccountPolicies: []delete.AccountPolicy{
+			{
+				Name: "AppEngine - Admin",
+			},
+		},
+		EnvironmentPolicies: []delete.EnvironmentPolicy{
+			{
+				Name:        "AppEngine - Admin",
+				Environment: "vuc",
+			},
+		},
+	}
+	assert.Equal(t, expectedResources, resources)
+}
+
+func TestLoader_ServiceUserProducesErrorWithoutFeatureFlag(t *testing.T) {
+	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
+  - type: service-user
+    name: my-service-user`)
+
+	_, err := delete.LoadResourcesToDelete(fs, deleteFilename)
+	assert.Error(t, err)
+}
+
+func TestLoader_NoEntriesSucceeds(t *testing.T) {
+	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:`)
+
+	resources, err := delete.LoadResourcesToDelete(fs, deleteFilename)
+	assert.NoError(t, err)
+	assert.Empty(t, resources)
+}
+
+func TestLoader_EmptyFileProducesError(t *testing.T) {
+	fs, deleteFilename := newMemMapFsWithDeleteFile(t, ``)
+
+	_, err := delete.LoadResourcesToDelete(fs, deleteFilename)
+	assert.Error(t, err)
+}
+
+func TestLoader_ConfigDeleteFileProducesError(t *testing.T) {
+	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
 - "management-zone/test entity/entities"
 - project: some-project
   type: builtin:auto.tagging
   id: my-tag
-`,
-			delete.Resources{},
-			true,
-		},
-		{
-			"unknown type produces error",
-			`delete:
-  - type: magic
-    email: there-are-no-service-users@yet.com`,
-			delete.Resources{},
-			true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fs := afero.NewMemMapFs()
-			filename, _ := filepath.Abs("delete.yaml")
-			err := afero.WriteFile(fs, filename, []byte(tt.givenDeleteFileContent), 0777)
-			assert.NoError(t, err)
+`)
 
-			got, err := delete.LoadResourcesToDelete(fs, filename)
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
+	_, err := delete.LoadResourcesToDelete(fs, deleteFilename)
+	assert.Error(t, err)
+}
 
-			assert.ElementsMatch(t, tt.want.Users, got.Users)
-			assert.ElementsMatch(t, tt.want.AccountPolicies, got.AccountPolicies)
-			assert.ElementsMatch(t, tt.want.EnvironmentPolicies, got.EnvironmentPolicies)
-			assert.ElementsMatch(t, tt.want.Groups, got.Groups)
-		})
-	}
+func TestLoader_UnknownTypeProducesError(t *testing.T) {
+	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
+  - type: unknown-type
+    email: not.theres@yet.com`)
+
+	_, err := delete.LoadResourcesToDelete(fs, deleteFilename)
+	assert.Error(t, err)
+}
+
+func newMemMapFsWithDeleteFile(t *testing.T, contents string) (afero.Fs, string) {
+	fs := afero.NewMemMapFs()
+	filename, _ := filepath.Abs("delete.yaml")
+	err := afero.WriteFile(fs, filename, []byte(contents), 0777)
+	assert.NoError(t, err)
+	return fs, filename
 }
