@@ -18,13 +18,14 @@ package templatetools
 
 import (
 	"encoding/json"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 )
 
 type JSONObject map[string]any
 
 // NewJSONObject is a function that creates a JSONObject from a raw JSON byte slice.
-func NewJSONObject(raw []byte) (JSONObject, error) {
+func NewJSONObject(raw json.RawMessage) (JSONObject, error) {
 	var m map[string]any
 	err := json.Unmarshal(raw, &m)
 	if err != nil {
@@ -54,21 +55,22 @@ func (o JSONObject) ParameterizeAttributeWith(keyOfJSONAttribute string, nameOfP
 	return &value.ValueParameter{Value: v}
 }
 
-// ToJSON converts JSONObject to its []byte representation.
+// ToJSON converts JSONObject to its json.RawMessage representation.
 // If pretty is true then the JSON is formatted with indentation and new lines
-func (o JSONObject) ToJSON(pretty bool) ([]byte, error) {
-	var bytes []byte
+func (o JSONObject) ToJSON(pretty bool) (json.RawMessage, error) {
+	var retVal json.RawMessage
 	var err error
 	if pretty {
-		bytes, err = json.MarshalIndent(o, "", "  ")
+		retVal, err = json.MarshalIndent(o, "", "  ")
 	} else {
-		bytes, err = json.Marshal(o)
+		retVal, err = json.Marshal(o)
 	}
-	return bytes, err
-
+	return retVal, err
 }
 
 // Delete removes a key-value pair for the specified key from JSONObject.
-func (o JSONObject) Delete(key string) {
-	delete(o, key)
+func (o JSONObject) Delete(keys ...string) {
+	for _, k := range keys {
+		delete(o, k)
+	}
 }
