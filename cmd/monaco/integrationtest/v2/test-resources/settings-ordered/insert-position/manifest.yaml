@@ -2,6 +2,7 @@ manifestVersion: 1.0
 
 projects:
 - name: both-back-and-front-are-set
+- name: insert-after-not-set
 
 environmentGroups:
 - name: default
