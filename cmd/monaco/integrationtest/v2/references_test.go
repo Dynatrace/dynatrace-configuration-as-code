@@ -19,7 +19,6 @@
 package v2
 
 import (
-	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -101,7 +100,7 @@ func TestOnlyStringReferences(t *testing.T) {
 				})
 				assert.Empty(t, errs, "unexpected error loading manifest")
 
-				projects, errs := project.LoadProjects(context.TODO(), fs, project.ProjectLoaderContext{
+				projects, errs := project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
 					KnownApis:       api.NewAPIs().GetApiNameLookup(),
 					WorkingDir:      "download",
 					Manifest:        mani,
@@ -198,7 +197,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 					})
 					assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
 
-					projects, errs := project.LoadProjects(context.TODO(), fs, project.ProjectLoaderContext{
+					projects, errs := project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
 						KnownApis:       api.NewAPIs().GetApiNameLookup(),
 						WorkingDir:      "download",
 						Manifest:        mani,

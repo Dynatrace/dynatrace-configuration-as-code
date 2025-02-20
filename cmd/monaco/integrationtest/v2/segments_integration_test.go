@@ -19,7 +19,6 @@
 package v2
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -53,7 +52,7 @@ func TestSegments(t *testing.T) {
 			assert.NoError(t, err)
 
 			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-			result, err := segmentsClient.GetAll(context.Background())
+			result, err := segmentsClient.GetAll(t.Context())
 			assert.NoError(t, err)
 
 			coord := coordinate.Coordinate{
@@ -75,7 +74,7 @@ func TestSegments(t *testing.T) {
 			assert.NoError(t, err)
 
 			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-			result, err := segmentsClient.GetAll(context.Background())
+			result, err := segmentsClient.GetAll(t.Context())
 			assert.NoError(t, err)
 
 			coord := coordinate.Coordinate{
@@ -97,7 +96,7 @@ func TestSegments(t *testing.T) {
 			assert.NoError(t, err)
 
 			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-			result, err := segmentsClient.GetAll(context.Background())
+			result, err := segmentsClient.GetAll(t.Context())
 			assert.NoError(t, err)
 
 			coord := coordinate.Coordinate{
@@ -125,7 +124,7 @@ func TestSegments(t *testing.T) {
 			assert.Error(t, err)
 
 			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-			result, err := segmentsClient.GetAll(context.Background())
+			result, err := segmentsClient.GetAll(t.Context())
 			assert.NoError(t, err)
 
 			coord := coordinate.Coordinate{
@@ -145,7 +144,7 @@ func TestSegments(t *testing.T) {
 			assert.NoError(t, err)
 
 			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-			result, err := segmentsClient.GetAll(context.Background())
+			result, err := segmentsClient.GetAll(t.Context())
 			assert.NoError(t, err)
 
 			coord := coordinate.Coordinate{
