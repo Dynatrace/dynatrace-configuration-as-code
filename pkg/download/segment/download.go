@@ -70,9 +70,7 @@ func createConfig(projectName string, response openpipeline.Response) (config.Co
 	}
 
 	// delete fields that prevent a re-upload of the configuration
-	jsonObj.Delete("uid")
-	jsonObj.Delete("version")
-	jsonObj.Delete("externalId")
+	jsonObj.Delete("uid", "version", "externalId")
 
 	jsonRaw, err := jsonObj.ToJSON(true)
 	if err != nil {
