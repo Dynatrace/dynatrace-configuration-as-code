@@ -189,6 +189,12 @@ func TestOrderedSettings(t *testing.T) {
 	configFolder := "test-resources/settings-ordered/order1"
 	manifestPath := configFolder + "/manifest.yaml"
 
+	coordc23, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", Type: "builtin:container.monitoring-rule", ConfigId: "c2314e1b-409c-3eaf-9efa-5dc593b14aff"})
+	assert.NoError(t, err)
+
+	coord704, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", Type: "builtin:container.monitoring-rule", ConfigId: "704aa921-9ff8-3f8e-bc6d-bedb63093ae9"})
+	assert.NoError(t, err)
+
 	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
 		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project", manifestPath)
 		assert.NoError(t, err)
@@ -287,6 +293,36 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 		o(dtClient)
 	}
 	return dtClient
+}
+
+func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
+	const configFolder = "test-resources/settings-ordered/insert-position"
+
+	const manifestFile = configFolder + "/manifest.yaml"
+
+	const specificEnvironment = "platform"
+	const project = "insert-after-not-set"
+	const schema = "builtin:url-based-sampling"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAfterNotSet", func(fs afero.Fs, tc TestContext) {
+
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project %s --verbose", manifestFile, project)
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+
+		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			DiscardValue: true,
+		})
+
+		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+
+		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
+		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
+
+		assert.Equal(t, len(list)-2, findPositionWithExternalId(t, list, first))
+		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, second))
+	})
 }
 
 func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
