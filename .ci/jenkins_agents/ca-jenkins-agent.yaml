@@ -21,6 +21,6 @@ spec:
         - tail
         - -f
         - /dev/null
-      volumes:
-        - name: cache-volume
-          emptyDir: { }
+  volumes:
+    - name: cache-volume
+      emptyDir: { }
