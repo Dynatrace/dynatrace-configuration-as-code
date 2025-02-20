@@ -23,15 +23,16 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 func TestSkip(t *testing.T) {
@@ -116,7 +117,7 @@ func TestSkip(t *testing.T) {
 				testCaseVar := "SKIPPED_VAR_" + tc.suffix
 				t.Setenv(testCaseVar, strconv.FormatBool(tt.given.skipVarValue))
 
-				err := monaco.RunWithFSf(fs, "monaco deploy %s --verbose", manifest)
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 				assert.NoError(t, err)
 
 				client, ok := clients[tt.given.environment]

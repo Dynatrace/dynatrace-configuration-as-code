@@ -20,9 +20,10 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"path/filepath"
 	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -143,12 +144,12 @@ func TestDelete(t *testing.T) {
 			assert.NoError(t1, err)
 
 			// DEPLOY Config
-			err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", deployManifestPath))
 			assert.NoError(t1, err)
 			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", true)
 
 			// DELETE Config
-			err = monaco.RunWithFSf(fs, "monaco delete %s --verbose", tt.cmdFlag)
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco delete %s --verbose", tt.cmdFlag))
 			assert.NoError(t1, err)
 			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", false)
 
@@ -233,16 +234,16 @@ environmentGroups:
 	assert.NoError(t, err)
 
 	// DEPLOY Config
-	err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
+	err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", deployManifestPath))
 	assert.NoError(t, err)
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 	// ensure test resources are removed after test is done
 	t.Cleanup(func() {
-		monaco.RunWithFs(fs, "monaco delete --manifest=test-resources/delete-test-configs/deploy-manifest.yaml --verbose")
+		monaco.Run(t, fs, "monaco delete --manifest=test-resources/delete-test-configs/deploy-manifest.yaml --verbose")
 	})
 
 	// DELETE Configs - with API Token only Manifest
-	err = monaco.RunWithFs(fs, "monaco delete --verbose")
+	err = monaco.Run(t, fs, "monaco delete --verbose")
 	assert.NoError(t, err)
 
 	// Assert expected deletions
@@ -323,7 +324,7 @@ configs:
 	assert.NoError(t, err)
 
 	// DEPLOY Config
-	err = monaco.RunWithFSf(fs, "monaco deploy %s --verbose", deployManifestPath)
+	err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", deployManifestPath))
 	require.NoError(t, err)
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
@@ -366,7 +367,7 @@ configs:
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
 	assert.NoError(t, err)
 
-	err = monaco.RunWithFSf(fs, "monaco delete --manifest %s --verbose", deployManifestPath)
+	err = monaco.Run(t, fs, fmt.Sprintf("monaco delete --manifest %s --verbose", deployManifestPath))
 	require.NoError(t, err)
 
 	// Assert key-user-action is deleted
@@ -391,7 +392,7 @@ configs:
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
 	assert.NoError(t, err)
 
-	err = monaco.RunWithFSf(fs, "monaco delete --manifest %s --verbose", deployManifestPath)
+	err = monaco.Run(t, fs, fmt.Sprintf("monaco delete --manifest %s --verbose", deployManifestPath))
 	require.NoError(t, err)
 
 	// Assert expected deletions
@@ -406,7 +407,7 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 		// DELETE Config
 		deleteFileName := configFolder + "oauth-delete.yaml"
 		cmdFlag := "--manifest=" + configFolder + "oauth-only-manifest.yaml --file=" + deleteFileName
-		err := monaco.RunWithFSf(fs, "monaco delete %s --verbose", cmdFlag)
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco delete %s --verbose", cmdFlag))
 		assert.NoError(t, err)
 
 		logFile := log.LogFilePath()
@@ -423,7 +424,7 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 		// DELETE Config
 		deleteFileName := configFolder + "token-delete.yaml"
 		cmdFlag := "--manifest=" + configFolder + "token-only-manifest.yaml --file=" + deleteFileName
-		err := monaco.RunWithFSf(fs, "monaco delete %s --verbose", cmdFlag)
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco delete %s --verbose", cmdFlag))
 		assert.NoError(t, err)
 
 		logFile := log.LogFilePath()

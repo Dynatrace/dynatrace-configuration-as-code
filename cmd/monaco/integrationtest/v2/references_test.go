@@ -21,6 +21,7 @@ package v2
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -86,11 +87,11 @@ func TestOnlyStringReferences(t *testing.T) {
 			RunIntegrationWithCleanupOnGivenFsAndEnvs(t, fs, configFolder, manifestFile, env, "string_references", tt.envVars, func(fs afero.Fs, ctx TestContext) {
 
 				// upsert
-				err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj)
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj))
 				require.NoError(t, err, "create: did not expect error")
 
 				// download
-				err = monaco.RunWithFSf(fs, "monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, "--api=dashboard,network-zone")
+				err = monaco.Run(t, fs, fmt.Sprintf("monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, "--api=dashboard,network-zone"))
 				require.NoError(t, err, "download: did not expect error")
 
 				// load downloaded project
@@ -183,11 +184,11 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 				RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, testName, func(fs afero.Fs, ctx TestContext) {
 
 					// upsert
-					err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj)
+					err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj))
 					require.NoError(t, err, "create: did not expect error")
 
 					// download
-					err = monaco.RunWithFSf(fs, "monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, tt.downloadOpts)
+					err = monaco.Run(t, fs, fmt.Sprintf("monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, tt.downloadOpts))
 					require.NoError(t, err, "download: did not expect error")
 
 					// assert
@@ -221,7 +222,7 @@ func TestReferencesAreValid(t *testing.T) {
 	configFolder := "test-resources/references/"
 	manifestFile := configFolder + "manifest.yaml"
 
-	err := monaco.Runf("monaco deploy %s --environment=platform_env --dry-run --verbose", manifestFile)
+	err := monaco.Run(t, monaco.NewTestFs(), fmt.Sprintf("monaco deploy %s --environment=platform_env --dry-run --verbose", manifestFile))
 	assert.NoError(t, err, "expected configurations to be valid")
 }
 

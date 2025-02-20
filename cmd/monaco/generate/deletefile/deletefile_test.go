@@ -81,7 +81,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 	outputFolder := "output-folder"
-	err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --output-folder=%s", outputFolder)
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco generate deletefile ./test-resources/manifest.yaml --output-folder=%s", outputFolder))
 	assert.NoError(t, err)
 
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -118,7 +118,7 @@ func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 	outputFolder := "output-folder"
-	err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml  --output-folder=%s", outputFolder)
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco generate deletefile ./test-resources/manifest.yaml  --output-folder=%s", outputFolder))
 	assert.NoError(t, err)
 	require.NoError(t, err)
 
@@ -147,7 +147,7 @@ func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 	outputFolder := "output-folder"
-	err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --output-folder=%s --types=builtin:management-zones,notification --exclude-types=notification", outputFolder)
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco generate deletefile ./test-resources/manifest.yaml --output-folder=%s --types=builtin:management-zones,notification --exclude-types=notification", outputFolder))
 	assert.NoError(t, err)
 
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -171,7 +171,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 
 	t.Run("env1 includes base notification name", func(t *testing.T) {
 		fs := testutils.CreateTestFileSystem()
-		err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --environment=env1 --output-folder=%s", outputFolder)
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco generate deletefile ./test-resources/manifest.yaml --environment=env1 --output-folder=%s", outputFolder))
 		assert.NoError(t, err)
 
 		expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -185,7 +185,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 
 	t.Run("env2 includes over-written notification name", func(t *testing.T) {
 		fs := testutils.CreateTestFileSystem()
-		err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --environment=env2 --output-folder=%s", outputFolder)
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco generate deletefile ./test-resources/manifest.yaml --environment=env2 --output-folder=%s", outputFolder))
 		assert.NoError(t, err)
 
 		expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -199,7 +199,7 @@ func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 
 	t.Run("no specific env includes both notification names", func(t *testing.T) {
 		fs := testutils.CreateTestFileSystem()
-		err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --output-folder=%s", outputFolder)
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco generate deletefile ./test-resources/manifest.yaml --output-folder=%s", outputFolder))
 		assert.NoError(t, err)
 
 		expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -219,7 +219,7 @@ func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 	outputFolder := "output-folder"
-	err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest.yaml --project=other-project --output-folder=%s", outputFolder)
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco generate deletefile ./test-resources/manifest.yaml --project=other-project --output-folder=%s", outputFolder))
 	assert.NoError(t, err)
 
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -239,7 +239,7 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 
 	fs := testutils.CreateTestFileSystem()
 	outputFolder := "output-folder"
-	err := monaco.RunWithFSf(fs, "monaco generate deletefile ./test-resources/manifest_invalid_project.yaml --output-folder=%s", outputFolder)
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco generate deletefile ./test-resources/manifest_invalid_project.yaml --output-folder=%s", outputFolder))
 	assert.NoError(t, err)
 
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
@@ -327,7 +327,7 @@ func testPreexistingFileIsNotOverwritten(t *testing.T, existingFile string, expe
 	if customFileName {
 		cmd = cmd + fmt.Sprintf(" --file=%s", existingFile)
 	}
-	err = monaco.RunWithFs(fs, cmd)
+	err = monaco.Run(t, fs, cmd)
 	require.NoError(t, err)
 
 	// THEN existing file is untouched

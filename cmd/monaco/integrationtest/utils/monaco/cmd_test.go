@@ -1,3 +1,5 @@
+//go:build integration
+
 /*
  * @license
  * Copyright 2024 Dynatrace LLC
@@ -17,11 +19,14 @@
 package monaco_test
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 )
 
 func TestMonacoRun(t *testing.T) {
-	assert.Panics(t, func() { monaco.Run("deploy") }, "command must begin with 'monaco'")
+	err := monaco.Run(t, monaco.NewTestFs(), "deploy")
+	assert.ErrorContains(t, err, "command must start with 'monaco '")
 }

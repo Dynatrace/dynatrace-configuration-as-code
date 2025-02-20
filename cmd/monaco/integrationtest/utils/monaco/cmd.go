@@ -1,3 +1,5 @@
+//go:build integration || unit
+
 /*
  * @license
  * Copyright 2024 Dynatrace LLC
@@ -17,49 +19,39 @@
 package monaco
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"strings"
+	"testing"
 
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 )
 
-// The Monaco is the entry point for integration tests. It accepts a command in a way it would be called via a CLI. `monaco` keyword can be omitted from the command.
-// To execute command invoke Run() method
-//
-// monaco.Monaco("monaco download manifest.yaml --enviroment=my_env").Run()
+func NewTestFs() afero.Fs { return afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()) }
 
-func Run(command string) error {
-	return RunWithFs(newFs(), command)
-}
+// spacesRegex finds all sequential spaces
+var spacesRegex = regexp.MustCompile(`\s+`)
 
-func Runf(command string, args ...any) error {
-	return RunWithFSf(newFs(), command, args...)
-}
-
-func newFs() afero.Fs { return afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()) }
-
-func RunWithFSf(fs afero.Fs, command string, args ...any) error {
-	return RunWithFs(fs, fmt.Sprintf(command, args...))
-}
-
-func RunWithFs(fs afero.Fs, command string) error {
+// Run is the entrypoint to run monaco for all integration tests.
+// It requires to specify the full command (`monaco [deploy]....`) and sets up the runner.
+func Run(t *testing.T, fs afero.Fs, command string) error {
 	// remove multiple spaces
-	c := regexp.MustCompile(`\s+`).ReplaceAllString(command, " ")
+	c := spacesRegex.ReplaceAllString(command, " ")
 	c = strings.Trim(c, " ")
 
-	if !strings.HasPrefix(c, "monaco ") {
-		panic("Command must start with 'monaco'")
+	const prefix = "monaco "
+
+	if !strings.HasPrefix(c, prefix) {
+		return fmt.Errorf("command must start with '%s'", prefix)
 	}
-	fmt.Println(c)
-	c = strings.TrimPrefix(c, "monaco ")
+	t.Logf("Running command: %s", command)
+	c = strings.TrimPrefix(c, prefix)
 
 	args := strings.Split(c, " ")
 
 	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs(args)
-	return runner.RunCmd(context.TODO(), cmd)
+	return runner.RunCmd(t.Context(), cmd)
 }

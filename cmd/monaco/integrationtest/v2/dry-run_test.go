@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -49,11 +50,11 @@ func TestDryRun(t *testing.T) {
 		setAllURLEnvironmentVariables(t, server.URL)
 
 		// This causes a POST for all configs:
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment))
 		assert.NoError(t, err)
 
 		// This causes a PUT for all configs:
-		err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment)
+		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment))
 		assert.NoError(t, err)
 	})
 }
