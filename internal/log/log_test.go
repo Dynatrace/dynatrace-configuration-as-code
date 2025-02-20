@@ -85,9 +85,6 @@ func TestPrepareLogging(t *testing.T) {
 			// setup test fs with given files
 			fs := testutils.TempFs(t)
 
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
 			for folder, perm := range tt.givenFolders {
 				err := fs.MkdirAll(folder, perm)
 				assert.NoError(t, err)
@@ -101,7 +98,7 @@ func TestPrepareLogging(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			file, errFile, err := prepareLogFiles(ctx, fs)
+			file, errFile, err := prepareLogFiles(t.Context(), fs)
 
 			if tt.wantLogFile {
 				assert.NotNil(t, file)
@@ -130,9 +127,7 @@ func TestPrepareLogging(t *testing.T) {
 // this would happen if the Windows folder is marked read only, or POSIX permissions don't allow writing to it.
 func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	file, errFile, err := prepareLogFiles(ctx, fs)
+	file, errFile, err := prepareLogFiles(t.Context(), fs)
 	assert.Nil(t, file)
 	assert.Nil(t, errFile)
 	assert.Error(t, err)
@@ -168,7 +163,7 @@ func TestFromCtx(t *testing.T) {
 	e := "e1"
 	g := "g"
 
-	logger := WithCtxFields(context.WithValue(context.WithValue(context.TODO(), CtxKeyCoord{}, c), CtxKeyEnv{}, CtxValEnv{Name: e, Group: g}))
+	logger := WithCtxFields(context.WithValue(context.WithValue(t.Context(), CtxKeyCoord{}, c), CtxKeyEnv{}, CtxValEnv{Name: e, Group: g}))
 	logger.Info("Hi with context")
 
 	var data map[string]interface{}
