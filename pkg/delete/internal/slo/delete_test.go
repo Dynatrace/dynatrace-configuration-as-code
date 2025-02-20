@@ -214,3 +214,52 @@ func (s *stubClient) Delete(_ context.Context, id string) (libAPI.Response, erro
 	s.called = true
 	return s.delete(id)
 }
+
+func TestDeleteAll(t *testing.T) {
+	t.Run("simple case", func(t *testing.T) {
+		c := stubClient{
+			list: func() (libAPI.PagedListResponse, error) {
+				return libAPI.PagedListResponse{
+					libAPI.ListResponse{
+						Objects: [][]byte{
+							[]byte(`{"id": "uid_1"}`),
+							[]byte(`{"id": "uid_2"}`),
+							[]byte(`{"id": "uid_3"}`),
+						}},
+				}, nil
+			},
+			delete: func(uid string) (libAPI.Response, error) {
+				assert.Contains(t, []string{"uid_1", "uid_2", "uid_3"}, uid)
+				return libAPI.Response{StatusCode: http.StatusOK}, nil
+			},
+		}
+
+		err := slo.DeleteAll(t.Context(), &c)
+		assert.NoError(t, err)
+	})
+
+	t.Run("deletion continues even if error occurs during delete", func(t *testing.T) {
+		c := stubClient{
+			list: func() (libAPI.PagedListResponse, error) {
+				return libAPI.PagedListResponse{
+					libAPI.ListResponse{
+						Objects: [][]byte{
+							[]byte(`{"id": "uid_1"}`),
+							[]byte(`{"id": "uid_2"}`),
+							[]byte(`{"id": "uid_3"}`),
+						}},
+				}, nil
+			},
+			delete: func(uid string) (libAPI.Response, error) {
+				assert.Contains(t, []string{"uid_1", "uid_2", "uid_3"}, uid)
+				if uid == "uid_2" {
+					return libAPI.Response{}, errors.New("some unpredictable error")
+				}
+				return libAPI.Response{StatusCode: http.StatusOK}, nil
+			},
+		}
+
+		err := slo.DeleteAll(t.Context(), &c)
+		assert.Error(t, err)
+	})
+}
