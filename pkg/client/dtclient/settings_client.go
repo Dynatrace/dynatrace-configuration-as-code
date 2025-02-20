@@ -124,8 +124,21 @@ type SettingsResourceContext struct {
 
 type UpsertSettingsOptions struct {
 	OverrideRetry *RetrySetting
-	InsertAfter   string
+
+	// InsertAfter is the position at where the object should be inserted.
+	// It can be an arbitrary ID of another settings object.
+	// It must be nil if the schema is an unordered schema. If it's not set for ordered schemas, it is handled like InsertPositionBack.
+	//
+	// It supports the following magic values to insert at the FRONT and BOTTOM of the list:
+	//   - FRONT (InsertPositionFront) -> insert at the front of the list
+	//   - BACK (InsertPositionBack) -> insert at the back of the list
+	InsertAfter *string
 }
+
+const (
+	InsertPositionFront = "FRONT"
+	InsertPositionBack  = "BACK"
+)
 
 // defaultListSettingsFields  are the fields we are interested in when getting setting objects
 const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schemaId,scope,modificationInfo"
@@ -215,13 +228,13 @@ type (
 	}
 
 	settingsRequest struct {
-		SchemaId      string `json:"schemaId"`
-		ExternalId    string `json:"externalId,omitempty"`
-		Scope         string `json:"scope"`
-		Value         any    `json:"value"`
-		SchemaVersion string `json:"schemaVersion,omitempty"`
-		ObjectId      string `json:"objectId,omitempty"`
-		InsertAfter   string `json:"insertAfter,omitempty"`
+		SchemaId      string  `json:"schemaId"`
+		ExternalId    string  `json:"externalId,omitempty"`
+		Scope         string  `json:"scope"`
+		Value         any     `json:"value"`
+		SchemaVersion string  `json:"schemaVersion,omitempty"`
+		ObjectId      string  `json:"objectId,omitempty"`
+		InsertAfter   *string `json:"insertAfter,omitempty"`
 	}
 
 	schemaConstraint struct {
@@ -507,7 +520,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 	}
 
 	if schema, ok := d.schemaCache.Get(obj.SchemaId); ok {
-		if upsertOptions.InsertAfter != "" && !schema.Ordered {
+		if upsertOptions.InsertAfter != nil && !schema.Ordered {
 			return DynatraceEntity{}, fmt.Errorf("'%s' is not an ordered setting, hence 'insertAfter' is not supported for this type of setting object", obj.SchemaId)
 		}
 	}
@@ -675,11 +688,13 @@ func explodePath(targetPath string) []string {
 // To do this, we have to wrap the template in another object and send this object to the server.
 // Currently, we only encode one object into an array of objects, but we can optimize it to contain multiple elements to update.
 // Note payload limitations: https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit#payload-limit
-func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj SettingsObject, externalID string, insertAfter string) ([]byte, error) {
+func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj SettingsObject, externalID string, insertAfter *string) ([]byte, error) {
 	var value any
 	if err := json.Unmarshal(obj.Content, &value); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal rendered config: %w", err)
 	}
+
+	insertPosition := insertAfterToPayloadValue(insertAfter)
 
 	data := settingsRequest{
 		SchemaId:      obj.SchemaId,
@@ -688,7 +703,7 @@ func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj Set
 		Value:         value,
 		SchemaVersion: obj.SchemaVersion,
 		ObjectId:      remoteObjectId,
-		InsertAfter:   insertAfter,
+		InsertAfter:   insertPosition,
 	}
 
 	// Create json obj. We currently marshal everything into an array, but we can optimize it to include multiple objects in the
@@ -708,7 +723,32 @@ func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj Set
 	return dest.Bytes(), nil
 }
 
-// parsePostResponse unmarshalls and parses the settings response for the post request
+// insertAfterToPayloadValue converts the insertAfter value to the proper
+// value required in the payload.
+//
+// For POST (only method that we use), it must be as follows:
+//
+//   - insert to the front: `insertAfter` to ""
+//   - insert to the back: `insertAfter` to nil (default behavior of monaco)
+//   - insert after another item: `insertAfter` to the ID of the item
+func insertAfterToPayloadValue(insertAfter *string) *string {
+
+	if insertAfter == nil {
+		return nil
+	}
+
+	switch *insertAfter {
+	case InsertPositionBack:
+		return nil
+	case InsertPositionFront:
+		var empty = ""
+		return &empty
+	default:
+		return insertAfter
+	}
+}
+
+// parsePostResponse unmarshals and parses the settings response for the post request
 // The response is returned as an array for each element we send.
 // Since we only send one object at the moment, we simply use the first one.
 func parsePostResponse(body []byte) (DynatraceEntity, error) {
