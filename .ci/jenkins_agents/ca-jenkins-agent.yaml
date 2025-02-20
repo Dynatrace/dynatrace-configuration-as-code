@@ -11,6 +11,8 @@ spec:
       volumeMounts:
         - mountPath: .cache
           name: cache-volume
+        - mountPath: .docker
+          name: cache-docker
       args:
         - "jenkins-slave"
       resources:
@@ -23,4 +25,6 @@ spec:
         - /dev/null
   volumes:
     - name: cache-volume
+      emptyDir: { }
+    - name: cache-docker
       emptyDir: { }
