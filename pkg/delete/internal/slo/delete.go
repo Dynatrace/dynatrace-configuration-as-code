@@ -122,6 +122,27 @@ func isAPIErrorStatusNotFound(err error) bool {
 	return apiErr.StatusCode == http.StatusNotFound
 }
 
+func DeleteAll(ctx context.Context, c client) error {
+	items, err := c.List(ctx)
+	if err != nil {
+		return err
+	}
+
+	var retErr error
+	for _, i := range items.All() {
+		var e entry
+		if err := json.Unmarshal(i, &e); err != nil {
+			retErr = errors.Join(retErr, err)
+			continue
+		}
+		err := deleteSingle(ctx, c, pointer.DeletePointer{Type: string(config.ServiceLevelObjectiveID), OriginObjectId: e.ID})
+		if err != nil {
+			retErr = errors.Join(retErr, err)
+		}
+	}
+	return retErr
+}
+
 type entry struct {
 	ID         string `json:"id"`
 	ExternalID string `json:"externalId"`
