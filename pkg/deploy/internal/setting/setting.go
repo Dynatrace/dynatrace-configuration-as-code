@@ -19,6 +19,7 @@ package setting
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
@@ -40,7 +41,10 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeID, c.Type.ID()))
 	}
 
-	insertAfter := extractInsertAfter(properties)
+	insertAfter, err := getAndParseInsertAfterParameter(properties)
+	if err != nil {
+		return entities.ResolvedEntity{}, err
+	}
 
 	scope, err := extract.Scope(properties)
 	if err != nil {
@@ -97,14 +101,35 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 
 }
 
-func extractInsertAfter(properties parameter.Properties) string {
-	var insertAfter string
-
-	if ia, ok := properties[config.InsertAfterParameter]; ok {
-		insertAfter = ia.(string)
+// getAndParseInsertAfterParameter finds and parses the `insertAfter parameter.
+//
+//   - null is returned if the position is not set
+//   - dtclient.InsertPositionFront is returned iff the position is set to `front` (case-insensitive)
+//   - dtclient.InsertPositionBack is returned iff the position is set to `back` (case-insensitive)
+//   - otherwise, the value itself is returned (id of another config)
+//
+// It returns an error if the insertAfter parameter is something other than an error (e.g. compound parameter).
+func getAndParseInsertAfterParameter(properties parameter.Properties) (*string, error) {
+	param, found := properties[config.InsertAfterParameter]
+	if !found {
+		return nil, nil
 	}
 
-	return insertAfter
+	insertAfter, ok := param.(string)
+	if !ok {
+		return nil, fmt.Errorf("'insertAfter' parameter must be a string of either an ID, '%s', or '%s', got '%v'", dtclient.InsertPositionFront, dtclient.InsertPositionBack, param)
+	}
+
+	// Test if insertAfter are magic values (case-insensitive)
+	// We can't modify the original insertAfter value, as IDs must not be upper-cased.
+	switch strings.ToUpper(insertAfter) {
+	case dtclient.InsertPositionFront:
+		insertAfter = dtclient.InsertPositionFront
+	case dtclient.InsertPositionBack:
+		insertAfter = dtclient.InsertPositionBack
+	}
+
+	return &insertAfter, nil
 }
 
 func getEntityID(c *config.Config, e dtclient.DynatraceEntity) (string, error) {
