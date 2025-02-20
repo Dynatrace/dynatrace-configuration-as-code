@@ -18,6 +18,7 @@ package templatetools
 
 import (
 	"encoding/json"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 )
 
@@ -65,10 +66,11 @@ func (o JSONObject) ToJSON(pretty bool) ([]byte, error) {
 		bytes, err = json.Marshal(o)
 	}
 	return bytes, err
-
 }
 
 // Delete removes a key-value pair for the specified key from JSONObject.
-func (o JSONObject) Delete(key string) {
-	delete(o, key)
+func (o JSONObject) Delete(keys ...string) {
+	for _, k := range keys {
+		delete(o, k)
+	}
 }

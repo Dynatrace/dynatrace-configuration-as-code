@@ -19,10 +19,14 @@
 package templatetools_test
 
 import (
+	"encoding/json"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/templatetools"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestNew(t *testing.T) {
@@ -217,4 +221,58 @@ func TestJSONObject_ToJSON(t *testing.T) {
 			assert.Equal(t, string(tc.want), string(actual))
 		})
 	}
+}
+
+func TestJSONObject_Delete(t *testing.T) {
+	t.Run("delete single entry", func(t *testing.T) {
+		given := json.RawMessage(`{"key1": "value1","key2": "value2","key3": "value3"}`)
+
+		json, err := templatetools.NewJSONObject(given)
+		require.NoError(t, err)
+
+		json.Delete("key1")
+
+		assert.Empty(t, json.Get("key1"))
+		assert.Equal(t, "value2", json.Get("key2"))
+		assert.Equal(t, "value3", json.Get("key3"))
+	})
+
+	t.Run("delete multiple entries", func(t *testing.T) {
+		given := json.RawMessage(`{"key1": "value1","key2": "value2","key3": "value3"}`)
+
+		json, err := templatetools.NewJSONObject(given)
+		require.NoError(t, err)
+
+		json.Delete("key1", "key2")
+
+		assert.Empty(t, json.Get("key1"))
+		assert.Empty(t, json.Get("key2"))
+		assert.Equal(t, "value3", json.Get("key3"))
+	})
+
+	t.Run("try to delete unknown entry", func(t *testing.T) {
+		given := json.RawMessage(`{"key1": "value1","key2": "value2","key3": "value3"}`)
+
+		json, err := templatetools.NewJSONObject(given)
+		require.NoError(t, err)
+
+		json.Delete("unknown")
+
+		assert.Equal(t, "value1", json.Get("key1"))
+		assert.Equal(t, "value2", json.Get("key2"))
+		assert.Equal(t, "value3", json.Get("key3"))
+	})
+
+	t.Run("try to delete nil", func(t *testing.T) {
+		given := json.RawMessage(`{"key1": "value1","key2": "value2","key3": "value3"}`)
+
+		json, err := templatetools.NewJSONObject(given)
+		require.NoError(t, err)
+
+		json.Delete(nil...)
+
+		assert.Equal(t, "value1", json.Get("key1"))
+		assert.Equal(t, "value2", json.Get("key2"))
+		assert.Equal(t, "value3", json.Get("key3"))
+	})
 }
