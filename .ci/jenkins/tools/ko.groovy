@@ -31,7 +31,7 @@ private def registrySecret(String registry) {
                  [envVar: 'registry',        vaultKey: 'registry',        isRequired: true],
                  [envVar: 'repo',            vaultKey: 'repo',            isRequired: true],
                  [envVar: 'username',        vaultKey: 'username',        isRequired: true],
-                 [envVar: 'password',        vaultKey: 'password',        isRequired: true]
+                 [envVar: 'password',        vaultKey: 'password',        isRequired: true],
                  [envVar: 'base_image_path', vaultKey: 'base_image_path', isRequired: true]
              ]
          ]]
