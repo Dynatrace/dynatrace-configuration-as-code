@@ -8,6 +8,9 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
       imagePullPolicy: Always
+      volumeMounts:
+        - mountPath: .cache
+          name: cache-volume
       args:
         - "jenkins-slave"
       resources:
@@ -18,3 +21,6 @@ spec:
         - tail
         - -f
         - /dev/null
+      volumes:
+        - name: cache-volume
+          emptyDir: { }
