@@ -1,0 +1,17 @@
+{
+  "criteria": [
+    {
+      "target": 90,
+      "timeframeFrom": "now-7d",
+      "timeframeTo": "now",
+      "warning": 95
+    }
+  ],
+  "customSli": {
+    "filterSegments": [],
+    "indicator": "timeseries series = avg(dt.synthetic.http.availability), \n           by:{ dt.entity.synthetic_location, dt.entity.http_check }, interval:1m\n\n| filter dt.entity.synthetic_location == \"{{ .extractedIDs.id_SYNTHETIC_LOCATION_0000000000000064 }}\"      \n| filter IN(dt.entity.http_check, {\"{{ .extractedIDs.id_HTTP_CHECK_1313FB3056F81BBE }}\",\"{{ .extractedIDs.id_HTTP_CHECK_DB55161EAA7A7B4F }}\",\"{{ .extractedIDs.id_HTTP_CHECK_1334D771FF374E0C }}\"})\n| summarize { sli = min(series[]) }, by: { timeframe, interval }"
+  },
+  "description": "https://umsaywsjuo.dev.apps.dynatracelabs.com/ui/apps/dynatrace.notebooks/notebook/{{ .extractedIDs.id_1e8fb359_5604_474f_8afd_dd81016bf338 }}#{{ .extractedIDs.id_b838dcae_1f4c_4e8e_81ff_cc17c6de11ec }}",
+  "name": "{{ .name }}",
+  "tags": []
+}
