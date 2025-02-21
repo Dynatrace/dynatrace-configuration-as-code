@@ -31,6 +31,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/setting"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/slo"
 )
 
 // All collects and deletes ALL configuration objects using the provided ClientSet.
@@ -82,6 +83,15 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 			log.Warn("Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
 		} else if err := segment.DeleteAll(ctx, clients.SegmentClient); err != nil {
 			log.Error("Failed to delete all %s configurations: %v", config.SegmentID, err)
+			errCount++
+		}
+	}
+
+	if featureflags.ServiceLevelObjective.Enabled() {
+		if clients.ServiceLevelObjectiveClient == nil {
+			log.Warn("Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
+		} else if err := slo.DeleteAll(ctx, clients.ServiceLevelObjectiveClient); err != nil {
+			log.Error("Failed to delete all %s configurations: %v", config.ServiceLevelObjective{}, err)
 			errCount++
 		}
 	}
