@@ -133,7 +133,7 @@ func loadResourcesToDelete(fs afero.Fs, deleteFile string) (delete.Resources, er
 }
 
 func deleteFromAccount(ctx context.Context, account manifest.Account, resourcesToDelete delete.Resources) error {
-	accountAccess, err := createAccountDeleteClient(account)
+	accountAccess, err := createAccountDeleteClient(ctx, account)
 	if err != nil {
 		log.Error("Failed to create API client for account %q: %v", account.Name, err)
 		return err
@@ -146,7 +146,7 @@ func deleteFromAccount(ctx context.Context, account manifest.Account, resourcesT
 	return nil
 }
 
-func createAccountDeleteClient(a manifest.Account) (delete.Account, error) {
+func createAccountDeleteClient(ctx context.Context, a manifest.Account) (delete.Account, error) {
 	oauthCreds := clientcredentials.Config{
 		ClientID:     a.OAuth.ClientID.Value.Value(),
 		ClientSecret: a.OAuth.ClientSecret.Value.Value(),
@@ -164,7 +164,7 @@ func createAccountDeleteClient(a manifest.Account) (delete.Account, error) {
 		WithAccountURL(apiUrl).
 		WithOAuthCredentials(oauthCreds).
 		WithUserAgent(client.DefaultMonacoUserAgent).
-		AccountClient()
+		AccountClient(ctx)
 	if err != nil {
 		return delete.Account{}, err
 	}

@@ -142,7 +142,7 @@ func CreateAccountClients(ctx context.Context, manifestAccounts map[string]manif
 			factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 		}
 
-		accClient, err := factory.AccountClient()
+		accClient, err := factory.AccountClient(ctx)
 		if err != nil {
 			return accClients, err
 		}
@@ -216,7 +216,7 @@ func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds 
 		}
 	}
 
-	client, err := clients.Factory().WithPlatformURL(platformURL).WithOAuthCredentials(oauthCreds).CreatePlatformClient()
+	client, err := clients.Factory().WithPlatformURL(platformURL).WithOAuthCredentials(oauthCreds).CreatePlatformClient(ctx)
 	if err != nil {
 		return "", err
 	}

@@ -273,37 +273,37 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 				ClientSecret: auth.OAuth.ClientSecret.Value.Value(),
 				TokenURL:     auth.OAuth.GetTokenEndpointValue(),
 			}).WithPlatformURL(url)
-		client, err := cFactory.CreatePlatformClient()
+		client, err := cFactory.CreatePlatformClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		bucketClient, err = cFactory.BucketClientWithRetrySettings(15, time.Second, 5*time.Minute)
+		bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, 15, time.Second, 5*time.Minute)
 		if err != nil {
 			return nil, err
 		}
 
-		autClient, err = cFactory.AutomationClient()
+		autClient, err = cFactory.AutomationClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		documentClient, err = cFactory.DocumentClient()
+		documentClient, err = cFactory.DocumentClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		openPipelineClient, err = cFactory.OpenPipelineClient()
+		openPipelineClient, err = cFactory.OpenPipelineClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		segmentClient, err = cFactory.SegmentsClient()
+		segmentClient, err = cFactory.SegmentsClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		serviceLevelObjectiveClient, err = cFactory.SLOClient()
+		serviceLevelObjectiveClient, err = cFactory.SLOClient(ctx)
 		if err != nil {
 			return nil, err
 		}
