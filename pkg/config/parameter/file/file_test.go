@@ -27,21 +27,63 @@ import (
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 )
 
+// TestParseFileValueParameter tests the parsing of file value parameters and that escaping is enabled by default.
 func TestParseFileValueParameter(t *testing.T) {
+	tests := []struct {
+		name                string
+		parameterValue      map[string]any
+		expectedEscapeValue bool
+	}{
+		{
+			name:                "escape by default",
+			parameterValue:      map[string]any{"path": "something.txt"},
+			expectedEscapeValue: true,
+		},
+		{
+			name:                "escaping can be explicitly disabled",
+			parameterValue:      map[string]any{"path": "something.txt", "escape": false},
+			expectedEscapeValue: false,
+		},
+		{
+			name:                "escaping can be explicitly enabled",
+			parameterValue:      map[string]any{"path": "something.txt", "escape": true},
+			expectedEscapeValue: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			param, err := parseFileValueParameter(parameter.ParameterParserContext{
+				Fs:    afero.NewMemMapFs(),
+				Value: tt.parameterValue,
+			})
+
+			assert.NoError(t, err)
+			fileParam, ok := param.(*FileParameter)
+			require.True(t, ok)
+			assert.Equal(t, "file", param.GetType())
+			assert.Equal(t, "something.txt", fileParam.Path)
+			assert.Equal(t, tt.expectedEscapeValue, fileParam.Escape)
+		})
+	}
+}
+
+// TestParseFileValueParameterEscapeMustBeBoolean tests that setting `escape“ to a non boolean results in an error.
+func TestParseFileValueParameterEscapeMustBeBoolean(t *testing.T) {
 	param, err := parseFileValueParameter(parameter.ParameterParserContext{
 		Fs:    afero.NewMemMapFs(),
-		Value: map[string]any{"path": "something.txt"},
+		Value: map[string]any{"path": "something.txt", "escape": 4},
 	})
 
-	fileParam := param.(*FileParameter)
-	require.NoError(t, err)
-	assert.Equal(t, "file", param.GetType())
-	assert.Equal(t, "something.txt", fileParam.Path)
+	assert.Nil(t, param)
+	assert.ErrorContains(t, err, "must be a boolean")
 }
 
 func TestWriteFileValueParameter(t *testing.T) {
 	fileParam := &FileParameter{
-		Path: "myfile",
+		Path:   "myfile",
+		Escape: true,
 	}
 
 	context := parameter.ParameterWriterContext{
@@ -51,6 +93,7 @@ func TestWriteFileValueParameter(t *testing.T) {
 	result, err := writeFileValueParameter(context)
 	require.NoError(t, err)
 	assert.Equal(t, "myfile", result["path"])
+	assert.Equal(t, true, result["escape"])
 }
 
 func TestWriteFileValueParameter_WrongType(t *testing.T) {
@@ -70,6 +113,46 @@ func TestParseFileValueParameter_MissingPath(t *testing.T) {
 
 	assert.Nil(t, param)
 	assert.IsType(t, parameter.ParameterParserError{}, err)
+}
+
+// TestResolveValueEscaping tests that escaping of file parameters content can be enabled or disabled.
+func TestResolveValueEscaping(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	afero.WriteFile(fs, "test-content", []byte(`"test-content"`), 0644)
+
+	tests := []struct {
+		name                  string
+		fileParam             *FileParameter
+		expectedResolvedValue string
+	}{
+		{
+			name: "escaping enabled",
+			fileParam: &FileParameter{
+				Fs:     fs,
+				Path:   "test-content",
+				Escape: true,
+			},
+			expectedResolvedValue: `\"test-content\"`,
+		},
+		{
+			name: "escaping disabled",
+			fileParam: &FileParameter{
+				Fs:     fs,
+				Path:   "test-content",
+				Escape: false,
+			},
+			expectedResolvedValue: `"test-content"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := tt.fileParam.ResolveValue(parameter.ResolveContext{})
+			assert.NoError(t, err)
+			assert.NotNil(t, result)
+			assert.Equal(t, tt.expectedResolvedValue, result)
+		})
+	}
 }
 
 func TestResolveValue(t *testing.T) {

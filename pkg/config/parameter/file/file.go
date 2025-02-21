@@ -37,6 +37,7 @@ var FileParameterSerde = parameter.ParameterSerDe{
 type FileParameter struct {
 	Fs                   afero.Fs
 	Path                 string
+	Escape               bool
 	referencedParameters []parameter.ParameterReference
 }
 
@@ -66,8 +67,11 @@ func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interfac
 	if err != nil {
 		return nil, parameter.NewParameterResolveValueError(context, err.Error())
 	}
+	if f.Escape {
+		return template.EscapeSpecialCharactersInValue(strContent, template.FullStringEscapeFunction)
+	}
 
-	return template.EscapeSpecialCharactersInValue(strContent, template.FullStringEscapeFunction)
+	return strContent, nil
 }
 
 // getReferencedParameterValues gets the resolved values of parameters defined in the `references` section of the file parameter. If an unknown parameter is referenced, an error is returned.
@@ -94,9 +98,18 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 		return nil, parameter.NewParameterParserError(context, "missing property `path`")
 	}
 
+	escape := true
+	if escapeValue, ok := context.Value["escape"]; ok {
+		escapeBool, ok := escapeValue.(bool)
+		if !ok {
+			return nil, parameter.NewParameterParserError(context, "property `escape` must be a boolean")
+		}
+		escape = escapeBool
+	}
+
 	references, ok := context.Value["references"]
 	if !ok {
-		return &FileParameter{Fs: context.Fs, Path: strings.ToString((path))}, nil
+		return &FileParameter{Fs: context.Fs, Path: strings.ToString(path), Escape: escape}, nil
 	}
 
 	referencedParameterSlice, ok := references.([]interface{})
@@ -109,7 +122,7 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("invalid parameter references: %v", err))
 	}
 
-	return &FileParameter{Fs: context.Fs, Path: strings.ToString((path)), referencedParameters: referencedParameters}, nil
+	return &FileParameter{Fs: context.Fs, Path: strings.ToString(path), Escape: escape, referencedParameters: referencedParameters}, nil
 
 }
 
@@ -123,6 +136,7 @@ func writeFileValueParameter(context parameter.ParameterWriterContext) (map[stri
 	result := make(map[string]interface{})
 
 	result["path"] = fileParam.Path
+	result["escape"] = fileParam.Escape
 
 	return result, nil
 }
