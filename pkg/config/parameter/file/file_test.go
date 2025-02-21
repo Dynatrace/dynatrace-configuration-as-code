@@ -17,15 +17,30 @@
 package file
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
+	"testing"
+
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 )
 
 func TestParseFileValueParameter(t *testing.T) {
+	param, err := parseFileValueParameter(parameter.ParameterParserContext{
+		Fs:    afero.NewMemMapFs(),
+		Value: map[string]any{"path": "something.txt", "escaped": false},
+	})
+
+	fileParam := param.(*FileParameter)
+	require.NoError(t, err)
+	assert.Equal(t, "file", param.GetType())
+	assert.Equal(t, "something.txt", fileParam.Path)
+	assert.False(t, fileParam.Escaped)
+}
+
+func TestParseFileValueParameterEscapedByDefault(t *testing.T) {
 	param, err := parseFileValueParameter(parameter.ParameterParserContext{
 		Fs:    afero.NewMemMapFs(),
 		Value: map[string]any{"path": "something.txt"},
@@ -35,12 +50,14 @@ func TestParseFileValueParameter(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "file", param.GetType())
 	assert.Equal(t, "something.txt", fileParam.Path)
+	assert.True(t, fileParam.Escaped)
 }
 
 func TestWriteFileValueParameter(t *testing.T) {
 
 	fileParam := &FileParameter{
-		Path: "myfile",
+		Path:    "myfile",
+		Escaped: true,
 	}
 
 	context := parameter.ParameterWriterContext{
@@ -50,6 +67,7 @@ func TestWriteFileValueParameter(t *testing.T) {
 	result, err := writeFileValueParameter(context)
 	require.NoError(t, err)
 	assert.Equal(t, "myfile", result["path"])
+	assert.Equal(t, true, result["escaped"])
 
 }
 

@@ -28,7 +28,7 @@
       "action": "dynatrace.automations:run-javascript",
       "description": "Build a custom task running js Code",
       "input": {
-        "script": "// optional import of sdk modules\nimport { metadataClient } from '@dynatrace-sdk/client-metadata';\nimport { executionsClient } from '@dynatrace-sdk/client-automation';\n\nexport default async function ({ execution_id }) {\n  // your code goes here\n  const me = await metadataClient.getUserInfo();\n  console.log('Automated script execution on behalf of', me.userName);\n\n  console.log({{`{{`}} event() {{`}}`}})\n  // get the current execution\n  const ex = await executionsClient.getExecution({ id: execution_id });\n\n  return { ...me, triggeredBy: ex.trigger };\n}"
+        "script": "{{.javascipt}}"
       },
       "name": "jinja",
       "position": {

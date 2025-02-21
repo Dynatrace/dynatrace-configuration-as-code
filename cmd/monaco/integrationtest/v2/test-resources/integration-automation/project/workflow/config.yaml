@@ -20,6 +20,9 @@ configs:
     template: c5a71c83-9dbd-458d-b42d-d48b098c60ed.json
     skip: false
     parameters:
+      javascript:
+        type: file
+        path: script.js
       actor:
         type: environment
         name: WORKFLOW_ACTOR
