@@ -127,7 +127,7 @@ type SettingsClient interface {
 	GetSchema(context.Context, string) (dtclient.Schema, error)
 
 	// List returns all settings objects for a given schema.
-	List(context.Context, string, dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
+	List(ctx context.Context, schema string, options dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
 
 	// Get returns the setting with the given object ID
 	Get(context.Context, string) (*dtclient.DownloadSettingsObject, error)
@@ -180,6 +180,7 @@ type ServiceLevelObjectiveClient interface {
 	List(ctx context.Context) (libAPI.PagedListResponse, error)
 	Update(ctx context.Context, id string, body []byte) (libAPI.Response, error)
 	Create(ctx context.Context, body []byte) (libAPI.Response, error)
+	Delete(ctx context.Context, id string) (libAPI.Response, error)
 }
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)

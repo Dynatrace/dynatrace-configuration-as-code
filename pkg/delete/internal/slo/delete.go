@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2024 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package segment
+package slo
 
 import (
 	"context"
@@ -24,7 +24,6 @@ import (
 	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -33,8 +32,8 @@ import (
 )
 
 type client interface {
-	List(ctx context.Context) (segments.Response, error)
-	Delete(ctx context.Context, id string) (segments.Response, error)
+	List(ctx context.Context) (api.PagedListResponse, error)
+	Delete(ctx context.Context, id string) (api.Response, error)
 }
 
 func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
@@ -47,7 +46,7 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 		}
 	}
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d %s objects(s)", errCount, config.SegmentID)
+		return fmt.Errorf("failed to delete %d %s objects(s)", errCount, config.ServiceLevelObjectiveID)
 	}
 	return nil
 }
@@ -79,7 +78,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 }
 
 func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePointer) (string, error) {
-	items, err := list(ctx, c)
+	items, err := c.List(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -89,20 +88,28 @@ func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePoi
 		return "", fmt.Errorf("unable to generate externalID: %w", err)
 	}
 
-	var foundUUIDs []string
-	for _, i := range items {
-		if i.ExternalID == extID {
-			foundUUIDs = append(foundUUIDs, i.UID)
+	var found []entry
+	for _, i := range items.All() {
+		var e entry
+		if err := json.Unmarshal(i, &e); err != nil {
+			return "", err
+		}
+		if e.ExternalID == extID {
+			found = append(found, e)
 		}
 	}
 
 	switch {
-	case len(foundUUIDs) == 0:
+	case len(found) == 0:
 		return "", nil
-	case len(foundUUIDs) > 1:
-		return "", fmt.Errorf("found more than one %s with same externalId (%s); matching IDs: %s", config.SegmentID, extID, foundUUIDs)
+	case len(found) > 1:
+		var ids []string
+		for _, i := range found {
+			ids = append(ids, i.ID)
+		}
+		return "", fmt.Errorf("found more than one %s with same externalId (%s); matching IDs: %s", config.ServiceLevelObjectiveID, extID, ids)
 	default:
-		return foundUUIDs[0], nil
+		return found[0].ID, nil
 	}
 }
 
@@ -115,37 +122,7 @@ func isAPIErrorStatusNotFound(err error) bool {
 	return apiErr.StatusCode == http.StatusNotFound
 }
 
-func DeleteAll(ctx context.Context, c client) error {
-	items, err := list(ctx, c)
-	if err != nil {
-		return err
-	}
-
-	var retErr error
-	for _, i := range items {
-		err := deleteSingle(ctx, c, pointer.DeletePointer{Type: string(config.SegmentID), OriginObjectId: i.UID})
-		if err != nil {
-			retErr = errors.Join(retErr, err)
-		}
-	}
-	return retErr
-}
-
-type items []struct {
-	UID        string `json:"uid"`
+type entry struct {
+	ID         string `json:"id"`
 	ExternalID string `json:"externalId"`
-}
-
-func list(ctx context.Context, c client) (items, error) {
-	listResp, err := c.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var items items
-	if err = json.Unmarshal(listResp.Data, &items); err != nil {
-		return nil, fmt.Errorf("problem with reading recieved data: %w", err)
-	}
-
-	return items, nil
 }

@@ -19,7 +19,6 @@
 package v2
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -59,13 +58,13 @@ func TestDocuments(t *testing.T) {
 
 		// check isPrivate == false
 		clientSet := integrationtest.CreateDynatraceClients(t, man.Environments[environment])
-		result, err := clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+		result, err := clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.False(t, result.Responses[0].IsPrivate)
 
 		// check isPrivate == true
-		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+		result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.True(t, result.Responses[0].IsPrivate)
@@ -97,19 +96,19 @@ func TestDocuments(t *testing.T) {
 		assert.NoError(t, err)
 
 		// check if isPrivate was changed to true
-		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+		result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.True(t, result.Responses[0].IsPrivate)
 
 		// check if isPrivate was changed to false
-		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+		result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
 		assert.False(t, result.Responses[0].IsPrivate)
 
 		// check if both launchpads were created successful
-		result, err = clientSet.DocumentClient.List(context.TODO(), fmt.Sprintf("type='launchpad'"))
+		result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("type='launchpad'"))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 2)
 

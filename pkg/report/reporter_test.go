@@ -19,7 +19,6 @@
 package report_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -36,8 +35,7 @@ import (
 
 // TestReporter_ContextWithNoReporterDiscards tests that the Recorder obtained from an context without the default one discards.
 func TestReporter_ContextWithNoReporterDiscards(t *testing.T) {
-	ctx := context.TODO()
-	reporter := report.GetReporterFromContextOrDiscard(ctx)
+	reporter := report.GetReporterFromContextOrDiscard(t.Context())
 	require.NotNil(t, reporter)
 
 	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard"}, report.StateSuccess, nil, nil)
@@ -54,7 +52,7 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 	testTime := time.Unix(time.Now().Unix(), 0).UTC()
 
 	r := report.NewDefaultReporterWithClockFunc(fs, reportFilename, func() time.Time { return testTime })
-	ctx := report.NewContextWithReporter(context.TODO(), r)
+	ctx := report.NewContextWithReporter(t.Context(), r)
 
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
 	require.NotNil(t, reporter)

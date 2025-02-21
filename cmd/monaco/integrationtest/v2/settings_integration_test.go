@@ -19,7 +19,6 @@
 package v2
 
 import (
-	"context"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -101,7 +100,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	}))
 	content, err := configToDeploy.Template.Content()
 	assert.NoError(t, err)
-	_, err = c.Upsert(context.TODO(), dtclient.SettingsObject{
+	_, err = c.Upsert(t.Context(), dtclient.SettingsObject{
 		Coordinate:     configToDeploy.Coordinate,
 		SchemaId:       configToDeploy.Type.(config.SettingsType).SchemaId,
 		SchemaVersion:  configToDeploy.Type.(config.SettingsType).SchemaVersion,
@@ -117,7 +116,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 
 	// Check if settings 2.0 object with "new" external ID exists
 	c = createSettingsClient(t, environment)
-	settings, _ := c.List(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+	settings, _ := c.List(t.Context(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == extID
 	}})
 	assert.Len(t, settings, 1)
@@ -126,7 +125,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	coord := sortedConfigs["platform_env"][0].Coordinate
 	coord.Project = ""
 	legacyExtID, _ := idutils.GenerateExternalIDForSettingsObject(coord)
-	settings, _ = c.List(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+	settings, _ = c.List(t.Context(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == legacyExtID
 	}})
 	assert.Len(t, settings, 0)
@@ -197,7 +196,7 @@ func TestOrderedSettings(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.List(context.TODO(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		results, err := settingsClient.List(t.Context(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
 		assert.NoError(t, err)
 
 		assert.Len(t, results, 2)
@@ -216,7 +215,7 @@ func TestOrderedSettings(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.List(context.TODO(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		results, err := settingsClient.List(t.Context(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
 		assert.NoError(t, err)
 
 		assert.Len(t, results, 2)
@@ -240,7 +239,7 @@ func TestOrderedSettingsCrossProjects(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.List(context.TODO(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		results, err := settingsClient.List(t.Context(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
 		assert.NoError(t, err)
 
 		assert.Len(t, results, 2)
@@ -272,7 +271,7 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 	client, err := clientFactory.CreatePlatformClient()
 	require.NoError(t, err)
 
-	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), *client)
+	classicURL, err := metadata.GetDynatraceClassicURL(t.Context(), *client)
 	require.NoError(t, err)
 
 	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(env.Auth.Token.Value.Value())

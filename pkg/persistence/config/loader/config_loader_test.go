@@ -45,6 +45,7 @@ import (
 func Test_parseConfigs(t *testing.T) {
 	t.Setenv("ENV_VAR_SKIP_TRUE", "true")
 	t.Setenv("ENV_VAR_SKIP_FALSE", "false")
+	t.Setenv("ENV_VAR_SOME_RANDOM_VAR", "someRandomVariable")
 
 	testLoaderContext := &LoaderContext{
 		ProjectId: "project",
@@ -534,7 +535,48 @@ configs:
 			},
 		},
 		{
-			name:             "loads settings 2.0 config with a reference as insertAfter but with wrong property",
+			name:             "loads settings 2.0 config with insertAfter as a value-parameter",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'environment'
+      insertAfter: my-id`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:profile.test",
+						ConfigId: "profile-id",
+					},
+					Type: config.SettingsType{
+						SchemaId:      "builtin:profile.test",
+						SchemaVersion: "1.0",
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter:        &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter:       &value.ValueParameter{Value: "environment"},
+						config.InsertAfterParameter: &value.ValueParameter{Value: "my-id"},
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
+				},
+			},
+		},
+		{
+			name:             "loads settings 2.0 config with insertAfter as a env-parameter",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -550,11 +592,55 @@ configs:
       schemaVersion: '1.0'
       scope: 'environment'
       insertAfter:
-        type: reference
-        configId: configId
-        property: name
-        configType: something`,
-			wantErrorsContain: []string{`failed to parse insertAfter: property field of reference parameter "project:something:configId:name" must be "id"`},
+        type: environment
+        name: ENV_VAR_SOME_RANDOM_VAR
+`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:profile.test",
+						ConfigId: "profile-id",
+					},
+					Type: config.SettingsType{
+						SchemaId:      "builtin:profile.test",
+						SchemaVersion: "1.0",
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter:        &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter:       &value.ValueParameter{Value: "environment"},
+						config.InsertAfterParameter: &environment.EnvironmentVariableParameter{Name: "ENV_VAR_SOME_RANDOM_VAR"},
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
+				},
+			},
+		},
+		{
+			name:             "loads settings 2.0 config with an invalid insertAfter parameter",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'environment'
+      insertAfter:
+        type: invalid
+`,
+			wantErrorsContain: []string{
+				"failed to parse insertAfter parameter",
+			},
 		},
 		{
 			name:             "loads settings 2.0 config with a shorthand reference as scope",

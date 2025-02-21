@@ -19,7 +19,6 @@
 package dynatrace
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -40,7 +39,7 @@ func TestVerifyEnvironmentGeneration_TurnedOffByFF(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ok := VerifyEnvironmentGeneration(context.TODO(), manifest.Environments{
+	ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 		"env": manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
@@ -66,7 +65,7 @@ func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ok := VerifyEnvironmentGeneration(context.TODO(), manifest.Environments{
+	ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 		"env": manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
@@ -116,7 +115,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if ok := VerifyEnvironmentGeneration(context.TODO(), tt.args.envs); ok == tt.wantErr {
+			if ok := VerifyEnvironmentGeneration(t.Context(), tt.args.envs); ok == tt.wantErr {
 				t.Errorf("VerifyEnvironmentGeneration() error = %v, wantErr %v", ok, tt.wantErr)
 			}
 		})
@@ -129,7 +128,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(context.TODO(), manifest.Environments{
+		ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				URL: manifest.URLDefinition{
@@ -162,7 +161,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(context.TODO(), manifest.Environments{
+		ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				URL: manifest.URLDefinition{
@@ -201,7 +200,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(context.TODO(), manifest.Environments{
+		ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 			"env1": manifest.EnvironmentDefinition{
 				Name: "env1",
 				URL: manifest.URLDefinition{
@@ -213,7 +212,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		})
 		assert.False(t, ok)
 
-		ok = VerifyEnvironmentGeneration(context.TODO(), manifest.Environments{
+		ok = VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 			"env2": manifest.EnvironmentDefinition{
 				Name: "env2",
 				URL: manifest.URLDefinition{
