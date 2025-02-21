@@ -1,0 +1,21 @@
+{
+  "criteria": [
+    {
+      "target": 98,
+      "timeframeFrom": "now-7d",
+      "timeframeTo": "now"
+    }
+  ],
+  "description": "Measures the CPU usage of selected hosts over time.",
+  "name": " {{ .name }}",
+  "sliReference": {
+    "templateId": "e2J1aWx0aW46aW50ZXJuYWwuc2VydmljZS5sZXZlbC5vYmplY3RpdmUudGVtcGxhdGVzLCBpZDogNTJjNzRmMGItNzY1ZS00NWRiLWFmMGQtN2E1MDdjNGY0YjRlfQ==",
+    "variables": [
+      {
+        "name": "hosts",
+        "value": "\"{{ .extractedIDs.id_HOST_DED360997F66F0C2 }}\""
+      }
+    ]
+  },
+  "tags": []
+}
