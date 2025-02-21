@@ -18,11 +18,13 @@ package file
 
 import (
 	"fmt"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	tmpl "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/spf13/afero"
 )
 
 const FileParameterType = "file"
@@ -35,6 +37,7 @@ var FileParameterSerde = parameter.ParameterSerDe{
 type FileParameter struct {
 	Fs                   afero.Fs
 	Path                 string
+	Escaped              bool
 	referencedParameters []parameter.ParameterReference
 }
 
@@ -59,8 +62,11 @@ func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interfac
 	if err != nil {
 		return nil, parameter.NewParameterResolveValueError(context, err.Error())
 	}
+	if f.Escaped {
+		return template.EscapeSpecialCharactersInValue(strContent, template.FullStringEscapeFunction)
+	}
 
-	return template.EscapeSpecialCharactersInValue(strContent, template.FullStringEscapeFunction)
+	return strContent, nil
 }
 
 func parseFileValueParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
@@ -73,9 +79,16 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 		return nil, parameter.NewParameterParserError(context, "missing property `path`")
 	}
 
+	escaped := true
+	if escapedValue, ok := context.Value["escaped"]; ok {
+		if escapedBool, ok := escapedValue.(bool); ok {
+			escaped = escapedBool
+		}
+	}
+
 	references, ok := context.Value["references"]
 	if !ok {
-		return &FileParameter{Fs: context.Fs, Path: strings.ToString((path))}, nil
+		return &FileParameter{Fs: context.Fs, Path: strings.ToString((path)), Escaped: escaped}, nil
 	}
 
 	referencedParameterSlice, ok := references.([]interface{})
@@ -88,7 +101,7 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("invalid parameter references: %v", err))
 	}
 
-	return &FileParameter{Fs: context.Fs, Path: strings.ToString((path)), referencedParameters: referencedParameters}, nil
+	return &FileParameter{Fs: context.Fs, Path: strings.ToString((path)), Escaped: escaped, referencedParameters: referencedParameters}, nil
 
 }
 
@@ -102,6 +115,7 @@ func writeFileValueParameter(context parameter.ParameterWriterContext) (map[stri
 	result := make(map[string]interface{})
 
 	result["path"] = fileParam.Path
+	result["escaped"] = fileParam.Escaped
 
 	return result, nil
 }
