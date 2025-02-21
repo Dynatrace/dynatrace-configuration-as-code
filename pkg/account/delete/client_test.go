@@ -19,6 +19,7 @@
 package delete_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -668,6 +669,231 @@ func TestAccountAPIClient_DeleteUser(t *testing.T) {
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
 		err = accountClient.DeleteUser(t.Context(), "user@test.com")
+		assert.Error(t, err)
+	})
+}
+
+func TestAccountAPIClient_DeleteServiceUser(t *testing.T) {
+	t.Run("successful delete", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+			switch req.URL.Path {
+			case "/iam/v1/accounts/1234/service-users":
+				assert.Equal(t, http.MethodGet, req.Method)
+
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = rw.Write([]byte(`{
+  "results": [
+    {
+      "uid": "uid1",
+      "email": "string",
+      "name": "su1",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    },
+	{
+      "uid": "uid2",
+      "email": "string",
+      "name": "su2",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 2
+}`))
+
+			case "/iam/v1/accounts/1234/service-users/uid2":
+				assert.Equal(t, http.MethodDelete, req.Method)
+				rw.WriteHeader(200)
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteServiceUser(context.Background(), "su2")
+		assert.NoError(t, err)
+	})
+
+	t.Run("returns NotFoundError if 404 is returned when deleting service user", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+			switch req.URL.Path {
+			case "/iam/v1/accounts/1234/service-users":
+				assert.Equal(t, http.MethodGet, req.Method)
+
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = rw.Write([]byte(`{
+  "results": [
+    {
+      "uid": "uid1",
+      "email": "string",
+      "name": "su1",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 2
+}`))
+
+			case "/iam/v1/accounts/1234/service-users/uid1":
+				assert.Equal(t, http.MethodDelete, req.Method)
+				rw.WriteHeader(404)
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteServiceUser(context.Background(), "su1")
+		assert.ErrorIs(t, err, delete.NotFoundErr)
+	})
+
+	t.Run("returns NotFoundError if service user not found in list results", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+			switch req.URL.Path {
+			case "/iam/v1/accounts/1234/service-users":
+				assert.Equal(t, http.MethodGet, req.Method)
+
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = rw.Write([]byte(`{
+  "results": [
+    {
+      "uid": "uid1",
+      "email": "string",
+      "name": "su1",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 1
+}`))
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteServiceUser(context.Background(), "su2")
+		assert.ErrorIs(t, err, delete.NotFoundErr)
+	})
+
+	t.Run("returns an error if multiple service users are found with the same name", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+			switch req.URL.Path {
+			case "/iam/v1/accounts/1234/service-users":
+				assert.Equal(t, http.MethodGet, req.Method)
+
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = rw.Write([]byte(`{
+  "results": [
+    {
+      "uid": "uid1",
+      "email": "string",
+      "name": "su1",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    },
+	{
+      "uid": "uid2",
+      "email": "string",
+      "name": "su1",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 2
+}`))
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteServiceUser(context.Background(), "su1")
+		assert.ErrorContains(t, err, "found multiple service users with name")
+	})
+
+	t.Run("returns an error if list failed", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			switch req.URL.Path {
+			case "/iam/v1/accounts/1234/service-users":
+				assert.Equal(t, http.MethodGet, req.Method)
+				rw.WriteHeader(400)
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteServiceUser(context.Background(), "su1")
+		assert.Error(t, err)
+	})
+
+	t.Run("returns an error if delete failed", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+			switch req.URL.Path {
+			case "/iam/v1/accounts/1234/service-users":
+				assert.Equal(t, http.MethodGet, req.Method)
+
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = rw.Write([]byte(`{
+  "results": [
+    {
+      "uid": "uid1",
+      "email": "string",
+      "name": "su1",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 1
+}`))
+
+			case "/iam/v1/accounts/1234/service-users/uid1":
+				assert.Equal(t, http.MethodDelete, req.Method)
+				rw.WriteHeader(400)
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteServiceUser(context.Background(), "su1")
 		assert.Error(t, err)
 	})
 }

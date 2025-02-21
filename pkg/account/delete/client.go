@@ -20,17 +20,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 
 	"golang.org/x/net/context"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 )
 
 // Client for deleting resources from the Account Management API
 type Client interface {
 	DeleteUser(ctx context.Context, email string) error
+	DeleteServiceUser(ctx context.Context, name string) error
 	DeleteGroup(ctx context.Context, name string) error
 	DeleteAccountPolicy(ctx context.Context, name string) error
 	DeleteEnvironmentPolicy(ctx context.Context, environment, name string) error
@@ -66,6 +69,79 @@ func (c *AccountAPIClient) DeleteUser(ctx context.Context, email string) error {
 		return err
 	}
 	return nil
+}
+
+// DeleteServiceUser retrieves all service users, looks up the service user by name and removes it from the account.
+// Returns error if any API call fails unless the user is already not present, either in the list when looking by name or during the subsequent delete call.
+// In addition, an error is returned if multiple service users are found with the same name.
+func (c *AccountAPIClient) DeleteServiceUser(ctx context.Context, name string) error {
+	uid, err := c.getServiceUserIDByName(ctx, c.accountUUID, name)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.client.ServiceUserManagementAPI.DeleteUser(ctx, c.accountUUID, uid).Execute()
+	defer closeResponseBody(resp)
+	if resp != nil && resp.StatusCode == 404 {
+		return NotFoundErr
+	}
+	if err := handleClientResponseError(resp, err, fmt.Sprintf("failed to delete service user %q", name)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *AccountAPIClient) getServiceUserIDByName(ctx context.Context, accountUUID, name string) (string, error) {
+	serviceUsers, err := c.getServiceUsers(ctx, accountUUID)
+	if err != nil {
+		return "", err
+	}
+
+	uid := ""
+	for _, s := range serviceUsers {
+		if s.Name == name {
+			if uid != "" {
+				return "", fmt.Errorf("found multiple service users with name %s", name)
+			}
+			uid = s.Uid
+		}
+	}
+	if uid == "" {
+		return "", NotFoundErr
+	}
+
+	return uid, nil
+}
+
+func (c *AccountAPIClient) getServiceUsers(ctx context.Context, accountUUID string) ([]accountmanagement.ExternalServiceUserDto, error) {
+	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
+	const pageSize = 100
+	for page := (int32)(1); page < math.MaxInt32; page++ {
+		r, err := c.getServiceUsersPage(ctx, accountUUID, page, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		serviceUsers = append(serviceUsers, r.Results...)
+
+		if r.NextPageKey == nil {
+			break
+		}
+	}
+
+	return serviceUsers, nil
+}
+
+func (c *AccountAPIClient) getServiceUsersPage(ctx context.Context, accountUUID string, page int32, pageSize int32) (*accountmanagement.ExternalServiceUsersPageDto, error) {
+	r, resp, err := c.client.ServiceUserManagementAPI.GetServiceUsersFromAccount(ctx, accountUUID).Page(page).PageSize(pageSize).Execute()
+	defer closeResponseBody(resp)
+	if err = handleClientResponseError(resp, err, "failed to get service users"); err != nil {
+		return nil, err
+	}
+	if r == nil {
+		return nil, errors.New("the received data are empty")
+	}
+	return r, nil
 }
 
 // DeleteGroup removes the group with the given name from the account

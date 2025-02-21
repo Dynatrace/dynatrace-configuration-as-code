@@ -18,11 +18,14 @@ package delete
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
+	"path/filepath"
+
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
-	"path/filepath"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
 
 type loaderContext struct {
@@ -90,6 +93,7 @@ func readDeleteFile(context *loaderContext) (FileDefinition, error) {
 func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 	var groups []Group
 	var users []User
+	var serviceUsers []ServiceUser
 	var accountPolicies []AccountPolicy
 	var environmentPolicies []EnvironmentPolicy
 
@@ -107,6 +111,16 @@ func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, err.Error())
 			}
 			users = append(users, User{Email: secret.Email(parsed.Email)})
+		case "service-user":
+			if !featureflags.ServiceUsers.Enabled() {
+				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown type %q - needs to be one of "user", "group" or "policy"`, parsed.Type))
+			}
+			var parsed ServiceUserDeleteEntry
+			err := mapstructure.Decode(e, &parsed)
+			if err != nil {
+				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, err.Error())
+			}
+			serviceUsers = append(serviceUsers, ServiceUser{Name: parsed.Name})
 		case "group":
 			var parsed GroupDeleteEntry
 			err := mapstructure.Decode(e, &parsed)
@@ -126,16 +140,20 @@ func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 			case "environment":
 				environmentPolicies = append(environmentPolicies, EnvironmentPolicy{Name: parsed.Name, Environment: parsed.Level.Environment})
 			default:
-				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unkown policy level %q - needs to be one of "account","environment"`, parsed.Level))
+				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown policy level %q - needs to be either "account" or "environment"`, parsed.Level))
 			}
 		default:
-			return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unkown type %q - needs to be one of "user","group","policy"`, parsed.Type))
+			if featureflags.ServiceUsers.Enabled() {
+				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown type %q - needs to be one of "user", "service-user", "group" or "policy"`, parsed.Type))
+			}
+			return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown type %q - needs to be one of "user", "group" or "policy"`, parsed.Type))
 		}
 
 	}
 
 	return Resources{
 		Users:               users,
+		ServiceUsers:        serviceUsers,
 		Groups:              groups,
 		AccountPolicies:     accountPolicies,
 		EnvironmentPolicies: environmentPolicies,
