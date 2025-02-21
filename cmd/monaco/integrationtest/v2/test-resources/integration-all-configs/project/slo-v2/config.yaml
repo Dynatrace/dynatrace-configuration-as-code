@@ -1,0 +1,36 @@
+configs:
+- id: template-based
+  type: slo-v2
+  config:
+    name: template based SLO config
+    template: template-based.json
+    parameters:
+      extractedIDs:
+        type: value
+        value:
+          id_HOST_DED360997F66F0C2: HOST-DED360997F66F0C2
+    skip: true # platform only config
+  environmentOverrides:
+    - environment: platform_env
+      override:
+        skip: false
+- id: custom-made
+  type: slo-v2
+  config:
+    name: custom made SLO config
+    template: custom-made.json
+    parameters:
+      extractedIDs:
+        type: value
+        value:
+          id_1e8fb359_5604_474f_8afd_dd81016bf338: 1e8fb359-5604-474f-8afd-dd81016bf338
+          id_HTTP_CHECK_1313FB3056F81BBE: HTTP_CHECK-1313FB3056F81BBE
+          id_HTTP_CHECK_1334D771FF374E0C: HTTP_CHECK-1334D771FF374E0C
+          id_HTTP_CHECK_DB55161EAA7A7B4F: HTTP_CHECK-DB55161EAA7A7B4F
+          id_SYNTHETIC_LOCATION_0000000000000064: SYNTHETIC_LOCATION-0000000000000064
+          id_b838dcae_1f4c_4e8e_81ff_cc17c6de11ec: b838dcae-1f4c-4e8e-81ff-cc17c6de11ec
+    skip: true # platform only config
+  environmentOverrides:
+    - environment: platform_env
+      override:
+        skip: false
