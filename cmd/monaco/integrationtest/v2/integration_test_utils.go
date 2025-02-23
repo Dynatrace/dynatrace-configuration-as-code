@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
@@ -88,7 +89,7 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 	runIntegration(t, opts, testFunc)
 }
 
-func RunIntegrationWithCleanupOnGivenFsAndEnvs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
+func RunIntegrationWithCleanupOnGivenFsAndEnvs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[featureflags.FeatureFlag]string, testFunc TestFunc) {
 	opts := testOptions{
 		fs:                  testFs,
 		configFolder:        configFolder,
@@ -101,7 +102,7 @@ func RunIntegrationWithCleanupOnGivenFsAndEnvs(t *testing.T, testFs afero.Fs, co
 	runIntegration(t, opts, testFunc)
 }
 
-func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
+func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[featureflags.FeatureFlag]string, testFunc TestFunc) {
 	opts := testOptions{
 		fs:                  testutils.CreateTestFileSystem(),
 		configFolder:        configFolder,
@@ -118,7 +119,7 @@ func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath
 type testOptions struct {
 	fs                                                      afero.Fs
 	configFolder, manifestPath, specificEnvironment, suffix string
-	envVars                                                 map[string]string
+	envVars                                                 map[featureflags.FeatureFlag]string
 
 	// skipCleanup skips the Monaco cleanup that generates the delete file and deletes all created resources.
 	// It is false by default, thus the cleanup must be disabled intentionally
@@ -131,7 +132,7 @@ func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
 
 	for k, v := range opts.envVars {
-		setTestEnvVar(t, k, v, suffix)
+		setTestEnvVar(t, k.EnvName(), v, suffix)
 	}
 
 	if !opts.skipCleanup {
