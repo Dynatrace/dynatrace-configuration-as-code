@@ -1,0 +1,25 @@
+# this config is designed to test that if a config has 'insertAfter' set to FRONT, the config IS added to the front
+# `first` is deployed first at the start of the list, and `second` is deployed second, following directly after `first`
+
+configs:
+
+- id: first
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope: environment
+      insertAfter: FRONT
+  config:
+    template: url-sampling.json
+
+- id: second
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope: environment
+      insertAfter:
+        type: reference
+        configId: first
+        property: id
+  config:
+    template: url-sampling.json
