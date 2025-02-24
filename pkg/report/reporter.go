@@ -110,6 +110,7 @@ func (d *defaultReporter) runRecorder(fs afero.Fs, reportFilePath string) error 
 		return fmt.Errorf("error open record file: %w", err)
 	}
 
+	defer file.Close()
 	writer := bufio.NewWriter(file)
 	for {
 		select {
@@ -122,10 +123,6 @@ func (d *defaultReporter) runRecorder(fs afero.Fs, reportFilePath string) error 
 			if !open {
 				if err := writer.Flush(); err != nil {
 					return fmt.Errorf("unable to flush record file: %w", err)
-				}
-
-				if err := file.Close(); err != nil {
-					return fmt.Errorf("unable to close record file: %w", err)
 				}
 				return nil
 			}
