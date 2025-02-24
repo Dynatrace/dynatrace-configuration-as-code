@@ -128,19 +128,19 @@ func DeleteAll(ctx context.Context, c client) error {
 		return err
 	}
 
-	var retErr error
+	var errs []error
 	for _, i := range items.All() {
 		var e entry
 		if err := json.Unmarshal(i, &e); err != nil {
-			retErr = errors.Join(retErr, err)
+			errs = append(errs, err)
 			continue
 		}
 		err := deleteSingle(ctx, c, pointer.DeletePointer{Type: string(config.ServiceLevelObjectiveID), OriginObjectId: e.ID})
 		if err != nil {
-			retErr = errors.Join(retErr, err)
+			errs = append(errs, err)
 		}
 	}
-	return retErr
+	return errors.Join(errs...)
 }
 
 type entry struct {
