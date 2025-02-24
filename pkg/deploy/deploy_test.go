@@ -1369,7 +1369,6 @@ func TestDeployConfigFF(t *testing.T) {
 		t.Run(tt.name+" | FF Enabled", func(t *testing.T) {
 			t.Setenv(tt.featureFlag, "true")
 			err := deploy.Deploy(t.Context(), tt.projects, c, deploy.DeployConfigsOptions{})
-			//fakeClient returns unimplemented error on every execution of any method
 			assert.Errorf(t, err, "unimplemented")
 		})
 		t.Run(tt.name+" | FF Disabled", func(t *testing.T) {
