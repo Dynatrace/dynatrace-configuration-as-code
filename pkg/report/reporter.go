@@ -111,29 +111,38 @@ func (d *defaultReporter) runRecorder(fs afero.Fs, reportFilePath string) error 
 	}
 
 	writer := bufio.NewWriter(file)
-	for r := range d.queue {
-		b, err := json.Marshal(r)
-		if err != nil {
-			return fmt.Errorf("unable to convert record: %w", err)
-		}
+	for {
+		select {
+		case <-time.After(3 * time.Second):
+			log.Debug("Flushed report")
+			if err := writer.Flush(); err != nil {
+				return fmt.Errorf("unable to flush record file: %w", err)
+			}
+		case r, open := <-d.queue:
+			if !open {
+				if err := writer.Flush(); err != nil {
+					return fmt.Errorf("unable to flush record file: %w", err)
+				}
 
-		if _, err := writer.Write(b); err != nil {
-			return fmt.Errorf("unable to write record: %w", err)
-		}
+				if err := file.Close(); err != nil {
+					return fmt.Errorf("unable to close record file: %w", err)
+				}
+				return nil
+			}
+			b, err := json.Marshal(r)
+			if err != nil {
+				return fmt.Errorf("unable to convert record: %w", err)
+			}
 
-		if _, err := writer.WriteString("\n"); err != nil {
-			return fmt.Errorf("unable to write newline: %w", err)
+			if _, err := writer.Write(b); err != nil {
+				return fmt.Errorf("unable to write record: %w", err)
+			}
+
+			if _, err := writer.WriteString("\n"); err != nil {
+				return fmt.Errorf("unable to write newline: %w", err)
+			}
 		}
 	}
-
-	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("unable to flush record file: %w", err)
-	}
-
-	if err := file.Close(); err != nil {
-		return fmt.Errorf("unable to close record file: %w", err)
-	}
-	return nil
 }
 
 func (d *defaultReporter) updateSummaryFromRecord(r Record) {
