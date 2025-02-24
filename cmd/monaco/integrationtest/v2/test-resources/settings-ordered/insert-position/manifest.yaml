@@ -3,6 +3,8 @@ manifestVersion: 1.0
 projects:
 - name: both-back-and-front-are-set
 - name: insert-after-not-set
+- name: insert-after-set-to-back
+- name: insert-after-set-to-front
 
 environmentGroups:
 - name: default

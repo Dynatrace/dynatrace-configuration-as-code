@@ -325,6 +325,66 @@ func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
 	})
 }
 
+func TestOrdered_InsertAtFrontWorks(t *testing.T) {
+	const configFolder = "test-resources/settings-ordered/insert-position"
+
+	const manifestFile = configFolder + "/manifest.yaml"
+
+	const specificEnvironment = "platform"
+	const project = "insert-after-set-to-front"
+	const schema = "builtin:url-based-sampling"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtFrontWorks", func(fs afero.Fs, tc TestContext) {
+
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project %s --verbose", manifestFile, project)
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+
+		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+
+		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			DiscardValue: true,
+		})
+
+		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+
+		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
+		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
+
+		assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
+		assert.Equal(t, 1, findPositionWithExternalId(t, list, second))
+	})
+}
+
+func TestOrdered_InsertAtBackWorks(t *testing.T) {
+	const configFolder = "test-resources/settings-ordered/insert-position"
+
+	const manifestFile = configFolder + "/manifest.yaml"
+
+	const specificEnvironment = "platform"
+	const project = "insert-after-set-to-back"
+	const schema = "builtin:url-based-sampling"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtBackWorks", func(fs afero.Fs, tc TestContext) {
+
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project %s --verbose", manifestFile, project)
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+
+		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+
+		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			DiscardValue: true,
+		})
+
+		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+
+		// Verify that last is actually the last object
+		last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
+		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
+	})
+}
+
 func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 	const configFolder = "test-resources/settings-ordered/insert-position"
 
