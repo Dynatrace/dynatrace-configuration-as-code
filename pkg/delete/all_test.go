@@ -36,7 +36,6 @@ func TestDeleteAll_Segments(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "true")
 
 		err := delete.All(t.Context(), client.ClientSet{SegmentClient: &c}, api.APIs{})
-		// fakeClient returns unimplemented error on every execution of any method
 		assert.Error(t, err, "unimplemented")
 	})
 
@@ -55,7 +54,6 @@ func TestDeleteAll_SLOv2(t *testing.T) {
 		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
 		err := delete.All(t.Context(), client.ClientSet{ServiceLevelObjectiveClient: &c}, api.APIs{})
-		// fakeClient returns unimplemented error on every execution of any method
 		assert.Error(t, err, "unimplemented")
 	})
 
