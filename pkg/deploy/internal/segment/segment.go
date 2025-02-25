@@ -22,11 +22,11 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	segment "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/deployhandler"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/handler"
 	"github.com/go-logr/logr"
 )
 
@@ -41,11 +41,11 @@ func Deploy(ctx context.Context, client deploySegmentClient, properties paramete
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	data := deployhandler.NewHandlerData(ctx, client, properties, []byte(renderedConfig), c)
+	data := handler.NewHandlerData(ctx, client, properties, []byte(renderedConfig), c)
 
-	addExternalIdHandler := deployhandler.AddExternalIDHandler{}
-	deployWithOriginObjectID := deployhandler.OriginObjectIDHandler{}
-	matchWithExternalIDHandler := deployhandler.MatchWithExternalIDHandler{
+	addExternalIdHandler := handler.AddExternalIDHandler{}
+	deployWithOriginObjectID := handler.OriginObjectIDHandler{}
+	matchWithExternalIDHandler := handler.MatchWithExternalIDHandler{
 		ExternalIDKey: "externalId",
 		IDKey:         "uid",
 		RemoteCall: func() ([][]byte, error) {
@@ -56,7 +56,7 @@ func Deploy(ctx context.Context, client deploySegmentClient, properties paramete
 			return transform(res)
 		},
 	}
-	createHandler := deployhandler.CreateHandler{IDKey: "uid"}
+	createHandler := handler.CreateHandler{IDKey: "uid"}
 	addExternalIdHandler.Next(&deployWithOriginObjectID).Next(&matchWithExternalIDHandler).Next(&createHandler)
 
 	return addExternalIdHandler.Handle(data)
