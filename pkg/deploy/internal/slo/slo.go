@@ -50,10 +50,7 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	externalID, err := idutils.GenerateExternalID(c.Coordinate)
-	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "failed to generate externalID").WithError(err)
-	}
+	externalID := idutils.GenerateExternalID(c.Coordinate)
 	requestPayload, err := addExternalId(externalID, renderedConfig)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "failed to add externalID to slo request payload").WithError(err)

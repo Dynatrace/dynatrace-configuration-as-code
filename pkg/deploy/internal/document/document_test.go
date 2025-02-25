@@ -79,9 +79,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 		}}),
 	}
 
-	expectedExternalId, err := idutils.GenerateExternalID(documentConfigCoordinate)
-	require.NoError(t, err)
-
+	expectedExternalId := idutils.GenerateExternalID(documentConfigCoordinate)
 	expectedFilterString := fmt.Sprintf("externalId=='%s'", expectedExternalId)
 
 	t.Run("Update by originObjectId succeeds", func(t *testing.T) {
@@ -171,8 +169,7 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 		}}),
 	}
 
-	expectedExternalId, err := idutils.GenerateExternalID(documentConfigCoordinate)
-	require.NoError(t, err)
+	expectedExternalId := idutils.GenerateExternalID(documentConfigCoordinate)
 
 	expectedFilterString := fmt.Sprintf("externalId=='%s'", expectedExternalId)
 

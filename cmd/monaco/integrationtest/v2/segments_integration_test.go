@@ -183,8 +183,7 @@ func parseSegmentsPayload(t *testing.T, resp api.Response) segmentsResponse {
 }
 
 func assertSegmentIsInResponse(t *testing.T, present bool, responses []api.Response, coord coordinate.Coordinate) {
-	externalId, err := idutils.GenerateExternalID(coord)
-	assert.NoError(t, err)
+	externalId := idutils.GenerateExternalID(coord)
 
 	found := false
 
