@@ -1,0 +1,27 @@
+# This config is designed to test that if a config has no 'insertAfter' set, the default behavior is to insert it at the BACK
+#
+# the config 'first' is deployed first (because of the phantom reference), and then the 'second' is deployed.
+# Since 'second' is deployed second and has insertAfter not set, it should be in the bottom
+
+configs:
+
+- id: first
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope: environment
+  config:
+    template: url-sampling.json
+
+- id: second
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope: environment
+  config:
+    template: url-sampling.json
+    parameters:
+      phantom:
+        type: reference
+        configId: first
+        property: id

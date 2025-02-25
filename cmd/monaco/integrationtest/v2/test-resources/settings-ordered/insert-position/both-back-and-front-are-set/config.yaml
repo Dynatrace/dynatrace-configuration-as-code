@@ -1,0 +1,24 @@
+# Test if setting `insertAfter` to `BACK` works as expected.
+#
+# First config, `first`, is deployed and will be added to the front
+# Second config, `last`, will be added to the back.
+
+configs:
+
+- id: first
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope: environment
+      insertAfter: FRONT
+  config:
+    template: url-sampling.json
+
+- id: last
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope: environment
+      insertAfter: BACK
+  config:
+    template: url-sampling.json

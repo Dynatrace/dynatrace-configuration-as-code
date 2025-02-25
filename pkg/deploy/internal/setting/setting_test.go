@@ -19,6 +19,7 @@
 package setting
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -153,4 +154,139 @@ func TestDeploySetting_ManagementZone_FailToDecodeMZoneID(t *testing.T) {
 	resolvedEntity, err := Deploy(t.Context(), c, props, "", conf)
 	assert.Zero(t, resolvedEntity)
 	assert.Error(t, err)
+}
+
+func TestDeploy_InsertAfter_NotDefined(t *testing.T) {
+
+	t.Parallel()
+
+	c := client.NewMockSettingsClient(gomock.NewController(t))
+	c.EXPECT().
+		Upsert(t.Context(), gomock.Any(), dtclient.UpsertSettingsOptions{OverrideRetry: nil, InsertAfter: nil}).
+		Times(1).
+		Return(dtclient.DynatraceEntity{}, nil)
+
+	conf := config.Config{
+		Type: config.SettingsType{SchemaId: "builtin:monaco-test", SchemaVersion: "1.2.3"},
+	}
+
+	props := map[string]any{
+		"scope": "environment",
+	}
+
+	_, err := Deploy(t.Context(), c, props, "{}", &conf)
+	assert.NoError(t, err)
+
+}
+func TestDeploy_InsertAfter_ValidCases(t *testing.T) {
+	tests := []struct {
+		name                string
+		insertAfterProperty string
+		expectedInsertAfter string
+	}{
+		{
+			name:                "an arbitrary ID is forwarded",
+			insertAfterProperty: "ID-12345",
+			expectedInsertAfter: "ID-12345",
+		},
+		{
+			name:                "arbitrary ID most not be uppercased",
+			insertAfterProperty: "id-12345",
+			expectedInsertAfter: "id-12345",
+		},
+		{
+			name:                "front is uppercased",
+			insertAfterProperty: "front",
+			expectedInsertAfter: dtclient.InsertPositionFront,
+		},
+		{
+			name:                "back is uppercased",
+			insertAfterProperty: "baCK",
+			expectedInsertAfter: dtclient.InsertPositionBack,
+		},
+		{
+			name:                "simple FRONT",
+			insertAfterProperty: "FRONT",
+			expectedInsertAfter: dtclient.InsertPositionFront,
+		},
+		{
+			name:                "simple BACK",
+			insertAfterProperty: "BACK",
+			expectedInsertAfter: dtclient.InsertPositionBack,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			c := client.NewMockSettingsClient(gomock.NewController(t))
+			c.EXPECT().
+				Upsert(t.Context(), gomock.Any(), gomock.Eq(dtclient.UpsertSettingsOptions{OverrideRetry: nil, InsertAfter: &test.expectedInsertAfter})).
+				Times(1).
+				Return(dtclient.DynatraceEntity{}, nil)
+
+			conf := config.Config{
+				Type: config.SettingsType{SchemaId: "builtin:monaco-test", SchemaVersion: "1.2.3"},
+			}
+
+			props := map[string]any{
+				"scope":       "environment",
+				"insertAfter": test.insertAfterProperty,
+			}
+
+			_, err := Deploy(t.Context(), c, props, "{}", &conf)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestDeploy_InsertAfter_InvalidCases(t *testing.T) {
+
+	const errorTemplate = "'insertAfter' parameter must be a string of either an ID, 'FRONT', or 'BACK', got '%s'"
+
+	tests := []struct {
+		name                string
+		insertAfterProperty any
+		errorContains       string
+	}{
+		{
+			name:                "empty array",
+			insertAfterProperty: []string{},
+			errorContains:       fmt.Sprintf(errorTemplate, "[]"),
+		},
+		{
+			name:                "filled array",
+			insertAfterProperty: []string{"test"},
+			errorContains:       fmt.Sprintf(errorTemplate, "[test]"),
+		},
+		{
+			name:                "map",
+			insertAfterProperty: map[string]any{"test": "test"},
+			errorContains:       fmt.Sprintf(errorTemplate, "map[test:test]"),
+		},
+		{
+			name:                "object",
+			insertAfterProperty: struct{ name string }{"test"},
+			errorContains:       fmt.Sprintf(errorTemplate, "{test}"),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			c := client.NewMockSettingsClient(gomock.NewController(t))
+
+			conf := config.Config{
+				Type: config.SettingsType{SchemaId: "builtin:monaco-test", SchemaVersion: "1.2.3"},
+			}
+
+			props := map[string]any{
+				"scope":       "environment",
+				"insertAfter": test.insertAfterProperty,
+			}
+
+			_, err := Deploy(t.Context(), c, props, "{}", &conf)
+			assert.ErrorContains(t, err, test.errorContains)
+		})
+	}
 }

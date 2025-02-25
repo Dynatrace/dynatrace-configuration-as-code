@@ -1,0 +1,9 @@
+{
+    "enabled": true,
+    "ignore": false,
+    "factor": "6",
+    "path": "test",
+    "pathComparisonType": "EQUALS",
+    "queryParameters": [],
+    "httpMethodAny": true
+}

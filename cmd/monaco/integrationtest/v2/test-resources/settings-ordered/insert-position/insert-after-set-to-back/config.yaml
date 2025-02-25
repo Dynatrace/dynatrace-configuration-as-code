@@ -1,0 +1,27 @@
+# Test if setting `insertAfter` to `BACK` works as expected.
+#
+# First config, `first`, is deployed and will be added to the front
+# Second config, `back`, will be added to the back. The phantom reference enforces the deployment order
+
+configs:
+- id: first
+  config:
+    template: url-sampling.json
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope: environment
+- id: second
+  config:
+    template: url-sampling.json
+    parameters:
+      phantom:
+        type: reference
+        configId: first
+        configType: builtin:url-based-sampling
+        property: id
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope: environment
+      insertAfter: BACK

@@ -1,0 +1,33 @@
+manifestVersion: 1.0
+
+projects:
+- name: both-back-and-front-are-set
+- name: insert-after-not-set
+- name: insert-after-set-to-back
+- name: insert-after-set-to-front
+
+environmentGroups:
+- name: default
+  environments:
+    - name: classic
+      url:
+        type: environment
+        value: URL_ENVIRONMENT_1
+      auth:
+        token:
+          name: TOKEN_ENVIRONMENT_1
+    - name: platform
+      url:
+        type: environment
+        value: PLATFORM_URL_ENVIRONMENT_2
+      auth:
+        token:
+          name: TOKEN_ENVIRONMENT_2
+        oAuth:
+          clientId:
+            name: OAUTH_CLIENT_ID
+          clientSecret:
+            name: OAUTH_CLIENT_SECRET
+          tokenEndpoint:
+            type: environment
+            value: OAUTH_TOKEN_ENDPOINT

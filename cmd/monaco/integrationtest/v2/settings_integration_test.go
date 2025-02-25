@@ -37,6 +37,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 )
 
@@ -188,6 +189,12 @@ func TestOrderedSettings(t *testing.T) {
 	configFolder := "test-resources/settings-ordered/order1"
 	manifestPath := configFolder + "/manifest.yaml"
 
+	coordc23, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", Type: "builtin:container.monitoring-rule", ConfigId: "c2314e1b-409c-3eaf-9efa-5dc593b14aff"})
+	assert.NoError(t, err)
+
+	coord704, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", Type: "builtin:container.monitoring-rule", ConfigId: "704aa921-9ff8-3f8e-bc6d-bedb63093ae9"})
+	assert.NoError(t, err)
+
 	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
 		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project", manifestPath)
 		assert.NoError(t, err)
@@ -200,8 +207,8 @@ func TestOrderedSettings(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Len(t, results, 2)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkYzIzMTRlMWItNDA5Yy0zZWFmLTllZmEtNWRjNTkzYjE0YWZm", results[0].ExternalId)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkNzA0YWE5MjEtOWZmOC0zZjhlLWJjNmQtYmVkYjYzMDkzYWU5", results[1].ExternalId)
+		assert.Equal(t, coordc23, results[0].ExternalId)
+		assert.Equal(t, coord704, results[1].ExternalId)
 	})
 
 	configFolder = "test-resources/settings-ordered/order2"
@@ -219,8 +226,8 @@ func TestOrderedSettings(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Len(t, results, 2)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkNzA0YWE5MjEtOWZmOC0zZjhlLWJjNmQtYmVkYjYzMDkzYWU5", results[0].ExternalId)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkYzIzMTRlMWItNDA5Yy0zZWFmLTllZmEtNWRjNTkzYjE0YWZm", results[1].ExternalId)
+		assert.Equal(t, coord704, results[0].ExternalId)
+		assert.Equal(t, coordc23, results[1].ExternalId)
 	})
 
 }
@@ -286,4 +293,162 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 		o(dtClient)
 	}
 	return dtClient
+}
+
+func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
+	const configFolder = "test-resources/settings-ordered/insert-position"
+
+	const manifestFile = configFolder + "/manifest.yaml"
+
+	const specificEnvironment = "platform"
+	const project = "insert-after-not-set"
+	const schema = "builtin:url-based-sampling"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAfterNotSet", func(fs afero.Fs, tc TestContext) {
+
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project %s --verbose", manifestFile, project)
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+
+		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			DiscardValue: true,
+		})
+
+		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+
+		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
+		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
+
+		assert.Equal(t, len(list)-2, findPositionWithExternalId(t, list, first))
+		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, second))
+	})
+}
+
+func TestOrdered_InsertAtFrontWorks(t *testing.T) {
+	const configFolder = "test-resources/settings-ordered/insert-position"
+
+	const manifestFile = configFolder + "/manifest.yaml"
+
+	const specificEnvironment = "platform"
+	const project = "insert-after-set-to-front"
+	const schema = "builtin:url-based-sampling"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtFrontWorks", func(fs afero.Fs, tc TestContext) {
+
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project %s --verbose", manifestFile, project)
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+
+		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+
+		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			DiscardValue: true,
+		})
+
+		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+
+		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
+		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
+
+		assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
+		assert.Equal(t, 1, findPositionWithExternalId(t, list, second))
+	})
+}
+
+func TestOrdered_InsertAtBackWorks(t *testing.T) {
+	const configFolder = "test-resources/settings-ordered/insert-position"
+
+	const manifestFile = configFolder + "/manifest.yaml"
+
+	const specificEnvironment = "platform"
+	const project = "insert-after-set-to-back"
+	const schema = "builtin:url-based-sampling"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtBackWorks", func(fs afero.Fs, tc TestContext) {
+
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project %s --verbose", manifestFile, project)
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+
+		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+
+		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			DiscardValue: true,
+		})
+
+		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+
+		// Verify that last is actually the last object
+		last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
+		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
+	})
+}
+
+func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
+	const configFolder = "test-resources/settings-ordered/insert-position"
+
+	const manifestFile = configFolder + "/manifest.yaml"
+
+	const specificEnvironment = "platform"
+	const project = "both-back-and-front-are-set"
+	const schema = "builtin:url-based-sampling"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtBackWorks", func(fs afero.Fs, tc TestContext) {
+
+		err := monaco.RunWithFSf(fs, "monaco deploy %s --project %s --verbose", manifestFile, project)
+		assert.NoError(t, err)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+
+		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+
+		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			DiscardValue: true,
+		})
+
+		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+
+		// Verify that last is actually the first object
+		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
+		assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
+
+		// Verify that last is actually the last object
+		last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "last"}, tc)
+		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
+	})
+}
+
+func findPositionWithExternalId(t *testing.T, objects []dtclient.DownloadSettingsObject, externalId string) int {
+	t.Helper()
+
+	for i := range objects {
+		if objects[i].ExternalId == externalId {
+			return i
+		}
+	}
+
+	t.Errorf("Could not find position ob object with external id %s", externalId)
+	return -1
+}
+
+func settingsExternalIdForTest(t *testing.T, originalCoordinate coordinate.Coordinate, testContext TestContext) string {
+
+	originalCoordinate.ConfigId += "_" + testContext.suffix
+
+	id, err := idutils.GenerateExternalIDForSettingsObject(originalCoordinate)
+	require.NoError(t, err)
+
+	return id
+}
+
+func createSettingsClientFromManifest(t *testing.T, fs afero.Fs, manifestPath string, environment string) client.SettingsClient {
+	man, errs := manifestloader.Load(&manifestloader.Context{
+		Fs:           fs,
+		ManifestPath: manifestPath,
+		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
+	})
+	assert.Empty(t, errs)
+
+	clientSet := integrationtest.CreateDynatraceClients(t, man.Environments[environment])
+	return clientSet.SettingsClient
 }

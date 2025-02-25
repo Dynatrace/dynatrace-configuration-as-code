@@ -19,8 +19,10 @@
 package dtclient
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -917,6 +919,113 @@ func TestUpsertSettings(t *testing.T) {
 	}
 }
 
+func TestUpsert_InsertAfter(t *testing.T) {
+
+	const testSchema = "builtin:monaco-test"
+
+	tests := []struct {
+		name                string
+		givenInsertAfter    *string
+		expectedInsertAfter *string
+	}{
+		{
+			name:                "ID is forwarded",
+			givenInsertAfter:    strRef("test"),
+			expectedInsertAfter: strRef("test"),
+		},
+		{
+			name:                "FRONT is converted to '' (empty string)",
+			givenInsertAfter:    strRef(InsertPositionFront),
+			expectedInsertAfter: strRef(""),
+		},
+		{
+			name:                "BACK is removed (nil)",
+			givenInsertAfter:    strRef(InsertPositionBack),
+			expectedInsertAfter: nil,
+		},
+		{
+			name:                "None given converts to nil",
+			givenInsertAfter:    nil,
+			expectedInsertAfter: nil,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+
+			mux := http.NewServeMux()
+
+			mux.HandleFunc("GET /api/v2/settings/schemas/{schema}", func(w http.ResponseWriter, r *http.Request) {
+				if r.PathValue("schema") != testSchema {
+					t.Errorf("Unexpected schema id %s", r.PathValue("schema"))
+				}
+
+				resp := schemaDetailsResponse{
+					Ordered: true,
+				}
+
+				payload, err := json.Marshal(resp)
+				assert.NoError(t, err)
+
+				_, err = w.Write(payload)
+				assert.NoError(t, err)
+			})
+
+			mux.HandleFunc("GET /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte(`{}`))
+				assert.NoError(t, err)
+			})
+
+			mux.HandleFunc("POST /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+
+				var req []settingsRequest
+				content, err := io.ReadAll(r.Body)
+				assert.NoError(t, err)
+
+				err = json.NewDecoder(bytes.NewReader(content)).Decode(&req)
+				assert.NoError(t, err)
+
+				assert.Len(t, req, 1)
+				assert.Equal(t, test.expectedInsertAfter, req[0].InsertAfter)
+
+				resp := []postResponse{{ObjectId: "ooid"}}
+				respPayload, err := json.Marshal(resp)
+				assert.NoError(t, err)
+
+				_, err = w.Write(respPayload)
+				assert.NoError(t, err)
+			})
+
+			server := httptest.NewTLSServer(mux)
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			require.NoError(t, err)
+
+			restClient := corerest.NewClient(serverURL, server.Client())
+
+			c, err := NewClassicSettingsClient(restClient)
+			require.NoError(t, err)
+
+			obj := SettingsObject{
+				SchemaId:   testSchema,
+				Coordinate: coordinate.Coordinate{Project: "proj", Type: testSchema, ConfigId: "id"},
+				Content:    []byte("{}"),
+			}
+			options := UpsertSettingsOptions{
+				InsertAfter: test.givenInsertAfter,
+			}
+
+			_, err = c.Upsert(t.Context(), obj, options)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func strRef(s string) *string {
+	return &s
+}
+
 func TestUpsertSettingsRetries(t *testing.T) {
 	numAPICalls := 0
 	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -960,7 +1069,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	numAPIGetCalls := 0
 	numAPIPostCalls := 0
 	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == settingsSchemaAPIPathClassic+"/some:schema" {
+		if req.URL.Path == (settingsSchemaAPIPathClassic)+"/some:schema" {
 			rw.WriteHeader(http.StatusOK)
 			rw.Write([]byte("{}"))
 			return
@@ -1012,7 +1121,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 	numGetAPICalls := 0
 	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == settingsSchemaAPIPathClassic+"/some:schema" {
+		if req.URL.Path == (settingsSchemaAPIPathClassic)+"/some:schema" {
 			rw.WriteHeader(http.StatusOK)
 			rw.Write([]byte("{}"))
 			return
@@ -1405,7 +1514,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 			server := httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
 
 				// GET schema details
-				if r.URL.Path == settingsSchemaAPIPathClassic+"/builtin:alerting.profile" {
+				if r.URL.Path == (settingsSchemaAPIPathClassic)+"/builtin:alerting.profile" {
 					writer.WriteHeader(http.StatusOK)
 					b, err := json.Marshal(tt.given.schemaDetailsResponse)
 					assert.NoError(t, err)
