@@ -36,7 +36,7 @@ func main() {
 	// full logging is set up in PreRunE method of the root command, created with runner.BuildCli
 	// that is the earliest point calls to log will be also written into files and adhere to user controlled verbosity
 	ctx := context.Background()
-	log.PrepareLogging(ctx, nil, true, nil, false)
+	log.PrepareLogging(ctx, nil, true, nil, false, false)
 
 	var versionNotification string
 	if !featureflags.SkipVersionCheck.Enabled() {

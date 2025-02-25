@@ -83,7 +83,8 @@ Examples:
 			}
 
 			fileBasedLogging := featureflags.LogToFile.Enabled() || supportArchive
-			log.PrepareLogging(cmd.Context(), fs, verbose, logSpy, fileBasedLogging)
+			memStatLogging := featureflags.LogMemStats.Enabled()
+			log.PrepareLogging(cmd.Context(), fs, verbose, logSpy, fileBasedLogging, memStatLogging)
 
 			// log the version except for running the main command, help command and version command
 			if (cmd.Name() != "monaco") && (cmd.Name() != "help") && (cmd.Name() != "version") {
