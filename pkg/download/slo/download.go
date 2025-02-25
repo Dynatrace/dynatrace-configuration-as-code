@@ -69,9 +69,7 @@ func createConfig(projectName string, data []byte) (config.Config, error) {
 	}
 
 	// delete fields that prevent a re-upload of the configuration
-	jsonObj.Delete("id")
-	jsonObj.Delete("version")
-	jsonObj.Delete("externalId")
+	jsonObj.Delete("id", "version", "externalId")
 
 	jsonRaw, err := jsonObj.ToJSON(true)
 	if err != nil {
