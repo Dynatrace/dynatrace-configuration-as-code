@@ -41,7 +41,7 @@ func TestDeleteWithCoordinate(t *testing.T) {
 			Identifier: "monaco_identifier",
 			Project:    "project",
 		}
-		externalID, _ := idutils.GenerateExternalIDForDocument(given.AsCoordinate())
+		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 
 		c := stubClient{
 			list: func() (libAPI.PagedListResponse, error) {
@@ -91,7 +91,7 @@ func TestDeleteWithCoordinate(t *testing.T) {
 			Project:    "project",
 		}
 
-		externalID, _ := idutils.GenerateExternalIDForDocument(given.AsCoordinate())
+		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 		c := stubClient{
 			list: func() (libAPI.PagedListResponse, error) {
 				return libAPI.PagedListResponse{

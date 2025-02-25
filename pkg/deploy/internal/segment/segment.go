@@ -50,10 +50,7 @@ func Deploy(ctx context.Context, client deploySegmentClient, properties paramete
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	externalId, err := idutils.GenerateExternalIDForDocument(c.Coordinate)
-	if err != nil {
-		return entities.ResolvedEntity{}, err
-	}
+	externalId := idutils.GenerateExternalID(c.Coordinate)
 	requestPayload, err := addExternalId(externalId, renderedConfig)
 	if err != nil {
 		return entities.ResolvedEntity{}, fmt.Errorf("failed to add externalId to segments request payload: %w", err)
