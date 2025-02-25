@@ -97,43 +97,59 @@ func newDefaultReporterWithClockFunc(fs afero.Fs, reportFilePath string, c func(
 	r.wg.Add(1)
 	go func() {
 		defer r.wg.Done()
-		if err := r.runRecorder(fs, reportFilePath); err != nil {
-			log.Error("Error recording deployment report: %s", err)
-		}
+		r.start(fs, reportFilePath)
 	}()
 	return r
 }
 
-func (d *defaultReporter) runRecorder(fs afero.Fs, reportFilePath string) error {
+func (d *defaultReporter) start(fs afero.Fs, reportFilePath string) {
 	file, err := fs.OpenFile(reportFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("error open record file: %w", err)
+		log.Error("Failed to open deployment report: %w", err)
+		return
 	}
+
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			log.Error("Failed to close deployment report: %w", closeErr)
+		}
+	}()
 
 	writer := bufio.NewWriter(file)
-	for r := range d.queue {
-		b, err := json.Marshal(r)
-		if err != nil {
-			return fmt.Errorf("unable to convert record: %w", err)
-		}
+	if recordErr := d.runRecorder(writer); recordErr != nil {
+		log.Error("Failed to record deployment report: %s", recordErr)
+	}
+}
 
-		if _, err := writer.Write(b); err != nil {
-			return fmt.Errorf("unable to write record: %w", err)
-		}
+func (d *defaultReporter) runRecorder(writer *bufio.Writer) error {
+	for {
+		select {
+		case <-time.After(3 * time.Second):
+			log.Debug("Flushed report")
+			if err := writer.Flush(); err != nil {
+				return fmt.Errorf("unable to flush record file: %w", err)
+			}
+		case r, open := <-d.queue:
+			if !open {
+				if err := writer.Flush(); err != nil {
+					return fmt.Errorf("unable to flush record file: %w", err)
+				}
+				return nil
+			}
+			b, err := json.Marshal(r)
+			if err != nil {
+				return fmt.Errorf("unable to convert record: %w", err)
+			}
 
-		if _, err := writer.WriteString("\n"); err != nil {
-			return fmt.Errorf("unable to write newline: %w", err)
+			if _, err := writer.Write(b); err != nil {
+				return fmt.Errorf("unable to write record: %w", err)
+			}
+
+			if _, err := writer.WriteString("\n"); err != nil {
+				return fmt.Errorf("unable to write newline: %w", err)
+			}
 		}
 	}
-
-	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("unable to flush record file: %w", err)
-	}
-
-	if err := file.Close(); err != nil {
-		return fmt.Errorf("unable to close record file: %w", err)
-	}
-	return nil
 }
 
 func (d *defaultReporter) updateSummaryFromRecord(r Record) {
