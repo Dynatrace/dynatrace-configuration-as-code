@@ -18,20 +18,15 @@ package segment
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	segment "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/handler"
 	"github.com/go-logr/logr"
 )
 
@@ -40,118 +35,37 @@ type deploySegmentClient interface {
 	Create(ctx context.Context, data []byte) (segment.Response, error)
 	GetAll(ctx context.Context) ([]segment.Response, error)
 }
-type jsonResponse struct {
-	UID        string `json:"uid"`
-	ExternalId string `json:"externalId"`
-}
 
 func Deploy(ctx context.Context, client deploySegmentClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	externalId, err := idutils.GenerateExternalIDForDocument(c.Coordinate)
-	if err != nil {
-		return entities.ResolvedEntity{}, err
-	}
-	requestPayload, err := addExternalId(externalId, renderedConfig)
-	if err != nil {
-		return entities.ResolvedEntity{}, fmt.Errorf("failed to add externalId to segments request payload: %w", err)
-	}
+	data := handler.NewHandlerData(ctx, client, properties, []byte(renderedConfig), c)
 
-	//Strategy 1 when OriginObjectId is set we update the object
-	if c.OriginObjectId != "" {
-		_, err := client.Update(ctx, c.OriginObjectId, requestPayload)
-		if err == nil {
-			return createResolveEntity(c.OriginObjectId, properties, c), nil
-		}
-
-		if !isAPIErrorStatusNotFound(err) {
-			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to deploy segment: %s", c.OriginObjectId)).WithError(err)
-		}
+	addExternalIdHandler := handler.AddExternalIDHandler{}
+	deployWithOriginObjectID := handler.OriginObjectIDHandler{}
+	matchWithExternalIDHandler := handler.MatchWithExternalIDHandler{
+		ExternalIDKey: "externalId",
+		IDKey:         "uid",
+		RemoteCall: func() ([][]byte, error) {
+			res, err := client.GetAll(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return transform(res)
+		},
 	}
+	createHandler := handler.CreateHandler{IDKey: "uid"}
+	addExternalIdHandler.Next(&deployWithOriginObjectID).Next(&matchWithExternalIDHandler).Next(&createHandler)
 
-	//Strategy 2 is to try to find a match with external id and update it
-	matchData, match, err := findMatchOnRemote(ctx, client, externalId)
-	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("error finding segment with externalId: %s", externalId)).WithError(err)
-	}
-
-	if match {
-		_, err := client.Update(ctx, matchData.UID, requestPayload)
-		if err != nil {
-			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update segment with externalId: %s", externalId)).WithError(err)
-		}
-		return createResolveEntity(matchData.UID, properties, c), nil
-	}
-
-	//Strategy 3 is to create a new segment object
-	createResponse, err := client.Create(ctx, requestPayload)
-	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create segment with externalId: %s", externalId)).WithError(err)
-	}
-
-	responseData, err := getJsonResponseFromSegmentsResponse(createResponse)
-	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to unmarshal segment with externalId: %s", externalId)).WithError(err)
-	}
-
-	return createResolveEntity(responseData.UID, properties, c), nil
+	return addExternalIdHandler.Handle(data)
 }
 
-func addExternalId(externalId string, renderedConfig string) ([]byte, error) {
-	var request map[string]any
-	err := json.Unmarshal([]byte(renderedConfig), &request)
-	if err != nil {
-		return nil, err
+func transform(rawResponse []api.Response) ([][]byte, error) {
+	something := make([][]byte, len(rawResponse))
+	for i, response := range rawResponse {
+		something[i] = response.Data
 	}
-	request["externalId"] = externalId
-	return json.Marshal(request)
-}
-
-func findMatchOnRemote(ctx context.Context, client deploySegmentClient, externalId string) (jsonResponse, bool, error) {
-	segmentsResponses, err := client.GetAll(ctx)
-	if err != nil {
-		return jsonResponse{}, false, fmt.Errorf("failed to GET segments: %w", err)
-	}
-
-	var responseData jsonResponse
-	for _, segmentResponse := range segmentsResponses {
-		responseData, err = getJsonResponseFromSegmentsResponse(segmentResponse)
-		if err != nil {
-			return jsonResponse{}, false, err
-		}
-		if responseData.ExternalId == externalId {
-			return responseData, true, nil
-		}
-	}
-
-	return jsonResponse{}, false, nil
-}
-
-func createResolveEntity(id string, properties parameter.Properties, c *config.Config) entities.ResolvedEntity {
-	properties[config.IdParameter] = id
-	return entities.ResolvedEntity{
-		Coordinate: c.Coordinate,
-		Properties: properties,
-	}
-}
-
-func getJsonResponseFromSegmentsResponse(rawResponse segment.Response) (jsonResponse, error) {
-	var response jsonResponse
-	err := json.Unmarshal(rawResponse.Data, &response)
-	if err != nil {
-		return jsonResponse{}, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return response, nil
-}
-
-func isAPIErrorStatusNotFound(err error) bool {
-	var apiErr api.APIError
-	if !errors.As(err, &apiErr) {
-		return false
-	}
-
-	return apiErr.StatusCode == http.StatusNotFound
+	return something, nil
 }
