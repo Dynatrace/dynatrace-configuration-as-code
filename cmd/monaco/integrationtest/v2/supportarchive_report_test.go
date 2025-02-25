@@ -123,7 +123,11 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 
 			fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
 			archive := "support-archive-" + fixedTime + ".zip"
-			expectedFiles := []string{fixedTime + ".log", fixedTime + "-errors.log", fixedTime + "-featureflag_state.log", fixedTime + "-memstat.log"}
+			expectedFiles := []string{
+				fixedTime + ".log",
+				fixedTime + "-errors.log",
+				fixedTime + "-featureflag_state.log",
+			}
 			if tt.expectAllFiles {
 				expectedFiles = append(expectedFiles, fixedTime+"-"+"req.log", fixedTime+"-"+"resp.log")
 			}
