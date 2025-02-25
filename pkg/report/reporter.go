@@ -105,13 +105,13 @@ func newDefaultReporterWithClockFunc(fs afero.Fs, reportFilePath string, c func(
 func (d *defaultReporter) start(fs afero.Fs, reportFilePath string) {
 	file, err := fs.OpenFile(reportFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Error("Failed to open deployment report: %w", err)
+		log.Error("Failed to open deployment report: %s", err)
 		return
 	}
 
 	defer func() {
 		if closeErr := file.Close(); closeErr != nil {
-			log.Error("Failed to close deployment report: %w", closeErr)
+			log.Error("Failed to close deployment report: %s", closeErr)
 		}
 	}()
 
