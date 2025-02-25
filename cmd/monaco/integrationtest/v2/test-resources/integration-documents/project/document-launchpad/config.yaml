@@ -1,7 +1,7 @@
 configs:
 - id: 1f75cd58-c80b-436c-91db-4817f7f5a06c
   config:
-    name: Another super cool Launchpad document
+    name: my_empty_launchpad
     parameters:
       extractedIDs:
         type: value
@@ -16,7 +16,7 @@ configs:
       private: true
 - id: 9d5e6707-0395-497b-8235-8b4150cb20fe
   config:
-    name: My super awesome launchpad
+    name: my_monaco_launchpad
     parameters:
       extractedIDs:
         type: value
