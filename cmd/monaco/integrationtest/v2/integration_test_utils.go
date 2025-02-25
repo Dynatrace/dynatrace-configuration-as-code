@@ -49,7 +49,7 @@ type TestFunc func(fs afero.Fs, ctx TestContext)
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
 func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
-	opts := TestOptions{
+	opts := testOptions{
 		fs:                  testutils.CreateTestFileSystem(),
 		configFolder:        configFolder,
 		manifestPath:        manifestPath,
@@ -58,11 +58,11 @@ func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specifi
 		envVars:             nil,
 	}
 
-	runIntegrationWithCleanup(t, opts, testFunc)
+	runIntegration(t, opts, testFunc)
 }
 
 func RunIntegrationWithoutCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
-	opts := TestOptions{
+	opts := testOptions{
 		fs:                  testutils.CreateTestFileSystem(),
 		configFolder:        configFolder,
 		manifestPath:        manifestPath,
@@ -72,11 +72,11 @@ func RunIntegrationWithoutCleanup(t *testing.T, configFolder, manifestPath, spec
 		skipCleanup:         true,
 	}
 
-	runIntegrationWithCleanup(t, opts, testFunc)
+	runIntegration(t, opts, testFunc)
 }
 
 func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
-	opts := TestOptions{
+	opts := testOptions{
 		fs:                  testFs,
 		configFolder:        configFolder,
 		manifestPath:        manifestPath,
@@ -85,11 +85,11 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 		envVars:             nil,
 	}
 
-	runIntegrationWithCleanup(t, opts, testFunc)
+	runIntegration(t, opts, testFunc)
 }
 
 func RunIntegrationWithCleanupOnGivenFsAndEnvs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
-	opts := TestOptions{
+	opts := testOptions{
 		fs:                  testFs,
 		configFolder:        configFolder,
 		manifestPath:        manifestPath,
@@ -98,11 +98,11 @@ func RunIntegrationWithCleanupOnGivenFsAndEnvs(t *testing.T, testFs afero.Fs, co
 		envVars:             envVars,
 	}
 
-	runIntegrationWithCleanup(t, opts, testFunc)
+	runIntegration(t, opts, testFunc)
 }
 
 func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
-	opts := TestOptions{
+	opts := testOptions{
 		fs:                  testutils.CreateTestFileSystem(),
 		configFolder:        configFolder,
 		manifestPath:        manifestPath,
@@ -111,11 +111,11 @@ func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath
 		envVars:             envVars,
 	}
 
-	runIntegrationWithCleanup(t, opts, testFunc)
+	runIntegration(t, opts, testFunc)
 
 }
 
-type TestOptions struct {
+type testOptions struct {
 	fs                                                      afero.Fs
 	configFolder, manifestPath, specificEnvironment, suffix string
 	envVars                                                 map[string]string
@@ -125,7 +125,7 @@ type TestOptions struct {
 	skipCleanup bool
 }
 
-func runIntegrationWithCleanup(t *testing.T, opts TestOptions, testFunc TestFunc) {
+func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 	configFolder, _ := filepath.Abs(opts.configFolder)
 
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
