@@ -97,23 +97,28 @@ func newDefaultReporterWithClockFunc(fs afero.Fs, reportFilePath string, c func(
 	r.wg.Add(1)
 	go func() {
 		defer r.wg.Done()
-		file, err := fs.OpenFile(reportFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			log.Error("Error opening deployment report: %w", err)
-			return
-		}
-
-		defer func() {
-			closeErr := file.Close()
-			log.Error("Error closing deployment report: %w", closeErr)
-		}()
-
-		writer := bufio.NewWriter(file)
-		if recordErr := r.runRecorder(writer); recordErr != nil {
-			log.Error("Error recording deployment report: %s", recordErr)
-		}
+		r.start(fs, reportFilePath)
 	}()
 	return r
+}
+
+func (d *defaultReporter) start(fs afero.Fs, reportFilePath string) {
+	file, err := fs.OpenFile(reportFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Error("Failed to open deployment report: %w", err)
+		return
+	}
+
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			log.Error("Failed to close deployment report: %w", closeErr)
+		}
+	}()
+
+	writer := bufio.NewWriter(file)
+	if recordErr := d.runRecorder(writer); recordErr != nil {
+		log.Error("Failed to record deployment report: %s", recordErr)
+	}
 }
 
 func (d *defaultReporter) runRecorder(writer *bufio.Writer) error {
