@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 )
 
+// TestSegmentsClient is a fake client that returns an unimplemented error on every execution of any method.
 type TestSegmentsClient struct{}
 
 func (TestSegmentsClient) List(ctx context.Context) (segments.Response, error) {
@@ -50,6 +51,7 @@ func (TestSegmentsClient) Get(ctx context.Context, id string) (segments.Response
 	return segments.Response{}, fmt.Errorf("unimplemented")
 }
 
+// TestServiceLevelObjectiveClient is a fake client that returns an unimplemented error on every execution of any method.
 type TestServiceLevelObjectiveClient struct{}
 
 func (TestServiceLevelObjectiveClient) List(ctx context.Context) (api.PagedListResponse, error) {
