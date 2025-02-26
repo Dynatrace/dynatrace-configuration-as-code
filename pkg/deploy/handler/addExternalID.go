@@ -31,10 +31,13 @@ type AddExternalIDHandler struct {
 func (h *AddExternalIDHandler) Handle(data *HandlerData) (entities.ResolvedEntity, error) {
 	externalID, err := idutils.GenerateExternalIDForDocument(data.c.Coordinate)
 	if err != nil {
-		return entities.ResolvedEntity{}, err
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, "failed to generate externalID")
 	}
 
 	data.payload, err = addExternalId(externalID, data.payload)
+	if err != nil {
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, "failed to add externalID to payload")
+	}
 	data.externalID = &externalID
 
 	if h.next != nil {
