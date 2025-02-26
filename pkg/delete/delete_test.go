@@ -1056,7 +1056,7 @@ func TestDelete_Documents(t *testing.T) {
 			Project:    "project",
 		}
 
-		externalID, _ := idutils.GenerateExternalIDForDocument(given.AsCoordinate())
+		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 		c := client.NewMockDocumentClient(gomock.NewController(t))
 		c.EXPECT().List(gomock.Any(), gomock.Eq(fmt.Sprintf("externalId=='%s'", externalID))).
 			Times(1).
@@ -1075,7 +1075,7 @@ func TestDelete_Documents(t *testing.T) {
 			Project:    "project",
 		}
 
-		externalID, _ := idutils.GenerateExternalIDForDocument(given.AsCoordinate())
+		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 		c := client.NewMockDocumentClient(gomock.NewController(t))
 		c.EXPECT().List(gomock.Any(), gomock.Eq(fmt.Sprintf("externalId=='%s'", externalID))).
 			Times(1).
@@ -1093,7 +1093,7 @@ func TestDelete_Documents(t *testing.T) {
 			Project:    "project",
 		}
 
-		externalID, _ := idutils.GenerateExternalIDForDocument(given.AsCoordinate())
+		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 		c := client.NewMockDocumentClient(gomock.NewController(t))
 		c.EXPECT().List(gomock.Any(), gomock.Eq(fmt.Sprintf("externalId=='%s'", externalID))).
 			Times(1).

@@ -19,6 +19,7 @@ package idutils
 import (
 	"encoding/base64"
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -51,22 +52,13 @@ func GenerateExternalIDForSettingsObject(c coordinate.Coordinate) (string, error
 
 type ExternalIDGenerator func(coordinate.Coordinate) (string, error)
 
-// GenerateExternalIDForDocument generates an external ID for a document configuration. It is under 50 characters long and uses at most only "a-z", "A-Z", "0-9" and "-".
-func GenerateExternalIDForDocument(c coordinate.Coordinate) (string, error) {
-	// external ID must be at most 50 characters
-	const maxLength = 50
-
+// GenerateExternalID generates an external ID for a configuration. It is under 50 characters long and uses at most only "a-z", "A-Z", "0-9" and "-".
+func GenerateExternalID(c coordinate.Coordinate) string {
 	// prefix should be 7 characters
 	const prefix = "monaco-"
 
 	// uuid should be 8 + 1 + 4 + 1 + 4 + 1 + 4 + 1 + 12 = 36 characters
 	uuid := GenerateUUIDFromCoordinate(c)
 
-	externalID := fmt.Sprintf("%s%s", prefix, uuid)
-
-	// this should not occur: 36 + 7 < 50
-	if len(externalID) > maxLength {
-		return "", fmt.Errorf("calculated external id '%s' is longer than the max length %d", externalID, maxLength)
-	}
-	return externalID, nil
+	return fmt.Sprintf("%s%s", prefix, uuid)
 }
