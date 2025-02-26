@@ -271,7 +271,8 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 
 func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, manifestFile string) (suffix string, err error) {
 	log.Info("BEGIN PREPARATION PROCESS")
-	suffix = appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
+	suffix = integrationtest.GenerateTestSuffix(t, suffixTest)
+	appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
 	// update all env values to include the _suffix suffix so that we can set env-values in configs
 	for _, e := range os.Environ() {
