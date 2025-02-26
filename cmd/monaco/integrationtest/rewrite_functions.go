@@ -35,42 +35,46 @@ func GetAddSuffixFunction(suffix string) func(line string) string {
 }
 
 func ReplaceName(line string, idChange func(string) string) string {
+	if strings.HasSuffix(line, "#monaco-test:no-replace") {
+		return line
+	}
 
 	if strings.Contains(line, "env-token-name:") {
 		return line
 	}
 
-	if strings.Contains(line, "name:") && !strings.Contains(line, "#monaco-test:no-replace") {
-
-		trimmed := strings.TrimSpace(line)
-		split := strings.SplitN(trimmed, ":", 2)
-
-		key := split[0]
-		val := split[1]
-
-		if !isNameKey(key) {
-			return line
-		}
-
-		name := strings.TrimSpace(val)
-
-		if name == "" { //line only contained the name, can't do anything here and probably a non-shorthand v2 reference
-			return line
-		}
-
-		if strings.HasPrefix(name, "\"") || strings.HasPrefix(name, "'") {
-			name = name[1 : len(name)-1]
-		}
-
-		// Dependencies are not substituted
-		if isV2Dependency(name) {
-			return line
-		}
-
-		replaced := strings.ReplaceAll(line, name, idChange(name))
-		return replaced
+	if !strings.Contains(line, "name:") {
+		return line
 	}
-	return line
+
+	trimmed := strings.TrimSpace(line)
+	split := strings.SplitN(trimmed, ":", 2)
+
+	key := split[0]
+	val := split[1]
+
+	if !isNameKey(key) {
+		return line
+	}
+
+	name := strings.TrimSpace(val)
+
+	if name == "" { //line only contained the name, can't do anything here and probably a non-shorthand v2 reference
+		return line
+	}
+
+	if strings.HasPrefix(name, "\"") || strings.HasPrefix(name, "'") {
+		name = name[1 : len(name)-1]
+	}
+
+	// Dependencies are not substituted
+	if isV2Dependency(name) {
+		return line
+	}
+
+	replaced := strings.ReplaceAll(line, name, idChange(name))
+	return replaced
+
 }
 
 func isNameKey(key string) bool {
@@ -81,6 +85,10 @@ func isNameKey(key string) bool {
 }
 
 func ReplaceId(line string, idChange func(string) string) string {
+	if strings.HasSuffix(line, "#monaco-test:no-replace") {
+		return line
+	}
+
 	if strings.Contains(line, "id:") || strings.Contains(line, "configId:") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "-") {

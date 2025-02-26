@@ -65,7 +65,6 @@ var idReplacingPostfixFunc = func(line string) string {
 }
 
 func TestReplaceNameNotMatching(t *testing.T) {
-
 	assert.Equal(t, "management-zone", nameReplacingPostfixFunc("management-zone"))
 	assert.Equal(t, "config:", nameReplacingPostfixFunc("config:"))
 }
@@ -181,6 +180,11 @@ func TestReplaceId(t *testing.T) {
 			"replaces config property",
 			"- id: theConfigId",
 			"- id: theConfigId_postfix",
+		},
+		{
+			"leaves id marked with no replace unchanged",
+			"- id: theConfigId #monaco-test:no-replace",
+			"- id: theConfigId #monaco-test:no-replace",
 		},
 		{
 			"replaces configId reference prop",
