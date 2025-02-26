@@ -33,6 +33,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
@@ -47,6 +48,7 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 	fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
 	reportFile := fmt.Sprintf("%s-report.jsonl", fixedTime)
 	t.Setenv(environment.DeploymentReportFilename, reportFile)
+	t.Setenv(featureflags.LogMemStats.EnvName(), "true")
 
 	RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "SupportArchive", func(fs afero.Fs, _ TestContext) {
 		err := cleanupLogsDir()
@@ -121,7 +123,11 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 
 			fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
 			archive := "support-archive-" + fixedTime + ".zip"
-			expectedFiles := []string{fixedTime + ".log", fixedTime + "-errors.log", fixedTime + "-featureflag_state.log", fixedTime + "-memstat.log"}
+			expectedFiles := []string{
+				fixedTime + ".log",
+				fixedTime + "-errors.log",
+				fixedTime + "-featureflag_state.log",
+			}
 			if tt.expectAllFiles {
 				expectedFiles = append(expectedFiles, fixedTime+"-"+"req.log", fixedTime+"-"+"resp.log")
 			}

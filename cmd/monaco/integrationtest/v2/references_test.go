@@ -45,12 +45,12 @@ import (
 func TestOnlyStringReferences(t *testing.T) {
 	tests := []struct {
 		name     string
-		envVars  map[string]string
+		envVars  map[featureflags.FeatureFlag]string
 		validate func(t *testing.T, dashboardParameters config.Parameters)
 	}{
 		{
 			name:    "With feature flag enabled",
-			envVars: map[string]string{featureflags.OnlyCreateReferencesInStringValues.EnvName(): "true"},
+			envVars: map[featureflags.FeatureFlag]string{featureflags.OnlyCreateReferencesInStringValues: "true"},
 			validate: func(t *testing.T, dashboardParameters config.Parameters) {
 				assert.Len(t, dashboardParameters, 1, "dashboard should only have one parameter")
 				_, ok := dashboardParameters["name"]
@@ -59,7 +59,7 @@ func TestOnlyStringReferences(t *testing.T) {
 		},
 		{
 			name:    "With feature flag disabled",
-			envVars: map[string]string{featureflags.OnlyCreateReferencesInStringValues.EnvName(): "false"},
+			envVars: map[featureflags.FeatureFlag]string{featureflags.OnlyCreateReferencesInStringValues: "false"},
 			validate: func(t *testing.T, dashboardParameters config.Parameters) {
 				assert.Len(t, dashboardParameters, 2, "dashboard should have two parameters")
 				_, ok := dashboardParameters["name"]

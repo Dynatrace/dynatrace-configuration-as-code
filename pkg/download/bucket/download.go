@@ -132,10 +132,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 	}
 
 	// remove fields that will be set on deployment
-	r.Delete(bucketName)
-	r.Delete(status)
-	r.Delete(version)
-	r.Delete(updatable)
+	r.Delete(bucketName, status, version, updatable)
 
 	// pull displayName into parameter if one exists
 	parameters := map[string]parameter.Parameter{}

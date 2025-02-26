@@ -56,6 +56,9 @@ const (
 	// to turn it off until a generally better solution is available.
 	// Introduced: 2023-09-01; v2.9.1
 	UpdateNonUniqueByNameIfSingleOneExists FeatureFlag = "MONACO_FEAT_UPDATE_SINGLE_NON_UNIQUE_BY_NAME"
+
+	//LogMemStats enables/disables memory stat logging
+	LogMemStats FeatureFlag = "MONACO_LOG_MEM_STATS"
 )
 
 // permanentDefaultValues defines permanent feature flags and their default values.
@@ -74,4 +77,5 @@ var permanentDefaultValues = map[FeatureFlag]defaultValue{
 	BuildSimpleClassicURL:                  true,
 	LogToFile:                              true,
 	UpdateNonUniqueByNameIfSingleOneExists: true,
+	LogMemStats:                            false,
 }

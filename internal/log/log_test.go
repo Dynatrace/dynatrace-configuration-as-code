@@ -98,7 +98,7 @@ func TestPrepareLogging(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			file, errFile, err := prepareLogFiles(t.Context(), fs)
+			file, errFile, err := prepareLogFiles(t.Context(), fs, false)
 
 			if tt.wantLogFile {
 				assert.NotNil(t, file)
@@ -127,7 +127,7 @@ func TestPrepareLogging(t *testing.T) {
 // this would happen if the Windows folder is marked read only, or POSIX permissions don't allow writing to it.
 func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
-	file, errFile, err := prepareLogFiles(t.Context(), fs)
+	file, errFile, err := prepareLogFiles(t.Context(), fs, false)
 	assert.Nil(t, file)
 	assert.Nil(t, errFile)
 	assert.Error(t, err)
