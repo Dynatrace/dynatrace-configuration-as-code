@@ -19,6 +19,10 @@
 package v2
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -30,6 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -182,13 +187,26 @@ func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 	})
 }
 
-// TestOrderedSettings tries to deploy two setting objects A and B two times. The first time with A insert after B, the second time with B insert after A.
+// TestOrderedSettings tries to deploy two entity-scoped setting objects two times. The first time with "bbb" insert after "aaa", the second time with "aaa" insert after "bbb".
 // After each of the two deployment the actual order is asserted.
 func TestOrderedSettings(t *testing.T) {
+	host := fmt.Sprintf("HOST-%s", getRandomEntitySuffix(t))
+	log.Debug("Using %s as entity scope 'MONACO_TARGET_ENTITY_SCOPE'", host)
+
+	// these options list objects with the desired scope
+	lso := dtclient.ListSettingsOptions{Filter: func(dso dtclient.DownloadSettingsObject) bool { return dso.Scope == host }}
+
+	expectedExternalIdForAAA, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", ConfigId: "aaa", Type: "builtin:processavailability"})
+	assert.NoError(t, err)
+	expectedExternalIdForBBB, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", ConfigId: "bbb", Type: "builtin:processavailability"})
+	assert.NoError(t, err)
+
 	configFolder := "test-resources/settings-ordered/order1"
 	manifestPath := configFolder + "/manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
+	t.Setenv("MONACO_TARGET_ENTITY_SCOPE", host)
+
+	RunIntegrationWithoutCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
 		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project", manifestPath)
 		assert.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
@@ -196,12 +214,12 @@ func TestOrderedSettings(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.List(t.Context(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		results, err := settingsClient.List(t.Context(), "builtin:processavailability", lso)
 		assert.NoError(t, err)
 
 		assert.Len(t, results, 2)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkYzIzMTRlMWItNDA5Yy0zZWFmLTllZmEtNWRjNTkzYjE0YWZm", results[0].ExternalId)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkNzA0YWE5MjEtOWZmOC0zZjhlLWJjNmQtYmVkYjYzMDkzYWU5", results[1].ExternalId)
+		assert.Equal(t, expectedExternalIdForAAA, results[0].ExternalId)
+		assert.Equal(t, expectedExternalIdForBBB, results[1].ExternalId)
 	})
 
 	configFolder = "test-resources/settings-ordered/order2"
@@ -215,14 +233,25 @@ func TestOrderedSettings(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.List(t.Context(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		results, err := settingsClient.List(t.Context(), "builtin:processavailability", lso)
 		assert.NoError(t, err)
 
 		assert.Len(t, results, 2)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkNzA0YWE5MjEtOWZmOC0zZjhlLWJjNmQtYmVkYjYzMDkzYWU5", results[0].ExternalId)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkYzIzMTRlMWItNDA5Yy0zZWFmLTllZmEtNWRjNTkzYjE0YWZm", results[1].ExternalId)
+		assert.Equal(t, expectedExternalIdForBBB, results[0].ExternalId)
+		assert.Equal(t, expectedExternalIdForAAA, results[1].ExternalId)
 	})
 
+}
+
+// getRandomEntitySuffix gets a random 16 uppercase hexadecimal character string for use as a suffix for creating Dynatrace entity IDs, such as `HOST-...`.
+func getRandomEntitySuffix(t *testing.T) string {
+	b := make([]byte, 8)
+	len, err := rand.Read(b)
+
+	require.NoError(t, err)
+	require.Equal(t, 8, len)
+
+	return strings.ToUpper(hex.EncodeToString(b))
 }
 
 // TestOrderedSettingsCrossProjects tries to deploy two setting objects A and B, while both are in different projects.

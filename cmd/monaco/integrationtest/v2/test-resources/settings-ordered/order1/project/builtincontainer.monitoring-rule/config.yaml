@@ -1,23 +1,25 @@
 configs:
-- id: 704aa921-9ff8-3f8e-bc6d-bedb63093ae9 #monaco-test:no-replace
+
+- id: bbb #monaco-test:no-replace
   config:
-    template: 704aa921-9ff8-3f8e-bc6d-bedb63093ae9.json
-    skip: false
+    template: pa_bbb.json
   type:
     settings:
-      schema: builtin:container.monitoring-rule
-      schemaVersion: 0.0.1
-      scope: environment
+      schema: builtin:processavailability
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE #monaco-test:no-replace
       insertAfter:
-        configId: c2314e1b-409c-3eaf-9efa-5dc593b14aff #monaco-test:no-replace
+        configId: aaa #monaco-test:no-replace
         property: id
         type: reference
-- id: c2314e1b-409c-3eaf-9efa-5dc593b14aff #monaco-test:no-replace
+
+- id: aaa #monaco-test:no-replace
   config:
-    template: c2314e1b-409c-3eaf-9efa-5dc593b14aff.json
-    skip: false
+    template: pa_aaa.json
   type:
     settings:
-      schema: builtin:container.monitoring-rule
-      schemaVersion: 0.0.1
-      scope: environment
+      schema: builtin:processavailability
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE #monaco-test:no-replace

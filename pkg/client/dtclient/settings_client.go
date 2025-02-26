@@ -146,6 +146,7 @@ type ListSettingsOptions struct {
 }
 
 // ListSettingsFilter can be used to filter fetched settings objects with custom criteria, e.g. o.ExternalId == ""
+// Returning true includes the downloaded settings object in results.
 type ListSettingsFilter func(DownloadSettingsObject) bool
 
 type SettingsClient struct {

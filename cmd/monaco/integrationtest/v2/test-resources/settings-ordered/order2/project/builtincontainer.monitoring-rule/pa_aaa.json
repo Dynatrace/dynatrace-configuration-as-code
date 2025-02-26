@@ -1,0 +1,12 @@
+{
+    "enabled": true,
+    "name": "aaa",
+    "operatingSystem": [
+      "WINDOWS",
+      "AIX",
+      "LINUX"
+    ],
+    "minimumProcesses": 1,
+    "rules": [],
+    "metadata": []
+  }

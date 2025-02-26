@@ -1,0 +1,12 @@
+{
+    "enabled": true,
+    "name": "bbb",
+    "operatingSystem": [
+      "AIX",
+      "LINUX",
+      "WINDOWS"
+    ],
+    "minimumProcesses": 1,
+    "rules": [],
+    "metadata": []
+  }
