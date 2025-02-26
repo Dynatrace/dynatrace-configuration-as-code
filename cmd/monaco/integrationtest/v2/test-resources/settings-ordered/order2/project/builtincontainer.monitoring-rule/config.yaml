@@ -1,16 +1,17 @@
 configs:
-- id: 704aa921-9ff8-3f8e-bc6d-bedb63093ae9 #monaco-test:no-replace
+- id: rule_bbb
   config:
-    template: 704aa921-9ff8-3f8e-bc6d-bedb63093ae9.json
+    template: rule_bbb.json
     skip: false
   type:
     settings:
       schema: builtin:container.monitoring-rule
       schemaVersion: 0.0.1
       scope: environment
-- id: c2314e1b-409c-3eaf-9efa-5dc593b14aff #monaco-test:no-replace
+
+- id: rule_aaa
   config:
-    template: c2314e1b-409c-3eaf-9efa-5dc593b14aff.json
+    template: rule_aaa.json
     skip: false
   type:
     settings:
@@ -18,6 +19,6 @@ configs:
       schemaVersion: 0.0.1
       scope: environment
       insertAfter:
-        configId: 704aa921-9ff8-3f8e-bc6d-bedb63093ae9 #monaco-test:no-replace
+        configId: rule_bbb
         property: id
         type: reference

@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -185,11 +186,20 @@ func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 // TestOrderedSettings tries to deploy two setting objects A and B two times. The first time with A insert after B, the second time with B insert after A.
 // After each of the two deployment the actual order is asserted.
 func TestOrderedSettings(t *testing.T) {
+
 	configFolder := "test-resources/settings-ordered/order1"
 	manifestPath := configFolder + "/manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project", manifestPath)
+	suffix := ""
+	RunIntegrationWithoutCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, tc TestContext) {
+
+		expectedExternalIdForAAA, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", ConfigId: fmt.Sprintf("rule_aaa_%s", tc.suffix), Type: "builtin:container.monitoring-rule"})
+		assert.NoError(t, err)
+		expectedExternalIdForBBB, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", ConfigId: fmt.Sprintf("rule_bbb_%s", tc.suffix), Type: "builtin:container.monitoring-rule"})
+		assert.NoError(t, err)
+
+		suffix = tc.suffix
+		err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project", manifestPath)
 		assert.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
@@ -199,16 +209,20 @@ func TestOrderedSettings(t *testing.T) {
 		results, err := settingsClient.List(t.Context(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
 		assert.NoError(t, err)
 
-		assert.Len(t, results, 2)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkYzIzMTRlMWItNDA5Yy0zZWFmLTllZmEtNWRjNTkzYjE0YWZm", results[0].ExternalId)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkNzA0YWE5MjEtOWZmOC0zZjhlLWJjNmQtYmVkYjYzMDkzYWU5", results[1].ExternalId)
+		assertOneSettingFollowsAnotherInResults(t, expectedExternalIdForAAA, expectedExternalIdForBBB, results)
 	})
 
 	configFolder = "test-resources/settings-ordered/order2"
 	manifestPath = configFolder + "/manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
-		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project", manifestPath)
+	RunIntegrationWithCleanupWithoutSuffixExtension(t, configFolder, manifestPath, "", suffix, func(fs afero.Fs, tc TestContext) {
+
+		expectedExternalIdForAAA, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", ConfigId: fmt.Sprintf("rule_aaa_%s", tc.suffix), Type: "builtin:container.monitoring-rule"})
+		assert.NoError(t, err)
+		expectedExternalIdForBBB, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", ConfigId: fmt.Sprintf("rule_bbb_%s", tc.suffix), Type: "builtin:container.monitoring-rule"})
+		assert.NoError(t, err)
+
+		err = monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project", manifestPath)
 		assert.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
@@ -218,11 +232,28 @@ func TestOrderedSettings(t *testing.T) {
 		results, err := settingsClient.List(t.Context(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
 		assert.NoError(t, err)
 
-		assert.Len(t, results, 2)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkNzA0YWE5MjEtOWZmOC0zZjhlLWJjNmQtYmVkYjYzMDkzYWU5", results[0].ExternalId)
-		assert.Equal(t, "monaco:cHJvamVjdCRidWlsdGluOmNvbnRhaW5lci5tb25pdG9yaW5nLXJ1bGUkYzIzMTRlMWItNDA5Yy0zZWFmLTllZmEtNWRjNTkzYjE0YWZm", results[1].ExternalId)
+		assertOneSettingFollowsAnotherInResults(t, expectedExternalIdForBBB, expectedExternalIdForAAA, results)
 	})
+}
 
+func assertOneSettingFollowsAnotherInResults(t *testing.T, expectedFirstExternalId string, expectedSecondExternalId string, results []dtclient.DownloadSettingsObject) {
+	foundFirst := false
+	foundSecond := false
+	for _, result := range results {
+		if !foundFirst && !foundSecond && (result.ExternalId == expectedFirstExternalId) {
+			foundFirst = true
+			continue
+		}
+		if foundFirst && !foundSecond {
+			if result.ExternalId == expectedSecondExternalId {
+				foundSecond = true
+			}
+			break
+		}
+	}
+
+	assert.True(t, foundFirst)
+	assert.True(t, foundSecond)
 }
 
 // TestOrderedSettingsCrossProjects tries to deploy two setting objects A and B, while both are in different projects.
