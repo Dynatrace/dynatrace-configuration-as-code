@@ -36,3 +36,16 @@ configs:
     config:
       name: "prefix_name_to_be_rewritten_postfix"
       template: do/not/care.json
+  - id: id_to_be_preserved #monaco-test:no-replace
+    type:
+      settings:
+        schema: builtin:rum.mobile.request-errors
+        scope:
+          type: reference
+          project: project
+          configType: 'type'
+          configId: 'id_to_be_preserved' #monaco-test:no-replace
+          property: 'scope'
+    config:
+      name: "name_to_be_preserved" #monaco-test:no-replace
+      template: do/not/care.json
