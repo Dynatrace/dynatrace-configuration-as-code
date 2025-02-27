@@ -206,8 +206,10 @@ void createAndPublishContainer(Context ctx, String registry) {
 }
 
 void signWinBinaries(Map args = [source: null, version: null, destDir: null, projectName: null]) {
-    stage('Sign binaries') {
-        signWithSignService(source: args.source, version: args.version, destDir: args.destDir, projectName: args.projectName, signAction: "SIGN")
+    container('java-agent') {
+        stage('Sign binaries') {
+            signWithSignService(source: args.source, version: args.version, destDir: args.destDir, projectName: args.projectName, signAction: "SIGN")
+        }
     }
 }
 
