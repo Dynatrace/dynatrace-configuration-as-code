@@ -56,7 +56,7 @@ func TestSloV2(t *testing.T) {
 			sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
 			result, err := sloV2Client.List(t.Context())
 			assert.NoError(t, err)
-			externalIDs := parseExternalIDs(t, result)
+			externalIDs := extractExternalIDs(t, result)
 
 			cSliCoord := coordinate.Coordinate{
 				Project:  project,
@@ -88,7 +88,7 @@ func TestSloV2(t *testing.T) {
 			sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
 			result, err := sloV2Client.List(t.Context())
 			assert.NoError(t, err)
-			externalIDs := parseExternalIDs(t, result)
+			externalIDs := extractExternalIDs(t, result)
 
 			coord := coordinate.Coordinate{
 				Project:  project,
@@ -101,11 +101,11 @@ func TestSloV2(t *testing.T) {
 	})
 }
 
-func parseExternalIDs(t *testing.T, response api.PagedListResponse) []string {
+func extractExternalIDs(t *testing.T, response api.PagedListResponse) []string {
 	allObjects := response.All()
 	externalIds := make([]string, 0, len(allObjects))
 	for _, obj := range allObjects {
-		externalIds = append(externalIds, parseSloV2Payload(t, obj).ExternalId)
+		externalIds = append(externalIds, extractSloV2ExternalId(t, obj))
 	}
 	return externalIds
 }
@@ -125,11 +125,11 @@ type sloV2Response struct {
 	ExternalId string `json:"externalId"`
 }
 
-func parseSloV2Payload(t *testing.T, data []byte) sloV2Response {
+func extractSloV2ExternalId(t *testing.T, data []byte) string {
 	sloResp := sloV2Response{}
 
 	err := json.Unmarshal(data, &sloResp)
 	assert.NoError(t, err)
 
-	return sloResp
+	return sloResp.ExternalId
 }

@@ -9,8 +9,3 @@ configs:
   config:
     name: sli-reference
     template: './sli-reference.json'
-    parameters:
-      extractedIDs:
-        type: value
-        value:
-          id_HOST_DED360997F66F0C2: HOST-DED360997F66F0C2

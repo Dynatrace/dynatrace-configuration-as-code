@@ -13,7 +13,7 @@
     "variables": [
       {
         "name": "hosts",
-        "value": "\"{{ .extractedIDs.id_HOST_DED360997F66F0C2 }}\""
+        "value": "\"HOST-ABCD\""
       }
     ]
   },
