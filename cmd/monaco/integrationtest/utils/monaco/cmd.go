@@ -19,6 +19,7 @@
 package monaco
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -53,5 +54,9 @@ func Run(t *testing.T, fs afero.Fs, command string) error {
 
 	cmd := runner.BuildCmd(fs)
 	cmd.SetArgs(args)
-	return runner.RunCmd(t.Context(), cmd)
+
+	// explicit cancel for each monaco run invocation
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	return runner.RunCmd(ctx, cmd)
 }
