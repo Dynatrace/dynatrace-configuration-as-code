@@ -136,9 +136,9 @@ func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 	}
 
 	if !opts.skipCleanup {
-		t.Cleanup(func() {
+		defer func() {
 			integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, opts.specificEnvironment, suffix)
-		})
+		}()
 	}
 
 	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)

@@ -94,9 +94,9 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	environment := loadedManifest.Environments[env]
 	configToDeploy := sortedConfigs[env][0]
 
-	t.Cleanup(func() {
+	defer func() {
 		integrationtest.CleanupIntegrationTest(t, fs, manifestPath, env, "")
-	})
+	}()
 
 	// first deploy with external id generate that does not consider the project name
 	c := createSettingsClient(t, environment, dtclient.WithExternalIDGenerator(func(input coordinate.Coordinate) (string, error) {
