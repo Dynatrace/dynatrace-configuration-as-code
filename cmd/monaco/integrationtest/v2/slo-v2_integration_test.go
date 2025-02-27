@@ -20,6 +20,7 @@ package v2
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -47,10 +48,10 @@ func TestSloV2(t *testing.T) {
 
 	t.Run("When deploying two configs, two configs exist", func(t *testing.T) {
 		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "SLO-V2", func(fs afero.Fs, testContext TestContext) {
-			err := monaco.RunWithFSf(fs, "monaco deploy %s --project=%s --verbose", manifestPath, project)
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
 			assert.NoError(t, err)
 
-			err = monaco.RunWithFSf(fs, "monaco deploy %s --project=%s --verbose", manifestPath, project)
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
 			assert.NoError(t, err)
 
 			sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
@@ -82,7 +83,7 @@ func TestSloV2(t *testing.T) {
 
 		RunIntegrationWithoutCleanup(t, configFolder, manifestPath, environment, "SLO-V2", func(fs afero.Fs, testContext TestContext) {
 			// when deploying once
-			err := monaco.RunWithFSf(fs, "monaco deploy %s --project=%s --verbose", manifestPath, project)
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
 			assert.Error(t, err)
 
 			sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
