@@ -1,0 +1,16 @@
+configs:
+- id: custom-sli
+  type: slo-v2
+  config:
+    template: './custom-sli.json'
+    name: custom-sli
+- id: sli-reference
+  type: slo-v2
+  config:
+    name: sli-reference
+    template: './sli-reference.json'
+    parameters:
+      extractedIDs:
+        type: value
+        value:
+          id_HOST_DED360997F66F0C2: HOST-DED360997F66F0C2
