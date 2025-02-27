@@ -18,10 +18,11 @@ package errors
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
-	"strings"
 )
 
 var (

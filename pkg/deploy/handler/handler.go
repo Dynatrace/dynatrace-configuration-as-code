@@ -48,6 +48,14 @@ type Handler interface {
 	Handle(data *HandlerData) (entities.ResolvedEntity, error)
 }
 
+type ErrUndefinedNextHandler struct {
+	handler string
+}
+
+func (e ErrUndefinedNextHandler) Error() string {
+	return "next handler not defined for " + e.handler
+}
+
 type BaseHandler struct {
 	next Handler
 }
