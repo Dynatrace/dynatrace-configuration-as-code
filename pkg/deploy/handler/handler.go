@@ -18,6 +18,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -46,6 +47,20 @@ type deploymentClient interface {
 type Handler interface {
 	Next(handler Handler) Handler
 	Handle(data *HandlerData) (entities.ResolvedEntity, error)
+}
+
+type ErrDeployFailed struct {
+	configID       config.TypeID
+	originObjectID string
+	externalId     string
+}
+
+func (e ErrDeployFailed) Error() string {
+	if e.externalId != "" {
+		return fmt.Sprintf("failed to deploy %s, with externalID %s", e.configID, e.externalId)
+	}
+
+	return fmt.Sprintf("failed to deploy %s, with originObjectID %s", e.configID, e.originObjectID)
 }
 
 type ErrUndefinedNextHandler struct {

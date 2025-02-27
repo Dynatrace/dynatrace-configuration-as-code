@@ -18,25 +18,26 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
-	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+	deployErr "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 )
 
+var ErrFailedAddExternalID = errors.New("failed to add externalID to payload")
+
+// AddExternalIDHandler is responsible to add a generated externalID to the payload
 type AddExternalIDHandler struct {
 	BaseHandler
 }
 
 func (h *AddExternalIDHandler) Handle(data *HandlerData) (entities.ResolvedEntity, error) {
-	externalID, err := idutils.GenerateExternalIDForDocument(data.c.Coordinate)
-	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, "failed to generate externalID")
-	}
-
+	var err error
+	externalID := idutils.GenerateExternalID(data.c.Coordinate)
 	data.payload, err = addExternalId(externalID, data.payload)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, "failed to add externalID to payload")
+		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(ErrFailedAddExternalID, err))
 	}
 	data.externalID = &externalID
 
@@ -44,7 +45,7 @@ func (h *AddExternalIDHandler) Handle(data *HandlerData) (entities.ResolvedEntit
 		return h.next.Handle(data)
 	}
 
-	return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, "OriginObjectIDHandler no next handler found")
+	return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, ErrUndefinedNextHandler{handler: "AddExternalIDHandler"})
 }
 
 func addExternalId(externalId string, payload []byte) ([]byte, error) {
