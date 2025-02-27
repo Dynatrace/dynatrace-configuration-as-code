@@ -73,6 +73,10 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 	for _, key := range automationTypeOrder {
 		entries := allEntries[string(key)]
 		delete(remainingDeleteEntries, string(key))
+		if len(entries) == 0 {
+			continue
+		}
+
 		if autClient == nil {
 			log.WithCtxFields(ctx).WithFields(field.Type(key)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
 			continue
