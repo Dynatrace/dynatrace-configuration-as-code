@@ -188,13 +188,12 @@ func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 }
 
 // TestOrderedSettings tries to deploy two entity-scoped setting objects two times. The first time with "bbb" insert after "aaa", the second time with "aaa" insert after "bbb".
-// After each of the two deployment the actual order is asserted.
+// After each of the two deployments the actual order is asserted.
 func TestOrderedSettings(t *testing.T) {
 	host := fmt.Sprintf("HOST-%s", getRandomEntitySuffix(t))
 	log.Debug("Using %s as entity scope 'MONACO_TARGET_ENTITY_SCOPE'", host)
-
-	// these options list objects with the desired scope
-	lso := dtclient.ListSettingsOptions{Filter: func(dso dtclient.DownloadSettingsObject) bool { return dso.Scope == host }}
+	t.Setenv("MONACO_TARGET_ENTITY_SCOPE", host)
+	hostFilter := func(dso dtclient.DownloadSettingsObject) bool { return dso.Scope == host }
 
 	expectedExternalIdForAAA, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", ConfigId: "aaa", Type: "builtin:processavailability"})
 	assert.NoError(t, err)
@@ -204,8 +203,6 @@ func TestOrderedSettings(t *testing.T) {
 	configFolder := "test-resources/settings-ordered/order1"
 	manifestPath := configFolder + "/manifest.yaml"
 
-	t.Setenv("MONACO_TARGET_ENTITY_SCOPE", host)
-
 	RunIntegrationWithoutCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
 		err := monaco.RunWithFSf(fs, "monaco deploy %s --environment=platform_env --project=project", manifestPath)
 		assert.NoError(t, err)
@@ -214,10 +211,10 @@ func TestOrderedSettings(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.List(t.Context(), "builtin:processavailability", lso)
-		assert.NoError(t, err)
 
-		assert.Len(t, results, 2)
+		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{Filter: hostFilter})
+		require.NoError(t, err)
+		require.Len(t, results, 2)
 		assert.Equal(t, expectedExternalIdForAAA, results[0].ExternalId)
 		assert.Equal(t, expectedExternalIdForBBB, results[1].ExternalId)
 	})
@@ -233,14 +230,13 @@ func TestOrderedSettings(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.List(t.Context(), "builtin:processavailability", lso)
-		assert.NoError(t, err)
 
-		assert.Len(t, results, 2)
+		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{Filter: hostFilter})
+		require.NoError(t, err)
+		require.Len(t, results, 2)
 		assert.Equal(t, expectedExternalIdForBBB, results[0].ExternalId)
 		assert.Equal(t, expectedExternalIdForAAA, results[1].ExternalId)
 	})
-
 }
 
 // getRandomEntitySuffix gets a random 16 uppercase hexadecimal character string for use as a suffix for creating Dynatrace entity IDs, such as `HOST-...`.
