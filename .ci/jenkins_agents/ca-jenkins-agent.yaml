@@ -3,7 +3,7 @@ kind: Pod
 spec:
   containers:
     - name: java-agent
-      image: 17-jdk-bookworm
+      image: eclipse-temurin:17-jre-alpine
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
