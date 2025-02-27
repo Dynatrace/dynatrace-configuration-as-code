@@ -1,0 +1,27 @@
+configs:
+
+- id: bbb #monaco-test:no-replace
+  config:
+    template: pa_bbb.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:processavailability
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE #monaco-test:no-replace
+
+- id: aaa #monaco-test:no-replace
+  config:
+    template: pa_aaa.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:processavailability
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE #monaco-test:no-replace
+      insertAfter:
+        configId: bbb #monaco-test:no-replace
+        property: id
+        type: reference
