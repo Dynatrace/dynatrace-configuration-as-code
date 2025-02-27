@@ -18,11 +18,17 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
-	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+	deployErr "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+)
+
+var (
+	ErrUnmarshal = errors.New("error unmarshalling payload")
+	ErrCreate    = errors.New("error creating remote resource")
 )
 
 type CreateHandler struct {
@@ -33,12 +39,20 @@ type CreateHandler struct {
 func (h *CreateHandler) Handle(data *HandlerData) (entities.ResolvedEntity, error) {
 	createResponse, err := data.client.Create(data.ctx, data.payload)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, fmt.Sprintf("failed to create object with externalID: %s", *data.externalID)).WithError(err)
+		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(
+			ErrDeployFailed{configID: data.c.Type.ID(), externalId: *data.externalID},
+			ErrCreate,
+			err,
+		))
 	}
 
 	id, err := getIDFromResponse(createResponse, h.IDKey)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, fmt.Sprintf("failed to unmarshal object with externalID: %s", *data.externalID)).WithError(err)
+		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(
+			ErrDeployFailed{configID: data.c.Type.ID(), externalId: *data.externalID},
+			ErrUnmarshal,
+			err,
+		))
 	}
 
 	return createResolveEntity(id, data.properties, data.c), nil

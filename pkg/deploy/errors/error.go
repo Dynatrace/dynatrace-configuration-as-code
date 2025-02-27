@@ -47,6 +47,17 @@ func NewConfigDeployErr(conf *config.Config, reason string) ConfigDeployErr {
 	}
 }
 
+func NewFromErr(conf *config.Config, err error) ConfigDeployErr {
+	return ConfigDeployErr{
+		Location: conf.Coordinate,
+		EnvironmentDetails: configErrors.EnvironmentDetails{
+			Group:       conf.Group,
+			Environment: conf.Environment,
+		},
+		Err: err,
+	}
+}
+
 func (e ConfigDeployErr) WithError(err error) ConfigDeployErr {
 	e.Err = err
 	return e

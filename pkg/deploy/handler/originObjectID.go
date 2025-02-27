@@ -18,12 +18,11 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
-	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+	deployErr "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 )
 
 // OriginObjectIDHandler will check if originObjectID is set and try to update the remote object matching the ID
@@ -39,16 +38,18 @@ func (o *OriginObjectIDHandler) Handle(data *HandlerData) (entities.ResolvedEnti
 		}
 
 		if !isAPIErrorStatusNotFound(err) {
-			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, fmt.Sprintf("failed to deploy slo: %s", data.c.OriginObjectId)).WithError(err)
+			return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(
+				ErrDeployFailed{originObjectID: data.c.OriginObjectId, configID: data.c.Type.ID()},
+				err,
+			))
 		}
 	}
 
-	//This is temporary till all handlers are implemented
 	if o.next != nil {
 		return o.next.Handle(data)
 	}
 
-	return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(data.c, "OriginObjectIDHandler no next handler found")
+	return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, ErrUndefinedNextHandler{handler: "AddExternalIDHandler"})
 }
 
 func isAPIErrorStatusNotFound(err error) bool {
