@@ -37,6 +37,9 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
+	// flags are needed because the configs are still read and invalid types result in an error
+	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
+	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 	targetEnvironment := "classic_env"
 
 	RunIntegrationWithCleanup(t, configFolder, manifest, targetEnvironment, "AllConfigs", func(fs afero.Fs, _ TestContext) {
