@@ -69,8 +69,24 @@ func TestParseFileValueParameter(t *testing.T) {
 	}
 }
 
-// TestParseFileValueParameterEscapeMustBeBoolean tests that setting `escape“ to a non boolean results in an error.
-func TestParseFileValueParameterEscapeMustBeBoolean(t *testing.T) {
+// TestParseFileValueParameterWithRelativePath tests that a file parameter with a relative path is parsed correctly.
+func TestParseFileValueParameterWithRelativePath(t *testing.T) {
+	param, err := parseFileValueParameter(parameter.ParameterParserContext{
+		Fs:     afero.NewMemMapFs(),
+		Folder: "configs",
+		Value:  map[string]any{"path": "../scripts/setup.js"},
+	})
+
+	assert.NoError(t, err)
+	require.NotNil(t, param)
+
+	fileParam, ok := param.(*FileParameter)
+	require.True(t, ok)
+	assert.Equal(t, "scripts/setup.js", fileParam.Path)
+}
+
+// TestParseFileValueParameterEscapedMustBeBoolean tests that setting escaped to a non boolean results in an error.
+func TestParseFileValueParameterEscapedMustBeBoolean(t *testing.T) {
 	param, err := parseFileValueParameter(parameter.ParameterParserContext{
 		Fs:    afero.NewMemMapFs(),
 		Value: map[string]any{"path": "something.txt", "escape": 4},
@@ -162,6 +178,24 @@ func TestResolveValue(t *testing.T) {
 	param, err := parseFileValueParameter(parameter.ParameterParserContext{
 		Fs:    fs,
 		Value: map[string]any{"path": "test-content"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, param.GetReferences(), 0)
+
+	result, err := param.ResolveValue(parameter.ResolveContext{})
+	require.NoError(t, err)
+	assert.Equal(t, "test-content", result)
+}
+
+// TestResolveValueWithRelativePath tests that a file parameter with a relative path resolves correctly.
+func TestResolveValueWithRelativePath(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	afero.WriteFile(fs, "scripts/setup.js", []byte("test-content"), 0644)
+
+	param, err := parseFileValueParameter(parameter.ParameterParserContext{
+		Fs:     fs,
+		Folder: "config",
+		Value:  map[string]any{"path": "../scripts/setup.js"},
 	})
 	assert.NoError(t, err)
 	assert.Len(t, param.GetReferences(), 0)
