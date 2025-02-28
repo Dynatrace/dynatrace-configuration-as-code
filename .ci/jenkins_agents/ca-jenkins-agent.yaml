@@ -3,7 +3,7 @@ kind: Pod
 spec:
   containers:
     - name: java-agent
-      image: eclipse-temurin:17-jre-alpine
+      image: docker-proxy.lab.dynatrace.org/library/eclipse-temurin:17-jre-alpine
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
@@ -19,7 +19,7 @@ spec:
         - -f
         - /dev/null
     - name: ca-jenkins-agent
-      image: golang:1.24.0-bookworm
+      image: docker-proxy.lab.dynatrace.org/library/golang:1.24.0-bookworm
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
