@@ -53,8 +53,14 @@ func NewAccountAPIClient(accountUUID string, restClient *accounts.Client) Client
 	}
 }
 
-// NotFoundErr is a sentinel error signifying that the resource desired to be deleted was not found. Generally this error can be treated as a succeful "deletion" of the resource.
-var NotFoundErr = errors.New("nothing with given name found")
+// NotFoundError is an error signifying that the desired resource was not found. Generally this error can be treated as a successful "deletion" of the resource.
+type ResourceNotFoundError struct {
+	Identifier string
+}
+
+func (e *ResourceNotFoundError) Error() string {
+	return fmt.Sprintf("resource '%s' not found", e.Identifier)
+}
 
 // DeleteUser removes the user with the given email from the account
 // Returns error if any API call fails unless the user is already not present (HTTP 404)
@@ -62,7 +68,7 @@ func (c *AccountAPIClient) DeleteUser(ctx context.Context, email string) error {
 	resp, err := c.client.UserManagementAPI.RemoveUserFromAccount(ctx, c.accountUUID, email).Execute()
 	defer closeResponseBody(resp)
 	if resp != nil && resp.StatusCode == 404 {
-		return NotFoundErr
+		return &ResourceNotFoundError{Identifier: email}
 	}
 	if err := handleClientResponseError(resp, err, fmt.Sprintf("failed to delete user %q", email)); err != nil {
 		return err
@@ -82,7 +88,7 @@ func (c *AccountAPIClient) DeleteServiceUser(ctx context.Context, name string) e
 	resp, err := c.client.ServiceUserManagementAPI.DeleteUser(ctx, c.accountUUID, uid).Execute()
 	defer closeResponseBody(resp)
 	if resp != nil && resp.StatusCode == 404 {
-		return NotFoundErr
+		return &ResourceNotFoundError{Identifier: name}
 	}
 	if err := handleClientResponseError(resp, err, fmt.Sprintf("failed to delete service user %q", name)); err != nil {
 		return err
@@ -100,13 +106,13 @@ func (c *AccountAPIClient) getServiceUserIDByName(ctx context.Context, accountUU
 	for _, s := range serviceUsers {
 		if s.Name == name {
 			if uid != "" {
-				return "", fmt.Errorf("found multiple service users with name %s", name)
+				return "", fmt.Errorf("found multiple service users with name '%s'", name)
 			}
 			uid = s.Uid
 		}
 	}
 	if uid == "" {
-		return "", NotFoundErr
+		return "", &ResourceNotFoundError{Identifier: name}
 	}
 
 	return uid, nil
@@ -154,7 +160,7 @@ func (c *AccountAPIClient) DeleteGroup(ctx context.Context, name string) error {
 	resp, err := c.client.GroupManagementAPI.DeleteGroup(ctx, c.accountUUID, uuid).Execute()
 	defer closeResponseBody(resp)
 	if resp != nil && resp.StatusCode == 404 {
-		return NotFoundErr
+		return &ResourceNotFoundError{Identifier: name}
 	}
 	if err := handleClientResponseError(resp, err, fmt.Sprintf("failed to delete group %q", name)); err != nil {
 		return err
@@ -173,7 +179,7 @@ func (c *AccountAPIClient) getGroupID(ctx context.Context, accountUUID, name str
 			return g.GetUuid(), nil
 		}
 	}
-	return "", NotFoundErr
+	return "", &ResourceNotFoundError{Identifier: name}
 }
 
 // DeleteAccountPolicy removes the account-level policy with the given name from the account
@@ -199,7 +205,7 @@ func (c *AccountAPIClient) deletePolicy(ctx context.Context, levelType string, l
 	resp, err := c.client.PolicyManagementAPI.DeleteLevelPolicy(ctx, uuid, levelID, levelType).Force(true).Execute()
 	defer closeResponseBody(resp)
 	if resp != nil && resp.StatusCode == 404 {
-		return NotFoundErr
+		return &ResourceNotFoundError{Identifier: name}
 	}
 	if err := handleClientResponseError(resp, err, fmt.Sprintf("failed to delete policy %q", name)); err != nil {
 		return err
@@ -218,7 +224,7 @@ func (c *AccountAPIClient) getPolicyID(ctx context.Context, levelType, levelID, 
 			return p.GetUuid(), nil
 		}
 	}
-	return "", NotFoundErr
+	return "", &ResourceNotFoundError{Identifier: name}
 }
 
 func handleClientResponseError(resp *http.Response, clientErr error, errMessage string) error {

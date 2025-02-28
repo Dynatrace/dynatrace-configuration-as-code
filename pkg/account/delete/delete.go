@@ -91,7 +91,8 @@ func deleteUsers(ctx context.Context, account Account, users []User) int {
 			continue
 		}
 
-		if errors.Is(err, NotFoundErr) {
+		notFoundErr := &ResourceNotFoundError{}
+		if errors.As(err, &notFoundErr) {
 			log.Info("User %q does not exist for account %s", user.Email, account)
 			continue
 		}
@@ -111,7 +112,8 @@ func deleteServiceUsers(ctx context.Context, account Account, serviceUsers []Ser
 			continue
 		}
 
-		if errors.Is(err, NotFoundErr) {
+		notFoundErr := &ResourceNotFoundError{}
+		if errors.As(err, &notFoundErr) {
 			log.Info("Service user %q does not exist for account %s", user.Name, account)
 			continue
 		}
@@ -131,7 +133,8 @@ func deleteGroups(ctx context.Context, account Account, groups []Group) int {
 			continue
 		}
 
-		if errors.Is(err, NotFoundErr) {
+		notFoundErr := &ResourceNotFoundError{}
+		if errors.As(err, &notFoundErr) {
 			log.Info("Group %q does not exist for account %s", group.Name, account)
 			continue
 		}
@@ -151,7 +154,8 @@ func deleteAccountPolicies(ctx context.Context, account Account, accountPolicies
 			continue
 		}
 
-		if errors.Is(err, NotFoundErr) {
+		notFoundErr := &ResourceNotFoundError{}
+		if errors.As(err, &notFoundErr) {
 			log.Info("Policy %q does not exist for account %s", policy.Name, account)
 		}
 
@@ -170,7 +174,8 @@ func deleteEnvironmentPolicies(ctx context.Context, account Account, environment
 			continue
 		}
 
-		if errors.Is(err, NotFoundErr) {
+		notFoundErr := &ResourceNotFoundError{}
+		if errors.As(err, &notFoundErr) {
 			log.Info("Policy %q does not exist for environment %s", policy.Name, policy.Environment)
 			continue
 		}
