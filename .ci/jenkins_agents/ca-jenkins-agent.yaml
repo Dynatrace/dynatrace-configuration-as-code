@@ -12,7 +12,7 @@ spec:
         - "jenkins-slave"
       resources:
         requests:
-          cpu: 2
+          cpu: 1
           memory: 2Gi
       command:
         - tail
@@ -33,7 +33,7 @@ spec:
         - "jenkins-slave"
       resources:
         requests:
-          cpu: 2
+          cpu: 1.5
           memory: 2Gi
       command:
         - tail
