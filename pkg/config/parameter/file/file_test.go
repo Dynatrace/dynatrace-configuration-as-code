@@ -17,6 +17,7 @@
 package file
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -82,7 +83,7 @@ func TestParseFileValueParameterWithRelativePath(t *testing.T) {
 
 	fileParam, ok := param.(*FileParameter)
 	require.True(t, ok)
-	assert.Equal(t, "scripts/setup.js", fileParam.Path)
+	assert.Equal(t, filepath.FromSlash("scripts/setup.js"), fileParam.Path)
 }
 
 // TestParseFileValueParameterEscapedMustBeBoolean tests that setting escaped to a non boolean results in an error.
