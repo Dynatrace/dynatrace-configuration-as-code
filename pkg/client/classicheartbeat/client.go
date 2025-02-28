@@ -21,10 +21,12 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
 
 // TestClassic tests if the provided classicClient can actually reach a classic environment.
 func TestClassic(ctx context.Context, classicClient corerest.Client) bool {
+	log.Info("TestClassic %s", classicClient.BaseURL())
 	_, err := coreapi.AsResponseOrError(classicClient.GET(ctx, "", corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	return err == nil
 }
