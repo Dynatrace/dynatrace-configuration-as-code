@@ -55,8 +55,12 @@ func Write(fs afero.Fs) error {
 		log.LogFilePath(),
 		log.ErrorFilePath(),
 		ffState,
-		log.MemStatFilePath(),
 	}
+
+	if featureflags.LogMemStats.Enabled() {
+		files = append(files, log.MemStatFilePath())
+	}
+
 	if reportFilename := os.Getenv(environment.DeploymentReportFilename); len(reportFilename) > 0 {
 		files = append(files, reportFilename)
 	}

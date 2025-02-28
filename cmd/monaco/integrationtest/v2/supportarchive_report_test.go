@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -43,40 +44,82 @@ import (
 )
 
 func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
+
 	configFolder := "test-resources/support-archive/"
 	manifest := configFolder + "manifest.yaml"
 	fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
-	reportFile := fmt.Sprintf("%s-report.jsonl", fixedTime)
-	t.Setenv(environment.DeploymentReportFilename, reportFile)
-	t.Setenv(featureflags.LogMemStats.EnvName(), "true")
+	reportFilename := fmt.Sprintf("%s-report.jsonl", fixedTime)
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "SupportArchive", func(fs afero.Fs, _ TestContext) {
-		err := cleanupLogsDir()
-		assert.NoError(t, err)
+	tests := []struct {
+		name             string
+		reportFilename   string
+		enableMemstatlog bool
+		expectMemstatlog bool
+		expectReport     bool
+	}{
+		{
+			name: "supportarchive with no report or memstat log",
+		},
+		{
+			name:           "supportarchive with report but no memstat log",
+			reportFilename: reportFilename,
+			expectReport:   true,
+		},
+		{
+			name:             "supportarchive with memstat log but no report",
+			enableMemstatlog: true,
+			expectMemstatlog: true,
+		},
+		{
+			name:             "supportarchive with both report and memstat log",
+			reportFilename:   reportFilename,
+			enableMemstatlog: true,
+			expectReport:     true,
+			expectMemstatlog: true,
+		},
+	}
 
-		_ = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose --support-archive", manifest))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-		archive := "support-archive-" + fixedTime + ".zip"
-		expectedFiles := []string{
-			fixedTime + "-" + "req.log",
-			fixedTime + "-" + "resp.log",
-			fixedTime + ".log",
-			fixedTime + "-errors.log",
-			fixedTime + "-featureflag_state.log",
-			fixedTime + "-memstat.log",
-			reportFile,
-		}
+			t.Setenv(environment.DeploymentReportFilename, tt.reportFilename)
+			t.Setenv(featureflags.LogMemStats.EnvName(), strconv.FormatBool(tt.enableMemstatlog))
 
-		assertSupportArchive(t, fs, archive, expectedFiles)
+			RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "SupportArchive", func(fs afero.Fs, _ TestContext) {
+				err := cleanupLogsDir()
+				assert.NoError(t, err)
 
-		zipReader := readZipArchive(t, fs, archive)
-		logFile, err := zipReader.Open(fixedTime + ".log")
-		defer logFile.Close()
-		assert.NoError(t, err)
-		content, err := io.ReadAll(logFile)
-		assert.NoError(t, err)
-		assert.Contains(t, string(content), "debug", "expected log file to contain debug log entries")
-	})
+				_ = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose --support-archive", manifest))
+
+				archive := "support-archive-" + fixedTime + ".zip"
+				expectedFiles := []string{
+					fixedTime + "-" + "req.log",
+					fixedTime + "-" + "resp.log",
+					fixedTime + ".log",
+					fixedTime + "-errors.log",
+					fixedTime + "-featureflag_state.log",
+				}
+
+				if tt.expectReport {
+					expectedFiles = append(expectedFiles, tt.reportFilename)
+				}
+
+				if tt.expectMemstatlog {
+					expectedFiles = append(expectedFiles, fixedTime+"-memstat.log")
+				}
+
+				assertSupportArchive(t, fs, archive, expectedFiles)
+
+				zipReader := readZipArchive(t, fs, archive)
+				logFile, err := zipReader.Open(fixedTime + ".log")
+				defer logFile.Close()
+				assert.NoError(t, err)
+				content, err := io.ReadAll(logFile)
+				assert.NoError(t, err)
+				assert.Contains(t, string(content), "debug", "expected log file to contain debug log entries")
+			})
+		})
+	}
 }
 
 // TestSupportArchiveIsCreatedInErrorCases is split from the success-case test as these test-cases will not create objects
