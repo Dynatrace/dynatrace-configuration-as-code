@@ -262,9 +262,9 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 
 	downloadedManifestPath := filepath.Join(downloadFolder, "manifest.yaml")
 
-	t.Cleanup(func() { // cleanup uploaded configs after test run
+	defer func() { // cleanup uploaded configs after test run
 		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
-	})
+	}()
 
 	validation_uploadDownloadedConfigs(t, fs, downloadFolder, downloadedManifestPath) // re-deploy from download
 }
@@ -284,9 +284,9 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 		t.Setenv(newKey, val)
 	}
 
-	t.Cleanup(func() { // register extra cleanup in case test fails after deployment
+	defer func() { // register extra cleanup in case test fails after deployment
 		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
-	})
+	}()
 
 	err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifestFile))
 	assert.NoError(t, err)

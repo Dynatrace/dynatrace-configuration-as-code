@@ -67,13 +67,13 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	a := api.NewAPIs()["alerting-profile"]
 	assert.True(t, a.NonUniqueName)
 
-	t.Cleanup(func() {
+	defer func() {
 		for _, id := range []string{firstExistingObjectUUID, secondExistingObjectUUID, monacoGeneratedUUID} {
 			if err := c.Delete(t.Context(), a, id); err != nil {
 				t.Log("failed to cleanup test config with ID: ", id)
 			}
 		}
-	})
+	}()
 
 	payload := []byte(fmt.Sprintf(`{ "displayName": "%s", "rules": [] }`, name))
 
@@ -142,13 +142,13 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 	a := api.NewAPIs()["alerting-profile"]
 	assert.True(t, a.NonUniqueName)
 
-	t.Cleanup(func() {
+	defer func() {
 		for _, id := range []string{firstExistingObjectUUID, secondExistingObjectUUID, monacoGeneratedUUID, otherMonacoGeneratedUUID} {
 			if err := c.Delete(t.Context(), a, id); err != nil {
 				t.Log("failed to cleanup test config with ID: ", id)
 			}
 		}
-	})
+	}()
 
 	payload := []byte(fmt.Sprintf(`{ "displayName": "%s", "rules": [] }`, name))
 

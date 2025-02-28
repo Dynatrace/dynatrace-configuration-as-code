@@ -236,9 +236,9 @@ environmentGroups:
 	assert.NoError(t, err)
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 	// ensure test resources are removed after test is done
-	t.Cleanup(func() {
+	defer func() {
 		monaco.Run(t, fs, "monaco delete --manifest=test-resources/delete-test-configs/deploy-manifest.yaml --verbose")
-	})
+	}()
 
 	// DELETE Configs - with API Token only Manifest
 	err = monaco.Run(t, fs, "monaco delete --verbose")
