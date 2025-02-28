@@ -122,6 +122,53 @@ func TestAccountAPIClient_DeleteGroup(t *testing.T) {
 		notFoundErr := &delete.ResourceNotFoundError{}
 		assert.ErrorAs(t, err, &notFoundErr)
 	})
+
+	t.Run("successful delete of service user with no description", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+			switch req.URL.Path {
+			case "/iam/v1/accounts/1234/service-users":
+				assert.Equal(t, http.MethodGet, req.Method)
+
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = rw.Write([]byte(`{
+  "results": [
+    {
+      "uid": "uid1",
+      "email": "string",
+      "name": "su1",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    },
+	{
+      "uid": "uid2",
+      "email": "string",
+      "name": "su2",
+      "surname": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 2
+}`))
+
+			case "/iam/v1/accounts/1234/service-users/uid2":
+				assert.Equal(t, http.MethodDelete, req.Method)
+				rw.WriteHeader(200)
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteServiceUser(context.Background(), "su2")
+		assert.NoError(t, err)
+	})
+
 	t.Run("returns NotFoundError if delete result is a 404", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if !strings.HasPrefix(req.URL.Path, "/iam/v1/accounts/1234/groups") {
