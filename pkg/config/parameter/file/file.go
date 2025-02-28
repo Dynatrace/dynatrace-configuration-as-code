@@ -100,6 +100,7 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 	}
 
 	path := strings.ToString(p)
+	path = filepath.FromSlash(path)
 
 	path = filepath.Join(context.Folder, path)
 	escape := true
