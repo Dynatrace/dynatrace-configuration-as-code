@@ -18,7 +18,6 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	deployErr "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
@@ -35,20 +34,20 @@ func (h *MatchWithExternalIDHandler) Handle(data *HandlerData) (entities.Resolve
 	//When List interface in client lib needs to be standardized, this can be removed
 	payloadList, err := h.RemoteCall()
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(
+		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c,
 			ErrDeployFailed{configID: data.c.Type.ID(), externalId: *data.externalID},
 			err,
-		))
+		)
 	}
 
 	var response map[string]any
 	var id string
 	for _, payload := range payloadList {
 		if err := json.Unmarshal(payload, &response); err != nil {
-			return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(
+			return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c,
 				ErrDeployFailed{configID: data.c.Type.ID(), externalId: *data.externalID},
 				err,
-			))
+			)
 		}
 		value, ok := response[h.ExternalIDKey].(string)
 		if ok && value == *data.externalID {
@@ -64,10 +63,10 @@ func (h *MatchWithExternalIDHandler) Handle(data *HandlerData) (entities.Resolve
 
 	_, err = data.client.Update(data.ctx, id, data.payload)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(
+		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c,
 			ErrDeployFailed{configID: data.c.Type.ID(), externalId: *data.externalID},
 			err,
-		))
+		)
 	}
 
 	return createResolveEntity(id, data.properties, data.c), nil

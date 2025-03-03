@@ -39,20 +39,20 @@ type CreateHandler struct {
 func (h *CreateHandler) Handle(data *HandlerData) (entities.ResolvedEntity, error) {
 	createResponse, err := data.client.Create(data.ctx, data.payload)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(
+		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c,
 			ErrDeployFailed{configID: data.c.Type.ID(), externalId: *data.externalID},
 			ErrCreate,
 			err,
-		))
+		)
 	}
 
 	id, err := getIDFromResponse(createResponse, h.IDKey)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(
+		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c,
 			ErrDeployFailed{configID: data.c.Type.ID(), externalId: *data.externalID},
 			ErrUnmarshal,
 			err,
-		))
+		)
 	}
 
 	return createResolveEntity(id, data.properties, data.c), nil

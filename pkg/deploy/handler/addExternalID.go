@@ -37,7 +37,7 @@ func (h *AddExternalIDHandler) Handle(data *HandlerData) (entities.ResolvedEntit
 	externalID := idutils.GenerateExternalID(data.c.Coordinate)
 	data.payload, err = addExternalId(externalID, data.payload)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(ErrFailedAddExternalID, err))
+		return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, ErrFailedAddExternalID, err)
 	}
 	data.externalID = &externalID
 

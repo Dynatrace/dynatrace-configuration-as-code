@@ -17,6 +17,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -47,14 +48,14 @@ func NewConfigDeployErr(conf *config.Config, reason string) ConfigDeployErr {
 	}
 }
 
-func NewFromErr(conf *config.Config, err error) ConfigDeployErr {
+func NewFromErr(conf *config.Config, errs ...error) ConfigDeployErr {
 	return ConfigDeployErr{
 		Location: conf.Coordinate,
 		EnvironmentDetails: configErrors.EnvironmentDetails{
 			Group:       conf.Group,
 			Environment: conf.Environment,
 		},
-		Err: err,
+		Err: errors.Join(errs...),
 	}
 }
 

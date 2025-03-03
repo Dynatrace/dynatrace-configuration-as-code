@@ -38,10 +38,10 @@ func (o *OriginObjectIDHandler) Handle(data *HandlerData) (entities.ResolvedEnti
 		}
 
 		if !isAPIErrorStatusNotFound(err) {
-			return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, errors.Join(
+			return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c,
 				ErrDeployFailed{originObjectID: data.c.OriginObjectId, configID: data.c.Type.ID()},
 				err,
-			))
+			)
 		}
 	}
 
@@ -49,7 +49,7 @@ func (o *OriginObjectIDHandler) Handle(data *HandlerData) (entities.ResolvedEnti
 		return o.next.Handle(data)
 	}
 
-	return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, ErrUndefinedNextHandler{handler: "AddExternalIDHandler"})
+	return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, ErrUndefinedNextHandler{handler: "OriginObjectIDHandler"})
 }
 
 func isAPIErrorStatusNotFound(err error) bool {
