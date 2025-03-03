@@ -110,6 +110,7 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withPlatformConfigs
 	suffixTest := "_download_automations"
 
 	t.Setenv(featureflags.Segments.EnvName(), "true")
+	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }

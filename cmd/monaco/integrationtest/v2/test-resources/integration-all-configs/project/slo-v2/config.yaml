@@ -1,0 +1,26 @@
+configs:
+- id: template-based
+  type: slo-v2
+  config:
+    name: template based SLO config
+    template: template-based.json
+    parameters:
+      extractedIDs:
+        type: value
+        value:
+          id_HOST_DED360997F66F0C2: HOST-DED360997F66F0C2
+    skip: true # platform only config
+  environmentOverrides:
+    - environment: platform_env
+      override:
+        skip: false
+- id: custom-made
+  type: slo-v2
+  config:
+    name: custom made SLO config
+    template: custom-made.json
+    skip: true # platform only config
+  environmentOverrides:
+    - environment: platform_env
+      override:
+        skip: false
