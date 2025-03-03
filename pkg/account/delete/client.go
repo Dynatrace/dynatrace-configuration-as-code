@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
@@ -120,8 +119,9 @@ func (c *AccountAPIClient) getServiceUserIDByName(ctx context.Context, accountUU
 
 func (c *AccountAPIClient) getServiceUsers(ctx context.Context, accountUUID string) ([]accountmanagement.ExternalServiceUserDto, error) {
 	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
-	const pageSize = 100
-	for page := (int32)(1); page < math.MaxInt32; page++ {
+	const pageSize = 1000
+	page := (int32)(1)
+	for {
 		r, err := c.getServiceUsersPage(ctx, accountUUID, page, pageSize)
 		if err != nil {
 			return nil, err
@@ -132,6 +132,7 @@ func (c *AccountAPIClient) getServiceUsers(ctx context.Context, accountUUID stri
 		if r.NextPageKey == nil {
 			break
 		}
+		page++
 	}
 
 	return serviceUsers, nil
