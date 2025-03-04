@@ -18,11 +18,13 @@ package file
 
 import (
 	"fmt"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	tmpl "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/spf13/afero"
 )
 
 const FileParameterType = "file"
@@ -55,7 +57,16 @@ func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interfac
 		return nil, parameter.NewParameterResolveValueError(context, err.Error())
 	}
 
-	strContent, err := tmpl.Render(parameterTmpl, context.ResolvedParameterValues)
+	resolvedParameterValues := make(map[string]interface{})
+	for _, param := range f.referencedParameters {
+		value, ok := context.ResolvedParameterValues[param.Property]
+		if !ok {
+			return nil, fmt.Errorf("unknown parameter '%s'", param.Property)
+		}
+		resolvedParameterValues[param.Property] = value
+	}
+
+	strContent, err := tmpl.Render(parameterTmpl, resolvedParameterValues)
 	if err != nil {
 		return nil, parameter.NewParameterResolveValueError(context, err.Error())
 	}
