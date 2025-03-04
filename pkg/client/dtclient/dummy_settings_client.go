@@ -63,3 +63,15 @@ func (c *DummySettingsClient) List(_ context.Context, _ string, _ ListSettingsOp
 func (c *DummySettingsClient) Delete(_ context.Context, _ string) error {
 	return nil
 }
+
+func (c *DummySettingsClient) GetPermission(_ context.Context, _ string) (PermissionResponse, error) {
+	return PermissionResponse{}, nil
+}
+
+func (c *DummySettingsClient) UpdatePermission(_ context.Context, _ string, _ PermissionResponse) error {
+	return nil
+}
+
+func (c *DummySettingsClient) DeletePermission(_ context.Context, _ string) error {
+	return nil
+}

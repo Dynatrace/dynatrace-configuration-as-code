@@ -134,6 +134,15 @@ type SettingsClient interface {
 
 	// Delete deletes a settings object giving its object ID
 	Delete(context.Context, string) error
+
+	AccessControl
+}
+
+// AccessControl is an abstraction of the CRUD operations of `permissions` `all-users` endpoint.
+type AccessControl interface {
+	GetPermission(context.Context, string) (dtclient.PermissionResponse, error)
+	UpdatePermission(context.Context, string, dtclient.PermissionResponse) error
+	DeletePermission(context.Context, string) error
 }
 
 type AutomationClient interface {

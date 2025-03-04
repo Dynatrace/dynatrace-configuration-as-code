@@ -189,6 +189,13 @@ type SettingsClient struct {
 	schemaCache cache.Cache[Schema]
 }
 
+type TypePermissions string
+
+const (
+	Read  TypePermissions = "r"
+	Write TypePermissions = "w"
+)
+
 type (
 	// SettingsObject contains all the information necessary to create/update a settings object
 	SettingsObject struct {
@@ -223,6 +230,10 @@ type (
 		TotalCount int        `json:"totalCount"`
 	}
 
+	PermissionResponse struct {
+		Permissions []TypePermissions `json:"permissions"`
+	}
+
 	postResponse struct {
 		ObjectId string `json:"objectId"`
 	}
@@ -255,6 +266,7 @@ const (
 	settingsSchemaAPIPathPlatform = "/platform/classic/environment-api/v2/settings/schemas"
 	settingsObjectAPIPathClassic  = "/api/v2/settings/objects"
 	settingsObjectAPIPathPlatform = "/platform/classic/environment-api/v2/settings/objects"
+	settingsPermissionAPIPath     = "/settings/objects/{objectId}/permissions/all-users"
 )
 
 func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *SettingsClient) {
@@ -840,4 +852,60 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 	}
 
 	return nil
+}
+
+func (d *SettingsClient) GetPermission(ctx context.Context, id string) (PermissionResponse, error) {
+	resp, err := coreapi.AsResponseOrError(d.client.GET(
+		ctx,
+		getPermissionPathWithID(id),
+		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
+	))
+
+	if err != nil {
+		return PermissionResponse{}, fmt.Errorf("failed to get permission: %w", err)
+	}
+
+	var result PermissionResponse
+	if err = json.Unmarshal(resp.Data, &result); err != nil {
+		return PermissionResponse{}, fmt.Errorf("failed to unmarshal permission response: %w", err)
+	}
+
+	return result, nil
+}
+
+func (d *SettingsClient) UpdatePermission(ctx context.Context, id string, permission PermissionResponse) error {
+	payload, err := json.Marshal(permission)
+	if err != nil {
+		return fmt.Errorf("failed to marshal permission: %w", err)
+	}
+
+	_, err = coreapi.AsResponseOrError(d.client.PUT(
+		ctx,
+		getPermissionPathWithID(id),
+		bytes.NewReader(payload),
+		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
+	))
+	if err != nil {
+		return fmt.Errorf("failed to update permission: %w", err)
+	}
+
+	return nil
+}
+
+func (d *SettingsClient) DeletePermission(ctx context.Context, id string) error {
+	_, err := coreapi.AsResponseOrError(d.client.DELETE(
+		ctx,
+		getPermissionPathWithID(id),
+		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
+	))
+
+	if err != nil {
+		return fmt.Errorf("failed to delete permission object: %w", err)
+	}
+
+	return nil
+}
+
+func getPermissionPathWithID(id string) string {
+	return strings.Replace(settingsPermissionAPIPath, "{objectId}", id, -1)
 }
