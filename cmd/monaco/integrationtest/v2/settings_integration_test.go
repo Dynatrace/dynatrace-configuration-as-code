@@ -247,28 +247,37 @@ func TestOrderedSettings(t *testing.T) {
 // TestOrderedSettingsCrossProjects tries to deploy two setting objects A and B, while both are in different projects.
 // After each of the two deployment the actual order is asserted.
 func TestOrderedSettingsCrossProjects(t *testing.T) {
-	configFolder := "test-resources/settings-ordered/cross-project-reference"
-	manifestPath := configFolder + "/manifest.yaml"
+	const configFolder = "test-resources/settings-ordered/cross-project-reference"
+	const manifestPath = configFolder + "/manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
+	const schema = "builtin:url-based-sampling"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, tc TestContext) {
+		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
+
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=source", manifestPath))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"source"}, "platform_env", true)
 
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.List(t.Context(), "builtin:container.monitoring-rule", dtclient.ListSettingsOptions{})
+		results, err := settingsClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			DiscardValue: true,
+			Filter:       filterObjectsForScope(pgiMeId),
+		})
 		assert.NoError(t, err)
 
 		assert.Len(t, results, 2)
 
 		// target is first, as source 'insertsAfter' target
-		targetConfigExternalId, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "target", Type: "builtin:container.monitoring-rule", ConfigId: "target-id"})
+		targetConfigExternalId := settingsExternalIdForTest(t, coordinate.Coordinate{Project: "target", Type: schema, ConfigId: "target-id"}, tc)
 		assert.NoError(t, err)
 		assert.Equal(t, targetConfigExternalId, results[0].ExternalId)
 
-		sourceConfigExternalId, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "source", Type: "builtin:container.monitoring-rule", ConfigId: "source-id"})
+		sourceConfigExternalId := settingsExternalIdForTest(t, coordinate.Coordinate{Project: "source", Type: schema, ConfigId: "source-id"}, tc)
 		assert.NoError(t, err)
 		assert.Equal(t, sourceConfigExternalId, results[1].ExternalId)
 	})
