@@ -34,7 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -191,10 +190,9 @@ func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 // TestOrderedSettings tries to deploy two entity-scoped setting objects two times. The first time with "bbb" insert after "aaa", the second time with "aaa" insert after "bbb".
 // After each of the two deployments the actual order is asserted.
 func TestOrderedSettings(t *testing.T) {
-	host := fmt.Sprintf("HOST-%s", getRandomEntitySuffix(t))
-	log.Debug("Using %s as entity scope 'MONACO_TARGET_ENTITY_SCOPE'", host)
+	host := randomMeID("HOST")
+	t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", host)
 	t.Setenv("MONACO_TARGET_ENTITY_SCOPE", host)
-	hostFilter := func(dso dtclient.DownloadSettingsObject) bool { return dso.Scope == host }
 
 	expectedExternalIdForAAA, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", ConfigId: "aaa", Type: "builtin:processavailability"})
 	assert.NoError(t, err)
@@ -213,7 +211,10 @@ func TestOrderedSettings(t *testing.T) {
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
 
-		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{Filter: hostFilter})
+		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
+			DiscardValue: true,
+			Filter:       filterObjectsForScope(host),
+		})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
 		assert.Equal(t, expectedExternalIdForAAA, results[0].ExternalId)
@@ -232,23 +233,15 @@ func TestOrderedSettings(t *testing.T) {
 		environment := loadedManifest.Environments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
 
-		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{Filter: hostFilter})
+		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
+			DiscardValue: true,
+			Filter:       filterObjectsForScope(host),
+		})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
 		assert.Equal(t, expectedExternalIdForBBB, results[0].ExternalId)
 		assert.Equal(t, expectedExternalIdForAAA, results[1].ExternalId)
 	})
-}
-
-// getRandomEntitySuffix gets a random 16 uppercase hexadecimal character string for use as a suffix for creating Dynatrace entity IDs, such as `HOST-...`.
-func getRandomEntitySuffix(t *testing.T) string {
-	b := make([]byte, 8)
-	len, err := rand.Read(b)
-
-	require.NoError(t, err)
-	require.Equal(t, 8, len)
-
-	return strings.ToUpper(hex.EncodeToString(b))
 }
 
 // TestOrderedSettingsCrossProjects tries to deploy two setting objects A and B, while both are in different projects.
@@ -324,17 +317,21 @@ func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
 	const schema = "builtin:url-based-sampling"
 
 	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAfterNotSet", func(fs afero.Fs, tc TestContext) {
+		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
+			Filter:       filterObjectsForScope(pgiMeId),
 		})
 
-		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+		assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
 
 		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
 		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
@@ -342,6 +339,12 @@ func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
 		assert.Equal(t, len(list)-2, findPositionWithExternalId(t, list, first))
 		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, second))
 	})
+}
+
+func filterObjectsForScope(pgiMeId string) func(object dtclient.DownloadSettingsObject) bool {
+	return func(object dtclient.DownloadSettingsObject) bool {
+		return object.Scope == pgiMeId
+	}
 }
 
 func TestOrdered_InsertAtFrontWorks(t *testing.T) {
@@ -354,18 +357,22 @@ func TestOrdered_InsertAtFrontWorks(t *testing.T) {
 	const schema = "builtin:url-based-sampling"
 
 	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtFrontWorks", func(fs afero.Fs, tc TestContext) {
+		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
 		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
+			Filter:       filterObjectsForScope(pgiMeId),
 		})
 
-		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+		assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
 
 		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
 		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
@@ -385,18 +392,22 @@ func TestOrdered_InsertAtBackWorks(t *testing.T) {
 	const schema = "builtin:url-based-sampling"
 
 	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtBackWorks", func(fs afero.Fs, tc TestContext) {
+		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
 		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
+			Filter:       filterObjectsForScope(pgiMeId),
 		})
 
-		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+		assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
 
 		// Verify that last is actually the last object
 		last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
@@ -414,18 +425,22 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 	const schema = "builtin:url-based-sampling"
 
 	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtBackWorks", func(fs afero.Fs, tc TestContext) {
+		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
 		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
+			Filter:       filterObjectsForScope(pgiMeId),
 		})
 
-		assert.GreaterOrEqual(t, len(list), 2, "At least the two configs in the test should be deployed")
+		assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
 
 		// Verify that last is actually the first object
 		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
@@ -470,4 +485,16 @@ func createSettingsClientFromManifest(t *testing.T, fs afero.Fs, manifestPath st
 
 	clientSet := integrationtest.CreateDynatraceClients(t, man.Environments[environment])
 	return clientSet.SettingsClient
+}
+
+// getRandomMonitoredEntitySuffix gets a random 16 uppercase hexadecimal character string for use as a suffix for creating Dynatrace entity IDs, such as `HOST-...`.
+func getRandomMonitoredEntitySuffix() string {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b) // will never return an error and always fill the array
+
+	return strings.ToUpper(hex.EncodeToString(b))
+}
+
+func randomMeID(meType string) string {
+	return meType + "-" + getRandomMonitoredEntitySuffix()
 }
