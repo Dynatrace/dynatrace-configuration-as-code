@@ -281,39 +281,6 @@ func TestOrderedSettingsCrossProjects(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, sourceConfigExternalId, results[1].ExternalId)
 	})
-
-}
-
-func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.SettingsClient)) client.SettingsClient {
-
-	clientFactory := clients.Factory().
-		WithOAuthCredentials(clientcredentials.Config{
-			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
-			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
-			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
-		}).
-		//WithConcurrentRequestLimit(concurrentRequestLimit).
-
-		WithPlatformURL(env.URL.Value)
-
-	client, err := clientFactory.CreatePlatformClient(t.Context())
-	require.NoError(t, err)
-
-	classicURL, err := metadata.GetDynatraceClassicURL(t.Context(), *client)
-	require.NoError(t, err)
-
-	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(env.Auth.Token.Value.Value())
-
-	classicClient, err := clientFactory.CreateClassicClient()
-	require.NoError(t, err)
-
-	dtClient, err := dtclient.NewClassicSettingsClient(classicClient)
-	require.NoError(t, err)
-
-	for _, o := range opts {
-		o(dtClient)
-	}
-	return dtClient
 }
 
 func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
@@ -348,12 +315,6 @@ func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
 		assert.Equal(t, len(list)-2, findPositionWithExternalId(t, list, first))
 		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, second))
 	})
-}
-
-func filterObjectsForScope(pgiMeId string) func(object dtclient.DownloadSettingsObject) bool {
-	return func(object dtclient.DownloadSettingsObject) bool {
-		return object.Scope == pgiMeId
-	}
 }
 
 func TestOrdered_InsertAtFrontWorks(t *testing.T) {
@@ -459,6 +420,44 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 		last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "last"}, tc)
 		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
 	})
+}
+
+func filterObjectsForScope(pgiMeId string) func(object dtclient.DownloadSettingsObject) bool {
+	return func(object dtclient.DownloadSettingsObject) bool {
+		return object.Scope == pgiMeId
+	}
+}
+
+func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.SettingsClient)) client.SettingsClient {
+
+	clientFactory := clients.Factory().
+		WithOAuthCredentials(clientcredentials.Config{
+			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
+			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
+		}).
+		//WithConcurrentRequestLimit(concurrentRequestLimit).
+
+		WithPlatformURL(env.URL.Value)
+
+	client, err := clientFactory.CreatePlatformClient(t.Context())
+	require.NoError(t, err)
+
+	classicURL, err := metadata.GetDynatraceClassicURL(t.Context(), *client)
+	require.NoError(t, err)
+
+	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(env.Auth.Token.Value.Value())
+
+	classicClient, err := clientFactory.CreateClassicClient()
+	require.NoError(t, err)
+
+	dtClient, err := dtclient.NewClassicSettingsClient(classicClient)
+	require.NoError(t, err)
+
+	for _, o := range opts {
+		o(dtClient)
+	}
+	return dtClient
 }
 
 func findPositionWithExternalId(t *testing.T, objects []dtclient.DownloadSettingsObject, externalId string) int {
