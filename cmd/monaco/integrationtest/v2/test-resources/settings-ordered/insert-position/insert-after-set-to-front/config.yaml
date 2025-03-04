@@ -7,7 +7,9 @@ configs:
   type:
     settings:
       schema: builtin:url-based-sampling
-      scope: environment
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE
       insertAfter: FRONT
   config:
     template: url-sampling.json
@@ -16,7 +18,9 @@ configs:
   type:
     settings:
       schema: builtin:url-based-sampling
-      scope: environment
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE
       insertAfter:
         type: reference
         configId: first
