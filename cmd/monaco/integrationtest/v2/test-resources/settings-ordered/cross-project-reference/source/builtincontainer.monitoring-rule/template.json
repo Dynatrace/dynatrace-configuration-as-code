@@ -1,7 +1,0 @@
-{
-  "enabled": true,
-  "mode": "MONITORING_OFF",
-  "property": "CONTAINER_NAME",
-  "operator": "STARTS",
-  "value": "aaaa"
-}
