@@ -17,10 +17,12 @@
 package compound
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
@@ -145,8 +147,13 @@ func TestResolveComplexValue(t *testing.T) {
 	assert.Equal(t, "Hansi is 12 years old", strings.ToString(result))
 }
 
+// TestResolveValueErrorOnUndefinedReference tests that resolving a compound parameter using an undefined reference results in an error.
 func TestResolveValueErrorOnUndefinedReference(t *testing.T) {
-	testFormat := "{{ .firstName }} {{ .lastName }}"
+	testFormat := "Hi {{ .name }} "
+	compoundParameter, err := New("testName", testFormat,
+		[]parameter.ParameterReference{{Property: "firstName"}})
+	require.NoError(t, err)
+
 	context := parameter.ResolveContext{
 		ResolvedParameterValues: parameter.Properties{
 			"person": map[string]interface{}{
@@ -155,13 +162,31 @@ func TestResolveValueErrorOnUndefinedReference(t *testing.T) {
 			},
 		},
 	}
-	compoundParameter, err := New("testName", testFormat,
-		[]parameter.ParameterReference{{Property: "firstName"}})
-	require.NoError(t, err)
 
 	_, err = compoundParameter.ResolveValue(context)
 
 	require.Error(t, err, "expected an error resolving undefined references")
+}
+
+// TestResolveValueErrorOnUnknownParameter tests that resolving a compound parameter that references an unknown parameter results in an error.
+func TestResolveValueErrorOnUnknownParameter(t *testing.T) {
+	testFormat := "Hi {{ .firstName }}"
+	compoundParameter, err := New("testName", testFormat,
+		[]parameter.ParameterReference{{Property: "firstName"}})
+	require.NoError(t, err)
+
+	context := parameter.ResolveContext{
+		ResolvedParameterValues: parameter.Properties{
+			"person": map[string]interface{}{
+				"age":  12,
+				"name": "Hansi",
+			},
+		},
+	}
+
+	_, err = compoundParameter.ResolveValue(context)
+
+	require.Error(t, err, "expected an error resolving undefined parameter")
 }
 
 func TestWriteCompoundParameter(t *testing.T) {

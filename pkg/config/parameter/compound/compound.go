@@ -17,10 +17,12 @@ package compound
 import (
 	"bytes"
 	"fmt"
+	templ "text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
+
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	template2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
-	"github.com/google/go-cmp/cmp"
-	templ "text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
@@ -68,7 +70,11 @@ func (p *CompoundParameter) ResolveValue(context parameter.ResolveContext) (inte
 	compoundData := make(map[string]interface{})
 
 	for _, param := range p.referencedParameters {
-		compoundData[param.Property] = context.ResolvedParameterValues[param.Property]
+		value, ok := context.ResolvedParameterValues[param.Property]
+		if !ok {
+			return nil, fmt.Errorf("unknown parameter '%s'", param.Property)
+		}
+		compoundData[param.Property] = value
 	}
 
 	out := bytes.Buffer{}
