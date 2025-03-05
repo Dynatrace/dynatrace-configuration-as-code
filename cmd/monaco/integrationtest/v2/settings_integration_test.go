@@ -192,7 +192,6 @@ func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 func TestOrderedSettings(t *testing.T) {
 	host := randomMeID("HOST")
 	t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", host)
-	t.Setenv("MONACO_TARGET_ENTITY_SCOPE", host)
 
 	expectedExternalIdForAAA, err := idutils.GenerateExternalIDForSettingsObject(coordinate.Coordinate{Project: "project", ConfigId: "aaa", Type: "builtin:processavailability"})
 	assert.NoError(t, err)
@@ -202,7 +201,9 @@ func TestOrderedSettings(t *testing.T) {
 	configFolder := "test-resources/settings-ordered/order1"
 	manifestPath := configFolder + "/manifest.yaml"
 
-	RunIntegrationWithoutCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithoutCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, tc TestContext) {
+		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.suffix)
+
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
 		assert.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
@@ -224,7 +225,9 @@ func TestOrderedSettings(t *testing.T) {
 	configFolder = "test-resources/settings-ordered/order2"
 	manifestPath = configFolder + "/manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, tc TestContext) {
+		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.suffix)
+
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
 		assert.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
@@ -342,13 +345,15 @@ func TestOrdered_InsertAtFrontWorks(t *testing.T) {
 			Filter:       filterObjectsForScope(pgiMeId),
 		})
 
-		assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
+		assert.Equal(t, 3, len(list), "Exactly two configs should be deployed")
 
 		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
 		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
+		third := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "third"}, tc)
 
-		assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
-		assert.Equal(t, 1, findPositionWithExternalId(t, list, second))
+		assert.Equal(t, 0, findPositionWithExternalId(t, list, second))
+		assert.Equal(t, 1, findPositionWithExternalId(t, list, third))
+		assert.Equal(t, 2, findPositionWithExternalId(t, list, first))
 	})
 }
 
@@ -436,8 +441,6 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
 			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 		}).
-		//WithConcurrentRequestLimit(concurrentRequestLimit).
-
 		WithPlatformURL(env.URL.Value)
 
 	client, err := clientFactory.CreatePlatformClient(t.Context())
