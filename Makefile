@@ -92,8 +92,8 @@ test: mocks install-gotestsum
 	@echo "Testing $(BINARY_NAME)..."
 	@gotestsum ${testopts} --format testdox -- -tags=unit -v -race ./...
 
-integration-test: mocks install-gotestsum
-	@gotestsum ${testopts} --format testdox -- -tags=integration -timeout=30m -v -race ./cmd/monaco/integrationtest/v2
+integration-test:
+	@go test -tags=integration -timeout=30m -v -race ./cmd/monaco/integrationtest/v2
 
 download-restore-test: mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=download_restore -timeout=30m -v -race ./...
