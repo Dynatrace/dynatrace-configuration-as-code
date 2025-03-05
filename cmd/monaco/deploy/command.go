@@ -17,12 +17,12 @@
 package deploy
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"golang.org/x/net/context"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"

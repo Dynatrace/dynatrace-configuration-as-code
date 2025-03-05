@@ -17,12 +17,11 @@
 package delete
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-
-	"golang.org/x/net/context"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"

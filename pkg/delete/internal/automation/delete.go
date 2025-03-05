@@ -17,6 +17,7 @@
 package automation
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -30,7 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	"golang.org/x/net/context"
 )
 
 type client interface {
