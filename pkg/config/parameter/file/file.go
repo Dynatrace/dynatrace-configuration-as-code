@@ -57,13 +57,9 @@ func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interfac
 		return nil, parameter.NewParameterResolveValueError(context, err.Error())
 	}
 
-	resolvedParameterValues := make(map[string]interface{})
-	for _, param := range f.referencedParameters {
-		value, ok := context.ResolvedParameterValues[param.Property]
-		if !ok {
-			return nil, fmt.Errorf("unknown parameter '%s'", param.Property)
-		}
-		resolvedParameterValues[param.Property] = value
+	resolvedParameterValues, err := f.getReferencedParameterValues(context)
+	if err != nil {
+		return nil, err
 	}
 
 	strContent, err := tmpl.Render(parameterTmpl, resolvedParameterValues)
@@ -72,6 +68,20 @@ func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interfac
 	}
 
 	return template.EscapeSpecialCharactersInValue(strContent, template.FullStringEscapeFunction)
+}
+
+// getReferencedParameterValues gets the resolved values of parameters defined in the `references` section of the file parameter. If an unknown parameter is referenced, an error is returned.
+// These are the only properties that may be used within the template.
+func (f *FileParameter) getReferencedParameterValues(context parameter.ResolveContext) (map[string]any, error) {
+	resolvedParameterValues := make(map[string]any)
+	for _, param := range f.referencedParameters {
+		value, ok := context.ResolvedParameterValues[param.Property]
+		if !ok {
+			return nil, fmt.Errorf("unknown parameter '%s'", param.Property)
+		}
+		resolvedParameterValues[param.Property] = value
+	}
+	return resolvedParameterValues, nil
 }
 
 func parseFileValueParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
