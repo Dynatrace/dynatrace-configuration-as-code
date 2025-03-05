@@ -53,6 +53,8 @@ func ContainsRecord(t *testing.T, records []report.Record, wantedRecord report.R
 	}
 
 	if exists && !shouldExist {
+		t.Errorf("Record %v exists in %v but should not exist", wantedRecord, records)
+	} else if !exists && shouldExist {
 		t.Errorf("Record %v does not exist in %v", wantedRecord, records)
 	}
 }
