@@ -64,11 +64,11 @@ func (c *DummySettingsClient) Delete(_ context.Context, _ string) error {
 	return nil
 }
 
-func (c *DummySettingsClient) GetPermission(_ context.Context, _ string) (PermissionResponse, error) {
-	return PermissionResponse{}, nil
+func (c *DummySettingsClient) GetPermission(_ context.Context, _ string) (PermissionObject, error) {
+	return PermissionObject{}, nil
 }
 
-func (c *DummySettingsClient) UpdatePermission(_ context.Context, _ string, _ PermissionResponse) error {
+func (c *DummySettingsClient) UpdatePermission(_ context.Context, _ string, _ PermissionObject) error {
 	return nil
 }
 

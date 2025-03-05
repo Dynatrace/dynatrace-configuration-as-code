@@ -140,8 +140,8 @@ type SettingsClient interface {
 
 // AccessControl is an abstraction of the CRUD operations of `permissions` `all-users` endpoint.
 type AccessControl interface {
-	GetPermission(context.Context, string) (dtclient.PermissionResponse, error)
-	UpdatePermission(context.Context, string, dtclient.PermissionResponse) error
+	GetPermission(context.Context, string) (dtclient.PermissionObject, error)
+	UpdatePermission(context.Context, string, dtclient.PermissionObject) error
 	DeletePermission(context.Context, string) error
 }
 

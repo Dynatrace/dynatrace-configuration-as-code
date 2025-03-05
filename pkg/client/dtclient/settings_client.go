@@ -196,6 +196,8 @@ const (
 	Write TypePermissions = "w"
 )
 
+type TypeAccessor string
+
 type (
 	// SettingsObject contains all the information necessary to create/update a settings object
 	SettingsObject struct {
@@ -230,8 +232,12 @@ type (
 		TotalCount int        `json:"totalCount"`
 	}
 
-	PermissionResponse struct {
+	Accessor struct {
+		Type string `json:"type"`
+	}
+	PermissionObject struct {
 		Permissions []TypePermissions `json:"permissions"`
+		Accessor    Accessor          `json:"accessor"`
 	}
 
 	postResponse struct {
@@ -854,26 +860,46 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 	return nil
 }
 
-func (d *SettingsClient) GetPermission(ctx context.Context, id string) (PermissionResponse, error) {
+func (d *SettingsClient) GetPermission(ctx context.Context, id string) (PermissionObject, error) {
+	path, err := getPermissionPathWithID(id)
+	if err != nil {
+		return PermissionObject{}, err
+	}
+
 	resp, err := coreapi.AsResponseOrError(d.client.GET(
 		ctx,
-		getPermissionPathWithID(id),
+		path,
 		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
 	))
 
-	if err != nil {
-		return PermissionResponse{}, fmt.Errorf("failed to get permission: %w", err)
+	apiError := coreapi.APIError{}
+	// when the API returns a 404 it means that you don't have permission (no-access)
+	if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+		return PermissionObject{}, nil
 	}
 
-	var result PermissionResponse
+	if err != nil {
+		return PermissionObject{}, fmt.Errorf("failed to get permission: %w", err)
+	}
+
+	var result PermissionObject
 	if err = json.Unmarshal(resp.Data, &result); err != nil {
-		return PermissionResponse{}, fmt.Errorf("failed to unmarshal permission response: %w", err)
+		return PermissionObject{}, fmt.Errorf("failed to unmarshal permission response: %w", err)
 	}
 
 	return result, nil
 }
 
-func (d *SettingsClient) UpdatePermission(ctx context.Context, id string, permission PermissionResponse) error {
+func (d *SettingsClient) CreatePermission(ctx context.Context, permission PermissionObject) error {
+	return nil
+}
+
+func (d *SettingsClient) UpdatePermission(ctx context.Context, id string, permission PermissionObject) error {
+	path, err := getPermissionPathWithID(id)
+	if err != nil {
+		return err
+	}
+
 	payload, err := json.Marshal(permission)
 	if err != nil {
 		return fmt.Errorf("failed to marshal permission: %w", err)
@@ -881,7 +907,7 @@ func (d *SettingsClient) UpdatePermission(ctx context.Context, id string, permis
 
 	_, err = coreapi.AsResponseOrError(d.client.PUT(
 		ctx,
-		getPermissionPathWithID(id),
+		path,
 		bytes.NewReader(payload),
 		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
 	))
@@ -893,9 +919,13 @@ func (d *SettingsClient) UpdatePermission(ctx context.Context, id string, permis
 }
 
 func (d *SettingsClient) DeletePermission(ctx context.Context, id string) error {
-	_, err := coreapi.AsResponseOrError(d.client.DELETE(
+	path, err := getPermissionPathWithID(id)
+	if err != nil {
+		return err
+	}
+	_, err = coreapi.AsResponseOrError(d.client.DELETE(
 		ctx,
-		getPermissionPathWithID(id),
+		path,
 		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
 	))
 
@@ -906,6 +936,10 @@ func (d *SettingsClient) DeletePermission(ctx context.Context, id string) error 
 	return nil
 }
 
-func getPermissionPathWithID(id string) string {
-	return strings.Replace(settingsPermissionAPIPath, "{objectId}", id, -1)
+func getPermissionPathWithID(id string) (string, error) {
+	if id == "" {
+		return "", fmt.Errorf("id cannot be empty")
+	}
+
+	return strings.Replace(settingsPermissionAPIPath, "{objectId}", id, -1), nil
 }
