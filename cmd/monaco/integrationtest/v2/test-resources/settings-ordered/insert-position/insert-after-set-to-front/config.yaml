@@ -1,8 +1,9 @@
 # this config is designed to test that if a config has 'insertAfter' set to FRONT, the config IS added to the front
-# `first` is deployed first at the start of the list, and `second` is deployed second, following directly after `first`
+# `first` is deployed first and the only item in the list.
+# Then `second` is deployed with `insertAfter: FRONT` making it the actual first config.
+# Last, `third` is deployed with `insertAfter: second`, making it the actual second config.
 
 configs:
-
 - id: first
   type:
     settings:
@@ -10,7 +11,6 @@ configs:
       scope:
         type: environment
         name: MONACO_TARGET_ENTITY_SCOPE
-      insertAfter: FRONT
   config:
     template: url-sampling.json
 
@@ -21,9 +21,27 @@ configs:
       scope:
         type: environment
         name: MONACO_TARGET_ENTITY_SCOPE
-      insertAfter:
+      insertAfter: FRONT
+  config:
+    template: url-sampling.json
+    parameters:
+      phantom-to-first:
         type: reference
         configId: first
         property: id
+
+- id: third
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE
+      insertAfter:
+        type: reference
+        configId: second
+        property: id
   config:
     template: url-sampling.json
+
+
