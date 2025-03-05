@@ -17,19 +17,16 @@
 package classic
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-
-	"golang.org/x/net/context"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
