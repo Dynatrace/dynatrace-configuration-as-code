@@ -24,6 +24,7 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
 
 const ClassicEnvironmentDomainPath = "/platform/metadata/v1/classic-environment-domain"
@@ -46,6 +47,7 @@ func (u classicEnvURL) GetURL() string {
 // GetDynatraceClassicURL tries to fetch the URL of the classic environment using the API of a platform enabled
 // environment
 func GetDynatraceClassicURL(ctx context.Context, platformClient corerest.Client) (string, error) {
+	log.Info("GetDynatraceClassicURL with %s", platformClient.BaseURL())
 	resp, err := coreapi.AsResponseOrError(platformClient.GET(ctx, ClassicEnvironmentDomainPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		apiErr := coreapi.APIError{}
