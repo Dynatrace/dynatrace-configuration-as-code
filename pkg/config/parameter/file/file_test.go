@@ -17,12 +17,14 @@
 package file
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
+	"testing"
+
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 )
 
 func TestParseFileValueParameter(t *testing.T) {
@@ -38,7 +40,6 @@ func TestParseFileValueParameter(t *testing.T) {
 }
 
 func TestWriteFileValueParameter(t *testing.T) {
-
 	fileParam := &FileParameter{
 		Path: "myfile",
 	}
@@ -50,11 +51,9 @@ func TestWriteFileValueParameter(t *testing.T) {
 	result, err := writeFileValueParameter(context)
 	require.NoError(t, err)
 	assert.Equal(t, "myfile", result["path"])
-
 }
 
 func TestWriteFileValueParameter_WrongType(t *testing.T) {
-
 	fileParam := envParam.New("env")
 
 	context := parameter.ParameterWriterContext{
@@ -64,16 +63,13 @@ func TestWriteFileValueParameter_WrongType(t *testing.T) {
 	result, err := writeFileValueParameter(context)
 	require.Nil(t, result)
 	assert.IsType(t, &parameter.ParameterWriterError{}, err)
-
 }
 
 func TestParseFileValueParameter_MissingPath(t *testing.T) {
-
 	param, err := parseFileValueParameter(parameter.ParameterParserContext{})
 
 	assert.Nil(t, param)
 	assert.IsType(t, parameter.ParameterParserError{}, err)
-
 }
 
 func TestResolveValue(t *testing.T) {
@@ -92,7 +88,7 @@ func TestResolveValue(t *testing.T) {
 	assert.Equal(t, "test-content", result)
 }
 
-func TestResolveValueWithRefernces(t *testing.T) {
+func TestResolveValueWithReferences(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	afero.WriteFile(fs, "test-content", []byte("test-content {{ .ref1 }} - {{ .ref2 }}"), 0644)
 
@@ -113,7 +109,8 @@ func TestResolveValueWithRefernces(t *testing.T) {
 	assert.Equal(t, "test-content ref1-resolved - ref2-resolved", result)
 }
 
-func TestResolveValueWithRefernces_RefMissing(t *testing.T) {
+// TestResolveValueWithReferences_ParameterMissing tests that file parameter referencing a parameter that is not found causes an error.
+func TestResolveValueWithReferences_ParameterMissing(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	afero.WriteFile(fs, "test-content", []byte("test-content {{ .ref1 }} - {{ .ref2 }}"), 0644)
 
@@ -131,7 +128,28 @@ func TestResolveValueWithRefernces_RefMissing(t *testing.T) {
 	})
 	assert.Nil(t, result)
 	assert.Error(t, err)
+}
 
+// TestResolveValueWithReferences_ReferenceMissing tests that using an unreferenced parameter causes an error.
+func TestResolveValueWithReferences_ReferenceMissing(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	afero.WriteFile(fs, "test-content", []byte("test-content {{ .ref1 }} - {{ .ref2 }}"), 0644)
+
+	param, _ := parseFileValueParameter(parameter.ParameterParserContext{
+		Fs:    fs,
+		Value: map[string]any{"path": "test-content", "references": []any{"ref1"}},
+	})
+
+	assert.Len(t, param.GetReferences(), 1)
+
+	result, err := param.ResolveValue(parameter.ResolveContext{
+		ResolvedParameterValues: map[string]interface{}{
+			"ref1": "ref1-resolved",
+			"ref2": "ref2-resolved",
+		},
+	})
+	assert.Nil(t, result)
+	assert.Error(t, err)
 }
 
 func TestResolveValue_FileNotFound(t *testing.T) {

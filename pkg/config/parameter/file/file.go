@@ -18,11 +18,13 @@ package file
 
 import (
 	"fmt"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	tmpl "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/spf13/afero"
 )
 
 const FileParameterType = "file"
@@ -55,12 +57,31 @@ func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interfac
 		return nil, parameter.NewParameterResolveValueError(context, err.Error())
 	}
 
-	strContent, err := tmpl.Render(parameterTmpl, context.ResolvedParameterValues)
+	resolvedParameterValues, err := f.getReferencedParameterValues(context)
+	if err != nil {
+		return nil, err
+	}
+
+	strContent, err := tmpl.Render(parameterTmpl, resolvedParameterValues)
 	if err != nil {
 		return nil, parameter.NewParameterResolveValueError(context, err.Error())
 	}
 
 	return template.EscapeSpecialCharactersInValue(strContent, template.FullStringEscapeFunction)
+}
+
+// getReferencedParameterValues gets the resolved values of parameters defined in the `references` section of the file parameter. If an unknown parameter is referenced, an error is returned.
+// These are the only properties that may be used within the template.
+func (f *FileParameter) getReferencedParameterValues(context parameter.ResolveContext) (map[string]any, error) {
+	resolvedParameterValues := make(map[string]any)
+	for _, param := range f.referencedParameters {
+		value, ok := context.ResolvedParameterValues[param.Property]
+		if !ok {
+			return nil, fmt.Errorf("unknown parameter '%s'", param.Property)
+		}
+		resolvedParameterValues[param.Property] = value
+	}
+	return resolvedParameterValues, nil
 }
 
 func parseFileValueParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
