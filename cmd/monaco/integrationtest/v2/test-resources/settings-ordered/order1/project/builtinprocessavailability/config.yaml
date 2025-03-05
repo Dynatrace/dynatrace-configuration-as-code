@@ -8,7 +8,7 @@ configs:
       schema: builtin:processavailability
       scope:
         type: environment
-        name: MONACO_TARGET_ENTITY_SCOPE #monaco-test:no-replace
+        name: MONACO_TARGET_ENTITY_SCOPE
       insertAfter:
         configId: aaa #monaco-test:no-replace
         property: id
@@ -22,4 +22,4 @@ configs:
       schema: builtin:processavailability
       scope:
         type: environment
-        name: MONACO_TARGET_ENTITY_SCOPE #monaco-test:no-replace
+        name: MONACO_TARGET_ENTITY_SCOPE

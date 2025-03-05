@@ -205,7 +205,8 @@ func TestOrderedSettings(t *testing.T) {
 		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.suffix)
 
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
-		assert.NoError(t, err)
+		require.NoError(t, err)
+
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
@@ -218,8 +219,8 @@ func TestOrderedSettings(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
-		assert.Equal(t, expectedExternalIdForAAA, results[0].ExternalId)
-		assert.Equal(t, expectedExternalIdForBBB, results[1].ExternalId)
+		assert.Equal(t, 0, findPositionWithExternalId(t, results, expectedExternalIdForAAA))
+		assert.Equal(t, 1, findPositionWithExternalId(t, results, expectedExternalIdForBBB))
 	})
 
 	configFolder = "test-resources/settings-ordered/order2"
@@ -229,7 +230,8 @@ func TestOrderedSettings(t *testing.T) {
 		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.suffix)
 
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
-		assert.NoError(t, err)
+		require.NoError(t, err)
+
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
@@ -242,8 +244,8 @@ func TestOrderedSettings(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
-		assert.Equal(t, expectedExternalIdForBBB, results[0].ExternalId)
-		assert.Equal(t, expectedExternalIdForAAA, results[1].ExternalId)
+		assert.Equal(t, 0, findPositionWithExternalId(t, results, expectedExternalIdForBBB))
+		assert.Equal(t, 1, findPositionWithExternalId(t, results, expectedExternalIdForAAA))
 	})
 }
 
@@ -315,8 +317,8 @@ func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
 		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
 		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
 
-		assert.Equal(t, len(list)-2, findPositionWithExternalId(t, list, first))
-		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, second))
+		assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
+		assert.Equal(t, 1, findPositionWithExternalId(t, list, second))
 	})
 }
 
@@ -345,7 +347,7 @@ func TestOrdered_InsertAtFrontWorks(t *testing.T) {
 			Filter:       filterObjectsForScope(pgiMeId),
 		})
 
-		assert.Equal(t, 3, len(list), "Exactly two configs should be deployed")
+		assert.Len(t, list, 3, "Exactly three configs should be deployed")
 
 		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
 		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
