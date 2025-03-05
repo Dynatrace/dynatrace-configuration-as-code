@@ -20,7 +20,10 @@ package monaco
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/http/httptrace"
+	"net/textproto"
 	"regexp"
 	"strings"
 	"testing"
@@ -56,7 +59,66 @@ func Run(t *testing.T, fs afero.Fs, command string) error {
 	cmd.SetArgs(args)
 
 	// explicit cancel for each monaco run invocation
+
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
+
+	trace := httptrace.ClientTrace{
+		GetConn: func(hostPort string) {
+			t.Log("GetConn")
+		},
+		GotConn: func(info httptrace.GotConnInfo) {
+			t.Log("GotConn")
+		},
+		PutIdleConn: func(err error) {
+			t.Log("PutIdleConn")
+		},
+		GotFirstResponseByte: func() {
+			t.Log("GotFirstResponseByte")
+		},
+		Got100Continue: func() {
+			t.Log("Got100Continue")
+		},
+		Got1xxResponse: func(code int, header textproto.MIMEHeader) error {
+			t.Log("Got1xxResponse", code, header)
+			return nil
+		},
+		DNSStart: func(info httptrace.DNSStartInfo) {
+			t.Log("DNSStart", info)
+		},
+		DNSDone: func(info httptrace.DNSDoneInfo) {
+			t.Log("DNSDone", info)
+		},
+		ConnectStart: func(network, addr string) {
+			t.Log("ConnectStart", network, addr)
+		},
+		ConnectDone: func(network, addr string, err error) {
+			t.Log("ConnectDone", network, addr, err)
+		},
+		TLSHandshakeStart: func() {
+			t.Log("TLSHandshakeStart")
+		},
+		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
+			t.Log("TLSHandshakeDone", state, err)
+		},
+		WroteHeaderField: func(key string, value []string) {
+			if key == "authorization" {
+				value = []string{"****HIDDEN****"}
+			}
+			t.Log("WroteHeaderField", key, value)
+		},
+		WroteHeaders: func() {
+			t.Log("WroteHeaders")
+		},
+		Wait100Continue: func() {
+			t.Log("Wait100Continue")
+		},
+		WroteRequest: func(info httptrace.WroteRequestInfo) {
+			t.Log("WroteRequest", info)
+		},
+	}
+
+	ctx = httptrace.WithClientTrace(ctx, &trace)
+
 	return runner.RunCmd(ctx, cmd)
 }
