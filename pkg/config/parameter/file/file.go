@@ -99,10 +99,14 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 		return nil, parameter.NewParameterParserError(context, "missing property `path`")
 	}
 
-	path := strings.ToString(p)
+	path, ok := p.(string)
+	if !ok {
+		return nil, parameter.NewParameterParserError(context, "property `path` must be a string")
+	}
+
 	path = filepath.FromSlash(path)
 
-	path = filepath.Join(context.Folder, path)
+	path = filepath.Join(context.WorkingDirectory, path)
 	escape := true
 	if escapedValue, ok := context.Value["escape"]; ok {
 		escapeBool, ok := escapedValue.(bool)

@@ -83,13 +83,13 @@ func (p ParameterReference) String() string {
 }
 
 type ParameterParserContext struct {
-	Folder        string
-	Coordinate    coordinate.Coordinate
-	Group         string
-	Environment   string
-	ParameterName string
-	Fs            afero.Fs
-	Value         map[string]interface {
+	WorkingDirectory string
+	Coordinate       coordinate.Coordinate
+	Group            string
+	Environment      string
+	ParameterName    string
+	Fs               afero.Fs
+	Value            map[string]interface {
 	}
 }
 
