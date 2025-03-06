@@ -2243,134 +2243,28 @@ func TestSettingsClient_GetPermission(t *testing.T) {
 	})
 }
 
-func TestSettingsClient_CreatePermission(t *testing.T) {
+func TestSettingsClient_UpsertPermission(t *testing.T) {
 	t.Run("success cases", func(t *testing.T) {
 		tests := []struct {
 			name             string
 			id               string
 			permissionObject PermissionObject
-			response         testutils.Response
+			putResponse      testutils.Response
+			postResponse     testutils.Response
 		}{
 			{
-				name:     "create read write permission",
-				id:       "12345",
-				response: testutils.Response{ResponseCode: http.StatusCreated},
-				permissionObject: PermissionObject{
-					Permissions: []TypePermissions{Read, Write},
-					Accessor:    &Accessor{Type: TypeAccessor(AllUsers)},
-				},
-			},
-			{
-				name:     "create write permission",
-				id:       "12345",
-				response: testutils.Response{ResponseCode: http.StatusCreated},
-				permissionObject: PermissionObject{
-					Permissions: []TypePermissions{Write},
-					Accessor:    &Accessor{Type: TypeAccessor(AllUsers)},
-				},
-			},
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				postResponse := []testutils.ResponseDef{
-					{
-						POST: func(t *testing.T, req *http.Request) testutils.Response {
-							assert.Contains(t, req.URL.String(), tt.id)
-							return tt.response
-						},
-					},
-				}
-				server := testutils.NewHTTPTestServer(t, postResponse)
-				defer server.Close()
-
-				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
-				assert.NoError(t, err)
-
-				err = dcl.CreatePermission(t.Context(), tt.id, tt.permissionObject)
-				assert.NoError(t, err)
-			})
-		}
-	})
-	t.Run("error cases", func(t *testing.T) {
-		tests := []struct {
-			name             string
-			id               string
-			permissionObject PermissionObject
-			response         testutils.Response
-		}{
-			{
-				name: "calling create if object already exists",
-				id:   "12345",
-				response: testutils.Response{
-					ResponseCode: http.StatusBadRequest,
-					ResponseBody: `{"error": {"code": 400, "message": "Given accessor already has permissions on this object."}}`,
-				},
-				permissionObject: PermissionObject{
-					Permissions: []TypePermissions{Read, Write},
-					Accessor:    &Accessor{Type: TypeAccessor(AllUsers)},
-				},
-			},
-			{
-				name: "missing accessor",
-				id:   "12345",
-				response: testutils.Response{
-					ResponseCode: http.StatusBadRequest,
-					ResponseBody: `{"error": {"code": 400, "message": "Missing accessor on this object."}}`,
-				},
+				name:        "update read write permission",
+				id:          "12345",
+				putResponse: testutils.Response{ResponseCode: http.StatusOK},
 				permissionObject: PermissionObject{
 					Permissions: []TypePermissions{Read, Write},
 				},
 			},
 			{
-				name:             "missing id",
-				id:               "",
-				response:         testutils.Response{},
-				permissionObject: PermissionObject{},
-			},
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				postResponse := []testutils.ResponseDef{
-					{
-						POST: func(t *testing.T, req *http.Request) testutils.Response {
-							assert.Contains(t, req.URL.String(), tt.id)
-							return tt.response
-						},
-					},
-				}
-				server := testutils.NewHTTPTestServer(t, postResponse)
-				defer server.Close()
-
-				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
-				assert.NoError(t, err)
-
-				err = dcl.CreatePermission(t.Context(), tt.id, tt.permissionObject)
-				assert.Error(t, err)
-			})
-		}
-	})
-}
-
-func TestSettingsClient_UpdatePermission(t *testing.T) {
-	t.Run("success cases", func(t *testing.T) {
-		tests := []struct {
-			name             string
-			id               string
-			permissionObject PermissionObject
-			response         testutils.Response
-		}{
-			{
-				name:     "create read write permission",
-				id:       "12345",
-				response: testutils.Response{ResponseCode: http.StatusOK},
-				permissionObject: PermissionObject{
-					Permissions: []TypePermissions{Read, Write},
-				},
-			},
-			{
-				name:     "create write permission",
-				id:       "12345",
-				response: testutils.Response{ResponseCode: http.StatusOK},
+				name:         "create write permission",
+				id:           "12345",
+				putResponse:  testutils.Response{ResponseCode: http.StatusNotFound},
+				postResponse: testutils.Response{ResponseCode: http.StatusCreated},
 				permissionObject: PermissionObject{
 					Permissions: []TypePermissions{Write},
 				},
@@ -2378,21 +2272,26 @@ func TestSettingsClient_UpdatePermission(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				putResponse := []testutils.ResponseDef{
+				response := []testutils.ResponseDef{
 					{
 						PUT: func(t *testing.T, req *http.Request) testutils.Response {
 							assert.Contains(t, req.URL.String(), tt.id)
-							return tt.response
+							return tt.putResponse
+						},
+					}, {
+						POST: func(t *testing.T, req *http.Request) testutils.Response {
+							assert.Contains(t, req.URL.String(), tt.id)
+							return tt.postResponse
 						},
 					},
 				}
-				server := testutils.NewHTTPTestServer(t, putResponse)
+				server := testutils.NewHTTPTestServer(t, response)
 				defer server.Close()
 
 				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 				assert.NoError(t, err)
 
-				err = dcl.UpdatePermission(t.Context(), tt.id, tt.permissionObject)
+				err = dcl.UpsertPermission(t.Context(), tt.id, tt.permissionObject)
 				assert.NoError(t, err)
 			})
 		}
@@ -2402,15 +2301,27 @@ func TestSettingsClient_UpdatePermission(t *testing.T) {
 			name             string
 			id               string
 			permissionObject PermissionObject
-			response         testutils.Response
+			putResponse      testutils.Response
+			postResponse     testutils.Response
 		}{
 			{
-				name: "calling create if object already exists",
+				name: "not found on put error on create",
 				id:   "12345",
-				response: testutils.Response{
+				putResponse: testutils.Response{
 					ResponseCode: http.StatusNotFound,
 					ResponseBody: `{"error": {"code": 400, "message": "Not found error message."}}`,
 				},
+				postResponse: testutils.Response{ResponseCode: http.StatusBadRequest},
+				permissionObject: PermissionObject{
+					Permissions: []TypePermissions{Read, Write},
+				},
+			},
+			{
+				name: "500 on put",
+				id:   "12345",
+				putResponse: testutils.Response{
+					ResponseCode: http.StatusBadGateway,
+				},
 				permissionObject: PermissionObject{
 					Permissions: []TypePermissions{Read, Write},
 				},
@@ -2418,27 +2329,33 @@ func TestSettingsClient_UpdatePermission(t *testing.T) {
 			{
 				name:             "missing id",
 				id:               "",
-				response:         testutils.Response{},
+				putResponse:      testutils.Response{},
+				postResponse:     testutils.Response{},
 				permissionObject: PermissionObject{},
 			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				putResponse := []testutils.ResponseDef{
+				response := []testutils.ResponseDef{
 					{
 						PUT: func(t *testing.T, req *http.Request) testutils.Response {
 							assert.Contains(t, req.URL.String(), tt.id)
-							return tt.response
+							return tt.putResponse
+						},
+					}, {
+						POST: func(t *testing.T, req *http.Request) testutils.Response {
+							assert.Contains(t, req.URL.String(), tt.id)
+							return tt.postResponse
 						},
 					},
 				}
-				server := testutils.NewHTTPTestServer(t, putResponse)
+				server := testutils.NewHTTPTestServer(t, response)
 				defer server.Close()
 
 				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 				assert.NoError(t, err)
 
-				err = dcl.UpdatePermission(t.Context(), tt.id, tt.permissionObject)
+				err = dcl.UpsertPermission(t.Context(), tt.id, tt.permissionObject)
 				assert.Error(t, err)
 			})
 		}
