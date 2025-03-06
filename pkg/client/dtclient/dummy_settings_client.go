@@ -68,6 +68,10 @@ func (c *DummySettingsClient) GetPermission(_ context.Context, _ string) (Permis
 	return PermissionObject{}, nil
 }
 
+func (c *DummySettingsClient) CreatePermission(_ context.Context, _ string, _ PermissionObject) error {
+	return nil
+}
+
 func (c *DummySettingsClient) UpdatePermission(_ context.Context, _ string, _ PermissionObject) error {
 	return nil
 }

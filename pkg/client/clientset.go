@@ -139,8 +139,10 @@ type SettingsClient interface {
 }
 
 // AccessControl is an abstraction of the CRUD operations of `permissions` `all-users` endpoint.
+// CreatePermission currently no upsert logic on the remote side exists so we also need this method
 type AccessControl interface {
 	GetPermission(context.Context, string) (dtclient.PermissionObject, error)
+	CreatePermission(context.Context, string, dtclient.PermissionObject) error
 	UpdatePermission(context.Context, string, dtclient.PermissionObject) error
 	DeletePermission(context.Context, string) error
 }
