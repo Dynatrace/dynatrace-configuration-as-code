@@ -135,6 +135,14 @@ func (d *ConfigClient) UpsertByName(ctx context.Context, a api.API, name string,
 	if a.ID == api.Extension {
 		return d.uploadExtension(ctx, a, name, payload)
 	}
+
+	if isSlo(a) {
+		if isSloV1, parseErr := api.IsSloV1Payload(payload); parseErr != nil {
+			return DynatraceEntity{}, parseErr
+		} else if !isSloV1 {
+			return DynatraceEntity{}, errors.New("tried to deploy an slo-v2 configuration to slo-v1")
+		}
+	}
 	return d.upsertDynatraceObject(ctx, a, name, payload)
 }
 
@@ -529,6 +537,10 @@ func isKeyUserActionWeb(a api.API) bool {
 
 func isUserSessionPropertiesMobile(a api.API) bool {
 	return a.ID == api.UserActionAndSessionPropertiesMobile
+}
+
+func isSlo(a api.API) bool {
+	return a.ID == api.Slo
 }
 
 func (d *ConfigClient) getExistingObjectId(ctx context.Context, objectName string, theApi api.API, payload []byte) (string, error) {
