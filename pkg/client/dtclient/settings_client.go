@@ -864,7 +864,7 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 }
 
 func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (PermissionObject, error) {
-	path, err := getPermissionPathWithID(objectID, "GET")
+	path, err := getPermissionPathWithID(objectID)
 	if err != nil {
 		return PermissionObject{}, err
 	}
@@ -893,8 +893,8 @@ func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (Pe
 	return result, nil
 }
 
-func (d *SettingsClient) CreatePermission(ctx context.Context, objectID string, permission PermissionObject) error {
-	path, err := getPermissionPathWithID(objectID, "POST")
+func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, permission PermissionObject) error {
+	path, err := getPermissionPathWithID(objectID)
 	if err != nil {
 		return err
 	}
@@ -904,6 +904,27 @@ func (d *SettingsClient) CreatePermission(ctx context.Context, objectID string, 
 		return fmt.Errorf("failed to marshal permission: %w", err)
 	}
 
+	// In the first sep we try to update the remote object
+	_, err = coreapi.AsResponseOrError(d.client.PUT(
+		ctx,
+		path,
+		bytes.NewReader(payload),
+		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
+	))
+
+	// Successful create
+	if err == nil {
+		return nil
+	}
+
+	apiError := coreapi.APIError{}
+	// On a 404 we step throw and try to create the object
+	if errors.As(err, &apiError) && apiError.StatusCode != http.StatusNotFound {
+		return fmt.Errorf("failed to update permission: %w", err)
+	}
+
+	// endpoint for POST is different to PUT
+	path = strings.Replace(settingsPermissionAPIPath, "{objectId}", objectID, -1)
 	_, err = coreapi.AsResponseOrError(d.client.POST(
 		ctx,
 		path,
@@ -918,32 +939,8 @@ func (d *SettingsClient) CreatePermission(ctx context.Context, objectID string, 
 	return nil
 }
 
-func (d *SettingsClient) UpdatePermission(ctx context.Context, objectID string, permission PermissionObject) error {
-	path, err := getPermissionPathWithID(objectID, "PUT")
-	if err != nil {
-		return err
-	}
-
-	payload, err := json.Marshal(permission)
-	if err != nil {
-		return fmt.Errorf("failed to marshal permission: %w", err)
-	}
-
-	_, err = coreapi.AsResponseOrError(d.client.PUT(
-		ctx,
-		path,
-		bytes.NewReader(payload),
-		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
-	))
-	if err != nil {
-		return fmt.Errorf("failed to update permission: %w", err)
-	}
-
-	return nil
-}
-
 func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) error {
-	path, err := getPermissionPathWithID(objectID, "DELETE")
+	path, err := getPermissionPathWithID(objectID)
 	if err != nil {
 		return err
 	}
@@ -961,13 +958,9 @@ func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) 
 }
 
 // When creating a permission we need to point to settingsPermissionAPIPath else we point to settingsPermissionAllUsersAPIPath
-func getPermissionPathWithID(id string, method string) (string, error) {
+func getPermissionPathWithID(id string) (string, error) {
 	if id == "" {
 		return "", fmt.Errorf("id cannot be empty")
-	}
-
-	if method == "POST" {
-		return strings.Replace(settingsPermissionAPIPath, "{objectId}", id, -1), nil
 	}
 
 	return strings.Replace(settingsPermissionAllUsersAPIPath, "{objectId}", id, -1), nil
