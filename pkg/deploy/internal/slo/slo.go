@@ -24,20 +24,22 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/go-logr/logr"
+
+	coreApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/go-logr/logr"
 )
 
 type deployServiceLevelObjectiveClient interface {
-	List(ctx context.Context) (api.PagedListResponse, error)
-	Update(ctx context.Context, id string, data []byte) (api.Response, error)
-	Create(ctx context.Context, data []byte) (api.Response, error)
+	List(ctx context.Context) (coreApi.PagedListResponse, error)
+	Update(ctx context.Context, id string, data []byte) (coreApi.Response, error)
+	Create(ctx context.Context, data []byte) (coreApi.Response, error)
 }
 
 type sloResponse struct {
@@ -83,6 +85,11 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	}
 
 	//Strategy 3 is to create a new slo
+	if isSloV1, parseErr := api.IsSloV1Payload(requestPayload); parseErr != nil {
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to deploy slo with externalID: %s", externalID)).WithError(parseErr)
+	} else if isSloV1 {
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to deploy slo with externalID: %s", externalID)).WithError(errors.New("tried to deploy an slo-v1 configuration to slo-v2"))
+	}
 	createResponse, err := client.Create(ctx, requestPayload)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to deploy slo with externalID: %s", externalID)).WithError(err)
@@ -106,7 +113,7 @@ func addExternalId(externalId string, renderedConfig string) ([]byte, error) {
 	return json.Marshal(request)
 }
 
-func responseFromHttpData(rawResponse api.Response) (sloResponse, error) {
+func responseFromHttpData(rawResponse coreApi.Response) (sloResponse, error) {
 	var response sloResponse
 	err := json.Unmarshal(rawResponse.Data, &response)
 	if err != nil {
@@ -125,7 +132,7 @@ func createResolveEntity(id string, properties parameter.Properties, c *config.C
 }
 
 func isAPIErrorStatusNotFound(err error) bool {
-	var apiErr api.APIError
+	var apiErr coreApi.APIError
 	if !errors.As(err, &apiErr) {
 		return false
 	}

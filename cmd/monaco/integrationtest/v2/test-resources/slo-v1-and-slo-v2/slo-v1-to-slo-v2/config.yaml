@@ -1,0 +1,22 @@
+configs:
+- id: demo_slo_1
+  type: slo-v2
+  config:
+    name: "My SLO #1"
+    template: slo.json
+- id: demo_slo_2
+  type: slo-v2
+  config:
+    name: "My SLO #2"
+    template: slo-setting.json
+    parameters:
+      metricName:
+        type: compound
+        format: "{{.baseMetric}}{{.testSuffix}}"
+        references:
+          - baseMetric
+          - testSuffix
+      baseMetric: "my_settings_slo_4"
+      testSuffix:
+        type: environment
+        name: "UNIQUE_TEST_SUFFIX"
