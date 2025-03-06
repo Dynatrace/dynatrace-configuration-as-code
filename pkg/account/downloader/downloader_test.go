@@ -666,7 +666,7 @@ func TestDownloader_OnlyServiceUser(t *testing.T) {
 	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{}, nil)
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: "A service user"}}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: accountmanagement.PtrString("A service user")}}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "service.user@some.org"}, nil)
 
 	result, err := downloader.DownloadResources(context.TODO())
@@ -703,7 +703,7 @@ func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return(nil, nil)
 
-	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: "A service user"}}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: accountmanagement.PtrString("A service user")}}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{
 		Email:  "service.user@some.org",
 		Groups: []accountmanagement.AccountGroupDto{{Uuid: groupUUID1}},
@@ -745,7 +745,7 @@ func TestDownloader_NoRequestedServiceUserDetails(t *testing.T) {
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: "A service user"}}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: accountmanagement.PtrString("A service user")}}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(nil, nil)
 
 	result, err := downloader.DownloadResources(context.TODO())
