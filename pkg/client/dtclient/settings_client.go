@@ -198,6 +198,8 @@ const (
 
 type TypeAccessor string
 
+const AllUsers TypeAccessor = "all-users"
+
 type (
 	// SettingsObject contains all the information necessary to create/update a settings object
 	SettingsObject struct {
@@ -233,11 +235,11 @@ type (
 	}
 
 	Accessor struct {
-		Type string `json:"type"`
+		Type TypeAccessor `json:"type"`
 	}
 	PermissionObject struct {
 		Permissions []TypePermissions `json:"permissions"`
-		Accessor    Accessor          `json:"accessor"`
+		Accessor    *Accessor         `json:"accessor,omitempty"`
 	}
 
 	postResponse struct {
@@ -268,11 +270,12 @@ type (
 )
 
 const (
-	settingsSchemaAPIPathClassic  = "/api/v2/settings/schemas"
-	settingsSchemaAPIPathPlatform = "/platform/classic/environment-api/v2/settings/schemas"
-	settingsObjectAPIPathClassic  = "/api/v2/settings/objects"
-	settingsObjectAPIPathPlatform = "/platform/classic/environment-api/v2/settings/objects"
-	settingsPermissionAPIPath     = "/settings/objects/{objectId}/permissions/all-users"
+	settingsSchemaAPIPathClassic      = "/api/v2/settings/schemas"
+	settingsSchemaAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/schemas"
+	settingsObjectAPIPathClassic      = "/api/v2/settings/objects"
+	settingsObjectAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/objects"
+	settingsPermissionAllUsersAPIPath = "/settings/objects/{objectId}/permissions/all-users"
+	settingsPermissionAPIPath         = "/settings/objects/{objectId}/permissions"
 )
 
 func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *SettingsClient) {
@@ -860,8 +863,8 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 	return nil
 }
 
-func (d *SettingsClient) GetPermission(ctx context.Context, id string) (PermissionObject, error) {
-	path, err := getPermissionPathWithID(id)
+func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (PermissionObject, error) {
+	path, err := getPermissionPathWithID(objectID, "GET")
 	if err != nil {
 		return PermissionObject{}, err
 	}
@@ -890,12 +893,33 @@ func (d *SettingsClient) GetPermission(ctx context.Context, id string) (Permissi
 	return result, nil
 }
 
-func (d *SettingsClient) CreatePermission(ctx context.Context, permission PermissionObject) error {
+func (d *SettingsClient) CreatePermission(ctx context.Context, objectID string, permission PermissionObject) error {
+	path, err := getPermissionPathWithID(objectID, "POST")
+	if err != nil {
+		return err
+	}
+
+	payload, err := json.Marshal(permission)
+	if err != nil {
+		return fmt.Errorf("failed to marshal permission: %w", err)
+	}
+
+	_, err = coreapi.AsResponseOrError(d.client.POST(
+		ctx,
+		path,
+		bytes.NewReader(payload),
+		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
+	))
+
+	if err != nil {
+		return fmt.Errorf("failed to create permission: %w", err)
+	}
+
 	return nil
 }
 
-func (d *SettingsClient) UpdatePermission(ctx context.Context, id string, permission PermissionObject) error {
-	path, err := getPermissionPathWithID(id)
+func (d *SettingsClient) UpdatePermission(ctx context.Context, objectID string, permission PermissionObject) error {
+	path, err := getPermissionPathWithID(objectID, "PUT")
 	if err != nil {
 		return err
 	}
@@ -918,8 +942,8 @@ func (d *SettingsClient) UpdatePermission(ctx context.Context, id string, permis
 	return nil
 }
 
-func (d *SettingsClient) DeletePermission(ctx context.Context, id string) error {
-	path, err := getPermissionPathWithID(id)
+func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) error {
+	path, err := getPermissionPathWithID(objectID, "DELETE")
 	if err != nil {
 		return err
 	}
@@ -936,10 +960,15 @@ func (d *SettingsClient) DeletePermission(ctx context.Context, id string) error 
 	return nil
 }
 
-func getPermissionPathWithID(id string) (string, error) {
+// When creating a permission we need to point to settingsPermissionAPIPath else we point to settingsPermissionAllUsersAPIPath
+func getPermissionPathWithID(id string, method string) (string, error) {
 	if id == "" {
 		return "", fmt.Errorf("id cannot be empty")
 	}
 
-	return strings.Replace(settingsPermissionAPIPath, "{objectId}", id, -1), nil
+	if method == "POST" {
+		return strings.Replace(settingsPermissionAPIPath, "{objectId}", id, -1), nil
+	}
+
+	return strings.Replace(settingsPermissionAllUsersAPIPath, "{objectId}", id, -1), nil
 }
