@@ -139,7 +139,7 @@ type SettingsClient interface {
 }
 
 // AccessControl is an abstraction of the CRUD operations of `permissions` `all-users` endpoint.
-// CreatePermission currently no upsert logic on the remote side exists so we also need this method
+// UpsertPermission is first trying to update the remote object if a 404 is returned it will try to create it.
 type AccessControl interface {
 	GetPermission(context.Context, string) (dtclient.PermissionObject, error)
 	UpsertPermission(context.Context, string, dtclient.PermissionObject) error
