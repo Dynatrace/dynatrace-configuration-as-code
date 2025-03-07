@@ -87,7 +87,7 @@ func TestDeploySuccess(t *testing.T) {
 				Template:       template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate:     testCoordinate,
 				OriginObjectId: "my-object-id",
-				Type:           config.Segment{},
+				Type:           config.ServiceLevelObjective{},
 				Parameters:     config.Parameters{},
 				Skip:           false,
 			},
@@ -118,7 +118,7 @@ func TestDeploySuccess(t *testing.T) {
 			inputConfig: config.Config{
 				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate: testCoordinate,
-				Type:       config.Segment{},
+				Type:       config.ServiceLevelObjective{},
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
@@ -160,7 +160,7 @@ func TestDeploySuccess(t *testing.T) {
 			inputConfig: config.Config{
 				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate: testCoordinate,
-				Type:       config.Segment{},
+				Type:       config.ServiceLevelObjective{},
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
@@ -233,7 +233,7 @@ func TestDeployErrors(t *testing.T) {
 				Template:       template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate:     testCoordinate,
 				OriginObjectId: "my-object-id",
-				Type:           config.Segment{},
+				Type:           config.ServiceLevelObjective{},
 				Parameters:     config.Parameters{},
 				Skip:           false,
 			},
@@ -256,7 +256,7 @@ func TestDeployErrors(t *testing.T) {
 			inputConfig: config.Config{
 				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate: testCoordinate,
-				Type:       config.Segment{},
+				Type:       config.ServiceLevelObjective{},
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
@@ -277,7 +277,7 @@ func TestDeployErrors(t *testing.T) {
 			inputConfig: config.Config{
 				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate: testCoordinate,
-				Type:       config.Segment{},
+				Type:       config.ServiceLevelObjective{},
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
@@ -311,7 +311,7 @@ func TestDeployErrors(t *testing.T) {
 			inputConfig: config.Config{
 				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate: testCoordinate,
-				Type:       config.Segment{},
+				Type:       config.ServiceLevelObjective{},
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
@@ -343,7 +343,7 @@ func TestDeployErrors(t *testing.T) {
 			inputConfig: config.Config{
 				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate: testCoordinate,
-				Type:       config.Segment{},
+				Type:       config.ServiceLevelObjective{},
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
@@ -374,7 +374,7 @@ func TestDeployErrors(t *testing.T) {
 			inputConfig: config.Config{
 				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate: testCoordinate,
-				Type:       config.Segment{},
+				Type:       config.ServiceLevelObjective{},
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
@@ -403,6 +403,29 @@ func TestDeployErrors(t *testing.T) {
 				return list, nil
 			},
 		},
+		{
+			name: "fails if payload is slo-v1",
+			inputConfig: config.Config{
+				Template:       template.NewInMemoryTemplate("path/file.json", `{"evaluationType": "AGGREGATE"}`),
+				Coordinate:     testCoordinate,
+				OriginObjectId: "my-object-id",
+				Type:           config.ServiceLevelObjective{},
+				Parameters:     config.Parameters{},
+				Skip:           false,
+			},
+			updateStub: func() (api.Response, error) {
+				t.Fatalf("should not be called")
+				return api.Response{}, nil
+			},
+			createStub: func() (api.Response, error) {
+				t.Fatalf("should not be called")
+				return api.Response{}, nil
+			},
+			listStub: func() (api.PagedListResponse, error) {
+				t.Fatalf("should not be called")
+				return nil, nil
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -411,7 +434,9 @@ func TestDeployErrors(t *testing.T) {
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
 
-			_, err := slo.Deploy(t.Context(), &c, props, "{}", &tt.inputConfig)
+			templateContent, contentErr := tt.inputConfig.Template.Content()
+			assert.NoError(t, contentErr)
+			_, err := slo.Deploy(t.Context(), &c, props, templateContent, &tt.inputConfig)
 			assert.Error(t, err)
 		})
 	}

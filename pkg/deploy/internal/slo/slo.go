@@ -26,10 +26,9 @@ import (
 
 	"github.com/go-logr/logr"
 
-	coreApi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -37,9 +36,9 @@ import (
 )
 
 type deployServiceLevelObjectiveClient interface {
-	List(ctx context.Context) (coreApi.PagedListResponse, error)
-	Update(ctx context.Context, id string, data []byte) (coreApi.Response, error)
-	Create(ctx context.Context, data []byte) (coreApi.Response, error)
+	List(ctx context.Context) (api.PagedListResponse, error)
+	Update(ctx context.Context, id string, data []byte) (api.Response, error)
+	Create(ctx context.Context, data []byte) (api.Response, error)
 }
 
 type sloResponse struct {
@@ -53,9 +52,9 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	defer cancel()
 
 	externalID := idutils.GenerateExternalID(c.Coordinate)
-	requestPayload, err := addExternalId(externalID, renderedConfig)
+	requestPayload, err := addExternalIdAndValidate(externalID, renderedConfig)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "failed to add externalID to slo request payload").WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "failed to validate slo payload").WithError(err)
 	}
 
 	//Strategy 1 when OriginObjectId is set we update the object
@@ -85,11 +84,6 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	}
 
 	//Strategy 3 is to create a new slo
-	if isSloV1, parseErr := api.IsSloV1Payload(requestPayload); parseErr != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to deploy slo with externalID: %s", externalID)).WithError(parseErr)
-	} else if isSloV1 {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to deploy slo with externalID: %s", externalID)).WithError(errors.New("tried to deploy an slo-v1 configuration to slo-v2"))
-	}
 	createResponse, err := client.Create(ctx, requestPayload)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to deploy slo with externalID: %s", externalID)).WithError(err)
@@ -103,17 +97,20 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	return createResolveEntity(response.ID, properties, c), nil
 }
 
-func addExternalId(externalId string, renderedConfig string) ([]byte, error) {
+func addExternalIdAndValidate(externalId string, renderedConfig string) ([]byte, error) {
 	var request map[string]any
 	err := json.Unmarshal([]byte(renderedConfig), &request)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to add externalID to slo request payload: %w", err)
 	}
 	request["externalId"] = externalId
+	if _, exists := request["evaluationType"]; exists {
+		return nil, errors.New("tried to deploy an slo-v1 configuration to slo-v2")
+	}
 	return json.Marshal(request)
 }
 
-func responseFromHttpData(rawResponse coreApi.Response) (sloResponse, error) {
+func responseFromHttpData(rawResponse api.Response) (sloResponse, error) {
 	var response sloResponse
 	err := json.Unmarshal(rawResponse.Data, &response)
 	if err != nil {
@@ -132,7 +129,7 @@ func createResolveEntity(id string, properties parameter.Properties, c *config.C
 }
 
 func isAPIErrorStatusNotFound(err error) bool {
-	var apiErr coreApi.APIError
+	var apiErr api.APIError
 	if !errors.As(err, &apiErr) {
 		return false
 	}
