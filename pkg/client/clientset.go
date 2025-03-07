@@ -134,6 +134,16 @@ type SettingsClient interface {
 
 	// Delete deletes a settings object giving its object ID
 	Delete(context.Context, string) error
+
+	AccessControl
+}
+
+// AccessControl is an abstraction of the CRUD operations of `permissions` `all-users` endpoint.
+// UpsertPermission is first trying to update the remote object if a 404 is returned it will try to create it.
+type AccessControl interface {
+	GetPermission(context.Context, string) (dtclient.PermissionObject, error)
+	UpsertPermission(context.Context, string, dtclient.PermissionObject) error
+	DeletePermission(context.Context, string) error
 }
 
 type AutomationClient interface {
