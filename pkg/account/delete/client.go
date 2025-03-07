@@ -52,7 +52,7 @@ func NewAccountAPIClient(accountUUID string, restClient *accounts.Client) Client
 	}
 }
 
-// NotFoundError is an error signifying that the desired resource was not found. Generally this error can be treated as a successful "deletion" of the resource.
+// ResourceNotFoundError is an error signifying that the desired resource was not found. Generally this error can be treated as a successful "deletion" of the resource.
 type ResourceNotFoundError struct {
 	Identifier string
 }
