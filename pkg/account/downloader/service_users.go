@@ -56,7 +56,7 @@ func (a *Downloader) serviceUsers(ctx context.Context, groups Groups) (ServiceUs
 		su := &account.ServiceUser{
 			Name:           dto.Name,
 			OriginObjectID: dtoGroups.Uid,
-			Description:    dto.Description,
+			Description:    dto.GetDescription(),
 			Groups:         groups.refFromDTOs(dtoGroups.Groups),
 		}
 
