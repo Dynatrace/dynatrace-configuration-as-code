@@ -17,9 +17,11 @@
 package delete
 
 import (
-	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/invopop/jsonschema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 )
 
 type (
@@ -34,6 +36,9 @@ type (
 	}
 	UserDeleteEntry struct {
 		Email string `mapstructure:"email"`
+	}
+	ServiceUserDeleteEntry struct {
+		Name string `mapstructure:"name"`
 	}
 	GroupDeleteEntry struct {
 		Name string `mapstructure:"name"`
@@ -61,7 +66,12 @@ func (_ Entries) JSONSchema() *jsonschema.Schema {
 
 	props := base.Properties
 	props.Set("email", &jsonschema.Schema{Type: "string", Description: "email of the user to delete - required for type user"})
-	props.Set("name", &jsonschema.Schema{Type: "string", Description: "name of the group or policy to delete"})
+
+	if featureflags.ServiceUsers.Enabled() {
+		props.Set("name", &jsonschema.Schema{Type: "string", Description: "name of the group, policy or service user to delete"})
+	} else {
+		props.Set("name", &jsonschema.Schema{Type: "string", Description: "name of the group or policy to delete"})
+	}
 
 	props.Set("level", &jsonschema.Schema{
 		Type:        "object",
@@ -89,6 +99,14 @@ func (_ Entries) JSONSchema() *jsonschema.Schema {
 			orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "user"}})),
 		Required: []string{"email"},
 	})
+
+	if featureflags.ServiceUsers.Enabled() {
+		conditionalRequiredFields = append(conditionalRequiredFields, &jsonschema.Schema{
+			Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
+				orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "service-user"}})),
+			Required: []string{"name"},
+		})
+	}
 
 	conditionalRequiredFields = append(conditionalRequiredFields, &jsonschema.Schema{
 		Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
