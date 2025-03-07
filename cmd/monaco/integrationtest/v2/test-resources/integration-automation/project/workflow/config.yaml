@@ -28,3 +28,20 @@ configs:
   type:
     automation:
       resource: workflow
+- id: workflow-with-relative-file-parameter
+  config:
+    name: e2e test workflow using relative file parameter
+    template: c5a71c83-9dbd-458d-b42d-d48b098c60ed.json
+    skip: false
+    parameters:
+      javascript:
+        type: file
+        path: ../common/script.js
+      actor:
+        type: environment
+        name: WORKFLOW_ACTOR
+        default: 05c22404-d9e7-4646-9741-fc8afc47e3f8
+      owner: ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d
+  type:
+    automation:
+      resource: workflow

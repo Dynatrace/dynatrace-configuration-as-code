@@ -17,6 +17,7 @@
 package file
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -69,15 +70,57 @@ func TestParseFileValueParameter(t *testing.T) {
 	}
 }
 
-// TestParseFileValueParameterEscapeMustBeBoolean tests that setting `escape“ to a non boolean results in an error.
-func TestParseFileValueParameterEscapeMustBeBoolean(t *testing.T) {
+// TestParseFileValueParameterWithRelativePath tests that a file parameter with a relative path is parsed correctly.
+func TestParseFileValueParameterWithRelativePath(t *testing.T) {
 	param, err := parseFileValueParameter(parameter.ParameterParserContext{
-		Fs:    afero.NewMemMapFs(),
-		Value: map[string]any{"path": "something.txt", "escape": 4},
+		Fs:               afero.NewMemMapFs(),
+		WorkingDirectory: "configs",
+		Value:            map[string]any{"path": "../scripts/setup.js"},
 	})
 
-	assert.Nil(t, param)
-	assert.ErrorContains(t, err, "must be a boolean")
+	assert.NoError(t, err)
+	require.NotNil(t, param)
+
+	fileParam, ok := param.(*FileParameter)
+	require.True(t, ok)
+	assert.Equal(t, filepath.FromSlash("scripts/setup.js"), fileParam.Path)
+}
+
+// TestParseFileValueParameterErrors tests that parseFileValueParameter produces errors as expected.
+func TestParseFileValueParameterErrors(t *testing.T) {
+	tests := []struct {
+		name                   string
+		parameterValue         map[string]any
+		expectedErrorSubstring string
+	}{
+		{
+			name:                   "escape must be a boolean",
+			parameterValue:         map[string]any{"path": "something.txt", "escape": 4},
+			expectedErrorSubstring: "must be a boolean",
+		},
+		{
+			name:                   "missing path",
+			parameterValue:         map[string]any{},
+			expectedErrorSubstring: "missing property",
+		},
+		{
+			name:                   "path must be a string",
+			parameterValue:         map[string]any{"path": 7},
+			expectedErrorSubstring: "must be a string",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			param, err := parseFileValueParameter(parameter.ParameterParserContext{
+				Fs:    afero.NewMemMapFs(),
+				Value: tt.parameterValue,
+			})
+
+			assert.Nil(t, param)
+			assert.ErrorContains(t, err, tt.expectedErrorSubstring)
+		})
+	}
 }
 
 func TestWriteFileValueParameter(t *testing.T) {
@@ -106,13 +149,6 @@ func TestWriteFileValueParameter_WrongType(t *testing.T) {
 	result, err := writeFileValueParameter(context)
 	require.Nil(t, result)
 	assert.IsType(t, &parameter.ParameterWriterError{}, err)
-}
-
-func TestParseFileValueParameter_MissingPath(t *testing.T) {
-	param, err := parseFileValueParameter(parameter.ParameterParserContext{})
-
-	assert.Nil(t, param)
-	assert.IsType(t, parameter.ParameterParserError{}, err)
 }
 
 // TestResolveValueEscaping tests that escaping of file parameters content can be enabled or disabled.
@@ -162,6 +198,24 @@ func TestResolveValue(t *testing.T) {
 	param, err := parseFileValueParameter(parameter.ParameterParserContext{
 		Fs:    fs,
 		Value: map[string]any{"path": "test-content"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, param.GetReferences(), 0)
+
+	result, err := param.ResolveValue(parameter.ResolveContext{})
+	require.NoError(t, err)
+	assert.Equal(t, "test-content", result)
+}
+
+// TestResolveValueWithRelativePath tests that a file parameter with a relative path resolves correctly.
+func TestResolveValueWithRelativePath(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	afero.WriteFile(fs, "scripts/setup.js", []byte("test-content"), 0644)
+
+	param, err := parseFileValueParameter(parameter.ParameterParserContext{
+		Fs:               fs,
+		WorkingDirectory: "config",
+		Value:            map[string]any{"path": "../scripts/setup.js"},
 	})
 	assert.NoError(t, err)
 	assert.Len(t, param.GetReferences(), 0)
