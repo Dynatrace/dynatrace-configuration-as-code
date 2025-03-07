@@ -1,0 +1,14 @@
+{
+    "enabled": true,
+    "name": "{{ .name }}",
+    "metricName": "{{ .metricName }}",
+    "metricExpression": "(100)*(builtin:service.errors.server.successCount / builtin:service.requestCount.total)",
+    "evaluationType": "AGGREGATE",
+    "filter": "type(\"SERVICE\")",
+    "evaluationWindow": "-1w",
+    "targetSuccess": 95,
+    "targetWarning": 99,
+    "errorBudgetBurnRate": {
+        "burnRateVisualizationEnabled": false
+    }
+}

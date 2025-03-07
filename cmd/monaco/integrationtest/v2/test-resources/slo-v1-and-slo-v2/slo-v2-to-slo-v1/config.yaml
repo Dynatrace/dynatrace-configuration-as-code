@@ -1,0 +1,13 @@
+configs:
+- id: custom-sli
+  type:
+    api: slo
+  config:
+    template: './custom-sli.json'
+    name: custom-sli
+- id: sli-reference
+  type:
+    api: slo
+  config:
+    name: sli-reference
+    template: './sli-reference.json'
