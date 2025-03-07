@@ -16,10 +16,12 @@ package parameter
 
 import (
 	"fmt"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
-	"github.com/spf13/afero"
 )
 
 // Properties defines a map representing resolved parameters
@@ -81,12 +83,13 @@ func (p ParameterReference) String() string {
 }
 
 type ParameterParserContext struct {
-	Coordinate    coordinate.Coordinate
-	Group         string
-	Environment   string
-	ParameterName string
-	Fs            afero.Fs
-	Value         map[string]interface {
+	WorkingDirectory string
+	Coordinate       coordinate.Coordinate
+	Group            string
+	Environment      string
+	ParameterName    string
+	Fs               afero.Fs
+	Value            map[string]interface {
 	}
 }
 

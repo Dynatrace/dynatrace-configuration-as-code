@@ -18,6 +18,7 @@ package file
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/afero"
 
@@ -93,14 +94,22 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 		return nil, parameter.NewParameterParserError(context, "missing filesystem handle to load parameter")
 	}
 
-	path, ok := context.Value["path"]
+	p, ok := context.Value["path"]
 	if !ok {
 		return nil, parameter.NewParameterParserError(context, "missing property `path`")
 	}
 
+	path, ok := p.(string)
+	if !ok {
+		return nil, parameter.NewParameterParserError(context, "property `path` must be a string")
+	}
+
+	path = filepath.FromSlash(path)
+
+	path = filepath.Join(context.WorkingDirectory, path)
 	escape := true
-	if escapeValue, ok := context.Value["escape"]; ok {
-		escapeBool, ok := escapeValue.(bool)
+	if escapedValue, ok := context.Value["escape"]; ok {
+		escapeBool, ok := escapedValue.(bool)
 		if !ok {
 			return nil, parameter.NewParameterParserError(context, "property `escape` must be a boolean")
 		}

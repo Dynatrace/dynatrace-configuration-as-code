@@ -127,12 +127,13 @@ func parseParameter(fs afero.Fs, context *singleConfigEntryLoadContext, environm
 		}
 
 		return serDe.Deserializer(parameter.ParameterParserContext{
+			WorkingDirectory: context.Folder,
 			Coordinate: coordinate.Coordinate{
 				Project:  context.ProjectId,
 				Type:     context.Type,
 				ConfigId: configId,
 			},
-			Fs:            afero.NewBasePathFs(fs, context.Folder),
+			Fs:            fs,
 			ParameterName: name,
 			Value:         maps.ToStringMap(val),
 		})
