@@ -1,0 +1,20 @@
+manifestVersion: 1.0
+projects:
+- name: project
+environmentGroups:
+  - name: default
+    environments:
+      - name: environment1
+        url:
+          type: environment
+          value: URL_ENVIRONMENT_1
+        auth:
+          token:
+            name: TOKEN_ENVIRONMENT_1
+      - name: platform_env
+        url:
+          type: environment
+          value: URL_ENVIRONMENT_1
+        auth:
+          token:
+            name: TOKEN_ENVIRONMENT_1

@@ -93,7 +93,7 @@ func TestLoadingReport(t *testing.T) {
 					Type:  report.TypeLoad,
 					Time:  report.JSONTime(time.Now()),
 					State: report.StateError,
-					Error: "cannot parse definition in `invalid-classic-with-settings\\config.yaml`: config api type (notification) configuration can only reference IDs of other config api types - parameter \"alertingProfileId\" references \"builtin:alerting.profile\" type",
+					Error: "config api type (notification) configuration can only reference IDs of other config api types - parameter \"alertingProfileId\" references \"builtin:alerting.profile\" type",
 				},
 			},
 		},
@@ -120,6 +120,18 @@ func TestLoadingReport(t *testing.T) {
 					State:  report.StateError,
 					Config: &coordinate.Coordinate{Project: "project", Type: "key-user-actions-web", ConfigId: "action"},
 					Error:  "scope parameter of config of type 'key-user-actions-web' with ID 'action' needs to be a reference parameter to another web-application config",
+				},
+			},
+		},
+		{
+			Name:     "cyclic dependency error is logged",
+			Manifest: "test-resources/config-with-cycle/manifest.yaml",
+			WantRecord: []report.Record{
+				{
+					Type:  report.TypeLoad,
+					Time:  report.JSONTime(time.Now()),
+					State: report.StateError,
+					Error: "There are 1 dependency cycles between the configurations",
 				},
 			},
 		},

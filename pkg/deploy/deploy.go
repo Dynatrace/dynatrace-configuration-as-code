@@ -84,27 +84,35 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 		}
 		errors.As(validationErrs, &deploymentErrs)
 	}
+
+	reporter := report.GetReporterFromContextOrDiscard(ctx)
+
+	envNames := environmentClients.Names()
+	g := graph.New(projects, envNames)
+	envConfigs, err := getSortedEnvConfigs(g, envNames)
+	if err != nil {
+		reporter.ReportLoading(report.StateError, err, "", nil)
+		return err
+	}
+	preloadCaches(ctx, projects, environmentClients)
+
 	projectString := "project"
 	if len(projects) > 1 {
 		projectString = "projects"
 	}
-	reporter := report.GetReporterFromContextOrDiscard(ctx)
 	reporter.ReportInfo(fmt.Sprintf("%d %v validated", len(projects), projectString))
 	defer reporter.ReportInfo("Deployment finished")
-
-	preloadCaches(ctx, projects, environmentClients)
-	g := graph.New(projects, environmentClients.Names())
 
 	for env, clientset := range environmentClients {
 		ctx := newContextWithEnvironment(ctx, env)
 		log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", env.Name)
 
-		sortedConfigs, err := g.GetIndependentlySortedConfigs(env.Name)
-		if err != nil {
-			return fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)
+		sortedConfigs, ok := envConfigs[env.Name]
+		if !ok {
+			return fmt.Errorf("failed to get independently sorted configs for environment %q", env.Name)
 		}
 
-		if err = deployComponents(ctx, sortedConfigs, clientset); err != nil {
+		if err := deployComponents(ctx, sortedConfigs, clientset); err != nil {
 			log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Error("Deployment failed for environment %q: %v", env.Name, err)
 			deploymentErrs = deploymentErrs.Append(env.Name, err)
 			if !opts.ContinueOnErr && !opts.DryRun {
@@ -120,6 +128,18 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 	}
 
 	return nil
+}
+
+func getSortedEnvConfigs(g graph.ConfigGraphPerEnvironment, envNames []string) (map[string][]graph.SortedComponent, error) {
+	envConfigs := make(map[string][]graph.SortedComponent)
+	for _, env := range envNames {
+		sortedConfigs, err := g.GetIndependentlySortedConfigs(env)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env, err)
+		}
+		envConfigs[env] = sortedConfigs
+	}
+	return envConfigs, nil
 }
 
 func deployComponents(ctx context.Context, components []graph.SortedComponent, clientset *client.ClientSet) error {

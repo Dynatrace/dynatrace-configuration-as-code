@@ -1,0 +1,23 @@
+configs:
+- id: report-1
+  type:
+    api: reports
+  config:
+    name:
+      configType: reports
+      configId: report-2
+      property: id
+      type: reference
+    template: report.json
+    skip: false
+- id: report-2
+  type:
+    api: reports
+  config:
+    name:
+      configType: reports
+      configId: report-1
+      property: id
+      type: reference
+    template: report.json
+    skip: false
