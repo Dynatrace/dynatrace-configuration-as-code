@@ -278,8 +278,8 @@ const (
 	settingsSchemaAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/schemas"
 	settingsObjectAPIPathClassic      = "/api/v2/settings/objects"
 	settingsObjectAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/objects"
-	settingsPermissionAllUsersAPIPath = "/settings/objects/{objectId}/permissions/all-users"
-	settingsPermissionAPIPath         = "/settings/objects/{objectId}/permissions"
+	settingsPermissionAllUsersAPIPath = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users"
+	settingsPermissionAPIPath         = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions"
 )
 
 func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *SettingsClient) {
