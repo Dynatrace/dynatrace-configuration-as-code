@@ -189,6 +189,21 @@ type SettingsClient struct {
 	schemaCache cache.Cache[Schema]
 }
 
+type TypePermissions = string
+
+const (
+	Read  TypePermissions = "r"
+	Write TypePermissions = "w"
+)
+
+type TypeAccessor = string
+
+const (
+	AllUsers TypeAccessor = "all-users"
+	Group    TypeAccessor = "group"
+	User     TypeAccessor = "user"
+)
+
 type (
 	// SettingsObject contains all the information necessary to create/update a settings object
 	SettingsObject struct {
@@ -223,6 +238,14 @@ type (
 		TotalCount int        `json:"totalCount"`
 	}
 
+	Accessor struct {
+		Type TypeAccessor `json:"type"`
+	}
+	PermissionObject struct {
+		Permissions []TypePermissions `json:"permissions"`
+		Accessor    *Accessor         `json:"accessor,omitempty"`
+	}
+
 	postResponse struct {
 		ObjectId string `json:"objectId"`
 	}
@@ -251,10 +274,12 @@ type (
 )
 
 const (
-	settingsSchemaAPIPathClassic  = "/api/v2/settings/schemas"
-	settingsSchemaAPIPathPlatform = "/platform/classic/environment-api/v2/settings/schemas"
-	settingsObjectAPIPathClassic  = "/api/v2/settings/objects"
-	settingsObjectAPIPathPlatform = "/platform/classic/environment-api/v2/settings/objects"
+	settingsSchemaAPIPathClassic      = "/api/v2/settings/schemas"
+	settingsSchemaAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/schemas"
+	settingsObjectAPIPathClassic      = "/api/v2/settings/objects"
+	settingsObjectAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/objects"
+	settingsPermissionAllUsersAPIPath = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users"
+	settingsPermissionAPIPath         = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions"
 )
 
 func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *SettingsClient) {
@@ -840,4 +865,116 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 	}
 
 	return nil
+}
+
+func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (PermissionObject, error) {
+	path, err := getPermissionPathWithID(objectID)
+	if err != nil {
+		return PermissionObject{}, err
+	}
+
+	resp, err := coreapi.AsResponseOrError(d.client.GET(
+		ctx,
+		path,
+		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
+	))
+
+	apiError := coreapi.APIError{}
+	// when the API returns a 404 it means that you don't have permission (no-access), or the object does not exist
+	if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+		return PermissionObject{}, nil
+	}
+
+	if err != nil {
+		return PermissionObject{}, fmt.Errorf("failed to get permission: %w", err)
+	}
+
+	var result PermissionObject
+	if err = json.Unmarshal(resp.Data, &result); err != nil {
+		return PermissionObject{}, fmt.Errorf("failed to unmarshal permission response: %w", err)
+	}
+
+	return result, nil
+}
+
+func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, permission PermissionObject) error {
+	payload, err := json.Marshal(permission)
+	if err != nil {
+		return fmt.Errorf("failed to marshal permission: %w", err)
+	}
+
+	path, err := getPermissionPathWithID(objectID)
+	if err != nil {
+		return err
+	}
+
+	_, err = coreapi.AsResponseOrError(d.client.GET(
+		ctx,
+		path,
+		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
+	))
+
+	// When there is no error the object is found and we update it.
+	if err == nil {
+		_, err = coreapi.AsResponseOrError(d.client.PUT(
+			ctx,
+			path,
+			bytes.NewReader(payload),
+			corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
+		))
+
+		if err != nil {
+			return fmt.Errorf("failed to update permission: %w", err)
+		}
+
+		return nil
+	}
+
+	apiError := coreapi.APIError{}
+	// On a 404 we step throw and try to create the object on remote in any other error we exit
+	if errors.As(err, &apiError) && apiError.StatusCode != http.StatusNotFound {
+		return fmt.Errorf("failed to get permission: %w", err)
+	}
+
+	// endpoint for POST is different to PUT
+	path = strings.Replace(settingsPermissionAPIPath, "{objectId}", objectID, -1)
+	_, err = coreapi.AsResponseOrError(d.client.POST(
+		ctx,
+		path,
+		bytes.NewReader(payload),
+		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
+	))
+
+	if err != nil {
+		return fmt.Errorf("failed to create permission: %w", err)
+	}
+
+	return nil
+}
+
+func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) error {
+	path, err := getPermissionPathWithID(objectID)
+	if err != nil {
+		return err
+	}
+	_, err = coreapi.AsResponseOrError(d.client.DELETE(
+		ctx,
+		path,
+		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
+	))
+
+	if err != nil {
+		return fmt.Errorf("failed to delete permission object: %w", err)
+	}
+
+	return nil
+}
+
+// When using the settingsPermissionAllUsersAPIPath we need to add the objectID into path
+func getPermissionPathWithID(id string) (string, error) {
+	if id == "" {
+		return "", fmt.Errorf("id cannot be empty")
+	}
+
+	return strings.Replace(settingsPermissionAllUsersAPIPath, "{objectId}", id, -1), nil
 }
