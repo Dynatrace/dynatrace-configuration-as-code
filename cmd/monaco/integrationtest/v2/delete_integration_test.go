@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -324,6 +325,10 @@ configs:
 	// DEPLOY Config
 	err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", deployManifestPath))
 	require.NoError(t, err)
+
+	// Extra sleep to ensure that the application is available - this is added to prevent HTTP 500 errors occuring later in deletion.
+	time.Sleep(10 * time.Second)
+
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
 	man, errs := manifestloader.Load(&manifestloader.Context{
