@@ -630,8 +630,8 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 }
 
 func TestUpsertSettings(t *testing.T) {
-	coord := coordinate.Coordinate{Project: "my-project", ConfigId: "user-provided-id", Type: "builtin:alerting.profile"}
-	exId, err := idutils.GenerateExternalIDForSettingsObject(coord)
+	cord := coordinate.Coordinate{Project: "my-project", ConfigId: "user-provided-id", Type: "builtin:alerting.profile"}
+	exId, err := idutils.GenerateExternalIDForSettingsObject(cord)
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -903,7 +903,7 @@ func TestUpsertSettings(t *testing.T) {
 
 			resp, err := c.Upsert(t.Context(), SettingsObject{
 				OriginObjectId: "anObjectID",
-				Coordinate:     coord,
+				Coordinate:     cord,
 				SchemaId:       "builtin:alerting.profile",
 				Scope:          "tenant",
 				Content:        []byte(test.expectSettingsRequestValue),
@@ -2117,4 +2117,371 @@ func TestResourceContextWorksAsModificationInfo(t *testing.T) {
 			assert.Equal(t, settingObjectWithModificationInfo.GetModifiablePaths(), settingObjectWithResourceContext.GetModifiablePaths())
 		})
 	}
+}
+
+func TestSettingsClient_GetPermission(t *testing.T) {
+	t.Run("success cases", func(t *testing.T) {
+		tests := []struct {
+			name             string
+			id               string
+			expectedResponse PermissionObject
+			response         testutils.Response
+		}{
+			{
+				name: "no access",
+				id:   "12345",
+				response: testutils.Response{
+					ResponseCode: http.StatusNotFound,
+					ResponseBody: `{"error": {"code": 404, "message": "No permissions found for accessor"}}`,
+					ContentType:  "application/json",
+				},
+				expectedResponse: PermissionObject{},
+			},
+			{
+				name: "can view",
+				id:   "12345",
+				response: testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: `{"permissions": ["r"], "accessor": {"type": "all-users"}}`,
+					ContentType:  "application/json",
+				},
+				expectedResponse: PermissionObject{
+					Permissions: []TypePermissions{Read},
+					Accessor:    &Accessor{Type: TypeAccessor(AllUsers)},
+				},
+			},
+			{
+				name: "can edit",
+				id:   "12345",
+				response: testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: `{"permissions": ["r", "w"], "accessor": {"type": "all-users"}}`,
+					ContentType:  "application/json",
+				},
+				expectedResponse: PermissionObject{
+					Permissions: []TypePermissions{Read, Write},
+					Accessor:    &Accessor{Type: TypeAccessor(AllUsers)},
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				getResponse := []testutils.ResponseDef{
+					{
+						GET: func(t *testing.T, req *http.Request) testutils.Response {
+							assert.Contains(t, req.URL.String(), tt.id)
+							return tt.response
+						},
+					},
+				}
+
+				server := testutils.NewHTTPTestServer(t, getResponse)
+				defer server.Close()
+
+				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+				assert.NoError(t, err)
+
+				res, err := dcl.GetPermission(t.Context(), tt.id)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResponse, res)
+			})
+		}
+	})
+	t.Run("error cases", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			id       string
+			response testutils.Response
+		}{
+			{
+				name: "api 500 error",
+				id:   "12345",
+				response: testutils.Response{
+					ResponseCode: http.StatusBadGateway,
+					ResponseBody: `{"error": {"code": 502, "message": "Some message"}}`,
+					ContentType:  "application/json",
+				},
+			},
+			{
+				name: "api returns error json",
+				id:   "12345",
+				response: testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: `{//}`,
+					ContentType:  "application/json",
+				},
+			},
+			{
+				name:     "get called with no id",
+				id:       "",
+				response: testutils.Response{},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				getResponse := []testutils.ResponseDef{
+					{
+						GET: func(t *testing.T, req *http.Request) testutils.Response {
+							assert.Contains(t, req.URL.String(), tt.id)
+							return tt.response
+						},
+					},
+				}
+
+				server := testutils.NewHTTPTestServer(t, getResponse)
+				defer server.Close()
+
+				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+				assert.NoError(t, err)
+
+				res, err := dcl.GetPermission(t.Context(), tt.id)
+				assert.Equal(t, PermissionObject{}, res)
+				assert.Error(t, err)
+			})
+		}
+	})
+}
+
+func TestSettingsClient_UpsertPermission(t *testing.T) {
+	t.Run("success cases", func(t *testing.T) {
+		tests := []struct {
+			name             string
+			id               string
+			permissionObject PermissionObject
+			responses        []testutils.ResponseDef
+		}{
+			{
+				name: "update read write permission",
+				id:   "12345",
+				responses: []testutils.ResponseDef{
+					{
+						GET: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{
+								ResponseCode: http.StatusOK,
+								ResponseBody: `{}`,
+							}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							assert.Contains(t, req.URL.String(), "12345")
+						},
+					}, {
+						PUT: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusOK}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							assert.Contains(t, req.URL.String(), "12345")
+						},
+					},
+				},
+				permissionObject: PermissionObject{
+					Permissions: []TypePermissions{Read, Write},
+				},
+			},
+			{
+				name: "create write permission",
+				id:   "12345",
+				responses: []testutils.ResponseDef{
+					{
+						GET: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusNotFound, ResponseBody: `{}`}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							assert.Contains(t, req.URL.String(), "12345")
+						},
+					}, {
+						POST: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusCreated}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							assert.Contains(t, req.URL.String(), "12345")
+						},
+					},
+				},
+				permissionObject: PermissionObject{
+					Permissions: []TypePermissions{Write},
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				server := testutils.NewHTTPTestServer(t, tt.responses)
+				defer server.Close()
+
+				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+				assert.NoError(t, err)
+
+				err = dcl.UpsertPermission(t.Context(), tt.id, tt.permissionObject)
+				assert.NoError(t, err)
+			})
+		}
+	})
+	t.Run("error cases", func(t *testing.T) {
+		tests := []struct {
+			name             string
+			id               string
+			permissionObject PermissionObject
+			responses        []testutils.ResponseDef
+		}{
+			{
+				name: "not found on GET error on create",
+				id:   "12345",
+				responses: []testutils.ResponseDef{
+					{
+						GET: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusNotFound, ResponseBody: `{"error": {"code": 400, "message": "Not found error message."}}`}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							assert.Contains(t, req.URL.String(), "12345")
+						},
+					}, {
+						POST: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusBadRequest}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							assert.Contains(t, req.URL.String(), "12345")
+						},
+					},
+				},
+				permissionObject: PermissionObject{
+					Permissions: []TypePermissions{Read, Write},
+				},
+			},
+			{
+				name: "500 on put",
+				id:   "12345",
+				responses: []testutils.ResponseDef{
+					{
+						GET: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusOK, ResponseBody: `{}`}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							assert.Contains(t, req.URL.String(), "12345")
+						},
+					}, {
+						PUT: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusBadGateway}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							assert.Contains(t, req.URL.String(), "12345")
+						},
+					},
+				},
+				permissionObject: PermissionObject{
+					Permissions: []TypePermissions{Read, Write},
+				},
+			},
+			{
+				name: "500 on GET",
+				id:   "12345",
+				responses: []testutils.ResponseDef{
+					{
+						GET: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusBadGateway}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							assert.Contains(t, req.URL.String(), "12345")
+						},
+					},
+				},
+				permissionObject: PermissionObject{
+					Permissions: []TypePermissions{Read, Write},
+				},
+			},
+			{
+				name: "missing id",
+				id:   "",
+				responses: []testutils.ResponseDef{
+					{
+						GET: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusOK, ResponseBody: `{}`}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							assert.Contains(t, req.URL.String(), "12345")
+						},
+					},
+				},
+				permissionObject: PermissionObject{},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				server := testutils.NewHTTPTestServer(t, tt.responses)
+				defer server.Close()
+
+				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+				assert.NoError(t, err)
+
+				err = dcl.UpsertPermission(t.Context(), tt.id, tt.permissionObject)
+				assert.Error(t, err)
+			})
+		}
+	})
+}
+
+func TestSettingsClient_DeletePermission(t *testing.T) {
+	t.Run("success cases", func(t *testing.T) {
+		const id = "some-id"
+		delResponse := []testutils.ResponseDef{
+			{
+				DELETE: func(t *testing.T, req *http.Request) testutils.Response {
+					assert.Contains(t, req.URL.String(), id)
+					return testutils.Response{ResponseCode: http.StatusOK}
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, delResponse)
+		defer server.Close()
+
+		dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+		assert.NoError(t, err)
+
+		err = dcl.DeletePermission(t.Context(), id)
+		assert.NoError(t, err)
+	})
+
+	t.Run("error cases", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			id       string
+			response testutils.Response
+		}{
+			{
+				name: "api 500 error",
+				id:   "12345",
+				response: testutils.Response{
+					ResponseCode: http.StatusBadGateway,
+					ResponseBody: `{"error": {"code": 502, "message": "Some message"}}`,
+					ContentType:  "application/json",
+				},
+			},
+			{
+				name:     "no id set",
+				id:       "",
+				response: testutils.Response{},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				delResponse := []testutils.ResponseDef{
+					{
+						DELETE: func(t *testing.T, req *http.Request) testutils.Response {
+							assert.Contains(t, req.URL.String(), tt.id)
+							return tt.response
+						},
+					},
+				}
+
+				server := testutils.NewHTTPTestServer(t, delResponse)
+				defer server.Close()
+
+				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+				assert.NoError(t, err)
+
+				err = dcl.DeletePermission(t.Context(), tt.id)
+				assert.Error(t, err)
+			})
+		}
+	})
 }
