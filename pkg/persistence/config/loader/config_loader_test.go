@@ -721,6 +721,91 @@ configs:
 			},
 		},
 		{
+			name:             "loads settings 2.0 config with all properties and all-users permission with FF on",
+			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'tenant'
+      permissions:
+        all-users: 'read'`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:profile.test",
+						ConfigId: "profile-id",
+					},
+					Type: config.SettingsType{
+						SchemaId:          "builtin:profile.test",
+						SchemaVersion:     "1.0",
+						AllUserPermission: config.Read,
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						"name":                &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
+				},
+			},
+		},
+		{
+			name:             "loads settings 2.0 config all-users permission with invalid value with FF on",
+			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'tenant'
+      permissions:
+        all-users: 'wrong-value'`,
+			wantErrorsContain: []string{"cannot parse definition in `test-file.yaml`: unknown all-users value: `wrong-value`, allowed: [read write none]"},
+		},
+		{
+			name:             "loads settings 2.0 config with all properties and all-users permission with FF off",
+			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "false"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'tenant'
+      permissions:
+        all-users: 'read'`,
+			wantErrorsContain: []string{"unknown settings configuration type `permissions`"},
+		},
+		{
 			name:              "loading a config without type content",
 			filePathArgument:  "test-file.yaml",
 			filePathOnDisk:    "test-file.yaml",
@@ -1934,6 +2019,10 @@ func Test_validateParameter(t *testing.T) {
 			tt.wantErr(t, validateParameter(&ctx, "paramName", tt.given.param), fmt.Sprintf("validateParameter - given %s", tt.given))
 		})
 	}
+}
+
+func Test_parseConfigsAccessControlSettings(t *testing.T) {
+
 }
 
 func makeCompoundParam(t *testing.T, refs []parameter.ParameterReference) *compound.CompoundParameter {
