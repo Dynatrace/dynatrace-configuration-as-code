@@ -19,6 +19,7 @@
 package dtclient
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -27,6 +28,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/maps"
 
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
@@ -164,4 +167,63 @@ func NewClassicConfigClientForTesting(environmentUrl string, client *http.Client
 	return NewClassicConfigClient(
 		restClient,
 		opts...)
+}
+
+type MuxRouteOptions struct {
+	Response       any  // default empty object
+	ResponseStatus int  // default 200
+	FailOnCall     bool // default false
+}
+
+// RunSettingsClientOnTestServer starts a test server with routes and responses defined in routeMappings.
+// The test server is then used by the settings client, that is created and forwarded to the testing function testFunc
+// Returns a map with the amount of API calls on registered routes
+func RunSettingsClientOnTestServer(t *testing.T, routeMappings map[string]MuxRouteOptions, testFunc func(client *SettingsClient)) map[string]int {
+	mux := http.NewServeMux()
+
+	apiCalls := registerMuxRoutes(t, mux, routeMappings)
+
+	server := httptest.NewTLSServer(mux)
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	restClient := corerest.NewClient(serverURL, server.Client())
+
+	c, err := NewClassicSettingsClient(restClient)
+	require.NoError(t, err)
+
+	testFunc(c)
+	return apiCalls
+}
+
+func registerMuxRoutes(t *testing.T, mux *http.ServeMux, routeMappings map[string]MuxRouteOptions) map[string]int {
+	apiCalls := make(map[string]int)
+	for route, options := range routeMappings {
+		mux.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
+			apiCalls[r.Pattern]++
+
+			if options.FailOnCall {
+				t.Errorf("Called '%s' but it should not be called", r.Pattern)
+				return
+			}
+			var payload []byte
+			// if not given return an empty object
+			if options.Response == nil {
+				payload = []byte("{}")
+			} else {
+				var err error
+				payload, err = json.Marshal(options.Response)
+				require.NoError(t, err)
+			}
+
+			if options.ResponseStatus != 0 {
+				w.WriteHeader(options.ResponseStatus)
+			}
+			_, err := w.Write(payload)
+			assert.NoError(t, err)
+		})
+	}
+	return apiCalls
 }
