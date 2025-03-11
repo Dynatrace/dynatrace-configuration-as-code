@@ -34,6 +34,7 @@ import (
 
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/bools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -2484,4 +2485,161 @@ func TestSettingsClient_DeletePermission(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
+	testSchema1 := "schema1"
+	testSchema2 := "schema2"
+	schemas := SchemaListResponse{
+		Items: SchemaList{
+			{
+				SchemaId: testSchema1,
+			},
+			{
+				SchemaId: testSchema2,
+			},
+		},
+		TotalCount: 2,
+	}
+	fullSchemas := map[string]schemaDetailsResponse{
+		testSchema1: {
+			SchemaId:                testSchema1,
+			OwnerBasedAccessControl: bools.Pointer(true),
+		},
+		testSchema2: {
+			SchemaId:                testSchema2,
+			OwnerBasedAccessControl: bools.Pointer(false),
+		},
+	}
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /api/v2/settings/schemas", func(w http.ResponseWriter, r *http.Request) {
+		payload, err := json.Marshal(schemas)
+		assert.NoError(t, err)
+
+		_, err = w.Write(payload)
+		assert.NoError(t, err)
+	})
+
+	mux.HandleFunc("GET /api/v2/settings/schemas/{schema}", func(w http.ResponseWriter, r *http.Request) {
+		schemaId := r.PathValue("schema")
+
+		payload, err := json.Marshal(fullSchemas[schemaId])
+		assert.NoError(t, err)
+
+		_, err = w.Write(payload)
+		assert.NoError(t, err)
+	})
+
+	server := httptest.NewTLSServer(mux)
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	restClient := corerest.NewClient(serverURL, server.Client())
+
+	c, err := NewClassicSettingsClient(restClient)
+
+	gotSchemas, err := c.ListSchemas(t.Context(), ListSchemasOptions{})
+	assert.NoError(t, err)
+
+	assert.Equal(t, SchemaList{
+		SchemaItem{
+			SchemaId:                testSchema1,
+			Ordered:                 false,
+			OwnerBasedAccessControl: bools.Pointer(true),
+		},
+		SchemaItem{
+			SchemaId:                testSchema2,
+			Ordered:                 false,
+			OwnerBasedAccessControl: bools.Pointer(false),
+		},
+	}, gotSchemas)
+}
+
+func TestSettingsClient_ListSchemas_WithAclAndError(t *testing.T) {
+	testSchema1 := "schema1"
+	schemas := SchemaListResponse{
+		Items: SchemaList{
+			{
+				SchemaId: testSchema1,
+			},
+		},
+		TotalCount: 1,
+	}
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /api/v2/settings/schemas", func(w http.ResponseWriter, r *http.Request) {
+		payload, err := json.Marshal(schemas)
+		assert.NoError(t, err)
+
+		_, err = w.Write(payload)
+		assert.NoError(t, err)
+	})
+
+	mux.HandleFunc("GET /api/v2/settings/schemas/{schema}", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, err := w.Write([]byte("{}"))
+		assert.NoError(t, err)
+	})
+
+	server := httptest.NewTLSServer(mux)
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	restClient := corerest.NewClient(serverURL, server.Client())
+
+	c, err := NewClassicSettingsClient(restClient)
+
+	_, err = c.ListSchemas(t.Context(), ListSchemasOptions{})
+	assert.Error(t, err)
+}
+
+func TestSettingsClient_ListSchemas_WithoutAcl(t *testing.T) {
+	testSchema1 := "schema1"
+	schemas := SchemaListResponse{
+		Items: SchemaList{
+			{
+				SchemaId: testSchema1,
+			},
+		},
+		TotalCount: 1,
+	}
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /api/v2/settings/schemas", func(w http.ResponseWriter, r *http.Request) {
+		payload, err := json.Marshal(schemas)
+		assert.NoError(t, err)
+
+		_, err = w.Write(payload)
+		assert.NoError(t, err)
+	})
+
+	mux.HandleFunc("GET /api/v2/settings/schemas/{schema}", func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("unexpected schema call to '%s'", r.PathValue("schema"))
+	})
+
+	server := httptest.NewTLSServer(mux)
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	restClient := corerest.NewClient(serverURL, server.Client())
+
+	c, err := NewClassicSettingsClient(restClient)
+
+	gotSchemas, err := c.ListSchemas(t.Context(), ListSchemasOptions{DiscardACL: true})
+	assert.NoError(t, err)
+
+	assert.Equal(t, SchemaList{
+		SchemaItem{
+			SchemaId:                testSchema1,
+			Ordered:                 false,
+			OwnerBasedAccessControl: nil,
+		},
+	}, gotSchemas)
 }

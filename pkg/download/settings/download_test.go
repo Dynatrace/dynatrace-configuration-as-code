@@ -21,6 +21,7 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"testing"
 
@@ -28,9 +29,11 @@ import (
 	"go.uber.org/mock/gomock"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/bools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -54,8 +57,8 @@ func TestDownloadAll(t *testing.T) {
 		Settings          func() ([]dtclient.DownloadSettingsObject, error)
 		ListSettingsCalls int
 
-		GetSchema      func(schemaID string) (dtclient.Schema, error)
-		GetSchemaCalls int
+		Permissions        func() (dtclient.PermissionObject, error)
+		GetPermissionCalls int
 	}
 	tests := []struct {
 		name       string
@@ -72,11 +75,12 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return nil, fmt.Errorf("oh no")
 				},
-				GetSchema:      func(schemaID string) (dtclient.Schema, error) { return dtclient.Schema{}, nil },
-				GetSchemaCalls: 0,
 
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return nil, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 0,
 			},
@@ -92,11 +96,10 @@ func TestDownloadAll(t *testing.T) {
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return nil, coreapi.APIError{StatusCode: 0}
 				},
-				ListSettingsCalls: 2,
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{}, nil
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
-				GetSchemaCalls: 2,
+				ListSettingsCalls: 2,
 			},
 			want: v2.ConfigsPerType{},
 		},
@@ -107,10 +110,6 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "id1"}, nil
-				},
-				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
@@ -120,6 +119,9 @@ func TestDownloadAll(t *testing.T) {
 						Scope:         "tenant",
 						Value:         json.RawMessage{},
 					}}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -132,10 +134,6 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "id1"}, nil
-				},
-				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
@@ -145,6 +143,9 @@ func TestDownloadAll(t *testing.T) {
 						Scope:         "tenant",
 						Value:         json.RawMessage("{}"),
 					}}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -179,10 +180,6 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "id1"}, nil
-				},
-				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
@@ -192,6 +189,9 @@ func TestDownloadAll(t *testing.T) {
 						Scope:         "tenant",
 						Value:         json.RawMessage(`{"skip" : true}`),
 					}}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -204,10 +204,6 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "id1"}, nil
-				},
-				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{
 						{
@@ -230,6 +226,9 @@ func TestDownloadAll(t *testing.T) {
 							},
 						},
 					}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -260,10 +259,6 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "id1"}, nil
-				},
-				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{
 						{
@@ -279,6 +274,9 @@ func TestDownloadAll(t *testing.T) {
 							},
 						},
 					}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -309,10 +307,6 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1", Ordered: true}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "id1", Ordered: true}, nil
-				},
-				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{
 						{
@@ -352,6 +346,9 @@ func TestDownloadAll(t *testing.T) {
 							},
 						},
 					}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -411,10 +408,6 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1", Ordered: true}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "id1", Ordered: true}, nil
-				},
-				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{
 						{
@@ -454,6 +447,9 @@ func TestDownloadAll(t *testing.T) {
 							},
 						},
 					}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -528,10 +524,6 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "id1", Ordered: true}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "id1", Ordered: true}, nil
-				},
-				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{
 						{
@@ -571,6 +563,9 @@ func TestDownloadAll(t *testing.T) {
 							},
 						},
 					}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -643,14 +638,13 @@ func TestDownloadAll(t *testing.T) {
 			name: "DownloadSettings - empty list of schemas",
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) { return dtclient.SchemaList{}, nil },
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{}, nil
-				},
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{}, nil
 				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
+				},
 				ListSchemasCalls:  1,
-				GetSchemaCalls:    0,
 				ListSettingsCalls: 0,
 			},
 			want: v2.ConfigsPerType{},
@@ -662,10 +656,6 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "builtin:alerting-profile"}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "builtin:alerting-profile"}, nil
-				},
-				GetSchemaCalls: 1,
 
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
@@ -676,6 +666,9 @@ func TestDownloadAll(t *testing.T) {
 						Scope:         "tenant",
 						Value:         json.RawMessage(`{}`),
 					}}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 1,
@@ -707,10 +700,6 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "builtin:host.monitoring.mode"}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "builtin:host.monitoring.mode"}, nil
-				},
-				GetSchemaCalls: 1,
 
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
@@ -721,6 +710,9 @@ func TestDownloadAll(t *testing.T) {
 						Scope:         "HOST-1234567890ABCDEF",
 						Value:         json.RawMessage(`{}`),
 					}}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 1,
@@ -737,19 +729,18 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "builtin:host.monitoring.mode"}}, nil
 				},
-				GetSchema: func(schemaID string) (dtclient.Schema, error) {
-					return dtclient.Schema{SchemaId: "builtin:host.monitoring.mode"}, nil
-				},
-				GetSchemaCalls: 1,
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
 						SchemaVersion: "1.2.3",
 						SchemaId:      "builtin:host.monitoring.mode",
 						ObjectId:      "oid1",
-						Scope:         "HOST-1234567890ABCDEF",
+						Scope:         "builtin:host.monitoring.mode",
 						Value:         json.RawMessage(`{}`),
 					}}, nil
+				},
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
 				},
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 1,
@@ -767,12 +758,160 @@ func TestDownloadAll(t *testing.T) {
 						SchemaVersion: "1.2.3",
 					},
 					Parameters: map[string]parameter.Parameter{
-						config.ScopeParameter: &value.ValueParameter{Value: "HOST-1234567890ABCDEF"},
+						config.ScopeParameter: &value.ValueParameter{Value: "builtin:host.monitoring.mode"},
 					},
 					Skip:           false,
 					OriginObjectId: "oid1",
 				},
 			}},
+		},
+		{
+			name: "Downloading settings with ACL",
+			envVars: map[string]string{
+				featureflags.AccessControlSettings.EnvName(): "true",
+			},
+			mockValues: mockValues{
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{
+						{
+							SchemaId:                "app:my-app:schema",
+							Ordered:                 false,
+							OwnerBasedAccessControl: bools.Pointer(true),
+						},
+					}, nil
+				},
+				ListSchemasCalls: 1,
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
+						ExternalId:    "ex1",
+						SchemaVersion: "1.2.3",
+						SchemaId:      "app:my-app:schema",
+						ObjectId:      "oid1",
+						Scope:         "environment",
+						Value:         json.RawMessage(`{}`),
+					}}, nil
+				},
+				ListSettingsCalls: 1,
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{
+						Permissions: []dtclient.TypePermissions{dtclient.Read, dtclient.Write},
+						Accessor: &dtclient.Accessor{
+							Type: dtclient.AllUsers,
+						},
+					}, nil
+				},
+				GetPermissionCalls: 1,
+			},
+			schemas: []config.SettingsType{{SchemaId: "app:my-app:schema"}},
+			want: v2.ConfigsPerType{"app:my-app:schema": {
+				{
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "app:my-app:schema",
+						ConfigId: uuid1,
+					},
+					Type: config.SettingsType{
+						SchemaId:          "app:my-app:schema",
+						SchemaVersion:     "1.2.3",
+						AllUserPermission: stringutils.Pointer(config.WritePermission),
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
+					},
+					Skip:           false,
+					OriginObjectId: "oid1",
+				},
+			}},
+		},
+		{
+			name: "Downloading settings without ACL if FF is not enabled",
+			mockValues: mockValues{
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{
+						{
+							SchemaId:                "app:my-app:schema",
+							Ordered:                 false,
+							OwnerBasedAccessControl: bools.Pointer(true),
+						},
+					}, nil
+				},
+				ListSchemasCalls: 1,
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
+						ExternalId:    "ex1",
+						SchemaVersion: "1.2.3",
+						SchemaId:      "app:my-app:schema",
+						ObjectId:      "oid1",
+						Scope:         "environment",
+						Value:         json.RawMessage(`{}`),
+					}}, nil
+				},
+				ListSettingsCalls: 1,
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, nil
+				},
+				GetPermissionCalls: 0,
+			},
+			schemas: []config.SettingsType{{SchemaId: "app:my-app:schema"}},
+			want: v2.ConfigsPerType{"app:my-app:schema": {
+				{
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "app:my-app:schema",
+						ConfigId: uuid1,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "app:my-app:schema",
+						SchemaVersion: "1.2.3",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
+					},
+					Skip:           false,
+					OriginObjectId: "oid1",
+				},
+			}},
+		},
+		{
+			name: "Downloading settings with ACL fails on permission fetch",
+			envVars: map[string]string{
+				featureflags.AccessControlSettings.EnvName(): "true",
+			},
+			mockValues: mockValues{
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{
+						{
+							SchemaId:                "app:my-app:schema",
+							Ordered:                 false,
+							OwnerBasedAccessControl: bools.Pointer(true),
+						},
+					}, nil
+				},
+				ListSchemasCalls: 1,
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
+						ExternalId:    "ex1",
+						SchemaVersion: "1.2.3",
+						SchemaId:      "app:my-app:schema",
+						ObjectId:      "oid1",
+						Scope:         "environment",
+						Value:         json.RawMessage(`{}`),
+					}}, nil
+				},
+				ListSettingsCalls: 1,
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, coreapi.APIError{
+						StatusCode: http.StatusInternalServerError,
+						Body:       nil,
+						Request:    corerest.RequestInfo{},
+					}
+				},
+				GetPermissionCalls: 1,
+			},
+			schemas: []config.SettingsType{{SchemaId: "app:my-app:schema"}},
+			want:    v2.ConfigsPerType{},
 		},
 	}
 	for _, tt := range tests {
@@ -788,11 +927,13 @@ func TestDownloadAll(t *testing.T) {
 
 			c := client.NewMockSettingsClient(gomock.NewController(t))
 			schemas, err := tt.mockValues.Schemas()
-			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
+			c.EXPECT().ListSchemas(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
+			permissions, err := tt.mockValues.Permissions()
+			c.EXPECT().GetPermission(gomock.Any(), gomock.Any()).Times(tt.mockValues.GetPermissionCalls).Return(permissions, err)
 
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			res, _ := Download(t.Context(), c, "projectName", tt.filters, tt.schemas...)
+			res, err := Download(t.Context(), c, "projectName", tt.filters, tt.schemas...)
 
 			assert.Equal(t, tt.want, res)
 		})
