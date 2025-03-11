@@ -45,7 +45,7 @@ const (
 	ServiceLevelObjective FeatureFlag = "MONACO_FEAT_SLO_V2"
 	// AccessControlSettings toggles whether settings enable the access control
 	// Introduced: v2.21.0
-	AccessControlSettings FeatureFlag = "MONACO_ACC_CONTROL_SETTINGS"
+	AccessControlSettings FeatureFlag = "MONACO_FEAT_ACCESS_CONTROL_SETTINGS"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
