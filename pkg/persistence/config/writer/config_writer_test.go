@@ -30,6 +30,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	strUtils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -883,7 +884,7 @@ func TestWriteConfigs(t *testing.T) {
 					Type: config.SettingsType{
 						SchemaId:          "schemaid",
 						SchemaVersion:     "1.2.3",
-						AllUserPermission: config.Read,
+						AllUserPermission: strUtils.Pointer(config.Read),
 					},
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "scope"},
@@ -907,7 +908,7 @@ func TestWriteConfigs(t *testing.T) {
 								Type: config.SettingsType{
 									SchemaId:          "schemaid",
 									SchemaVersion:     "1.2.3",
-									AllUserPermission: config.Read,
+									AllUserPermission: strUtils.Pointer(config.Read),
 								},
 								Scope: "scope",
 							},
@@ -932,7 +933,7 @@ func TestWriteConfigs(t *testing.T) {
 					Type: config.SettingsType{
 						SchemaId:          "schemaid",
 						SchemaVersion:     "1.2.3",
-						AllUserPermission: config.Read,
+						AllUserPermission: strUtils.Pointer(config.Read),
 					},
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "scope"},

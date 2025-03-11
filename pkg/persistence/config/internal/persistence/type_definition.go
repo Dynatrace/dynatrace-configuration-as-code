@@ -165,9 +165,9 @@ func (c *TypeDefinition) parseSettingsType(a any) error {
 		return fmt.Errorf("unknown settings configuration property 'permissions'")
 	}
 
-	var allUserPermission config.AllUserPermissionKind
+	var allUserPermission *config.AllUserPermissionKind
 	if r.Permissions != nil {
-		allUserPermission = *r.Permissions.AllUsers
+		allUserPermission = r.Permissions.AllUsers
 	}
 	c.Type = config.SettingsType{
 		SchemaId:          r.Schema,
@@ -238,8 +238,8 @@ func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 		}
 
 		if featureflags.AccessControlSettings.Enabled() {
-			if t.AllUserPermission != "" && !slices.Contains(config.KnownAllUserPermissionKind, t.AllUserPermission) {
-				return fmt.Errorf("unknown all-users value: '%s', allowed: %v", t.AllUserPermission, config.KnownAllUserPermissionKind)
+			if t.AllUserPermission != nil && !slices.Contains(config.KnownAllUserPermissionKind, *t.AllUserPermission) {
+				return fmt.Errorf("unknown all-users value: '%s', allowed: %v", *t.AllUserPermission, config.KnownAllUserPermissionKind)
 			}
 		}
 
@@ -331,9 +331,9 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}
 
 		if featureflags.AccessControlSettings.Enabled() {
-			if t.AllUserPermission != "" {
+			if t.AllUserPermission != nil {
 				setDefinition.Permissions = &PermissionDefinition{
-					AllUsers: &t.AllUserPermission,
+					AllUsers: t.AllUserPermission,
 				}
 			}
 		}

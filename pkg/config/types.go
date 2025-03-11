@@ -42,7 +42,7 @@ var KnownAllUserPermissionKind = []AllUserPermissionKind{Read, Write, None}
 
 type SettingsType struct {
 	SchemaId, SchemaVersion string
-	AllUserPermission       AllUserPermissionKind
+	AllUserPermission       *AllUserPermissionKind
 }
 
 func (SettingsType) ID() TypeID {

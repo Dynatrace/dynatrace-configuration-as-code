@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	strUtils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -749,7 +750,7 @@ configs:
 					Type: config.SettingsType{
 						SchemaId:          "builtin:profile.test",
 						SchemaVersion:     "1.0",
-						AllUserPermission: config.Read,
+						AllUserPermission: strUtils.Pointer(config.Read),
 					},
 					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
