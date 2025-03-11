@@ -111,7 +111,7 @@ func getFilter(deletePointer pointer.DeletePointer) (dtclient.ListSettingsFilter
 func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 	errs := 0
 
-	schemas, err := c.ListSchemas(ctx)
+	schemas, err := c.ListSchemas(ctx, dtclient.ListSchemasOptions{DiscardACL: true})
 	if err != nil {
 		return fmt.Errorf("failed to fetch settings schemas. No settings will be deleted. Reason: %w", err)
 	}

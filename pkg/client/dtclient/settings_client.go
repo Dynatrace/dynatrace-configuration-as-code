@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/exp/maps"
@@ -148,6 +149,13 @@ const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schem
 const reducedListSettingsFields = "objectId,externalId,schemaVersion,schemaId,scope,modificationInfo"
 const defaultPageSize = "500"
 
+// ListSchemasOptions are additional options for the ListSchemas method
+// of the Settings client
+type ListSchemasOptions struct {
+	// If set to `false` it does not fetch the "ownerBasedAccessControl" information
+	DiscardACL bool
+}
+
 // ListSettingsOptions are additional options for the ListSettings method
 // of the Settings client
 type ListSettingsOptions struct {
@@ -222,15 +230,19 @@ type (
 	}
 
 	Schema struct {
-		SchemaId         string
-		Ordered          bool
-		UniqueProperties [][]string
+		SchemaId                string
+		Ordered                 bool
+		OwnerBasedAccessControl *bool
+		UniqueProperties        [][]string
 	}
 
-	SchemaList []struct {
+	SchemaItem struct {
 		SchemaId string `json:"schemaId"`
 		Ordered  bool   `json:"ordered"`
+		// At the moment, the API doesn't return this property
+		OwnerBasedAccessControl *bool `json:"ownerBasedAccessControl"`
 	}
+	SchemaList []SchemaItem
 
 	// SchemaListResponse is the response type returned by the ListSchemas operation
 	SchemaListResponse struct {
@@ -267,9 +279,10 @@ type (
 
 	// schemaDetailsResponse is the response type returned by the getSchema operation
 	schemaDetailsResponse struct {
-		SchemaId          string             `json:"schemaId"`
-		Ordered           bool               `json:"ordered"`
-		SchemaConstraints []schemaConstraint `json:"schemaConstraints"`
+		SchemaId                string             `json:"schemaId"`
+		Ordered                 bool               `json:"ordered"`
+		SchemaConstraints       []schemaConstraint `json:"schemaConstraints"`
+		OwnerBasedAccessControl *bool              `json:"ownerBasedAccessControl"`
 	}
 )
 
@@ -386,7 +399,7 @@ func (d *SettingsClient) Cache(ctx context.Context, schemaID string) error {
 	return err
 }
 
-func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
+func (d *SettingsClient) ListSchemas(ctx context.Context, options ListSchemasOptions) (schemas SchemaList, err error) {
 	queryParams := url.Values{}
 	queryParams.Add("fields", "ordered,schemaId")
 
@@ -406,7 +419,42 @@ func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, e
 		log.Warn("Total count of settings 2.0 schemas (=%d) does not match with count of actually downloaded settings 2.0 schemas (=%d)", result.TotalCount, len(result.Items))
 	}
 
+	if !options.DiscardACL {
+		return d.addACLToSchemas(ctx, result.Items)
+	}
 	return result.Items, nil
+}
+
+// addACLToSchemas adds the correct ownerBasedAccessControl information to the schemas
+func (d *SettingsClient) addACLToSchemas(ctx context.Context, schemas SchemaList) (SchemaList, error) {
+	wg := sync.WaitGroup{}
+	downloadMutex := sync.Mutex{}
+	wg.Add(len(schemas))
+	errs := make([]error, 0)
+	for i, s := range schemas {
+		go func(s SchemaItem) {
+			defer wg.Done()
+			fullSchema, err := d.GetSchema(ctx, s.SchemaId)
+			if err != nil {
+				downloadMutex.Lock()
+				errs = append(errs, err)
+				downloadMutex.Unlock()
+				return
+			}
+			if fullSchema.OwnerBasedAccessControl != nil {
+				schemas[i] = SchemaItem{
+					SchemaId:                s.SchemaId,
+					Ordered:                 s.Ordered,
+					OwnerBasedAccessControl: fullSchema.OwnerBasedAccessControl,
+				}
+			}
+		}(s)
+	}
+	wg.Wait()
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	return schemas, nil
 }
 
 func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constraints Schema, err error) {
@@ -433,6 +481,7 @@ func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constr
 		}
 	}
 	ret.Ordered = sd.Ordered
+	ret.OwnerBasedAccessControl = sd.OwnerBasedAccessControl
 
 	d.schemaCache.Set(schemaID, ret)
 	return ret, nil
