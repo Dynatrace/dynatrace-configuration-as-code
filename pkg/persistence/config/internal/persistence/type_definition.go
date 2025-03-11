@@ -323,20 +323,23 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 			insertAfterValue = c.InsertAfter
 		}
 
-		var per *PermissionDefinition
-		if featureflags.AccessControlSettings.Enabled() {
-			per = &PermissionDefinition{}
+		setDefinition := SettingsDefinition{
+			Schema:        t.SchemaId,
+			SchemaVersion: t.SchemaVersion,
+			Scope:         c.Scope,
+			InsertAfter:   insertAfterValue,
 		}
 
-		return map[string]any{
-			"settings": SettingsDefinition{
-				Schema:        t.SchemaId,
-				SchemaVersion: t.SchemaVersion,
-				Scope:         c.Scope,
-				InsertAfter:   insertAfterValue,
-				Permissions:   per,
-			},
-		}, nil
+		if featureflags.AccessControlSettings.Enabled() {
+			s, ok := c.Type.(config.SettingsType)
+			if ok && s.AllUserPermission != "" {
+				setDefinition.Permissions = &PermissionDefinition{
+					AllUsers: &s.AllUserPermission,
+				}
+			}
+		}
+
+		return map[string]any{"settings": setDefinition}, nil
 
 	case config.AutomationType:
 		return map[string]any{
