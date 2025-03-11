@@ -722,7 +722,7 @@ configs:
 			},
 		},
 		{
-			name:             "loads settings 2.0 config with all properties and all-users permission with FF on",
+			name:             "loads settings 2.0 config with all properties and allUsers permission with FF on",
 			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -739,7 +739,7 @@ configs:
       schemaVersion: '1.0'
       scope: 'tenant'
       permissions:
-        all-users: 'read'`,
+        allUsers: 'read'`,
 			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
@@ -765,7 +765,7 @@ configs:
 			},
 		},
 		{
-			name:             "loads settings 2.0 config all-users permission with invalid value with FF on",
+			name:             "loads settings 2.0 config allUsers permission with invalid value with FF on",
 			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -782,11 +782,11 @@ configs:
       schemaVersion: '1.0'
       scope: 'tenant'
       permissions:
-        all-users: 'wrong-value'`,
-			wantErrorsContain: []string{"cannot parse definition in `test-file.yaml`: unknown all-users value: 'wrong-value', allowed: [read write none]"},
+        allUsers: 'wrong-value'`,
+			wantErrorsContain: []string{"cannot parse definition in `test-file.yaml`: unknown allUsers value: 'wrong-value', allowed: [read write none]"},
 		},
 		{
-			name:             "loads settings 2.0 config with all properties and all-users permission with FF off",
+			name:             "loads settings 2.0 config with all properties and allUsers permission with FF off",
 			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "false"},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -803,7 +803,7 @@ configs:
       schemaVersion: '1.0'
       scope: 'tenant'
       permissions:
-        all-users: 'read'`,
+        allUsers: 'read'`,
 			wantErrorsContain: []string{"unknown settings configuration property 'permissions'"},
 		},
 		{
