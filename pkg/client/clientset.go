@@ -121,7 +121,7 @@ type SettingsClient interface {
 	Upsert(context.Context, dtclient.SettingsObject, dtclient.UpsertSettingsOptions) (dtclient.DynatraceEntity, error)
 
 	// ListSchemas returns all schemas that the Dynatrace environment reports
-	ListSchemas(context.Context) (dtclient.SchemaList, error)
+	ListSchemas(context.Context, dtclient.ListSchemasOptions) (dtclient.SchemaList, error)
 
 	// GetSchema returns the settings schema with the given schema ID
 	GetSchema(context.Context, string) (dtclient.Schema, error)
