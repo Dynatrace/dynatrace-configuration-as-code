@@ -782,7 +782,7 @@ configs:
       scope: 'tenant'
       permissions:
         all-users: 'wrong-value'`,
-			wantErrorsContain: []string{"cannot parse definition in `test-file.yaml`: unknown all-users value: `wrong-value`, allowed: [read write none]"},
+			wantErrorsContain: []string{"cannot parse definition in `test-file.yaml`: unknown all-users value: 'wrong-value', allowed: [read write none]"},
 		},
 		{
 			name:             "loads settings 2.0 config with all properties and all-users permission with FF off",
@@ -803,7 +803,7 @@ configs:
       scope: 'tenant'
       permissions:
         all-users: 'read'`,
-			wantErrorsContain: []string{"unknown settings configuration type `permissions`"},
+			wantErrorsContain: []string{"unknown settings configuration type 'permissions'"},
 		},
 		{
 			name:              "loading a config without type content",
@@ -2019,10 +2019,6 @@ func Test_validateParameter(t *testing.T) {
 			tt.wantErr(t, validateParameter(&ctx, "paramName", tt.given.param), fmt.Sprintf("validateParameter - given %s", tt.given))
 		})
 	}
-}
-
-func Test_parseConfigsAccessControlSettings(t *testing.T) {
-
 }
 
 func makeCompoundParam(t *testing.T, refs []parameter.ParameterReference) *compound.CompoundParameter {
