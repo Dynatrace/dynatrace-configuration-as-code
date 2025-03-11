@@ -803,7 +803,7 @@ configs:
       scope: 'tenant'
       permissions:
         all-users: 'read'`,
-			wantErrorsContain: []string{"unknown settings configuration type 'permissions'"},
+			wantErrorsContain: []string{"unknown settings configuration property 'permissions'"},
 		},
 		{
 			name:              "loading a config without type content",
