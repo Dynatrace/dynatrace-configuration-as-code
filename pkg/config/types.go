@@ -33,12 +33,12 @@ var _ Type = SettingsType{}
 type AllUserPermissionKind = string
 
 const (
-	Read  AllUserPermissionKind = "read"
-	Write AllUserPermissionKind = "write"
-	None  AllUserPermissionKind = "none"
+	ReadPermission  AllUserPermissionKind = "read"
+	WritePermission AllUserPermissionKind = "write"
+	NonePermission  AllUserPermissionKind = "none"
 )
 
-var KnownAllUserPermissionKind = []AllUserPermissionKind{Read, Write, None}
+var KnownAllUserPermissionKind = []AllUserPermissionKind{ReadPermission, WritePermission, NonePermission}
 
 type SettingsType struct {
 	SchemaId, SchemaVersion string

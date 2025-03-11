@@ -750,7 +750,7 @@ configs:
 					Type: config.SettingsType{
 						SchemaId:          "builtin:profile.test",
 						SchemaVersion:     "1.0",
-						AllUserPermission: strUtils.Pointer(config.Read),
+						AllUserPermission: strUtils.Pointer(config.ReadPermission),
 					},
 					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{

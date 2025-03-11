@@ -884,7 +884,7 @@ func TestWriteConfigs(t *testing.T) {
 					Type: config.SettingsType{
 						SchemaId:          "schemaid",
 						SchemaVersion:     "1.2.3",
-						AllUserPermission: strUtils.Pointer(config.Read),
+						AllUserPermission: strUtils.Pointer(config.ReadPermission),
 					},
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "scope"},
@@ -908,7 +908,7 @@ func TestWriteConfigs(t *testing.T) {
 								Type: config.SettingsType{
 									SchemaId:          "schemaid",
 									SchemaVersion:     "1.2.3",
-									AllUserPermission: strUtils.Pointer(config.Read),
+									AllUserPermission: strUtils.Pointer(config.ReadPermission),
 								},
 								Scope: "scope",
 							},
@@ -933,7 +933,7 @@ func TestWriteConfigs(t *testing.T) {
 					Type: config.SettingsType{
 						SchemaId:          "schemaid",
 						SchemaVersion:     "1.2.3",
-						AllUserPermission: strUtils.Pointer(config.Read),
+						AllUserPermission: strUtils.Pointer(config.ReadPermission),
 					},
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "scope"},
