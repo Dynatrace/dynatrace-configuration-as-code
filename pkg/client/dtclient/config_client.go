@@ -132,8 +132,14 @@ func (d *ConfigClient) ExistsWithName(ctx context.Context, api api.API, name str
 }
 
 func (d *ConfigClient) UpsertByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
-	if a.ID == api.Extension {
+	if isExtension(a) {
 		return d.uploadExtension(ctx, a, name, payload)
+	}
+
+	if isSlo(a) {
+		if valErr := validateSloV1Payload(payload); valErr != nil {
+			return DynatraceEntity{}, valErr
+		}
 	}
 	return d.upsertDynatraceObject(ctx, a, name, payload)
 }
@@ -531,6 +537,14 @@ func isUserSessionPropertiesMobile(a api.API) bool {
 	return a.ID == api.UserActionAndSessionPropertiesMobile
 }
 
+func isSlo(a api.API) bool {
+	return a.ID == api.Slo
+}
+
+func isExtension(a api.API) bool {
+	return a.ID == api.Extension
+}
+
 func (d *ConfigClient) getExistingObjectId(ctx context.Context, objectName string, theApi api.API, payload []byte) (string, error) {
 	var objID string
 	// if there is a custom equal function registered, use that instead of just the Object name
@@ -862,4 +876,19 @@ func translateSyntheticEntityResponse(resp SyntheticEntity, objectName string) D
 		Name: objectName,
 		Id:   resp.EntityId,
 	}
+}
+
+func validateSloV1Payload(payload []byte) error {
+	type SloV1Keys struct {
+		EvaluationType string `json:"evaluationType"` // evaluation type is the only required property that is used in rate metrics and non rate metrics
+	}
+	parsedPayload := SloV1Keys{}
+	err := json.Unmarshal(payload, &parsedPayload)
+	if err != nil {
+		return err
+	}
+	if parsedPayload.EvaluationType == "" {
+		return errors.New("tried to deploy an slo-v2 configuration to slo-v1")
+	}
+	return nil
 }

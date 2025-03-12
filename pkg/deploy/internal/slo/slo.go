@@ -24,6 +24,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-logr/logr"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -31,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/go-logr/logr"
 )
 
 type deployServiceLevelObjectiveClient interface {
@@ -51,9 +52,9 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	defer cancel()
 
 	externalID := idutils.GenerateExternalID(c.Coordinate)
-	requestPayload, err := addExternalId(externalID, renderedConfig)
+	requestPayload, err := addExternalIdAndValidate(externalID, renderedConfig)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "failed to add externalID to slo request payload").WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "failed to validate slo payload").WithError(err)
 	}
 
 	//Strategy 1 when OriginObjectId is set we update the object
@@ -96,13 +97,16 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	return createResolveEntity(response.ID, properties, c), nil
 }
 
-func addExternalId(externalId string, renderedConfig string) ([]byte, error) {
+func addExternalIdAndValidate(externalId string, renderedConfig string) ([]byte, error) {
 	var request map[string]any
 	err := json.Unmarshal([]byte(renderedConfig), &request)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to add externalID to slo request payload: %w", err)
 	}
 	request["externalId"] = externalId
+	if _, exists := request["evaluationType"]; exists {
+		return nil, errors.New("tried to deploy an slo-v1 configuration to slo-v2")
+	}
 	return json.Marshal(request)
 }
 

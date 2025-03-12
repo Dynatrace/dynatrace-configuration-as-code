@@ -1,0 +1,16 @@
+{
+  "criteria": [
+    {
+      "target": 90,
+      "timeframeFrom": "now-7d",
+      "timeframeTo": "now",
+      "warning": 95
+    }
+  ],
+  "customSli": {
+    "indicator": "timeseries sli = avg(dt.synthetic.http.availability)"
+  },
+  "description": "my description",
+  "name": "{{ .name }}",
+  "tags": []
+}

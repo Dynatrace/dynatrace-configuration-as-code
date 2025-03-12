@@ -33,6 +33,7 @@ import (
 )
 
 var mockAPI = api.API{ID: "mock-api", SingleConfiguration: true}
+var mockAPISlo = api.API{ID: api.Slo, SingleConfiguration: true}
 var mockAPINotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
 
 var testReportsApi = api.API{ID: "reports", URLPath: "/api/config/v1/reports"}
@@ -663,6 +664,7 @@ func Test_createDynatraceObject(t *testing.T) {
 		serverResponse      testServerResponse
 		want                DynatraceEntity
 		wantErr             bool
+		payload             []byte
 	}{
 		{
 			name:                "Calls correct POST endpoint",
@@ -672,6 +674,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			serverResponse:      testServerResponse{statusCode: 200, body: `{ "id": "42", "name": "Test object" }`},
 			want:                DynatraceEntity{Id: "42", Name: "Test object"},
 			wantErr:             false,
+			payload:             []byte("{}"),
 		},
 		{
 			name:       "Sends expected query parameters when creating app-detection-rule",
@@ -686,6 +689,17 @@ func Test_createDynatraceObject(t *testing.T) {
 			serverResponse: testServerResponse{statusCode: 200, body: `{ "id": "42", "name": "Test object" }`},
 			want:           DynatraceEntity{Id: "42", Name: "Test object"},
 			wantErr:        false,
+			payload:        []byte("{}"),
+		},
+		{
+			name:                "Sends slo if payload is valid",
+			objectName:          "Test object",
+			apiKey:              api.Slo,
+			expectedQueryParams: []testQueryParams{},
+			serverResponse:      testServerResponse{statusCode: 200, body: `{ "id": "42", "name": "Test object" }`},
+			want:                DynatraceEntity{Id: "42", Name: "Test object"},
+			wantErr:             false,
+			payload:             []byte(`{"evaluationType": "AGGREGATE"}`),
 		},
 		{
 			name:                "Returns err on server error",
@@ -695,6 +709,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			serverResponse:      testServerResponse{statusCode: 400, body: `{}`},
 			want:                DynatraceEntity{},
 			wantErr:             true,
+			payload:             []byte("{}"),
 		},
 		{
 			name:                "Returns error if response can't be parsed",
@@ -704,6 +719,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			serverResponse:      testServerResponse{statusCode: 200, body: `{ "not": "a value" }`},
 			want:                DynatraceEntity{},
 			wantErr:             true,
+			payload:             []byte("{}"),
 		},
 	}
 	for _, tt := range tests {
@@ -732,7 +748,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			testApi := api.API{ID: tt.apiKey}
 
 			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(testRetrySettings))
-			got, err := dtclient.createDynatraceObject(t.Context(), tt.objectName, testApi, []byte("{}"))
+			got, err := dtclient.createDynatraceObject(t.Context(), tt.objectName, testApi, tt.payload)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -833,4 +849,17 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	resp, err := client.Get(t.Context(), mockAPI, "test")
 	assert.NoError(t, err, "there should not be an error")
 	assert.Equal(t, body, resp)
+}
+
+func TestSloV2ToSloV1(t *testing.T) {
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		http.Error(res, "", http.StatusForbidden)
+	}))
+	defer testServer.Close()
+
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
+	require.NoError(t, err)
+
+	_, err = client.UpsertByName(t.Context(), mockAPISlo, "test", []byte("{}"))
+	assert.ErrorContains(t, err, "tried to deploy an slo-v2 configuration to slo-v1")
 }
