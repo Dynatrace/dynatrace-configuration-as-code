@@ -137,10 +137,8 @@ func (d *ConfigClient) UpsertByName(ctx context.Context, a api.API, name string,
 	}
 
 	if isSlo(a) {
-		if isSloV1, parseErr := isSloV1Payload(payload); parseErr != nil {
-			return DynatraceEntity{}, parseErr
-		} else if !isSloV1 {
-			return DynatraceEntity{}, errors.New("tried to deploy an slo-v2 configuration to slo-v1")
+		if valErr := validateSloV1Payload(payload); valErr != nil {
+			return DynatraceEntity{}, valErr
 		}
 	}
 	return d.upsertDynatraceObject(ctx, a, name, payload)
@@ -880,14 +878,17 @@ func translateSyntheticEntityResponse(resp SyntheticEntity, objectName string) D
 	}
 }
 
-func isSloV1Payload(payload []byte) (bool, error) {
+func validateSloV1Payload(payload []byte) error {
 	type SloV1Keys struct {
 		EvaluationType string `json:"evaluationType"` // evaluation type is the only required property that is used in rate metrics and non rate metrics
 	}
 	parsedPayload := SloV1Keys{}
 	err := json.Unmarshal(payload, &parsedPayload)
 	if err != nil {
-		return false, err
+		return err
 	}
-	return parsedPayload.EvaluationType != "", nil
+	if parsedPayload.EvaluationType == "" {
+		return errors.New("tried to deploy an slo-v2 configuration to slo-v1")
+	}
+	return nil
 }
