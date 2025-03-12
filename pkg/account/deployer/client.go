@@ -18,6 +18,7 @@ package deployer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,6 +36,7 @@ type (
 	Permissions    = accountmanagement.PermissionsDto
 	Policy         = accountmanagement.CreateOrUpdateLevelPolicyRequestDto
 	Group          = accountmanagement.PutGroupDto
+	ServiceUser    = accountmanagement.ServiceUserDto
 	ManagementZone = accountmanagement.ManagementZoneResourceDto
 
 	accountManagementClient struct {
@@ -245,6 +247,160 @@ func (d *accountManagementClient) upsertUser(ctx context.Context, userId string)
 	}
 
 	return userId, nil
+}
+
+func (d *accountManagementClient) upsertServiceUser(ctx context.Context, serviceUserId string, data ServiceUser) (remoteId, error) {
+	if serviceUserId == "" {
+		suId, err := d.getServiceUserIDByName(ctx, data.Name)
+		if err != nil {
+			var rnfErr *ResourceNotFoundError
+			if !errors.As(err, &rnfErr) {
+				return "", err
+			}
+
+			return d.createServiceUser(ctx, data)
+		}
+		serviceUserId = suId
+	}
+
+	return d.updateServiceUser(ctx, serviceUserId, data)
+}
+
+func (d *accountManagementClient) createServiceUser(ctx context.Context, dto accountmanagement.ServiceUserDto) (string, error) {
+	uuidDto, resp, err := d.client.ServiceUserManagementAPI.CreateServiceUserForAccount(ctx, d.accountInfo.AccountUUID).ServiceUserDto(dto).Execute()
+	defer closeResponseBody(resp)
+	if err = handleClientResponseError(resp, err, "failed to create service user"); err != nil {
+		return "", err
+	}
+
+	if uuidDto == nil {
+		return "", errors.New("the received data are empty")
+	}
+
+	return uuidDto.Uuid, nil
+}
+
+func (d *accountManagementClient) updateServiceUser(ctx context.Context, serviceUserId string, dto accountmanagement.ServiceUserDto) (string, error) {
+	resp, err := d.client.ServiceUserManagementAPI.UpdateServiceUserForAccount(ctx, d.accountInfo.AccountUUID, serviceUserId).ServiceUserDto(dto).Execute()
+	defer closeResponseBody(resp)
+	if err = handleClientResponseError(resp, err, "failed to update service user"); err != nil {
+		return "", err
+	}
+
+	return serviceUserId, nil
+}
+
+// ResourceNotFoundError is an error signifying that the desired resource was not found.
+type ResourceNotFoundError struct {
+	Identifier string
+}
+
+func (e ResourceNotFoundError) Error() string {
+	return fmt.Sprintf("resource '%s' not found", e.Identifier)
+}
+
+func (c *accountManagementClient) getServiceUserIDByName(ctx context.Context, name string) (string, error) {
+	serviceUser, err := c.getServiceUserByName(ctx, name)
+	if err != nil {
+		return "", err
+	}
+
+	return serviceUser.Uid, nil
+}
+
+func (c *accountManagementClient) getServiceUserEmailByName(ctx context.Context, name string) (string, error) {
+	serviceUser, err := c.getServiceUserByName(ctx, name)
+	if err != nil {
+		return "", err
+	}
+
+	return serviceUser.Email, nil
+}
+
+func (c *accountManagementClient) getServiceUserByName(ctx context.Context, name string) (*accountmanagement.ExternalServiceUserDto, error) {
+	serviceUsers, err := c.getServiceUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var foundServiceUser *accountmanagement.ExternalServiceUserDto
+	for _, s := range serviceUsers {
+		if s.Name == name {
+			if foundServiceUser != nil {
+				return nil, fmt.Errorf("found multiple service users with name '%s'", name)
+			}
+			foundServiceUser = &s
+		}
+	}
+	if foundServiceUser == nil {
+		return nil, &ResourceNotFoundError{Identifier: name}
+	}
+
+	return foundServiceUser, nil
+}
+
+func (c *accountManagementClient) getServiceUserEmailByUid(ctx context.Context, uid string) (string, error) {
+	serviceUser, err := c.getServiceUserByUid(ctx, uid)
+	if err != nil {
+		return "", err
+	}
+
+	return serviceUser.Email, nil
+}
+
+func (c *accountManagementClient) getServiceUserByUid(ctx context.Context, uid string) (*accountmanagement.ExternalServiceUserDto, error) {
+	serviceUsers, err := c.getServiceUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var foundServiceUser *accountmanagement.ExternalServiceUserDto
+	for _, s := range serviceUsers {
+		if s.Uid == uid {
+			if foundServiceUser != nil {
+				return nil, fmt.Errorf("found multiple service users with id '%s'", uid)
+			}
+			foundServiceUser = &s
+		}
+	}
+	if foundServiceUser == nil {
+		return nil, &ResourceNotFoundError{Identifier: uid}
+	}
+
+	return foundServiceUser, nil
+}
+
+func (c *accountManagementClient) getServiceUsers(ctx context.Context) ([]accountmanagement.ExternalServiceUserDto, error) {
+	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
+	const pageSize = 1000
+	page := (int32)(1)
+	for {
+		r, err := c.getServiceUsersPage(ctx, page, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		serviceUsers = append(serviceUsers, r.Results...)
+
+		if r.NextPageKey == nil {
+			break
+		}
+		page++
+	}
+
+	return serviceUsers, nil
+}
+
+func (c *accountManagementClient) getServiceUsersPage(ctx context.Context, page int32, pageSize int32) (*accountmanagement.ExternalServiceUsersPageDto, error) {
+	r, resp, err := c.client.ServiceUserManagementAPI.GetServiceUsersFromAccount(ctx, c.accountInfo.AccountUUID).Page(page).PageSize(pageSize).Execute()
+	defer closeResponseBody(resp)
+	if err = handleClientResponseError(resp, err, "failed to get service users"); err != nil {
+		return nil, err
+	}
+	if r == nil {
+		return nil, errors.New("the received data are empty")
+	}
+	return r, nil
 }
 
 func (d *accountManagementClient) updatePermissions(ctx context.Context, groupId string, permissions []accountmanagement.PermissionsDto) error {
