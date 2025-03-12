@@ -51,6 +51,8 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		return entities.ResolvedEntity{}, err
 	}
 
+	log.WithCtxFields(ctx).Debug("")
+
 	settingsObj := dtclient.SettingsObject{
 		Coordinate:     c.Coordinate,
 		SchemaId:       t.SchemaId,
