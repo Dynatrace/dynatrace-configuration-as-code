@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	strUtils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -719,6 +720,91 @@ configs:
 					OriginObjectId: "origin-object-id",
 				},
 			},
+		},
+		{
+			name:             "loads settings 2.0 config with all properties and allUsers permission with FF on",
+			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'tenant'
+      permissions:
+        allUsers: 'read'`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:profile.test",
+						ConfigId: "profile-id",
+					},
+					Type: config.SettingsType{
+						SchemaId:          "builtin:profile.test",
+						SchemaVersion:     "1.0",
+						AllUserPermission: strUtils.Pointer(config.ReadPermission),
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						"name":                &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
+				},
+			},
+		},
+		{
+			name:             "loads settings 2.0 config allUsers permission with invalid value with FF on",
+			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'tenant'
+      permissions:
+        allUsers: 'wrong-value'`,
+			wantErrorsContain: []string{"cannot parse definition in `test-file.yaml`: unknown allUsers value: 'wrong-value', allowed: [read write none]"},
+		},
+		{
+			name:             "loads settings 2.0 config with all properties and allUsers permission with FF off",
+			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "false"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'tenant'
+      permissions:
+        allUsers: 'read'`,
+			wantErrorsContain: []string{"unknown settings configuration property 'permissions'"},
 		},
 		{
 			name:              "loading a config without type content",

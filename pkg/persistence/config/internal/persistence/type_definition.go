@@ -46,10 +46,15 @@ type ComplexApiDefinition struct {
 }
 
 type SettingsDefinition struct {
-	Schema        string          `yaml:"schema,omitempty" json:"schema,omitempty" jsonschema:"required,description=The Settings 2.0 schema of this config."`
-	SchemaVersion string          `yaml:"schemaVersion,omitempty" json:"schemaVersion,omitempty" jsonschema:"description=This optionally informs the Settings API that a specific schema version was used for this config."`
-	Scope         ConfigParameter `yaml:"scope,omitempty" json:"scope,omitempty"  jsonschema:"required,description=This defines the scope in which this Setting applies."`
-	InsertAfter   ConfigParameter `yaml:"insertAfter,omitempty" json:"insertAfter,omitempty" jsonschema:"description=This optionally informs the settings API that this particular objects needs to be inserted after the referenced one."`
+	Schema        string                `yaml:"schema,omitempty" json:"schema,omitempty" jsonschema:"required,description=The Settings 2.0 schema of this config."`
+	SchemaVersion string                `yaml:"schemaVersion,omitempty" json:"schemaVersion,omitempty" jsonschema:"description=This optionally informs the Settings API that a specific schema version was used for this config."`
+	Scope         ConfigParameter       `yaml:"scope,omitempty" json:"scope,omitempty"  jsonschema:"required,description=This defines the scope in which this Setting applies."`
+	InsertAfter   ConfigParameter       `yaml:"insertAfter,omitempty" json:"insertAfter,omitempty" jsonschema:"description=This optionally informs the settings API that this particular objects needs to be inserted after the referenced one."`
+	Permissions   *PermissionDefinition `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=The optional permissions to be applied to this config."`
+}
+
+type PermissionDefinition struct {
+	AllUsers *string `yaml:"allUsers,omitempty" json:"allUsers" jsonschema:"required,enum=read,enum=write,enum=none,description=All users can use this permission." mapstructure:"allUsers"`
 }
 
 type AutomationDefinition struct {
@@ -156,9 +161,18 @@ func (c *TypeDefinition) parseSettingsType(a any) error {
 		return fmt.Errorf("failed to unmarshal settings-type: %w", err)
 	}
 
+	if !featureflags.AccessControlSettings.Enabled() && r.Permissions != nil {
+		return fmt.Errorf("unknown settings configuration property 'permissions'")
+	}
+
+	var allUserPermission *config.AllUserPermissionKind
+	if r.Permissions != nil {
+		allUserPermission = r.Permissions.AllUsers
+	}
 	c.Type = config.SettingsType{
-		SchemaId:      r.Schema,
-		SchemaVersion: r.SchemaVersion,
+		SchemaId:          r.Schema,
+		SchemaVersion:     r.SchemaVersion,
+		AllUserPermission: allUserPermission,
 	}
 	c.Scope = r.Scope
 	c.InsertAfter = r.InsertAfter
@@ -221,6 +235,12 @@ func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 
 		if c.Scope == nil {
 			return errors.New("missing settings scope")
+		}
+
+		if featureflags.AccessControlSettings.Enabled() {
+			if t.AllUserPermission != nil && !slices.Contains(config.KnownAllUserPermissionKind, *t.AllUserPermission) {
+				return fmt.Errorf("unknown allUsers value: '%s', allowed: %v", *t.AllUserPermission, config.KnownAllUserPermissionKind)
+			}
 		}
 
 	case config.AutomationType:
@@ -303,14 +323,22 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 			insertAfterValue = c.InsertAfter
 		}
 
-		return map[string]any{
-			"settings": SettingsDefinition{
-				Schema:        t.SchemaId,
-				SchemaVersion: t.SchemaVersion,
-				Scope:         c.Scope,
-				InsertAfter:   insertAfterValue,
-			},
-		}, nil
+		setDefinition := SettingsDefinition{
+			Schema:        t.SchemaId,
+			SchemaVersion: t.SchemaVersion,
+			Scope:         c.Scope,
+			InsertAfter:   insertAfterValue,
+		}
+
+		if featureflags.AccessControlSettings.Enabled() {
+			if t.AllUserPermission != nil {
+				setDefinition.Permissions = &PermissionDefinition{
+					AllUsers: t.AllUserPermission,
+				}
+			}
+		}
+
+		return map[string]any{"settings": setDefinition}, nil
 
 	case config.AutomationType:
 		return map[string]any{

@@ -43,6 +43,9 @@ const (
 	// ServiceLevelObjective toggles whether slo configurations are downloaded and / or deployed.
 	// Introduced: v2.19.0
 	ServiceLevelObjective FeatureFlag = "MONACO_FEAT_SLO_V2"
+	// AccessControlSettings toggles whether settings enable the access control
+	// Introduced: v2.21.0
+	AccessControlSettings FeatureFlag = "MONACO_FEAT_ACCESS_CONTROL_SETTINGS"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
@@ -57,4 +60,5 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	ServiceUsers:                       false,
 	OnlyCreateReferencesInStringValues: false,
 	ServiceLevelObjective:              false,
+	AccessControlSettings:              false,
 }

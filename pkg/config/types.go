@@ -30,8 +30,19 @@ const (
 
 var _ Type = SettingsType{}
 
+type AllUserPermissionKind = string
+
+const (
+	ReadPermission  AllUserPermissionKind = "read"
+	WritePermission AllUserPermissionKind = "write"
+	NonePermission  AllUserPermissionKind = "none"
+)
+
+var KnownAllUserPermissionKind = []AllUserPermissionKind{ReadPermission, WritePermission, NonePermission}
+
 type SettingsType struct {
 	SchemaId, SchemaVersion string
+	AllUserPermission       *AllUserPermissionKind
 }
 
 func (SettingsType) ID() TypeID {
