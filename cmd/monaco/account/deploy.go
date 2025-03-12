@@ -31,6 +31,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -134,8 +135,12 @@ func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
 		accountDeployer := deployer.NewAccountDeployer(deployer.NewClient(accInfo, accClient), deployer.WithMaxConcurrentDeploys(maxConcurrentDeploys))
 		logger.Info("Deploying configuration for account: %s", accInfo.Name)
 		logger.Info("Number of users to deploy: %d", len(resources.Users))
+		if featureflags.ServiceUsers.Enabled() {
+			logger.Info("Number of service users to deploy: %d", len(resources.ServiceUsers))
+		}
 		logger.Info("Number of groups to deploy: %d", len(resources.Groups))
 		logger.Info("Number of policies to deploy: %d", len(resources.Policies))
+
 		if err = accountDeployer.Deploy(ctx, resources); err != nil {
 			return err
 		}
