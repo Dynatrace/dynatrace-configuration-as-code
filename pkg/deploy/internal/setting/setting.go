@@ -61,8 +61,9 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 	}
 
 	insertOptions := dtclient.UpsertSettingsOptions{
-		OverrideRetry: nil,
-		InsertAfter:   insertAfter,
+		OverrideRetry:     nil,
+		InsertAfter:       insertAfter,
+		AllUserPermission: t.AllUserPermission,
 	}
 
 	if c.HasRefTo(string(config.BucketTypeID)) {

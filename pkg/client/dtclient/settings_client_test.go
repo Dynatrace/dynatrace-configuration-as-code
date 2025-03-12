@@ -35,8 +35,11 @@ import (
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/bools"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -918,6 +921,165 @@ func TestUpsertSettings(t *testing.T) {
 			assert.Equal(t, test.expectEntity, resp)
 		})
 	}
+}
+
+func TestUpsertSettings_ACL(t *testing.T) {
+	testSchema := "schema"
+	obj := SettingsObject{
+		SchemaId:   testSchema,
+		Coordinate: coordinate.Coordinate{Project: "proj", Type: testSchema, ConfigId: "id"},
+		Content:    []byte("{}"),
+	}
+	schemaACL := schemaDetailsResponse{
+		SchemaId:                testSchema,
+		OwnerBasedAccessControl: bools.Pointer(true),
+	}
+	schemaNoACL := schemaDetailsResponse{
+		SchemaId: testSchema,
+	}
+	objResp := []postResponse{{ObjectId: "ooid"}}
+
+	t.Run("Permissions are not modified if feature flag is disabled", func(t *testing.T) {
+		t.Setenv(featureflags.AccessControlSettings.EnvName(), "false")
+		mappings := map[string]MuxRouteOptions{
+			"GET /api/v2/settings/schemas/schema": {
+				Response: schemaACL,
+			},
+			"GET /api/v2/settings/objects": {},
+			"POST /api/v2/settings/objects": {
+				Response: objResp,
+			},
+			settingsPermissionAPIPath: {
+				FailOnCall: true,
+			},
+			settingsPermissionAllUsersAPIPath: {
+				FailOnCall: true,
+			},
+		}
+
+		RunSettingsClientOnTestServer(t, mappings, func(c *SettingsClient) {
+			// setup cache
+			_, err := c.GetSchema(t.Context(), testSchema)
+			require.NoError(t, err)
+
+			_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: stringutils.Pointer(config.WritePermission)})
+			assert.NoError(t, err)
+		})
+	})
+
+	t.Run("Returns an error if permissions are set but the schema does not support ACL", func(t *testing.T) {
+		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
+		mappings := map[string]MuxRouteOptions{
+			"GET /api/v2/settings/schemas/schema": {
+				Response: schemaNoACL,
+			},
+			"GET /api/v2/settings/objects":  {},
+			"POST /api/v2/settings/objects": {Response: objResp},
+			settingsPermissionAPIPath: {
+				FailOnCall: true,
+			},
+			settingsPermissionAllUsersAPIPath: {
+				FailOnCall: true,
+			},
+		}
+		RunSettingsClientOnTestServer(t, mappings, func(c *SettingsClient) {
+			// setup cache
+			_, err := c.GetSchema(t.Context(), testSchema)
+			require.NoError(t, err)
+
+			_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: stringutils.Pointer(config.WritePermission)})
+			assert.ErrorContains(t, err, "does not support owner based access control")
+		})
+	})
+
+	t.Run("Does not call delete permissions if schema does not support ACL and permissions are not set", func(t *testing.T) {
+		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
+		mappings := map[string]MuxRouteOptions{
+			"GET /api/v2/settings/schemas/schema": {
+				Response: schemaNoACL,
+			},
+			"GET /api/v2/settings/objects":  {},
+			"POST /api/v2/settings/objects": {Response: objResp},
+			settingsPermissionAPIPath: {
+				FailOnCall: true,
+			},
+			settingsPermissionAllUsersAPIPath: {
+				FailOnCall: true,
+			},
+		}
+		RunSettingsClientOnTestServer(t, mappings, func(c *SettingsClient) {
+			// setup cache
+			_, err := c.GetSchema(t.Context(), testSchema)
+			require.NoError(t, err)
+
+			_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{})
+			assert.NoError(t, err)
+		})
+	})
+
+	t.Run("Deletes a permission", func(t *testing.T) {
+		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
+		mappings := map[string]MuxRouteOptions{
+			"GET /api/v2/settings/schemas/schema": {
+				Response: schemaACL,
+			},
+			"GET /api/v2/settings/objects":  {},
+			"POST /api/v2/settings/objects": {Response: objResp},
+			settingsPermissionAPIPath: {
+				FailOnCall: true,
+			},
+			"DELETE " + settingsPermissionAllUsersAPIPath: {},
+		}
+		apiCalls := RunSettingsClientOnTestServer(t, mappings, func(c *SettingsClient) {
+			_, err := c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: stringutils.Pointer(config.NonePermission)})
+			assert.NoError(t, err)
+		})
+		assert.Equal(t, 1, apiCalls["DELETE "+settingsPermissionAllUsersAPIPath])
+	})
+
+	t.Run("Creates a permission", func(t *testing.T) {
+		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
+		mappings := map[string]MuxRouteOptions{
+			"GET /api/v2/settings/schemas/schema": {
+				Response: schemaACL,
+			},
+			"GET /api/v2/settings/objects":      {},
+			"POST /api/v2/settings/objects":     {Response: objResp},
+			"POST " + settingsPermissionAPIPath: {},
+			"GET " + settingsPermissionAllUsersAPIPath: {
+				ResponseStatus: 404,
+			},
+			settingsPermissionAllUsersAPIPath: {
+				FailOnCall: true,
+			},
+		}
+		apiCalls := RunSettingsClientOnTestServer(t, mappings, func(c *SettingsClient) {
+			_, err := c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: stringutils.Pointer(config.WritePermission)})
+			assert.NoError(t, err)
+		})
+		assert.Equal(t, 1, apiCalls["POST "+settingsPermissionAPIPath])
+	})
+
+	t.Run("Updates a permission", func(t *testing.T) {
+		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
+		mappings := map[string]MuxRouteOptions{
+			"GET /api/v2/settings/schemas/schema": {
+				Response: schemaACL,
+			},
+			"GET /api/v2/settings/objects":  {},
+			"POST /api/v2/settings/objects": {Response: objResp},
+			settingsPermissionAPIPath: {
+				FailOnCall: true,
+			},
+			"GET " + settingsPermissionAllUsersAPIPath: {},
+			"PUT " + settingsPermissionAllUsersAPIPath: {},
+		}
+		apiCalls := RunSettingsClientOnTestServer(t, mappings, func(c *SettingsClient) {
+			_, err := c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: stringutils.Pointer(config.WritePermission)})
+			assert.NoError(t, err)
+		})
+		assert.Equal(t, 1, apiCalls["PUT "+settingsPermissionAllUsersAPIPath])
+	})
 }
 
 func TestUpsert_InsertAfter(t *testing.T) {

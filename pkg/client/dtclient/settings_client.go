@@ -34,12 +34,15 @@ import (
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -133,7 +136,8 @@ type UpsertSettingsOptions struct {
 	// It supports the following magic values to insert at the FRONT and BOTTOM of the list:
 	//   - FRONT (InsertPositionFront) -> insert at the front of the list
 	//   - BACK (InsertPositionBack) -> insert at the back of the list
-	InsertAfter *string
+	InsertAfter       *string
+	AllUserPermission *config.AllUserPermissionKind
 }
 
 const (
@@ -291,8 +295,8 @@ const (
 	settingsSchemaAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/schemas"
 	settingsObjectAPIPathClassic      = "/api/v2/settings/objects"
 	settingsObjectAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/objects"
-	settingsPermissionAllUsersAPIPath = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users"
-	settingsPermissionAPIPath         = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions"
+	settingsPermissionAllUsersAPIPath = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users" // GET, PUT, DELETE
+	settingsPermissionAPIPath         = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions"           // POST
 )
 
 func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *SettingsClient) {
@@ -620,8 +624,59 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		return DynatraceEntity{}, err
 	}
 
+	permErr := d.modifyPermission(ctx, entity.Id, obj.SchemaId, upsertOptions.AllUserPermission)
+	if permErr != nil {
+		return DynatraceEntity{}, permErr
+	}
+
 	log.WithCtxFields(ctx).Debug("Created/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
 	return entity, nil
+}
+
+// modifyPermission creates, updates or deletes the all-user permission of a given settings object
+func (d *SettingsClient) modifyPermission(ctx context.Context, objectID string, schemaId string, allUserPermission *config.AllUserPermissionKind) error {
+	if !featureflags.AccessControlSettings.Enabled() {
+		return nil
+	}
+	permissions := getPermissionsFromConfig(allUserPermission)
+	if schema, schemaExists := d.schemaCache.Get(schemaId); schemaExists && (schema.OwnerBasedAccessControl == nil || !*schema.OwnerBasedAccessControl) {
+		// if we don't have any permissions to update and the schema does not support ACL, we return (success)
+		if permissions == nil {
+			return nil
+		}
+		return fmt.Errorf("the given schema '%s' does not support owner based access control", schemaId)
+	}
+
+	if permissions == nil {
+		err := d.DeletePermission(ctx, objectID)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := d.UpsertPermission(ctx, objectID, PermissionObject{
+			Permissions: permissions,
+			Accessor:    &Accessor{AllUsers},
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// getPermissionsFromConfig maps from "write" (config) to ["r", "w"] (API)
+func getPermissionsFromConfig(allUserPermission *config.AllUserPermissionKind) []TypePermissions {
+	if allUserPermission == nil {
+		return nil
+	}
+	if *allUserPermission == config.ReadPermission {
+		return []TypePermissions{Read}
+	}
+	if *allUserPermission == config.WritePermission {
+		return []TypePermissions{Read, Write}
+	}
+	// invalid value already handled during load
+	return nil
 }
 
 type match struct {
@@ -905,8 +960,7 @@ func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *Downloa
 func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
-		apiError := coreapi.APIError{}
-		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+		if api.IsAPIErrorStatusNotFound(err) {
 			log.Debug("No settings object with id '%s' found to delete (HTTP 404 response)", objectID)
 			return nil
 		}
@@ -928,9 +982,8 @@ func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (Pe
 		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
 	))
 
-	apiError := coreapi.APIError{}
 	// when the API returns a 404 it means that you don't have permission (no-access), or the object does not exist
-	if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+	if api.IsAPIErrorStatusNotFound(err) {
 		return PermissionObject{}, nil
 	}
 
@@ -1012,10 +1065,10 @@ func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) 
 		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
 	))
 
-	if err != nil {
+	// deployments with "none" for all-user will always try to delete. This could be an update (restricted to shared) or it stays the same (delete 404)
+	if err != nil && !api.IsAPIErrorStatusNotFound(err) {
 		return fmt.Errorf("failed to delete permission object: %w", err)
 	}
-
 	return nil
 }
 
