@@ -148,9 +148,9 @@ func (d *AccountDeployer) deployResources(ctx context.Context, res *account.Reso
 	d.deployPolicies(ctx, res.Policies, dispatcher)
 	d.deployGroups(ctx, res.Groups, dispatcher)
 	d.deployUsers(ctx, res.Users, dispatcher)
+	d.deployServiceUsers(ctx, res.ServiceUsers, dispatcher)
 
 	return dispatcher.Wait()
-
 }
 
 func (d *AccountDeployer) updateBindings(ctx context.Context, res *account.Resources) error {
@@ -249,6 +249,21 @@ func (d *AccountDeployer) deployUsers(ctx context.Context, users map[string]acco
 	}
 }
 
+func (d *AccountDeployer) deployServiceUsers(ctx context.Context, serviceUsers map[string]account.ServiceUser, dispatcher *Dispatcher) {
+	for _, serviceUser := range serviceUsers {
+		serviceUser := serviceUser
+		deployServiceUserJob := func(wg *sync.WaitGroup, errCh chan error) {
+			defer wg.Done()
+			d.logger.Info("Deploying service user %s", serviceUser.Name)
+			if _, err := d.upsertServiceUser(d.logCtx(ctx), serviceUser); err != nil {
+				errCh <- fmt.Errorf("unable to deploy service user for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+			}
+		}
+		dispatcher.AddJob(deployServiceUserJob)
+
+	}
+}
+
 func (d *AccountDeployer) deployGroupBindings(ctx context.Context, groups map[account.GroupId]account.Group, dispatcher *Dispatcher) {
 	for _, group := range groups {
 		group := group
@@ -318,6 +333,11 @@ func (d *AccountDeployer) upsertGroup(ctx context.Context, group account.Group) 
 
 func (d *AccountDeployer) upsertUser(ctx context.Context, user account.User) (remoteId, error) {
 	return d.accClient.upsertUser(ctx, user.Email.Value())
+}
+
+func (d *AccountDeployer) upsertServiceUser(ctx context.Context, serviceUser account.ServiceUser) (remoteId, error) {
+	//return d.accClient.upsertUser(ctx, user.Email.Value())
+	return "", nil
 }
 
 func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group account.Group) error {
