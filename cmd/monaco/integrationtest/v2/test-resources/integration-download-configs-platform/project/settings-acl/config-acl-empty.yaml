@@ -1,0 +1,11 @@
+configs:
+- id: settings
+  config:
+    name: Connection-empty
+    template: settings.json
+    skip: false
+  type:
+    settings:
+      schema: app:my.dynatrace.github.connector:connection
+      schemaVersion: "1"
+      scope: environment

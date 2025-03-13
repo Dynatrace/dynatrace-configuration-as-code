@@ -39,6 +39,7 @@ func TestDryRun(t *testing.T) {
 	envVars := map[featureflags.FeatureFlag]string{
 		featureflags.OpenPipeline:          "true",
 		featureflags.ServiceLevelObjective: "true",
+		featureflags.AccessControlSettings: "true",
 	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
