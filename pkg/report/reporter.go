@@ -116,19 +116,22 @@ func (d *defaultReporter) start(fs afero.Fs, reportFilePath string) {
 		}
 	}()
 
-	writer := bufio.NewWriter(file)
-	if recordErr := d.runRecorder(writer); recordErr != nil {
+	if recordErr := d.runRecorder(file); recordErr != nil {
 		log.Error("Failed to record deployment report: %s", recordErr)
 	}
 }
 
-func (d *defaultReporter) runRecorder(writer *bufio.Writer) error {
+func (d *defaultReporter) runRecorder(file afero.File) error {
+	writer := bufio.NewWriter(file)
 	for {
 		select {
 		case <-time.After(3 * time.Second):
 			log.Debug("Flushed report")
 			if err := writer.Flush(); err != nil {
 				return fmt.Errorf("unable to flush record file: %w", err)
+			}
+			if err := file.Sync(); err != nil {
+				return fmt.Errorf("unable to sync record file: %w", err)
 			}
 		case r, open := <-d.queue:
 			if !open {
