@@ -263,18 +263,20 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 		l := log.WithCtxFields(ctx).WithFields(
 			field.F("parent", parent.Config.Coordinate),
 			field.F("deploymentFailed", failed),
-			field.F("child", child.Config.Coordinate),
+			field.F("child", childCfg.Coordinate),
 			field.StatusDeploymentSkipped())
 
 		// after the first iteration
+		var skipDeploymentWarning string
 		if parent != root {
-			l.WithFields(field.F("root", root.Config.Coordinate)).
-				Warn("Skipping deployment of %v, as it depends on %v which was not deployed after root dependency configuration %v %s", childCfg.Coordinate, parent.Config.Coordinate, root.Config.Coordinate, reason)
+			l = l.WithFields(field.F("root", root.Config.Coordinate))
+			skipDeploymentWarning = fmt.Sprintf("Skipping deployment of %v, as it depends on %v which was not deployed after root dependency configuration %v %s", childCfg.Coordinate, parent.Config.Coordinate, root.Config.Coordinate, reason)
 		} else {
-			l.Warn("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
+			skipDeploymentWarning = fmt.Sprintf("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
 		}
 
-		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.StateSkipped, nil, nil)
+		l.Warn(skipDeploymentWarning)
+		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.StateSkipped, []report.Detail{{Type: report.DetailTypeWarn, Message: skipDeploymentWarning}}, nil)
 
 		removeChildren(ctx, child, root, configGraph, failed)
 
