@@ -531,7 +531,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 			"",
 		},
 		{
-			"token manifest with settings api and permissions",
+			"OAuth manifest with settings api and permissions",
 			manifest.Environments{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
@@ -554,7 +554,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 			project.ConfigsPerType{
 				string(config.SettingsTypeID): []config.Config{settingsConfWithPermission},
 			},
-			"using permission property on settings API requires a OAuth",
+			"using permission property on settings API requires OAuth",
 		},
 	}
 
