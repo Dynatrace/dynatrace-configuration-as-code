@@ -289,7 +289,7 @@ func validateAuthenticationWithProjectConfigs(projects []project.Project, enviro
 					case config.SettingsType:
 						t, ok := conf.Type.(config.SettingsType)
 						if ok && t.AllUserPermission != nil && environments[envName].Auth.OAuth == nil {
-							return fmt.Errorf("using permission property on settings API requires a OAuth, schema '%s' enviroment '%s'", t.SchemaId, envName)
+							return fmt.Errorf("using permission property on settings API requires OAuth, schema '%s' enviroment '%s'", t.SchemaId, envName)
 						}
 						if environments[envName].Auth.Token == nil && environments[envName].Auth.OAuth == nil {
 							return fmt.Errorf("API of type '%s' requires a token or OAuth for environment '%s'", conf.Type, envName)
