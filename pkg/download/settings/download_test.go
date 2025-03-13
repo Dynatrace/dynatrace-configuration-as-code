@@ -30,10 +30,9 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/bools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -776,7 +775,7 @@ func TestDownloadAll(t *testing.T) {
 						{
 							SchemaId:                "app:my-app:schema",
 							Ordered:                 false,
-							OwnerBasedAccessControl: bools.Pointer(true),
+							OwnerBasedAccessControl: pointers.ToPointer(true),
 						},
 					}, nil
 				},
@@ -814,7 +813,7 @@ func TestDownloadAll(t *testing.T) {
 					Type: config.SettingsType{
 						SchemaId:          "app:my-app:schema",
 						SchemaVersion:     "1.2.3",
-						AllUserPermission: stringutils.Pointer(config.WritePermission),
+						AllUserPermission: pointers.ToPointer(config.WritePermission),
 					},
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
@@ -832,7 +831,7 @@ func TestDownloadAll(t *testing.T) {
 						{
 							SchemaId:                "app:my-app:schema",
 							Ordered:                 false,
-							OwnerBasedAccessControl: bools.Pointer(true),
+							OwnerBasedAccessControl: pointers.ToPointer(true),
 						},
 					}, nil
 				},
@@ -885,7 +884,7 @@ func TestDownloadAll(t *testing.T) {
 						{
 							SchemaId:                "app:my-app:schema",
 							Ordered:                 false,
-							OwnerBasedAccessControl: bools.Pointer(true),
+							OwnerBasedAccessControl: pointers.ToPointer(true),
 						},
 					}, nil
 				},
@@ -927,7 +926,7 @@ func TestDownloadAll(t *testing.T) {
 
 			c := client.NewMockSettingsClient(gomock.NewController(t))
 			schemas, err := tt.mockValues.Schemas()
-			c.EXPECT().ListSchemas(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
+			c.EXPECT().ListSchemas(gomock.Any()).Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			permissions, err := tt.mockValues.Permissions()
 			c.EXPECT().GetPermission(gomock.Any(), gomock.Any()).Times(tt.mockValues.GetPermissionCalls).Return(permissions, err)
 

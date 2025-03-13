@@ -26,10 +26,6 @@ func ToString(v interface{}) string {
 	return fmt.Sprintf("%v", v)
 }
 
-func Pointer(str string) *string {
-	return &str
-}
-
 // CapitalizeFirstRuneInString returns the specified string with the first rune in uppercase. If the first rune cannot be extracted, the string is returned unchanged.
 func CapitalizeFirstRuneInString(s string) string {
 	firstRune, width := utf8.DecodeRuneInString(s)

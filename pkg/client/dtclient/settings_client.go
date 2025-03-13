@@ -26,7 +26,6 @@ import (
 	"net/url"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/exp/maps"
@@ -34,6 +33,7 @@ import (
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -149,13 +149,6 @@ const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schem
 const reducedListSettingsFields = "objectId,externalId,schemaVersion,schemaId,scope,modificationInfo"
 const defaultPageSize = "500"
 
-// ListSchemasOptions are additional options for the ListSchemas method
-// of the Settings client
-type ListSchemasOptions struct {
-	// If set to `false` it does not fetch the "ownerBasedAccessControl" information
-	DiscardACL bool
-}
-
 // ListSettingsOptions are additional options for the ListSettings method
 // of the Settings client
 type ListSettingsOptions struct {
@@ -237,10 +230,9 @@ type (
 	}
 
 	SchemaItem struct {
-		SchemaId string `json:"schemaId"`
-		Ordered  bool   `json:"ordered"`
-		// At the moment, the API doesn't return this property
-		OwnerBasedAccessControl *bool `json:"ownerBasedAccessControl"`
+		SchemaId                string `json:"schemaId"`
+		Ordered                 bool   `json:"ordered"`
+		OwnerBasedAccessControl *bool  `json:"ownerBasedAccessControl,omitempty"`
 	}
 	SchemaList []SchemaItem
 
@@ -282,7 +274,7 @@ type (
 		SchemaId                string             `json:"schemaId"`
 		Ordered                 bool               `json:"ordered"`
 		SchemaConstraints       []schemaConstraint `json:"schemaConstraints"`
-		OwnerBasedAccessControl *bool              `json:"ownerBasedAccessControl"`
+		OwnerBasedAccessControl *bool              `json:"ownerBasedAccessControl,omitempty"`
 	}
 )
 
@@ -399,7 +391,7 @@ func (d *SettingsClient) Cache(ctx context.Context, schemaID string) error {
 	return err
 }
 
-func (d *SettingsClient) ListSchemas(ctx context.Context, options ListSchemasOptions) (schemas SchemaList, err error) {
+func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
 	queryParams := url.Values{}
 	queryParams.Add("fields", "ordered,schemaId")
 
@@ -419,42 +411,48 @@ func (d *SettingsClient) ListSchemas(ctx context.Context, options ListSchemasOpt
 		log.Warn("Total count of settings 2.0 schemas (=%d) does not match with count of actually downloaded settings 2.0 schemas (=%d)", result.TotalCount, len(result.Items))
 	}
 
-	if !options.DiscardACL {
-		return d.addACLToSchemas(ctx, result.Items)
+	if featureflags.AccessControlSettings.Enabled() {
+		return d.addOwnerBasedAccessControl(ctx, result.Items)
 	}
 	return result.Items, nil
 }
 
 // addACLToSchemas adds the correct ownerBasedAccessControl information to the schemas
-func (d *SettingsClient) addACLToSchemas(ctx context.Context, schemas SchemaList) (SchemaList, error) {
-	wg := sync.WaitGroup{}
-	downloadMutex := sync.Mutex{}
-	wg.Add(len(schemas))
-	errs := make([]error, 0)
-	for i, s := range schemas {
+func (d *SettingsClient) addOwnerBasedAccessControl(ctx context.Context, schemas SchemaList) (SchemaList, error) {
+	errChan := make(chan error, len(schemas))
+	resChan := make(chan SchemaItem, len(schemas))
+	errs := make([]error, 0, len(schemas))
+	updatedSchemas := make(SchemaList, 0, len(schemas))
+
+	for _, s := range schemas {
 		go func(s SchemaItem) {
-			defer wg.Done()
 			fullSchema, err := d.GetSchema(ctx, s.SchemaId)
 			if err != nil {
-				downloadMutex.Lock()
-				errs = append(errs, err)
-				downloadMutex.Unlock()
+				errChan <- err
 				return
 			}
-			if fullSchema.OwnerBasedAccessControl != nil {
-				schemas[i] = SchemaItem{
-					SchemaId:                s.SchemaId,
-					Ordered:                 s.Ordered,
-					OwnerBasedAccessControl: fullSchema.OwnerBasedAccessControl,
-				}
-			}
+
+			s.OwnerBasedAccessControl = fullSchema.OwnerBasedAccessControl
+			resChan <- s
 		}(s)
 	}
-	wg.Wait()
+
+	for i := 0; i < len(schemas); i++ {
+		select {
+		case err := <-errChan:
+			errs = append(errs, err)
+		case res := <-resChan:
+			updatedSchemas = append(updatedSchemas, res)
+		}
+	}
+
+	close(errChan)
+	close(resChan)
+
 	if len(errs) > 0 {
 		return nil, errors.Join(errs...)
 	}
-	return schemas, nil
+	return updatedSchemas, nil
 }
 
 func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constraints Schema, err error) {
