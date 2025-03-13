@@ -639,12 +639,10 @@ func (d *SettingsClient) modifyPermission(ctx context.Context, objectID string, 
 		return nil
 	}
 	permissions := getPermissionsFromConfig(allUserPermission)
-	if schema, schemaExists := d.schemaCache.Get(schemaId); schemaExists && (schema.OwnerBasedAccessControl == nil || !*schema.OwnerBasedAccessControl) {
-		// if we don't have any permissions to update and the schema does not support ACL, we return (success)
-		if permissions == nil {
-			return nil
-		}
-		return fmt.Errorf("the given schema '%s' does not support owner based access control", schemaId)
+
+	// if we don't have any permissions to update and the schema does not support ACL, we return (success)
+	if schema, schemaExists := d.schemaCache.Get(schemaId); schemaExists && (schema.OwnerBasedAccessControl == nil || !*schema.OwnerBasedAccessControl) && permissions == nil {
+		return nil
 	}
 
 	if permissions == nil {

@@ -967,31 +967,6 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		})
 	})
 
-	t.Run("Returns an error if permissions are set but the schema does not support ACL", func(t *testing.T) {
-		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
-		mappings := map[string]MuxRouteOptions{
-			"GET /api/v2/settings/schemas/schema": {
-				Response: schemaNoACL,
-			},
-			"GET /api/v2/settings/objects":  {},
-			"POST /api/v2/settings/objects": {Response: objResp},
-			settingsPermissionAPIPath: {
-				FailOnCall: true,
-			},
-			settingsPermissionAllUsersAPIPath: {
-				FailOnCall: true,
-			},
-		}
-		RunSettingsClientOnTestServer(t, mappings, func(c *SettingsClient) {
-			// setup cache
-			_, err := c.GetSchema(t.Context(), testSchema)
-			require.NoError(t, err)
-
-			_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: stringutils.Pointer(config.WritePermission)})
-			assert.ErrorContains(t, err, "does not support owner based access control")
-		})
-	})
-
 	t.Run("Does not call delete permissions if schema does not support ACL and permissions are not set", func(t *testing.T) {
 		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 		mappings := map[string]MuxRouteOptions{
