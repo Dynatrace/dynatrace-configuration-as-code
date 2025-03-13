@@ -45,7 +45,7 @@ func (c *DummySettingsClient) Upsert(_ context.Context, obj SettingsObject, _ Up
 	}, nil
 }
 
-func (c *DummySettingsClient) ListSchemas(_ context.Context, _ ListSchemasOptions) (SchemaList, error) {
+func (c *DummySettingsClient) ListSchemas(_ context.Context) (SchemaList, error) {
 	return make(SchemaList, 0), nil
 }
 
