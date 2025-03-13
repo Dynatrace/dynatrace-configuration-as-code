@@ -40,6 +40,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
@@ -190,11 +191,19 @@ func TestDeployReport(t *testing.T) {
 
 		t.Setenv(environment.DeploymentReportFilename, reportFile)
 
-		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, _ TestContext) {
+		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, tc TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
 			require.NoError(t, err)
 
 			assertReport(t, fs, reportFile, true)
+
+			// assert report contains a DEPLOY record for config that was skipped together with details of the reason
+			records := readReport(t, fs, reportFile)
+			record, exists := matcher.FindRecord(records, report.Record{Type: report.TypeDeploy, State: report.StateSkipped, Config: &coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "profile3_" + tc.suffix}})
+			assert.True(t, exists)
+			require.Len(t, record.Details, 1)
+			assert.Equal(t, "WARN", record.Details[0].Type)
+			assert.Contains(t, record.Details[0].Message, "Skipping deployment")
 		})
 	})
 
@@ -254,20 +263,31 @@ func cleanupLogsDir() error {
 	return err
 }
 
-func assertReport(t *testing.T, fs afero.Fs, path string, succeed bool) {
+// readReport reads and returns all records in the specified report file and asserts that this succeeded.
+func readReport(t *testing.T, fs afero.Fs, path string) []report.Record {
 	t.Helper()
 
 	records, err := report.ReadReportFile(fs, path)
 	require.NoError(t, err, "file must exists and be readable")
 
 	require.NotEmpty(t, records)
+
+	return records
+}
+
+// assertReport reads a report and asserts that it either indicates a successful or failed deployment depending on the value of succeed.
+func assertReport(t *testing.T, fs afero.Fs, path string, succeed bool) {
+	t.Helper()
+
+	records := readReport(t, fs, path)
+	matcher.ContainsInfoRecord(t, records, "Monaco version")
+	matcher.ContainsInfoRecord(t, records, "Deployment finished")
+	matcher.ContainsInfoRecord(t, records, "Report finished")
+
 	if succeed {
 		for index, r := range records {
 			assert.Containsf(t, []report.RecordState{report.StateSuccess, report.StateExcluded, report.StateSkipped, report.StateInfo}, r.State, "config at %d is with status %s", index, r.State)
 		}
-		matcher.ContainsInfoRecord(t, records, "Monaco version")
-		matcher.ContainsInfoRecord(t, records, "Deployment finished")
-		matcher.ContainsInfoRecord(t, records, "Report finished")
 	}
 
 	if !succeed {

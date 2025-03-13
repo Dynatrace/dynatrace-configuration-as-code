@@ -1,8 +1,27 @@
 configs:
-- id: profile
+- id: profile1
   config:
     name: Test Profile
     template: profile.json
     skip: false
+  type:
+    api: alerting-profile
+- id: profile2
+  config:
+    name: Test Profile
+    template: profile.json
+    skip: true
+  type:
+    api: alerting-profile
+- id: profile3
+  config:
+    name: Test Profile
+    template: profile.json
+    skip: false
+    parameters:
+      p1: # use a parameter to force dependency
+        type: reference
+        configId: profile2
+        property: id
   type:
     api: alerting-profile
