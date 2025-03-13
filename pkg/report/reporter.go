@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	libstrings "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -212,7 +213,7 @@ func convertErrorToString(err error) string {
 	if err == nil {
 		return ""
 	}
-	return err.Error()
+	return libstrings.CapitalizeFirstRuneInString(err.Error())
 }
 
 // GetSummary returns a summary of all seen events as a string.

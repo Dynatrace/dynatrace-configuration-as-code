@@ -16,7 +16,11 @@
 
 package strings
 
-import "fmt"
+import (
+	"fmt"
+	"unicode"
+	"unicode/utf8"
+)
 
 func ToString(v interface{}) string {
 	return fmt.Sprintf("%v", v)
@@ -24,4 +28,13 @@ func ToString(v interface{}) string {
 
 func Pointer(str string) *string {
 	return &str
+}
+
+// CapitalizeFirstRuneInString returns the specified string with the first rune in uppercase. If the first rune cannot be extracted, the string is returned unchanged.
+func CapitalizeFirstRuneInString(s string) string {
+	firstRune, width := utf8.DecodeRuneInString(s)
+	if firstRune == utf8.RuneError {
+		return s
+	}
+	return string(unicode.ToUpper(firstRune)) + s[width:]
 }

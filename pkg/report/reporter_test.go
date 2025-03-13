@@ -76,11 +76,11 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, records, 7)
-	anError := "an error"
+	anError := "An error"
 
 	matcher.ContainsRecord(t, records, report.Record{Type: "INFO", Time: report.JSONTime(testTime), State: "INFO", Message: "startup"}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "LOAD", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS"}, true)
-	matcher.ContainsRecord(t, records, report.Record{Type: "LOAD", Time: report.JSONTime(testTime), State: "ERROR", Error: "my-error", Message: "my-message"}, true)
+	matcher.ContainsRecord(t, records, report.Record{Type: "LOAD", Time: report.JSONTime(testTime), State: "ERROR", Error: "My-error", Message: "my-message"}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS", Details: nil, Error: ""}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, State: "ERROR", Details: []report.Detail{{Type: report.DetailTypeError, Message: "error"}}, Error: anError}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, State: "SKIPPED", Details: []report.Detail{{Type: report.DetailTypeInfo, Message: "skipped"}}, Error: ""}, true)
