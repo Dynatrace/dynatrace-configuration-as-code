@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package bools
+package pointers
 
-func Pointer(v bool) *bool {
-	return &v
+func ToPointer[T any](t T) *T {
+	return &t
 }

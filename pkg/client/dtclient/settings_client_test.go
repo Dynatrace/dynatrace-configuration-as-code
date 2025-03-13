@@ -34,8 +34,9 @@ import (
 
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/bools"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
@@ -2488,28 +2489,23 @@ func TestSettingsClient_DeletePermission(t *testing.T) {
 }
 
 func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
+	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 	testSchema1 := "schema1"
 	testSchema2 := "schema2"
-	schemas := SchemaListResponse{
-		Items: SchemaList{
-			{
-				SchemaId: testSchema1,
-			},
-			{
-				SchemaId: testSchema2,
-			},
-		},
-		TotalCount: 2,
-	}
 	fullSchemas := map[string]schemaDetailsResponse{
 		testSchema1: {
 			SchemaId:                testSchema1,
-			OwnerBasedAccessControl: bools.Pointer(true),
+			OwnerBasedAccessControl: pointers.ToPointer(true),
 		},
 		testSchema2: {
 			SchemaId:                testSchema2,
-			OwnerBasedAccessControl: bools.Pointer(false),
+			OwnerBasedAccessControl: pointers.ToPointer(false),
 		},
+	}
+
+	schemas := SchemaListResponse{}
+	for schemaId := range fullSchemas {
+		schemas.Items = append(schemas.Items, SchemaItem{SchemaId: schemaId})
 	}
 	mux := http.NewServeMux()
 
@@ -2540,26 +2536,28 @@ func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
 	restClient := corerest.NewClient(serverURL, server.Client())
 
 	c, err := NewClassicSettingsClient(restClient)
+	require.NoError(t, err)
 
-	gotSchemas, err := c.ListSchemas(t.Context(), ListSchemasOptions{})
+	gotSchemas, err := c.ListSchemas(t.Context())
 	assert.NoError(t, err)
 
-	assert.Equal(t, SchemaList{
+	assert.ElementsMatch(t, SchemaList{
 		SchemaItem{
 			SchemaId:                testSchema1,
 			Ordered:                 false,
-			OwnerBasedAccessControl: bools.Pointer(true),
+			OwnerBasedAccessControl: pointers.ToPointer(true),
 		},
 		SchemaItem{
 			SchemaId:                testSchema2,
 			Ordered:                 false,
-			OwnerBasedAccessControl: bools.Pointer(false),
+			OwnerBasedAccessControl: pointers.ToPointer(false),
 		},
 	}, gotSchemas)
 }
 
-func TestSettingsClient_ListSchemas_WithAclAndError(t *testing.T) {
+func TestSettingsClient_ListSchemas_WithAclAndErrorOnGetSchema(t *testing.T) {
 	testSchema1 := "schema1"
+	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 	schemas := SchemaListResponse{
 		Items: SchemaList{
 			{
@@ -2593,13 +2591,15 @@ func TestSettingsClient_ListSchemas_WithAclAndError(t *testing.T) {
 	restClient := corerest.NewClient(serverURL, server.Client())
 
 	c, err := NewClassicSettingsClient(restClient)
+	require.NoError(t, err)
 
-	_, err = c.ListSchemas(t.Context(), ListSchemasOptions{})
+	_, err = c.ListSchemas(t.Context())
 	assert.Error(t, err)
 }
 
 func TestSettingsClient_ListSchemas_WithoutAcl(t *testing.T) {
 	testSchema1 := "schema1"
+	t.Setenv(featureflags.AccessControlSettings.EnvName(), "false")
 	schemas := SchemaListResponse{
 		Items: SchemaList{
 			{
@@ -2631,8 +2631,9 @@ func TestSettingsClient_ListSchemas_WithoutAcl(t *testing.T) {
 	restClient := corerest.NewClient(serverURL, server.Client())
 
 	c, err := NewClassicSettingsClient(restClient)
+	require.NoError(t, err)
 
-	gotSchemas, err := c.ListSchemas(t.Context(), ListSchemasOptions{DiscardACL: true})
+	gotSchemas, err := c.ListSchemas(t.Context())
 	assert.NoError(t, err)
 
 	assert.Equal(t, SchemaList{

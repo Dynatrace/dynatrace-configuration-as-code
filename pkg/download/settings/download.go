@@ -32,7 +32,7 @@ import (
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -89,7 +89,7 @@ func downloadSpecific(ctx context.Context, client client.SettingsClient, project
 }
 
 func fetchAllSchemas(ctx context.Context, cl client.SettingsClient) ([]schema, error) {
-	dlSchemas, err := cl.ListSchemas(ctx, dtclient.ListSchemasOptions{})
+	dlSchemas, err := cl.ListSchemas(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func fetchAllSchemas(ctx context.Context, cl client.SettingsClient) ([]schema, e
 }
 
 func fetchSchemas(ctx context.Context, cl client.SettingsClient, schemaIds []string) ([]schema, error) {
-	dlSchemas, err := cl.ListSchemas(ctx, dtclient.ListSchemasOptions{})
+	dlSchemas, err := cl.ListSchemas(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -287,12 +287,12 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permis
 func getObjectPermission(permissions map[string]dtclient.PermissionObject, objectID string) *config.AllUserPermissionKind {
 	if p, exists := permissions[objectID]; exists && p.Accessor != nil && p.Accessor.Type == dtclient.AllUsers {
 		if slices.Contains(p.Permissions, dtclient.Write) {
-			return stringutils.Pointer(config.WritePermission)
+			return pointers.ToPointer(config.WritePermission)
 		}
 		if slices.Contains(p.Permissions, dtclient.Read) {
-			return stringutils.Pointer(config.ReadPermission)
+			return pointers.ToPointer(config.ReadPermission)
 		}
-		return stringutils.Pointer(config.NonePermission)
+		return pointers.ToPointer(config.NonePermission)
 	}
 	return nil
 }
