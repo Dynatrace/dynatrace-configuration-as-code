@@ -554,7 +554,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 			project.ConfigsPerType{
 				string(config.SettingsTypeID): []config.Config{settingsConfWithPermission},
 			},
-			"using permission property on settings API requires OAuth",
+			"Using permission property on settings API requires OAuth",
 		},
 	}
 
