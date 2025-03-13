@@ -1,0 +1,5 @@
+{
+  "name": "{{.name}}",
+  "type": "pat",
+  "token": "123abc"
+}

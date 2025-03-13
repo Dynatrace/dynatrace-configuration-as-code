@@ -1,0 +1,13 @@
+configs:
+- id: config-acl
+  config:
+    name: Connection
+    template: settings.json
+    skip: false
+  type:
+    settings: # schema without ACL but permissions set
+      schema: builtin:tags.auto-tagging
+      schemaVersion: "1"
+      scope: environment
+      permissions:
+        allUsers: write
