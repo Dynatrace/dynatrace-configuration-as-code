@@ -571,7 +571,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		return DynatraceEntity{}, err
 	}
 
-	log.WithCtxFields(ctx).Debug("Created/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
+	log.WithCtxFields(ctx).Debug("Created/Updated object '%s' (SchemaID: '%s', Scope: '%s') with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, obj.Scope, externalID)
 	return entity, nil
 }
 

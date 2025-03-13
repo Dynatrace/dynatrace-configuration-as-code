@@ -421,11 +421,11 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 
 		// Verify that last is actually the first object
 		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
-		assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
+		assert.Equal(t, 0, findPositionWithExternalId(t, list, first), "Expected config '%s' to be on the first position", first)
 
 		// Verify that last is actually the last object
 		last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "last"}, tc)
-		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
+		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last), "Expected config '%s' to be on the last position", last)
 	})
 }
 
