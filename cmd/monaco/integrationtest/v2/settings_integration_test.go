@@ -507,6 +507,24 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 	return dtClient
 }
 
+func createSettingsClientPlatform(t *testing.T, env manifest.EnvironmentDefinition) client.SettingsClient {
+	clientFactory := clients.Factory().
+		WithOAuthCredentials(clientcredentials.Config{
+			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
+			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
+		}).
+		WithPlatformURL(env.URL.Value)
+
+	c, err := clientFactory.CreatePlatformClient(t.Context())
+	require.NoError(t, err)
+
+	dtClient, err := dtclient.NewPlatformSettingsClient(c)
+	require.NoError(t, err)
+
+	return dtClient
+}
+
 func findPositionWithExternalId(t *testing.T, objects []dtclient.DownloadSettingsObject, externalId string) int {
 	t.Helper()
 

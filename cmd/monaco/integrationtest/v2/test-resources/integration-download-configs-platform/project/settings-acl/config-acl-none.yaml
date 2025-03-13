@@ -1,0 +1,13 @@
+configs:
+- id: settings-acl-none
+  config:
+    name: None # keep it short. suffix + timestamp + name should be less than 50 characters for this schema
+    template: settings.json
+    skip: false
+  type:
+    settings:
+      schema: app:my.dynatrace.github.connector:connection
+      schemaVersion: "1"
+      scope: environment
+      permissions:
+        allUsers: none
