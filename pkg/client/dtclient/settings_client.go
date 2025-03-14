@@ -419,34 +419,34 @@ func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, e
 
 // addACLToSchemas adds the correct ownerBasedAccessControl information to the schemas
 func (d *SettingsClient) addOwnerBasedAccessControl(ctx context.Context, schemas SchemaList) (SchemaList, error) {
-	errChan := make(chan error, len(schemas))
-	resChan := make(chan SchemaItem, len(schemas))
-	errs := make([]error, 0, len(schemas))
-	updatedSchemas := make(SchemaList, 0, len(schemas))
+	type result struct {
+		Err    error
+		Schema SchemaItem
+	}
+	resChan := make(chan result, len(schemas))
 
 	for _, s := range schemas {
 		go func(s SchemaItem) {
 			fullSchema, err := d.GetSchema(ctx, s.SchemaId)
-			if err != nil {
-				errChan <- err
-				return
+			if err == nil {
+				s.OwnerBasedAccessControl = fullSchema.OwnerBasedAccessControl
 			}
 
-			s.OwnerBasedAccessControl = fullSchema.OwnerBasedAccessControl
-			resChan <- s
+			resChan <- result{Schema: s, Err: err}
 		}(s)
 	}
 
+	errs := make([]error, 0, len(schemas))
+	updatedSchemas := make(SchemaList, 0, len(schemas))
+
 	for i := 0; i < len(schemas); i++ {
-		select {
-		case err := <-errChan:
-			errs = append(errs, err)
-		case res := <-resChan:
-			updatedSchemas = append(updatedSchemas, res)
+		if res := <-resChan; res.Err != nil {
+			errs = append(errs, res.Err)
+		} else {
+			updatedSchemas = append(updatedSchemas, res.Schema)
 		}
 	}
 
-	close(errChan)
 	close(resChan)
 
 	if len(errs) > 0 {
