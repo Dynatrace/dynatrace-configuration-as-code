@@ -428,9 +428,7 @@ func (d *SettingsClient) addOwnerBasedAccessControl(ctx context.Context, schemas
 	for _, s := range schemas {
 		go func(s SchemaItem) {
 			fullSchema, err := d.GetSchema(ctx, s.SchemaId)
-			if err == nil {
-				s.OwnerBasedAccessControl = fullSchema.OwnerBasedAccessControl
-			}
+			s.OwnerBasedAccessControl = fullSchema.OwnerBasedAccessControl
 
 			resChan <- result{Schema: s, Err: err}
 		}(s)
