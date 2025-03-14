@@ -25,12 +25,12 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointers"
 
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	strUtils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -884,7 +884,7 @@ func TestWriteConfigs(t *testing.T) {
 					Type: config.SettingsType{
 						SchemaId:          "schemaid",
 						SchemaVersion:     "1.2.3",
-						AllUserPermission: strUtils.Pointer(config.ReadPermission),
+						AllUserPermission: pointers.ToPointer(config.ReadPermission),
 					},
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "scope"},
@@ -908,7 +908,7 @@ func TestWriteConfigs(t *testing.T) {
 								Type: config.SettingsType{
 									SchemaId:          "schemaid",
 									SchemaVersion:     "1.2.3",
-									AllUserPermission: strUtils.Pointer(config.ReadPermission),
+									AllUserPermission: pointers.ToPointer(config.ReadPermission),
 								},
 								Scope: "scope",
 							},
@@ -933,7 +933,7 @@ func TestWriteConfigs(t *testing.T) {
 					Type: config.SettingsType{
 						SchemaId:          "schemaid",
 						SchemaVersion:     "1.2.3",
-						AllUserPermission: strUtils.Pointer(config.ReadPermission),
+						AllUserPermission: pointers.ToPointer(config.ReadPermission),
 					},
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "scope"},
