@@ -59,6 +59,6 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	Segments:                           true,
 	ServiceUsers:                       false,
 	OnlyCreateReferencesInStringValues: false,
-	ServiceLevelObjective:              false,
+	ServiceLevelObjective:              true,
 	AccessControlSettings:              false,
 }
