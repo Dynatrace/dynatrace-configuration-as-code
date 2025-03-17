@@ -68,7 +68,7 @@ func TestLoadingReport(t *testing.T) {
 					Time:    report.JSONTime(time.Now()),
 					State:   report.StateError,
 					Message: "",
-					Error:   "manifest file does not exist",
+					Error:   "Manifest file does not exist",
 				},
 			},
 		},
