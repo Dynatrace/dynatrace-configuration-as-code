@@ -36,7 +36,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
@@ -2495,11 +2495,11 @@ func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
 	fullSchemas := map[string]schemaDetailsResponse{
 		testSchema1: {
 			SchemaId:                testSchema1,
-			OwnerBasedAccessControl: pointers.ToPointer(true),
+			OwnerBasedAccessControl: pointer.Pointer(true),
 		},
 		testSchema2: {
 			SchemaId:                testSchema2,
-			OwnerBasedAccessControl: pointers.ToPointer(false),
+			OwnerBasedAccessControl: pointer.Pointer(false),
 		},
 	}
 
@@ -2545,12 +2545,12 @@ func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
 		SchemaItem{
 			SchemaId:                testSchema1,
 			Ordered:                 false,
-			OwnerBasedAccessControl: pointers.ToPointer(true),
+			OwnerBasedAccessControl: pointer.Pointer(true),
 		},
 		SchemaItem{
 			SchemaId:                testSchema2,
 			Ordered:                 false,
-			OwnerBasedAccessControl: pointers.ToPointer(false),
+			OwnerBasedAccessControl: pointer.Pointer(false),
 		},
 	}, gotSchemas)
 }

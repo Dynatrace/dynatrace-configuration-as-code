@@ -32,7 +32,7 @@ import (
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -775,7 +775,7 @@ func TestDownloadAll(t *testing.T) {
 						{
 							SchemaId:                "app:my-app:schema",
 							Ordered:                 false,
-							OwnerBasedAccessControl: pointers.ToPointer(true),
+							OwnerBasedAccessControl: pointer.Pointer(true),
 						},
 					}, nil
 				},
@@ -813,7 +813,7 @@ func TestDownloadAll(t *testing.T) {
 					Type: config.SettingsType{
 						SchemaId:          "app:my-app:schema",
 						SchemaVersion:     "1.2.3",
-						AllUserPermission: pointers.ToPointer(config.WritePermission),
+						AllUserPermission: pointer.Pointer(config.WritePermission),
 					},
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
@@ -831,7 +831,7 @@ func TestDownloadAll(t *testing.T) {
 						{
 							SchemaId:                "app:my-app:schema",
 							Ordered:                 false,
-							OwnerBasedAccessControl: pointers.ToPointer(true),
+							OwnerBasedAccessControl: pointer.Pointer(true),
 						},
 					}, nil
 				},
@@ -884,7 +884,7 @@ func TestDownloadAll(t *testing.T) {
 						{
 							SchemaId:                "app:my-app:schema",
 							Ordered:                 false,
-							OwnerBasedAccessControl: pointers.ToPointer(true),
+							OwnerBasedAccessControl: pointer.Pointer(true),
 						},
 					}, nil
 				},

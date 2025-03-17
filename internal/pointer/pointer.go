@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package pointers
+package pointer
 
-func ToPointer[T any](t T) *T {
+func Pointer[T any](t T) *T {
 	return &t
 }

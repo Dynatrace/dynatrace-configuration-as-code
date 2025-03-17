@@ -32,7 +32,7 @@ import (
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -287,12 +287,12 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permis
 func getObjectPermission(permissions map[string]dtclient.PermissionObject, objectID string) *config.AllUserPermissionKind {
 	if p, exists := permissions[objectID]; exists && p.Accessor != nil && p.Accessor.Type == dtclient.AllUsers {
 		if slices.Contains(p.Permissions, dtclient.Write) {
-			return pointers.ToPointer(config.WritePermission)
+			return pointer.Pointer(config.WritePermission)
 		}
 		if slices.Contains(p.Permissions, dtclient.Read) {
-			return pointers.ToPointer(config.ReadPermission)
+			return pointer.Pointer(config.ReadPermission)
 		}
-		return pointers.ToPointer(config.NonePermission)
+		return pointer.Pointer(config.NonePermission)
 	}
 	return nil
 }
