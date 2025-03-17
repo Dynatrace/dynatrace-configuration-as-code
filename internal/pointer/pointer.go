@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,23 +14,8 @@
  * limitations under the License.
  */
 
-package strings
+package pointer
 
-import (
-	"fmt"
-	"unicode"
-	"unicode/utf8"
-)
-
-func ToString(v interface{}) string {
-	return fmt.Sprintf("%v", v)
-}
-
-// CapitalizeFirstRuneInString returns the specified string with the first rune in uppercase. If the first rune cannot be extracted, the string is returned unchanged.
-func CapitalizeFirstRuneInString(s string) string {
-	firstRune, width := utf8.DecodeRuneInString(s)
-	if firstRune == utf8.RuneError {
-		return s
-	}
-	return string(unicode.ToUpper(firstRune)) + s[width:]
+func Pointer[T any](t T) *T {
+	return &t
 }

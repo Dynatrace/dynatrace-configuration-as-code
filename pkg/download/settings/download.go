@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -31,6 +32,7 @@ import (
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -43,8 +45,9 @@ import (
 )
 
 type schema struct {
-	id      string
-	ordered bool
+	id                      string
+	ordered                 bool
+	ownerBasedAccessControl *bool
 }
 
 func Download(ctx context.Context, client client.SettingsClient, projectName string, filters Filters, schemaIDs ...config.SettingsType) (v2.ConfigsPerType, error) {
@@ -94,8 +97,9 @@ func fetchAllSchemas(ctx context.Context, cl client.SettingsClient) ([]schema, e
 	var schemas []schema
 	for _, s := range dlSchemas {
 		schemas = append(schemas, schema{
-			id:      s.SchemaId,
-			ordered: s.Ordered,
+			id:                      s.SchemaId,
+			ordered:                 s.Ordered,
+			ownerBasedAccessControl: s.OwnerBasedAccessControl,
 		})
 
 	}
@@ -117,8 +121,9 @@ func fetchSchemas(ctx context.Context, cl client.SettingsClient, schemaIds []str
 	for _, s := range dlSchemas {
 		if _, exists := schemaIdSet[s.SchemaId]; exists {
 			schemas = append(schemas, schema{
-				id:      s.SchemaId,
-				ordered: s.Ordered,
+				id:                      s.SchemaId,
+				ordered:                 s.Ordered,
+				ownerBasedAccessControl: s.OwnerBasedAccessControl,
 			})
 		}
 	}
@@ -140,18 +145,23 @@ func download(ctx context.Context, client client.SettingsClient, schemas []schem
 			lg.Debug("Downloading all settings for schema '%s'", s.id)
 			objects, err := client.List(ctx, s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
-				var errMsg string
-				var apiErr coreapi.APIError
-				if errors.As(err, &apiErr) {
-					errMsg = asConcurrentErrMsg(apiErr)
-				} else {
-					errMsg = err.Error()
-				}
+				errMsg := extractApiErrorMessage(err)
 				lg.WithFields(field.Error(err)).Error("Failed to fetch all settings for schema '%s': %v", s.id, errMsg)
 				return
 			}
 
-			cfgs := convertAllObjects(objects, projectName, sc.ordered, filters)
+			permissions := make(map[string]dtclient.PermissionObject)
+			if s.ownerBasedAccessControl != nil && *s.ownerBasedAccessControl && featureflags.AccessControlSettings.Enabled() {
+				var permErr error
+				permissions, permErr = getObjectsPermission(ctx, client, objects)
+				if permErr != nil {
+					errMsg := extractApiErrorMessage(permErr)
+					lg.WithFields(field.Error(permErr)).Error("Failed to fetch settings permissions for schema '%s': %v", s.id, errMsg)
+					return
+				}
+			}
+
+			cfgs := convertAllObjects(objects, permissions, projectName, sc.ordered, filters)
 			downloadMutex.Lock()
 			results[s.id] = cfgs
 			downloadMutex.Unlock()
@@ -172,6 +182,41 @@ func download(ctx context.Context, client client.SettingsClient, schemas []schem
 	return results
 }
 
+func extractApiErrorMessage(err error) string {
+	var apiErr coreapi.APIError
+	if errors.As(err, &apiErr) {
+		return asConcurrentErrMsg(apiErr)
+	}
+	return err.Error()
+}
+
+func getObjectsPermission(ctx context.Context, client client.SettingsClient, objects []dtclient.DownloadSettingsObject) (map[string]dtclient.PermissionObject, error) {
+	downloadMutex := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	wg.Add(len(objects))
+	errs := make([]error, 0)
+	permissions := make(map[string]dtclient.PermissionObject)
+	for _, obj := range objects {
+		go func(obj dtclient.DownloadSettingsObject) {
+			defer wg.Done()
+
+			permission, err := client.GetPermission(ctx, obj.ObjectId)
+			if err != nil {
+				downloadMutex.Lock()
+				errs = append(errs, err)
+				downloadMutex.Unlock()
+				return
+			}
+			permissions[obj.ObjectId] = permission
+		}(obj)
+	}
+	wg.Wait()
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	return permissions, nil
+}
+
 func asConcurrentErrMsg(err coreapi.APIError) string {
 	if err.StatusCode != 403 {
 		return err.Error()
@@ -182,7 +227,7 @@ func asConcurrentErrMsg(err coreapi.APIError) string {
 	return fmt.Sprintf("%s\n%s", err.Error(), additionalMessage)
 }
 
-func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, projectName string, ordered bool, filters Filters) []config.Config {
+func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permissions map[string]dtclient.PermissionObject, projectName string, ordered bool, filters Filters) []config.Config {
 	result := make([]config.Config, 0, len(settingsObjects))
 
 	var previousConfigForScope = make(map[string]*config.Config)
@@ -217,8 +262,9 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, projec
 				ConfigId: configId,
 			},
 			Type: config.SettingsType{
-				SchemaId:      settingsObject.SchemaId,
-				SchemaVersion: settingsObject.SchemaVersion,
+				SchemaId:          settingsObject.SchemaId,
+				SchemaVersion:     settingsObject.SchemaVersion,
+				AllUserPermission: getObjectPermission(permissions, settingsObject.ObjectId),
 			},
 			Parameters: map[string]parameter.Parameter{
 				config.ScopeParameter: &value.ValueParameter{Value: scope},
@@ -236,6 +282,19 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, projec
 
 	}
 	return result
+}
+
+func getObjectPermission(permissions map[string]dtclient.PermissionObject, objectID string) *config.AllUserPermissionKind {
+	if p, exists := permissions[objectID]; exists && p.Accessor != nil && p.Accessor.Type == dtclient.AllUsers {
+		if slices.Contains(p.Permissions, dtclient.Write) {
+			return pointer.Pointer(config.WritePermission)
+		}
+		if slices.Contains(p.Permissions, dtclient.Read) {
+			return pointer.Pointer(config.ReadPermission)
+		}
+		return pointer.Pointer(config.NonePermission)
+	}
+	return nil
 }
 
 func shouldFilterSettings() bool {

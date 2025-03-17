@@ -33,6 +33,7 @@ import (
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -222,15 +223,18 @@ type (
 	}
 
 	Schema struct {
-		SchemaId         string
-		Ordered          bool
-		UniqueProperties [][]string
+		SchemaId                string
+		Ordered                 bool
+		OwnerBasedAccessControl *bool
+		UniqueProperties        [][]string
 	}
 
-	SchemaList []struct {
-		SchemaId string `json:"schemaId"`
-		Ordered  bool   `json:"ordered"`
+	SchemaItem struct {
+		SchemaId                string `json:"schemaId"`
+		Ordered                 bool   `json:"ordered"`
+		OwnerBasedAccessControl *bool  `json:"ownerBasedAccessControl,omitempty"`
 	}
+	SchemaList []SchemaItem
 
 	// SchemaListResponse is the response type returned by the ListSchemas operation
 	SchemaListResponse struct {
@@ -267,9 +271,10 @@ type (
 
 	// schemaDetailsResponse is the response type returned by the getSchema operation
 	schemaDetailsResponse struct {
-		SchemaId          string             `json:"schemaId"`
-		Ordered           bool               `json:"ordered"`
-		SchemaConstraints []schemaConstraint `json:"schemaConstraints"`
+		SchemaId                string             `json:"schemaId"`
+		Ordered                 bool               `json:"ordered"`
+		SchemaConstraints       []schemaConstraint `json:"schemaConstraints"`
+		OwnerBasedAccessControl *bool              `json:"ownerBasedAccessControl,omitempty"`
 	}
 )
 
@@ -406,7 +411,46 @@ func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, e
 		log.Warn("Total count of settings 2.0 schemas (=%d) does not match with count of actually downloaded settings 2.0 schemas (=%d)", result.TotalCount, len(result.Items))
 	}
 
+	if featureflags.AccessControlSettings.Enabled() {
+		return d.addOwnerBasedAccessControl(ctx, result.Items)
+	}
 	return result.Items, nil
+}
+
+// addACLToSchemas adds the correct ownerBasedAccessControl information to the schemas
+func (d *SettingsClient) addOwnerBasedAccessControl(ctx context.Context, schemas SchemaList) (SchemaList, error) {
+	type result struct {
+		Err    error
+		Schema SchemaItem
+	}
+	resChan := make(chan result, len(schemas))
+
+	for _, s := range schemas {
+		go func(s SchemaItem) {
+			fullSchema, err := d.GetSchema(ctx, s.SchemaId)
+			s.OwnerBasedAccessControl = fullSchema.OwnerBasedAccessControl
+
+			resChan <- result{Schema: s, Err: err}
+		}(s)
+	}
+
+	errs := make([]error, 0, len(schemas))
+	updatedSchemas := make(SchemaList, 0, len(schemas))
+
+	for i := 0; i < len(schemas); i++ {
+		if res := <-resChan; res.Err != nil {
+			errs = append(errs, res.Err)
+		} else {
+			updatedSchemas = append(updatedSchemas, res.Schema)
+		}
+	}
+
+	close(resChan)
+
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	return updatedSchemas, nil
 }
 
 func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constraints Schema, err error) {
@@ -433,6 +477,7 @@ func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constr
 		}
 	}
 	ret.Ordered = sd.Ordered
+	ret.OwnerBasedAccessControl = sd.OwnerBasedAccessControl
 
 	d.schemaCache.Set(schemaID, ret)
 	return ret, nil
