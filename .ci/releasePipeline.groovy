@@ -1,10 +1,12 @@
+@Library('shared-jenkins-monaco') _
+
 pipeline {
     agent {
         kubernetes {
             cloud 'linux-amd64'
-            nodeSelector 'kubernetes.io/arch=amd64,kubernetes.io/os=linux'
             instanceCap '2'
-            yamlFile '.ci/jenkins_agents/ca-jenkins-agent.yaml'
+            yaml nodeUtils.getNodeYaml()
+            defaultContainer "ca-jenkins-agent"
         }
     }
 
@@ -16,10 +18,6 @@ pipeline {
             steps {
                 script {
                     Context ctx
-                    stage("setup container") {
-                        tools = load(".ci/jenkins/tools/tools.groovy")
-                        tools.installGo("1.24.1")
-                    }
 
                     stage("Pre-build steps") {
                         ctx = new Context(newGithubRelease())
@@ -210,8 +208,10 @@ void createAndPublishContainer(Context ctx, String registry) {
 }
 
 void signWinBinaries(Map args = [source: null, version: null, destDir: null, projectName: null]) {
-    stage('Sign binaries') {
-        signWithSignService(source: args.source, version: args.version, destDir: args.destDir, projectName: args.projectName, signAction: "SIGN")
+    container('java-agent') {
+        stage('Sign binaries') {
+            signWithSignService(source: args.source, version: args.version, destDir: args.destDir, projectName: args.projectName, signAction: "SIGN")
+        }
     }
 }
 
