@@ -251,8 +251,8 @@ func TestWriteAccountResources(t *testing.T) {
 		{
 			"only service users",
 			account.Resources{
-				ServiceUsers: map[account.ServiceUserId]account.ServiceUser{
-					"Service User 1": {
+				ServiceUsers: []account.ServiceUser{
+					{
 						Name:        "Service User 1",
 						Description: "Description of service user",
 						Groups: []account.Ref{
@@ -273,10 +273,52 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
+			"two service users with same name but different origin object IDs",
+			account.Resources{
+				ServiceUsers: []account.ServiceUser{
+					{
+						Name:           "Service User",
+						OriginObjectID: "abc1",
+						Description:    "Description of service user",
+						Groups: []account.Ref{
+							account.Reference{Id: "my-group"},
+							account.StrReference("Log viewer"),
+						},
+					},
+					{
+						Name:           "Service User",
+						OriginObjectID: "abc2",
+						Description:    "Description of service user",
+						Groups: []account.Ref{
+							account.Reference{Id: "my-group"},
+							account.StrReference("Log viewer"),
+						},
+					},
+				},
+			},
+			want{serviceUsers: `service-users:
+- name: Service User
+  description: Description of service user
+  groups:
+  - Log viewer
+  - type: reference
+    id: my-group
+  originObjectId: abc1
+- name: Service User
+  description: Description of service user
+  groups:
+  - Log viewer
+  - type: reference
+    id: my-group
+  originObjectId: abc2
+`,
+			},
+		},
+		{
 			"groups are not written if service user has none",
 			account.Resources{
-				ServiceUsers: map[account.ServiceUserId]account.ServiceUser{
-					"Service User 1": {
+				ServiceUsers: []account.ServiceUser{
+					{
 						Name:        "Service User 1",
 						Description: "Description of service user",
 					},
@@ -338,8 +380,8 @@ func TestWriteAccountResources(t *testing.T) {
 						Policy:      "ALLOW a:b:c;",
 					},
 				},
-				ServiceUsers: map[account.ServiceUserId]account.ServiceUser{
-					"Service User 1": {
+				ServiceUsers: []account.ServiceUser{
+					{
 						Name:        "Service User 1",
 						Description: "Description of service user",
 						Groups: []account.Ref{
@@ -449,8 +491,8 @@ func TestWriteAccountResources(t *testing.T) {
 						Policy:         "ALLOW a:b:c;",
 					},
 				},
-				ServiceUsers: map[account.ServiceUserId]account.ServiceUser{
-					"Service User 1": {
+				ServiceUsers: []account.ServiceUser{
+					{
 						Name:           "Service User 1",
 						OriginObjectID: "ObjectID-789",
 						Description:    "Description of service user",
@@ -605,8 +647,8 @@ func TestWriteAccountResources(t *testing.T) {
 						Policy:      "ALLOW a:b:c;",
 					},
 				},
-				ServiceUsers: map[account.ServiceUserId]account.ServiceUser{
-					"Second service user": {
+				ServiceUsers: []account.ServiceUser{
+					{
 						Name:        "Second service user",
 						Description: "Description of service user",
 						Groups: []account.Ref{
@@ -614,7 +656,7 @@ func TestWriteAccountResources(t *testing.T) {
 							account.StrReference("Log viewer"),
 						},
 					},
-					"First service user": {
+					{
 						Name:        "First service user",
 						Description: "Description of service user",
 						Groups: []account.Ref{
@@ -810,8 +852,8 @@ func TestServiceUsersNotPersistedIfFeatureFlagDisabled(t *testing.T) {
 					Policy:      "ALLOW a:b:c;",
 				},
 			},
-			ServiceUsers: map[account.ServiceUserId]account.ServiceUser{
-				"Service User 1": {
+			ServiceUsers: []account.ServiceUser{
+				{
 					Name:        "Service User 1",
 					Description: "Description of service user",
 					Groups: []account.Ref{

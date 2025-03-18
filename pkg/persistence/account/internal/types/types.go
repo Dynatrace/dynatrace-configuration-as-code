@@ -37,7 +37,7 @@ type (
 		Policies     map[string]Policy
 		Groups       map[string]Group
 		Users        map[string]User
-		ServiceUsers map[string]ServiceUser
+		ServiceUsers []ServiceUser
 	}
 
 	File struct {

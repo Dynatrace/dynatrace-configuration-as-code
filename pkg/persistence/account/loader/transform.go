@@ -119,9 +119,9 @@ func transformUsers(pUsers map[string]persistence.User) map[account.UserId]accou
 	return users
 }
 
-func transformServiceUsers(pUsers map[string]persistence.ServiceUser) map[account.ServiceUserId]account.ServiceUser {
-	serviceUsers := make(map[account.ServiceUserId]account.ServiceUser, len(pUsers))
-	for id, su := range pUsers {
+func transformServiceUsers(pServiceUsers []persistence.ServiceUser) []account.ServiceUser {
+	serviceUsers := make([]account.ServiceUser, len(pServiceUsers))
+	for id, su := range pServiceUsers {
 		serviceUsers[id] = account.ServiceUser{
 			Name:        su.Name,
 			Description: su.Description,
