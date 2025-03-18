@@ -165,9 +165,3 @@ func NewClassicConfigClientForTesting(environmentUrl string, client *http.Client
 		restClient,
 		opts...)
 }
-
-type MuxRouteOptions struct {
-	Response       any  // default empty object
-	ResponseStatus int  // default 200
-	FailOnCall     bool // default false
-}
