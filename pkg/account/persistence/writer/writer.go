@@ -225,7 +225,7 @@ func toPersistenceUsers(users map[string]account.User) []persistence.User {
 	return out
 }
 
-func toPersistenceServiceUsers(serviceUsers map[string]account.ServiceUser) []persistence.ServiceUser {
+func toPersistenceServiceUsers(serviceUsers []account.ServiceUser) []persistence.ServiceUser {
 	out := make([]persistence.ServiceUser, 0, len(serviceUsers))
 	for _, v := range serviceUsers {
 		out = append(out, persistence.ServiceUser{
@@ -235,9 +235,16 @@ func toPersistenceServiceUsers(serviceUsers map[string]account.ServiceUser) []pe
 			OriginObjectID: v.OriginObjectID,
 		})
 	}
-	// sort service users by name so that they are stable within a persisted file
+
+	// sort service users so that they are stable within a persisted file.
+	// first sort by name, but if two or more have the same name, sort by originObjectId.
 	slices.SortFunc(out, func(a, b persistence.ServiceUser) int {
-		return caseInsensitiveLexicographicSmaller(a.Name, b.Name)
+		nameCmp := caseInsensitiveLexicographicSmaller(a.Name, b.Name)
+		if nameCmp != 0 {
+			return nameCmp
+		}
+
+		return caseInsensitiveLexicographicSmaller(a.OriginObjectID, b.OriginObjectID)
 	})
 	return out
 }

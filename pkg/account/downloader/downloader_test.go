@@ -675,8 +675,8 @@ func TestDownloader_OnlyServiceUser(t *testing.T) {
 	assert.Empty(t, result.Policies)
 	assert.Empty(t, result.Groups)
 	assert.Empty(t, result.Users)
-	assert.Equal(t, map[account.UserId]account.ServiceUser{
-		"service_user": {Name: "service_user", Description: "A service user"},
+	assert.Equal(t, []account.ServiceUser{
+		{Name: "service_user", Description: "A service user"},
 	}, result.ServiceUsers)
 }
 
@@ -721,8 +721,8 @@ func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
 		}}, result.Groups)
 	assert.Empty(t, result.Users)
 
-	assert.Equal(t, map[account.UserId]account.ServiceUser{
-		"service_user": {Name: "service_user", Description: "A service user",
+	assert.Equal(t, []account.ServiceUser{
+		{Name: "service_user", Description: "A service user",
 			Groups: []account.Ref{account.Reference{Id: toID("test_group")}},
 		},
 	}, result.ServiceUsers)

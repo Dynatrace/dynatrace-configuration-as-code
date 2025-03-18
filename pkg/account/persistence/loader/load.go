@@ -46,31 +46,33 @@ func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefi
 		}
 		for _, pol := range res.Policies {
 			if _, exists := resources.Policies[pol.ID]; exists {
-				return nil, fmt.Errorf("policy with id %q already defined in another project", pol.ID)
+				return nil, fmt.Errorf("policy with id '%s' already defined in another project", pol.ID)
 			}
 			resources.Policies[pol.ID] = pol
 		}
 
 		for _, gr := range res.Groups {
 			if _, exists := resources.Groups[gr.ID]; exists {
-				return nil, fmt.Errorf("group with id %q already defined in another project", gr.ID)
+				return nil, fmt.Errorf("group with id '%s' already defined in another project", gr.ID)
 			}
 			resources.Groups[gr.ID] = gr
 		}
 
 		for _, us := range res.Users {
 			if _, exists := resources.Users[us.Email.Value()]; exists {
-				return nil, fmt.Errorf("user with email %q already defined in another project", us.Email)
+				return nil, fmt.Errorf("user with email '%s' already defined in another project", us.Email)
 			}
 			resources.Users[us.Email.Value()] = us
 		}
 
 		if featureflags.ServiceUsers.Enabled() {
 			for _, su := range res.ServiceUsers {
-				if _, exists := resources.ServiceUsers[su.Name]; exists {
-					return nil, fmt.Errorf("service user with name %q already defined in another project", su.Name)
+				for _, existingServiceUser := range resources.ServiceUsers {
+					if err := verifySerivceUsersAreNotAmbiguous(su, existingServiceUser); err != nil {
+						return nil, err
+					}
 				}
-				resources.ServiceUsers[su.Name] = su
+				resources.ServiceUsers = append(resources.ServiceUsers, su)
 			}
 		}
 	}
@@ -112,7 +114,7 @@ func findAndLoadResources(fs afero.Fs, rootPath string) (*account.Resources, err
 		Policies:     make(map[string]account.Policy),
 		Groups:       make(map[string]account.Group),
 		Users:        make(map[string]account.User),
-		ServiceUsers: make(map[string]account.ServiceUser),
+		ServiceUsers: make([]account.ServiceUser, 0),
 	}
 
 	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
@@ -121,8 +123,6 @@ func findAndLoadResources(fs afero.Fs, rootPath string) (*account.Resources, err
 	}
 
 	for _, yamlFilePath := range yamlFilePaths {
-		log.WithFields(field.F("file", yamlFilePaths)).Debug("Loading file %q", yamlFilePath)
-
 		file, err := loadFile(fs, yamlFilePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load file %q: %w", yamlFilePath, err)
@@ -205,12 +205,36 @@ func addResourcesFromFile(res *account.Resources, file persistence.File) error {
 
 	if featureflags.ServiceUsers.Enabled() {
 		for _, su := range file.ServiceUsers {
-			if _, exists := res.ServiceUsers[su.Name]; exists {
-				return fmt.Errorf("found duplicate service user with name %q", su.Name)
+			serviceUser := transformServiceUser(su)
+			for _, existingServiceUser := range res.ServiceUsers {
+				if err := verifySerivceUsersAreNotAmbiguous(existingServiceUser, serviceUser); err != nil {
+					return err
+				}
 			}
-			res.ServiceUsers[su.Name] = transformServiceUser(su)
+			res.ServiceUsers = append(res.ServiceUsers, serviceUser)
 		}
 	}
 
+	return nil
+}
+
+// verifySerivceUsersAreNotAmbiguous returns an error iff the two objects could refer to the same underlying service users.
+func verifySerivceUsersAreNotAmbiguous(su1 account.ServiceUser, su2 account.ServiceUser) error {
+	// if they both have origin object ids that are the same they are ambiguous
+	if (su1.OriginObjectID != "") && (su2.OriginObjectID != "") && (su1.OriginObjectID == su2.OriginObjectID) {
+		return fmt.Errorf("multiple service users with the same originObjectId '%s'", su1.OriginObjectID)
+	}
+
+	// if they have different names they are not ambiguous
+	if su1.Name != su2.Name {
+		return nil
+	}
+
+	// if they have the same name but one or both are missing originObjectIds they are ambiguous
+	if su1.OriginObjectID == "" || su2.OriginObjectID == "" {
+		return fmt.Errorf("multiple service users with name '%s' but at least one is without originObjectId", su1.Name)
+	}
+
+	// other combinations are OK
 	return nil
 }

@@ -100,9 +100,10 @@ func transformUser(pUser persistence.User) account.User {
 
 func transformServiceUser(pServiceUser persistence.ServiceUser) account.ServiceUser {
 	return account.ServiceUser{
-		Name:        pServiceUser.Name,
-		Description: pServiceUser.Description,
-		Groups:      transformReferences(pServiceUser.Groups),
+		Name:           pServiceUser.Name,
+		Description:    pServiceUser.Description,
+		Groups:         transformReferences(pServiceUser.Groups),
+		OriginObjectID: pServiceUser.OriginObjectID,
 	}
 }
 

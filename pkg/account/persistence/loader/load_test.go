@@ -23,6 +23,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
@@ -151,8 +152,8 @@ func TestLoad(t *testing.T) {
 		assert.Len(t, loaded.Policies, 1)
 		assert.Contains(t, loaded.Policies, "my-policy", "expected policy to exist: my-policy")
 
-		assert.Len(t, loaded.ServiceUsers, 1)
-		assert.Contains(t, loaded.ServiceUsers, "Service User 1", "expected service user to exist: Service User 1")
+		require.Len(t, loaded.ServiceUsers, 1)
+		assert.Equal(t, "Service User 1", loaded.ServiceUsers[0].Name, "expected service user to exist: Service User 1")
 	})
 
 	t.Run("Load single file - service user feature flag disabled", func(t *testing.T) {
@@ -242,6 +243,16 @@ func TestLoad(t *testing.T) {
 		assert.Empty(t, loaded.Policies)
 	})
 
+	t.Run("Load service users with same name but different originObjectIds", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+		loaded, err := Load(afero.NewOsFs(), "testdata/service-users-with-same-name-and-different-origin-object-ids.yaml")
+		require.NoError(t, err)
+		assert.Empty(t, loaded.Users)
+		assert.Empty(t, loaded.Groups)
+		assert.Empty(t, loaded.Policies)
+		assert.Len(t, loaded.ServiceUsers, 2)
+	})
+
 	t.Run("Duplicate group produces error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/duplicate-group.yaml")
 		assert.Error(t, err)
@@ -257,9 +268,27 @@ func TestLoad(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("Duplicate service user produces error", func(t *testing.T) {
+	t.Run("Service users with the same name and no origin object IDs produce error", func(t *testing.T) {
 		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
-		_, err := Load(afero.NewOsFs(), "testdata/duplicate-service-user.yaml")
+		_, err := Load(afero.NewOsFs(), "testdata/service-users-with-same-name-and-no-origin-object-ids.yaml")
+		assert.Error(t, err)
+	})
+
+	t.Run("Service users with the same name and same origin object IDs produce error", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+		_, err := Load(afero.NewOsFs(), "testdata/service-users-with-same-name-and-same-origin-object-ids.yaml")
+		assert.Error(t, err)
+	})
+
+	t.Run("Service users with the same name and one missing origin object ID produce error", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+		_, err := Load(afero.NewOsFs(), "testdata/service-users-with-same-name-and-missing-origin-object-id.yaml")
+		assert.Error(t, err)
+	})
+
+	t.Run("Service users with the different name and same origin object IDs produce error", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+		_, err := Load(afero.NewOsFs(), "testdata/service-users-with-different-name-and-same-origin-object-ids.yaml")
 		assert.Error(t, err)
 	})
 
@@ -301,7 +330,7 @@ func TestLoad(t *testing.T) {
 			Policies:     make(map[string]account.Policy, 0),
 			Groups:       make(map[string]account.Group, 0),
 			Users:        make(map[string]account.User, 0),
-			ServiceUsers: make(map[string]account.ServiceUser, 0),
+			ServiceUsers: make([]account.ServiceUser, 0),
 		}, result)
 		assert.NoError(t, err)
 	})
