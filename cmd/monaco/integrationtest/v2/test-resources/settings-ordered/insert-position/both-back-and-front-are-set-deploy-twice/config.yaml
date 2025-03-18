@@ -1,4 +1,4 @@
-# Test if setting `insertAfter` to `BACK` works as expected.
+# Test if setting `insertAfter` to `BACK` works as expected when deploying the configs twice
 #
 # First config, `first`, is deployed and will be added to the front
 # Second config, `last`, will be added to the back.
