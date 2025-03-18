@@ -34,32 +34,32 @@ type customErr struct {
 func (e customErr) Error() string {
 	return "error"
 }
-func TestIsAPIErrorStatusNotFound(t *testing.T) {
-	t.Run("is true if status is 404", func(t *testing.T) {
-		err := api.APIError{StatusCode: http.StatusNotFound}
-		got := IsAPIErrorStatusNotFound(err)
-		assert.Equal(t, true, got)
-	})
 
-	t.Run("is false if status is not 404", func(t *testing.T) {
-		testcases := []int{http.StatusBadRequest, http.StatusTooManyRequests, http.StatusOK, http.StatusForbidden, http.StatusUnauthorized}
+func TestIsAPIErrorStatusNotFound_Success(t *testing.T) {
+	err := api.APIError{StatusCode: http.StatusNotFound}
+	got := IsAPIErrorStatusNotFound(err)
+	assert.Equal(t, true, got)
+}
 
-		for _, tt := range testcases {
-			t.Run(fmt.Sprintf("is false if status is %d", tt), func(t *testing.T) {
-				err := api.APIError{StatusCode: tt}
-				got := IsAPIErrorStatusNotFound(err)
-				assert.Equal(t, false, got)
-			})
-		}
-	})
+func TestIsAPIErrorStatusNotFound_ErrorOnDifferentStatus(t *testing.T) {
+	testcases := []int{http.StatusBadRequest, http.StatusTooManyRequests, http.StatusOK, http.StatusForbidden, http.StatusUnauthorized}
 
-	t.Run("is false if error is not an apiError", func(t *testing.T) {
-		testcases := []error{customErr{StatusCode: http.StatusNotFound}, errors.New("error")}
-		for _, err := range testcases {
-			t.Run(fmt.Sprintf("is false if status is %T", err), func(t *testing.T) {
-				got := IsAPIErrorStatusNotFound(err)
-				assert.Equal(t, false, got)
-			})
-		}
-	})
+	for _, tt := range testcases {
+		t.Run(fmt.Sprintf("is false if status is %d", tt), func(t *testing.T) {
+			err := api.APIError{StatusCode: tt}
+			got := IsAPIErrorStatusNotFound(err)
+			assert.Equal(t, false, got)
+		})
+	}
+}
+
+func TestIsAPIErrorStatusNotFound_ErrorOnDifferentType(t *testing.T) {
+	testcases := []error{customErr{StatusCode: http.StatusNotFound}, errors.New("error")}
+
+	for _, err := range testcases {
+		t.Run(fmt.Sprintf("is false if status is %T", err), func(t *testing.T) {
+			got := IsAPIErrorStatusNotFound(err)
+			assert.Equal(t, false, got)
+		})
+	}
 }
