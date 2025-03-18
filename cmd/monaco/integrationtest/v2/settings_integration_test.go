@@ -429,6 +429,48 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 	})
 }
 
+func TestOrdered_InsertAtFrontAndBackWorksDeployTwice(t *testing.T) {
+	const configFolder = "test-resources/settings-ordered/insert-position"
+
+	const manifestFile = configFolder + "/manifest.yaml"
+
+	const specificEnvironment = "platform"
+	const project = "both-back-and-front-are-set-deploy-twice"
+	const schema = "builtin:url-based-sampling"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtBackWorks", func(fs afero.Fs, tc TestContext) {
+		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
+
+		// first
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
+		require.NoError(t, err)
+		// second
+		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
+		require.NoError(t, err)
+
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+
+		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+
+		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			DiscardValue: true,
+			Filter:       filterObjectsForScope(pgiMeId),
+		})
+
+		assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
+
+		// Verify that last is actually the first object
+		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
+		assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
+
+		// Verify that last is actually the last object
+		last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "last"}, tc)
+		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
+	})
+}
+
 func filterObjectsForScope(pgiMeId string) func(object dtclient.DownloadSettingsObject) bool {
 	return func(object dtclient.DownloadSettingsObject) bool {
 		return object.Scope == pgiMeId
