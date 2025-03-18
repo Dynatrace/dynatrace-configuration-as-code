@@ -19,6 +19,14 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+
+	"github.com/spf13/afero"
+	"gopkg.in/yaml.v2"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -27,12 +35,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
-	"github.com/spf13/afero"
-	"gopkg.in/yaml.v2"
-	"os"
-	"path/filepath"
-	"slices"
-	"strings"
 )
 
 // Context holds all information for [Load]
@@ -81,7 +83,7 @@ type ManifestLoaderError struct {
 }
 
 func (e ManifestLoaderError) Error() string {
-	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Reason)
+	return fmt.Sprintf("%s: %s", e.Reason, e.ManifestPath)
 }
 
 func newManifestLoaderError(path string, reason string) ManifestLoaderError {
