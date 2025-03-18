@@ -28,17 +28,16 @@ func NewAccountManagementResources() *Resources {
 }
 
 type (
-	PolicyId      = string
-	GroupId       = string
-	UserId        = string
-	ServiceUserId = string
-	PolicyLevel   = any // either PolicyLevelAccount or PolicyLevelEnvironment is allowed
+	PolicyId    = string
+	GroupId     = string
+	UserId      = string
+	PolicyLevel = any // either PolicyLevelAccount or PolicyLevelEnvironment is allowed
 
 	Resources struct {
 		Policies     map[PolicyId]Policy
 		Groups       map[GroupId]Group
 		Users        map[UserId]User
-		ServiceUsers map[ServiceUserId]ServiceUser
+		ServiceUsers []ServiceUser
 	}
 
 	Policy struct {
