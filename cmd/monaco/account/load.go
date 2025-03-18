@@ -18,11 +18,14 @@ package account
 
 import (
 	"fmt"
+	"path"
+
+	"github.com/spf13/afero"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	accountLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
-	"github.com/spf13/afero"
-	"path"
 )
 
 func loadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefinitionByProjectID) (*account.Resources, error) {
@@ -48,11 +51,43 @@ func loadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefi
 
 		for _, us := range res.Users {
 			if _, exists := resources.Users[us.Email.Value()]; exists {
-				return nil, fmt.Errorf("group with id %q already defined in another project", us.Email)
+				return nil, fmt.Errorf("user with id %q already defined in another project", us.Email)
 			}
 			resources.Users[us.Email.Value()] = us
+		}
+
+		if featureflags.ServiceUsers.Enabled() {
+			for _, su := range res.ServiceUsers {
+				for _, existingServiceUser := range resources.ServiceUsers {
+					if areServiceUsersAmbiguous(su, existingServiceUser) {
+						return nil, fmt.Errorf("found ambiguous service user with name %q", su.Name)
+					}
+				}
+				resources.ServiceUsers = append(resources.ServiceUsers, su)
+			}
 		}
 	}
 
 	return resources, nil
+}
+
+// areServiceUsersAmbiguous returns true iff the two objects could refer to the same underlying service users.
+func areServiceUsersAmbiguous(su1 account.ServiceUser, su2 account.ServiceUser) bool {
+	// if they both have origin object ids that are the same they are ambiguous
+	if (su1.OriginObjectID != "") && (su2.OriginObjectID != "") && (su1.OriginObjectID == su2.OriginObjectID) {
+		return true
+	}
+
+	// if they have different names they are not ambiguous
+	if su1.Name != su2.Name {
+		return false
+	}
+
+	// if they have the same name but one or both are missing originObjectIds they are ambiguous
+	if su1.OriginObjectID == "" || su2.OriginObjectID == "" {
+		return true
+	}
+
+	// other combinations are OK
+	return false
 }
