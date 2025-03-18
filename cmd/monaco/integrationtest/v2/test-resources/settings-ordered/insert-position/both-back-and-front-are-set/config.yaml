@@ -15,6 +15,7 @@ configs:
       insertAfter: FRONT
   config:
     template: url-sampling.json
+    name: first
 
 - id: last
   type:
@@ -26,3 +27,4 @@ configs:
       insertAfter: BACK
   config:
     template: url-sampling.json
+    name: last
