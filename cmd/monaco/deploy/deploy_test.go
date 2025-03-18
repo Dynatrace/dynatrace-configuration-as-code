@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
@@ -411,7 +411,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		Skip: false,
 	}
 	settingsConfWithPermission := config.Config{
-		Type: config.SettingsType{AllUserPermission: strings.Pointer(config.ReadPermission)},
+		Type: config.SettingsType{AllUserPermission: pointer.Pointer(config.ReadPermission)},
 		Skip: false,
 	}
 	classicConfSkip := classicConf
