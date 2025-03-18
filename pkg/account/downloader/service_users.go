@@ -71,10 +71,10 @@ func (a *Downloader) serviceUsers(ctx context.Context, groups Groups) (ServiceUs
 	return retVal, nil
 }
 
-func (sus ServiceUsers) asAccountServiceUsers() map[account.ServiceUserId]account.ServiceUser {
-	retVal := make(map[account.ServiceUserId]account.ServiceUser, len(sus))
+func (sus ServiceUsers) asAccountServiceUsers() []account.ServiceUser {
+	retVal := make([]account.ServiceUser, 0, len(sus))
 	for _, su := range sus {
-		retVal[su.serviceUser.Name] = *su.serviceUser
+		retVal = append(retVal, *su.serviceUser)
 	}
 	return retVal
 }
