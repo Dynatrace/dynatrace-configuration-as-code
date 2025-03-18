@@ -1,3 +1,5 @@
+@Library('shared-jenkins-monaco') _
+
 pipeline {
     agent {
         kubernetes {
