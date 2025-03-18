@@ -47,7 +47,6 @@ func Run(t *testing.T, fs afero.Fs, command string) error {
 	if !strings.HasPrefix(c, prefix) {
 		return fmt.Errorf("command must start with '%s'", prefix)
 	}
-	t.Logf("Running command: %s", command)
 	c = strings.TrimPrefix(c, prefix)
 
 	args := strings.Split(c, " ")
@@ -58,5 +57,10 @@ func Run(t *testing.T, fs afero.Fs, command string) error {
 	// explicit cancel for each monaco run invocation
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	return runner.RunCmd(ctx, cmd)
+
+	t.Logf("Running command: %s", command)
+	err := runner.RunCmd(ctx, cmd)
+	t.Logf("Finished command: %s", command)
+
+	return err
 }

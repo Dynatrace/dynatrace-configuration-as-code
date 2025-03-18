@@ -137,6 +137,7 @@ func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 
 	if !opts.skipCleanup {
 		defer func() {
+			t.Log("Starting cleanup")
 			integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, opts.specificEnvironment, suffix)
 		}()
 	}
