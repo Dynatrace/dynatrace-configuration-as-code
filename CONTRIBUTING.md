@@ -29,7 +29,7 @@ This is also the area currently offering the most opportunity to improve the too
 
 ## How to contribute
 
-The easiest way to start contributing or helping with the Configuration as Code project is to pick an existing [issue/bug](https://github.com/dynatrace-oss/dynatrace-configuration-as-code/issues) and [get to work](#building-the-Dynatrace-Configuration-as-Code-Tool).
+The easiest way to start contributing or helping with the Configuration as Code project is to pick an existing [issue/bug](https://github.com/dynatrace/dynatrace-configuration-as-code/issues) and [get to work](#building-the-Dynatrace-Configuration-as-Code-Tool).
 
 For proposing a change, we'd like to discuss potential changes in GitHub issues before implementation.
 That will allow us to give design feedback up front and set expectations about the scope of the change and, for more significant changes, 
@@ -78,7 +78,7 @@ More examples can be found [here](https://www.conventionalcommits.org/en/v1.0.0/
 
 ## Code of Conduct and Shared Values
 
-Before contributing, please read and approve [our Code Of Conduct](https://github.com/dynatrace-oss/dynatrace-configuration-as-code/blob/main/CODE_OF_CONDUCT.md) outlining our shared values and expectations. 
+Before contributing, please read and approve [our Code Of Conduct](https://github.com/dynatrace/dynatrace-configuration-as-code/blob/main/CODE_OF_CONDUCT.md) outlining our shared values and expectations. 
 
 ## Building the Dynatrace Configuration as Code Tool
 
