@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
@@ -409,6 +410,10 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		Type: config.SettingsType{},
 		Skip: false,
 	}
+	settingsConfWithPermission := config.Config{
+		Type: config.SettingsType{AllUserPermission: pointer.Pointer(config.ReadPermission)},
+		Skip: false,
+	}
 	classicConfSkip := classicConf
 	classicConfSkip.Skip = true
 	documentConfSkip := documentConf
@@ -524,6 +529,32 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 				string(config.SettingsTypeID): []config.Config{settingsConf},
 			},
 			"",
+		},
+		{
+			"OAuth manifest with settings api and permissions",
+			manifest.Environments{
+				envId: manifest.EnvironmentDefinition{
+					Name: envId,
+					Auth: manifest.Auth{
+						OAuth: &oAuth},
+				}},
+			project.ConfigsPerType{
+				string(config.SettingsTypeID): []config.Config{settingsConfWithPermission},
+			},
+			"",
+		},
+		{
+			"token manifest with settings api and permissions",
+			manifest.Environments{
+				envId: manifest.EnvironmentDefinition{
+					Name: envId,
+					Auth: manifest.Auth{
+						Token: &token},
+				}},
+			project.ConfigsPerType{
+				string(config.SettingsTypeID): []config.Config{settingsConfWithPermission},
+			},
+			"using permission property on settings API requires OAuth",
 		},
 	}
 
