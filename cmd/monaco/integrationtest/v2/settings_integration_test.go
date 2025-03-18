@@ -398,7 +398,7 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 	const manifestFile = configFolder + "/manifest.yaml"
 
 	const specificEnvironment = "platform"
-	const project = "both-back-and-front-are-set"
+	const project = "both-back-and-front-are-set-with-initial"
 	const schema = "builtin:url-based-sampling"
 
 	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtBackWorks", func(fs afero.Fs, tc TestContext) {
@@ -417,7 +417,7 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 			Filter:       filterObjectsForScope(pgiMeId),
 		})
 
-		assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
+		assert.Equal(t, 3, len(list), "Exactly three configs should be deployed")
 
 		// Verify that last is actually the first object
 		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
