@@ -18,11 +18,13 @@ package account
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	accountLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
-	"github.com/spf13/afero"
 	"path"
+
+	"github.com/spf13/afero"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	accountLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
 
 func loadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefinitionByProjectID) (*account.Resources, error) {

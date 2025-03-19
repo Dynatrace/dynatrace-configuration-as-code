@@ -31,7 +31,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 )
 
 func TestIdempotenceOfDeployment(t *testing.T) {

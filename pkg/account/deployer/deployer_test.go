@@ -28,7 +28,7 @@ import (
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 )
 
 func testResources(t *testing.T) *account.Resources {
