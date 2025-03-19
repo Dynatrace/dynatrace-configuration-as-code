@@ -1044,6 +1044,59 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("Does not call delete permissions if schema supports ACL but permissions are not set", func(t *testing.T) {
+		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
+
+		mux := http.NewServeMux()
+
+		mux.HandleFunc("GET /api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
+			payload, err := json.Marshal(schemaACL)
+			require.NoError(t, err)
+
+			_, err = w.Write(payload)
+			require.NoError(t, err)
+		})
+
+		mux.HandleFunc("GET /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+			_, err := w.Write([]byte("{}"))
+			require.NoError(t, err)
+		})
+
+		mux.HandleFunc("POST /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+			payload, err := json.Marshal(objResp)
+			require.NoError(t, err)
+
+			_, err = w.Write(payload)
+			require.NoError(t, err)
+		})
+
+		mux.HandleFunc(settingsPermissionAPIPath, func(w http.ResponseWriter, r *http.Request) {
+			t.Errorf("Called '%s' but it should not be called", r.Pattern)
+		})
+
+		mux.HandleFunc(settingsPermissionAllUsersAPIPath, func(w http.ResponseWriter, r *http.Request) {
+			t.Errorf("Called '%s' but it should not be called", r.Pattern)
+		})
+
+		server := httptest.NewTLSServer(mux)
+		defer server.Close()
+
+		serverURL, err := url.Parse(server.URL)
+		require.NoError(t, err)
+
+		restClient := corerest.NewClient(serverURL, server.Client())
+
+		c, err := NewClassicSettingsClient(restClient)
+		require.NoError(t, err)
+
+		// setup cache
+		_, err = c.GetSchema(t.Context(), testSchema)
+		require.NoError(t, err)
+
+		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{})
+		assert.NoError(t, err)
+	})
+
 	t.Run("Deletes a permission", func(t *testing.T) {
 		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 		deleteCalled := false
