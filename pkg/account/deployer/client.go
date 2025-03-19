@@ -88,9 +88,6 @@ func (d *accountManagementClient) getManagementZones(ctx context.Context) ([]Man
 	if err = handleClientResponseError(resp, err, "unable to get environment resources for account "+d.accountInfo.AccountUUID); err != nil {
 		return nil, err
 	}
-	if err != nil {
-		return nil, err
-	}
 	if envResources == nil {
 		return []ManagementZone{}, nil
 	}
