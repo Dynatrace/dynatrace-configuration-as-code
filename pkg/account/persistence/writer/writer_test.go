@@ -26,7 +26,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
 )
 
 func TestWriteAccountResources(t *testing.T) {

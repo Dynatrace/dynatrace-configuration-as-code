@@ -18,14 +18,16 @@ package schemas
 
 import (
 	"fmt"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	accountDelete "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
+	account "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config"
-	"github.com/spf13/afero"
-	"path/filepath"
 )
 
 func generateSchemaFiles(fs afero.Fs, outputfolder string) error {

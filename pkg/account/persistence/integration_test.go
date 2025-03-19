@@ -19,12 +19,14 @@
 package account_test
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/writer"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
 )
 
 func TestLoadAndReWriteAccountResources(t *testing.T) {

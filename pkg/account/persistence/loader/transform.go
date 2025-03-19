@@ -18,7 +18,7 @@ package loader
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
+	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
 
 func transformToAccountResources(resources *persistence.Resources) *account.Resources {
