@@ -18,6 +18,7 @@ package loader
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -28,7 +29,41 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
+
+// LoadResources loads and merges resources from the specified projects assumed to be located within the specified working directory.
+func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefinitionByProjectID) (*account.Resources, error) {
+	resources := account.NewAccountManagementResources()
+	for _, p := range projects {
+		res, err := Load(fs, path.Join(workingDir, p.Path))
+		if err != nil {
+			return nil, err
+		}
+		for _, pol := range res.Policies {
+			if _, exists := resources.Policies[pol.ID]; exists {
+				return nil, fmt.Errorf("policy with id %q already defined in another project", pol.ID)
+			}
+			resources.Policies[pol.ID] = pol
+		}
+
+		for _, gr := range res.Groups {
+			if _, exists := resources.Groups[gr.ID]; exists {
+				return nil, fmt.Errorf("group with id %q already defined in another project", gr.ID)
+			}
+			resources.Groups[gr.ID] = gr
+		}
+
+		for _, us := range res.Users {
+			if _, exists := resources.Users[us.Email.Value()]; exists {
+				return nil, fmt.Errorf("group with id %q already defined in another project", us.Email)
+			}
+			resources.Users[us.Email.Value()] = us
+		}
+	}
+
+	return resources, nil
+}
 
 // Load loads account management resources from YAML configuration files
 // located within the specified root directory path.
