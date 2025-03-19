@@ -56,9 +56,18 @@ func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefi
 
 		for _, us := range res.Users {
 			if _, exists := resources.Users[us.Email.Value()]; exists {
-				return nil, fmt.Errorf("group with id %q already defined in another project", us.Email)
+				return nil, fmt.Errorf("user with email %q already defined in another project", us.Email)
 			}
 			resources.Users[us.Email.Value()] = us
+		}
+
+		if featureflags.ServiceUsers.Enabled() {
+			for _, su := range res.ServiceUsers {
+				if _, exists := resources.ServiceUsers[su.Name]; exists {
+					return nil, fmt.Errorf("service user with name %q already defined in another project", su.Name)
+				}
+				resources.ServiceUsers[su.Name] = su
+			}
 		}
 	}
 
