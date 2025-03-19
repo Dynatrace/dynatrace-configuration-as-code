@@ -807,6 +807,50 @@ configs:
 			wantErrorsContain: []string{"unknown settings configuration property 'permissions'"},
 		},
 		{
+			name:             "loads settings 2.0 config with 'none' allUsers permissions if permissions are set but allUsers is missing",
+			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'tenant'
+      permissions:
+        something: xy
+`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:profile.test",
+						ConfigId: "profile-id",
+					},
+					Type: config.SettingsType{
+						SchemaId:          "builtin:profile.test",
+						SchemaVersion:     "1.0",
+						AllUserPermission: pointer.Pointer(config.NonePermission),
+					},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						"name":                &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
+				},
+			},
+		},
+		{
 			name:              "loading a config without type content",
 			filePathArgument:  "test-file.yaml",
 			filePathOnDisk:    "test-file.yaml",

@@ -25,6 +25,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 )
 
@@ -167,7 +168,11 @@ func (c *TypeDefinition) parseSettingsType(a any) error {
 
 	var allUserPermission *config.AllUserPermissionKind
 	if r.Permissions != nil {
-		allUserPermission = r.Permissions.AllUsers
+		if r.Permissions.AllUsers != nil {
+			allUserPermission = r.Permissions.AllUsers
+		} else {
+			allUserPermission = pointer.Pointer(config.NonePermission)
+		}
 	}
 	c.Type = config.SettingsType{
 		SchemaId:          r.Schema,
