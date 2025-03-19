@@ -35,6 +35,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 )
 
@@ -111,7 +112,7 @@ func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
 	log.Debug("Deploying to accounts: %q", maps.Keys(accounts))
 	log.Debug("Deploying projects: %q", maps.Keys(projects))
 
-	resources, err := loadResources(fs, opts.workingDir, projects)
+	resources, err := loader.LoadResources(fs, opts.workingDir, projects)
 	if err != nil {
 		return fmt.Errorf("failed to load all account management resources: %w", err)
 	}

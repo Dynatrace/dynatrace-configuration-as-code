@@ -18,6 +18,7 @@
 package loader
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -25,7 +26,102 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
+
+func TestLoadResources_Duplicates(t *testing.T) {
+	testCases := []struct {
+		description string
+		content     string
+	}{
+		{
+			description: "Load Resources - duplicate user",
+			content: `
+users:
+- email: email@address.com
+  groups:
+  - Log viewer
+`,
+		},
+		{
+			description: "Load Resources - duplicate policy",
+			content: `policies:
+- name: My Policy
+  id: my-policy
+  level:
+    type: account
+  description: abcde
+  policy: |-
+    ALLOW automation:workflows:read;
+`,
+		},
+		{
+			description: "Load Resources - duplicate group",
+			content: `groups:
+- name: My Group
+  id: my-group
+  description: This is my group
+`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			for _, folderName := range []string{"p1", "p2"} {
+				afero.WriteFile(fs, fmt.Sprintf("%s/%s", folderName, "res.yaml"), []byte(tc.content), 0644)
+			}
+
+			_, err := LoadResources(fs, ".", manifest.ProjectDefinitionByProjectID{
+				"p1": manifest.ProjectDefinition{Name: "p1", Group: "g1", Path: "p1"},
+				"p2": manifest.ProjectDefinition{Name: "p2", Group: "g1", Path: "p2"},
+			})
+
+			assert.Error(t, err)
+		})
+	}
+}
+
+func TestLoadResources(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	userContent := `
+users:
+- email: email@address.com
+  groups:
+  - Log viewer
+`
+	policyContent := `policies:
+- name: My Policy
+  id: my-policy
+  level:
+    type: account
+  description: abcde
+  policy: |-
+    ALLOW automation:workflows:read;
+`
+	groupContent := `groups:
+- name: My Group
+  id: my-group
+  description: This is my group
+`
+	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p1", "user.yaml"), []byte(userContent), 0644)
+	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p2", "policy.yaml"), []byte(policyContent), 0644)
+	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p3", "group.yaml"), []byte(groupContent), 0644)
+
+	res, err := LoadResources(fs, ".", manifest.ProjectDefinitionByProjectID{
+		"p1": manifest.ProjectDefinition{Name: "p1", Group: "g1", Path: "p1"},
+		"p2": manifest.ProjectDefinition{Name: "p2", Group: "g1", Path: "p2"},
+		"p3": manifest.ProjectDefinition{Name: "p3", Group: "g1", Path: "p3"},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assert.Len(t, res.Users, 1)
+	assert.Len(t, res.Policies, 1)
+	assert.Len(t, res.Groups, 1)
+
+}
 
 func TestLoad(t *testing.T) {
 
