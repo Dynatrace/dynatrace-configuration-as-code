@@ -23,8 +23,6 @@ import (
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,7 +32,7 @@ func TestIntegrationScopeParameters(t *testing.T) {
 	manifest := configFolder + "/manifest.yaml"
 	specificEnvironment := ""
 
-	envVars := map[featureflags.FeatureFlag]string{
+	envVars := map[string]string{
 		"SCOPE_TEST_ENV_VAR": "environment",
 	}
 

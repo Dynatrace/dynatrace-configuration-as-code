@@ -28,7 +28,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 )
 
 // tests all configs for a single environment
@@ -38,7 +37,7 @@ func TestIntegrationAutomation(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 	specificEnvironment := ""
 
-	envs := map[featureflags.FeatureFlag]string{}
+	envs := map[string]string{}
 	if isHardeningEnvironment() {
 		envs["WORKFLOW_ACTOR"] = os.Getenv("WORKFLOW_ACTOR")
 	}
