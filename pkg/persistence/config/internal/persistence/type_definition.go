@@ -166,6 +166,10 @@ func (c *TypeDefinition) parseSettingsType(a any) error {
 		return fmt.Errorf("unknown settings configuration property 'permissions'")
 	}
 
+	hasPermissions := false
+	if configMap, ok := a.(map[any]any); ok {
+		_, hasPermissions = configMap["permissions"]
+	}
 	var allUserPermission *config.AllUserPermissionKind
 	if r.Permissions != nil {
 		if r.Permissions.AllUsers != nil {
@@ -173,6 +177,8 @@ func (c *TypeDefinition) parseSettingsType(a any) error {
 		} else {
 			allUserPermission = pointer.Pointer(config.NonePermission)
 		}
+	} else if hasPermissions {
+		allUserPermission = pointer.Pointer(config.NonePermission)
 	}
 	c.Type = config.SettingsType{
 		SchemaId:          r.Schema,
