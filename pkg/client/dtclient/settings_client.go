@@ -610,7 +610,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 	resp, err := SendWithRetryWithInitialTry(ctx, d.client.POST, d.settingsObjectAPIPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, payload, retrySetting)
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
-		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
+		return DynatraceEntity{}, fmt.Errorf("failed to create or update settings object with externalId %s: %w", externalID, err)
 	}
 
 	entity, err := parsePostResponse(resp.Data)
@@ -618,9 +618,12 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		return DynatraceEntity{}, err
 	}
 
-	permErr := d.modifyPermission(ctx, entity.Id, obj.SchemaId, upsertOptions.AllUserPermission)
-	if permErr != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to modify permissions of Settings object with externalId %s: %w", externalID, permErr)
+	if featureflags.AccessControlSettings.Enabled() && upsertOptions.AllUserPermission != nil {
+		permErr := d.modifyPermission(ctx, entity.Id, *upsertOptions.AllUserPermission)
+
+		if permErr != nil {
+			return DynatraceEntity{}, fmt.Errorf("failed to modify permissions of settings object with externalId %s: %w", externalID, permErr)
+		}
 	}
 
 	log.WithCtxFields(ctx).Debug("Created/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
@@ -628,16 +631,8 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 }
 
 // modifyPermission creates, updates or deletes the all-user permission of a given settings object
-func (d *SettingsClient) modifyPermission(ctx context.Context, objectID string, schemaId string, allUserPermission *config.AllUserPermissionKind) error {
-	if !featureflags.AccessControlSettings.Enabled() || allUserPermission == nil {
-		return nil
-	}
-	permissions := getPermissionsFromConfig(*allUserPermission)
-
-	// if we don't have any permissions to update and the schema does not support ACL, we return (success)
-	if schema, schemaExists := d.schemaCache.Get(schemaId); schemaExists && (schema.OwnerBasedAccessControl == nil || !*schema.OwnerBasedAccessControl) && permissions == nil {
-		return nil
-	}
+func (d *SettingsClient) modifyPermission(ctx context.Context, objectID string, allUserPermission config.AllUserPermissionKind) error {
+	permissions := getPermissionsFromConfig(allUserPermission)
 
 	if permissions == nil {
 		err := d.DeletePermission(ctx, objectID)
