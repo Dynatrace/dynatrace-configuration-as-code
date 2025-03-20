@@ -30,6 +30,38 @@ import (
 	"testing"
 )
 
+const (
+	manifestWithEnvVarUrl string = `manifestVersion: "1.0"
+projects:
+- name: test-project
+environmentGroups:
+- name: default
+  environments:
+  - name: test-project
+    url:
+      type: environment
+      value: ENVIRONMENT_URL
+    auth:
+      token:
+        type: environment
+        name: TEST_ENV_TOKEN
+`
+	manifestWithValueUrl string = `manifestVersion: "1.0"
+projects:
+- name: test-project
+environmentGroups:
+- name: default
+  environments:
+  - name: test-project
+    url:
+      value: env.url.com
+    auth:
+      token:
+        type: environment
+        name: TEST_ENV_TOKEN
+`
+)
+
 func TestWriteToDisk(t *testing.T) {
 
 	type args struct {
@@ -37,16 +69,18 @@ func TestWriteToDisk(t *testing.T) {
 		downloadedConfigs v2.ConfigsPerType
 		projectName       string
 		tokenEnvVarName   string
-		environmentUrl    string
+		environmentUrl    manifest.URLDefinition
 		outputFolder      string
 		timestampString   string
 	}
 	tests := []struct {
-		name             string
-		args             args
-		wantOutputFolder string
-		wantManifestFile string
-		wantErr          bool
+		name                string
+		args                args
+		wantOutputFolder    string
+		wantManifestFile    string
+		wantManifestContent string
+		wantErr             bool
+		forceOverwrite      bool
 	}{
 		{
 			"creates expected files",
@@ -69,12 +103,17 @@ func TestWriteToDisk(t *testing.T) {
 				},
 				projectName:     "test-project",
 				tokenEnvVarName: "TEST_ENV_TOKEN",
-				environmentUrl:  "env.url.com",
+				environmentUrl: manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
+					Value: "env.url.com",
+				},
 				outputFolder:    "test-output",
 				timestampString: "TESTING_TIME",
 			},
 			"test-output",
 			"manifest.yaml",
+			manifestWithValueUrl,
+			false,
 			false,
 		},
 		{
@@ -98,12 +137,17 @@ func TestWriteToDisk(t *testing.T) {
 				},
 				projectName:     "test-project",
 				tokenEnvVarName: "TEST_ENV_TOKEN",
-				environmentUrl:  "env.url.com",
+				environmentUrl: manifest.URLDefinition{
+					Type: manifest.EnvironmentURLType,
+					Name: "ENVIRONMENT_URL",
+				},
 				outputFolder:    "",
 				timestampString: "TESTING_TIME",
 			},
 			"download_TESTING_TIME",
 			"manifest.yaml",
+			manifestWithEnvVarUrl,
+			false,
 			false,
 		},
 		{
@@ -127,12 +171,17 @@ func TestWriteToDisk(t *testing.T) {
 				},
 				projectName:     "test-project",
 				tokenEnvVarName: "TEST_ENV_TOKEN",
-				environmentUrl:  "env.url.com",
+				environmentUrl: manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
+					Value: "env.url.com",
+				},
 				outputFolder:    "test-output",
 				timestampString: "TESTING_TIME",
 			},
 			"test-output",
 			"manifest_TESTING_TIME.yaml",
+			manifestWithValueUrl,
+			false,
 			false,
 		},
 		{
@@ -156,13 +205,18 @@ func TestWriteToDisk(t *testing.T) {
 				},
 				projectName:     "test-project",
 				tokenEnvVarName: "TEST_ENV_TOKEN",
-				environmentUrl:  "env.url.com",
+				environmentUrl: manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
+					Value: "env.url.com",
+				},
 				outputFolder:    "test-output",
 				timestampString: "TESTING_TIME",
 			},
 			"test-output",
 			"manifest.yaml",
+			manifestWithValueUrl,
 			false,
+			true,
 		},
 	}
 	for _, tt := range tests {
@@ -176,30 +230,35 @@ func TestWriteToDisk(t *testing.T) {
 				EnvironmentUrl:  tt.args.environmentUrl,
 				OutputFolder:    tt.args.outputFolder,
 				timestampString: tt.args.timestampString,
+				ForceOverwrite:  tt.forceOverwrite,
 			}
 
 			if err := writeToDisk(tt.args.fs, writerContext); (err != nil) != tt.wantErr {
-				t.Errorf("WriteToDisk() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if exists, err := afero.Exists(tt.args.fs, tt.args.outputFolder); err != nil || !exists {
-				t.Errorf("WriteToDisk(): expected outputfolder %v was not created", tt.args.outputFolder)
+				t.Errorf("Expected outputfolder %v was not created", tt.args.outputFolder)
 			}
 
 			if exists, err := afero.Exists(tt.args.fs, tt.wantOutputFolder); err != nil || !exists {
-				t.Errorf("WriteToDisk(): expected outputfolder %v was not created", tt.wantOutputFolder)
+				t.Errorf("Expected outputfolder %v was not created", tt.wantOutputFolder)
 			}
 
 			expectedProjectFolder := filepath.Join(tt.wantOutputFolder, tt.args.projectName)
 			if exists, err := afero.Exists(tt.args.fs, expectedProjectFolder); err != nil || !exists {
-				t.Errorf("WriteToDisk(): expected project %v was not created", expectedProjectFolder)
+				t.Errorf("Expected project %v was not created", expectedProjectFolder)
 			}
 
 			expectedManifest := filepath.Join(tt.wantOutputFolder, tt.wantManifestFile)
 			if exists, err := afero.Exists(tt.args.fs, expectedManifest); err != nil || !exists {
-				t.Errorf("WriteToDisk(): expected manifest %v was not created", expectedManifest)
+				t.Errorf("Expected manifest %v was not created", expectedManifest)
 			}
 
+			actualManifestContent, err := afero.ReadFile(tt.args.fs, expectedManifest)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantManifestContent, string(actualManifestContent),
+				"Manifest content was expected to be:\n%v\nbut actually was:\n%v", tt.wantManifestContent, string(actualManifestContent))
 		})
 	}
 }
@@ -232,7 +291,10 @@ func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
 		Auth: manifest.Auth{Token: &manifest.AuthSecret{
 			Name: tokenEnvVarName,
 		}},
-		EnvironmentUrl:  environmentUrl,
+		EnvironmentUrl: manifest.URLDefinition{
+			Type:  manifest.EnvironmentURLType,
+			Value: environmentUrl,
+		},
 		OutputFolder:    outputFolder,
 		timestampString: timestampString,
 	}
