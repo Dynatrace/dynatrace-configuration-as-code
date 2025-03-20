@@ -137,7 +137,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentURL:         env.URL.Value,
+			environmentURL:         env.URL,
 			auth:                   env.Auth,
 			outputFolder:           cmdOptions.outputFolder,
 			projectName:            cmdOptions.projectName,
@@ -159,7 +159,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 		return err
 	}
 
-	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth)
+	clientSet, err := client.CreateClientSet(ctx, options.environmentURL.Value, options.auth)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,10 @@ func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOpt
 
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentURL:         cmdOptions.environmentURL,
+			environmentURL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Value: cmdOptions.environmentURL,
+			},
 			auth:                   *a,
 			outputFolder:           cmdOptions.outputFolder,
 			projectName:            cmdOptions.projectName,
@@ -197,7 +200,7 @@ func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOpt
 		return err
 	}
 
-	clientSet, err := client.CreateClientSet(ctx, options.environmentURL, options.auth)
+	clientSet, err := client.CreateClientSet(ctx, options.environmentURL.Value, options.auth)
 	if err != nil {
 		return err
 	}
@@ -211,7 +214,7 @@ func doDownloadConfigs(ctx context.Context, fs afero.Fs, clientSet *client.Clien
 		return err
 	}
 
-	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentURL, opts.projectName)
+	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentURL.Value, opts.projectName)
 	downloadedConfigs, err := downloadConfigs(ctx, clientSet, apisToDownload, opts, defaultDownloadFn)
 	if err != nil {
 		return err

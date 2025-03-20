@@ -44,6 +44,22 @@ import (
 )
 
 func TestDownloadConfigsBehaviour(t *testing.T) {
+	var downloadOptions = downloadOptionsShared{
+		environmentURL: manifest.URLDefinition{
+			Type:  manifest.ValueURLType,
+			Value: "testurl.com",
+		},
+		auth: manifest.Auth{
+			Token: &manifest.AuthSecret{
+				Name:  "TEST_TOKEN_VAR",
+				Value: "test.token",
+			},
+		},
+		outputFolder:           "folder",
+		projectName:            "project",
+		forceOverwriteManifest: false,
+	}
+
 	tests := []struct {
 		name                      string
 		givenOpts                 downloadConfigsOptions
@@ -53,10 +69,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Default opts: downloads Configs and Settings",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:    nil,
-				specificSchemas: nil,
-				onlyAPIs:        false,
-				onlySettings:    false,
+				specificAPIs:          nil,
+				specificSchemas:       nil,
+				onlyAPIs:              false,
+				onlySettings:          false,
+				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.Value{}, nil)
@@ -70,10 +87,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Specific Settings: downloads defined Settings only",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:    nil,
-				specificSchemas: []string{"builtin:magic.secret"},
-				onlyAPIs:        false,
-				onlySettings:    false,
+				specificAPIs:          nil,
+				specificSchemas:       []string{"builtin:magic.secret"},
+				onlyAPIs:              false,
+				onlySettings:          false,
+				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), gomock.Any()).Times(0)
@@ -88,10 +106,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Specific APIs: downloads defined APIs only",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:    []string{"alerting-profile"},
-				specificSchemas: nil,
-				onlyAPIs:        false,
-				onlySettings:    false,
+				specificAPIs:          []string{"alerting-profile"},
+				specificSchemas:       nil,
+				onlyAPIs:              false,
+				onlySettings:          false,
+				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
@@ -105,10 +124,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Specific APIs and Settings: downloads defined APIs and Schemas",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:    []string{"alerting-profile"},
-				specificSchemas: []string{"builtin:magic.secret"},
-				onlyAPIs:        false,
-				onlySettings:    false,
+				specificAPIs:          []string{"alerting-profile"},
+				specificSchemas:       []string{"builtin:magic.secret"},
+				onlyAPIs:              false,
+				onlySettings:          false,
+				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
@@ -123,10 +143,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Only APIs: downloads APIs only",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:    nil,
-				specificSchemas: nil,
-				onlyAPIs:        true,
-				onlySettings:    false,
+				specificAPIs:          nil,
+				specificSchemas:       nil,
+				onlyAPIs:              true,
+				onlySettings:          false,
+				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.Value{}, nil)
@@ -140,10 +161,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Only Settings: downloads Settings only",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:    nil,
-				specificSchemas: nil,
-				onlyAPIs:        false,
-				onlySettings:    true,
+				specificAPIs:          nil,
+				specificSchemas:       nil,
+				onlyAPIs:              false,
+				onlySettings:          true,
+				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
 				c.EXPECT().List(gomock.Any(), gomock.Any()).Times(0)
@@ -157,19 +179,6 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			tt.givenOpts.downloadOptionsShared = downloadOptionsShared{
-				environmentURL: "testurl.com",
-				auth: manifest.Auth{
-					Token: &manifest.AuthSecret{
-						Name:  "TEST_TOKEN_VAR",
-						Value: "test.token",
-					},
-				},
-				outputFolder:           "folder",
-				projectName:            "project",
-				forceOverwriteManifest: false,
-			}
 
 			configClient := client.NewMockConfigClient(gomock.NewController(t))
 			tt.expectedConfigBehaviour(configClient)
@@ -477,7 +486,10 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 		specificSchemas: []string{"UNKNOWN SCHEMA"},
 		onlySettings:    false,
 		downloadOptionsShared: downloadOptionsShared{
-			environmentURL: "testurl.com",
+			environmentURL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Value: "testurl.com",
+			},
 			auth: manifest.Auth{
 				Token: &manifest.AuthSecret{
 					Name:  "TEST_TOKEN_VAR",
