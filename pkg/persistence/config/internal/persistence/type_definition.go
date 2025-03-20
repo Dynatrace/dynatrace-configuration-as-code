@@ -166,20 +166,8 @@ func (c *TypeDefinition) parseSettingsType(a any) error {
 		return fmt.Errorf("unknown settings configuration property 'permissions'")
 	}
 
-	hasPermissions := false
-	if configMap, ok := a.(map[any]any); ok {
-		_, hasPermissions = configMap["permissions"]
-	}
-	var allUserPermission *config.AllUserPermissionKind
-	if r.Permissions != nil {
-		if r.Permissions.AllUsers != nil {
-			allUserPermission = r.Permissions.AllUsers
-		} else {
-			allUserPermission = pointer.Pointer(config.NonePermission)
-		}
-	} else if hasPermissions {
-		allUserPermission = pointer.Pointer(config.NonePermission)
-	}
+	allUserPermission := getAllUserPermission(r.Permissions)
+
 	c.Type = config.SettingsType{
 		SchemaId:          r.Schema,
 		SchemaVersion:     r.SchemaVersion,
@@ -389,4 +377,17 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}
 	}
 	return nil, fmt.Errorf("unknown type: %T", c.Type)
+}
+
+// getAllUserPermission returns the allUsers permission and falls back to "none" if permission are set but allUsers is missing
+func getAllUserPermission(p *PermissionDefinition) *config.AllUserPermissionKind {
+	if p == nil {
+		return nil
+	}
+
+	if p.AllUsers == nil {
+		return pointer.Pointer(config.NonePermission)
+	}
+
+	return p.AllUsers
 }
