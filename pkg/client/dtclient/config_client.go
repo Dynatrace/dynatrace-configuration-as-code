@@ -376,7 +376,7 @@ func (d *ConfigClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restC
 	}
 
 	apiError := coreapi.APIError{}
-	if !errors.As(err, &apiError) {
+	if !errors.As(err, &apiError) || !corerest.ShouldRetry(apiError.StatusCode) {
 		return nil, err
 	}
 

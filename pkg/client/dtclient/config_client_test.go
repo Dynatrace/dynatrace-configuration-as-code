@@ -19,7 +19,9 @@
 package dtclient
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -28,6 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
@@ -862,4 +865,21 @@ func TestSloV2ToSloV1(t *testing.T) {
 
 	_, err = client.UpsertByName(t.Context(), mockAPISlo, "test", []byte("{}"))
 	assert.ErrorContains(t, err, "tried to deploy an slo-v2 configuration to slo-v1")
+}
+
+func TestCallWithRetryOnKnowTimingIssue_IgnoreRetryOn(t *testing.T) {
+	testServer := httptest.NewTLSServer(http.NewServeMux())
+	defer testServer.Close()
+
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
+	require.NoError(t, err)
+
+	i := 0
+	mockCall := SendRequestWithBody(func(ctx context.Context, url string, data io.Reader, options corerest.RequestOptions) (*http.Response, error) {
+		i++
+		return nil, coreapi.APIError{StatusCode: http.StatusForbidden, Body: []byte("Metric selector invalid")}
+	})
+	_, err = client.callWithRetryOnKnowTimingIssue(t.Context(), mockCall, "some/path", []byte("{}"), api.API{}, corerest.RequestOptions{})
+	assert.Error(t, err)
+	assert.Equal(t, 1, i)
 }

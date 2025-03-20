@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -111,4 +113,40 @@ func Test_sendWithRetryReturnsIfNotSuccess(t *testing.T) {
 	apiError := coreapi.APIError{}
 	require.ErrorAs(t, err, &apiError)
 	assert.Equal(t, 400, apiError.StatusCode)
+}
+
+func Test_SendWithRetryWithInitialTry_RetryIgnoredIfForbidden(t *testing.T) {
+	i := 0
+	mockCall := SendRequestWithBody(func(ctx context.Context, url string, data io.Reader, options corerest.RequestOptions) (*http.Response, error) {
+		i++
+		return nil, coreapi.APIError{StatusCode: http.StatusForbidden}
+	})
+
+	_, err := SendWithRetryWithInitialTry(t.Context(), mockCall, "some/path", corerest.RequestOptions{}, []byte("body"), RetrySetting{MaxRetries: 10})
+	require.Error(t, err)
+	assert.Equal(t, 1, i)
+}
+
+func Test_GetWithRetry_RetryIgnoredIfForbidden(t *testing.T) {
+	i := 0
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /some/path", func(w http.ResponseWriter, r *http.Request) {
+		i++
+		w.WriteHeader(http.StatusForbidden)
+		_, err := w.Write([]byte("{}"))
+		assert.NoError(t, err)
+	})
+
+	server := httptest.NewTLSServer(mux)
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	restClient := corerest.NewClient(serverURL, server.Client())
+
+	_, err = GetWithRetry(t.Context(), *restClient, "some/path", corerest.RequestOptions{}, RetrySetting{MaxRetries: 10})
+	require.Error(t, err)
+	assert.Equal(t, 1, i)
 }
