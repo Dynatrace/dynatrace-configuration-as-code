@@ -807,7 +807,7 @@ configs:
 			wantErrorsContain: []string{"unknown settings configuration property 'permissions'"},
 		},
 		{
-			name:             "loads settings 2.0 config with 'none' allUsers permissions if permissions are set but do not contain anything",
+			name:             "loads settings 2.0 config with nil allUsers permissions if permissions are set but do not contain anything",
 			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
@@ -835,7 +835,7 @@ configs:
 					Type: config.SettingsType{
 						SchemaId:          "builtin:profile.test",
 						SchemaVersion:     "1.0",
-						AllUserPermission: pointer.Pointer(config.NonePermission),
+						AllUserPermission: nil,
 					},
 					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
