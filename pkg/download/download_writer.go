@@ -31,7 +31,7 @@ import (
 )
 
 type WriterContext struct {
-	EnvironmentUrl  string
+	EnvironmentUrl  manifest.URLDefinition
 	ProjectToWrite  project.Project
 	Auth            manifest.Auth
 	OutputFolder    string
@@ -70,11 +70,8 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 		Projects: projectDefinition,
 		Environments: map[string]manifest.EnvironmentDefinition{
 			writerContext.ProjectToWrite.Id: {
-				Name: writerContext.ProjectToWrite.Id,
-				URL: manifest.URLDefinition{
-					Type:  manifest.ValueURLType,
-					Value: writerContext.EnvironmentUrl,
-				},
+				Name:  writerContext.ProjectToWrite.Id,
+				URL:   writerContext.EnvironmentUrl,
 				Group: "default",
 				Auth:  writerContext.Auth,
 			},
