@@ -40,6 +40,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -133,7 +134,8 @@ type UpsertSettingsOptions struct {
 	// It supports the following magic values to insert at the FRONT and BOTTOM of the list:
 	//   - FRONT (InsertPositionFront) -> insert at the front of the list
 	//   - BACK (InsertPositionBack) -> insert at the back of the list
-	InsertAfter *string
+	InsertAfter       *string
+	AllUserPermission *config.AllUserPermissionKind
 }
 
 const (
@@ -283,8 +285,8 @@ const (
 	settingsSchemaAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/schemas"
 	settingsObjectAPIPathClassic      = "/api/v2/settings/objects"
 	settingsObjectAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/objects"
-	settingsPermissionAllUsersAPIPath = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users"
-	settingsPermissionAPIPath         = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions"
+	settingsPermissionAllUsersAPIPath = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users" // GET, PUT, DELETE
+	settingsPermissionAPIPath         = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions"           // POST
 )
 
 func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *SettingsClient) {
@@ -608,7 +610,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 	resp, err := SendWithRetryWithInitialTry(ctx, d.client.POST, d.settingsObjectAPIPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, payload, retrySetting)
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
-		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
+		return DynatraceEntity{}, fmt.Errorf("failed to create or update settings object with externalId %s: %w", externalID, err)
 	}
 
 	entity, err := parsePostResponse(resp.Data)
@@ -616,8 +618,42 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		return DynatraceEntity{}, err
 	}
 
+	if featureflags.AccessControlSettings.Enabled() && upsertOptions.AllUserPermission != nil {
+		permErr := d.modifyPermission(ctx, entity.Id, *upsertOptions.AllUserPermission)
+
+		if permErr != nil {
+			return DynatraceEntity{}, fmt.Errorf("failed to modify permissions of settings object with externalId %s: %w", externalID, permErr)
+		}
+	}
+
 	log.WithCtxFields(ctx).Debug("Created/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
 	return entity, nil
+}
+
+// modifyPermission creates, updates or deletes the all-user permission of a given settings object
+func (d *SettingsClient) modifyPermission(ctx context.Context, objectID string, allUserPermission config.AllUserPermissionKind) error {
+	permissions := getPermissionsFromConfig(allUserPermission)
+
+	if permissions != nil {
+		return d.UpsertPermission(ctx, objectID, PermissionObject{
+			Permissions: permissions,
+			Accessor:    &Accessor{AllUsers},
+		})
+	}
+
+	return d.DeletePermission(ctx, objectID)
+}
+
+// getPermissionsFromConfig maps from "write" (config) to ["r", "w"] (API)
+func getPermissionsFromConfig(allUserPermission config.AllUserPermissionKind) []TypePermissions {
+	if allUserPermission == config.ReadPermission {
+		return []TypePermissions{Read}
+	}
+	if allUserPermission == config.WritePermission {
+		return []TypePermissions{Read, Write}
+	}
+	// invalid value already handled during load
+	return nil
 }
 
 type match struct {
@@ -1008,10 +1044,11 @@ func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) 
 		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
 	))
 
-	if err != nil {
+	apiError := coreapi.APIError{}
+	// deployments with "none" for all-user will always try to delete. This could be an update (restricted to shared) or it stays the same (delete 404)
+	if err != nil && (!errors.As(err, &apiError) || apiError.StatusCode != http.StatusNotFound) {
 		return fmt.Errorf("failed to delete permission object: %w", err)
 	}
-
 	return nil
 }
 
