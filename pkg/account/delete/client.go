@@ -57,7 +57,7 @@ type ResourceNotFoundError struct {
 	Identifier string
 }
 
-func (e *ResourceNotFoundError) Error() string {
+func (e ResourceNotFoundError) Error() string {
 	return fmt.Sprintf("resource '%s' not found", e.Identifier)
 }
 
