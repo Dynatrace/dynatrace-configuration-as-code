@@ -1,0 +1,52 @@
+# Test if setting `insertAfter` to `BACK` works as expected with an initial config as 'separator'.
+# Without the separator, the configs are deployed in parallel and might run into a race condition on the remote server leading to an unpredictable ordering.
+#
+# First, `initial` is deployed. Then `first` and `last` are deployed in parallel.
+# `first` should be on the first position, `last` on the last position.
+
+configs:
+- id: initial
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE
+      insertAfter: FRONT
+  config:
+    template: url-sampling.json
+    name: initial
+
+- id: first
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE
+      insertAfter: FRONT
+  config:
+    template: url-sampling.json
+    name: first
+    parameters:
+      _phantom:
+        type: reference
+        property: id
+        configId: initial
+
+- id: last
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE
+      insertAfter: BACK
+  config:
+    template: url-sampling.json
+    name: last
+    parameters:
+      _phantom:
+        type: reference
+        property: id
+        configId: initial

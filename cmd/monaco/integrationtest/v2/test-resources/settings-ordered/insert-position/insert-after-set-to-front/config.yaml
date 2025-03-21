@@ -13,6 +13,7 @@ configs:
         name: MONACO_TARGET_ENTITY_SCOPE
   config:
     template: url-sampling.json
+    name: first
 
 - id: second
   type:
@@ -24,6 +25,7 @@ configs:
       insertAfter: FRONT
   config:
     template: url-sampling.json
+    name: second
     parameters:
       phantom-to-first:
         type: reference
@@ -43,5 +45,6 @@ configs:
         property: id
   config:
     template: url-sampling.json
+    name: third
 
 
