@@ -60,21 +60,21 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		OriginObjectId: c.OriginObjectId,
 	}
 
-	insertOptions := dtclient.UpsertSettingsOptions{
+	upsertOptions := dtclient.UpsertSettingsOptions{
 		OverrideRetry:     nil,
 		InsertAfter:       insertAfter,
 		AllUserPermission: t.AllUserPermission,
 	}
 
 	if c.HasRefTo(string(config.BucketTypeID)) {
-		insertOptions.OverrideRetry = &dtclient.RetrySetting{WaitTime: 10 * time.Second, MaxRetries: 6}
+		upsertOptions.OverrideRetry = &dtclient.RetrySetting{WaitTime: 10 * time.Second, MaxRetries: 6}
 	}
 
 	if c.HasRefTo(api.ApplicationWeb) {
-		insertOptions.OverrideRetry = &dtclient.DefaultRetrySettings.VeryLong
+		upsertOptions.OverrideRetry = &dtclient.DefaultRetrySettings.VeryLong
 	}
 
-	dtEntity, err := settingsClient.Upsert(ctx, settingsObj, insertOptions)
+	dtEntity, err := settingsClient.Upsert(ctx, settingsObj, upsertOptions)
 	if err != nil {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
 	}
