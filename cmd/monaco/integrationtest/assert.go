@@ -23,9 +23,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
+
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 
 	"github.com/stretchr/testify/assert"
 
@@ -290,15 +291,15 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 		expectedId = idutils.GenerateBucketName(cfg.Coordinate)
 	}
 
-	resp, err := getBucketWithRetry(t.Context(), client, expectedId, 0, 5)
+	_, err := getBucketWithRetry(t.Context(), client, expectedId, 5)
 
 	exists := true
-
-	if respErr, ok := resp.AsAPIError(); ok {
-		if respErr.StatusCode == 404 {
+	apiErr := coreapi.APIError{}
+	if errors.As(err, &apiErr) {
+		if apiErr.StatusCode == 404 {
 			exists = false
 		} else {
-			assert.NoError(t, respErr)
+			assert.NoError(t, apiErr)
 		}
 	} else if err != nil {
 		assert.NoError(t, err)
@@ -318,14 +319,21 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 	return expectedId
 }
 
-func getBucketWithRetry(ctx context.Context, client client.BucketClient, bucketName string, try, maxTries int) (buckets.Response, error) {
-	resp, err := client.Get(ctx, bucketName)
-	if try < maxTries && resp.StatusCode == http.StatusNotFound {
-		try++
-		time.Sleep(time.Second)
-		return getBucketWithRetry(ctx, client, bucketName, try, maxTries)
-	}
+func getBucketWithRetry(ctx context.Context, client client.BucketClient, bucketName string, maxTries int) (buckets.Response, error) {
+	var resp buckets.Response
+	var err error
+	for try := 0; try < maxTries; try++ {
+		resp, err = client.Get(ctx, bucketName)
+		if err == nil {
+			return resp, nil
+		}
 
+		if !coreapi.IsNotFoundError(err) {
+			return buckets.Response{}, err
+		}
+
+		time.Sleep(time.Second)
+	}
 	return resp, err
 }
 
