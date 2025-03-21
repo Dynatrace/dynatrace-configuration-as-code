@@ -72,8 +72,8 @@ func SendWithRetry(ctx context.Context, sendWithBody SendRequestWithBody, endpoi
 			return resp, nil
 		}
 
-		apierror := coreapi.APIError{}
-		if !errors.As(err, &apierror) {
+		apiErr := coreapi.APIError{}
+		if !errors.As(err, &apiErr) || !corerest.ShouldRetry(apiErr.StatusCode) /*e.g., 403 after 429*/ {
 			return nil, err
 		}
 	}
@@ -117,7 +117,7 @@ func GetWithRetry(ctx context.Context, c corerest.Client, endpoint string, reque
 			return resp, nil
 		}
 
-		if !errors.As(err, &apiErr) {
+		if !errors.As(err, &apiErr) || !corerest.ShouldRetry(apiErr.StatusCode) /*e.g., 403 after 429*/ {
 			return nil, err
 		}
 	}
