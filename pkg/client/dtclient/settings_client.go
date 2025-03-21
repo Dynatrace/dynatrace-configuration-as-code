@@ -634,21 +634,14 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 func (d *SettingsClient) modifyPermission(ctx context.Context, objectID string, allUserPermission config.AllUserPermissionKind) error {
 	permissions := getPermissionsFromConfig(allUserPermission)
 
-	if permissions == nil {
-		err := d.DeletePermission(ctx, objectID)
-		if err != nil {
-			return err
-		}
-	} else {
-		err := d.UpsertPermission(ctx, objectID, PermissionObject{
+	if permissions != nil {
+		return d.UpsertPermission(ctx, objectID, PermissionObject{
 			Permissions: permissions,
 			Accessor:    &Accessor{AllUsers},
 		})
-		if err != nil {
-			return err
-		}
 	}
-	return nil
+
+	return d.DeletePermission(ctx, objectID)
 }
 
 // getPermissionsFromConfig maps from "write" (config) to ["r", "w"] (API)
