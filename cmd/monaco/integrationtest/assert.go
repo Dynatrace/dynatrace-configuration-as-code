@@ -30,7 +30,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -291,7 +290,7 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 		expectedId = idutils.GenerateBucketName(cfg.Coordinate)
 	}
 
-	_, err := getBucketWithRetry(t.Context(), client, expectedId, 120)
+	err := waitForBucketToExist(t.Context(), client, expectedId, 120)
 
 	exists := true
 	apiErr := coreapi.APIError{}
@@ -319,22 +318,22 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 	return expectedId
 }
 
-func getBucketWithRetry(ctx context.Context, client client.BucketClient, bucketName string, maxTries int) (buckets.Response, error) {
-	var resp buckets.Response
+// waitForBucketToExist tries to get bucket status until it is successfully retrieved, max tries is exhausted, or some other error occurs.
+func waitForBucketToExist(ctx context.Context, client client.BucketClient, bucketName string, maxTries int) error {
 	var err error
 	for try := 0; try < maxTries; try++ {
-		resp, err = client.Get(ctx, bucketName)
+		_, err = client.Get(ctx, bucketName)
 		if err == nil {
-			return resp, nil
+			return nil
 		}
 
 		if !coreapi.IsNotFoundError(err) {
-			return buckets.Response{}, err
+			return err
 		}
 
 		time.Sleep(time.Second)
 	}
-	return resp, err
+	return err
 }
 
 func wait(description string, maxPollCount int, condition func() bool) error {
