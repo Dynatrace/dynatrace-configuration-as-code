@@ -72,8 +72,8 @@ func SendWithRetry(ctx context.Context, sendWithBody SendRequestWithBody, endpoi
 			return resp, nil
 		}
 
-		apierror := coreapi.APIError{}
-		if !errors.As(err, &apierror) {
+		apiErr := coreapi.APIError{}
+		if !errors.As(err, &apiErr) || !corerest.ShouldRetry(apiErr.StatusCode) /*e.g., 403 after 429*/ {
 			return nil, err
 		}
 	}
@@ -88,8 +88,8 @@ func SendWithRetryWithInitialTry(ctx context.Context, sendWithBody SendRequestWi
 		return resp, nil
 	}
 
-	apierror := coreapi.APIError{}
-	if !errors.As(err, &apierror) {
+	apiError := coreapi.APIError{}
+	if !errors.As(err, &apiError) || !corerest.ShouldRetry(apiError.StatusCode) {
 		return nil, err
 	}
 
@@ -102,14 +102,14 @@ func GetWithRetry(ctx context.Context, c corerest.Client, endpoint string, reque
 		return resp, nil
 	}
 
-	apierror := coreapi.APIError{}
-	if !errors.As(err, &apierror) {
+	apiErr := coreapi.APIError{}
+	if !errors.As(err, &apiErr) || !corerest.ShouldRetry(apiErr.StatusCode) {
 		return nil, err
 	}
 
 	url := c.BaseURL().JoinPath(endpoint).String()
 	for i := 0; i < settings.MaxRetries; i++ {
-		log.WithCtxFields(ctx).Warn("Retrying failed GET request %s (HTTP %d)", url, apierror.StatusCode)
+		log.WithCtxFields(ctx).Warn("Retrying failed GET request %s (HTTP %d)", url, apiErr.StatusCode)
 		time.Sleep(settings.WaitTime)
 
 		resp, err = coreapi.AsResponseOrError(c.GET(ctx, endpoint, requestOptions))
@@ -117,7 +117,7 @@ func GetWithRetry(ctx context.Context, c corerest.Client, endpoint string, reque
 			return resp, nil
 		}
 
-		if !errors.As(err, &apierror) {
+		if !errors.As(err, &apiErr) || !corerest.ShouldRetry(apiErr.StatusCode) /*e.g., 403 after 429*/ {
 			return nil, err
 		}
 	}
