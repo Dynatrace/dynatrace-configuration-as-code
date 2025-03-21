@@ -51,7 +51,7 @@ var (
 )
 
 type downloadOptionsShared struct {
-	environmentURL         string
+	environmentURL         manifest.URLDefinition
 	auth                   manifest.Auth
 	outputFolder           string
 	projectName            string
