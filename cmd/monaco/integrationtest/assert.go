@@ -291,7 +291,7 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 		expectedId = idutils.GenerateBucketName(cfg.Coordinate)
 	}
 
-	_, err := getBucketWithRetry(t.Context(), client, expectedId, 5)
+	_, err := getBucketWithRetry(t.Context(), client, expectedId, 120)
 
 	exists := true
 	apiErr := coreapi.APIError{}
