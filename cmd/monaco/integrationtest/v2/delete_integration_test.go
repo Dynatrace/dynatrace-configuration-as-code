@@ -327,7 +327,7 @@ configs:
 	require.NoError(t, err)
 
 	// Extra sleep to ensure that the application is available - this is added to prevent HTTP 500 errors occuring later in deletion.
-	time.Sleep(10 * time.Second)
+	time.Sleep(60 * time.Second)
 
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
