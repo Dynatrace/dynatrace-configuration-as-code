@@ -25,6 +25,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 )
 
@@ -165,10 +166,8 @@ func (c *TypeDefinition) parseSettingsType(a any) error {
 		return fmt.Errorf("unknown settings configuration property 'permissions'")
 	}
 
-	var allUserPermission *config.AllUserPermissionKind
-	if r.Permissions != nil {
-		allUserPermission = r.Permissions.AllUsers
-	}
+	allUserPermission := getAllUserPermission(r.Permissions)
+
 	c.Type = config.SettingsType{
 		SchemaId:          r.Schema,
 		SchemaVersion:     r.SchemaVersion,
@@ -378,4 +377,17 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}
 	}
 	return nil, fmt.Errorf("unknown type: %T", c.Type)
+}
+
+// getAllUserPermission returns the allUsers permission and falls back to "none" if permission are set but allUsers is missing
+func getAllUserPermission(p *PermissionDefinition) *config.AllUserPermissionKind {
+	if p == nil {
+		return nil
+	}
+
+	if p.AllUsers == nil {
+		return pointer.Pointer(config.NonePermission)
+	}
+
+	return p.AllUsers
 }
