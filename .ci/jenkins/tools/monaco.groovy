@@ -63,8 +63,8 @@ void deploy(String project, boolean ignoreReturnStatus = true) {
 
 void buildForwarder() {
     String logForwarderBin = "${JENKINS_AGENT_WORKDIR}/logForwarder"
-    sh(label: "build monaco-log-forwarder",
-        script: """go build -buildvcs=false -o ${logForwarderBin}""")
+   sh(label: "build monaco-log-forwarder",
+        script: """CGO_ENABLED=0 go build -a -tags=netgo -buildvcs=false -ldflags=\"-w -extldflags -static\" -o ${logForwarderBin}""")
     sh "ls -alF ${JENKINS_AGENT_WORKDIR}"
 }
 
