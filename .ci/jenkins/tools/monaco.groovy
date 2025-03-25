@@ -49,12 +49,13 @@ void purge() {
 void deploy(String project, boolean ignoreReturnStatus = true) {
     String monacoBin = "${JENKINS_AGENT_WORKDIR}/monaco"
     String logForwarderBin = "${JENKINS_AGENT_WORKDIR}/logForwarder"
+    String manifestPath = "${JENKINS_AGENT_WORKDIR}/deployment/manifest.yaml"
 
     withVault(vaultSecrets: secrets) {
         // to provoke memory leak remove MONACO_CONCURENT_DEPLOYMENT flag. The default value is MONACO_CONCURENT_DEPLOYMENT=100
         status = sh(label: "monaco deploy",
             returnStatus: true,
-            script: "MONACO_CONCURENT_DEPLOYMENT=30 MONACO_LOG_FORMAT=json ${monacoBin} deploy manifest.yaml --project=${project} --verbose | ${logForwarderBin} LOG_FWD_URL LOG_FWD_TOKEN")
+            script: "MONACO_CONCURENT_DEPLOYMENT=30 MONACO_LOG_FORMAT=json ${monacoBin} deploy ${manifestPath} --project=${project} --verbose | ${logForwarderBin} LOG_FWD_URL LOG_FWD_TOKEN")
         if (!ignoreReturnStatus) {
             0 == status
         }
@@ -66,6 +67,12 @@ void buildForwarder() {
    sh(label: "build monaco-log-forwarder",
         script: """CGO_ENABLED=0 go build -a -tags=netgo -buildvcs=false -ldflags=\"-w -extldflags -static\" -o ${logForwarderBin}""")
     sh "ls -alF ${JENKINS_AGENT_WORKDIR}"
+}
+
+void copyTestData() {
+    String deploymentFolder = "${JENKINS_AGENT_WORKDIR}/deployment"
+    sh(label: "copy test data",
+        script: """cp -R . ${deploymentFolder}/""")
 }
 
 return this

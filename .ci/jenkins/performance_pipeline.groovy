@@ -21,6 +21,7 @@ podTemplate(yaml: readTrusted('.ci/jenkins/agents/performance-agent.yaml')) {
                 git(credentialsId: 'bitbucket-buildmaster',
                     url: 'https://bitbucket.lab.dynatrace.org/scm/claus/monaco-test-data.git',
                     branch: 'main')
+                monaco.copyTestData()
                 cleanWs()
 
             }
