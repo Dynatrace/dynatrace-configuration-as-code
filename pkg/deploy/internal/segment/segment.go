@@ -43,7 +43,10 @@ func Deploy(ctx context.Context, client deploySegmentClient, properties paramete
 
 	data := handler.NewHandlerData(ctx, client, properties, []byte(renderedConfig), c)
 
-	addExternalIdHandler := handler.AddExternalIDHandler{}
+	payloadHandler := handler.PayloadHandler{
+		Generators: []handler.Generator{handler.ExternalIDGenerator},
+		Modifiers:  []handler.Modifier{handler.AddExternalID},
+	}
 	deployWithOriginObjectID := handler.OriginObjectIDHandler{}
 	matchWithExternalIDHandler := handler.MatchWithExternalIDHandler{
 		ExternalIDKey: "externalId",
@@ -57,9 +60,9 @@ func Deploy(ctx context.Context, client deploySegmentClient, properties paramete
 		},
 	}
 	createHandler := handler.CreateHandler{IDKey: "uid"}
-	addExternalIdHandler.Next(&deployWithOriginObjectID).Next(&matchWithExternalIDHandler).Next(&createHandler)
+	payloadHandler.Next(&deployWithOriginObjectID).Next(&matchWithExternalIDHandler).Next(&createHandler)
 
-	return addExternalIdHandler.Handle(data)
+	return payloadHandler.Handle(data)
 }
 
 func transform(rawResponse []api.Response) ([][]byte, error) {

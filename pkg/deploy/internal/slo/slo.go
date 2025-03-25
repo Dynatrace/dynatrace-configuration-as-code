@@ -18,6 +18,7 @@ package slo
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -35,13 +36,19 @@ type deployServiceLevelObjectiveClient interface {
 	Create(ctx context.Context, data []byte) (api.Response, error)
 }
 
+var ErrSloV1Payload = errors.New("tried to deploy an slo-v1 configuration to slo-v2")
+
 func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
 	data := handler.NewHandlerData(ctx, client, properties, []byte(renderedConfig), c)
-	addExternalIdHandler := handler.AddExternalIDHandler{}
+	payloadHandler := handler.PayloadHandler{
+		Generators: []handler.Generator{handler.ExternalIDGenerator},
+		Modifiers:  []handler.Modifier{handler.AddExternalID},
+		Validators: []handler.Validator{sloPayloadValidator},
+	}
 	deployWithOriginObjectID := handler.OriginObjectIDHandler{}
 	matchWithExternalIDHandler := handler.MatchWithExternalIDHandler{
 		ExternalIDKey: "externalId",
@@ -56,7 +63,15 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 		},
 	}
 	createHandler := handler.CreateHandler{IDKey: "id"}
-	addExternalIdHandler.Next(&deployWithOriginObjectID).Next(&matchWithExternalIDHandler).Next(&createHandler)
+	payloadHandler.Next(&deployWithOriginObjectID).Next(&matchWithExternalIDHandler).Next(&createHandler)
 
-	return addExternalIdHandler.Handle(data)
+	return payloadHandler.Handle(data)
+}
+
+// validates if the payload is a valid slo v2 payload
+func sloPayloadValidator(request map[string]any) error {
+	if _, exists := request["evaluationType"]; exists {
+		return ErrSloV1Payload
+	}
+	return nil
 }
