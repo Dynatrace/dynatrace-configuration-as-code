@@ -85,6 +85,14 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 		errors.As(validationErrs, &deploymentErrs)
 	}
 
+	if settingsValidationErrs := validateSettingsPermissions(ctx, projects, environmentClients); settingsValidationErrs != nil {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, settingsValidationErrs, "", nil)
+		if !opts.ContinueOnErr && !opts.DryRun {
+			return settingsValidationErrs
+		}
+		errors.As(settingsValidationErrs, &deploymentErrs)
+	}
+
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
 
 	envNames := environmentClients.Names()
@@ -125,6 +133,75 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 
 	if len(deploymentErrs) != 0 {
 		return deploymentErrs
+	}
+
+	return nil
+}
+
+// We loop over the configs per environment, keep those which are SettingsType and have AllUserPermission set,
+// get the schema IDs, fetch all the schemas in parallel and then verify that for all these schemas, we have
+// OwnerBasedAccessControl == true.
+// If there is a schema where that is not the case, we collect/log errors for each config referencing said schema.
+func validateSettingsPermissions(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients) error {
+	configsWithPermissionsPerEnvironment := make(map[dynatrace.EnvironmentInfo]map[string][]config.Config)
+
+	for _, p := range projects {
+		p.ForEveryConfigDo(func(c config.Config) {
+			s, ok := c.Type.(config.SettingsType)
+			if !ok {
+				return
+			}
+
+			if s.AllUserPermission == nil {
+				return
+			}
+
+			environmentInfo := dynatrace.EnvironmentInfo{
+				Group: c.Group,
+				Name:  c.Environment,
+			}
+
+			if configsWithPermissionsPerEnvironment[environmentInfo] == nil {
+				configsWithPermissionsPerEnvironment[environmentInfo] = make(map[string][]config.Config)
+			}
+			if configsWithPermissionsPerEnvironment[environmentInfo][s.SchemaId] == nil {
+				configsWithPermissionsPerEnvironment[environmentInfo][s.SchemaId] = make([]config.Config, 1)
+			}
+			configsWithPermissionsPerEnvironment[environmentInfo][s.SchemaId] =
+				append(configsWithPermissionsPerEnvironment[environmentInfo][s.SchemaId], c)
+		})
+	}
+
+	aclValidationErrs := make([]error, 0)
+	for environmentInfo, configsWithPermissionForEnvironment := range configsWithPermissionsPerEnvironment {
+		schemaIdsInEnv := make([]string, len(configsWithPermissionForEnvironment))
+
+		i := 0
+		for k := range configsWithPermissionForEnvironment {
+			schemaIdsInEnv[i] = k
+			i++
+		}
+
+		schemas, err := environmentClients[environmentInfo].SettingsClient.GetSchemas(ctx, schemaIdsInEnv)
+		if err != nil {
+			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, fmt.Errorf("validation failed due to: %w", err), "", nil)
+			return err
+		}
+
+		for _, schema := range schemas {
+			if schema.OwnerBasedAccessControl == nil || !*schema.OwnerBasedAccessControl {
+				errorMsg := errors.New("config has permissions set but schema is not enabled for owner-based access control")
+				aclValidationErrs = append(aclValidationErrs, errorMsg)
+
+				for _, c := range configsWithPermissionForEnvironment[schema.SchemaId] {
+					report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, errorMsg, "", &c.Coordinate)
+				}
+			}
+		}
+	}
+
+	if len(aclValidationErrs) > 0 {
+		return errors.Join(aclValidationErrs...)
 	}
 
 	return nil

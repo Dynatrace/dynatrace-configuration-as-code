@@ -421,29 +421,51 @@ func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, e
 
 // addACLToSchemas adds the correct ownerBasedAccessControl information to the schemas
 func (d *SettingsClient) addOwnerBasedAccessControl(ctx context.Context, schemas SchemaList) (SchemaList, error) {
+	schemaIds := make([]string, 0, len(schemas))
+	for _, schema := range schemas {
+		schemaIds = append(schemaIds, schema.SchemaId)
+	}
+
+	fetchedSchemas, err := d.GetSchemas(ctx, schemaIds)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedSchemas := make(SchemaList, 0, len(schemas))
+	for _, schema := range fetchedSchemas {
+		updatedSchemas = append(updatedSchemas, SchemaItem{
+			SchemaId:                schema.SchemaId,
+			Ordered:                 schema.Ordered,
+			OwnerBasedAccessControl: schema.OwnerBasedAccessControl,
+		})
+	}
+	return updatedSchemas, nil
+}
+
+func (d *SettingsClient) GetSchemas(ctx context.Context, schemaIDs []string) ([]Schema, error) {
 	type result struct {
 		Err    error
-		Schema SchemaItem
+		Schema Schema
 	}
-	resChan := make(chan result, len(schemas))
 
-	for _, s := range schemas {
-		go func(s SchemaItem) {
-			fullSchema, err := d.GetSchema(ctx, s.SchemaId)
-			s.OwnerBasedAccessControl = fullSchema.OwnerBasedAccessControl
+	resChan := make(chan result, len(schemaIDs))
 
-			resChan <- result{Schema: s, Err: err}
+	for _, s := range schemaIDs {
+		go func(s string) {
+			fullSchema, err := d.GetSchema(ctx, s)
+
+			resChan <- result{Schema: fullSchema, Err: err}
 		}(s)
 	}
 
-	errs := make([]error, 0, len(schemas))
-	updatedSchemas := make(SchemaList, 0, len(schemas))
+	errs := make([]error, 0, len(schemaIDs))
+	schemas := make([]Schema, 0, len(schemaIDs))
 
-	for i := 0; i < len(schemas); i++ {
+	for i := 0; i < len(schemaIDs); i++ {
 		if res := <-resChan; res.Err != nil {
 			errs = append(errs, res.Err)
 		} else {
-			updatedSchemas = append(updatedSchemas, res.Schema)
+			schemas = append(schemas, res.Schema)
 		}
 	}
 
@@ -452,7 +474,7 @@ func (d *SettingsClient) addOwnerBasedAccessControl(ctx context.Context, schemas
 	if len(errs) > 0 {
 		return nil, errors.Join(errs...)
 	}
-	return updatedSchemas, nil
+	return schemas, nil
 }
 
 func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constraints Schema, err error) {
