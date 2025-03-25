@@ -155,7 +155,6 @@ func TestValidate_ErrorForSameNameAndScopeWithDifferentScopeCheckedEarlier(t *te
 	err3 := validator.Validate(newTestClassicConfigForValidation(t, "config3", api.KeyUserActionsMobile, map[string]parameter.Parameter{
 		config.NameParameter:  value.New("name"),
 		config.ScopeParameter: value.New("scope1")}))
-
 	assert.Error(t, err3)
 }
 
