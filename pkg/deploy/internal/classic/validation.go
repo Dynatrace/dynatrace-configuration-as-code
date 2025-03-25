@@ -19,13 +19,13 @@ package classic
 import (
 	"fmt"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	compoundParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -126,5 +126,42 @@ func ensureNonDuplicateNames(c config.Config, c2 config.Config) error {
 			}
 		}
 	}
+	return nil
+}
+
+// deprecatedApiValidator should be created via NewDeprecatedApiValidator().
+// For a given classic API config, this validator checks the specific API.
+// If this API is deprecated, and the validator has not seen that API before, it will log a warning.
+type deprecatedApiValidator struct {
+	apis     api.APIs
+	seenApis map[string]struct{}
+}
+
+func NewDeprecatedApiValidator() *deprecatedApiValidator {
+	return &deprecatedApiValidator{
+		apis:     api.NewAPIs(),
+		seenApis: make(map[string]struct{}),
+	}
+}
+
+// Validate checks if the given config API is deprecated. If it is, and if the validator has not seen the api before, a warning will be logged.
+func (v *deprecatedApiValidator) Validate(_ []project.Project, c config.Config) error {
+
+	a, ok := c.Type.(config.ClassicApiType)
+	if !ok {
+		return nil
+	}
+
+	if _, apiAlreadySeen := v.seenApis[a.Api]; apiAlreadySeen {
+		return nil
+	}
+
+	v.seenApis[a.Api] = struct{}{}
+	theAPI := v.apis[a.Api]
+
+	if theAPI.DeprecatedBy != "" {
+		log.Warn("API '%s' is deprecated. Please migrate to '%s'.", theAPI.ID, theAPI.DeprecatedBy)
+	}
+
 	return nil
 }

@@ -1,0 +1,32 @@
+{
+    "description": "sampleDescription",
+    "entitySelectorBasedRules": [
+        {
+            "enabled": true,
+            "entitySelector": "type(HOST) AND cpuCores(4)"
+        }
+    ],
+    "name": "{{ .name }}",
+    "rules": [
+        {
+            "conditions": [
+                {
+                    "comparisonInfo": {
+                        "negate": false,
+                        "operator": "EXISTS",
+                        "type": "STRING"
+                    },
+                    "key": {
+                        "attribute": "SERVICE_WEB_SERVER_NAME"
+                    }
+                }
+            ],
+            "enabled": true,
+            "propagationTypes": [
+                "SERVICE_TO_HOST_LIKE"
+            ],
+            "type": "SERVICE",
+            "valueFormat": "myTagValue {Service:DetectedName}"
+        }
+    ]
+}
