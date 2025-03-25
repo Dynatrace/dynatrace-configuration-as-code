@@ -17,9 +17,6 @@
 package handler
 
 import (
-	"errors"
-	"net/http"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	deployErr "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
@@ -37,7 +34,7 @@ func (o *OriginObjectIDHandler) Handle(data *HandlerData) (entities.ResolvedEnti
 			return createResolveEntity(data.c.OriginObjectId, data.properties, data.c), nil
 		}
 
-		if !isAPIErrorStatusNotFound(err) {
+		if !api.IsNotFoundError(err) {
 			return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c,
 				ErrDeployFailed{originObjectID: data.c.OriginObjectId, configID: data.c.Type.ID()},
 				err,
@@ -50,13 +47,4 @@ func (o *OriginObjectIDHandler) Handle(data *HandlerData) (entities.ResolvedEnti
 	}
 
 	return entities.ResolvedEntity{}, deployErr.NewFromErr(data.c, ErrUndefinedNextHandler{handler: "OriginObjectIDHandler"})
-}
-
-func isAPIErrorStatusNotFound(err error) bool {
-	var apiErr api.APIError
-	if !errors.As(err, &apiErr) {
-		return false
-	}
-
-	return apiErr.StatusCode == http.StatusNotFound
 }
