@@ -78,7 +78,7 @@ func (v *validator) Validate(_ []project.Project, c config.Config) error {
 		scope1 := c.Parameters[config.ScopeParameter]
 		scope2 := c2.Parameters[config.ScopeParameter]
 		if !cmp.Equal(scope1, scope2) {
-			return nil
+			continue
 		}
 
 		// if we are able to resolve the parameters, compare their value
