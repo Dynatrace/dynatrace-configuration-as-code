@@ -13,7 +13,7 @@ podTemplate(yaml: readTrusted('.ci/jenkins/agents/performance-agent.yaml')) {
             stage("build log forwarder") {
                 git(credentialsId: 'bitbucket-buildmaster',
                     url: 'https://bitbucket.lab.dynatrace.org/scm/claus/monaco-test-data.git',
-                    branch: 'otel-log-forwarder')
+                    branch: 'generic-log-ingester')
                 monaco.buildForwarder()
             }
 
