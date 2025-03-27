@@ -52,7 +52,7 @@ jobs:
         run: go install gotest.tools/gotestsum@3f7ff0ec4aeb6f95f5d67c998b71f272aa8a8b41
 
       - name: 🧪 Unit test with coverage
-        run: gotestsum --format testdox --format-icons hivis -- -coverprofile=cover.out -tags=unit -v -race ./...
+        run: gotestsum --format testdox --format-icons hivis -- -coverprofile=cov.out -tags=unit -v -race ./...
 
       - name: ⬆️ SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8b4250a32bb97 #v5.1.0
