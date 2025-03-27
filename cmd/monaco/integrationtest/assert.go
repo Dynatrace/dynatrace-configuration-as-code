@@ -295,7 +295,7 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 	exists := true
 	apiErr := coreapi.APIError{}
 	if errors.As(err, &apiErr) {
-		if apiErr.StatusCode == 404 {
+		if coreapi.IsNotFoundError(apiErr) {
 			exists = false
 		} else {
 			assert.NoError(t, apiErr)

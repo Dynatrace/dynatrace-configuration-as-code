@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/go-logr/logr"
 
@@ -69,7 +68,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 			return createResolvedEntity(documentName, md.ID, c.Coordinate, properties), nil
 		}
 
-		if !isAPIErrorStatusNotFound(err) {
+		if !api.IsNotFoundError(err) {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", c.OriginObjectId)).WithError(err)
 		}
 	}
@@ -106,15 +105,6 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	}
 
 	return createResolvedEntity(documentName, md.ID, c.Coordinate, properties), nil
-}
-
-func isAPIErrorStatusNotFound(err error) bool {
-	var apiErr api.APIError
-	if !errors.As(err, &apiErr) {
-		return false
-	}
-
-	return apiErr.StatusCode == http.StatusNotFound
 }
 
 func tryGetDocumentIDByExternalID(ctx context.Context, client Client, externalId string) (string, error) {

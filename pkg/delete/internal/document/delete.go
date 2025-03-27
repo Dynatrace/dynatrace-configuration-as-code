@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -73,7 +72,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 	}
 
 	_, err := c.Delete(ctx, id)
-	if err != nil && !isAPIErrorStatusNotFound(err) {
+	if err != nil && !api.IsNotFoundError(err) {
 		return fmt.Errorf("failed to delete entry with id '%s' - %w", id, err)
 	}
 
@@ -96,15 +95,6 @@ func tryGetDocumentIDByExternalID(ctx context.Context, c client, externalId stri
 	default:
 		return listResponse.Responses[0].ID, nil
 	}
-}
-
-func isAPIErrorStatusNotFound(err error) bool {
-	var apiErr api.APIError
-	if !errors.As(err, &apiErr) {
-		return false
-	}
-
-	return apiErr.StatusCode == http.StatusNotFound
 }
 
 func DeleteAll(ctx context.Context, c client) error {
