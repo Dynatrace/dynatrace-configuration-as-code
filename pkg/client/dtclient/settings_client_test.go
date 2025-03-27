@@ -2428,7 +2428,10 @@ func TestSettingsClient_GetPermission(t *testing.T) {
 					ResponseBody: `{"error": {"code": 404, "message": "No permissions found for accessor"}}`,
 					ContentType:  "application/json",
 				},
-				expectedResponse: PermissionObject{},
+				expectedResponse: PermissionObject{
+					Permissions: []TypePermissions{},
+					Accessor:    &Accessor{Type: TypeAccessor(AllUsers)},
+				},
 			},
 			{
 				name: "can view",
