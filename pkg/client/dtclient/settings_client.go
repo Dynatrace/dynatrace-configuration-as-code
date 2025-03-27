@@ -968,7 +968,10 @@ func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (Pe
 	apiError := coreapi.APIError{}
 	// when the API returns a 404 it means that you don't have permission (no-access), or the object does not exist
 	if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
-		return PermissionObject{}, nil
+		return PermissionObject{
+			Permissions: []TypePermissions{},
+			Accessor:    &Accessor{Type: AllUsers},
+		}, nil
 	}
 
 	if err != nil {
