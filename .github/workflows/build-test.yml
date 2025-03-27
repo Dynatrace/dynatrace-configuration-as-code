@@ -42,26 +42,16 @@ jobs:
       - name: 🏗️ Compile
         run: make compile
 
-      - name: 🧪 Unit test
-        run: make test testopts="--junitfile test-result-ubuntu-latest-unit.xml"
+      - name: 🚀 Binary starts
+        run: go run ./cmd/monaco
 
-      - name: ⬆️ Upload Test Results
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
-        if: always()
-        with:
-          name: Test Results - Unit
-          path: test-result-*.xml
-
-      - name: Coverage
+      - name: 🧪 Unit test with coverage
         run: go test -coverprofile=./cov.out -tags=unit -v -race ./...
 
-      - name: SonarQube Scan
+      - name: ⬆️ SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8b4250a32bb97 #v5.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      - name: 🚀 Binary starts
-        run: go run ./cmd/monaco
 
   upload_event:
     name: "Upload Event File"
