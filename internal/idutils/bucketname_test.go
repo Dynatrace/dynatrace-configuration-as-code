@@ -88,7 +88,7 @@ func TestSanitizeBucketName(t *testing.T) {
 			expectedOutputName: "abc",
 		},
 		{
-			name:               "Invalid second character are removed",
+			name:               "Invalid second character is removed",
 			inputName:          "a_abc",
 			expectedOutputName: "aabc",
 		},
