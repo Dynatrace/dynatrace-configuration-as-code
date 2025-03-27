@@ -17,11 +17,13 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
-	"strings"
 )
 
 var (
@@ -43,6 +45,17 @@ func NewConfigDeployErr(conf *config.Config, reason string) ConfigDeployErr {
 			Environment: conf.Environment,
 		},
 		Reason: reason,
+	}
+}
+
+func NewFromErr(conf *config.Config, errs ...error) ConfigDeployErr {
+	return ConfigDeployErr{
+		Location: conf.Coordinate,
+		EnvironmentDetails: configErrors.EnvironmentDetails{
+			Group:       conf.Group,
+			Environment: conf.Environment,
+		},
+		Err: errors.Join(errs...),
 	}
 }
 
