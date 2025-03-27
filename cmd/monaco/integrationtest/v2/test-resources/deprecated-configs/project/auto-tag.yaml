@@ -1,0 +1,18 @@
+configs:
+- id: application-tagging
+  type: auto-tag
+  config:
+    template: "auto-tag.json"
+    name: "Config-Test"
+- id: application-tagging-2
+  type: auto-tag
+  config:
+    template: "auto-tag.json"
+    name: "Config-Test-2"
+- id: application-tagging-3
+  type: auto-tag
+  config:
+    template: "auto-tag.json"
+    name: "Config-Test-3"
+
+

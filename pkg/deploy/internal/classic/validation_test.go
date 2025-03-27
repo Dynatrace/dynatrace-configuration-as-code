@@ -139,6 +139,25 @@ func TestValidate_ErrorForSameNameAndScope(t *testing.T) {
 	assert.Error(t, err2)
 }
 
+func TestValidate_ErrorForSameNameAndScopeWithDifferentScopeCheckedEarlier(t *testing.T) {
+	validator := NewValidator()
+
+	err1 := validator.Validate(newTestClassicConfigForValidation(t, "config1", api.KeyUserActionsMobile, map[string]parameter.Parameter{
+		config.NameParameter:  value.New("name"),
+		config.ScopeParameter: value.New("scope")}))
+	assert.NoError(t, err1)
+
+	err2 := validator.Validate(newTestClassicConfigForValidation(t, "config2", api.KeyUserActionsMobile, map[string]parameter.Parameter{
+		config.NameParameter:  value.New("name"),
+		config.ScopeParameter: value.New("scope1")}))
+	assert.NoError(t, err2)
+
+	err3 := validator.Validate(newTestClassicConfigForValidation(t, "config3", api.KeyUserActionsMobile, map[string]parameter.Parameter{
+		config.NameParameter:  value.New("name"),
+		config.ScopeParameter: value.New("scope1")}))
+	assert.Error(t, err3)
+}
+
 func TestValidate_ValidateCompoundParameterName(t *testing.T) {
 
 	t.Run("compound resolves to different values - no error", func(t *testing.T) {
