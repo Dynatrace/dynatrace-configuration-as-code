@@ -108,7 +108,7 @@ func findAndLoadResources(fs afero.Fs, rootPath string) (*persistence.Resources,
 		Policies:     make(map[string]persistence.Policy),
 		Groups:       make(map[string]persistence.Group),
 		Users:        make(map[string]persistence.User),
-		ServiceUsers: make(map[string]persistence.ServiceUser),
+		ServiceUsers: []persistence.ServiceUser{},
 	}
 
 	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
@@ -117,8 +117,6 @@ func findAndLoadResources(fs afero.Fs, rootPath string) (*persistence.Resources,
 	}
 
 	for _, yamlFilePath := range yamlFilePaths {
-		log.WithFields(field.F("file", yamlFilePaths)).Debug("Loading file %q", yamlFilePath)
-
 		file, err := loadFile(fs, yamlFilePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load file %q: %w", yamlFilePath, err)
@@ -129,7 +127,7 @@ func findAndLoadResources(fs afero.Fs, rootPath string) (*persistence.Resources,
 			return nil, fmt.Errorf("invalid file %q: %w", yamlFilePath, err)
 		}
 
-		err = addResourcesFromFile(resources, *file)
+		err = addResourcesFromFile(&resources, *file)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add resources from file %q: %w", yamlFilePath, err)
 		}
@@ -177,7 +175,7 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 	return &file, err
 }
 
-func addResourcesFromFile(res persistence.Resources, file persistence.File) error {
+func addResourcesFromFile(res *persistence.Resources, file persistence.File) error {
 	for _, p := range file.Policies {
 		if _, exists := res.Policies[p.ID]; exists {
 			return fmt.Errorf("found duplicate policy with id %q", p.ID)
@@ -201,12 +199,35 @@ func addResourcesFromFile(res persistence.Resources, file persistence.File) erro
 
 	if featureflags.ServiceUsers.Enabled() {
 		for _, su := range file.ServiceUsers {
-			if _, exists := res.ServiceUsers[su.Name]; exists {
-				return fmt.Errorf("found duplicate service user with name %q", su.Name)
+			for _, existingServiceUser := range res.ServiceUsers {
+				if areServiceUsersAmbiguous(su, existingServiceUser) {
+					return fmt.Errorf("found ambiguous service user with name %q", su.Name)
+				}
 			}
-			res.ServiceUsers[su.Name] = su
+			res.ServiceUsers = append(res.ServiceUsers, su)
 		}
 	}
 
 	return nil
+}
+
+// areServiceUsersAmbiguous returns true iff the two objects could refer to the same underlying service users.
+func areServiceUsersAmbiguous(su1 persistence.ServiceUser, su2 persistence.ServiceUser) bool {
+	// if they both have origin object ids that are the same they are ambiguous
+	if (su1.OriginObjectID != "") && (su2.OriginObjectID != "") && (su1.OriginObjectID == su2.OriginObjectID) {
+		return true
+	}
+
+	// if they have different names they are not ambiguous
+	if su1.Name != su2.Name {
+		return false
+	}
+
+	// if they have the same name but one or both are missing originObjectIds they are ambiguous
+	if su1.OriginObjectID == "" || su2.OriginObjectID == "" {
+		return true
+	}
+
+	// other combinations are OK
+	return false
 }

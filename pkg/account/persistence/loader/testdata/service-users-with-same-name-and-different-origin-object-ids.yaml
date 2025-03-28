@@ -1,0 +1,15 @@
+service-users:
+  - name: Service User 1
+    originObjectId: abc1
+    description: Description
+    groups:
+      - type: reference
+        id: my-group
+      - Log viewer
+  - name: Service User 1
+    originObjectId: abc2
+    description: Description
+    groups:
+      - type: reference
+        id: my-group
+      - Log viewer
