@@ -37,17 +37,19 @@ func GenerateBucketName(c coordinate.Coordinate) string {
 		return name
 	}
 
-	sanitiziedName := SanitizeBucketName(name)
-	if sanitiziedName != name {
-		log.Warn("Bucket name was changed to '%s' from '%s'", sanitiziedName, name)
+	sanitizedName := sanitizeBucketName(name)
+	if sanitizedName != name {
+		log.Warn("Bucket name was changed to '%s' from '%s'", sanitizedName, name)
 	}
 
-	return sanitiziedName
+	return sanitizedName
 }
 
-// SanitizeBucketName modifies the specified name to meet the requirements of the bucket-definitions API: pattern: `([a-z])([a-z0-9])([a-z0-9_-])+`,  maxLength: 100.
+// sanitizeBucketName modifies the specified name to meet the requirements of the bucket-definitions API: pattern: `([a-z])([a-z0-9])([a-z0-9_-])+`,  maxLength: 100.
 // It does this by deleting invalid characters and truncating the result if it is more than 100 characters long.
-func SanitizeBucketName(name string) string {
+func sanitizeBucketName(name string) string {
+	const maximumBucketNameLength = 100
+
 	// make name lower case
 	name = strings.ToLower(name)
 
@@ -61,8 +63,8 @@ func SanitizeBucketName(name string) string {
 	name = regexp.MustCompile(`^([a-z])([_-]+)`).ReplaceAllString(name, "$1")
 
 	// truncate if longer that 100 characters. this only works because name only consists of characters [a-z0-9_-]: each is one byte in UTF-8.
-	if len(name) > 100 {
-		name = name[0:100]
+	if len(name) > maximumBucketNameLength {
+		name = name[0:maximumBucketNameLength]
 	}
 	return name
 }

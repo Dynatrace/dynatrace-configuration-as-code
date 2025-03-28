@@ -70,52 +70,53 @@ func TestGenerateBucketName(t *testing.T) {
 	}
 }
 
-// TestSanitizeBucketName tests that bucket names are sanitized as expected.
-func TestSanitizeBucketName(t *testing.T) {
+// TestGenerateBucketNameSanitizes tests that generated bucket names are sanitized as expected.
+func TestGenerateBucketNameSanitizes(t *testing.T) {
+	t.Setenv(featureflags.SanitizeBucketNames.EnvName(), "true")
 	tests := []struct {
 		name               string
-		inputName          string
+		inputCoordinate    coordinate.Coordinate
 		expectedOutputName string
 	}{
 		{
 			name:               "Invalid first character is removed",
-			inputName:          "0abc",
-			expectedOutputName: "abc",
+			inputCoordinate:    coordinate.Coordinate{Project: "0abc", Type: "bucket", ConfigId: "bucket"},
+			expectedOutputName: "abc_bucket",
 		},
 		{
 			name:               "Multiple invalid first characters are removed",
-			inputName:          "0_abc",
-			expectedOutputName: "abc",
+			inputCoordinate:    coordinate.Coordinate{Project: "0_abc", Type: "bucket", ConfigId: "bucket"},
+			expectedOutputName: "abc_bucket",
 		},
 		{
 			name:               "Invalid second character is removed",
-			inputName:          "a_abc",
-			expectedOutputName: "aabc",
+			inputCoordinate:    coordinate.Coordinate{Project: "p_1", Type: "bucket", ConfigId: "bucket"},
+			expectedOutputName: "p1_bucket",
 		},
 		{
 			name:               "Multiple invalid second characters are removed",
-			inputName:          "a_-abc",
-			expectedOutputName: "aabc",
+			inputCoordinate:    coordinate.Coordinate{Project: "p__1", Type: "bucket", ConfigId: "bucket"},
+			expectedOutputName: "p1_bucket",
 		},
 		{
 			name:               "Invalid first and second characters are removed",
-			inputName:          "0_a_bc",
-			expectedOutputName: "abc",
+			inputCoordinate:    coordinate.Coordinate{Project: "_p_1", Type: "bucket", ConfigId: "bucket"},
+			expectedOutputName: "p1_bucket",
 		},
 		{
 			name:               "Length is limited to 100 characters",
-			inputName:          "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+			inputCoordinate:    coordinate.Coordinate{Project: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv", Type: "bucket", ConfigId: "bucket"},
 			expectedOutputName: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv",
 		},
 		{
 			name:               "Length is limited to 100 characters after removing invalid characters",
-			inputName:          "0_abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
-			expectedOutputName: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv",
+			inputCoordinate:    coordinate.Coordinate{Project: "_p_abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv", Type: "bucket", ConfigId: "bucket"},
+			expectedOutputName: "pabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstu",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expectedOutputName, idutils.SanitizeBucketName(tt.inputName))
+			assert.Equal(t, tt.expectedOutputName, idutils.GenerateBucketName(tt.inputCoordinate))
 		})
 	}
 }

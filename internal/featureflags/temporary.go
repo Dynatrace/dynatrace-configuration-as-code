@@ -48,7 +48,7 @@ const (
 	AccessControlSettings FeatureFlag = "MONACO_FEAT_ACCESS_CONTROL_SETTINGS"
 	// SanitizeBucketNames toggles whether bucket names created by Monaco are sanitized or not.
 	// Introduced: v2.23.0
-	SanitizeBucketNames FeatureFlag = "MONACO_FEAT_SANITIZE_BUCKET_NAMES"
+	SanitizeBucketNames FeatureFlag = "MONACO_SANITIZE_BUCKET_NAMES"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
