@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
@@ -56,7 +55,7 @@ func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) erro
 		if err != nil {
 			var apiErr api.APIError
 			if errors.As(err, &apiErr) {
-				if apiErr.StatusCode != http.StatusNotFound {
+				if !api.IsNotFoundError(apiErr) {
 					logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration - rejected by API: %v", e, bucketName, err)
 					deleteErrs++
 				}
@@ -114,7 +113,7 @@ func DeleteAll(ctx context.Context, c client) error {
 		if err != nil {
 			var apiErr api.APIError
 			if errors.As(err, &apiErr) {
-				if apiErr.StatusCode != http.StatusNotFound {
+				if !api.IsNotFoundError(apiErr) {
 					logger.Error("Failed to delete bucket %q - rejected by API: %v", bucketName.BucketName, err)
 					errs++
 					continue

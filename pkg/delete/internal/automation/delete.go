@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
@@ -72,7 +71,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
 	if err != nil {
 		var apiErr api.APIError
 		if errors.As(err, &apiErr) {
-			if apiErr.StatusCode != http.StatusNotFound {
+			if !api.IsNotFoundError(err) {
 				logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q - rejected by API: %v", dp.Type, id, err)
 				return 1
 			}
