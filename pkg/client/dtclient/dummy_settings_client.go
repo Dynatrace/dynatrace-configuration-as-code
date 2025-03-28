@@ -53,6 +53,10 @@ func (c *DummySettingsClient) GetSchema(_ context.Context, _ string) (schema Sch
 	return Schema{}, nil
 }
 
+func (c *DummySettingsClient) GetSchemas(_ context.Context, _ []string) (schema []Schema, err error) {
+	return []Schema{}, nil
+}
+
 func (c *DummySettingsClient) Get(_ context.Context, _ string) (*DownloadSettingsObject, error) {
 	return &DownloadSettingsObject{}, nil
 }
