@@ -254,6 +254,18 @@ func AssertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsTyp
 
 }
 
+func AssertPermission(t *testing.T, c client.SettingsClient, objectID string, permissions []dtclient.TypePermissions) {
+	resp, err := c.GetPermission(t.Context(), objectID)
+	if err != nil {
+		if len(permissions) == 0 && coreapi.IsNotFoundError(err) {
+			return
+		}
+		t.Errorf("failed to get permissions. Error: %s", err)
+		return
+	}
+	assert.Equal(t, permissions, resp.Permissions)
+}
+
 func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) (id string) {
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(resource)
 	assert.NoError(t, err, "failed to get resource type for: %s", cfg.Coordinate)
