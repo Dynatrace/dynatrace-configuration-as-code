@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -64,7 +63,7 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 			return createResolveEntity(c.OriginObjectId, properties, c), nil
 		}
 
-		if !isAPIErrorStatusNotFound(err) {
+		if !api.IsNotFoundError(err) {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to deploy slo: %s", c.OriginObjectId)).WithError(err)
 		}
 	}
@@ -126,15 +125,6 @@ func createResolveEntity(id string, properties parameter.Properties, c *config.C
 		Coordinate: c.Coordinate,
 		Properties: properties,
 	}
-}
-
-func isAPIErrorStatusNotFound(err error) bool {
-	var apiErr api.APIError
-	if !errors.As(err, &apiErr) {
-		return false
-	}
-
-	return apiErr.StatusCode == http.StatusNotFound
 }
 
 func findMatchOnRemote(ctx context.Context, client deployServiceLevelObjectiveClient, externalId string) (id string, match bool, err error) {

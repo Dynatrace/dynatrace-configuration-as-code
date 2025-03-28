@@ -496,7 +496,7 @@ func (d *SettingsClient) handleUpsertUnsupportedVersion(ctx context.Context, obj
 	if err != nil {
 		apiErr := coreapi.APIError{}
 		// Settings API returns 400 StatusBadRequest for 404 StatusNotFound
-		if !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusBadRequest || apiErr.StatusCode == http.StatusNotFound {
+		if !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusBadRequest || coreapi.IsNotFoundError(apiErr) {
 			return DynatraceEntity{}, fmt.Errorf("unable to fetch settings object with object id %q: %w", obj.OriginObjectId, err)
 		}
 	}
@@ -942,8 +942,7 @@ func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *Downloa
 func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
-		apiError := coreapi.APIError{}
-		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+		if coreapi.IsNotFoundError(err) {
 			log.Debug("No settings object with id '%s' found to delete (HTTP 404 response)", objectID)
 			return nil
 		}
@@ -965,9 +964,8 @@ func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (Pe
 		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
 	))
 
-	apiError := coreapi.APIError{}
 	// when the API returns a 404 it means that you don't have permission (no-access), or the object does not exist
-	if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+	if coreapi.IsNotFoundError(err) {
 		return PermissionObject{
 			Permissions: []TypePermissions{},
 			Accessor:    &Accessor{Type: AllUsers},
@@ -1019,9 +1017,8 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 		return nil
 	}
 
-	apiError := coreapi.APIError{}
 	// On a 404 we step throw and try to create the object on remote in any other error we exit
-	if errors.As(err, &apiError) && apiError.StatusCode != http.StatusNotFound {
+	if !coreapi.IsNotFoundError(err) {
 		return fmt.Errorf("failed to get permission: %w", err)
 	}
 
@@ -1052,9 +1049,8 @@ func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) 
 		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
 	))
 
-	apiError := coreapi.APIError{}
 	// deployments with "none" for all-user will always try to delete. This could be an update (restricted to shared) or it stays the same (delete 404)
-	if err != nil && (!errors.As(err, &apiError) || apiError.StatusCode != http.StatusNotFound) {
+	if err != nil && !coreapi.IsNotFoundError(err) {
 		return fmt.Errorf("failed to delete permission object: %w", err)
 	}
 	return nil

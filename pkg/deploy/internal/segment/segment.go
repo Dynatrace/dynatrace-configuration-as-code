@@ -19,10 +19,10 @@ package segment
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"net/http"
 	"time"
+
+	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	segment "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
@@ -32,7 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/go-logr/logr"
 )
 
 type deploySegmentClient interface {
@@ -63,7 +62,7 @@ func Deploy(ctx context.Context, client deploySegmentClient, properties paramete
 			return createResolveEntity(c.OriginObjectId, properties, c), nil
 		}
 
-		if !isAPIErrorStatusNotFound(err) {
+		if !api.IsNotFoundError(err) {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to deploy segment: %s", c.OriginObjectId)).WithError(err)
 		}
 	}
@@ -142,13 +141,4 @@ func getJsonResponseFromSegmentsResponse(rawResponse segment.Response) (jsonResp
 	}
 
 	return response, nil
-}
-
-func isAPIErrorStatusNotFound(err error) bool {
-	var apiErr api.APIError
-	if !errors.As(err, &apiErr) {
-		return false
-	}
-
-	return apiErr.StatusCode == http.StatusNotFound
 }

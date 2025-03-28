@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -42,7 +41,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 		var e error
 		if theAPI.HasParent() {
 			parentID, e = resolveIdentifier(ctx, client, theAPI.Parent, toIdentifier(dp.Scope, "", ""))
-			if e != nil && !is404(e) {
+			if e != nil && !coreapi.IsNotFoundError(e) {
 				log.WithFields(field.Error(e)).Error("unable to resolve config ID: %v", e)
 				err = errors.Join(err, e)
 				continue
@@ -56,7 +55,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 		id := dp.OriginObjectId
 		if id == "" {
 			id, e = resolveIdentifier(ctx, client, &a, toIdentifier(dp.Identifier, dp.ActionType, dp.Domain))
-			if e != nil && !is404(e) {
+			if e != nil && !coreapi.IsNotFoundError(e) {
 				log.WithFields(field.Error(e)).Error("unable to resolve config ID: %v", e)
 				err = errors.Join(err, e)
 				continue
@@ -66,7 +65,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 			}
 		}
 
-		if e := client.Delete(ctx, a, id); e != nil && !is404(e) {
+		if e := client.Delete(ctx, a, id); e != nil && !coreapi.IsNotFoundError(e) {
 			log.WithFields(field.Error(e)).Error("failed to delete config: %v", e)
 			err = errors.Join(err, e)
 		}
@@ -83,11 +82,6 @@ func toIdentifier(identifier, actionType, domain string) identifier {
 		"actionType": actionType,
 		"domain":     domain,
 	}
-}
-
-func is404(err error) bool {
-	var v coreapi.APIError
-	return errors.As(err, &v) && v.StatusCode == http.StatusNotFound
 }
 
 // resolveIdentifier get the actual ID from DT and update entries with it

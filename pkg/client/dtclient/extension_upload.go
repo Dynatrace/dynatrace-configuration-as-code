@@ -21,10 +21,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"mime/multipart"
-	"net/http"
 	"time"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -86,8 +84,7 @@ type Properties struct {
 func (d *ConfigClient) validateIfExtensionShouldBeUploaded(ctx context.Context, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
 	response, err := coreapi.AsResponseOrError(d.client.GET(ctx, apiPath+"/"+extensionName, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
-		apiError := coreapi.APIError{}
-		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+		if coreapi.IsNotFoundError(err) {
 			return extensionNeedsUpdate, nil
 		}
 

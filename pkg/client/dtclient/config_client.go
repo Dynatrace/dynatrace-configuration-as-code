@@ -109,8 +109,7 @@ func (d *ConfigClient) Delete(ctx context.Context, api api.API, id string) error
 
 	_, err = coreapi.AsResponseOrError(d.client.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
-		apiError := coreapi.APIError{}
-		if errors.As(err, &apiError) && apiError.StatusCode == http.StatusNotFound {
+		if coreapi.IsNotFoundError(err) {
 			log.Debug("No config with id '%s' found to delete (HTTP 404 response)", id)
 			return nil
 		}
@@ -461,12 +460,12 @@ func isSyntheticMonitorServerError(apiError coreapi.APIError, theApi api.API) bo
 }
 
 func isGeneralSyntheticAPIError(apiError coreapi.APIError, theApi api.API) bool {
-	return (strings.HasPrefix(theApi.ID, "synthetic-") || theApi.ID == api.CredentialVault) && (apiError.StatusCode == http.StatusNotFound || apiError.Is5xxError())
+	return (strings.HasPrefix(theApi.ID, "synthetic-") || theApi.ID == api.CredentialVault) && (coreapi.IsNotFoundError(apiError) || apiError.Is5xxError())
 }
 
 func isApplicationAPIError(apiError coreapi.APIError, theApi api.API) bool {
 	return isAnyApplicationApi(theApi) &&
-		(apiError.Is5xxError() || apiError.StatusCode == http.StatusConflict || apiError.StatusCode == http.StatusNotFound)
+		(apiError.Is5xxError() || apiError.StatusCode == http.StatusConflict || coreapi.IsNotFoundError(apiError))
 }
 
 // Special case (workaround):
