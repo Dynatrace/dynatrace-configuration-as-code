@@ -21,6 +21,8 @@ package id_extraction
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
@@ -379,13 +381,37 @@ func TestScopeParameterIsTreatedAsParameter(t *testing.T) {
 				},
 			},
 		},
+		{
+			"scope parameter with environment value is not treated as separate param",
+			project.ConfigsPerType{
+				"test-type": []config.Config{
+					{
+						Template:   template.NewInMemoryTemplate("test-tmpl", `{"key": "value\nCLOUD_APPLICATION-0000000000000000"}`),
+						Parameters: config.Parameters{},
+					},
+				},
+			},
+			project.ConfigsPerType{
+				"test-type": []config.Config{
+					{
+						Template: template.NewInMemoryTemplate("test-tmpl", `{"key": "value\n{{ .extractedIDs.id_CLOUD_APPLICATION_0000000000000000 }}"}`),
+						Parameters: config.Parameters{
+							"extractedIDs": value.New(map[string]string{"id_CLOUD_APPLICATION_0000000000000000": "CLOUD_APPLICATION-0000000000000000"}),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotErr := ExtractIDsIntoYAML(tt.given)
 			assert.NoError(t, gotErr)
-			assert.Equal(t, tt.want, got)
+
+			if diff := cmp.Diff(got, tt.want, cmpopts.EquateComparable(template.InMemoryTemplate{})); diff != "" {
+				t.Errorf("ExtractIDsIntoYAML() returned diff (-got +want):\n%s", diff)
+			}
 		})
 	}
 }
@@ -464,15 +490,34 @@ func TestFindAllIds(t *testing.T) {
 			"HELLO-Imnotanentityidbutstilliwasdetectedassuch",
 			nil,
 		},
+		{
+			`\nABC-0000000000000000`,
+			[]string{"ABC-0000000000000000"},
+		},
+		{
+			`\rABC-0000000000000000`,
+			[]string{"ABC-0000000000000000"},
+		},
+		{
+			`\tABC-0000000000000000`,
+			[]string{"ABC-0000000000000000"},
+		},
+		{
+			`\\tABC-0000000000000000`,
+			[]string{"ABC-0000000000000000"},
+		},
+		{
+			`\nf1614cf1-4f6e-4187-b303-af4beb42268c`,
+			[]string{"f1614cf1-4f6e-4187-b303-af4beb42268c"},
+		},
 	}
 
 	for _, tt := range tc {
-		tt := tt
 		t.Run(tt.in, func(t *testing.T) {
 			t.Parallel()
 
-			f := findAllIds(tt.in)
-			assert.ElementsMatch(t, tt.expectedIds, f)
+			foundIds := findAllIds(tt.in)
+			assert.ElementsMatch(t, tt.expectedIds, foundIds)
 		})
 	}
 

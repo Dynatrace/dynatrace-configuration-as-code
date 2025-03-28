@@ -95,9 +95,23 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) (project.ConfigsP
 	return configsPerType, nil
 }
 
+// invalidMeId finds ME IDs in the form of `nABC`, `rABC`, and `tABC`. They are most commonly mistakenly created by `\nABC`.
+var invalidMeId = regexp.MustCompile("[nrt][A-Z]+")
+
 func findAllIds(content string) []string {
 	ids := meIDRegexPattern.FindAllString(content, -1)
+
+	// Super simple, hacky, sanity check to not accidentally include matches for ME IDs in the form of `nABC-123` which result from `\nABC-123`.
+	// Alternatives to the check is validating the content of matches for `\`, but a `\` can also be escaped and would require recursive checking.
+	// To not do that, we simply check if the id starts with `n`, `r`, `t` (from `\n`, `\r`, `\t`), and then only uppercase characters. This is a good check for potential issues.
+	for i, id := range ids {
+		if invalidMeId.MatchString(id) {
+			ids[i] = id[1:]
+		}
+	}
+
 	ids = append(ids, uuidRegexPattern.FindAllString(content, -1)...)
+
 	return ids
 }
 
