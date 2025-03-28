@@ -288,7 +288,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
-		bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, 15, time.Second, 5*time.Minute)
+		bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, time.Second, 5*time.Minute)
 		if err != nil {
 			return nil, err
 		}

@@ -52,10 +52,10 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	if err != nil {
 		var apiErr api.APIError
 		if errors.As(err, &apiErr) {
-			return entities.ResolvedEntity{}, fmt.Errorf("failed to upsert bucket with bucketName %q: %w", bucketName, err)
+			return entities.ResolvedEntity{}, fmt.Errorf("failed to upsert bucket '%s': %w", bucketName, err)
 		}
 
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName)).WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket '%s'", bucketName)).WithError(err)
 	}
 
 	properties[config.IdParameter] = bucketName
