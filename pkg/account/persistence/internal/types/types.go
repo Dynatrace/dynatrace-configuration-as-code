@@ -33,13 +33,6 @@ const (
 )
 
 type (
-	Resources struct {
-		Policies     map[string]Policy
-		Groups       map[string]Group
-		Users        map[string]User
-		ServiceUsers map[string]ServiceUser
-	}
-
 	File struct {
 		Policies     []Policy      `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies to configure for this account."`
 		Groups       []Group       `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups to configure for this account."`

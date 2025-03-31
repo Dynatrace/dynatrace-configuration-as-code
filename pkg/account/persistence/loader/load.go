@@ -81,16 +81,16 @@ func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefi
 //  2. validates the loaded data for correct syntax
 //  3. returns the data in the in-memory account.Resources representation
 func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
-	persisted, err := findAndLoadResources(fs, rootPath)
+	resources, err := findAndLoadResources(fs, rootPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load account management resources from %q: %w", rootPath, err)
 	}
 
-	if err := validateReferences(persisted); err != nil {
+	if err := validateReferences(resources); err != nil {
 		return nil, fmt.Errorf("account management resources from %q are invalid: %w", rootPath, err)
 	}
 
-	return transformToAccountResources(persisted), nil
+	return resources, nil
 }
 
 // HasAnyAccountKeyDefined checks whether the map has any AM key defined.
@@ -103,12 +103,12 @@ func HasAnyAccountKeyDefined(m map[string]any) bool {
 	return m[persistence.KeyUsers] != nil || m[persistence.KeyServiceUsers] != nil || m[persistence.KeyGroups] != nil || m[persistence.KeyPolicies] != nil
 }
 
-func findAndLoadResources(fs afero.Fs, rootPath string) (*persistence.Resources, error) {
-	resources := persistence.Resources{
-		Policies:     make(map[string]persistence.Policy),
-		Groups:       make(map[string]persistence.Group),
-		Users:        make(map[string]persistence.User),
-		ServiceUsers: make(map[string]persistence.ServiceUser),
+func findAndLoadResources(fs afero.Fs, rootPath string) (*account.Resources, error) {
+	resources := account.Resources{
+		Policies:     make(map[string]account.Policy),
+		Groups:       make(map[string]account.Group),
+		Users:        make(map[string]account.User),
+		ServiceUsers: make(map[string]account.ServiceUser),
 	}
 
 	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
@@ -177,26 +177,26 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 	return &file, err
 }
 
-func addResourcesFromFile(res persistence.Resources, file persistence.File) error {
+func addResourcesFromFile(res account.Resources, file persistence.File) error {
 	for _, p := range file.Policies {
 		if _, exists := res.Policies[p.ID]; exists {
 			return fmt.Errorf("found duplicate policy with id %q", p.ID)
 		}
-		res.Policies[p.ID] = p
+		res.Policies[p.ID] = transformPolicy(p)
 	}
 
 	for _, g := range file.Groups {
 		if _, exists := res.Groups[g.ID]; exists {
 			return fmt.Errorf("found duplicate group with id %q", g.ID)
 		}
-		res.Groups[g.ID] = g
+		res.Groups[g.ID] = transformGroup(g)
 	}
 
 	for _, u := range file.Users {
 		if _, exists := res.Users[u.Email.Value()]; exists {
 			return fmt.Errorf("found duplicate user with email %q", u.Email)
 		}
-		res.Users[u.Email.Value()] = u
+		res.Users[u.Email.Value()] = transformUser(u)
 	}
 
 	if featureflags.ServiceUsers.Enabled() {
@@ -204,7 +204,7 @@ func addResourcesFromFile(res persistence.Resources, file persistence.File) erro
 			if _, exists := res.ServiceUsers[su.Name]; exists {
 				return fmt.Errorf("found duplicate service user with name %q", su.Name)
 			}
-			res.ServiceUsers[su.Name] = su
+			res.ServiceUsers[su.Name] = transformServiceUser(su)
 		}
 	}
 

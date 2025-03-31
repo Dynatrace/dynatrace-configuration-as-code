@@ -278,6 +278,12 @@ func TestLoad(t *testing.T) {
 		assert.Error(t, err)
 	})
 
+	t.Run("User user definition with group reference with missing id field produces error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/no-id-field-group-ref.yaml")
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "missing required field 'id' for reference")
+	})
+
 	t.Run("Partial group definition produces error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/partial-group.yaml")
 		assert.Error(t, err)
@@ -326,12 +332,6 @@ func TestValidateReferences(t *testing.T) {
 			path:           "testdata/no-ref-policy-account.yaml",
 			expected:       ErrRefMissing,
 			expectedErrMsg: `error validating account resources with id "non-existing-policy-ref": no referenced target found`,
-		},
-		{
-			name:           "group reference with missing id field",
-			path:           "testdata/no-id-field-group-ref.yaml",
-			expected:       ErrIdFieldMissing,
-			expectedErrMsg: `error validating account resources: no ref id field found`,
 		},
 		{
 			name:     "mixing configs and account resources",

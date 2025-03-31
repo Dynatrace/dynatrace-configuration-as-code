@@ -21,23 +21,6 @@ import (
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
 
-func transformToAccountResources(resources *persistence.Resources) *account.Resources {
-	return &account.Resources{
-		Policies:     transformPolicies(resources.Policies),
-		Groups:       transformGroups(resources.Groups),
-		Users:        transformUsers(resources.Users),
-		ServiceUsers: transformServiceUsers(resources.ServiceUsers),
-	}
-}
-
-func transformPolicies(pPolicies map[string]persistence.Policy) map[account.PolicyId]account.Policy {
-	policies := make(map[account.PolicyId]account.Policy, len(pPolicies))
-	for id, pPolicy := range pPolicies {
-		policies[id] = transformPolicy(pPolicy)
-	}
-	return policies
-}
-
 func transformPolicy(pPolicy persistence.Policy) account.Policy {
 	return account.Policy{
 		ID:             pPolicy.ID,
@@ -58,14 +41,6 @@ func transformLevel(pLevel persistence.PolicyLevel) any {
 	default:
 		panic("unable to convert persistence model")
 	}
-}
-
-func transformGroups(pGroups map[string]persistence.Group) map[account.GroupId]account.Group {
-	groups := make(map[account.GroupId]account.Group, len(pGroups))
-	for id, pGroup := range pGroups {
-		groups[id] = transformGroup(pGroup)
-	}
-	return groups
 }
 
 func transformGroup(pGroup persistence.Group) account.Group {
@@ -116,27 +91,11 @@ func transformManagementZones(pManagementZones []persistence.ManagementZone) []a
 	return managementZones
 }
 
-func transformUsers(pUsers map[string]persistence.User) map[account.UserId]account.User {
-	users := make(map[account.UserId]account.User, len(pUsers))
-	for id, pUser := range pUsers {
-		users[id] = transformUser(pUser)
-	}
-	return users
-}
-
 func transformUser(pUser persistence.User) account.User {
 	return account.User{
 		Email:  pUser.Email,
 		Groups: transformReferences(pUser.Groups),
 	}
-}
-
-func transformServiceUsers(pServiceUsers map[string]persistence.ServiceUser) map[account.ServiceUserId]account.ServiceUser {
-	serviceUsers := make(map[account.ServiceUserId]account.ServiceUser, len(pServiceUsers))
-	for id, pServiceUser := range pServiceUsers {
-		serviceUsers[id] = transformServiceUser(pServiceUser)
-	}
-	return serviceUsers
 }
 
 func transformServiceUser(pServiceUser persistence.ServiceUser) account.ServiceUser {
