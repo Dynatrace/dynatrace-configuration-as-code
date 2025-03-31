@@ -18,8 +18,7 @@ jobs:
       checks: write
 
     container:
-      # A Docker image with Semgrep installed. Do not change this.
-      image: returntocorp/semgrep@sha256:aebb747812ebd96b674928c63046730432ad06961a56f5b44fa01a29b3a9487a #v1.23.0
+      image: semgrep/semgrep@sha256:1844697a3d8b80166e2eaadb93f189a9372e6c8dc025cb14d9400f06e7475261 #v1.116.0
 
     # Skip any PR created by dependabot to avoid permission issues:
     if: (github.actor != 'dependabot[bot]')
