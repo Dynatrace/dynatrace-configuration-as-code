@@ -22,7 +22,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
-	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
 
 // validateReferences checks the references in the provided AMResources instance to ensure
@@ -85,7 +84,7 @@ func policyExists(a *types.Resources, id string) bool {
 
 }
 
-func validateFile(file persistence.File) error {
+func validateFile(file types.File) error {
 	for _, p := range file.Policies {
 		if err := validatePolicy(p); err != nil {
 			return err
