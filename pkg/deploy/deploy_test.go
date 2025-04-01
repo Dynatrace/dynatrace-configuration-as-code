@@ -1511,14 +1511,6 @@ func TestDeployDryRun(t *testing.T) {
 							},
 							Template: testutils.GenerateDummyTemplate(t),
 						},
-					},
-				},
-			},
-		},
-		{
-			Configs: project.ConfigsPerTypePerEnvironments{
-				"env": project.ConfigsPerType{
-					"p1": {
 						config.Config{
 							Type:        config.ServiceLevelObjective{},
 							Environment: "env",
@@ -1528,6 +1520,76 @@ func TestDeployDryRun(t *testing.T) {
 								ConfigId: "config1",
 							},
 							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.OpenPipelineType{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "segment",
+								ConfigId: "config1",
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.DocumentType{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "document",
+								ConfigId: "config1",
+							},
+							Parameters: config.Parameters{
+								config.NameParameter: &value.ValueParameter{
+									Value: "value",
+								},
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.BucketType{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "bucket",
+								ConfigId: "config1",
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.AutomationType{Resource: config.Workflow},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "automation",
+								ConfigId: "config1",
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.ClassicApiType{Api: "app-detection-rule"},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								ConfigId: "config1",
+							},
+							Parameters: config.Parameters{
+								config.NameParameter: &value.ValueParameter{
+									Value: "value",
+								},
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.SettingsType{SchemaId: "builtin:setting"},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								ConfigId: "config2",
+							},
+							Parameters: config.Parameters{
+								config.ScopeParameter: &value.ValueParameter{
+									Value: "HOST-12345",
+								},
+							},
 						},
 					},
 				},
