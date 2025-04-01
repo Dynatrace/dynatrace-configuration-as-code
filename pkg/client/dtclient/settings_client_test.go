@@ -1864,7 +1864,11 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 }
 
 func TestListKnownSettings(t *testing.T) {
-
+	retryOptions := corerest.RetryOptions{
+		DelayAfterRetry: 0,
+		MaxRetries:      10,
+		ShouldRetryFunc: corerest.RetryIfNotSuccess,
+	}
 	tests := []struct {
 		name                      string
 		givenSchemaID             string
@@ -2029,12 +2033,29 @@ func TestListKnownSettings(t *testing.T) {
 			wantError:            true,
 		},
 		{
+			name:          "Returns error if HTTP error is encountered - 404",
+			givenSchemaID: "builtin:something",
+			givenServerResponses: []testServerResponse{
+				{404, "not found"},
+			},
+			want: nil,
+			wantQueryParamsPerAPICall: [][]testQueryParams{
+				{
+					{"schemaIds", "builtin:something"},
+					{"pageSize", "500"},
+					{"fields", defaultListSettingsFields},
+				},
+			},
+			wantNumberOfAPICalls: 1,
+			wantError:            true,
+		},
+		{
 			name:          "Retries on HTTP error on paginated request and returns eventual success",
 			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
-				{400, `get next page fail`},
-				{400, `retry fail`},
+				{429, `get next page fail`},
+				{429, `retry fail`},
 				{200, `{ "items": [ {"objectId": "b1d4c623-25e0-4b54-9eb5-6734f1a72041", "externalId": "VGhlIE1hc3Rlcgo="} ] }`},
 			},
 			want: []DownloadSettingsObject{
@@ -2071,10 +2092,10 @@ func TestListKnownSettings(t *testing.T) {
 			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
-				{400, `get next page fail`},
-				{400, `retry fail 1`},
-				{400, `retry fail 2`},
-				{400, `retry fail 3`},
+				{429, `get next page fail`},
+				{429, `retry fail 1`},
+				{429, `retry fail 2`},
+				{429, `retry fail 3`},
 			},
 			want: nil,
 			wantQueryParamsPerAPICall: [][]testQueryParams{
@@ -2132,7 +2153,7 @@ func TestListKnownSettings(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			require.NoError(t, err)
 
-			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
+			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5), corerest.WithRetryOptions(&retryOptions))
 
 			client, err := NewClassicSettingsClient(restClient,
 				WithRetrySettings(testRetrySettings),

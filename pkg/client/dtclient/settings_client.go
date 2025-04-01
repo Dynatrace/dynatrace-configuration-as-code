@@ -179,7 +179,7 @@ type SettingsClient struct {
 	//  settingsObjectAPIPath is the API path to use for accessing settings objects
 	settingsObjectAPIPath string
 
-	// retrySettings are the settings to be used for retrying failed http requests
+	// retrySettings are the settings to be used for retrying failed POST requests in Upsert
 	retrySettings RetrySettings
 
 	// generateExternalID is used to generate an external id for settings 2.0 objects
@@ -914,7 +914,7 @@ func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSet
 		return len(parsed.Items), nil
 	}
 
-	err = listPaginated(ctx, d.client, d.retrySettings.Normal, d.settingsObjectAPIPath, params, schemaId, addToResult)
+	err = listPaginated(ctx, d.client, d.settingsObjectAPIPath, params, schemaId, addToResult)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list settings of schema %q: %w", schemaId, err)
 	}
