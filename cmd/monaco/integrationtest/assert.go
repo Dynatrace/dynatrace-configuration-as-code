@@ -102,7 +102,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 		env := loadedManifest.Environments[envName]
 
-		clients := CreateDynatraceClients(t, env)
+		clients := CreateDynatraceClientsWithCaching(t, env)
 
 		lookup := entityLookup{}
 

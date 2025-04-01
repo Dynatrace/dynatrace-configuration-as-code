@@ -35,7 +35,7 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-// CreateDynatraceClients creates a client set used in e2e tests.
+// CreateDynatraceClients creates a client set with caching disabled for use in E2E tests.
 // Note, that the caching mechanism in the client is disabled to eliminate the risk of getting
 // wrong information from the cache in cases where we want to get
 // resources immediately after they've been created (e.g. to assert that they exist)
@@ -46,6 +46,22 @@ func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefini
 		environment.Auth,
 		client.ClientOptions{
 			CachingDisabled: true, // disabled to avoid wrong cache reads
+		},
+	)
+	require.NoError(t, err, "failed to create test client")
+	return clients
+}
+
+// CreateDynatraceClientsWithCaching creates a client set with caching enabled for use in E2E tests.
+// Note, where there is a risk of getting wrong information from the cache in cases where we want to get
+// resources immediately after they've been created (e.g. to assert that they exist), use CreateDynatraceClients.
+func CreateDynatraceClientsWithCaching(t *testing.T, environment manifest.EnvironmentDefinition) *client.ClientSet {
+	clients, err := client.CreateClientSetWithOptions(
+		t.Context(),
+		environment.URL.Value,
+		environment.Auth,
+		client.ClientOptions{
+			CachingDisabled: false,
 		},
 	)
 	require.NoError(t, err, "failed to create test client")
