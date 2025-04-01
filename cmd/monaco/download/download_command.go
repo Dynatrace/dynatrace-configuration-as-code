@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 
 	"github.com/spf13/afero"
@@ -163,32 +162,23 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 	}
 }
 
-// printUploadToSameEnvironmentWarning function may display a warning message on the console,
+// checkIfAbleToUploadToSameEnvironment function may display a warning message on the console,
 // notifying the user that downloaded objects cannot be uploaded to the same environment.
 // It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
-func printUploadToSameEnvironmentWarning(ctx context.Context, env manifest.EnvironmentDefinition) {
-	var serverVersion version.Version
-	var err error
-
-	var httpClient *http.Client
-	if env.Auth.OAuth == nil {
-		httpClient = clientAuth.NewTokenAuthClient(env.Auth.Token.Value.Value())
-	} else {
-		credentials := clientAuth.OauthCredentials{
-			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
-			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
-			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
-		}
-		httpClient = clientAuth.NewOAuthClient(ctx, credentials)
+func checkIfAbleToUploadToSameEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) {
+	// ignore server version check if OAuth is provided (can't be below the specified version)
+	if env.Auth.OAuth != nil {
+		return
 	}
 
-	url, err := url.Parse(env.URL.Value)
+	parsedUrl, err := url.Parse(env.URL.Value)
 	if err != nil {
 		log.Error("Invalid environment URL: %s", err)
 		return
 	}
 
-	serverVersion, err = versionClient.GetDynatraceVersion(ctx, corerest.NewClient(url, httpClient, corerest.WithRateLimiter(), corerest.WithRetryOptions(&client.DefaultRetryOptions)))
+	httpClient := clientAuth.NewTokenAuthClient(env.Auth.Token.Value.Value())
+	serverVersion, err := versionClient.GetDynatraceVersion(ctx, corerest.NewClient(parsedUrl, httpClient, corerest.WithRateLimiter(), corerest.WithRetryOptions(&client.DefaultRetryOptions)))
 	if err != nil {
 		log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Warn("Unable to determine server version %q: %v", env.URL.Value, err)
 		return
