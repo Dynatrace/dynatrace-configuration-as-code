@@ -129,7 +129,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
 
-	printUploadToSameEnvironmentWarning(ctx, env)
+	checkIfAbleToUploadToSameEnvironment(ctx, env)
 
 	if !cmdOptions.forceOverwrite {
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)

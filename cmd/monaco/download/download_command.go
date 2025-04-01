@@ -162,10 +162,10 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 	}
 }
 
-// printUploadToSameEnvironmentWarning function may display a warning message on the console,
+// checkIfAbleToUploadToSameEnvironment function may display a warning message on the console,
 // notifying the user that downloaded objects cannot be uploaded to the same environment.
 // It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
-func printUploadToSameEnvironmentWarning(ctx context.Context, env manifest.EnvironmentDefinition) {
+func checkIfAbleToUploadToSameEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) {
 	// ignore server version check if OAuth is provided (can't be below the specified version)
 	if env.Auth.OAuth != nil {
 		return
