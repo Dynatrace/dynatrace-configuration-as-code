@@ -17,7 +17,6 @@
 package download
 
 import (
-	"context"
 	"encoding/json"
 	"net/http/httptest"
 	"path/filepath"
@@ -98,7 +97,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -172,7 +171,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -266,7 +265,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -389,7 +388,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -461,7 +460,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -535,7 +534,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -638,7 +637,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -758,7 +757,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -902,7 +901,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			assert.NoError(t, err)
 
 			// THEN we can load the project again and verify its content
-			projects, errs := loadDownloadedProjects(fs, apiMap)
+			projects, errs := loadDownloadedProjects(t, fs, apiMap)
 
 			if !testcase.shouldProjectExist {
 				assert.Equal(t, len(errs) > 0, true, "Project loading should have failed")
@@ -989,7 +988,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 		}
 	}
 
-	projects, errs := projectLoader.LoadProjects(context.TODO(), fs, projectLoader.ProjectLoaderContext{
+	projects, errs := projectLoader.LoadProjects(t.Context(), fs, projectLoader.ProjectLoaderContext{
 		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      testBasePath,
 		Manifest:        man,
@@ -1074,7 +1073,7 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apis)
+	projects, errs := loadDownloadedProjects(t, fs, apis)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -1130,7 +1129,7 @@ func TestDownloadGoTemplateExpressionsAreEscaped(t *testing.T) {
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, api.APIs{})
+	projects, errs := loadDownloadedProjects(t, fs, api.APIs{})
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -1198,7 +1197,7 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apis)
+	projects, errs := loadDownloadedProjects(t, fs, apis)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -1252,7 +1251,7 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, api.APIs{})
+	projects, errs := loadDownloadedProjects(t, fs, api.APIs{})
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -1312,7 +1311,7 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, api.APIs{})
+	projects, errs := loadDownloadedProjects(t, fs, api.APIs{})
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -1363,7 +1362,7 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 	}
 }
 
-func loadDownloadedProjects(fs afero.Fs, apis api.APIs) ([]projectLoader.Project, []error) {
+func loadDownloadedProjects(t *testing.T, fs afero.Fs, apis api.APIs) ([]projectLoader.Project, []error) {
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: "out/manifest.yaml",
@@ -1373,7 +1372,7 @@ func loadDownloadedProjects(fs afero.Fs, apis api.APIs) ([]projectLoader.Project
 		return nil, errs
 	}
 
-	return projectLoader.LoadProjects(context.TODO(), fs, projectLoader.ProjectLoaderContext{
+	return projectLoader.LoadProjects(t.Context(), fs, projectLoader.ProjectLoaderContext{
 		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      "out",
 		Manifest:        man,

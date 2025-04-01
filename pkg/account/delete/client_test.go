@@ -19,7 +19,6 @@
 package delete_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -726,7 +725,7 @@ func TestAccountAPIClient_DeleteServiceUser(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteServiceUser(context.Background(), "su2")
+		err = accountClient.DeleteServiceUser(t.Context(), "su2")
 		assert.NoError(t, err)
 	})
 
@@ -772,7 +771,7 @@ func TestAccountAPIClient_DeleteServiceUser(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteServiceUser(context.Background(), "su2")
+		err = accountClient.DeleteServiceUser(t.Context(), "su2")
 		assert.NoError(t, err)
 	})
 
@@ -811,7 +810,7 @@ func TestAccountAPIClient_DeleteServiceUser(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteServiceUser(context.Background(), "su1")
+		err = accountClient.DeleteServiceUser(t.Context(), "su1")
 		notFoundErr := &delete.ResourceNotFoundError{}
 		assert.ErrorAs(t, err, &notFoundErr)
 	})
@@ -847,7 +846,7 @@ func TestAccountAPIClient_DeleteServiceUser(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteServiceUser(context.Background(), "su2")
+		err = accountClient.DeleteServiceUser(t.Context(), "su2")
 		notFoundErr := &delete.ResourceNotFoundError{}
 		assert.ErrorAs(t, err, &notFoundErr)
 	})
@@ -891,7 +890,7 @@ func TestAccountAPIClient_DeleteServiceUser(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteServiceUser(context.Background(), "su1")
+		err = accountClient.DeleteServiceUser(t.Context(), "su1")
 		assert.ErrorContains(t, err, "found multiple service users with name")
 	})
 
@@ -911,7 +910,7 @@ func TestAccountAPIClient_DeleteServiceUser(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteServiceUser(context.Background(), "su1")
+		err = accountClient.DeleteServiceUser(t.Context(), "su1")
 		assert.Error(t, err)
 	})
 
@@ -950,7 +949,7 @@ func TestAccountAPIClient_DeleteServiceUser(t *testing.T) {
 		restClient := rest.NewClient(serverURL, server.Client())
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
-		err = accountClient.DeleteServiceUser(context.Background(), "su1")
+		err = accountClient.DeleteServiceUser(t.Context(), "su1")
 		assert.Error(t, err)
 	})
 }
