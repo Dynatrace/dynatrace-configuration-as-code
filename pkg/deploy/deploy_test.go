@@ -17,14 +17,20 @@
 package deploy_test
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -1402,6 +1408,86 @@ func TestDeployConfigFF(t *testing.T) {
 			t.Setenv(tt.featureFlag, "false")
 			err := deploy.Deploy(t.Context(), tt.projects, c, deploy.DeployConfigsOptions{})
 			assert.Errorf(t, err, fmt.Sprintf("unknown config-type (ID: %q)", tt.configType))
+		})
+	}
+}
+
+type StubOpenPipelineClient struct {
+	UpdateStub func() (openpipeline.Response, error)
+}
+
+func (c *StubOpenPipelineClient) GetAll(ctx context.Context) ([]openpipeline.Response, error) {
+	return []coreapi.Response{}, nil
+}
+
+func (c *StubOpenPipelineClient) Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error) {
+	return c.UpdateStub()
+}
+
+func TestLogResponseErrors(t *testing.T) {
+	projects := []project.Project{
+		{
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"p1": {
+						config.Config{
+							Type:        config.OpenPipelineType{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "type",
+								ConfigId: "config1",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name           string
+		updateStub     func() (openpipeline.Response, error)
+		expectedErrLog string
+	}{
+		{
+			name: "500 error",
+			updateStub: func() (openpipeline.Response, error) {
+				return openpipeline.Response{}, coreapi.APIError{StatusCode: 501}
+			},
+			expectedErrLog: "Deployment failed - Dynatrace Server Error",
+		},
+		{
+			name: "400 error",
+			updateStub: func() (openpipeline.Response, error) {
+				return openpipeline.Response{}, coreapi.APIError{StatusCode: 404}
+			},
+			expectedErrLog: "Deployment failed - Dynatrace API rejected HTTP request / JSON data",
+		},
+		{
+			name: "default error",
+			updateStub: func() (openpipeline.Response, error) {
+				return openpipeline.Response{}, coreapi.APIError{StatusCode: 0}
+			},
+			expectedErrLog: "Deployment failed - Dynatrace API call unsuccessful",
+		},
+	}
+	logSpy := bytes.Buffer{}
+	log.SetDefaultLogger(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dummyClientSet := client.ClientSet{
+				OpenPipelineClient: &StubOpenPipelineClient{UpdateStub: tt.updateStub},
+			}
+			c := dynatrace.EnvironmentClients{
+				dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
+			}
+
+			err := deploy.Deploy(t.Context(), projects, c, deploy.DeployConfigsOptions{})
+			assert.NotNil(t, err)
+			assert.Contains(t, logSpy.String(), tt.expectedErrLog)
+			logSpy.Reset()
 		})
 	}
 }
