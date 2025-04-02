@@ -81,7 +81,7 @@ func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefi
 // Load loads account management resources from YAML configuration files
 // located within the specified root directory path.
 // It:
-//  1. parses YAML files found under rootPath, extracts policies, groups, and users data
+//  1. parses YAML files found under rootPath, extracts policies, groups, users and service users
 //  2. validates the loaded data for correct syntax
 //  3. returns the data in the in-memory account.Resources representation
 func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
@@ -133,7 +133,7 @@ func findAndLoadResources(fs afero.Fs, rootPath string) (*account.Resources, err
 			return nil, fmt.Errorf("invalid file %q: %w", yamlFilePath, err)
 		}
 
-		err = addResourcesFromFile(resources, *file)
+		err = addResourcesFromFile(&resources, *file)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add resources from file %q: %w", yamlFilePath, err)
 		}
@@ -181,7 +181,7 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 	return &file, err
 }
 
-func addResourcesFromFile(res account.Resources, file persistence.File) error {
+func addResourcesFromFile(res *account.Resources, file persistence.File) error {
 	for _, p := range file.Policies {
 		if _, exists := res.Policies[p.ID]; exists {
 			return fmt.Errorf("found duplicate policy with id %q", p.ID)
