@@ -317,7 +317,7 @@ func TestLoad(t *testing.T) {
 	})
 
 	// TestLoadMissingEnvironmentLevelPolicyReferenceProducesError tests that loading account resources that
-	t.Run("", func(t *testing.T) {
+	t.Run("environment level policy reference not found", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/no-ref-policy-env.yaml")
 		assert.ErrorContains(t, err, "references missing policy")
 	})
