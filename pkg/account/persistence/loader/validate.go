@@ -30,40 +30,78 @@ import (
 // environment policies, and account policies, validating their references.
 func validateReferences(res *account.Resources) error {
 	for _, user := range res.Users {
-		for _, groupRef := range user.Groups {
-			if err := refCheck(res, groupRef, groupExists); err != nil {
-				return err
-			}
+		if err := validateUserReferences(res, user); err != nil {
+			return err
+		}
+	}
+
+	for _, serviceUser := range res.ServiceUsers {
+		if err := validateServiceUserReferences(res, serviceUser); err != nil {
+			return err
 		}
 	}
 
 	for _, group := range res.Groups {
-		// check references in environment policies
-		for _, env := range group.Environment {
-			for _, policyRef := range env.Policies {
-				if err := refCheck(res, policyRef, policyExists); err != nil {
-					return err
-				}
-			}
-		}
-		if group.Account != nil {
-			// check references in account policies
-			for _, policyRef := range group.Account.Policies {
-				if err := refCheck(res, policyRef, policyExists); err != nil {
-					return err
-				}
-			}
+		if err := validateGroupReferences(res, group); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func refCheck(res *account.Resources, ref account.Ref, refCheckFn func(*account.Resources, string) bool) error {
-	switch ref.(type) {
-	case account.Reference:
-		refExists := refCheckFn(res, ref.ID())
-		if !refExists {
-			return fmt.Errorf("error validating account resources with id %q: %w", ref.ID(), ErrRefMissing)
+func validateUserReferences(res *account.Resources, user account.User) error {
+	for _, groupRef := range user.Groups {
+		groupReference, ok := groupRef.(account.Reference)
+		if !ok {
+			continue
+		}
+
+		if !groupExists(res, groupReference.ID()) {
+			return fmt.Errorf("user '%s' references missing group '%s'", user.Email, groupReference.ID())
+		}
+	}
+	return nil
+}
+
+func validateServiceUserReferences(res *account.Resources, serviceUser account.ServiceUser) error {
+	for _, groupRef := range serviceUser.Groups {
+		groupReference, ok := groupRef.(account.Reference)
+		if !ok {
+			continue
+		}
+
+		if !groupExists(res, groupReference.ID()) {
+			return fmt.Errorf("service user '%s' references missing group '%s'", serviceUser.Name, groupReference.ID())
+		}
+	}
+	return nil
+}
+
+func validateGroupReferences(res *account.Resources, group account.Group) error {
+	// check references in environment policies
+	for _, env := range group.Environment {
+		for _, policyRef := range env.Policies {
+			policyReference, ok := policyRef.(account.Reference)
+			if !ok {
+				continue
+			}
+
+			if !policyExists(res, policyReference.ID()) {
+				return fmt.Errorf("group '%s' environment '%s' references missing policy '%s'", group.Name, env.Name, policyReference.ID())
+			}
+		}
+	}
+	if group.Account != nil {
+		// check references in account policies
+		for _, policyRef := range group.Account.Policies {
+			policyReference, ok := policyRef.(account.Reference)
+			if !ok {
+				continue
+			}
+
+			if !policyExists(res, policyReference.ID()) {
+				return fmt.Errorf("group '%s' account references missing policy '%s'", group.Name, policyReference.ID())
+			}
 		}
 	}
 	return nil

@@ -305,60 +305,35 @@ func TestLoad(t *testing.T) {
 		}, result)
 		assert.NoError(t, err)
 	})
-}
 
-func TestValidateReferences(t *testing.T) {
-	testCases := []struct {
-		name           string
-		path           string
-		expected       error
-		expectedErrMsg string
-	}{
-		{
+	t.Run("valid file produces no error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
+		assert.NoError(t, err)
+	})
 
-			name:           "group reference not found",
-			path:           "testdata/no-ref-group.yaml",
-			expected:       ErrRefMissing,
-			expectedErrMsg: `error validating account resources with id "non-existing-group-ref": no referenced target found`,
-		},
-		{
-			name:           "environment level policy reference not found",
-			path:           "testdata/no-ref-policy-env.yaml",
-			expected:       ErrRefMissing,
-			expectedErrMsg: `error validating account resources with id "non-existing-policy-ref": no referenced target found`,
-		},
-		{
-			name:           "account level policy reference not found",
-			path:           "testdata/no-ref-policy-account.yaml",
-			expected:       ErrRefMissing,
-			expectedErrMsg: `error validating account resources with id "non-existing-policy-ref": no referenced target found`,
-		},
-		{
-			name:     "mixing configs and account resources",
-			path:     "testdata/configs-accounts-mixed.yaml",
-			expected: ErrMixingConfigs,
-		},
-		{
-			name:     "mixing delete-file and account resources",
-			path:     "testdata/deletefile-accounts-mixed.yaml",
-			expected: ErrMixingDelete,
-		},
-		{
-			name:     "valid",
-			path:     "testdata/valid.yaml",
-			expected: nil,
-		},
-	}
+	t.Run("referencing a missing enviroment level policy produces an error.", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/no-ref-group.yaml")
+		assert.ErrorContains(t, err, "references missing group")
+	})
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := Load(afero.NewOsFs(), tc.path)
-			if tc.expected != nil {
-				assert.ErrorIs(t, err, tc.expected)
-				assert.ErrorContains(t, err, tc.expectedErrMsg)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
+	// TestLoadMissingEnvironmentLevelPolicyReferenceProducesError tests that loading account resources that
+	t.Run("", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/no-ref-policy-env.yaml")
+		assert.ErrorContains(t, err, "references missing policy")
+	})
+
+	t.Run("referencing a missing account level policy produces an error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/no-ref-policy-account.yaml")
+		assert.ErrorContains(t, err, "references missing policy")
+	})
+
+	t.Run("mixed configs and account resources produces an error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/configs-accounts-mixed.yaml")
+		assert.ErrorIs(t, err, ErrMixingConfigs)
+	})
+
+	t.Run("mixed delete and account resources produces an error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/deletefile-accounts-mixed.yaml")
+		assert.ErrorIs(t, err, ErrMixingDelete)
+	})
 }

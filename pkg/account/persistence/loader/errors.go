@@ -18,7 +18,5 @@ package loader
 
 import "errors"
 
-var ErrRefMissing = errors.New("no referenced target found")
-var ErrIdFieldMissing = errors.New("no ref id field found")
 var ErrMixingConfigs = errors.New("mixing both configurations and account resources is not allowed")
 var ErrMixingDelete = errors.New("mixing account resources with a delete file definition is not allowed")
