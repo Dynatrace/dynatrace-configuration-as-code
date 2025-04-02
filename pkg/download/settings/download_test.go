@@ -852,6 +852,9 @@ func TestDownloadAll(t *testing.T) {
 				},
 				GetPermissionCalls: 0,
 			},
+			envVars: map[string]string{
+				featureflags.AccessControlSettings.EnvName(): "false",
+			},
 			schemas: []config.SettingsType{{SchemaId: "app:my-app:schema"}},
 			want: v2.ConfigsPerType{"app:my-app:schema": {
 				{
