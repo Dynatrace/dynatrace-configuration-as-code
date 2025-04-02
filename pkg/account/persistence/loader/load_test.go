@@ -311,7 +311,7 @@ func TestLoad(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("referencing a missing enviroment level policy produces an error.", func(t *testing.T) {
+	t.Run("referencing a missing environment level policy produces an error.", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/no-ref-group.yaml")
 		assert.ErrorContains(t, err, "references missing group")
 	})
