@@ -21,71 +21,104 @@ import (
 	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
-	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
 
 // validateReferences checks the references in the provided AMResources instance to ensure
 // that all referenced groups and policies exist. It iterates through the users,
 // environment policies, and account policies, validating their references.
-func validateReferences(res *types.Resources) error {
+func validateReferences(res *account.Resources) error {
 	for _, user := range res.Users {
-		for _, groupRef := range user.Groups {
-			if err := refCheck(res, groupRef, groupExists); err != nil {
-				return err
-			}
+		if err := validateUserReferences(res, user); err != nil {
+			return err
+		}
+	}
+
+	for _, serviceUser := range res.ServiceUsers {
+		if err := validateServiceUserReferences(res, serviceUser); err != nil {
+			return err
 		}
 	}
 
 	for _, group := range res.Groups {
-		// check references in environment policies
-		for _, env := range group.Environment {
-			for _, policyRef := range env.Policies {
-				if err := refCheck(res, policyRef, policyExists); err != nil {
-					return err
-				}
+		if err := validateGroupReferences(res, group); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateUserReferences(res *account.Resources, user account.User) error {
+	for _, groupRef := range user.Groups {
+		groupReference, ok := groupRef.(account.Reference)
+		if !ok {
+			continue
+		}
+
+		if !groupExists(res, groupReference.ID()) {
+			return fmt.Errorf("user '%s' references missing group '%s'", user.Email, groupReference.ID())
+		}
+	}
+	return nil
+}
+
+func validateServiceUserReferences(res *account.Resources, serviceUser account.ServiceUser) error {
+	for _, groupRef := range serviceUser.Groups {
+		groupReference, ok := groupRef.(account.Reference)
+		if !ok {
+			continue
+		}
+
+		if !groupExists(res, groupReference.ID()) {
+			return fmt.Errorf("service user '%s' references missing group '%s'", serviceUser.Name, groupReference.ID())
+		}
+	}
+	return nil
+}
+
+func validateGroupReferences(res *account.Resources, group account.Group) error {
+	// check references in environment policies
+	for _, env := range group.Environment {
+		for _, policyRef := range env.Policies {
+			policyReference, ok := policyRef.(account.Reference)
+			if !ok {
+				continue
+			}
+
+			if !policyExists(res, policyReference.ID()) {
+				return fmt.Errorf("group '%s' environment '%s' references missing policy '%s'", group.Name, env.Name, policyReference.ID())
 			}
 		}
-		if group.Account != nil {
-			// check references in account policies
-			for _, policyRef := range group.Account.Policies {
-				if err := refCheck(res, policyRef, policyExists); err != nil {
-					return err
-				}
+	}
+	if group.Account != nil {
+		// check references in account policies
+		for _, policyRef := range group.Account.Policies {
+			policyReference, ok := policyRef.(account.Reference)
+			if !ok {
+				continue
+			}
+
+			if !policyExists(res, policyReference.ID()) {
+				return fmt.Errorf("group '%s' account references missing policy '%s'", group.Name, policyReference.ID())
 			}
 		}
 	}
 	return nil
 }
 
-func refCheck(res *types.Resources, reference types.Reference, refCheckFn func(*types.Resources, string) bool) error {
-	if reference.Type == types.ReferenceType {
-		if reference.Id == "" {
-			return fmt.Errorf("error validating account resources: %w", ErrIdFieldMissing)
-		}
-
-		refExists := refCheckFn(res, reference.Id)
-		if !refExists {
-			return fmt.Errorf("error validating account resources with id %q: %w", reference.Id, ErrRefMissing)
-		}
-	} else if reference.Value == "" {
-		return fmt.Errorf("error validating account resources: %w", errors.New("value is missing"))
-	}
-	return nil
-}
-
-func groupExists(a *types.Resources, id string) bool {
+func groupExists(a *account.Resources, id string) bool {
 	_, exists := a.Groups[id]
 	return exists
 }
 
-func policyExists(a *types.Resources, id string) bool {
+func policyExists(a *account.Resources, id string) bool {
 	_, exists := a.Policies[id]
 	return exists
 
 }
 
-func validateFile(file persistence.File) error {
+func validateFile(file types.File) error {
 	for _, p := range file.Policies {
 		if err := validatePolicy(p); err != nil {
 			return err
@@ -119,12 +152,24 @@ func validateUser(u types.User) error {
 	if u.Email == "" {
 		return errors.New("missing required field 'email' for user")
 	}
+
+	for _, groupRef := range u.Groups {
+		if err := validateReference(groupRef); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 func validateServiceUser(su types.ServiceUser) error {
 	if su.Name == "" {
 		return errors.New("missing required field 'name' for service user")
+	}
+
+	for _, groupRef := range su.Groups {
+		if err := validateReference(groupRef); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -136,7 +181,24 @@ func validateGroup(g types.Group) error {
 	if g.Name == "" {
 		return fmt.Errorf("missing required field 'name' for group %q", g.ID)
 	}
-	// groups don't necessarily need to define any permissions/policies
+
+	for _, env := range g.Environment {
+		for _, policyRef := range env.Policies {
+			if err := validateReference(policyRef); err != nil {
+				return err
+			}
+		}
+	}
+
+	if g.Account != nil {
+		// check references in account policies
+		for _, policyRef := range g.Account.Policies {
+			if err := validateReference(policyRef); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -158,6 +220,17 @@ func validatePolicy(p types.Policy) error {
 	}
 	if p.Policy == "" {
 		return fmt.Errorf("missing required field 'policy' for policy %q", p.ID)
+	}
+	return nil
+}
+
+func validateReference(reference types.Reference) error {
+	if reference.Type == types.ReferenceType {
+		if reference.Id == "" {
+			return errors.New("missing required field 'id' for reference")
+		}
+	} else if reference.Value == "" {
+		return errors.New("missing reference value")
 	}
 	return nil
 }

@@ -21,28 +21,15 @@ import (
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
 
-func transformToAccountResources(resources *persistence.Resources) *account.Resources {
-	return &account.Resources{
-		Policies:     transformPolicies(resources.Policies),
-		Groups:       transformGroups(resources.Groups),
-		Users:        transformUsers(resources.Users),
-		ServiceUsers: transformServiceUsers(resources.ServiceUsers),
+func transformPolicy(pPolicy persistence.Policy) account.Policy {
+	return account.Policy{
+		ID:             pPolicy.ID,
+		Name:           pPolicy.Name,
+		Level:          transformLevel(pPolicy.Level),
+		Description:    pPolicy.Description,
+		Policy:         pPolicy.Policy,
+		OriginObjectID: pPolicy.OriginObjectID,
 	}
-}
-
-func transformPolicies(pPolicies map[string]persistence.Policy) map[account.PolicyId]account.Policy {
-	policies := make(map[account.PolicyId]account.Policy, len(pPolicies))
-	for id, v := range pPolicies {
-		policies[id] = account.Policy{
-			ID:             v.ID,
-			Name:           v.Name,
-			Level:          transformLevel(v.Level),
-			Description:    v.Description,
-			Policy:         v.Policy,
-			OriginObjectID: v.OriginObjectID,
-		}
-	}
-	return policies
 }
 
 func transformLevel(pLevel persistence.PolicyLevel) any {
@@ -56,21 +43,17 @@ func transformLevel(pLevel persistence.PolicyLevel) any {
 	}
 }
 
-func transformGroups(pGroups map[string]persistence.Group) map[account.GroupId]account.Group {
-	groups := make(map[account.GroupId]account.Group, len(pGroups))
-	for id, v := range pGroups {
-		groups[id] = account.Group{
-			ID:                       v.ID,
-			Name:                     v.Name,
-			Description:              v.Description,
-			FederatedAttributeValues: v.FederatedAttributeValues,
-			Account:                  transformAccount(v.Account),
-			Environment:              transformEnvironments(v.Environment),
-			ManagementZone:           transformManagementZones(v.ManagementZone),
-			OriginObjectID:           v.OriginObjectID,
-		}
+func transformGroup(pGroup persistence.Group) account.Group {
+	return account.Group{
+		ID:                       pGroup.ID,
+		Name:                     pGroup.Name,
+		Description:              pGroup.Description,
+		FederatedAttributeValues: pGroup.FederatedAttributeValues,
+		Account:                  transformAccount(pGroup.Account),
+		Environment:              transformEnvironments(pGroup.Environment),
+		ManagementZone:           transformManagementZones(pGroup.ManagementZone),
+		OriginObjectID:           pGroup.OriginObjectID,
 	}
-	return groups
 }
 
 func transformAccount(pAccount *persistence.Account) *account.Account {
@@ -108,27 +91,19 @@ func transformManagementZones(pManagementZones []persistence.ManagementZone) []a
 	return managementZones
 }
 
-func transformUsers(pUsers map[string]persistence.User) map[account.UserId]account.User {
-	users := make(map[account.UserId]account.User, len(pUsers))
-	for id, v := range pUsers {
-		users[id] = account.User{
-			Email:  v.Email,
-			Groups: transformReferences(v.Groups),
-		}
+func transformUser(pUser persistence.User) account.User {
+	return account.User{
+		Email:  pUser.Email,
+		Groups: transformReferences(pUser.Groups),
 	}
-	return users
 }
 
-func transformServiceUsers(pUsers map[string]persistence.ServiceUser) map[account.ServiceUserId]account.ServiceUser {
-	serviceUsers := make(map[account.ServiceUserId]account.ServiceUser, len(pUsers))
-	for id, su := range pUsers {
-		serviceUsers[id] = account.ServiceUser{
-			Name:        su.Name,
-			Description: su.Description,
-			Groups:      transformReferences(su.Groups),
-		}
+func transformServiceUser(pServiceUser persistence.ServiceUser) account.ServiceUser {
+	return account.ServiceUser{
+		Name:        pServiceUser.Name,
+		Description: pServiceUser.Description,
+		Groups:      transformReferences(pServiceUser.Groups),
 	}
-	return serviceUsers
 }
 
 func transformReferences(pReferences []persistence.Reference) []account.Ref {
