@@ -278,7 +278,7 @@ func TestLoad(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("User user definition with group reference with missing id field produces error", func(t *testing.T) {
+	t.Run("User definition with group reference with missing id field produces error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/no-id-field-group-ref.yaml")
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, "missing required field 'id' for reference")
