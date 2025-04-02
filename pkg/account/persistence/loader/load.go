@@ -17,6 +17,7 @@
 package loader
 
 import (
+	"errors"
 	"fmt"
 	"path"
 
@@ -31,6 +32,9 @@ import (
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
+
+var ErrMixingConfigs = errors.New("mixing both configurations and account resources is not allowed")
+var ErrMixingDelete = errors.New("mixing account resources with a delete file definition is not allowed")
 
 // LoadResources loads and merges resources from the specified projects assumed to be located within the specified working directory.
 func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefinitionByProjectID) (*account.Resources, error) {
