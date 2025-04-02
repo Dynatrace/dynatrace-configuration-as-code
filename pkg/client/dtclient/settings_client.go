@@ -595,6 +595,9 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		if upsertOptions.InsertAfter != nil && !schema.Ordered {
 			return DynatraceEntity{}, fmt.Errorf("'%s' is not an ordered setting, hence 'insertAfter' is not supported for this type of setting object", obj.SchemaId)
 		}
+		if featureflags.AccessControlSettings.Enabled() && upsertOptions.AllUserPermission != nil && (schema.OwnerBasedAccessControl == nil || !*schema.OwnerBasedAccessControl) {
+			return DynatraceEntity{}, fmt.Errorf("schema '%s' does not have owner-based access control enabled, hence 'permissions' is not supported for this type of setting object'", obj.SchemaId)
+		}
 	}
 
 	payload, err := buildPostRequestPayload(ctx, remoteObjectId, obj, externalID, upsertOptions.InsertAfter)
