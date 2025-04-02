@@ -40,10 +40,10 @@ const emptyResponseRetryMax = 10
 // as filtering might exclude some entries that where received from the API.
 type AddEntriesToResult func(body []byte) (receivedEntries int, err error)
 
-func listPaginated(ctx context.Context, client *corerest.Client, retrySetting RetrySetting, endpoint string, queryParams url.Values, logLabel string,
+func listPaginated(ctx context.Context, client *corerest.Client, endpoint string, queryParams url.Values, logLabel string,
 	addToResult AddEntriesToResult) error {
 
-	body, totalReceivedCount, err := runAndProcessResponse(ctx, client, retrySetting, endpoint, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
+	body, totalReceivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, retrySetting Re
 			break
 		}
 
-		body, receivedCount, err := runAndProcessResponse(ctx, client, retrySetting, endpoint, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(endpoint, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
+		body, receivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(endpoint, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
 		if err != nil {
 			var apiErr coreapi.APIError
 			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusBadRequest {
@@ -86,8 +86,12 @@ func listPaginated(ctx context.Context, client *corerest.Client, retrySetting Re
 	return nil
 }
 
-func runAndProcessResponse(ctx context.Context, client *corerest.Client, retrySetting RetrySetting, endpoint string, requestOptions corerest.RequestOptions, addToResult AddEntriesToResult) ([]byte, int, error) {
-	resp, err := GetWithRetry(ctx, *client, endpoint, requestOptions, retrySetting)
+func runAndProcessResponse(ctx context.Context, client *corerest.Client, endpoint string, requestOptions corerest.RequestOptions, addToResult AddEntriesToResult) ([]byte, int, error) {
+	res, reqErr := client.GET(ctx, endpoint, requestOptions)
+	if reqErr != nil {
+		return nil, 0, reqErr
+	}
+	resp, err := coreapi.NewResponseFromHTTPResponse(res)
 	if err != nil {
 		return nil, 0, err
 	}
