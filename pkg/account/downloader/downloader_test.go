@@ -680,6 +680,40 @@ func TestDownloader_OnlyServiceUser(t *testing.T) {
 	}, result.ServiceUsers)
 }
 
+// TestDownloader_TwoServiceUsersWithSameName tests that downloading an account with two service users with the same name succeeds.
+func TestDownloader_TwoServiceUsersWithSameName(t *testing.T) {
+	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+
+	client := http.NewMockhttpClient(gomock.NewController(t))
+	downloader := downloader.New4Test(&account.AccountInfo{
+		Name:        "test",
+		AccountUUID: accountUUID,
+	}, client)
+
+	client.EXPECT().GetEnvironmentsAndMZones(gomock.Any(), accountUUID).Return([]accountmanagement.TenantResourceDto{}, []accountmanagement.ManagementZoneResourceDto{}, nil)
+	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{}, nil)
+	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
+	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{
+		{Uid: "abc1", Email: "abc1@some.org", Name: "service_user", Description: accountmanagement.PtrString("A service user")},
+		{Uid: "abc2", Email: "abc2@some.org", Name: "service_user", Description: accountmanagement.PtrString("A service user")},
+	}, nil)
+	client.EXPECT().GetGroupsForUser(gomock.Any(), "abc1@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "abc1@some.org"}, nil)
+	client.EXPECT().GetGroupsForUser(gomock.Any(), "abc2@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "abc2@some.org"}, nil)
+
+	result, err := downloader.DownloadResources(context.TODO())
+	assert.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.Empty(t, result.Policies)
+	assert.Empty(t, result.Groups)
+	assert.Empty(t, result.Users)
+	assert.Equal(t, []account.ServiceUser{
+		{OriginObjectID: "abc1", Name: "service_user", Description: "A service user"},
+		{OriginObjectID: "abc2", Name: "service_user", Description: "A service user"},
+	}, result.ServiceUsers)
+}
+
 // TestDownloader_ServiceUserWithOneGroup tests that downloading a service user belonging to one group succeeds.
 func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
 	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
@@ -726,7 +760,6 @@ func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
 			Groups: []account.Ref{account.Reference{Id: toID("test_group")}},
 		},
 	}, result.ServiceUsers)
-
 }
 
 // TestDownloader_NoRequestedServiceUserDetails tests that downloading a service user without details fails as expected.
