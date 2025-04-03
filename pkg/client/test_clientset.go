@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 )
 
@@ -67,5 +68,15 @@ func (TestServiceLevelObjectiveClient) Create(ctx context.Context, data []byte) 
 }
 
 func (TestServiceLevelObjectiveClient) Delete(ctx context.Context, id string) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
+}
+
+type TestOpenPipelineClient struct{}
+
+func (TestOpenPipelineClient) GetAll(ctx context.Context) ([]openpipeline.Response, error) {
+	return []api.Response{}, fmt.Errorf("unimplemented")
+}
+
+func (TestOpenPipelineClient) Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error) {
 	return api.Response{}, fmt.Errorf("unimplemented")
 }

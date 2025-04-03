@@ -17,14 +17,19 @@
 package deploy_test
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -1300,10 +1305,13 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 
 }
 
+// Test if the FF gets Disabled/Enabled that the correct error is returned
 func TestDeployConfigFF(t *testing.T) {
+	// Clients here will return an error if reached
 	dummyClientSet := client.ClientSet{
 		SegmentClient:               client.TestSegmentsClient{},
 		ServiceLevelObjectiveClient: client.TestServiceLevelObjectiveClient{},
+		OpenPipelineClient:          client.TestOpenPipelineClient{},
 	}
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
@@ -1363,6 +1371,30 @@ func TestDeployConfigFF(t *testing.T) {
 			featureFlag: featureflags.ServiceLevelObjective.EnvName(),
 			configType:  config.ServiceLevelObjectiveID,
 		},
+		{
+			name: "OpenPipeline FF test",
+			projects: []project.Project{
+				{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env": project.ConfigsPerType{
+							"p1": {
+								config.Config{
+									Type:        config.OpenPipelineType{},
+									Environment: "env",
+									Coordinate: coordinate.Coordinate{
+										Project:  "p1",
+										Type:     "type",
+										ConfigId: "config1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			featureFlag: featureflags.OpenPipeline.EnvName(),
+			configType:  config.OpenPipelineTypeID,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1375,6 +1407,86 @@ func TestDeployConfigFF(t *testing.T) {
 			t.Setenv(tt.featureFlag, "false")
 			err := deploy.Deploy(t.Context(), tt.projects, c, deploy.DeployConfigsOptions{})
 			assert.Errorf(t, err, fmt.Sprintf("unknown config-type (ID: %q)", tt.configType))
+		})
+	}
+}
+
+type StubOpenPipelineClient struct {
+	UpdateStub func() (openpipeline.Response, error)
+}
+
+func (c *StubOpenPipelineClient) GetAll(ctx context.Context) ([]openpipeline.Response, error) {
+	return []coreapi.Response{}, nil
+}
+
+func (c *StubOpenPipelineClient) Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error) {
+	return c.UpdateStub()
+}
+
+func TestLogResponseErrors(t *testing.T) {
+	projects := []project.Project{
+		{
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"p1": {
+						config.Config{
+							Type:        config.OpenPipelineType{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "openpipeline",
+								ConfigId: "config1",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name           string
+		updateStub     func() (openpipeline.Response, error)
+		expectedErrLog string
+	}{
+		{
+			name: "500 error",
+			updateStub: func() (openpipeline.Response, error) {
+				return openpipeline.Response{}, coreapi.APIError{StatusCode: 501}
+			},
+			expectedErrLog: "Deployment failed - Dynatrace Server Error",
+		},
+		{
+			name: "400 error",
+			updateStub: func() (openpipeline.Response, error) {
+				return openpipeline.Response{}, coreapi.APIError{StatusCode: 404}
+			},
+			expectedErrLog: "Deployment failed - Dynatrace API rejected HTTP request / JSON data",
+		},
+		{
+			name: "default error",
+			updateStub: func() (openpipeline.Response, error) {
+				return openpipeline.Response{}, coreapi.APIError{StatusCode: 0}
+			},
+			expectedErrLog: "Deployment failed - Dynatrace API call unsuccessful",
+		},
+	}
+	logSpy := bytes.Buffer{}
+	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), false, &logSpy, false, false)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dummyClientSet := client.ClientSet{
+				OpenPipelineClient: &StubOpenPipelineClient{UpdateStub: tt.updateStub},
+			}
+			c := dynatrace.EnvironmentClients{
+				dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
+			}
+
+			err := deploy.Deploy(t.Context(), projects, c, deploy.DeployConfigsOptions{})
+			assert.NotNil(t, err)
+			assert.Contains(t, logSpy.String(), tt.expectedErrLog)
+			logSpy.Reset()
 		})
 	}
 }
@@ -1398,14 +1510,6 @@ func TestDeployDryRun(t *testing.T) {
 							},
 							Template: testutils.GenerateDummyTemplate(t),
 						},
-					},
-				},
-			},
-		},
-		{
-			Configs: project.ConfigsPerTypePerEnvironments{
-				"env": project.ConfigsPerType{
-					"p1": {
 						config.Config{
 							Type:        config.ServiceLevelObjective{},
 							Environment: "env",
@@ -1415,6 +1519,76 @@ func TestDeployDryRun(t *testing.T) {
 								ConfigId: "config1",
 							},
 							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.OpenPipelineType{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "openpipeline",
+								ConfigId: "config1",
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.DocumentType{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "document",
+								ConfigId: "config1",
+							},
+							Parameters: config.Parameters{
+								config.NameParameter: &value.ValueParameter{
+									Value: "value",
+								},
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.BucketType{},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "bucket",
+								ConfigId: "config1",
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.AutomationType{Resource: config.Workflow},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								Project:  "p1",
+								Type:     "automation",
+								ConfigId: "config1",
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.ClassicApiType{Api: "app-detection-rule"},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								ConfigId: "config1",
+							},
+							Parameters: config.Parameters{
+								config.NameParameter: &value.ValueParameter{
+									Value: "value",
+								},
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						config.Config{
+							Type:        config.SettingsType{SchemaId: "builtin:setting"},
+							Environment: "env",
+							Coordinate: coordinate.Coordinate{
+								ConfigId: "config2",
+							},
+							Parameters: config.Parameters{
+								config.ScopeParameter: &value.ValueParameter{
+									Value: "HOST-12345",
+								},
+							},
 						},
 					},
 				},
