@@ -1434,7 +1434,7 @@ func TestLogResponseErrors(t *testing.T) {
 							Environment: "env",
 							Coordinate: coordinate.Coordinate{
 								Project:  "p1",
-								Type:     "type",
+								Type:     "openpipeline",
 								ConfigId: "config1",
 							},
 						},
@@ -1525,7 +1525,7 @@ func TestDeployDryRun(t *testing.T) {
 							Environment: "env",
 							Coordinate: coordinate.Coordinate{
 								Project:  "p1",
-								Type:     "segment",
+								Type:     "openpipeline",
 								ConfigId: "config1",
 							},
 							Template: testutils.GenerateDummyTemplate(t),
