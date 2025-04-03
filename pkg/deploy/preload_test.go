@@ -30,17 +30,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
-
-var dummyConfigClient = &dtclient.DummyConfigClient{}
-var dummySettingsClient = &dtclient.DummySettingsClient{}
-var clientsetEnv1 = &client.ClientSet{ConfigClient: dummyConfigClient, SettingsClient: dummySettingsClient}
-
-//var clientsetEnv2 = &client.ClientSet{ConfigClient: dummyConfigClient, SettingsClient: dummySettingsClient}
 
 func Test_gatherPreloadConfigTypeEntries_OneEntryPerConfigType(t *testing.T) {
 	entries := gatherPreloadConfigTypeEntries(
