@@ -191,29 +191,36 @@ func extractApiErrorMessage(err error) string {
 }
 
 func getObjectsPermission(ctx context.Context, client client.SettingsClient, objects []dtclient.DownloadSettingsObject) (map[string]dtclient.PermissionObject, error) {
-	downloadMutex := sync.Mutex{}
-	wg := sync.WaitGroup{}
-	wg.Add(len(objects))
+	type result struct {
+		Permission dtclient.PermissionObject
+		ObjectId   string
+		Err        error
+	}
 	errs := make([]error, 0)
+	resChan := make(chan result, len(objects))
+	defer close(resChan)
+
 	permissions := make(map[string]dtclient.PermissionObject)
 	for _, obj := range objects {
-		go func(obj dtclient.DownloadSettingsObject) {
-			defer wg.Done()
-
+		go func(ctx context.Context, obj dtclient.DownloadSettingsObject) {
 			permission, err := client.GetPermission(ctx, obj.ObjectId)
-			if err != nil {
-				downloadMutex.Lock()
-				errs = append(errs, err)
-				downloadMutex.Unlock()
-				return
-			}
-			permissions[obj.ObjectId] = permission
-		}(obj)
+			resChan <- result{permission, obj.ObjectId, err}
+		}(ctx, obj)
 	}
-	wg.Wait()
+
+	for i := 0; i < len(objects); i++ {
+		res := <-resChan
+		if res.Err != nil {
+			errs = append(errs, res.Err)
+			continue
+		}
+		permissions[res.ObjectId] = res.Permission
+	}
+
 	if len(errs) > 0 {
 		return nil, errors.Join(errs...)
 	}
+
 	return permissions, nil
 }
 
