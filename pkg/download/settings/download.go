@@ -192,9 +192,9 @@ func extractApiErrorMessage(err error) string {
 
 func getObjectsPermission(ctx context.Context, client client.SettingsClient, objects []dtclient.DownloadSettingsObject) (map[string]dtclient.PermissionObject, error) {
 	type result struct {
-		Schema   dtclient.PermissionObject
-		ObjectId string
-		Err      error
+		Permission dtclient.PermissionObject
+		ObjectId   string
+		Err        error
 	}
 	errs := make([]error, 0)
 	resChan := make(chan result, len(objects))
@@ -209,17 +209,15 @@ func getObjectsPermission(ctx context.Context, client client.SettingsClient, obj
 	}
 
 	for i := 0; i < len(objects); i++ {
-		if res := <-resChan; res.Err != nil {
+		res := <-resChan
+		if res.Err != nil {
 			errs = append(errs, res.Err)
-		} else {
-			permissions[res.ObjectId] = res.Schema
+			continue
 		}
+		permissions[res.ObjectId] = res.Permission
 	}
 
-	if len(errs) > 0 {
-		return nil, errors.Join(errs...)
-	}
-	return permissions, nil
+	return permissions, errors.Join(errs...)
 }
 
 func asConcurrentErrMsg(err coreapi.APIError) string {
