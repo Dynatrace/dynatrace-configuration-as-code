@@ -38,46 +38,54 @@ var ErrMixingDelete = errors.New("mixing account resources with a delete file de
 
 // LoadResources loads and merges resources from the specified projects assumed to be located within the specified working directory.
 func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefinitionByProjectID) (*account.Resources, error) {
-	resources := account.NewAccountManagementResources()
+	allResources := account.NewAccountManagementResources()
 	for _, p := range projects {
-		res, err := Load(fs, path.Join(workingDir, p.Path))
+		projectResources, err := Load(fs, path.Join(workingDir, p.Path))
 		if err != nil {
-			return nil, err
-		}
-		for _, pol := range res.Policies {
-			if _, exists := resources.Policies[pol.ID]; exists {
-				return nil, fmt.Errorf("policy with id '%s' already defined in another project", pol.ID)
-			}
-			resources.Policies[pol.ID] = pol
+			return nil, fmt.Errorf("unable to load resources from project '%s': %w", p.Name, err)
 		}
 
-		for _, gr := range res.Groups {
-			if _, exists := resources.Groups[gr.ID]; exists {
-				return nil, fmt.Errorf("group with id '%s' already defined in another project", gr.ID)
-			}
-			resources.Groups[gr.ID] = gr
-		}
-
-		for _, us := range res.Users {
-			if _, exists := resources.Users[us.Email.Value()]; exists {
-				return nil, fmt.Errorf("user with email '%s' already defined in another project", us.Email)
-			}
-			resources.Users[us.Email.Value()] = us
-		}
-
-		if featureflags.ServiceUsers.Enabled() {
-			for _, su := range res.ServiceUsers {
-				for _, existingServiceUser := range resources.ServiceUsers {
-					if err := verifyServiceUsersAreNotAmbiguous(su, existingServiceUser); err != nil {
-						return nil, err
-					}
-				}
-				resources.ServiceUsers = append(resources.ServiceUsers, su)
-			}
+		if err := addProjectResources(allResources, projectResources); err != nil {
+			return nil, fmt.Errorf("unable to add resources from project '%s': %w", p.Name, err)
 		}
 	}
 
-	return resources, nil
+	return allResources, nil
+}
+
+func addProjectResources(resources *account.Resources, res *account.Resources) error {
+	for _, pol := range res.Policies {
+		if _, exists := resources.Policies[pol.ID]; exists {
+			return fmt.Errorf("policy with id '%s' already defined in another project", pol.ID)
+		}
+		resources.Policies[pol.ID] = pol
+	}
+
+	for _, gr := range res.Groups {
+		if _, exists := resources.Groups[gr.ID]; exists {
+			return fmt.Errorf("group with id '%s' already defined in another project", gr.ID)
+		}
+		resources.Groups[gr.ID] = gr
+	}
+
+	for _, us := range res.Users {
+		if _, exists := resources.Users[us.Email.Value()]; exists {
+			return fmt.Errorf("user with email '%s' already defined in another project", us.Email)
+		}
+		resources.Users[us.Email.Value()] = us
+	}
+
+	if featureflags.ServiceUsers.Enabled() {
+		for _, su := range res.ServiceUsers {
+			for _, existingServiceUser := range resources.ServiceUsers {
+				if err := verifyServiceUsersAreNotAmbiguous(su, existingServiceUser); err != nil {
+					return err
+				}
+			}
+			resources.ServiceUsers = append(resources.ServiceUsers, su)
+		}
+	}
+	return nil
 }
 
 // Load loads account management resources from YAML configuration files
