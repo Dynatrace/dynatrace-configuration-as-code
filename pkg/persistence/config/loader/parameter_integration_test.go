@@ -19,7 +19,6 @@
 package loader
 
 import (
-	"context"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -46,7 +45,7 @@ func TestParametersAreLoadedAsExpected(t *testing.T) {
 		ParametersSerDe: config.DefaultParameterParsers,
 	}
 
-	cfgs, errs := LoadConfigFile(context.TODO(), fs, &loaderContext, "testdata/parameter-type-test-config.yaml")
+	cfgs, errs := LoadConfigFile(t.Context(), fs, &loaderContext, "testdata/parameter-type-test-config.yaml")
 	require.Empty(t, errs, "Expected test config to load without error")
 	assert.Len(t, cfgs, 1, "Expected test config to contain a single definition")
 
