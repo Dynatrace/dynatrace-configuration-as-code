@@ -701,7 +701,7 @@ func TestDownloader_TwoServiceUsersWithSameName(t *testing.T) {
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "abc1@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "abc1@some.org"}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "abc2@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "abc2@some.org"}, nil)
 
-	result, err := downloader.DownloadResources(context.TODO())
+	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
