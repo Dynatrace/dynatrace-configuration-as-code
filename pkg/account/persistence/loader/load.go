@@ -53,36 +53,36 @@ func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefi
 	return allResources, nil
 }
 
-func addProjectResources(resources *account.Resources, res *account.Resources) error {
-	for _, pol := range res.Policies {
-		if _, exists := resources.Policies[pol.ID]; exists {
+func addProjectResources(targetResources *account.Resources, sourceResources *account.Resources) error {
+	for _, pol := range sourceResources.Policies {
+		if _, exists := targetResources.Policies[pol.ID]; exists {
 			return fmt.Errorf("policy with id '%s' already defined in another project", pol.ID)
 		}
-		resources.Policies[pol.ID] = pol
+		targetResources.Policies[pol.ID] = pol
 	}
 
-	for _, gr := range res.Groups {
-		if _, exists := resources.Groups[gr.ID]; exists {
+	for _, gr := range sourceResources.Groups {
+		if _, exists := targetResources.Groups[gr.ID]; exists {
 			return fmt.Errorf("group with id '%s' already defined in another project", gr.ID)
 		}
-		resources.Groups[gr.ID] = gr
+		targetResources.Groups[gr.ID] = gr
 	}
 
-	for _, us := range res.Users {
-		if _, exists := resources.Users[us.Email.Value()]; exists {
+	for _, us := range sourceResources.Users {
+		if _, exists := targetResources.Users[us.Email.Value()]; exists {
 			return fmt.Errorf("user with email '%s' already defined in another project", us.Email)
 		}
-		resources.Users[us.Email.Value()] = us
+		targetResources.Users[us.Email.Value()] = us
 	}
 
 	if featureflags.ServiceUsers.Enabled() {
-		for _, su := range res.ServiceUsers {
-			for _, existingServiceUser := range resources.ServiceUsers {
+		for _, su := range sourceResources.ServiceUsers {
+			for _, existingServiceUser := range targetResources.ServiceUsers {
 				if err := verifyServiceUsersAreNotAmbiguous(su, existingServiceUser); err != nil {
 					return err
 				}
 			}
-			resources.ServiceUsers = append(resources.ServiceUsers, su)
+			targetResources.ServiceUsers = append(targetResources.ServiceUsers, su)
 		}
 	}
 	return nil
