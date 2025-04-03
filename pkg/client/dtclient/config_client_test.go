@@ -47,6 +47,13 @@ var testSyntheticApi = api.API{ID: "synthetic-monitor", URLPath: "/api/environme
 
 var testNetworkZoneApi = api.API{ID: "network-zone"}
 
+var retrySettings = RetrySettings{
+	Normal: RetrySetting{
+		WaitTime:   0,
+		MaxRetries: 3,
+	},
+}
+
 func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 
 	entry := make(map[string]interface{})
@@ -352,7 +359,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			}))
 			defer server.Close()
 
-			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), nil)
+			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(retrySettings))
 			_, got, err := dtclient.ExistsWithName(t.Context(), testApi, tt.givenObjectName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
@@ -637,13 +644,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 			}))
 			defer server.Close()
 			testApi := api.API{ID: tt.apiKey}
-			s := RetrySettings{
-				Normal: RetrySetting{
-					WaitTime:   0,
-					MaxRetries: 3,
-				},
-			}
-			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(s))
+			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(retrySettings))
 
 			_, _, err := dtclient.ExistsWithName(t.Context(), testApi, "")
 			if tt.expectError {
