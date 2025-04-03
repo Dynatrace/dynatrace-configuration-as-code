@@ -68,7 +68,7 @@ func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefi
 		if featureflags.ServiceUsers.Enabled() {
 			for _, su := range res.ServiceUsers {
 				for _, existingServiceUser := range resources.ServiceUsers {
-					if err := verifySerivceUsersAreNotAmbiguous(su, existingServiceUser); err != nil {
+					if err := verifyServiceUsersAreNotAmbiguous(su, existingServiceUser); err != nil {
 						return nil, err
 					}
 				}
@@ -207,7 +207,7 @@ func addResourcesFromFile(res *account.Resources, file persistence.File) error {
 		for _, su := range file.ServiceUsers {
 			serviceUser := transformServiceUser(su)
 			for _, existingServiceUser := range res.ServiceUsers {
-				if err := verifySerivceUsersAreNotAmbiguous(existingServiceUser, serviceUser); err != nil {
+				if err := verifyServiceUsersAreNotAmbiguous(existingServiceUser, serviceUser); err != nil {
 					return err
 				}
 			}
@@ -218,8 +218,8 @@ func addResourcesFromFile(res *account.Resources, file persistence.File) error {
 	return nil
 }
 
-// verifySerivceUsersAreNotAmbiguous returns an error iff the two objects could refer to the same underlying service users.
-func verifySerivceUsersAreNotAmbiguous(su1 account.ServiceUser, su2 account.ServiceUser) error {
+// verifyServiceUsersAreNotAmbiguous returns an error iff the two objects could refer to the same underlying service users.
+func verifyServiceUsersAreNotAmbiguous(su1 account.ServiceUser, su2 account.ServiceUser) error {
 	// if they both have origin object ids that are the same they are ambiguous
 	if (su1.OriginObjectID != "") && (su2.OriginObjectID != "") && (su1.OriginObjectID == su2.OriginObjectID) {
 		return fmt.Errorf("multiple service users with the same originObjectId '%s'", su1.OriginObjectID)
