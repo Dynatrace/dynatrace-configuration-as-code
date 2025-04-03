@@ -1,0 +1,5 @@
+service-users:
+  - name: service-user
+    description: A service user
+    groups:
+      - Default Group
