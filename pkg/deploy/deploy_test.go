@@ -24,8 +24,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
-
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
@@ -1473,7 +1472,7 @@ func TestLogResponseErrors(t *testing.T) {
 		},
 	}
 	logSpy := bytes.Buffer{}
-	log.SetDefaultLogger(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy})
+	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), false, &logSpy, false, false)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
