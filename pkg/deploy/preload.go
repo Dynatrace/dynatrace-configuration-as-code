@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -30,28 +29,27 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
-type preloadConfigTypeEntry struct {
-	configType config.Type
-	clientset  *client.ClientSet
-}
-
 // preloadCaches fills the caches of the specified clients for the config types used in the given projects.
-func preloadCaches(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients) {
+func preloadCaches(ctx context.Context, projects []project.Project, clientSet *client.ClientSet, environment string) {
 	var wg sync.WaitGroup
-	for _, p := range gatherPreloadConfigTypeEntries(projects, environmentClients) {
+	for _, c := range gatherPreloadConfigTypeEntries(projects, environment) {
 		wg.Add(1)
-		go func(p preloadConfigTypeEntry) {
+		go func(configType config.Type) {
 			defer wg.Done()
 
-			switch t := p.configType.(type) {
+			switch t := configType.(type) {
 			case config.SettingsType:
-				preloadSettingsValuesForSchemaId(ctx, p.clientset.SettingsClient, t.SchemaId)
+				if clientSet.SettingsClient != nil {
+					preloadSettingsValuesForSchemaId(ctx, clientSet.SettingsClient, t.SchemaId)
+				}
 
 			case config.ClassicApiType:
-				preloadValuesForApi(ctx, p.clientset.ConfigClient, t.Api)
+				if clientSet.ConfigClient != nil {
+					preloadValuesForApi(ctx, clientSet.ConfigClient, t.Api)
+				}
 			}
 
-		}(p)
+		}(c)
 	}
 	wg.Wait()
 }
@@ -89,35 +87,29 @@ func preloadValuesForApi(ctx context.Context, client client.ConfigClient, theApi
 }
 
 // gatherPreloadConfigTypeEntries scans the projects to determine which config types should be cached by which clients.
-func gatherPreloadConfigTypeEntries(projects []project.Project, environmentClients dynatrace.EnvironmentClients) []preloadConfigTypeEntry {
-	preloads := []preloadConfigTypeEntry{}
-	for environmentInfo, environmentClientSet := range environmentClients {
-		seenConfigTypes := map[string]struct{}{}
+func gatherPreloadConfigTypeEntries(projects []project.Project, environment string) []config.Type {
+	preloads := make([]config.Type, 0)
+	seenConfigTypes := map[string]struct{}{}
 
-		for _, project := range projects {
-			project.ForEveryConfigInEnvironmentDo(environmentInfo.Name, func(c config.Config) {
-				// If the config shall be skipped there is no point in caching it
-				if c.Skip {
-					return
-				}
-				if _, ok := seenConfigTypes[c.Coordinate.Type]; ok {
-					return
-				}
-				seenConfigTypes[c.Coordinate.Type] = struct{}{}
+	for _, p := range projects {
+		p.ForEveryConfigInEnvironmentDo(environment, func(c config.Config) {
+			// If the config shall be skipped there is no point in caching it
+			if c.Skip {
+				return
+			}
+			if _, ok := seenConfigTypes[c.Coordinate.Type]; ok {
+				return
+			}
+			seenConfigTypes[c.Coordinate.Type] = struct{}{}
 
-				switch t := c.Type.(type) {
-				case config.ClassicApiType:
-					if environmentClientSet.ConfigClient != nil {
-						preloads = append(preloads, preloadConfigTypeEntry{configType: t, clientset: environmentClientSet})
-					}
+			switch t := c.Type.(type) {
+			case config.ClassicApiType:
+				preloads = append(preloads, t)
 
-				case config.SettingsType:
-					if environmentClientSet.SettingsClient != nil {
-						preloads = append(preloads, preloadConfigTypeEntry{configType: t, clientset: environmentClientSet})
-					}
-				}
-			})
-		}
+			case config.SettingsType:
+				preloads = append(preloads, t)
+			}
+		})
 	}
 	return preloads
 }
