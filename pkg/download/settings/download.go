@@ -217,7 +217,11 @@ func getObjectsPermission(ctx context.Context, client client.SettingsClient, obj
 		permissions[res.ObjectId] = res.Permission
 	}
 
-	return permissions, errors.Join(errs...)
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+
+	return permissions, nil
 }
 
 func asConcurrentErrMsg(err coreapi.APIError) string {
