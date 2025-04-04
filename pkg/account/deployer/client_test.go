@@ -713,7 +713,7 @@ func TestClient_UpdateGroupBindings(t *testing.T) {
 		assert.Equal(t, 1, server.Calls())
 	})
 
-	t.Run("Update Grou pBindings - API call fails", func(t *testing.T) {
+	t.Run("Update Group Bindings - API call fails", func(t *testing.T) {
 		responses := []testutils.ResponseDef{
 			{
 				PUT: func(t *testing.T, request *http.Request) testutils.Response {
@@ -1172,4 +1172,36 @@ func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
 		assert.Equal(t, 4, server.Calls())
 	})
 
+}
+
+func TestClient_UpsertServiceUser(t *testing.T) {
+	/*
+		func TestClient_UpsertUser_UserAlreadyExists(t *testing.T) {
+		func TestClient_UpsertUser_Get_Existing_Users_Fails(t *testing.T) {
+		func TestClient_UpsertUser_CreateNewUser(t *testing.T) {
+		func TestClient_UpsertUser_CreatingNewFails(t *testing.T) {
+	*/
+	t.Run("Update Group Permissions - OK", func(t *testing.T) {
+	})
+}
+
+func TestClient_GetServiceUserEmailByUid(t *testing.T) {
+
+	// OK
+	// NONE
+	// TWO
+	// CALL FAILS
+
+	t.Run("Update Group Permissions - OK", func(t *testing.T) {
+	})
+}
+func TestClient_getServiceUserEmailByName(t *testing.T) {
+
+	// OK
+	// NONE
+	// TWO
+	// CALL FAILS
+
+	t.Run("Update Group Permissions - OK", func(t *testing.T) {
+	})
 }

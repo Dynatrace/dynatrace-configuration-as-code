@@ -63,6 +63,9 @@ type client interface {
 	upsertPolicy(ctx context.Context, policyLevel string, policyLevelId string, policyId string, policy Policy) (remoteId, error)
 	upsertGroup(ctx context.Context, groupId string, group Group) (remoteId, error)
 	upsertUser(ctx context.Context, userId string) (remoteId, error)
+	upsertServiceUser(ctx context.Context, serviceUserId string, serviceUser ServiceUser) (remoteId, error)
+	getServiceUserEmailByUid(ctx context.Context, uid string) (string, error)
+	getServiceUserEmailByName(ctx context.Context, name string) (string, error)
 	updateAccountPolicyBindings(ctx context.Context, groupId string, policyIds []string) error
 	updateEnvironmentPolicyBindings(ctx context.Context, envName string, groupId string, policyIds []string) error
 	deleteAllEnvironmentPolicyBindings(ctx context.Context, groupId string) error
@@ -148,9 +151,9 @@ func (d *AccountDeployer) deployResources(ctx context.Context, res *account.Reso
 	d.deployPolicies(ctx, res.Policies, dispatcher)
 	d.deployGroups(ctx, res.Groups, dispatcher)
 	d.deployUsers(ctx, res.Users, dispatcher)
+	d.deployServiceUsers(ctx, res.ServiceUsers, dispatcher)
 
 	return dispatcher.Wait()
-
 }
 
 func (d *AccountDeployer) updateBindings(ctx context.Context, res *account.Resources) error {
@@ -160,6 +163,7 @@ func (d *AccountDeployer) updateBindings(ctx context.Context, res *account.Resou
 
 	d.deployGroupBindings(ctx, res.Groups, dispatcher)
 	d.deployUserBindings(ctx, res.Users, dispatcher)
+	d.deployServiceUserBindings(ctx, res.ServiceUsers, dispatcher)
 	return dispatcher.Wait()
 
 }
@@ -249,6 +253,21 @@ func (d *AccountDeployer) deployUsers(ctx context.Context, users map[string]acco
 	}
 }
 
+func (d *AccountDeployer) deployServiceUsers(ctx context.Context, serviceUsers []account.ServiceUser, dispatcher *Dispatcher) {
+	for _, serviceUser := range serviceUsers {
+		serviceUser := serviceUser
+		deployServiceUserJob := func(wg *sync.WaitGroup, errCh chan error) {
+			defer wg.Done()
+			d.logger.Info("Deploying service user %s", serviceUser.Name)
+			if _, err := d.upsertServiceUser(d.logCtx(ctx), serviceUser); err != nil {
+				errCh <- fmt.Errorf("unable to deploy service user for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+			}
+		}
+		dispatcher.AddJob(deployServiceUserJob)
+
+	}
+}
+
 func (d *AccountDeployer) deployGroupBindings(ctx context.Context, groups map[account.GroupId]account.Group, dispatcher *Dispatcher) {
 	for _, group := range groups {
 		group := group
@@ -286,6 +305,22 @@ func (d *AccountDeployer) deployUserBindings(ctx context.Context, users map[acco
 
 	}
 }
+
+func (d *AccountDeployer) deployServiceUserBindings(ctx context.Context, serviceUsers []account.ServiceUser, dispatcher *Dispatcher) {
+	for _, serviceUser := range serviceUsers {
+		serviceUser := serviceUser
+		deployUserBindingsJob :=
+			func(wg *sync.WaitGroup, errCh chan error) {
+				defer wg.Done()
+				d.logger.Info("Updating group bindings for service user %s", serviceUser.Name)
+				if err := d.updateServiceUserGroupBindings(d.logCtx(ctx), serviceUser); err != nil {
+					errCh <- fmt.Errorf("unable to deploy user binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+				}
+			}
+		dispatcher.AddJob(deployUserBindingsJob)
+	}
+}
+
 func (d *AccountDeployer) upsertPolicy(ctx context.Context, policy account.Policy) (remoteId, error) {
 	var policyLevel string
 	var policyLevelID string
@@ -318,6 +353,15 @@ func (d *AccountDeployer) upsertGroup(ctx context.Context, group account.Group) 
 
 func (d *AccountDeployer) upsertUser(ctx context.Context, user account.User) (remoteId, error) {
 	return d.accClient.upsertUser(ctx, user.Email.Value())
+}
+
+func (d *AccountDeployer) upsertServiceUser(ctx context.Context, serviceUser account.ServiceUser) (remoteId, error) {
+	data := accountmanagement.ServiceUserDto{
+		Name:        serviceUser.Name,
+		Description: &serviceUser.Description,
+	}
+
+	return d.accClient.upsertServiceUser(ctx, serviceUser.OriginObjectID, data)
 }
 
 func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group account.Group) error {
@@ -365,6 +409,30 @@ func (d *AccountDeployer) updateUserGroupBindings(ctx context.Context, user acco
 		return err
 	}
 	return nil
+}
+
+func (d *AccountDeployer) updateServiceUserGroupBindings(ctx context.Context, serviceUser account.ServiceUser) error {
+	remoteGroupIds, err := d.getServiceUserGroupRefs(serviceUser)
+	if err != nil {
+		return err
+	}
+
+	email, err := d.getServiceUserEmail(ctx, serviceUser)
+	if err != nil {
+		return err
+	}
+
+	if err := d.accClient.updateGroupBindings(ctx, email, remoteGroupIds); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *AccountDeployer) getServiceUserEmail(ctx context.Context, serviceUser account.ServiceUser) (string, error) {
+	if serviceUser.OriginObjectID != "" {
+		return d.accClient.getServiceUserEmailByUid(ctx, serviceUser.OriginObjectID)
+	}
+	return d.accClient.getServiceUserEmailByName(ctx, serviceUser.Name)
 }
 
 func (d *AccountDeployer) updateGroupPermissions(ctx context.Context, group account.Group) error {
@@ -476,6 +544,10 @@ func (d *AccountDeployer) getEnvPolicyRefs(group account.Group) (map[envName][]r
 
 func (d *AccountDeployer) getUserGroupRefs(user account.User) ([]remoteId, error) {
 	return d.processItems(user.Groups, d.groupIdLookup)
+}
+
+func (d *AccountDeployer) getServiceUserGroupRefs(serviceUser account.ServiceUser) ([]remoteId, error) {
+	return d.processItems(serviceUser.Groups, d.groupIdLookup)
 }
 
 func (d *AccountDeployer) processItems(items []account.Ref, remoteIdLookup idLookupFn) ([]remoteId, error) {
