@@ -713,7 +713,7 @@ func TestClient_UpdateGroupBindings(t *testing.T) {
 		assert.Equal(t, 1, server.Calls())
 	})
 
-	t.Run("Update Grou pBindings - API call fails", func(t *testing.T) {
+	t.Run("Update Group Bindings - API call fails", func(t *testing.T) {
 		responses := []testutils.ResponseDef{
 			{
 				PUT: func(t *testing.T, request *http.Request) testutils.Response {
