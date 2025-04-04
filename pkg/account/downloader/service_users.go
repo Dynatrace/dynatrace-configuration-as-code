@@ -44,7 +44,7 @@ func (a *Downloader) serviceUsers(ctx context.Context, groups Groups) (ServiceUs
 
 	retVal := make(ServiceUsers, 0, len(dtos))
 	for _, dto := range dtos {
-		log.WithCtxFields(ctx).Debug("Downloading details for user %q", dto.Name)
+		log.WithCtxFields(ctx).Debug("Downloading details for service user %q", dto.Name)
 		dtoGroups, err := a.httpClient.GetGroupsForUser(ctx, dto.Email, a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get a list of bind groups for service user %q: %w", dto.Name, err)
@@ -55,7 +55,7 @@ func (a *Downloader) serviceUsers(ctx context.Context, groups Groups) (ServiceUs
 
 		su := &account.ServiceUser{
 			Name:           dto.Name,
-			OriginObjectID: dtoGroups.Uid,
+			OriginObjectID: dto.Uid,
 			Description:    dto.GetDescription(),
 			Groups:         groups.refFromDTOs(dtoGroups.Groups),
 		}
@@ -71,10 +71,10 @@ func (a *Downloader) serviceUsers(ctx context.Context, groups Groups) (ServiceUs
 	return retVal, nil
 }
 
-func (sus ServiceUsers) asAccountServiceUsers() map[account.ServiceUserId]account.ServiceUser {
-	retVal := make(map[account.ServiceUserId]account.ServiceUser, len(sus))
+func (sus ServiceUsers) asAccountServiceUsers() []account.ServiceUser {
+	retVal := make([]account.ServiceUser, 0, len(sus))
 	for _, su := range sus {
-		retVal[su.serviceUser.Name] = *su.serviceUser
+		retVal = append(retVal, *su.serviceUser)
 	}
 	return retVal
 }

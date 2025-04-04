@@ -38,44 +38,54 @@ var ErrMixingDelete = errors.New("mixing account resources with a delete file de
 
 // LoadResources loads and merges resources from the specified projects assumed to be located within the specified working directory.
 func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefinitionByProjectID) (*account.Resources, error) {
-	resources := account.NewAccountManagementResources()
+	allResources := account.NewAccountManagementResources()
 	for _, p := range projects {
-		res, err := Load(fs, path.Join(workingDir, p.Path))
+		projectResources, err := Load(fs, path.Join(workingDir, p.Path))
 		if err != nil {
-			return nil, err
-		}
-		for _, pol := range res.Policies {
-			if _, exists := resources.Policies[pol.ID]; exists {
-				return nil, fmt.Errorf("policy with id %q already defined in another project", pol.ID)
-			}
-			resources.Policies[pol.ID] = pol
+			return nil, fmt.Errorf("unable to load resources from project '%s': %w", p.Name, err)
 		}
 
-		for _, gr := range res.Groups {
-			if _, exists := resources.Groups[gr.ID]; exists {
-				return nil, fmt.Errorf("group with id %q already defined in another project", gr.ID)
-			}
-			resources.Groups[gr.ID] = gr
-		}
-
-		for _, us := range res.Users {
-			if _, exists := resources.Users[us.Email.Value()]; exists {
-				return nil, fmt.Errorf("user with email %q already defined in another project", us.Email)
-			}
-			resources.Users[us.Email.Value()] = us
-		}
-
-		if featureflags.ServiceUsers.Enabled() {
-			for _, su := range res.ServiceUsers {
-				if _, exists := resources.ServiceUsers[su.Name]; exists {
-					return nil, fmt.Errorf("service user with name %q already defined in another project", su.Name)
-				}
-				resources.ServiceUsers[su.Name] = su
-			}
+		if err := addProjectResources(allResources, projectResources); err != nil {
+			return nil, fmt.Errorf("unable to add resources from project '%s': %w", p.Name, err)
 		}
 	}
 
-	return resources, nil
+	return allResources, nil
+}
+
+func addProjectResources(targetResources *account.Resources, sourceResources *account.Resources) error {
+	for _, pol := range sourceResources.Policies {
+		if _, exists := targetResources.Policies[pol.ID]; exists {
+			return fmt.Errorf("policy with id '%s' already defined in another project", pol.ID)
+		}
+		targetResources.Policies[pol.ID] = pol
+	}
+
+	for _, gr := range sourceResources.Groups {
+		if _, exists := targetResources.Groups[gr.ID]; exists {
+			return fmt.Errorf("group with id '%s' already defined in another project", gr.ID)
+		}
+		targetResources.Groups[gr.ID] = gr
+	}
+
+	for _, us := range sourceResources.Users {
+		if _, exists := targetResources.Users[us.Email.Value()]; exists {
+			return fmt.Errorf("user with email '%s' already defined in another project", us.Email)
+		}
+		targetResources.Users[us.Email.Value()] = us
+	}
+
+	if featureflags.ServiceUsers.Enabled() {
+		for _, su := range sourceResources.ServiceUsers {
+			for _, existingServiceUser := range targetResources.ServiceUsers {
+				if err := verifyServiceUsersAreNotAmbiguous(su, existingServiceUser); err != nil {
+					return err
+				}
+			}
+			targetResources.ServiceUsers = append(targetResources.ServiceUsers, su)
+		}
+	}
+	return nil
 }
 
 // Load loads account management resources from YAML configuration files
@@ -112,7 +122,7 @@ func findAndLoadResources(fs afero.Fs, rootPath string) (*account.Resources, err
 		Policies:     make(map[string]account.Policy),
 		Groups:       make(map[string]account.Group),
 		Users:        make(map[string]account.User),
-		ServiceUsers: make(map[string]account.ServiceUser),
+		ServiceUsers: make([]account.ServiceUser, 0),
 	}
 
 	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
@@ -121,8 +131,6 @@ func findAndLoadResources(fs afero.Fs, rootPath string) (*account.Resources, err
 	}
 
 	for _, yamlFilePath := range yamlFilePaths {
-		log.WithFields(field.F("file", yamlFilePaths)).Debug("Loading file %q", yamlFilePath)
-
 		file, err := loadFile(fs, yamlFilePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load file %q: %w", yamlFilePath, err)
@@ -205,12 +213,36 @@ func addResourcesFromFile(res *account.Resources, file persistence.File) error {
 
 	if featureflags.ServiceUsers.Enabled() {
 		for _, su := range file.ServiceUsers {
-			if _, exists := res.ServiceUsers[su.Name]; exists {
-				return fmt.Errorf("found duplicate service user with name %q", su.Name)
+			serviceUser := transformServiceUser(su)
+			for _, existingServiceUser := range res.ServiceUsers {
+				if err := verifyServiceUsersAreNotAmbiguous(existingServiceUser, serviceUser); err != nil {
+					return err
+				}
 			}
-			res.ServiceUsers[su.Name] = transformServiceUser(su)
+			res.ServiceUsers = append(res.ServiceUsers, serviceUser)
 		}
 	}
 
+	return nil
+}
+
+// verifyServiceUsersAreNotAmbiguous returns an error iff the two objects could refer to the same underlying service users.
+func verifyServiceUsersAreNotAmbiguous(su1 account.ServiceUser, su2 account.ServiceUser) error {
+	// if they both have origin object ids that are the same they are ambiguous
+	if (su1.OriginObjectID != "") && (su2.OriginObjectID != "") && (su1.OriginObjectID == su2.OriginObjectID) {
+		return fmt.Errorf("multiple service users with the same originObjectId '%s'", su1.OriginObjectID)
+	}
+
+	// if they have different names they are not ambiguous
+	if su1.Name != su2.Name {
+		return nil
+	}
+
+	// if they have the same name but one or both are missing originObjectIds they are ambiguous
+	if su1.OriginObjectID == "" || su2.OriginObjectID == "" {
+		return fmt.Errorf("multiple service users with name '%s' but at least one is without originObjectId", su1.Name)
+	}
+
+	// other combinations are OK
 	return nil
 }
