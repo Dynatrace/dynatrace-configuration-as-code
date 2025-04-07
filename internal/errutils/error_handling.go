@@ -77,9 +77,3 @@ func PrintWarning(err error) {
 		log.WithFields(field.Error(err)).Warn(err.Error())
 	}
 }
-
-func PrintWarnings(errors []error) {
-	for _, err := range errors {
-		PrintWarning(err)
-	}
-}

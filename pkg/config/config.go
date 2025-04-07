@@ -78,10 +78,6 @@ type Config struct {
 	Template template.Template
 	// coordinates which specify the location of this configuration
 	Coordinate coordinate.Coordinate
-	// group this config belongs to
-	Group string
-	// name of the environment this configuration is for
-	Environment string
 	// Type holds information of the underlying config type (classic, settings, entities)
 	Type Type
 	// map of all parameters which will be resolved and are then available
@@ -108,11 +104,7 @@ func (c *Config) Render(properties map[string]interface{}) (string, error) {
 	renderedConfig, err := template.Render(c.Template, properties)
 	if err != nil {
 		return "", configErrors.InvalidJsonError{
-			Location: c.Coordinate,
-			EnvironmentDetails: configErrors.EnvironmentDetails{
-				Group:       c.Group,
-				Environment: c.Environment,
-			},
+			Location:         c.Coordinate,
 			Err:              err,
 			TemplateFilePath: templatePath,
 		}
@@ -120,18 +112,12 @@ func (c *Config) Render(properties map[string]interface{}) (string, error) {
 
 	err = json.ValidateJson(renderedConfig, json.Location{
 		Coordinate:       c.Coordinate,
-		Group:            c.Group,
-		Environment:      c.Environment,
 		TemplateFilePath: templatePath,
 	})
 
 	if err != nil {
 		return "", configErrors.InvalidJsonError{
-			Location: c.Coordinate,
-			EnvironmentDetails: configErrors.EnvironmentDetails{
-				Group:       c.Group,
-				Environment: c.Environment,
-			},
+			Location:         c.Coordinate,
 			Err:              err,
 			TemplateFilePath: templatePath,
 		}

@@ -17,15 +17,15 @@
 package config
 
 import (
+	s "sort"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	s "sort"
-	"strings"
 )
 
 func getSortedParameters(c *Config) ([]parameter.NamedParameter, []error) {
@@ -51,11 +51,7 @@ func getSortedParameters(c *Config) ([]parameter.NamedParameter, []error) {
 			param := parametersWithName[sortErr.OnId]
 
 			errs[i] = &CircularDependencyParameterSortError{
-				Location: c.Coordinate,
-				EnvironmentDetails: errors.EnvironmentDetails{
-					Group:       c.Group,
-					Environment: c.Environment,
-				},
+				Location:      c.Coordinate,
 				ParameterName: param.Name,
 				DependsOn:     param.Parameter.GetReferences(),
 			}

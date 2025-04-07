@@ -18,9 +18,9 @@ package loader
 
 import (
 	"errors"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
 
 var ErrMixingConfigs = errors.New("mixing both configurations and account resources is not allowed")
@@ -44,20 +44,18 @@ func newDefinitionParserError(configId string, context *singleConfigEntryLoadCon
 	}
 }
 
-func newDetailedDefinitionParserError(configId string, context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
+func newDetailedDefinitionParserError(configId string, context *singleConfigEntryLoadContext,
 	reason string) configErrors.DetailedDefinitionParserError {
 
 	return configErrors.DetailedDefinitionParserError{
 		DefinitionParserError: newDefinitionParserError(configId, context, reason),
-		EnvironmentDetails:    configErrors.EnvironmentDetails{Group: environment.Group, Environment: environment.Name},
 	}
 }
 
-func newParameterDefinitionParserError(name string, configId string, context *singleConfigEntryLoadContext,
-	environment manifest.EnvironmentDefinition, reason string) configErrors.ParameterDefinitionParserError {
+func newParameterDefinitionParserError(name string, configId string, context *singleConfigEntryLoadContext, reason string) configErrors.ParameterDefinitionParserError {
 
 	return configErrors.ParameterDefinitionParserError{
-		DetailedDefinitionParserError: newDetailedDefinitionParserError(configId, context, environment, reason),
+		DetailedDefinitionParserError: newDetailedDefinitionParserError(configId, context, reason),
 		ParameterName:                 name,
 	}
 }

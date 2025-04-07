@@ -25,14 +25,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
 // preloadCaches fills the caches of the specified clients for the config types used in the given projects.
-func preloadCaches(ctx context.Context, projects []project.Project, clientSet *client.ClientSet, environment string) {
+func preloadCaches(ctx context.Context, env v2.Environment, clientSet *client.ClientSet) {
 	var wg sync.WaitGroup
-	for _, c := range gatherPreloadConfigTypeEntries(projects, environment) {
+	for _, c := range gatherPreloadConfigTypeEntries(env) {
 		wg.Add(1)
 		go func(configType config.Type) {
 			defer wg.Done()
@@ -87,12 +87,12 @@ func preloadValuesForApi(ctx context.Context, client client.ConfigClient, theApi
 }
 
 // gatherPreloadConfigTypeEntries scans the projects to determine which config types should be cached by which clients.
-func gatherPreloadConfigTypeEntries(projects []project.Project, environment string) []config.Type {
+func gatherPreloadConfigTypeEntries(env v2.Environment) []config.Type {
 	preloads := make([]config.Type, 0)
 	seenConfigTypes := map[string]struct{}{}
 
-	for _, p := range projects {
-		p.ForEveryConfigInEnvironmentDo(environment, func(c config.Config) {
+	for _, p := range env.Projects {
+		p.ForEveryConfigDo(func(c config.Config) {
 			// If the config shall be skipped there is no point in caching it
 			if c.Skip {
 				return

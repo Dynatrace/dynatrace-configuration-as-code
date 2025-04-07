@@ -18,6 +18,11 @@ package deletefile
 
 import (
 	"fmt"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
@@ -27,9 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
-	"path/filepath"
 )
 
 func Command(fs afero.Fs) (cmd *cobra.Command) {
@@ -68,7 +70,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 			}
 
 			apis := api.NewAPIs().Filter(api.RemoveDisabled)
-			loadedProjects, errs := project.LoadProjects(cmd.Context(), fs, project.ProjectLoaderContext{
+			loadedEnvironments, errs := project.LoadEnvironments(cmd.Context(), fs, project.ProjectLoaderContext{
 				KnownApis:       apis.GetApiNameLookup(),
 				WorkingDir:      filepath.Dir(manifestName),
 				Manifest:        m,
@@ -80,19 +82,20 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 				return fmt.Errorf("failed to load projects")
 			}
 
+			filteredEnvironments := filterEnvs(loadedEnvironments, environments)
+
 			options := createDeleteFileOptions{
-				environmentNames: environments,
-				fileName:         fileName,
-				includeTypes:     includeTypes,
-				excludeTypes:     excludeTypes,
-				outputFolder:     outputFolder,
+				fileName:     fileName,
+				includeTypes: includeTypes,
+				excludeTypes: excludeTypes,
+				outputFolder: outputFolder,
 			}
 
 			// dashboard-share-settings and OpenPipeline configurations are excluded per default, as they cannot be deleted,
 			// hence it makes no sense to generate delete entries for it
 			options.excludeTypes = append(options.excludeTypes, api.DashboardShareSettings, string(config.OpenPipelineTypeID))
 
-			return createDeleteFile(fs, loadedProjects, apis, options)
+			return createDeleteFile(fs, filteredEnvironments, apis, options)
 		},
 	}
 
@@ -111,4 +114,15 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 	}
 
 	return cmd
+}
+
+func filterEnvs(environments []project.Environment, selectedEnvs []string) []project.Environment {
+	filteredEnvs := make([]project.Environment, 0, len(selectedEnvs))
+	selectedEnvMap := toStrLookupMap(selectedEnvs)
+	for _, env := range environments {
+		if _, ok := selectedEnvMap[env.Name]; ok {
+			filteredEnvs = append(filteredEnvs, env)
+		}
+	}
+	return filteredEnvs
 }

@@ -18,10 +18,11 @@ package errors
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
-	"strings"
 )
 
 var (
@@ -30,7 +31,6 @@ var (
 
 type ConfigDeployErr struct {
 	Location           coordinate.Coordinate           `json:"location"`
-	EnvironmentDetails configErrors.EnvironmentDetails `json:"environmentDetails"`
 	Reason             string                          `json:"reason"`
 	Err                error                           `json:"error"`
 }
@@ -38,10 +38,6 @@ type ConfigDeployErr struct {
 func NewConfigDeployErr(conf *config.Config, reason string) ConfigDeployErr {
 	return ConfigDeployErr{
 		Location: conf.Coordinate,
-		EnvironmentDetails: configErrors.EnvironmentDetails{
-			Group:       conf.Group,
-			Environment: conf.Environment,
-		},
 		Reason: reason,
 	}
 }
@@ -53,10 +49,6 @@ func (e ConfigDeployErr) WithError(err error) ConfigDeployErr {
 
 func (e ConfigDeployErr) Coordinates() coordinate.Coordinate {
 	return e.Location
-}
-
-func (e ConfigDeployErr) LocationDetails() configErrors.EnvironmentDetails {
-	return e.EnvironmentDetails
 }
 
 func (e ConfigDeployErr) Unwrap() error {

@@ -20,6 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -30,8 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"path/filepath"
 )
 
 // ExportError is returned in case any error occurs while creating a dependency graph file
@@ -72,7 +74,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		}
 	}
 
-	projects, errs := project.LoadProjects(ctx, fs, project.ProjectLoaderContext{
+	environments, errs := project.LoadEnvironments(ctx, fs, project.ProjectLoaderContext{
 		KnownApis:       api.NewAPIs().GetApiNameLookup(),
 		WorkingDir:      filepath.Dir(manifestPath),
 		Manifest:        m,
@@ -102,8 +104,6 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		})
 	}
 
-	graphs := graph.New(projects, m.Environments.Names(), opts...)
-
 	folderPath, err := filepath.Abs(outputFolder)
 	if err != nil {
 		return ExportError{
@@ -126,23 +126,24 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		}
 	}
 
-	for _, e := range m.Environments.Names() {
-		b, err := graphs.EncodeToDOT(e)
+	for _, e := range environments {
+		g := graph.New(e.AllConfigs(), opts...)
+		b, err := graph.EncodeToDOT(g, e.Name)
 		if err != nil {
 			return ExportError{
 				ManifestFile: manifestPath,
-				Environment:  e,
-				message:      fmt.Sprintf("failed to encode dependency graph to DOT for environment %q", e),
+				Environment:  e.Name,
+				message:      fmt.Sprintf("failed to encode dependency graph to DOT for environment %q", e.Name),
 				Reason:       err,
 			}
 		}
-		file := filepath.Join(folderPath, fmt.Sprintf("dependency_graph_%s.dot", e))
+		file := filepath.Join(folderPath, fmt.Sprintf("dependency_graph_%s.dot", e.Name))
 
 		exists, err := afero.Exists(fs, file)
 		if err != nil {
 			return ExportError{
 				ManifestFile: manifestPath,
-				Environment:  e,
+				Environment:  e.Name,
 				Filepath:     file,
 				message:      fmt.Sprintf("\"failed to validate if output file %q already exists", file),
 				Reason:       err,
@@ -150,7 +151,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		}
 		if exists {
 			time := timeutils.TimeAnchor().Format("20060102-150405")
-			newFile := filepath.Join(folderPath, fmt.Sprintf("dependency_graph_%s_%s.dot", e, time))
+			newFile := filepath.Join(folderPath, fmt.Sprintf("dependency_graph_%s_%s.dot", e.Name, time))
 			log.WithFields(field.F("file", newFile), field.F("existingFile", file)).Debug("Output file %q already exists, creating %q instead", file, newFile)
 			file = newFile
 		}
@@ -159,13 +160,13 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		if err != nil {
 			return ExportError{
 				ManifestFile: manifestPath,
-				Environment:  e,
+				Environment:  e.Name,
 				Filepath:     file,
 				message:      fmt.Sprintf("failed to create dependency graph file %q", file),
 				Reason:       err,
 			}
 		}
-		log.WithFields(field.F("file", file)).Info("Dependency graph for environment %q written to %q", e, file)
+		log.WithFields(field.F("file", file)).Info("Dependency graph for environment %q written to %q", e.Name, file)
 	}
 
 	return nil

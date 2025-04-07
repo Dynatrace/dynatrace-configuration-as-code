@@ -17,34 +17,35 @@
 package logging
 
 import (
+	"golang.org/x/exp/maps"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-func LogProjectsInfo(projects []project.Project) {
-	log.Info("Projects to be deployed (%d):", len(projects))
-	for _, p := range projects {
+func LogProjectsInfo(envs []v2.Environment) {
+	uniqueProjects := make(map[string]struct{})
+	for _, ev := range envs {
+		for _, p := range ev.Projects {
+			uniqueProjects[p.Id] = struct{}{}
+		}
+	}
+	projectNames := maps.Keys(uniqueProjects)
+	log.Info("Projects to be deployed (%d):", len(projectNames))
+	for _, p := range projectNames {
 		log.Info("  - %s", p)
 	}
 	if log.Level() == loggers.LevelDebug {
-		logConfigInfo(projects)
+		logConfigInfo(envs)
 	}
 }
 
-func logConfigInfo(projects []project.Project) {
-	cfgCount := make(map[string]int)
-	for _, p := range projects {
-		for env, cfgsPerTypePerEnv := range p.Configs {
-			for _, cfgsPerType := range cfgsPerTypePerEnv {
-				cfgCount[env] += len(cfgsPerType)
-			}
-		}
-	}
+func logConfigInfo(envs []v2.Environment) {
 	log.Debug("Configurations per environment:")
-	for env, count := range cfgCount {
-		log.Debug("  - %s:\t%d configurations", env, count)
+	for _, env := range envs {
+		log.Debug("  - %s:\t%d configurations", env, len(env.AllConfigs()))
 	}
 }
 

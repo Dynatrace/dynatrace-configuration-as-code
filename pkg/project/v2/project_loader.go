@@ -74,7 +74,7 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 }
 
 // Tries to load the specified projects. If no project names are specified, all projects are loaded.
-func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, specificProjectNames []string) ([]Project, []error) {
+func LoadEnvironments(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, specificProjectNames []string) ([]Environment, []error) {
 	var workingDirFs afero.Fs
 
 	if loaderContext.WorkingDir == "." {
@@ -92,43 +92,50 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 	projectNamesToLoad, errs := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
 
 	seenProjectNames := make(map[string]struct{}, len(projectNamesToLoad))
-	var loadedProjects []Project
+
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
+	loadedEnvs := make([]Environment, 0, len(environments))
 
-	for len(projectNamesToLoad) > 0 {
-		projectNameToLoad := projectNamesToLoad[0]
-		projectNamesToLoad = projectNamesToLoad[1:]
+	for _, env := range environments {
+		loadedProjects := make([]Project, 0, len(projectNamesToLoad))
 
-		if _, found := seenProjectNames[projectNameToLoad]; found {
-			continue
+		for len(projectNamesToLoad) > 0 {
+			projectNameToLoad := projectNamesToLoad[0]
+			projectNamesToLoad = projectNamesToLoad[1:]
+
+			if _, found := seenProjectNames[projectNameToLoad]; found {
+				continue
+			}
+			seenProjectNames[projectNameToLoad] = struct{}{}
+
+			projectDefinition, found := loaderContext.Manifest.Projects[projectNameToLoad]
+			if !found {
+				continue
+			}
+
+			project, loadProjectErrs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, env)
+
+			if len(loadProjectErrs) > 0 {
+				errs = append(errs, loadProjectErrs...)
+				continue
+			}
+			reporter.ReportInfo(fmt.Sprintf("Project %q loaded", project.String()))
+
+			loadedProjects = append(loadedProjects, project)
+			projectNamesToLoad = append(projectNamesToLoad, project.Dependencies...)
 		}
-		seenProjectNames[projectNameToLoad] = struct{}{}
-
-		projectDefinition, found := loaderContext.Manifest.Projects[projectNameToLoad]
-		if !found {
-			continue
-		}
-
-		project, loadProjectErrs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, environments)
-
-		if len(loadProjectErrs) > 0 {
-			errs = append(errs, loadProjectErrs...)
-			continue
-		}
-		reporter.ReportInfo(fmt.Sprintf("Project %q loaded", project.String()))
-
-		loadedProjects = append(loadedProjects, project)
-
-		for _, environment := range environments {
-			projectNamesToLoad = append(projectNamesToLoad, project.Dependencies[environment.Name]...)
-		}
+		loadedEnvs = append(loadedEnvs, Environment{
+			Projects: loadedProjects,
+			Name:     env.Name,
+			Group:    env.Group,
+		})
 	}
 
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	return loadedProjects, nil
+	return loadedEnvs, nil
 }
 
 // Gets full project names to load specified by project or grouping project names. If none are specified, all project names are returned. Errors are returned for any project names that do not exist.
@@ -178,7 +185,7 @@ func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) 
 	return result
 }
 
-func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
+func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, env manifest.EnvironmentDefinition) (Project, []error) {
 	if exists, err := afero.Exists(fs, projectDefinition.Path); err != nil {
 		formattedErr := fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
@@ -191,7 +198,7 @@ func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderCo
 
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
-	configs, errs := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
+	configs, errs := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, env)
 	for _, err := range errs {
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, err, "", nil)
 	}
@@ -268,11 +275,11 @@ func checkKeyUserActionScope(ctx context.Context, configs []config.Config, confi
 	return errs
 }
 
-func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
+func toConfigMap(configs []config.Config) ConfigsPerType {
 	// find and memorize (non-unique-name) configurations with identical names and set a special parameter on them
 	// to be able to identify them later
 	// splitting is map[environment]map[name]count
-	nonUniqueNameConfigCount := make(map[string]map[string]int)
+	nonUniqueNameConfigCount := make(map[string]int)
 	apis := api.NewAPIs()
 	for _, c := range configs {
 		if c.Type.ID() == config.ClassicApiTypeID && apis[c.Coordinate.Type].NonUniqueName {
@@ -281,39 +288,35 @@ func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 				log.WithFields(field.Error(err), field.Coordinate(c.Coordinate)).Error("Unable to resolve name of configuration")
 			}
 
-			if _, f := nonUniqueNameConfigCount[c.Environment]; !f {
-				nonUniqueNameConfigCount[c.Environment] = make(map[string]int)
-			}
-
 			if nameStr, ok := name.(string); ok {
-				nonUniqueNameConfigCount[c.Environment][nameStr]++
+				nonUniqueNameConfigCount[nameStr]++
 			}
 		}
 	}
 
-	configMap := make(ConfigsPerTypePerEnvironments)
+	configMap := make(ConfigsPerType)
 	for i, conf := range configs {
 		name, _ := config.GetNameForConfig(configs[i])
 		// set special parameter for non-unique configs that appear multiple times with the same name
 		// in order to be able to identify them during deployment
 		if nameStr, ok := name.(string); ok {
-			if nonUniqueNameConfigCount[conf.Environment][nameStr] > 1 {
+			if nonUniqueNameConfigCount[nameStr] > 1 {
 				configs[i].Parameters[config.NonUniqueNameConfigDuplicationParameter] = value.New(true)
 			}
 		}
 
-		if _, found := configMap[conf.Environment]; !found {
-			configMap[conf.Environment] = make(map[string][]config.Config)
+		if _, found := configMap[conf.Coordinate.Type]; !found {
+			configMap[conf.Coordinate.Type] = make([]config.Config, 0)
 		}
 
-		configMap[conf.Environment][conf.Coordinate.Type] = append(configMap[conf.Environment][conf.Coordinate.Type], conf)
+		configMap[conf.Coordinate.Type] = append(configMap[conf.Coordinate.Type], conf)
 	}
 	return configMap
 }
 
 // loadConfigsOfProject returns the (partial if errors) loaded configs and the errors
 func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
-	environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
+	env manifest.EnvironmentDefinition) ([]config.Config, []error) {
 
 	configFiles, err := files.FindYamlFiles(fs, projectDefinition.Path)
 	if err != nil {
@@ -325,7 +328,7 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 
 	loaderContext := &loader.LoaderContext{
 		ProjectId:       projectDefinition.Name,
-		Environments:    environments,
+		Environment:     env,
 		Path:            projectDefinition.Path,
 		KnownApis:       loadingContext.KnownApis,
 		ParametersSerDe: loadingContext.ParametersSerde,
@@ -364,8 +367,8 @@ func toFullyQualifiedConfigIdentifier(config config.Config) string {
 	return fmt.Sprintf("%s:%s:%s", config.Group, config.Environment, config.Coordinate)
 }
 
-func toDependenciesMap(projectId string, configs []config.Config) DependenciesPerEnvironment {
-	result := make(DependenciesPerEnvironment)
+func toDependenciesMap(projectId string, configs []config.Config) []ProjectID {
+	result := make([]ProjectID, 0)
 
 	for _, c := range configs {
 		// ignore skipped configs
@@ -379,8 +382,8 @@ func toDependenciesMap(projectId string, configs []config.Config) DependenciesPe
 				continue
 			}
 
-			if !slices.Contains(result[c.Environment], ref.Project) {
-				result[c.Environment] = append(result[c.Environment], ref.Project)
+			if !slices.Contains(result, ref.Project) {
+				result = append(result, ref.Project)
 			}
 		}
 	}

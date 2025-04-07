@@ -69,16 +69,16 @@ func LoadManifest(t *testing.T, fs afero.Fs, manifestFile string, specificEnviro
 	return m
 }
 
-func LoadProjects(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest) []project.Project {
+func LoadEnvironments(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest) []project.Environment {
 	cwd, err := filepath.Abs(filepath.Dir(manifestPath))
 	assert.NoError(t, err)
 
-	projects, errs := project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
+	environments, errs := project.LoadEnvironments(t.Context(), fs, project.ProjectLoaderContext{
 		KnownApis:       api.NewAPIs().GetApiNameLookup(),
 		WorkingDir:      cwd,
 		Manifest:        loadedManifest,
 		ParametersSerde: config.DefaultParameterParsers,
 	}, nil)
-	testutils.FailTestOnAnyError(t, errs, "loading of projects failed")
-	return projects
+	testutils.FailTestOnAnyError(t, errs, "loading of environments failed")
+	return environments
 }

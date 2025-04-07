@@ -517,8 +517,7 @@ func testForSameProperties(configs []extendedConfigDefinition) propertyCheckResu
 
 type extendedConfigDefinition struct {
 	persistence.ConfigDefinition
-	group       string
-	environment string
+	group string
 }
 
 func toConfigDefinitions(context *serializerContext, configs []config.Config) ([]extendedConfigDefinition, []configTemplate, []error) {

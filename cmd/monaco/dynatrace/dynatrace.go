@@ -171,42 +171,16 @@ type (
 		Group string
 	}
 	// EnvironmentClients is a collection of clients to use for specific environments
-	EnvironmentClients map[EnvironmentInfo]*client.ClientSet
+	EnvironmentClients *client.ClientSet
 )
 
-// Names gives back all environment Names for which the EnvironmentClients has a client sets
-func (e EnvironmentClients) Names() []string {
-	n := make([]string, 0, len(e))
-	for k := range e {
-		n = append(n, k.Name)
-	}
-	return n
-}
-
 // CreateEnvironmentClients gives back clients to use for specific environments
-func CreateEnvironmentClients(ctx context.Context, environments manifest.Environments, dryRun bool) (EnvironmentClients, error) {
-	clients := make(EnvironmentClients, len(environments))
-	for _, env := range environments {
-		if dryRun {
-			clients[EnvironmentInfo{
-				Name:  env.Name,
-				Group: env.Group,
-			}] = &client.DummyClientSet
-			continue
-		}
-
-		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth)
-		if err != nil {
-			return EnvironmentClients{}, err
-		}
-
-		clients[EnvironmentInfo{
-			Name:  env.Name,
-			Group: env.Group,
-		}] = clientSet
+func CreateEnvironmentClient(ctx context.Context, env manifest.EnvironmentDefinition, dryRun bool) (*client.ClientSet, error) {
+	if dryRun {
+		return &client.DummyClientSet, nil
 	}
 
-	return clients, nil
+	return client.CreateClientSet(ctx, env.URL.Value, env.Auth)
 }
 
 func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds clientcredentials.Config) (string, error) {

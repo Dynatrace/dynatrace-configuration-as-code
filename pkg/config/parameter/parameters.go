@@ -39,12 +39,6 @@ type ResolveContext struct {
 	// coordinates of the current config
 	ConfigCoordinate coordinate.Coordinate
 
-	// group of the current config
-	Group string
-
-	// environment of the current config
-	Environment string
-
 	// name of the parameter to resolve
 	ParameterName string
 
@@ -96,8 +90,6 @@ type ParameterParserContext struct {
 type ParameterParserError struct {
 	// Location (coordinate) of the config the error happened in
 	Location coordinate.Coordinate `json:"location"`
-	// EnvironmentDetails of the environment the parsing of the parameter failed for
-	EnvironmentDetails errors.EnvironmentDetails `json:"environmentDetails"`
 	// ParameterName holds the name of the parameter triggering the error
 	ParameterName string `json:"parameterName"`
 	// Reason is a text describing what went wrong
@@ -108,10 +100,6 @@ func (p ParameterParserError) Coordinates() coordinate.Coordinate {
 	return p.Location
 }
 
-func (p ParameterParserError) LocationDetails() errors.EnvironmentDetails {
-	return p.EnvironmentDetails
-}
-
 func (p ParameterParserError) Error() string {
 	return fmt.Sprintf("%s: cannot parse parameter: %s",
 		p.ParameterName, p.Reason)
@@ -119,18 +107,15 @@ func (p ParameterParserError) Error() string {
 
 func NewParameterParserError(context ParameterParserContext, reason string) error {
 	return ParameterParserError{
-		Location:           context.Coordinate,
-		EnvironmentDetails: errors.EnvironmentDetails{Group: context.Group, Environment: context.Environment},
-		ParameterName:      context.ParameterName,
-		Reason:             reason,
+		Location:      context.Coordinate,
+		ParameterName: context.ParameterName,
+		Reason:        reason,
 	}
 }
 
 type ParameterWriterError struct {
 	// Location (coordinate) of the config the error happened in
 	Location coordinate.Coordinate `json:"location"`
-	// EnvironmentDetails of the environment the parsing of the parameter failed for
-	EnvironmentDetails errors.EnvironmentDetails `json:"environmentDetails"`
 	// name of the parameter triggering the error
 	ParameterName string `json:"parameterName"`
 	// text describing what went wrong
@@ -141,10 +126,6 @@ func (p ParameterWriterError) Coordinates() coordinate.Coordinate {
 	return p.Location
 }
 
-func (p ParameterWriterError) LocationDetails() errors.EnvironmentDetails {
-	return p.EnvironmentDetails
-}
-
 func (p ParameterWriterError) Error() string {
 	return fmt.Sprintf("%s: cannot write parameter: %s",
 		p.ParameterName, p.Reason)
@@ -152,10 +133,9 @@ func (p ParameterWriterError) Error() string {
 
 func NewParameterWriterError(context ParameterWriterContext, reason string) error {
 	return &ParameterWriterError{
-		Location:           context.Coordinate,
-		EnvironmentDetails: errors.EnvironmentDetails{Group: context.Group, Environment: context.Environment},
-		ParameterName:      context.ParameterName,
-		Reason:             reason,
+		Location:      context.Coordinate,
+		ParameterName: context.ParameterName,
+		Reason:        reason,
 	}
 }
 
@@ -164,8 +144,6 @@ func NewParameterWriterError(context ParameterWriterContext, reason string) erro
 type ParameterResolveValueError struct {
 	// Location (coordinate) of the config.Config in which a parameter failed to be resolved
 	Location coordinate.Coordinate `json:"location"`
-	// EnvironmentDetails of the environment the resolving failed for
-	EnvironmentDetails errors.EnvironmentDetails `json:"environmentDetails"`
 	// ParameterName is the name of the parameter that failed to be resolved
 	ParameterName string `json:"parameterName"`
 	// Reason describing what went wrong
@@ -176,10 +154,6 @@ func (p ParameterResolveValueError) Coordinates() coordinate.Coordinate {
 	return p.Location
 }
 
-func (p ParameterResolveValueError) LocationDetails() errors.EnvironmentDetails {
-	return p.EnvironmentDetails
-}
-
 func (p ParameterResolveValueError) Error() string {
 	return fmt.Sprintf("%s: cannot parse parameter: %s",
 		p.ParameterName, p.Reason)
@@ -187,10 +161,9 @@ func (p ParameterResolveValueError) Error() string {
 
 func NewParameterResolveValueError(context ResolveContext, reason string) ParameterResolveValueError {
 	return ParameterResolveValueError{
-		Location:           context.ConfigCoordinate,
-		EnvironmentDetails: errors.EnvironmentDetails{Group: context.Group, Environment: context.Environment},
-		ParameterName:      context.ParameterName,
-		Reason:             reason,
+		Location:      context.ConfigCoordinate,
+		ParameterName: context.ParameterName,
+		Reason:        reason,
 	}
 }
 

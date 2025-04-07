@@ -29,7 +29,6 @@ import (
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
 )
 
@@ -54,7 +53,7 @@ func isSupportedParamTypeForSkip(p parameter.Parameter) bool {
 // References holds coordinate-string -> coordinate
 type References map[string]coordinate.Coordinate
 
-func parseParametersAndReferences(fs afero.Fs, context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
+func parseParametersAndReferences(fs afero.Fs, context *singleConfigEntryLoadContext,
 	configId string, parameterMap map[string]persistence.ConfigParameter) (config.Parameters, []error) {
 
 	parameters := make(map[string]parameter.Parameter)
@@ -66,13 +65,13 @@ func parseParametersAndReferences(fs afero.Fs, context *singleConfigEntryLoadCon
 			continue
 		}
 
-		err := validateParameterName(context, environment, configId, name)
+		err := validateParameterName(context, configId, name)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		result, err := parseParameter(fs, context, environment, configId, name, param)
+		result, err := parseParameter(fs, context, configId, name, param)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -80,7 +79,7 @@ func parseParametersAndReferences(fs afero.Fs, context *singleConfigEntryLoadCon
 
 		err = validateParameter(context, name, result)
 		if err != nil {
-			errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, err.Error()))
+			errs = append(errs, newDetailedDefinitionParserError(configId, context, err.Error()))
 			continue
 		}
 
@@ -94,11 +93,11 @@ func parseParametersAndReferences(fs afero.Fs, context *singleConfigEntryLoadCon
 	return parameters, nil
 }
 
-func validateParameterName(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition, configId string, name string) error {
+func validateParameterName(context *singleConfigEntryLoadContext, configId string, name string) error {
 
 	for _, parameterName := range config.ReservedParameterNames {
 		if name == parameterName {
-			return newParameterDefinitionParserError(name, configId, context, environment,
+			return newParameterDefinitionParserError(name, configId, context,
 				fmt.Sprintf("parameter name `%s` is not allowed (reserved)", parameterName))
 		}
 	}
@@ -106,11 +105,11 @@ func validateParameterName(context *singleConfigEntryLoadContext, environment ma
 	return nil
 }
 
-func parseParameter(fs afero.Fs, context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
+func parseParameter(fs afero.Fs, context *singleConfigEntryLoadContext,
 	configId string, name string, param interface{}) (parameter.Parameter, error) {
 
 	if val, ok := param.([]interface{}); ok {
-		ref, err := arrayToReferenceParameter(context, environment, configId, name, val)
+		ref, err := arrayToReferenceParameter(context, configId, name, val)
 
 		if err != nil {
 			return nil, err
@@ -122,7 +121,7 @@ func parseParameter(fs afero.Fs, context *singleConfigEntryLoadContext, environm
 		serDe, found := context.ParametersSerDe[parameterType]
 
 		if !found {
-			return nil, newParameterDefinitionParserError(name, configId, context, environment,
+			return nil, newParameterDefinitionParserError(name, configId, context,
 				fmt.Sprintf("unknown parameter type `%s`", parameterType))
 		}
 
@@ -143,10 +142,10 @@ func parseParameter(fs afero.Fs, context *singleConfigEntryLoadContext, environm
 }
 
 // TODO come up with better way to handle this, as this is a hack
-func arrayToReferenceParameter(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
+func arrayToReferenceParameter(context *singleConfigEntryLoadContext,
 	configId string, parameterName string, arr []interface{}) (parameter.Parameter, error) {
 	if len(arr) == 0 || len(arr) > 4 {
-		return nil, newParameterDefinitionParserError(parameterName, configId, context, environment,
+		return nil, newParameterDefinitionParserError(parameterName, configId, context,
 			fmt.Sprintf("short references must have between 1 and 4 elements. you provided `%d`", len(arr)))
 	}
 

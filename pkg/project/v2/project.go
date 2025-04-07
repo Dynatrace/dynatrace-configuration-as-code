@@ -17,8 +17,11 @@ package v2
 import (
 	"fmt"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 )
 
 type (
@@ -35,11 +38,41 @@ type (
 
 	ProjectID = string
 	// DependenciesPerEnvironment is a map of EnvironmentName to project IDs
-	DependenciesPerEnvironment map[EnvironmentName][]ProjectID
+	DependenciesPerEnvironment []ProjectID
 
 	// ActionOverConfig is a function that will be performed over each config that is part of a project via a Project.ForEveryConfigDo method
 	ActionOverConfig func(c config.Config)
 )
+
+type Environment struct {
+	Projects  []Project
+	Name      string
+	Group     string
+	ClientSet *client.ClientSet
+}
+
+func (e Environment) AllConfigs() []config.Config {
+	configs := make([]config.Config, 0)
+	for _, p := range e.Projects {
+		for cfgs := range p.Configs.AllConfigs {
+			configs = append(configs, cfgs)
+		}
+	}
+	return configs
+}
+
+func (e Environment) ReportForCircularDependencies() error {
+	if _, err := e.GetSortedConfigs(); err != nil {
+		errutils.PrintWarning(err)
+		return fmt.Errorf("there are circular dependencies between configurations that need to be resolved manually")
+	}
+	return nil
+}
+
+func (e Environment) GetSortedConfigs() ([]config.Config, error) {
+	g := graph.New(e.AllConfigs())
+	return graph.SortConfigs(g)
+}
 
 type Project struct {
 	Id string
@@ -48,38 +81,21 @@ type Project struct {
 	GroupId string
 
 	// Configs are the configurations within this Project
-	Configs ConfigsPerTypePerEnvironments
+	Configs ConfigsPerType
 
 	// Dependencies of this project to other projects
-	Dependencies DependenciesPerEnvironment
+	Dependencies []ProjectID
 }
 
 // HasDependencyOn returns whether the project it is called on, has a dependency on the given project, for the given environment
 func (p Project) HasDependencyOn(environment string, project Project) bool {
-	dependencies, found := p.Dependencies[environment]
-
-	if !found {
-		return false
-	}
-
-	for _, dep := range dependencies {
-		if dep == project.Id {
-			return true
-		}
-	}
-
 	return false
 }
 
 // GetConfigFor searches a config object for matching the given coordinate in the
 // current project.
-func (p Project) GetConfigFor(env string, c coordinate.Coordinate) (config.Config, bool) {
-	configsPerEnvironments, f := p.Configs[env]
-	if !f {
-		return config.Config{}, false
-	}
-
-	for cType, configsPerType := range configsPerEnvironments {
+func (p Project) GetConfigFor(c coordinate.Coordinate) (config.Config, bool) {
+	for cType, configsPerType := range p.Configs {
 		if c.Type == cType {
 			for _, cfg := range configsPerType {
 				if cfg.Coordinate.ConfigId == c.ConfigId {
@@ -103,25 +119,14 @@ func (p Project) String() string {
 // ForEveryConfigDo executes the given ActionOverConfig actions for each configuration defined in the project for each environment
 // Actions can not modify the configs inside the Project.
 func (p Project) ForEveryConfigDo(action ActionOverConfig) {
-	p.forEveryConfigDo("", action)
-}
-
-// ForEveryConfigInEnvironmentDo executes the given ActionOverConfig actions for each configuration defined in the project for a given environment.
-// It behaves like ForEveryConfigDo just limited to a single environment.
-// Actions can not modify the configs inside the Project.
-func (p Project) ForEveryConfigInEnvironmentDo(environment string, action ActionOverConfig) {
-	p.forEveryConfigDo(environment, action)
+	p.forEveryConfigDo(action)
 }
 
 // forEveryConfigDo applies the given action to every configuration, either for a single environment if requested,
 // or for all environments if the environemnt parameter is empty.
-func (p Project) forEveryConfigDo(environment string, action ActionOverConfig) {
-	for env, cpt := range p.Configs {
-		if environment == "" || environment == env {
-			for c := range cpt.AllConfigs {
-				action(c)
-			}
-		}
+func (p Project) forEveryConfigDo(action ActionOverConfig) {
+	for c := range p.Configs.AllConfigs {
+		action(c)
 	}
 }
 

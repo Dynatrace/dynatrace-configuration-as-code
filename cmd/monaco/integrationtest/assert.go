@@ -26,7 +26,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 
 	"github.com/stretchr/testify/assert"
 
@@ -45,7 +49,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 )
 
 type entityLookup map[coordinate.Coordinate]entities.ResolvedEntity
@@ -65,20 +68,36 @@ func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (entities.
 	return ent, f
 }
 
+func sortEnvironments(environments []project.Environment) (map[string][]config.Config, []error) {
+	cfgsPerEnv := make(map[string][]config.Config)
+	var errs graph.SortingErrors
+
+	for _, environment := range environments {
+		sortedCfgs, err := environment.GetSortedConfigs()
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		cfgsPerEnv[environment.Name] = sortedCfgs
+	}
+
+	if len(errs) > 0 {
+		return map[string][]config.Config{}, errs
+	}
+	return cfgsPerEnv, nil
+}
+
 // AssertAllConfigsAvailability checks all configurations of a given project with given availability.
 func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool) {
 	loadedManifest := LoadManifest(t, fs, manifestPath, specificEnvironment)
 
-	projects := LoadProjects(t, fs, manifestPath, loadedManifest)
+	environments := LoadEnvironments(t, fs, manifestPath, loadedManifest)
 
 	envNames := make([]string, 0, len(loadedManifest.Environments))
 
 	for _, env := range loadedManifest.Environments {
 		envNames = append(envNames, env.Name)
 	}
-
-	sortedConfigs, errs := sort.ConfigsPerEnvironment(projects, envNames)
-	testutils.FailTestOnAnyError(t, errs, "sorting configurations failed")
 
 	checkString := "exist"
 	if !available {
@@ -93,20 +112,22 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		}
 	} else {
 		log.Info("Asserting configurations from all projects %s", checkString)
-		for _, p := range projects {
-			projectsToValidate[p.Id] = struct{}{}
+		for _, p := range environments {
+			projectsToValidate[p.Name] = struct{}{}
 		}
 	}
 
-	for envName, configs := range sortedConfigs {
+	for _, environment := range environments {
+		sortedConfigs, err := environment.GetSortedConfigs()
+		require.NoError(t, err, "sorting configurations failed")
 
-		env := loadedManifest.Environments[envName]
+		for _, theConfig := range sortedConfigs {
 
-		clients := CreateDynatraceClients(t, env)
+			env := loadedManifest.Environments[environment.Name]
 
-		lookup := entityLookup{}
+			clients := CreateDynatraceClients(t, env)
 
-		for _, theConfig := range configs {
+			lookup := entityLookup{}
 			coord := theConfig.Coordinate
 
 			if theConfig.Skip {
@@ -139,7 +160,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 				var foundID string
 				switch typ := theConfig.Type.(type) {
 				case config.SettingsType:
-					foundID = AssertSetting(t, clients.SettingsClient, typ, env.Name, available, theConfig)
+					foundID = AssertSetting(t, clients.SettingsClient, typ, environment, available, theConfig)
 				case config.ClassicApiType:
 					assert.NotEmpty(t, configName, "classic API config %v is missing name, can not assert if it exists", theConfig.Coordinate)
 
@@ -152,7 +173,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						theApi = theApi.ApplyParentObjectID(scope)
 					}
 
-					foundID = AssertConfig(t, clients.ConfigClient, theApi, env, available, theConfig, configName)
+					foundID = AssertConfig(t, clients.ConfigClient, theApi, available, theConfig, configName, environment)
 				case config.AutomationType:
 					if clients.AutClient == nil {
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
@@ -182,14 +203,14 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
-func newContextWithLogConfig(t *testing.T, config config.Config) context.Context {
+func newContextWithLogConfig(t *testing.T, config config.Config, environment project.Environment) context.Context {
 	ctx := context.WithValue(t.Context(), log.CtxKeyCoord{}, config.Coordinate)
-	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: config.Environment, Group: config.Group})
+	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: environment.Name, Group: environment.Group})
 	return ctx
 }
 
-func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) (id string) {
-	ctx := newContextWithLogConfig(t, config)
+func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.API, shouldBeAvailable bool, config config.Config, name string, environment project.Environment) (id string) {
+	ctx := newContextWithLogConfig(t, config, environment)
 	configType := config.Coordinate.Type
 
 	var exists bool
@@ -218,8 +239,8 @@ func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.API, envi
 	return id
 }
 
-func AssertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config) (id string) {
-	ctx := newContextWithLogConfig(t, config)
+func AssertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsType, environment project.Environment, shouldBeAvailable bool, config config.Config) (id string) {
+	ctx := newContextWithLogConfig(t, config, environment)
 	expectedExtId, err := idutils.GenerateExternalIDForSettingsObject(config.Coordinate)
 	if err != nil {
 		t.Errorf("Unable to generate external id: %v", err)
@@ -237,14 +258,14 @@ func AssertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsTyp
 	exists := len(objects) == 1
 
 	if config.Skip {
-		assert.False(t, exists, "Skipped Settings Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", environmentName, config.Coordinate, typ.SchemaId)
+		assert.False(t, exists, "Skipped Settings Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
 		return
 	}
 
 	if shouldBeAvailable {
-		assert.True(t, exists, "Settings Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environmentName, config.Coordinate, typ.SchemaId)
+		assert.True(t, exists, "Settings Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
 	} else {
-		assert.False(t, exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environmentName, config.Coordinate, typ.SchemaId)
+		assert.False(t, exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
 	}
 
 	if exists {

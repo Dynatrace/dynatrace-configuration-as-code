@@ -18,10 +18,12 @@ package graph
 
 import (
 	"fmt"
+	"strings"
+
+	"gonum.org/v1/gonum/graph"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"gonum.org/v1/gonum/graph"
-	"strings"
 )
 
 // SortingErrors is a slice of errors that implements the error interface.
@@ -38,8 +40,6 @@ func (errs SortingErrors) Error() string {
 
 // CyclicDependencyError is returned if sorting a graph failed due to cyclic dependencies between configurations.
 type CyclicDependencyError struct {
-	//The Environment for which the error occurred.
-	Environment string `json:"environment"`
 	//A slice of all dependency cycles between configurations as slices of DependencyLocation. Each cycle slice is returned in order of dependencies.
 	ConfigsInDependencyCycle [][]DependencyLocation `json:"configsInDependencyCycle"`
 }
@@ -72,7 +72,7 @@ func (e CyclicDependencyError) Error() string {
 	return b.String()
 }
 
-func newCyclicDependencyError(environment string, cycles [][]graph.Node) CyclicDependencyError {
+func newCyclicDependencyError(cycles [][]graph.Node) CyclicDependencyError {
 	cfgCycles := make([][]DependencyLocation, len(cycles))
 	for i, cycle := range cycles {
 		cfgCycles[i] = make([]DependencyLocation, len(cycle))
@@ -90,7 +90,6 @@ func newCyclicDependencyError(environment string, cycles [][]graph.Node) CyclicD
 		}
 	}
 	return CyclicDependencyError{
-		Environment:              environment,
 		ConfigsInDependencyCycle: cfgCycles,
 	}
 }

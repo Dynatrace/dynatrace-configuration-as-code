@@ -40,10 +40,10 @@ func parseConfigEntry(
 	loaderContext *configFileLoaderContext,
 	configId string,
 	definition persistence.TopLevelConfigDefinition,
-) ([]config.Config, []error) {
+) (config.Config, []error) {
 
 	if definition.Type == (persistence.TypeDefinition{}) {
-		return nil, []error{errors.New("missing type definition")}
+		return config.Config{}, []error{errors.New("missing type definition")}
 	}
 
 	singleConfigContext := &singleConfigEntryLoadContext{
@@ -52,31 +52,25 @@ func parseConfigEntry(
 	}
 
 	if err := definition.Type.Validate(loaderContext.KnownApis); err != nil {
-		return nil, []error{newDefinitionParserError(configId, singleConfigContext, err.Error())}
+		return config.Config{}, []error{newDefinitionParserError(configId, singleConfigContext, err.Error())}
 	}
 
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
 	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
 
-	var results []config.Config
 	var errs []error
-	for _, env := range loaderContext.Environments {
 
-		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env, definition, groupOverrideMap, environmentOverrideMap)
+	result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, loaderContext.Environment, definition, groupOverrideMap, environmentOverrideMap)
 
-		if definitionErrors != nil {
-			errs = append(errs, definitionErrors...)
-			continue
-		}
-
-		results = append(results, result)
+	if definitionErrors != nil {
+		errs = append(errs, definitionErrors...)
 	}
 
 	if len(errs) != 0 {
-		return results, errs
+		return config.Config{}, errs
 	}
 
-	return results, nil
+	return result, nil
 }
 
 func toEnvironmentOverrideMap(environments []persistence.EnvironmentOverride) map[string]persistence.EnvironmentOverride {
@@ -126,7 +120,7 @@ func parseDefinitionForEnvironment(
 
 	configDefinition.Template = filepath.FromSlash(configDefinition.Template)
 
-	return getConfigFromDefinition(fs, context, configId, environment, configDefinition, definition.Type)
+	return getConfigFromDefinition(fs, context, configId, configDefinition, definition.Type)
 }
 
 func applyOverrides(base *persistence.ConfigDefinition, override persistence.ConfigDefinition) {
@@ -156,14 +150,13 @@ func getConfigFromDefinition(
 	fs afero.Fs,
 	context *singleConfigEntryLoadContext,
 	configId string,
-	environment manifest.EnvironmentDefinition,
 	definition persistence.ConfigDefinition,
 	configType persistence.TypeDefinition,
 ) (config.Config, []error) {
 
 	if definition.Template == "" {
 		return config.Config{}, []error{
-			newDetailedDefinitionParserError(configId, context, environment, "missing property `template`"),
+			newDetailedDefinitionParserError(configId, context, "missing property `template`"),
 		}
 	}
 
@@ -172,11 +165,10 @@ func getConfigFromDefinition(
 	var errs []error
 
 	if err != nil {
-		errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, fmt.Sprintf("error while loading template: `%s`", err)))
+		errs = append(errs, newDetailedDefinitionParserError(configId, context, fmt.Sprintf("error while loading template: `%s`", err)))
 	}
 
-	parameters, parameterErrors := parseParametersAndReferences(fs, context, environment, configId,
-		definition.Parameters)
+	parameters, parameterErrors := parseParametersAndReferences(fs, context, configId, definition.Parameters)
 
 	if parameterErrors != nil {
 		errs = append(errs, parameterErrors...)
@@ -186,7 +178,7 @@ func getConfigFromDefinition(
 	skipConfig := false
 
 	if definition.Skip != nil {
-		skip, err := parseSkip(fs, context, environment, configId, definition.Skip)
+		skip, err := parseSkip(fs, context, configId, definition.Skip)
 		if err == nil {
 			skipConfig = skip
 		} else {
@@ -199,7 +191,7 @@ func getConfigFromDefinition(
 	}
 
 	if definition.Name != nil {
-		name, err := parseParameter(fs, context, environment, configId, config.NameParameter, definition.Name)
+		name, err := parseParameter(fs, context, configId, config.NameParameter, definition.Name)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -207,7 +199,7 @@ func getConfigFromDefinition(
 		}
 
 	} else if (configType.Type.ID() == config.ClassicApiTypeID) && (configType.GetApiType() != api.DashboardShareSettings) {
-		errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, "missing parameter `name`"))
+		errs = append(errs, newDetailedDefinitionParserError(configId, context, "missing parameter `name`"))
 	}
 
 	if errs != nil {
@@ -216,7 +208,7 @@ func getConfigFromDefinition(
 
 	// if we have a scope field, we should parse it
 	if configType.Scope != nil {
-		scopeParam, err := parseParameter(fs, context, environment, configId, config.ScopeParameter, configType.Scope)
+		scopeParam, err := parseParameter(fs, context, configId, config.ScopeParameter, configType.Scope)
 		if err != nil {
 			return config.Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
 		}
@@ -231,7 +223,7 @@ func getConfigFromDefinition(
 	// if we have an insertAfter field, we need to parse the field as a parameter
 	if configType.InsertAfter != nil {
 
-		insertAfterParam, err := parseParameter(fs, context, environment, configId, config.InsertAfterParameter, configType.InsertAfter)
+		insertAfterParam, err := parseParameter(fs, context, configId, config.InsertAfterParameter, configType.InsertAfter)
 		if err != nil {
 			return config.Config{}, []error{fmt.Errorf("failed to parse insertAfter parameter: %w", err)}
 		}
@@ -247,8 +239,6 @@ func getConfigFromDefinition(
 			ConfigId: configId,
 		},
 		Type:           configType.Type,
-		Group:          environment.Group,
-		Environment:    environment.Name,
 		Parameters:     parameters,
 		Skip:           skipConfig,
 		OriginObjectId: definition.OriginObjectId,
@@ -257,17 +247,16 @@ func getConfigFromDefinition(
 
 func parseSkip(fs afero.Fs,
 	context *singleConfigEntryLoadContext,
-	environmentDefinition manifest.EnvironmentDefinition,
 	configId string,
 	param interface{},
 ) (bool, error) {
-	parsed, err := parseParameter(fs, context, environmentDefinition, configId, config.SkipParameter, param)
+	parsed, err := parseParameter(fs, context, configId, config.SkipParameter, param)
 	if err != nil {
 		return false, err
 	}
 
 	if !isSupportedParamTypeForSkip(parsed) {
-		return false, newParameterDefinitionParserError(config.SkipParameter, configId, context, environmentDefinition, "must be of type 'value' or 'environment'")
+		return false, newParameterDefinitionParserError(config.SkipParameter, configId, context, "must be of type 'value' or 'environment'")
 	}
 
 	resolved, err := parsed.ResolveValue(parameter.ResolveContext{
@@ -276,17 +265,15 @@ func parseSkip(fs afero.Fs,
 			Type:     context.Type,
 			ConfigId: configId,
 		},
-		Group:         environmentDefinition.Group,
-		Environment:   environmentDefinition.Name,
 		ParameterName: config.SkipParameter,
 	})
 	if err != nil {
-		return false, newParameterDefinitionParserError(config.SkipParameter, configId, context, environmentDefinition, fmt.Sprintf("failed to resolve value: %s", err))
+		return false, newParameterDefinitionParserError(config.SkipParameter, configId, context, fmt.Sprintf("failed to resolve value: %s", err))
 	}
 
 	retVal, err := strconv.ParseBool(fmt.Sprintf("%v", resolved))
 	if err != nil {
-		return false, newParameterDefinitionParserError(config.SkipParameter, configId, context, environmentDefinition, fmt.Sprintf("resolved value can only be 'true' or 'false' (current value is: '%v'", resolved))
+		return false, newParameterDefinitionParserError(config.SkipParameter, configId, context, fmt.Sprintf("resolved value can only be 'true' or 'false' (current value is: '%v'", resolved))
 	}
 
 	return retVal, err

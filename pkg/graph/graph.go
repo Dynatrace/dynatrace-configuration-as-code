@@ -30,7 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
 // coordinateToNodeIDMap is a lookup map from a configuration's coordinate.Coordinate to the int64 ID of its graph node.
@@ -69,30 +68,18 @@ func (n ConfigNode) String() string {
 	return fmt.Sprintf("ConfigNode{ id=%d, configCoordinate=%v }", n.NodeID, n.Config.Coordinate)
 }
 
-// ConfigGraphPerEnvironment is a map of directed dependency graphs per environment name.
-type ConfigGraphPerEnvironment map[string]*simple.DirectedGraph
-
 // EncodeToDOT returns a DOT string represenation of the dependency graph for the given environment.
-func (graphs ConfigGraphPerEnvironment) EncodeToDOT(environment string) ([]byte, error) {
-	g, err := graphs.getGraphForEnvironment(environment)
-	if err != nil {
-		return nil, err
-	}
+func EncodeToDOT(g *simple.DirectedGraph, environment string) ([]byte, error) {
 	return dot.Marshal(g, environment+"_dependency_graph", "", "  ")
 }
 
 // SortConfigs returns a slice of config.Config for the given environment sorted according to their dependencies.
-func (graphs ConfigGraphPerEnvironment) SortConfigs(environment string) ([]config.Config, error) {
-	g, err := graphs.getGraphForEnvironment(environment)
-	if err != nil {
-		return nil, err
-	}
-
+func SortConfigs(g *simple.DirectedGraph) ([]config.Config, error) {
 	sortedNodes, err := topo.Sort(g)
 	if err != nil {
 		sortErr := topo.Unorderable{}
 		if ok := errors.As(err, &sortErr); ok {
-			return []config.Config{}, newCyclicDependencyError(environment, sortErr)
+			return []config.Config{}, newCyclicDependencyError(sortErr)
 		}
 	}
 	sortedCfgs := make([]config.Config, len(sortedNodes))
@@ -114,12 +101,7 @@ type SortedComponent struct {
 
 // GetIndependentlySortedConfigs returns sorted slices of SortedComponent.
 // Dependent configurations are returned as a sub-graph as well as a slice, sorted in the correct order to deploy them sequentially.
-func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environment string) ([]SortedComponent, error) {
-	g, err := graphs.getGraphForEnvironment(environment)
-	if err != nil {
-		return nil, err
-	}
-
+func GetIndependentlySortedConfigs(g *simple.DirectedGraph) ([]SortedComponent, error) {
 	components := findConnectedComponents(g)
 	errs := make(SortingErrors, 0, len(components))
 	sortedComponents := make([]SortedComponent, len(components))
@@ -128,7 +110,7 @@ func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environmen
 		if err != nil {
 			sortErr := topo.Unorderable{}
 			if ok := errors.As(err, &sortErr); ok {
-				errs = append(errs, newCyclicDependencyError(environment, sortErr))
+				errs = append(errs, newCyclicDependencyError(sortErr))
 			} else {
 				errs = append(errs, fmt.Errorf("failed to sort dependency graph: %w", err))
 			}
@@ -145,14 +127,6 @@ func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environmen
 	}
 
 	return sortedComponents, nil
-}
-
-func (graphs ConfigGraphPerEnvironment) getGraphForEnvironment(environment string) (*simple.DirectedGraph, error) {
-	g, ok := graphs[environment]
-	if !ok {
-		return nil, fmt.Errorf("no dependency graph exists for environment %s", environment)
-	}
-	return g, nil
 }
 
 func findConnectedComponents(d *simple.DirectedGraph) []*simple.DirectedGraph {
@@ -206,29 +180,16 @@ func buildUndirectedGraph(d *simple.DirectedGraph) *simple.UndirectedGraph {
 
 type NodeOption func(n *ConfigNode)
 
-// New creates a new ConfigGraphPerEnvironment based on the given projects and environments.
-func New(projects []project.Project, environments []string, nodeOptions ...NodeOption) ConfigGraphPerEnvironment {
-	graphs := make(ConfigGraphPerEnvironment)
-	for _, environment := range environments {
-		cfgGraph := buildDependencyGraph(projects, environment, nodeOptions)
-		graphs[environment] = cfgGraph
-	}
-	return graphs
+// New creates a new simple.DirectedGraph based on the given projects and environments.
+func New(configs []config.Config, nodeOptions ...NodeOption) *simple.DirectedGraph {
+	return buildDependencyGraph(configs, nodeOptions)
 }
 
-func buildDependencyGraph(projects []project.Project, environment string, nodeOptions []NodeOption) *simple.DirectedGraph {
-	log.Debug("Creating dependency graph for %s", environment)
+func buildDependencyGraph(configs []config.Config, nodeOptions []NodeOption) *simple.DirectedGraph {
+	log.Debug("Creating dependency graph")
 	g := simple.NewDirectedGraph()
 	coordinateToNodeIDs := make(coordinateToNodeIDMap)
 	configReferences := make(referencesLookup)
-
-	var configs []config.Config
-
-	for _, p := range projects {
-		for _, cfgs := range p.Configs[environment] {
-			configs = append(configs, cfgs...)
-		}
-	}
 
 	for i, c := range configs {
 		if c.Skip && featureflags.IgnoreSkippedConfigs.Enabled() {

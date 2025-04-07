@@ -29,7 +29,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 )
 
 //go:generate mockgen -source=download.go -destination=download_mock.go -package=download -write_package_comment=false Command
@@ -59,14 +58,14 @@ type downloadOptionsShared struct {
 }
 
 func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, fs afero.Fs) error {
-	proj := download.CreateProjectData(downloadedConfigs, opts.projectName)
+	environment := download.CreateEnvironmentData(downloadedConfigs, opts.projectName)
 
 	downloadWriterContext := download.WriterContext{
-		EnvironmentUrl: opts.environmentURL,
-		ProjectToWrite: proj,
-		Auth:           opts.auth,
-		OutputFolder:   opts.outputFolder,
-		ForceOverwrite: opts.forceOverwriteManifest,
+		EnvironmentUrl:     opts.environmentURL,
+		EnvironmentToWrite: environment,
+		Auth:               opts.auth,
+		OutputFolder:       opts.outputFolder,
+		ForceOverwrite:     opts.forceOverwriteManifest,
 	}
 	err := download.WriteToDisk(fs, downloadWriterContext)
 	if err != nil {
@@ -74,22 +73,13 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 	}
 
 	log.Info("Searching for circular dependencies")
-	if depErr := reportForCircularDependencies(proj); depErr != nil {
+	if depErr := environment.ReportForCircularDependencies(); depErr != nil {
 		log.WithFields(field.Error(depErr)).Warn("Download finished with problems: %s", depErr)
 	} else {
 		log.Info("No circular dependencies found")
 	}
 
 	log.Info("Finished download")
-	return nil
-}
-
-func reportForCircularDependencies(p project.Project) error {
-	_, errs := sort.ConfigsPerEnvironment([]project.Project{p}, []string{p.Id})
-	if len(errs) != 0 {
-		errutils.PrintWarnings(errs)
-		return fmt.Errorf("there are circular dependencies between %d configurations that need to be resolved manually", len(errs))
-	}
 	return nil
 }
 

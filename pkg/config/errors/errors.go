@@ -28,15 +28,12 @@ type EnvironmentDetails struct {
 
 type DetailedConfigError interface {
 	ConfigError
-	LocationDetails() EnvironmentDetails
 }
 
 // InvalidJsonError contains details about a template JSON being invalid
 type InvalidJsonError struct {
 	// Location (coordinate) of the configuration whose template is invalid JSON
 	Location coordinate.Coordinate `json:"location"`
-	// EnvironmentDetails of the environment the template was rendered for
-	EnvironmentDetails EnvironmentDetails `json:"environmentDetails"`
 	// TemplateFilePath points to the file containing invalid JSON
 	TemplateFilePath string `json:"templateFilePath"`
 	// Err is the underlying JSON rendering error
@@ -54,10 +51,6 @@ var (
 
 func (e InvalidJsonError) Coordinates() coordinate.Coordinate {
 	return e.Location
-}
-
-func (e InvalidJsonError) LocationDetails() EnvironmentDetails {
-	return e.EnvironmentDetails
 }
 
 func (e InvalidJsonError) Error() string {

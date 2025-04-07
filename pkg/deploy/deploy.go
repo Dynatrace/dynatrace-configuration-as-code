@@ -26,7 +26,6 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -47,7 +46,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
@@ -68,48 +67,45 @@ var (
 	skipError = errors.New("skip error")
 )
 
-func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
+func DeployForAllEnvironments(ctx context.Context, environments []v2.Environment, opts DeployConfigsOptions) error {
 	maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
 	if maxConcurrentDeployments > 0 {
 		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
 		concurrentDeploymentsLimiter = rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
 	}
 	deploymentErrs := make(deployErrors.EnvironmentDeploymentErrors)
-
-	// note: Currently the validation works 'environment-independent', but that might be something we should reconsider to improve error messages
-	if validationErrs := validate.Validate(projects); validationErrs != nil {
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, validationErrs, "", nil)
-		if !opts.ContinueOnErr && !opts.DryRun {
-			return validationErrs
-		}
-		errors.As(validationErrs, &deploymentErrs)
-	}
-
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
-
-	envNames := environmentClients.Names()
-	g := graph.New(projects, envNames)
-	envConfigs, err := getSortedEnvConfigs(g, envNames)
-	if err != nil {
-		reporter.ReportLoading(report.StateError, err, "", nil)
-		return err
-	}
-
-	projectString := "project"
-	if len(projects) > 1 {
-		projectString = "projects"
-	}
-	reporter.ReportInfo(fmt.Sprintf("%d %v validated", len(projects), projectString))
 	defer reporter.ReportInfo("Deployment finished")
 
-	for env, clientSet := range environmentClients {
+	envConfigs := make(map[string][]graph.SortedComponent)
+	//configErrs := make([]error, 0)
+	for _, env := range environments {
+		envConfig, err := prepareConfig(ctx, env, opts)
+		if err != nil {
+			deplErr := make(deployErrors.EnvironmentDeploymentErrors)
+			fmtErr := fmt.Errorf("failed to validate environment %s: %w", env.Name, err)
+			//configErrs = append(configErrs, fmtErr)
+			reporter.ReportLoading(report.StateError, fmtErr, "", nil)
+			if errors.As(err, &deplErr) {
+				deploymentErrs = deploymentErrs.Append(env.Name, deplErr)
+			}
+			continue
+		}
+		envConfigs[env.Name] = envConfig
+	}
+
+	//if len(configErrs) > 0 {
+	//	return errors.Join(configErrs...)
+	//}
+
+	for _, env := range environments {
 		sortedConfigs, ok := envConfigs[env.Name]
 		if !ok {
 			return fmt.Errorf("failed to get independently sorted configs for environment %q", env.Name)
 		}
 		ctx = newContextWithEnvironment(ctx, env)
 
-		if depErr := Deploy(ctx, clientSet, projects, sortedConfigs, env.Name); depErr != nil {
+		if depErr := Deploy(ctx, env, sortedConfigs); depErr != nil {
 			log.WithFields(field.Environment(env.Name, env.Group), field.Error(depErr)).Error("Deployment failed for environment %q: %v", env.Name, depErr)
 			deploymentErrs = deploymentErrs.Append(env.Name, depErr)
 
@@ -128,24 +124,41 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 	return nil
 }
 
-func Deploy(ctx context.Context, clientSet *client.ClientSet, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
-	preloadCaches(ctx, projects, clientSet, environment)
-	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", environment)
+func prepareConfig(ctx context.Context, environment v2.Environment, opts DeployConfigsOptions) ([]graph.SortedComponent, error) {
+	deploymentErrs := make(deployErrors.EnvironmentDeploymentErrors)
 
-	return deployComponents(ctx, sortedConfigs, clientSet)
+	// note: Currently the validation works 'environment-independent', but that might be something we should reconsider to improve error messages
+	if validationErrs := validate.Validate(environment.Projects); validationErrs != nil {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, validationErrs, "", nil)
+		if !opts.ContinueOnErr && !opts.DryRun {
+			return nil, validationErrs
+		}
+		errors.As(validationErrs, &deploymentErrs)
+	}
+
+	reporter := report.GetReporterFromContextOrDiscard(ctx)
+
+	g := graph.New(environment.AllConfigs())
+	sortedConfigs, err := graph.GetIndependentlySortedConfigs(g)
+	if err != nil {
+		fmtErr := fmt.Errorf("failed to get independently sorted configs: %w", err)
+		reporter.ReportLoading(report.StateError, fmtErr, "", nil)
+		return nil, fmtErr
+	}
+
+	projectString := "project"
+	if len(environment.Projects) > 1 {
+		projectString = "projects"
+	}
+	reporter.ReportInfo(fmt.Sprintf("%d %v validated for environment %s", len(environment.Projects), projectString, environment.Name))
+	return sortedConfigs, deploymentErrs
 }
 
-// getSortedEnvConfigs sorts the config graphs and checks for certain errors like cyclic dependencies
-func getSortedEnvConfigs(g graph.ConfigGraphPerEnvironment, envNames []string) (map[string][]graph.SortedComponent, error) {
-	envConfigs := make(map[string][]graph.SortedComponent)
-	for _, env := range envNames {
-		sortedConfigs, err := g.GetIndependentlySortedConfigs(env)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env, err)
-		}
-		envConfigs[env] = sortedConfigs
-	}
-	return envConfigs, nil
+func Deploy(ctx context.Context, env v2.Environment, sortedConfigs []graph.SortedComponent) error {
+	preloadCaches(ctx, env, env.ClientSet)
+	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", env.Name)
+
+	return deployComponents(ctx, sortedConfigs, env.ClientSet)
 }
 
 func deployComponents(ctx context.Context, components []graph.SortedComponent, clientset *client.ClientSet) error {
@@ -389,6 +402,6 @@ func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
 }
 
-func newContextWithEnvironment(ctx context.Context, env dynatrace.EnvironmentInfo) context.Context {
+func newContextWithEnvironment(ctx context.Context, env v2.Environment) context.Context {
 	return context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 }

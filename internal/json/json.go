@@ -19,11 +19,12 @@ package json
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"strconv"
-	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
@@ -103,8 +104,6 @@ func (e JsonValidationError) PrettyError() string {
 
 type Location struct {
 	Coordinate       coordinate.Coordinate `json:"coordinate"`
-	Group            string                `json:"group"`
-	Environment      string                `json:"environment"`
 	TemplateFilePath string                `json:"templateFilePath"`
 }
 

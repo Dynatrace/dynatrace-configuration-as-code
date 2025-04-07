@@ -15,16 +15,17 @@
 package writer
 
 import (
+	"path/filepath"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	manifestwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/writer"
 	configwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/writer"
-	"path/filepath"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
 )
 
 type WriterContext struct {
@@ -35,7 +36,7 @@ type WriterContext struct {
 	ParametersSerde    map[string]parameter.ParameterSerDe
 }
 
-func WriteToDisk(context *WriterContext, manifestToWrite manifest.Manifest, projects []project.Project) []error {
+func WriteToDisk(context *WriterContext, manifestToWrite manifest.Manifest, environments []project.Environment) []error {
 	sanitizedOutputDir := filepath.Clean(context.OutputDir)
 	err := context.Fs.MkdirAll(sanitizedOutputDir, 0777)
 
@@ -52,11 +53,11 @@ func WriteToDisk(context *WriterContext, manifestToWrite manifest.Manifest, proj
 		return []error{err}
 	}
 
-	return writeProjects(context, manifestToWrite.Projects, projects)
+	return writeProjects(context, manifestToWrite.Projects, environments)
 }
 
 func writeProjects(context *WriterContext, projectDefinitions manifest.ProjectDefinitionByProjectID,
-	projects []project.Project) []error {
+	environments []project.Environment) []error {
 	sanitizedOutputDir := filepath.Clean(context.OutputDir)
 	err := context.Fs.MkdirAll(sanitizedOutputDir, 0777)
 
@@ -66,15 +67,15 @@ func writeProjects(context *WriterContext, projectDefinitions manifest.ProjectDe
 
 	var errors []error
 
-	for _, p := range projects {
-		definition, found := projectDefinitions[p.Id]
+	for _, p := range environments {
+		definition, found := projectDefinitions[p.Name]
 
 		if !found {
-			log.Warn("no project definition found for `%s`. skipping....\n", p.Id)
+			log.Warn("no project definition found for `%s`. skipping....\n", p.Name)
 			continue
 		}
 
-		configs := collectAllConfigs(p)
+		configs := p.AllConfigs()
 
 		errs := configwriter.WriteConfigs(&configwriter.WriterContext{
 			Fs:              context.Fs,
@@ -91,14 +92,4 @@ func writeProjects(context *WriterContext, projectDefinitions manifest.ProjectDe
 	}
 
 	return nil
-}
-
-func collectAllConfigs(p project.Project) (result []config.Config) {
-	for _, configsPerApi := range p.Configs {
-		for _, configs := range configsPerApi {
-			result = append(result, configs...)
-		}
-	}
-
-	return result
 }

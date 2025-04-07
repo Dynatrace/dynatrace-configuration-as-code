@@ -35,7 +35,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
@@ -57,33 +56,36 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
 
-	loadedProjects, err := loadProjects(ctx, fs, absManifestPath, loadedManifest, specificProjects)
+	loadedEnvironments, err := loadEnvironments(ctx, fs, absManifestPath, loadedManifest, specificProjects)
 	if err != nil {
 		return err
 	}
 
-	if err := validateProjectsWithEnvironments(ctx, loadedProjects, loadedManifest.Environments); err != nil {
+	if err := validateProjectsWithEnvironments(ctx, loadedEnvironments, loadedManifest.Environments); err != nil {
 		return err
 	}
 
-	logging.LogProjectsInfo(loadedProjects)
+	logging.LogProjectsInfo(loadedEnvironments)
 	logging.LogEnvironmentsInfo(loadedManifest.Environments)
 
-	err = validateAuthenticationWithProjectConfigs(loadedProjects, loadedManifest.Environments)
+	err = validateAuthenticationWithProjectConfigs(loadedEnvironments, loadedManifest.Environments)
 	if err != nil {
 		formattedErr := fmt.Errorf("manifest auth field misconfigured: %w", err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
 		return formattedErr
 	}
 
-	clientSets, err := dynatrace.CreateEnvironmentClients(ctx, loadedManifest.Environments, dryRun)
-	if err != nil {
-		formattedErr := fmt.Errorf("failed to create API clients: %w", err)
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
-		return formattedErr
+	for _, ev := range loadedEnvironments {
+		if clientSet, err := dynatrace.CreateEnvironmentClient(ctx, loadedManifest.Environments[ev.Name], dryRun); err != nil {
+			formattedErr := fmt.Errorf("failed to create API clients: %w", err)
+			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
+			return formattedErr
+		} else {
+			ev.ClientSet = clientSet
+		}
 	}
 
-	err = deploy.DeployForAllEnvironments(ctx, loadedProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun})
+	err = deploy.DeployForAllEnvironments(ctx, loadedEnvironments, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun})
 	if err != nil {
 		return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
 	}
@@ -126,8 +128,8 @@ func verifyEnvironmentGen(ctx context.Context, environments manifest.Environment
 	return true
 }
 
-func loadProjects(ctx context.Context, fs afero.Fs, manifestPath string, man *manifest.Manifest, specificProjects []string) ([]project.Project, error) {
-	projects, errs := project.LoadProjects(ctx, fs, project.ProjectLoaderContext{
+func loadEnvironments(ctx context.Context, fs afero.Fs, manifestPath string, man *manifest.Manifest, specificProjects []string) ([]project.Environment, error) {
+	projects, errs := project.LoadEnvironments(ctx, fs, project.ProjectLoaderContext{
 		KnownApis:       api.NewAPIs().Filter(api.RemoveDisabled).GetApiNameLookup(),
 		WorkingDir:      filepath.Dir(manifestPath),
 		Manifest:        *man,
@@ -149,32 +151,19 @@ type KindCoordinates map[string][]coordinate.Coordinate
 type KindCoordinatesPerEnvironment map[string]KindCoordinates
 type CoordinatesPerEnvironment map[string][]coordinate.Coordinate
 
-func validateProjectsWithEnvironments(ctx context.Context, projects []project.Project, envs manifest.Environments) error {
-	undefinedEnvironments := map[string]struct{}{}
-	openPipelineKindCoordinatesPerEnvironment := KindCoordinatesPerEnvironment{}
-	platformCoordinatesPerEnvironment := CoordinatesPerEnvironment{}
-	for _, p := range projects {
-		for envName, cfgPerType := range p.Configs {
-			_, found := envs[envName]
-			if !found {
-				undefinedEnvironments[envName] = struct{}{}
-				continue
-			}
+func validateProjectsWithEnvironments(ctx context.Context, environments []project.Environment, envs manifest.Environments) error {
+	errs := make([]error, 0)
+	for _, env := range environments {
+		configs := env.AllConfigs()
 
-			openPipelineKindCoordinates, found := openPipelineKindCoordinatesPerEnvironment[envName]
-			if !found {
-				openPipelineKindCoordinates = KindCoordinates{}
-				openPipelineKindCoordinatesPerEnvironment[envName] = openPipelineKindCoordinates
-			}
-			collectOpenPipelineCoordinatesByKind(cfgPerType, openPipelineKindCoordinates)
+		openPipelineKindCoordinates := collectOpenPipelineCoordinatesByKind(configs)
+		platformCoordinatesPerEnvironment := collectPlatformCoordinates(configs)
+		targetEnv := getDefinitionFromConfig(env, envs)
 
-			platformCoordinatesPerEnvironment[envName] = append(platformCoordinatesPerEnvironment[envName], collectPlatformCoordinates(cfgPerType)...)
-		}
+		errs = append(errs, collectRequiresPlatformErrors(platformCoordinatesPerEnvironment, targetEnv)...)
+		errs = append(errs, collectOpenPipelineCoordinateErrors(openPipelineKindCoordinates, env.Name)...)
 	}
 
-	errs := collectUndefinedEnvironmentErrors(undefinedEnvironments)
-	errs = append(errs, collectRequiresPlatformErrors(platformCoordinatesPerEnvironment, envs)...)
-	errs = append(errs, collectOpenPipelineCoordinateErrors(openPipelineKindCoordinatesPerEnvironment)...)
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
 
 	for _, err := range errs {
@@ -184,8 +173,18 @@ func validateProjectsWithEnvironments(ctx context.Context, projects []project.Pr
 	return errors.Join(errs...)
 }
 
-func collectOpenPipelineCoordinatesByKind(cfgPerType v2.ConfigsPerType, dest KindCoordinates) {
-	for cfg := range cfgPerType.AllConfigs {
+func getDefinitionFromConfig(env project.Environment, envs manifest.Environments) manifest.EnvironmentDefinition {
+	for _, eCfg := range envs {
+		if eCfg.Name == env.Name {
+			return eCfg
+		}
+	}
+	return manifest.EnvironmentDefinition{}
+}
+
+func collectOpenPipelineCoordinatesByKind(cfgPerType []config.Config) KindCoordinates {
+	dest := make(KindCoordinates)
+	for _, cfg := range cfgPerType {
 		if cfg.Skip {
 			continue
 		}
@@ -194,12 +193,13 @@ func collectOpenPipelineCoordinatesByKind(cfgPerType v2.ConfigsPerType, dest Kin
 			dest[openPipelineType.Kind] = append(dest[openPipelineType.Kind], cfg.Coordinate)
 		}
 	}
+	return dest
 }
 
-func collectPlatformCoordinates(cfgPerType v2.ConfigsPerType) []coordinate.Coordinate {
+func collectPlatformCoordinates(cfgPerType []config.Config) []coordinate.Coordinate {
 	plaformCoordinates := []coordinate.Coordinate{}
 
-	for cfg := range cfgPerType.AllConfigs {
+	for _, cfg := range cfgPerType {
 		if cfg.Skip {
 			continue
 		}
@@ -220,23 +220,12 @@ func configRequiresPlatform(c config.Config) bool {
 	}
 }
 
-func collectUndefinedEnvironmentErrors(undefinedEnvironments map[string]struct{}) []error {
+func collectOpenPipelineCoordinateErrors(openPipelineKindCoordinates KindCoordinates, envName string) []error {
 	errs := []error{}
-	for envName := range undefinedEnvironments {
-		errs = append(errs, fmt.Errorf("undefined environment %q", envName))
-	}
-	return errs
-}
-
-func collectOpenPipelineCoordinateErrors(openPipelineKindCoordinatesPerEnvironment KindCoordinatesPerEnvironment) []error {
-	errs := []error{}
-	for envName, openPipelineKindCoordinates := range openPipelineKindCoordinatesPerEnvironment {
-
-		// check for duplicate configurations for the same kind of openpipeline.
-		for kind, coordinates := range openPipelineKindCoordinates {
-			if len(coordinates) > 1 {
-				errs = append(errs, fmt.Errorf("environment %q has multiple openpipeline configurations of kind %q: %s", envName, kind, coordinateSliceAsString(coordinates)))
-			}
+	// check for duplicate configurations for the same kind of openpipeline.
+	for kind, coordinates := range openPipelineKindCoordinates {
+		if len(coordinates) > 1 {
+			errs = append(errs, fmt.Errorf("environment %q has multiple openpipeline configurations of kind %q: %s", envName, kind, coordinateSliceAsString(coordinates)))
 		}
 	}
 	return errs
@@ -250,18 +239,16 @@ func coordinateSliceAsString(coordinates []coordinate.Coordinate) string {
 	return strings.Join(coordinateStrings, ", ")
 }
 
-func collectRequiresPlatformErrors(platformCoordinatesPerEnvironment CoordinatesPerEnvironment, envs manifest.Environments) []error {
-	errs := []error{}
-	for envName, coordinates := range platformCoordinatesPerEnvironment {
-		env, found := envs[envName]
-		if !found || platformEnvironment(env) {
-			continue
-		}
+func collectRequiresPlatformErrors(coordinates []coordinate.Coordinate, env manifest.EnvironmentDefinition) []error {
+	errs := make([]error, 0)
 
-		if len(coordinates) > 0 {
-			exampleCoordinate := coordinates[0]
-			errs = append(errs, fmt.Errorf("environment %q is not configured to access platform, but at least one configuration (e.g. %q) requires it", envName, exampleCoordinate))
-		}
+	if platformEnvironment(env) {
+		return nil
+	}
+
+	if len(coordinates) > 0 {
+		exampleCoordinate := coordinates[0]
+		errs = append(errs, fmt.Errorf("environment %q is not configured to access platform, but at least one configuration (e.g. %q) requires it", env.Name, exampleCoordinate))
 	}
 	return errs
 }
@@ -272,33 +259,29 @@ func platformEnvironment(e manifest.EnvironmentDefinition) bool {
 
 // validateAuthenticationWithProjectConfigs validates each config entry against the manifest if required credentials are set
 // it takes into consideration the project, environments and the skip parameter in each config entry
-func validateAuthenticationWithProjectConfigs(projects []project.Project, environments manifest.Environments) error {
-	for _, p := range projects {
-		for envName, env := range p.Configs {
-			for _, file := range env {
-				for _, conf := range file {
-					if conf.Skip == true {
-						continue
-					}
+func validateAuthenticationWithProjectConfigs(environments []project.Environment, environmentConfig manifest.Environments) error {
+	for _, env := range environments {
+		for _, conf := range env.AllConfigs() {
+			if conf.Skip == true {
+				continue
+			}
 
-					switch conf.Type.(type) {
-					case config.ClassicApiType:
-						if environments[envName].Auth.Token == nil {
-							return fmt.Errorf("API of type '%s' requires a token for environment '%s'", conf.Type, envName)
-						}
-					case config.SettingsType:
-						t, ok := conf.Type.(config.SettingsType)
-						if ok && t.AllUserPermission != nil && environments[envName].Auth.OAuth == nil {
-							return fmt.Errorf("using permission property on settings API requires OAuth, schema '%s' enviroment '%s'", t.SchemaId, envName)
-						}
-						if environments[envName].Auth.Token == nil && environments[envName].Auth.OAuth == nil {
-							return fmt.Errorf("API of type '%s' requires a token or OAuth for environment '%s'", conf.Type, envName)
-						}
-					default:
-						if environments[envName].Auth.OAuth == nil {
-							return fmt.Errorf("API of type '%s' requires OAuth for environment '%s'", conf.Type, envName)
-						}
-					}
+			switch conf.Type.(type) {
+			case config.ClassicApiType:
+				if environmentConfig[env.Name].Auth.Token == nil {
+					return fmt.Errorf("API of type '%s' requires a token for environment '%s'", conf.Type, env.Name)
+				}
+			case config.SettingsType:
+				t, ok := conf.Type.(config.SettingsType)
+				if ok && t.AllUserPermission != nil && environmentConfig[env.Name].Auth.OAuth == nil {
+					return fmt.Errorf("using permission property on settings API requires OAuth, schema '%s' enviroment '%s'", t.SchemaId, env.Name)
+				}
+				if environmentConfig[env.Name].Auth.Token == nil && environmentConfig[env.Name].Auth.OAuth == nil {
+					return fmt.Errorf("API of type '%s' requires a token or OAuth for environment '%s'", conf.Type, env.Name)
+				}
+			default:
+				if environmentConfig[env.Name].Auth.OAuth == nil {
+					return fmt.Errorf("API of type '%s' requires OAuth for environment '%s'", conf.Type, env.Name)
 				}
 			}
 		}

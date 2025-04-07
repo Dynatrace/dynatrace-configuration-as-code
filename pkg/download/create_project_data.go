@@ -20,15 +20,15 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-func CreateProjectData(downloadedConfigs project.ConfigsPerType, projectName string) project.Project {
-	configsPerTypePerEnv := project.ConfigsPerTypePerEnvironments{
-		projectName: downloadedConfigs,
+func CreateEnvironmentData(downloadedConfigs project.ConfigsPerType, projectName string) project.Environment {
+	env := project.Environment{
+		Projects: []project.Project{{
+			Id:      projectName,
+			Configs: downloadedConfigs,
+		}},
+		Name:  projectName,
+		Group: "",
 	}
 
-	proj := project.Project{
-		Id:      projectName,
-		Configs: configsPerTypePerEnv,
-	}
-
-	return proj
+	return env
 }

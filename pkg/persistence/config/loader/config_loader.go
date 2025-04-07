@@ -38,7 +38,7 @@ import (
 type LoaderContext struct {
 	ProjectId       string
 	Path            string
-	Environments    []manifest.EnvironmentDefinition
+	Environment     manifest.EnvironmentDefinition
 	KnownApis       map[string]struct{}
 	ParametersSerDe map[string]parameter.ParameterSerDe
 }
@@ -106,7 +106,7 @@ func LoadConfigFile(ctx context.Context, fs afero.Fs, context *LoaderContext, fi
 
 		result, definitionErrors := parseConfigEntry(fs, configLoaderContext, cgf.Id, cgf)
 
-		configs = append(configs, result...)
+		configs = append(configs, result)
 
 		if len(definitionErrors) > 0 {
 			errs = append(errs, definitionErrors...)

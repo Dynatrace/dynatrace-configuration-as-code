@@ -18,30 +18,26 @@ package config
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"strings"
 )
 
 var _ configErrors.DetailedConfigError = (*ParamsRefErr)(nil)
 
 type ParamsRefErr struct {
-	Location           coordinate.Coordinate           `json:"location"`
-	EnvironmentDetails configErrors.EnvironmentDetails `json:"environmentDetails"`
-	ParameterName      string                          `json:"parameterName"`
-	Reference          parameter.ParameterReference    `json:"parameterReference"`
-	Reason             string                          `json:"reason"`
+	Location      coordinate.Coordinate        `json:"location"`
+	ParameterName string                       `json:"parameterName"`
+	Reference     parameter.ParameterReference `json:"parameterReference"`
+	Reason        string                       `json:"reason"`
 }
 
-func newParamsRefErr(coord coordinate.Coordinate, group string, env string,
+func newParamsRefErr(coord coordinate.Coordinate,
 	param string, ref parameter.ParameterReference, reason string) ParamsRefErr {
 	return ParamsRefErr{
-		Location: coord,
-		EnvironmentDetails: configErrors.EnvironmentDetails{
-			Group:       group,
-			Environment: env,
-		},
+		Location:      coord,
 		ParameterName: param,
 		Reference:     ref,
 		Reason:        reason,
@@ -50,10 +46,6 @@ func newParamsRefErr(coord coordinate.Coordinate, group string, env string,
 
 func (e ParamsRefErr) Coordinates() coordinate.Coordinate {
 	return e.Location
-}
-
-func (e ParamsRefErr) LocationDetails() configErrors.EnvironmentDetails {
-	return e.EnvironmentDetails
 }
 
 func (e ParamsRefErr) Error() string {
@@ -67,18 +59,13 @@ var (
 )
 
 type CircularDependencyParameterSortError struct {
-	Location           coordinate.Coordinate           `json:"location"`
-	EnvironmentDetails configErrors.EnvironmentDetails `json:"environmentDetails"`
-	ParameterName      string                          `json:"parameterName"`
-	DependsOn          []parameter.ParameterReference  `json:"dependsOn"`
+	Location      coordinate.Coordinate          `json:"location"`
+	ParameterName string                         `json:"parameterName"`
+	DependsOn     []parameter.ParameterReference `json:"dependsOn"`
 }
 
 func (e CircularDependencyParameterSortError) Coordinates() coordinate.Coordinate {
 	return e.Location
-}
-
-func (e CircularDependencyParameterSortError) LocationDetails() configErrors.EnvironmentDetails {
-	return e.EnvironmentDetails
 }
 
 func (e CircularDependencyParameterSortError) Error() string {

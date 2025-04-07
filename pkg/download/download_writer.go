@@ -18,6 +18,10 @@ package download
 
 import (
 	"fmt"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -26,17 +30,15 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/writer"
-	"github.com/spf13/afero"
-	"path/filepath"
 )
 
 type WriterContext struct {
-	EnvironmentUrl  manifest.URLDefinition
-	ProjectToWrite  project.Project
-	Auth            manifest.Auth
-	OutputFolder    string
-	ForceOverwrite  bool
-	timestampString string
+	EnvironmentUrl     manifest.URLDefinition
+	EnvironmentToWrite project.Environment
+	Auth               manifest.Auth
+	OutputFolder       string
+	ForceOverwrite     bool
+	timestampString    string
 }
 
 func (c WriterContext) GetOutputFolderFilePath() string {
@@ -60,8 +62,8 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 	projectFolderName := getProjectFolderName(fs, writerContext)
 
 	projectDefinition := manifest.ProjectDefinitionByProjectID{
-		writerContext.ProjectToWrite.Id: {
-			Name: writerContext.ProjectToWrite.Id,
+		writerContext.EnvironmentToWrite.Name: {
+			Name: writerContext.EnvironmentToWrite.Name,
 			Path: projectFolderName,
 		},
 	}
@@ -69,8 +71,8 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 	manifest := manifest.Manifest{
 		Projects: projectDefinition,
 		Environments: map[string]manifest.EnvironmentDefinition{
-			writerContext.ProjectToWrite.Id: {
-				Name:  writerContext.ProjectToWrite.Id,
+			writerContext.EnvironmentToWrite.Name: {
+				Name:  writerContext.EnvironmentToWrite.Name,
 				URL:   writerContext.EnvironmentUrl,
 				Group: "default",
 				Auth:  writerContext.Auth,
@@ -86,7 +88,7 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 		OutputDir:       outputFolder,
 		ManifestName:    manifestFileName,
 		ParametersSerde: config.DefaultParameterParsers,
-	}, manifest, []project.Project{writerContext.ProjectToWrite})
+	}, manifest, []project.Environment{writerContext.EnvironmentToWrite})
 
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)
@@ -116,11 +118,11 @@ func getManifestFileName(fs afero.Fs, writerContext WriterContext) string {
 }
 
 func getProjectFolderName(fs afero.Fs, writerContext WriterContext) string {
-	projectFolderName := writerContext.ProjectToWrite.Id
+	projectFolderName := writerContext.EnvironmentToWrite.Name
 	outputFolder := writerContext.GetOutputFolderFilePath()
-	defaultProjectFolderPath := filepath.Join(outputFolder, writerContext.ProjectToWrite.Id)
+	defaultProjectFolderPath := filepath.Join(outputFolder, writerContext.EnvironmentToWrite.Name)
 	if exists, _ := afero.Exists(fs, defaultProjectFolderPath); !exists {
-		return writerContext.ProjectToWrite.Id
+		return writerContext.EnvironmentToWrite.Name
 	}
 
 	if writerContext.ForceOverwrite {
@@ -128,7 +130,7 @@ func getProjectFolderName(fs afero.Fs, writerContext WriterContext) string {
 		return projectFolderName
 	}
 
-	projectFolderName = fmt.Sprintf("%s_%s", writerContext.ProjectToWrite.Id, writerContext.timestampString)
-	log.WithFields(field.F("outputFolder", outputFolder), field.F("projectFolder", projectFolderName)).Warn("A project folder named %q already exists in %q, creating %q instead.", writerContext.ProjectToWrite.Id, outputFolder, projectFolderName)
+	projectFolderName = fmt.Sprintf("%s_%s", writerContext.EnvironmentToWrite.Name, writerContext.timestampString)
+	log.WithFields(field.F("outputFolder", outputFolder), field.F("projectFolder", projectFolderName)).Warn("A project folder named %q already exists in %q, creating %q instead.", writerContext.EnvironmentToWrite.Name, outputFolder, projectFolderName)
 	return projectFolderName
 }

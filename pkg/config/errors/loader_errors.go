@@ -18,6 +18,7 @@ package errors
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -56,16 +57,6 @@ type DefinitionParserError struct {
 // DetailedDefinitionParserError is a DefinitionParserError, enriched with information for which environment loading failed
 type DetailedDefinitionParserError struct {
 	DefinitionParserError
-	// EnvironmentDetails of the environment the parsing of a configuration failed for
-	EnvironmentDetails EnvironmentDetails `json:"environmentDetails"`
-}
-
-func (e DetailedDefinitionParserError) LocationDetails() EnvironmentDetails {
-	return e.EnvironmentDetails
-}
-
-func (e DetailedDefinitionParserError) Environment() string {
-	return e.EnvironmentDetails.Environment
 }
 
 func (e DefinitionParserError) Coordinates() coordinate.Coordinate {

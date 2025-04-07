@@ -33,7 +33,7 @@ func resolveValues(c *Config, entities EntityLookup, parameters []parameter.Name
 		name := container.Name
 		param := container.Parameter
 
-		errs := validateParameterReferences(c.Coordinate, c.Group, c.Environment, entities, name, param)
+		errs := validateParameterReferences(c.Coordinate, entities, name, param)
 
 		if errs != nil {
 			errors = append(errors, errs...)
@@ -43,8 +43,6 @@ func resolveValues(c *Config, entities EntityLookup, parameters []parameter.Name
 		val, err := param.ResolveValue(parameter.ResolveContext{
 			PropertyResolver:        entities,
 			ConfigCoordinate:        c.Coordinate,
-			Group:                   c.Group,
-			Environment:             c.Environment,
 			ParameterName:           name,
 			ResolvedParameterValues: properties,
 		})
@@ -70,7 +68,7 @@ func resolveValues(c *Config, entities EntityLookup, parameters []parameter.Name
 	return properties, nil
 }
 
-func validateParameterReferences(configCoordinates coordinate.Coordinate, group string, environment string, entityLookup EntityLookup, paramName string, param parameter.Parameter) (errs []error) {
+func validateParameterReferences(configCoordinates coordinate.Coordinate, entityLookup EntityLookup, paramName string, param parameter.Parameter) (errs []error) {
 
 	for _, ref := range param.GetReferences() {
 		// we have to ignore references to the same config,
@@ -79,7 +77,7 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate, group 
 		if ref.Config == configCoordinates {
 			// parameters referencing themselves makes no sense
 			if ref.Property == paramName {
-				errs = append(errs, newParamsRefErr(configCoordinates, group, environment, paramName, ref, "parameter referencing itself"))
+				errs = append(errs, newParamsRefErr(configCoordinates, paramName, ref, "parameter referencing itself"))
 			}
 
 			continue
@@ -88,12 +86,12 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate, group 
 		entity, found := entityLookup.GetResolvedEntity(ref.Config)
 
 		if !found {
-			errs = append(errs, newParamsRefErr(configCoordinates, group, environment, paramName, ref, "referenced config not found"))
+			errs = append(errs, newParamsRefErr(configCoordinates, paramName, ref, "referenced config not found"))
 			continue
 		}
 
 		if entity.Skip {
-			errs = append(errs, newParamsRefErr(configCoordinates, group, environment, paramName, ref, "referencing skipped config"))
+			errs = append(errs, newParamsRefErr(configCoordinates, paramName, ref, "referencing skipped config"))
 			continue
 		}
 	}
