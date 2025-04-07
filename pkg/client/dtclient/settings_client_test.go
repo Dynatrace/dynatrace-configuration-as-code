@@ -3050,3 +3050,112 @@ func TestSettingsClient_ListSchemas_WithoutAcl(t *testing.T) {
 		},
 	}, gotSchemas)
 }
+
+func TestSettingsClient_ClearCache_OnSchemaCache(t *testing.T) {
+	testSchema := "schema1"
+	t.Setenv(featureflags.AccessControlSettings.EnvName(), "false")
+	schema := schemaDetailsResponse{
+		SchemaId:                testSchema,
+		Ordered:                 false,
+		SchemaConstraints:       nil,
+		OwnerBasedAccessControl: nil,
+	}
+	mux := http.NewServeMux()
+	schemaCalledCount := 0
+
+	mux.HandleFunc("GET /api/v2/settings/schemas/{schema}", func(w http.ResponseWriter, r *http.Request) {
+		schemaCalledCount++
+		payload, err := json.Marshal(schema)
+		require.NoError(t, err)
+
+		_, err = w.Write(payload)
+		require.NoError(t, err)
+	})
+
+	server := httptest.NewTLSServer(mux)
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	restClient := corerest.NewClient(serverURL, server.Client())
+
+	c, err := NewClassicSettingsClient(restClient)
+	require.NoError(t, err)
+
+	// fetch schema should trigger an API call
+	_, err = c.GetSchema(t.Context(), testSchema)
+	require.NoError(t, err)
+	require.Equal(t, schemaCalledCount, 1)
+
+	// fetch schema should not trigger an API call and use the cache
+	_, err = c.GetSchema(t.Context(), testSchema)
+	require.NoError(t, err)
+	require.Equal(t, schemaCalledCount, 1)
+
+	// fetch schema should clear the cache and trigger an API call
+	c.ClearCache()
+	_, err = c.GetSchema(t.Context(), testSchema)
+	require.NoError(t, err)
+	require.Equal(t, schemaCalledCount, 2)
+}
+
+func TestSettingsClient_ClearCache_OnSettingsCache(t *testing.T) {
+	objId := "abc-xyz"
+	testSchema := "schema1"
+	type settingsListResponse struct {
+		Items []DownloadSettingsObject `json:"items"`
+	}
+	settingsObject := settingsListResponse{
+		Items: []DownloadSettingsObject{
+			{
+				ExternalId:       "e-id",
+				SchemaVersion:    "1.0.0",
+				SchemaId:         testSchema,
+				ObjectId:         objId,
+				Scope:            "environment",
+				Value:            nil,
+				ModificationInfo: nil,
+				ResourceContext:  nil,
+			},
+		},
+	}
+	mux := http.NewServeMux()
+	settingsCalledCount := 0
+
+	mux.HandleFunc("GET /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		settingsCalledCount++
+		payload, err := json.Marshal(settingsObject)
+		require.NoError(t, err)
+
+		_, err = w.Write(payload)
+		require.NoError(t, err)
+	})
+
+	server := httptest.NewTLSServer(mux)
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	restClient := corerest.NewClient(serverURL, server.Client())
+
+	c, err := NewClassicSettingsClient(restClient)
+	require.NoError(t, err)
+
+	// fetch schema should trigger an API call
+	_, err = c.List(t.Context(), testSchema, ListSettingsOptions{})
+	require.NoError(t, err)
+	require.Equal(t, settingsCalledCount, 1)
+
+	// fetch schema should not trigger an API call and use the cache
+	_, err = c.List(t.Context(), testSchema, ListSettingsOptions{})
+	require.NoError(t, err)
+	require.Equal(t, settingsCalledCount, 1)
+
+	// fetch schema should clear the cache and trigger an API call
+	c.ClearCache()
+	_, err = c.List(t.Context(), testSchema, ListSettingsOptions{})
+	require.NoError(t, err)
+	require.Equal(t, settingsCalledCount, 2)
+}

@@ -60,6 +60,8 @@ type ConfigClient interface {
 	// Cache caches all config values for a given API.
 	Cache(ctx context.Context, a api.API) error
 
+	// ClearCache clears all cached data
+	ClearCache()
 	// List lists the available configs for an API.
 	// It calls the underlying GET endpoint of the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
@@ -114,6 +116,9 @@ type ConfigClient interface {
 type SettingsClient interface {
 	// Cache caches all settings objects for a given schema.
 	Cache(context.Context, string) error
+
+	// ClearCache clears all cached data
+	ClearCache()
 
 	// Upsert either creates the supplied object, or updates an existing one.
 	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we

@@ -17,25 +17,23 @@
 package deploy
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
+	"github.com/spf13/afero"
 	"go.uber.org/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
-
-var dummyConfigClient = &dtclient.DummyConfigClient{}
-var dummySettingsClient = &dtclient.DummySettingsClient{}
-var clientsetEnv1 = &client.ClientSet{ConfigClient: dummyConfigClient, SettingsClient: dummySettingsClient}
-var clientsetEnv2 = &client.ClientSet{ConfigClient: dummyConfigClient, SettingsClient: dummySettingsClient}
 
 func Test_gatherPreloadConfigTypeEntries_OneEntryPerConfigType(t *testing.T) {
 	entries := gatherPreloadConfigTypeEntries(
@@ -63,12 +61,11 @@ func Test_gatherPreloadConfigTypeEntries_OneEntryPerConfigType(t *testing.T) {
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1},
+		"env1",
 	)
 
 	require.Len(t, entries, 1)
-	assert.Equal(t, entries[0].clientset, clientsetEnv1)
-	assert.Equal(t, entries[0].configType, config.SettingsType{
+	assert.Equal(t, entries[0], config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	})
 }
@@ -100,16 +97,14 @@ func Test_gatherPreloadConfigTypeEntries_OneEntryForEachConfigType(t *testing.T)
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1},
+		"env1",
 	)
 
 	require.Len(t, entries, 2)
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.SettingsType{
-		SchemaId: "builtin:alerting.profile",
-	}})
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.ClassicApiType{
-		Api: "management-zone",
-	}})
+	assert.ElementsMatch(t, entries, []config.Type{
+		config.SettingsType{SchemaId: "builtin:alerting.profile"},
+		config.ClassicApiType{Api: "management-zone"},
+	})
 }
 
 func Test_gatherPreloadConfigTypeEntries_EntriesOnlyForSupportedConfigTypes(t *testing.T) {
@@ -139,107 +134,11 @@ func Test_gatherPreloadConfigTypeEntries_EntriesOnlyForSupportedConfigTypes(t *t
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1},
+		"env1",
 	)
 
 	require.Len(t, entries, 1)
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.SettingsType{
-		SchemaId: "builtin:alerting.profile",
-	}})
-}
-
-func Test_gatherPreloadConfigTypeEntries_OneEntryForEachEnvironmentInSameProject(t *testing.T) {
-	entries := gatherPreloadConfigTypeEntries(
-		[]project.Project{
-			{
-				Id:      "projectID",
-				GroupId: "groupID",
-				Configs: project.ConfigsPerTypePerEnvironments{
-					"env1": project.ConfigsPerType{
-						"builtin:alerting.profile": {
-							{
-								Coordinate: coordinate.Coordinate{Project: "projectID", ConfigId: "alertingProfile1", Type: "builtin:alerting.profile"},
-								Type: config.SettingsType{
-									SchemaId: "builtin:alerting.profile",
-								},
-							},
-						},
-					},
-					"env2": project.ConfigsPerType{
-						"builtin:alerting.profile": {
-							{
-								Coordinate: coordinate.Coordinate{Project: "projectID", ConfigId: "alertingProfile1", Type: "builtin:alerting.profile"},
-								Type: config.SettingsType{
-									SchemaId: "builtin:alerting.profile",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		dynatrace.EnvironmentClients{
-			dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1,
-			dynatrace.EnvironmentInfo{Name: "env2"}: clientsetEnv2,
-		},
-	)
-
-	require.Len(t, entries, 2)
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.SettingsType{
-		SchemaId: "builtin:alerting.profile",
-	}})
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv2, configType: config.SettingsType{
-		SchemaId: "builtin:alerting.profile",
-	}})
-}
-
-func Test_gatherPreloadConfigTypeEntries_OneEntryForEachEnvironmentInDifferentProjects(t *testing.T) {
-	entries := gatherPreloadConfigTypeEntries(
-		[]project.Project{
-			{
-				Id:      "projectID1",
-				GroupId: "groupID",
-				Configs: project.ConfigsPerTypePerEnvironments{
-					"env1": project.ConfigsPerType{
-						"builtin:alerting.profile": {
-							{
-								Coordinate: coordinate.Coordinate{Project: "projectID1", ConfigId: "alertingProfile1", Type: "builtin:alerting.profile"},
-								Type: config.SettingsType{
-									SchemaId: "builtin:alerting.profile",
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				Id:      "projectID2",
-				GroupId: "groupID",
-				Configs: project.ConfigsPerTypePerEnvironments{
-					"env2": project.ConfigsPerType{
-						"builtin:alerting.profile": {
-							{
-								Coordinate: coordinate.Coordinate{Project: "projectID2", ConfigId: "alertingProfile1", Type: "builtin:alerting.profile"},
-								Type: config.SettingsType{
-									SchemaId: "builtin:alerting.profile",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		dynatrace.EnvironmentClients{
-			dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1,
-			dynatrace.EnvironmentInfo{Name: "env2"}: clientsetEnv2,
-		},
-	)
-
-	require.Len(t, entries, 2)
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.SettingsType{
-		SchemaId: "builtin:alerting.profile",
-	}})
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv2, configType: config.SettingsType{
+	assert.Equal(t, entries, []config.Type{config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	}})
 }
@@ -280,48 +179,160 @@ func Test_gatherPreloadConfigTypeEntries_OneEntryForSameEnvironmentInDifferentPr
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{
-			dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1,
-		},
+		"env1",
 	)
 
-	require.Len(t, entries, 1)
-	assert.Contains(t, entries, preloadConfigTypeEntry{clientset: clientsetEnv1, configType: config.SettingsType{
+	assert.Equal(t, entries, []config.Type{config.SettingsType{
 		SchemaId: "builtin:alerting.profile",
 	}})
 }
 
-func Test_gatherPreloadConfigTypeEntries_NoEntryIfEnvironmentMissingClient(t *testing.T) {
-	entries := gatherPreloadConfigTypeEntries(
-		[]project.Project{
-			{
-				Id:      "projectID",
-				GroupId: "groupID",
-				Configs: project.ConfigsPerTypePerEnvironments{
-					"env1": project.ConfigsPerType{
-						"builtin:alerting.profile": {
-							{
-								Coordinate: coordinate.Coordinate{Project: "projectID", ConfigId: "alertingProfile1", Type: "builtin:alerting.profile"},
-								Type: config.SettingsType{
-									SchemaId: "builtin:alerting.profile",
-								},
+func Test_CacheSettingsFails(t *testing.T) {
+	expectedErrMsg := "error happened"
+	logOutput := strings.Builder{}
+	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), false, &logOutput, false, false)
+
+	dtClient := client.NewMockSettingsClient(gomock.NewController(t))
+	dtClient.EXPECT().Cache(gomock.Any(), gomock.Any()).Times(1).Return(errors.New(expectedErrMsg))
+	projects := []project.Project{
+		{
+			Id:      "projectID",
+			GroupId: "groupID",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env1": project.ConfigsPerType{
+					"dashboard-share-settings": {
+						{
+							Coordinate: coordinate.Coordinate{
+								Project:  "projectID",
+								ConfigId: "dashboard-share-settings",
+								Type:     "dashboard-share-settings",
+							},
+							Type: config.SettingsType{
+								SchemaId:      "my-schema-id",
+								SchemaVersion: "1.0.0",
 							},
 						},
 					},
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: &client.ClientSet{}},
-	)
+	}
+	clientSet := &client.ClientSet{SettingsClient: dtClient}
+	preloadCaches(t.Context(), projects, clientSet, "env1")
+	assert.Contains(t, logOutput.String(), expectedErrMsg)
+}
 
-	assert.Len(t, entries, 0)
+func Test_CacheSettingsSucceeds(t *testing.T) {
+	logOutput := strings.Builder{}
+	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), true, &logOutput, false, false)
+
+	dtClient := client.NewMockSettingsClient(gomock.NewController(t))
+	dtClient.EXPECT().Cache(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+	projects := []project.Project{
+		{
+			Id:      "projectID",
+			GroupId: "groupID",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env1": project.ConfigsPerType{
+					"dashboard-share-settings": {
+						{
+							Coordinate: coordinate.Coordinate{
+								Project:  "projectID",
+								ConfigId: "dashboard-share-settings",
+								Type:     "dashboard-share-settings",
+							},
+							Type: config.SettingsType{
+								SchemaId:      "my-schema-id",
+								SchemaVersion: "1.0.0",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	clientSet := &client.ClientSet{SettingsClient: dtClient}
+	preloadCaches(t.Context(), projects, clientSet, "env1")
+	assert.NotContains(t, logOutput.String(), "warn")
+	assert.Contains(t, logOutput.String(), "Cached")
+}
+
+func Test_CacheClassicSucceeds(t *testing.T) {
+	logOutput := strings.Builder{}
+	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), true, &logOutput, false, false)
+
+	dtClient := client.NewMockConfigClient(gomock.NewController(t))
+	dtClient.EXPECT().Cache(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+	projects := []project.Project{
+		{
+			Id:      "projectID",
+			GroupId: "groupID",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env1": project.ConfigsPerType{
+					api.Dashboard: {
+						{
+							Coordinate: coordinate.Coordinate{
+								Project:  "projectID",
+								ConfigId: "dashboard",
+								Type:     "dashboard",
+							},
+							Type: config.ClassicApiType{
+								Api: "dashboard",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	clientSet := &client.ClientSet{ConfigClient: dtClient}
+	preloadCaches(t.Context(), projects, clientSet, "env1")
+	output := logOutput.String()
+	assert.NotContains(t, output, "warn")
+	assert.Contains(t, output, "Cached")
+}
+
+func Test_CacheClassicFails(t *testing.T) {
+	logOutput := strings.Builder{}
+	expectedErr := "my error"
+	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), true, &logOutput, false, false)
+
+	dtClient := client.NewMockConfigClient(gomock.NewController(t))
+	dtClient.EXPECT().Cache(gomock.Any(), gomock.Any()).Times(1).Return(errors.New(expectedErr))
+	projects := []project.Project{
+		{
+			Id:      "projectID",
+			GroupId: "groupID",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env1": project.ConfigsPerType{
+					api.Dashboard: {
+						{
+							Coordinate: coordinate.Coordinate{
+								Project:  "projectID",
+								ConfigId: "dashboard",
+								Type:     "dashboard",
+							},
+							Type: config.ClassicApiType{
+								Api: "dashboard",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	clientSet := &client.ClientSet{ConfigClient: dtClient}
+	preloadCaches(t.Context(), projects, clientSet, "env1")
+	output := logOutput.String()
+	assert.Contains(t, output, expectedErr)
 }
 
 func Test_ScopedConfigsAreNotCached(t *testing.T) {
 	dtClient := client.NewMockConfigClient(gomock.NewController(t)) //<- dont expect any call(s) on the mocked client
 	type args struct {
-		projects           []project.Project
-		environmentClients dynatrace.EnvironmentClients
+		projects    []project.Project
+		clientSet   *client.ClientSet
+		environment string
 	}
 	tests := []struct {
 		name string
@@ -350,13 +361,14 @@ func Test_ScopedConfigsAreNotCached(t *testing.T) {
 						},
 					},
 				},
-				environmentClients: dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: &client.ClientSet{ConfigClient: dtClient}},
+				clientSet:   &client.ClientSet{ConfigClient: dtClient},
+				environment: "env1",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			preloadCaches(t.Context(), tt.args.projects, tt.args.environmentClients)
+			preloadCaches(t.Context(), tt.args.projects, tt.args.clientSet, tt.args.environment)
 		})
 	}
 }
@@ -402,20 +414,8 @@ func Test_gatherPreloadConfigTypeEntries_WithSkipParam(t *testing.T) {
 				},
 			},
 		},
-		dynatrace.EnvironmentClients{dynatrace.EnvironmentInfo{Name: "env1"}: clientsetEnv1},
+		"env1",
 	)
 
-	expectedEntries := []preloadConfigTypeEntry{
-		{
-			configType: config.ClassicApiType{Api: "dashboard-share-settings"},
-			clientset:  clientsetEnv1,
-		},
-		{
-			configType: config.ClassicApiType{Api: "management-zone"},
-			clientset:  clientsetEnv1,
-		},
-	}
-
-	require.ElementsMatch(t, entries, expectedEntries)
-
+	require.ElementsMatch(t, entries, []config.Type{config.ClassicApiType{Api: "dashboard-share-settings"}, config.ClassicApiType{Api: "management-zone"}})
 }

@@ -22,6 +22,7 @@ type Cache[T any] interface {
 	Get(key string) (T, bool)
 	Set(key string, entries T)
 	Delete(key string)
+	Clear()
 }
 
 // NoopCache is an implementation of Cache that doesn't actually do anything.
@@ -37,6 +38,10 @@ func (n NoopCache[T]) Set(_ string, _ T) {
 }
 
 func (n NoopCache[T]) Delete(_ string) {
+	// no-op
+}
+
+func (n NoopCache[T]) Clear() {
 	// no-op
 }
 
@@ -76,4 +81,11 @@ func (s *DefaultCache[T]) Delete(key string) {
 	defer s.mutex.Unlock()
 
 	delete(s.entries, key)
+}
+
+func (s *DefaultCache[T]) Clear() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.entries = nil
 }

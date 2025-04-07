@@ -393,6 +393,15 @@ func (d *SettingsClient) Cache(ctx context.Context, schemaID string) error {
 	return err
 }
 
+func (d *SettingsClient) ClearCache() {
+	if d.schemaCache != nil {
+		d.schemaCache.Clear()
+	}
+	if d.settingsCache != nil {
+		d.settingsCache.Clear()
+	}
+}
+
 func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
 	queryParams := url.Values{}
 	queryParams.Add("fields", "ordered,schemaId")

@@ -68,7 +68,7 @@ var (
 	skipError = errors.New("skip error")
 )
 
-func Deploy(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
+func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
 	maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
 	if maxConcurrentDeployments > 0 {
 		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
@@ -94,7 +94,6 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 		reporter.ReportLoading(report.StateError, err, "", nil)
 		return err
 	}
-	preloadCaches(ctx, projects, environmentClients)
 
 	projectString := "project"
 	if len(projects) > 1 {
@@ -103,18 +102,17 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 	reporter.ReportInfo(fmt.Sprintf("%d %v validated", len(projects), projectString))
 	defer reporter.ReportInfo("Deployment finished")
 
-	for env, clientset := range environmentClients {
-		ctx := newContextWithEnvironment(ctx, env)
-		log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", env.Name)
-
+	for env, clientSet := range environmentClients {
 		sortedConfigs, ok := envConfigs[env.Name]
 		if !ok {
 			return fmt.Errorf("failed to get independently sorted configs for environment %q", env.Name)
 		}
+		ctx = newContextWithEnvironment(ctx, env)
 
-		if err := deployComponents(ctx, sortedConfigs, clientset); err != nil {
-			log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Error("Deployment failed for environment %q: %v", env.Name, err)
-			deploymentErrs = deploymentErrs.Append(env.Name, err)
+		if depErr := Deploy(ctx, clientSet, projects, sortedConfigs, env.Name); depErr != nil {
+			log.WithFields(field.Environment(env.Name, env.Group), field.Error(depErr)).Error("Deployment failed for environment %q: %v", env.Name, depErr)
+			deploymentErrs = deploymentErrs.Append(env.Name, depErr)
+
 			if !opts.ContinueOnErr && !opts.DryRun {
 				return deploymentErrs
 			}
@@ -130,6 +128,15 @@ func Deploy(ctx context.Context, projects []project.Project, environmentClients 
 	return nil
 }
 
+func Deploy(ctx context.Context, clientSet *client.ClientSet, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
+	preloadCaches(ctx, projects, clientSet, environment)
+	defer clearCaches(clientSet)
+	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", environment)
+
+	return deployComponents(ctx, sortedConfigs, clientSet)
+}
+
+// getSortedEnvConfigs sorts the config graphs and checks for certain errors like cyclic dependencies
 func getSortedEnvConfigs(g graph.ConfigGraphPerEnvironment, envNames []string) (map[string][]graph.SortedComponent, error) {
 	envConfigs := make(map[string][]graph.SortedComponent)
 	for _, env := range envNames {

@@ -89,6 +89,10 @@ func (c *DummyConfigClient) Cache(ctx context.Context, a api.API) error {
 	return nil
 }
 
+func (c *DummyConfigClient) ClearCache() {
+	// no-op
+}
+
 func (c *DummyConfigClient) List(_ context.Context, a api.API) (values []Value, err error) {
 	entries, found := c.GetEntries(a)
 
