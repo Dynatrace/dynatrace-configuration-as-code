@@ -20,6 +20,7 @@ package dtclient
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -883,4 +884,43 @@ func TestCallWithRetryOnKnowTimingIssue_IgnoreRetryOn(t *testing.T) {
 	_, err = client.callWithRetryOnKnowTimingIssue(t.Context(), mockCall, "some/path", []byte("{}"), api.API{}, corerest.RequestOptions{})
 	assert.Error(t, err)
 	assert.Equal(t, 1, i)
+}
+
+func TestConfigClient_ClearCache(t *testing.T) {
+	body := Value{
+		Id:           "c-id",
+		Name:         "config-name",
+		Owner:        nil,
+		Type:         nil,
+		CustomFields: nil,
+	}
+	listCalledCount := 0
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		listCalledCount++
+		data, err := json.Marshal(body)
+		require.NoError(t, err)
+
+		_, err = res.Write(data)
+		require.NoError(t, err)
+	}))
+	defer testServer.Close()
+
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
+	require.NoError(t, err)
+
+	// trigger an API call and save to cache
+	_, err = client.List(t.Context(), mockAPISlo)
+	require.NoError(t, err)
+	require.Equal(t, listCalledCount, 1)
+
+	// check if cache was used and no API call was triggered
+	_, err = client.List(t.Context(), mockAPISlo)
+	require.NoError(t, err)
+	require.Equal(t, listCalledCount, 1)
+
+	// clear cache and check if API call is triggered
+	client.ClearCache()
+	_, err = client.List(t.Context(), mockAPISlo)
+	require.NoError(t, err)
+	require.Equal(t, listCalledCount, 2)
 }

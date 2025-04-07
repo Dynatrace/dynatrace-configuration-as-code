@@ -148,6 +148,7 @@ func TestDeployConfigGraph_SettingShouldFailUpsert(t *testing.T) {
 
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().Cache(gomock.Any(), gomock.Eq("builtin:test")).Times(1)
+	c.EXPECT().ClearCache().Times(1)
 	c.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := config.Config{
@@ -274,6 +275,7 @@ func TestDeployConfigGraph_DeploysSetting(t *testing.T) {
 		},
 	}
 	c.EXPECT().Cache(gomock.Any(), gomock.Eq("builtin:test")).Times(1)
+	c.EXPECT().ClearCache().Times(1)
 	c.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
@@ -306,6 +308,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 
 	cl := client.NewMockConfigClient(gomock.NewController(t))
 	cl.EXPECT().Cache(gomock.Any(), gomock.Eq(theApi)).Times(1)
+	cl.EXPECT().ClearCache().Times(1)
 	cl.EXPECT().UpsertByName(gomock.Any(), gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
 	parameters := []parameter.NamedParameter{
@@ -353,6 +356,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 
 	cl := client.NewMockConfigClient(gomock.NewController(t))
 	cl.EXPECT().Cache(gomock.Any(), gomock.Eq(api.NewAPIs()[theApiName])).Times(1)
+	cl.EXPECT().ClearCache().Times(1)
 	cl.EXPECT().UpsertByNonUniqueNameAndId(gomock.Any(), gomock.Any(), gomock.Any(), theConfigName, gomock.Any(), false)
 
 	parameters := []parameter.NamedParameter{

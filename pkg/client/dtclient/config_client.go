@@ -86,6 +86,12 @@ func (d *ConfigClient) Cache(ctx context.Context, api api.API) error {
 	return err
 }
 
+func (d *ConfigClient) ClearCache() {
+	if d.configCache != nil {
+		d.configCache.Clear()
+	}
+}
+
 func (d *ConfigClient) Get(ctx context.Context, api api.API, id string) (json []byte, err error) {
 	var dtUrl = api.URLPath
 	if !api.SingleConfiguration {

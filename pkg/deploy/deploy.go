@@ -130,6 +130,7 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 
 func Deploy(ctx context.Context, clientSet *client.ClientSet, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
 	preloadCaches(ctx, projects, clientSet, environment)
+	defer clearCaches(clientSet)
 	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", environment)
 
 	return deployComponents(ctx, sortedConfigs, clientSet)

@@ -54,6 +54,16 @@ func preloadCaches(ctx context.Context, projects []project.Project, clientSet *c
 	wg.Wait()
 }
 
+func clearCaches(clientSet *client.ClientSet) {
+	if clientSet.SettingsClient != nil {
+		clientSet.SettingsClient.ClearCache()
+	}
+
+	if clientSet.ConfigClient != nil {
+		clientSet.ConfigClient.ClearCache()
+	}
+}
+
 func preloadSettingsValuesForSchemaId(ctx context.Context, client client.SettingsClient, schemaId string) {
 	if err := client.Cache(ctx, schemaId); err != nil {
 		message := fmt.Sprintf("Could not cache settings values for schema %s: %s", schemaId, err)
