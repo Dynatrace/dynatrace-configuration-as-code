@@ -29,7 +29,9 @@ func (c *DummySettingsClient) Cache(context.Context, string) error {
 	return nil
 }
 
-func (c *DummySettingsClient) ClearCache() {}
+func (c *DummySettingsClient) ClearCache() {
+	// no-op
+}
 
 func (c *DummySettingsClient) Upsert(_ context.Context, obj SettingsObject, _ UpsertSettingsOptions) (DynatraceEntity, error) {
 
