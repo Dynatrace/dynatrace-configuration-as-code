@@ -27,6 +27,7 @@ import (
 	"time"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 
 	"github.com/stretchr/testify/assert"
 
@@ -45,7 +46,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 )
 
 type entityLookup map[coordinate.Coordinate]entities.ResolvedEntity
@@ -69,7 +69,7 @@ func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (entities.
 func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool) {
 	loadedManifest := LoadManifest(t, fs, manifestPath, specificEnvironment)
 
-	projects := LoadProjects(t, fs, manifestPath, loadedManifest)
+	environments := LoadEnvironments(t, fs, manifestPath, loadedManifest)
 
 	envNames := make([]string, 0, len(loadedManifest.Environments))
 
@@ -77,7 +77,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		envNames = append(envNames, env.Name)
 	}
 
-	sortedConfigs, errs := sort.ConfigsPerEnvironment(projects, envNames)
+	sortedConfigs, errs := graph.SortEnvironments(environments)
 	testutils.FailTestOnAnyError(t, errs, "sorting configurations failed")
 
 	checkString := "exist"
@@ -93,8 +93,10 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		}
 	} else {
 		log.Info("Asserting configurations from all projects %s", checkString)
-		for _, p := range projects {
-			projectsToValidate[p.Id] = struct{}{}
+		for _, e := range environments {
+			for _, p := range e.Projects {
+				projectsToValidate[p.Id] = struct{}{}
+			}
 		}
 	}
 

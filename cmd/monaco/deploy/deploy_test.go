@@ -20,9 +20,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -146,13 +147,17 @@ func Test_checkEnvironments(t *testing.T) {
 	project2Id := "project2"
 
 	t.Run("defined environment in project succeeds", func(t *testing.T) {
-		err := validateProjectsWithEnvironments(
+		err := validateEnvironments(
 			t.Context(),
-			[]project.Project{
+			[]project.Environment{
 				{
-					Id: project1Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{},
+					Projects: []project.Project{
+						{
+							Id: project1Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env1Id: project.ConfigsPerType{},
+							},
+						},
 					},
 				},
 			},
@@ -162,32 +167,20 @@ func Test_checkEnvironments(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("undefined environment in project fails", func(t *testing.T) {
-		err := validateProjectsWithEnvironments(
-			t.Context(),
-			[]project.Project{
-				{
-					Id: project1Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						"unknown_env": project.ConfigsPerType{},
-					},
-				},
-			},
-			manifest.Environments{
-				env1Id: env1Definition,
-			})
-		assert.ErrorContains(t, err, "undefined environment")
-	})
-
 	t.Run("platform config with platform environment succeeds", func(t *testing.T) {
-		err := validateProjectsWithEnvironments(
+		err := validateEnvironments(
 			t.Context(),
-			[]project.Project{
+			[]project.Environment{
 				{
-					Id: project1Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id)},
+					Name: env1Id,
+					Projects: []project.Project{
+						{
+							Id: project1Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env1Id: project.ConfigsPerType{
+									"openpipeline": []config.Config{createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id)},
+								},
+							},
 						},
 					},
 				},
@@ -199,14 +192,19 @@ func Test_checkEnvironments(t *testing.T) {
 	})
 
 	t.Run("platform config without platform environment fails", func(t *testing.T) {
-		err := validateProjectsWithEnvironments(
+		err := validateEnvironments(
 			t.Context(),
-			[]project.Project{
+			[]project.Environment{
 				{
-					Id: project1Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id)},
+					Name: env1Id,
+					Projects: []project.Project{
+						{
+							Id: project1Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env1Id: project.ConfigsPerType{
+									"openpipeline": []config.Config{createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id)},
+								},
+							},
 						},
 					},
 				},
@@ -218,16 +216,21 @@ func Test_checkEnvironments(t *testing.T) {
 	})
 
 	t.Run("two different openpipeline configs in same project succceed", func(t *testing.T) {
-		err := validateProjectsWithEnvironments(
+		err := validateEnvironments(
 			t.Context(),
-			[]project.Project{
+			[]project.Environment{
 				{
-					Id: project1Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{
-								createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id),
-								createOpenPipelineConfigForTest("events-openpipeline-id", "events", project1Id),
+					Name: env1Id,
+					Projects: []project.Project{
+						{
+							Id: project1Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env1Id: project.ConfigsPerType{
+									"openpipeline": []config.Config{
+										createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id),
+										createOpenPipelineConfigForTest("events-openpipeline-id", "events", project1Id),
+									},
+								},
 							},
 						},
 					},
@@ -238,25 +241,30 @@ func Test_checkEnvironments(t *testing.T) {
 	})
 
 	t.Run("two different openpipeline configs in different projects succceed", func(t *testing.T) {
-		err := validateProjectsWithEnvironments(
+		err := validateEnvironments(
 			t.Context(),
-			[]project.Project{
+			[]project.Environment{
 				{
-					Id: project1Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{
-								createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id),
+					Name: env1Id,
+					Projects: []project.Project{
+						{
+							Id: project1Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env1Id: project.ConfigsPerType{
+									"openpipeline": []config.Config{
+										createOpenPipelineConfigForTest("bizevents-openpipeline-id", "bizevents", project1Id),
+									},
+								},
 							},
 						},
-					},
-				},
-				{
-					Id: project2Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{
-								createOpenPipelineConfigForTest("events-openpipeline-id", "events", project2Id),
+						{
+							Id: project2Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env1Id: project.ConfigsPerType{
+									"openpipeline": []config.Config{
+										createOpenPipelineConfigForTest("events-openpipeline-id", "events", project2Id),
+									},
+								},
 							},
 						},
 					},
@@ -266,53 +274,36 @@ func Test_checkEnvironments(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("two identical openpipeline configs in same project but different environments succceed", func(t *testing.T) {
-		err := validateProjectsWithEnvironments(
-			t.Context(),
-			[]project.Project{
-				{
-					Id: project1Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{
-								createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
-							},
-						},
-						env2Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{
-								createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project1Id),
-							},
-						},
-					},
-				},
-			},
-			manifest.Environments{
-				env1Id: env1Definition,
-				env2Id: env2Definition,
-			})
-		assert.NoError(t, err)
-	})
-
 	t.Run("two identical openpipeline configs in different projects and environments succceed", func(t *testing.T) {
-		err := validateProjectsWithEnvironments(
+		err := validateEnvironments(
 			t.Context(),
-			[]project.Project{
+			[]project.Environment{
 				{
-					Id: project1Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{
-								createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
+					Name: env1Id,
+					Projects: []project.Project{
+						{
+							Id: project1Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env1Id: project.ConfigsPerType{
+									"openpipeline": []config.Config{
+										createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
+									},
+								},
 							},
 						},
 					},
 				},
 				{
-					Id: project2Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env2Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{
-								createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project2Id),
+					Name: env2Id,
+					Projects: []project.Project{
+						{
+							Id: project1Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env2Id: project.ConfigsPerType{
+									"openpipeline": []config.Config{
+										createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project1Id),
+									},
+								},
 							},
 						},
 					},
@@ -326,16 +317,21 @@ func Test_checkEnvironments(t *testing.T) {
 	})
 
 	t.Run("two identical openpipeline configs in same project and environments fail", func(t *testing.T) {
-		err := validateProjectsWithEnvironments(
+		err := validateEnvironments(
 			t.Context(),
-			[]project.Project{
+			[]project.Environment{
 				{
-					Id: project1Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{
-								createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
-								createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project1Id),
+					Name: env1Id,
+					Projects: []project.Project{
+						{
+							Id: project1Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env1Id: project.ConfigsPerType{
+									"openpipeline": []config.Config{
+										createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
+										createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project1Id),
+									},
+								},
 							},
 						},
 					},
@@ -349,25 +345,30 @@ func Test_checkEnvironments(t *testing.T) {
 	})
 
 	t.Run("two identical openpipeline configs in different projects and same environments fail", func(t *testing.T) {
-		err := validateProjectsWithEnvironments(
+		err := validateEnvironments(
 			t.Context(),
-			[]project.Project{
+			[]project.Environment{
 				{
-					Id: project1Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{
-								createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
+					Name: env1Id,
+					Projects: []project.Project{
+						{
+							Id: project1Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env1Id: project.ConfigsPerType{
+									"openpipeline": []config.Config{
+										createOpenPipelineConfigForTest("bizevents1-openpipeline-id", "bizevents", project1Id),
+									},
+								},
 							},
 						},
-					},
-				},
-				{
-					Id: project2Id,
-					Configs: project.ConfigsPerTypePerEnvironments{
-						env1Id: project.ConfigsPerType{
-							"openpipeline": []config.Config{
-								createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project2Id),
+						{
+							Id: project2Id,
+							Configs: project.ConfigsPerTypePerEnvironments{
+								env1Id: project.ConfigsPerType{
+									"openpipeline": []config.Config{
+										createOpenPipelineConfigForTest("bizevents2-openpipeline-id", "bizevents", project2Id),
+									},
+								},
 							},
 						},
 					},
@@ -561,11 +562,16 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 	for _, tc := range success_tests {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateAuthenticationWithProjectConfigs(
-				[]project.Project{
+				[]project.Environment{
 					{
-						Id: "some id",
-						Configs: project.ConfigsPerTypePerEnvironments{
-							envId: tc.configs,
+						Name: envId,
+						Projects: []project.Project{
+							{
+								Id: "some id",
+								Configs: project.ConfigsPerTypePerEnvironments{
+									envId: tc.configs,
+								},
+							},
 						},
 					},
 				},

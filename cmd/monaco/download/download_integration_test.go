@@ -988,7 +988,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 		}
 	}
 
-	projects, errs := projectLoader.LoadProjects(t.Context(), fs, projectLoader.ProjectLoaderContext{
+	projects, errs := projectLoader.LoadEnvironments(t.Context(), fs, projectLoader.ProjectLoaderContext{
 		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      testBasePath,
 		Manifest:        man,
@@ -1372,7 +1372,7 @@ func loadDownloadedProjects(t *testing.T, fs afero.Fs, apis api.APIs) ([]project
 		return nil, errs
 	}
 
-	return projectLoader.LoadProjects(t.Context(), fs, projectLoader.ProjectLoaderContext{
+	return projectLoader.LoadEnvironments(t.Context(), fs, projectLoader.ProjectLoaderContext{
 		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      "out",
 		Manifest:        man,

@@ -88,7 +88,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	env := "platform_env"
 
 	loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, env)
-	projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
+	projects := integrationtest.LoadEnvironments(t, fs, manifestPath, loadedManifest)
 	sortedConfigs, _ := sort.ConfigsPerEnvironment(projects, []string{env})
 	environment := loadedManifest.Environments[env]
 	configToDeploy := sortedConfigs[env][0]

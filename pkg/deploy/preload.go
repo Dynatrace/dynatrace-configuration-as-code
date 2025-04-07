@@ -30,9 +30,9 @@ import (
 )
 
 // preloadCaches fills the caches of the specified clients for the config types used in the given projects.
-func preloadCaches(ctx context.Context, projects []project.Project, clientSet *client.ClientSet, environment string) {
+func preloadCaches(ctx context.Context, environment project.Environment, clientSet *client.ClientSet) {
 	var wg sync.WaitGroup
-	for _, c := range gatherPreloadConfigTypeEntries(projects, environment) {
+	for _, c := range environment.PreloadConfigTypes() {
 		wg.Add(1)
 		go func(configType config.Type) {
 			defer wg.Done()
@@ -94,32 +94,4 @@ func preloadValuesForApi(ctx context.Context, client client.ConfigClient, theApi
 	message := fmt.Sprintf("Cached values for API %s", theApi)
 	report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, message, nil)
 	log.Debug(message)
-}
-
-// gatherPreloadConfigTypeEntries scans the projects to determine which config types should be cached by which clients.
-func gatherPreloadConfigTypeEntries(projects []project.Project, environment string) []config.Type {
-	preloads := make([]config.Type, 0)
-	seenConfigTypes := map[string]struct{}{}
-
-	for _, p := range projects {
-		p.ForEveryConfigInEnvironmentDo(environment, func(c config.Config) {
-			// If the config shall be skipped there is no point in caching it
-			if c.Skip {
-				return
-			}
-			if _, ok := seenConfigTypes[c.Coordinate.Type]; ok {
-				return
-			}
-			seenConfigTypes[c.Coordinate.Type] = struct{}{}
-
-			switch t := c.Type.(type) {
-			case config.ClassicApiType:
-				preloads = append(preloads, t)
-
-			case config.SettingsType:
-				preloads = append(preloads, t)
-			}
-		})
-	}
-	return preloads
 }

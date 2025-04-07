@@ -15,6 +15,7 @@
 package v2
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -40,6 +41,46 @@ type (
 	// ActionOverConfig is a function that will be performed over each config that is part of a project via a Project.ForEveryConfigDo method
 	ActionOverConfig func(c config.Config)
 )
+
+type Environment struct {
+	Projects []Project
+	Name     string
+	Group    string
+}
+
+func (e Environment) AllConfigs() []config.Config {
+	configs := make([]config.Config, 0)
+	for _, p := range e.Projects {
+		p.ForEveryConfigDo(func(c config.Config) {
+			configs = append(configs, c)
+		})
+	}
+	return configs
+}
+
+func (e Environment) PreloadConfigTypes() []config.Type {
+	preloads := make([]config.Type, 0)
+	seenConfigTypes := map[string]struct{}{}
+
+	for _, c := range e.AllConfigs() {
+		if c.Skip {
+			continue
+		}
+		if _, ok := seenConfigTypes[c.Coordinate.Type]; ok {
+			continue
+		}
+		seenConfigTypes[c.Coordinate.Type] = struct{}{}
+
+		switch t := c.Type.(type) {
+		case config.ClassicApiType:
+			preloads = append(preloads, t)
+
+		case config.SettingsType:
+			preloads = append(preloads, t)
+		}
+	}
+	return preloads
+}
 
 type Project struct {
 	Id string
@@ -100,27 +141,12 @@ func (p Project) String() string {
 	return p.Id
 }
 
-// ForEveryConfigDo executes the given ActionOverConfig actions for each configuration defined in the project for each environment
+// ForEveryConfigDo executes the given ActionOverConfig actions for each configuration defined in the project
 // Actions can not modify the configs inside the Project.
 func (p Project) ForEveryConfigDo(action ActionOverConfig) {
-	p.forEveryConfigDo("", action)
-}
-
-// ForEveryConfigInEnvironmentDo executes the given ActionOverConfig actions for each configuration defined in the project for a given environment.
-// It behaves like ForEveryConfigDo just limited to a single environment.
-// Actions can not modify the configs inside the Project.
-func (p Project) ForEveryConfigInEnvironmentDo(environment string, action ActionOverConfig) {
-	p.forEveryConfigDo(environment, action)
-}
-
-// forEveryConfigDo applies the given action to every configuration, either for a single environment if requested,
-// or for all environments if the environemnt parameter is empty.
-func (p Project) forEveryConfigDo(environment string, action ActionOverConfig) {
-	for env, cpt := range p.Configs {
-		if environment == "" || environment == env {
-			for c := range cpt.AllConfigs {
-				action(c)
-			}
+	for _, cpt := range p.Configs {
+		for c := range cpt.AllConfigs {
+			action(c)
 		}
 	}
 }
@@ -134,4 +160,26 @@ func (cpt ConfigsPerType) AllConfigs(yield func(config.Config) bool) {
 			}
 		}
 	}
+}
+
+func FilterEnvironments(environments []Environment, specifiedEnvs []string) ([]Environment, error) {
+	filteredEnvironments := make([]Environment, 0)
+	envMap := make(map[string]Environment)
+	errs := make([]error, 0)
+
+	for _, env := range environments {
+		envMap[env.Name] = env
+	}
+
+	for _, specifiedEnv := range specifiedEnvs {
+		if env, ok := envMap[specifiedEnv]; ok {
+			filteredEnvironments = append(filteredEnvironments, env)
+		} else {
+			errs = append(errs, fmt.Errorf("specified environment '%s' not found in definition", specifiedEnv))
+		}
+	}
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	return filteredEnvironments, nil
 }

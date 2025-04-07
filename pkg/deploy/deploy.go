@@ -68,7 +68,7 @@ var (
 	skipError = errors.New("skip error")
 )
 
-func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
+func DeployForAllEnvironments(ctx context.Context, environments []project.Environment, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
 	maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
 	if maxConcurrentDeployments > 0 {
 		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
@@ -76,8 +76,7 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 	}
 	deploymentErrs := make(deployErrors.EnvironmentDeploymentErrors)
 
-	// note: Currently the validation works 'environment-independent', but that might be something we should reconsider to improve error messages
-	if validationErrs := validate.Validate(projects); validationErrs != nil {
+	if validationErrs := validate.Validate(environments); validationErrs != nil {
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, validationErrs, "", nil)
 		if !opts.ContinueOnErr && !opts.DryRun {
 			return validationErrs
@@ -88,28 +87,28 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
 
 	envNames := environmentClients.Names()
-	g := graph.New(projects, envNames)
+	g := graph.NewEnvGraphs(environments)
 	envConfigs, err := getSortedEnvConfigs(g, envNames)
 	if err != nil {
 		reporter.ReportLoading(report.StateError, err, "", nil)
 		return err
 	}
 
-	projectString := "project"
-	if len(projects) > 1 {
-		projectString = "projects"
-	}
-	reporter.ReportInfo(fmt.Sprintf("%d %v validated", len(projects), projectString))
+	reporter.ReportInfo("Projects validated")
 	defer reporter.ReportInfo("Deployment finished")
 
-	for env, clientSet := range environmentClients {
+	for _, env := range environments {
 		sortedConfigs, ok := envConfigs[env.Name]
 		if !ok {
 			return fmt.Errorf("failed to get independently sorted configs for environment %q", env.Name)
 		}
+		clientSet := environmentClients[dynatrace.EnvironmentInfo{
+			Name:  env.Name,
+			Group: env.Group,
+		}]
 		ctx = newContextWithEnvironment(ctx, env)
 
-		if depErr := Deploy(ctx, clientSet, projects, sortedConfigs, env.Name); depErr != nil {
+		if depErr := Deploy(ctx, clientSet, env, sortedConfigs); depErr != nil {
 			log.WithFields(field.Environment(env.Name, env.Group), field.Error(depErr)).Error("Deployment failed for environment %q: %v", env.Name, depErr)
 			deploymentErrs = deploymentErrs.Append(env.Name, depErr)
 
@@ -128,10 +127,10 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 	return nil
 }
 
-func Deploy(ctx context.Context, clientSet *client.ClientSet, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
-	preloadCaches(ctx, projects, clientSet, environment)
+func Deploy(ctx context.Context, clientSet *client.ClientSet, environment project.Environment, sortedConfigs []graph.SortedComponent) error {
+	preloadCaches(ctx, environment, clientSet)
 	defer clearCaches(clientSet)
-	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", environment)
+	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", environment.Name)
 
 	return deployComponents(ctx, sortedConfigs, clientSet)
 }
@@ -390,6 +389,6 @@ func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
 }
 
-func newContextWithEnvironment(ctx context.Context, env dynatrace.EnvironmentInfo) context.Context {
+func newContextWithEnvironment(ctx context.Context, env project.Environment) context.Context {
 	return context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 }

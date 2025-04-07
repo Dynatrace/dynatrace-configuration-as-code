@@ -40,10 +40,10 @@ func parseConfigEntry(
 	loaderContext *configFileLoaderContext,
 	configId string,
 	definition persistence.TopLevelConfigDefinition,
-) ([]config.Config, []error) {
+) (config.Config, []error) {
 
 	if definition.Type == (persistence.TypeDefinition{}) {
-		return nil, []error{errors.New("missing type definition")}
+		return config.Config{}, []error{errors.New("missing type definition")}
 	}
 
 	singleConfigContext := &singleConfigEntryLoadContext{
@@ -52,31 +52,19 @@ func parseConfigEntry(
 	}
 
 	if err := definition.Type.Validate(loaderContext.KnownApis); err != nil {
-		return nil, []error{newDefinitionParserError(configId, singleConfigContext, err.Error())}
+		return config.Config{}, []error{newDefinitionParserError(configId, singleConfigContext, err.Error())}
 	}
 
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
 	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
 
-	var results []config.Config
-	var errs []error
-	for _, env := range loaderContext.Environments {
+	result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, loaderContext.Environment, definition, groupOverrideMap, environmentOverrideMap)
 
-		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env, definition, groupOverrideMap, environmentOverrideMap)
-
-		if definitionErrors != nil {
-			errs = append(errs, definitionErrors...)
-			continue
-		}
-
-		results = append(results, result)
+	if len(definitionErrors) > 0 {
+		return config.Config{}, definitionErrors
 	}
 
-	if len(errs) != 0 {
-		return results, errs
-	}
-
-	return results, nil
+	return result, nil
 }
 
 func toEnvironmentOverrideMap(environments []persistence.EnvironmentOverride) map[string]persistence.EnvironmentOverride {

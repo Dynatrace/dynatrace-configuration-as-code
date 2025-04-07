@@ -23,28 +23,29 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-func LogProjectsInfo(projects []project.Project) {
-	log.Info("Projects to be deployed (%d):", len(projects))
-	for _, p := range projects {
+func LogProjectsInfo(environments []project.Environment) {
+	projectNames := make(map[string]struct{})
+
+	for _, e := range environments {
+		for _, p := range e.Projects {
+			projectNames[p.String()] = struct{}{}
+		}
+	}
+	log.Info("Projects to be deployed (%d):", len(projectNames))
+
+	for p, _ := range projectNames {
 		log.Info("  - %s", p)
 	}
+
 	if log.Level() == loggers.LevelDebug {
-		logConfigInfo(projects)
+		logConfigInfo(environments)
 	}
 }
 
-func logConfigInfo(projects []project.Project) {
-	cfgCount := make(map[string]int)
-	for _, p := range projects {
-		for env, cfgsPerTypePerEnv := range p.Configs {
-			for _, cfgsPerType := range cfgsPerTypePerEnv {
-				cfgCount[env] += len(cfgsPerType)
-			}
-		}
-	}
+func logConfigInfo(environments []project.Environment) {
 	log.Debug("Configurations per environment:")
-	for env, count := range cfgCount {
-		log.Debug("  - %s:\t%d configurations", env, count)
+	for _, env := range environments {
+		log.Debug("  - %s:\t%d configurations", env, len(env.AllConfigs()))
 	}
 }
 

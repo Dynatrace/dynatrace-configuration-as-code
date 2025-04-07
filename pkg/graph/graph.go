@@ -81,6 +81,7 @@ func (graphs ConfigGraphPerEnvironment) EncodeToDOT(environment string) ([]byte,
 	return dot.Marshal(g, environment+"_dependency_graph", "", "  ")
 }
 
+// TODO: replace/remove
 // SortConfigs returns a slice of config.Config for the given environment sorted according to their dependencies.
 func (graphs ConfigGraphPerEnvironment) SortConfigs(environment string) ([]config.Config, error) {
 	g, err := graphs.getGraphForEnvironment(environment)
@@ -88,6 +89,23 @@ func (graphs ConfigGraphPerEnvironment) SortConfigs(environment string) ([]confi
 		return nil, err
 	}
 
+	sortedNodes, err := topo.Sort(g)
+	if err != nil {
+		sortErr := topo.Unorderable{}
+		if ok := errors.As(err, &sortErr); ok {
+			return []config.Config{}, newCyclicDependencyError(environment, sortErr)
+		}
+	}
+	sortedCfgs := make([]config.Config, len(sortedNodes))
+	for i, n := range sortedNodes {
+		sortedCfgs[i] = *n.(ConfigNode).Config
+	}
+
+	return sortedCfgs, nil
+}
+
+// TODO: environment name should not be needed
+func SortConfigs(g *simple.DirectedGraph, environment string) ([]config.Config, error) {
 	sortedNodes, err := topo.Sort(g)
 	if err != nil {
 		sortErr := topo.Unorderable{}
@@ -206,29 +224,44 @@ func buildUndirectedGraph(d *simple.DirectedGraph) *simple.UndirectedGraph {
 
 type NodeOption func(n *ConfigNode)
 
+// TODO: remove/replace
 // New creates a new ConfigGraphPerEnvironment based on the given projects and environments.
 func New(projects []project.Project, environments []string, nodeOptions ...NodeOption) ConfigGraphPerEnvironment {
 	graphs := make(ConfigGraphPerEnvironment)
 	for _, environment := range environments {
-		cfgGraph := buildDependencyGraph(projects, environment, nodeOptions)
+		configs := make([]config.Config, 0)
+		for _, p := range projects {
+			for _, cfgs := range p.Configs[environment] {
+				configs = append(configs, cfgs...)
+			}
+		}
+		log.Debug("Creating dependency graph for %s", environment)
+		cfgGraph := buildDependencyGraph(configs, nodeOptions)
 		graphs[environment] = cfgGraph
 	}
 	return graphs
 }
 
-func buildDependencyGraph(projects []project.Project, environment string, nodeOptions []NodeOption) *simple.DirectedGraph {
-	log.Debug("Creating dependency graph for %s", environment)
+// TODO: remove/replace
+// New creates a new ConfigGraphPerEnvironment based on the given projects and environments.
+func NewEnvGraphs(environments []project.Environment, nodeOptions ...NodeOption) ConfigGraphPerEnvironment {
+	graphs := make(ConfigGraphPerEnvironment)
+	for _, e := range environments {
+		log.Debug("Creating dependency graph for %s", e.Name)
+		cfgGraph := buildDependencyGraph(e.AllConfigs(), nodeOptions)
+		graphs[e.Name] = cfgGraph
+	}
+	return graphs
+}
+
+func NewConfigGraph(configs []config.Config, nodeOptions ...NodeOption) *simple.DirectedGraph {
+	return buildDependencyGraph(configs, nodeOptions)
+}
+
+func buildDependencyGraph(configs []config.Config, nodeOptions []NodeOption) *simple.DirectedGraph {
 	g := simple.NewDirectedGraph()
 	coordinateToNodeIDs := make(coordinateToNodeIDMap)
 	configReferences := make(referencesLookup)
-
-	var configs []config.Config
-
-	for _, p := range projects {
-		for _, cfgs := range p.Configs[environment] {
-			configs = append(configs, cfgs...)
-		}
-	}
 
 	for i, c := range configs {
 		if c.Skip && featureflags.IgnoreSkippedConfigs.Enabled() {

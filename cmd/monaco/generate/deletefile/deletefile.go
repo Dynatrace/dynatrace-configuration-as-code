@@ -42,15 +42,14 @@ import (
 )
 
 type createDeleteFileOptions struct {
-	environmentNames []string
-	fileName         string
-	includeTypes     []string
-	excludeTypes     []string
-	outputFolder     string
+	fileName     string
+	includeTypes []string
+	excludeTypes []string
+	outputFolder string
 }
 
-func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, options createDeleteFileOptions) error {
-	content, err := generateDeleteFileContent(apis, projects, options)
+func createDeleteFile(fs afero.Fs, environments []project.Environment, apis api.APIs, options createDeleteFileOptions) error {
+	content, err := generateDeleteFileContent(apis, environments, options)
 	if err != nil {
 		log.WithFields(field.Error(err)).Error("Failed to generate delete file content: %v", err)
 		return err
@@ -100,16 +99,11 @@ func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, op
 	return nil
 }
 
-func generateDeleteFileContent(apis api.APIs, projects []project.Project, options createDeleteFileOptions) ([]byte, error) {
+func generateDeleteFileContent(apis api.APIs, environments []project.Environment, options createDeleteFileOptions) ([]byte, error) {
 
 	log.Info("Generating delete file...")
 
-	var entries []persistence.DeleteEntry
-	if len(options.environmentNames) == 0 {
-		entries = generateDeleteEntries(apis, projects, options)
-	} else {
-		entries = generateDeleteEntriesForEnvironments(apis, projects, options)
-	}
+	entries := generateDeleteEntries(apis, environments, options)
 
 	f := persistence.FullFileDefinition{DeleteEntries: entries}
 	b, err := yaml.Marshal(&f)
@@ -120,44 +114,16 @@ func generateDeleteFileContent(apis api.APIs, projects []project.Project, option
 	return b, nil
 }
 
-func generateDeleteEntries(apis api.APIs, projects []project.Project, options createDeleteFileOptions) []persistence.DeleteEntry {
+func generateDeleteEntries(apis api.APIs, environments []project.Environment, options createDeleteFileOptions) []persistence.DeleteEntry {
 	entries := make(map[string]persistence.DeleteEntry) // set to ensure cfgs without environment overwrites are only added once
 
 	inclTypesLookup := toStrLookupMap(options.includeTypes)
 	exclTypesLookup := toStrLookupMap(options.excludeTypes)
 
-	for _, p := range projects {
-		log.Info("Adding delete entries for project %q...", p.Id)
-		p.ForEveryConfigDo(func(c config.Config) {
-			if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
-				if c.Coordinate.Type == string(config.OpenPipelineTypeID) {
-					log.Info("Skipped creating delete entry for %q as openpipeline configurations cannot be deleted", c.Coordinate)
-				}
-				return
-			}
-
-			entry, err := createDeleteEntry(c, apis, p)
-			if err != nil {
-				log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
-				return
-			}
-			entries[toMapKey(entry)] = entry
-		})
-	}
-
-	return maps.Values(entries)
-}
-
-func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Project, options createDeleteFileOptions) []persistence.DeleteEntry {
-	entries := make(map[string]persistence.DeleteEntry) // set to ensure cfgs without environment overwrites are only added once
-
-	inclTypesLookup := toStrLookupMap(options.includeTypes)
-	exclTypesLookup := toStrLookupMap(options.excludeTypes)
-
-	for _, p := range projects {
-		for _, env := range options.environmentNames {
-			log.Info("Adding delete entries for project %q and environment %q...", p.Id, env)
-			p.ForEveryConfigInEnvironmentDo(env, func(c config.Config) {
+	for _, env := range environments {
+		for _, p := range env.Projects {
+			log.Info("Adding delete entries for project %q and environment %q...", p.Id, env.Name)
+			p.ForEveryConfigDo(func(c config.Config) {
 				if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
 					if c.Coordinate.Type == string(config.OpenPipelineTypeID) {
 						log.Info("Skipped creating delete entry for %q as openpipeline configurations cannot be deleted", c.Coordinate)

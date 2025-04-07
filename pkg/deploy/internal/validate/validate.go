@@ -30,7 +30,7 @@ type Validator interface {
 
 // Validate verifies that the passed projects are sound to an extent that can be checked before deployment.
 // This means, that only checks can be performed that work on 'static' data.
-func Validate(projects []project.Project) error {
+func Validate(environments []project.Environment) error {
 	defaultValidators := []Validator{
 		classic.NewValidator(),
 		classic.NewDeprecatedApiValidator(),
@@ -38,20 +38,22 @@ func Validate(projects []project.Project) error {
 		&setting.InsertAfterSameScopeValidator{},
 	}
 
-	return validate(projects, defaultValidators)
+	return validate(environments, defaultValidators)
 }
 
-func validate(projects []project.Project, validators []Validator) error {
+func validate(environments []project.Environment, validators []Validator) error {
 	errs := make(errors.EnvironmentDeploymentErrors)
 
-	for _, p := range projects {
-		p.ForEveryConfigDo(func(c config.Config) {
-			for _, v := range validators {
-				if err := v.Validate(projects, c); err != nil {
-					errs = errs.Append(c.Environment, err)
+	for _, e := range environments {
+		for _, p := range e.Projects {
+			p.ForEveryConfigDo(func(c config.Config) {
+				for _, v := range validators {
+					if err := v.Validate(e.Projects, c); err != nil {
+						errs = errs.Append(c.Environment, err)
+					}
 				}
-			}
-		})
+			})
+		}
 	}
 
 	if len(errs) > 0 {

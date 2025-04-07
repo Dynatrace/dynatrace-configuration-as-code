@@ -74,7 +74,7 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 }
 
 // Tries to load the specified projects. If no project names are specified, all projects are loaded.
-func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, specificProjectNames []string) ([]Project, []error) {
+func LoadEnvironments(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, specificProjectNames []string) ([]Environment, []error) {
 	var workingDirFs afero.Fs
 
 	if loaderContext.WorkingDir == "." {
@@ -87,48 +87,55 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 		return nil, []error{fmt.Errorf("no projects defined in manifest")}
 	}
 
-	environments := toEnvironmentSlice(loaderContext.Manifest.Environments)
+	environmentDefinitions := toEnvironmentSlice(loaderContext.Manifest.Environments)
 
 	projectNamesToLoad, errs := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
 
 	seenProjectNames := make(map[string]struct{}, len(projectNamesToLoad))
-	var loadedProjects []Project
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
 
-	for len(projectNamesToLoad) > 0 {
-		projectNameToLoad := projectNamesToLoad[0]
-		projectNamesToLoad = projectNamesToLoad[1:]
+	loadedEnvironments := make([]Environment, 0, len(environmentDefinitions))
 
-		if _, found := seenProjectNames[projectNameToLoad]; found {
-			continue
+	for _, environment := range environmentDefinitions {
+		var loadedProjects []Project
+		remainingProjects := projectNamesToLoad
+		for len(remainingProjects) > 0 {
+			projectNameToLoad := remainingProjects[0]
+			remainingProjects = remainingProjects[1:]
+
+			if _, found := seenProjectNames[projectNameToLoad]; found {
+				continue
+			}
+			seenProjectNames[projectNameToLoad] = struct{}{}
+
+			projectDefinition, found := loaderContext.Manifest.Projects[projectNameToLoad]
+			if !found {
+				continue
+			}
+
+			project, loadProjectErrs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, environment)
+
+			if len(loadProjectErrs) > 0 {
+				errs = append(errs, loadProjectErrs...)
+				continue
+			}
+			reporter.ReportInfo(fmt.Sprintf("Project %q loaded", project.String()))
+
+			loadedProjects = append(loadedProjects, project)
+			projectNamesToLoad = append(remainingProjects, project.Dependencies[environment.Name]...)
 		}
-		seenProjectNames[projectNameToLoad] = struct{}{}
-
-		projectDefinition, found := loaderContext.Manifest.Projects[projectNameToLoad]
-		if !found {
-			continue
-		}
-
-		project, loadProjectErrs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, environments)
-
-		if len(loadProjectErrs) > 0 {
-			errs = append(errs, loadProjectErrs...)
-			continue
-		}
-		reporter.ReportInfo(fmt.Sprintf("Project %q loaded", project.String()))
-
-		loadedProjects = append(loadedProjects, project)
-
-		for _, environment := range environments {
-			projectNamesToLoad = append(projectNamesToLoad, project.Dependencies[environment.Name]...)
-		}
+		loadedEnvironments = append(loadedEnvironments, Environment{
+			Projects: loadedProjects,
+			Name:     environment.Name,
+			Group:    environment.Group,
+		})
 	}
 
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	return loadedProjects, nil
+	return loadedEnvironments, nil
 }
 
 // Gets full project names to load specified by project or grouping project names. If none are specified, all project names are returned. Errors are returned for any project names that do not exist.
@@ -178,7 +185,7 @@ func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) 
 	return result
 }
 
-func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
+func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environment manifest.EnvironmentDefinition) (Project, []error) {
 	if exists, err := afero.Exists(fs, projectDefinition.Path); err != nil {
 		formattedErr := fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
@@ -191,7 +198,7 @@ func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderCo
 
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
-	configs, errs := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
+	configs, errs := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environment)
 	for _, err := range errs {
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, err, "", nil)
 	}
@@ -313,7 +320,7 @@ func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 
 // loadConfigsOfProject returns the (partial if errors) loaded configs and the errors
 func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
-	environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
+	environment manifest.EnvironmentDefinition) ([]config.Config, []error) {
 
 	configFiles, err := files.FindYamlFiles(fs, projectDefinition.Path)
 	if err != nil {
@@ -325,7 +332,7 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 
 	loaderContext := &loader.LoaderContext{
 		ProjectId:       projectDefinition.Name,
-		Environments:    environments,
+		Environment:     environment,
 		Path:            projectDefinition.Path,
 		KnownApis:       loadingContext.KnownApis,
 		ParametersSerDe: loadingContext.ParametersSerde,

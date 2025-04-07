@@ -20,6 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -30,8 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"path/filepath"
 )
 
 // ExportError is returned in case any error occurs while creating a dependency graph file
@@ -72,7 +74,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		}
 	}
 
-	projects, errs := project.LoadProjects(ctx, fs, project.ProjectLoaderContext{
+	environments, errs := project.LoadEnvironments(ctx, fs, project.ProjectLoaderContext{
 		KnownApis:       api.NewAPIs().GetApiNameLookup(),
 		WorkingDir:      filepath.Dir(manifestPath),
 		Manifest:        m,
@@ -102,7 +104,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		})
 	}
 
-	graphs := graph.New(projects, m.Environments.Names(), opts...)
+	graphs := graph.NewEnvGraphs(environments, opts...)
 
 	folderPath, err := filepath.Abs(outputFolder)
 	if err != nil {

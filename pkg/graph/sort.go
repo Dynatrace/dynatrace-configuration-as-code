@@ -43,3 +43,27 @@ func SortProjects(projects []project.Project, environments []string) (map[string
 	}
 	return cfgsPerEnv, nil
 }
+
+func SortEnvironment(environment project.Environment) ([]config.Config, error) {
+	g := NewConfigGraph(environment.AllConfigs())
+	return SortConfigs(g, environment.Name)
+}
+
+func SortEnvironments(environments []project.Environment) (map[string][]config.Config, []error) {
+	cfgsPerEnv := make(map[string][]config.Config)
+	var errs SortingErrors
+
+	for _, environment := range environments {
+		sortedCfgs, err := SortEnvironment(environment)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		cfgsPerEnv[environment.Name] = sortedCfgs
+	}
+
+	if len(errs) > 0 {
+		return map[string][]config.Config{}, errs
+	}
+	return cfgsPerEnv, nil
+}
