@@ -1173,3 +1173,680 @@ func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
 	})
 
 }
+
+func TestClient_getServiceUserEmailByUid(t *testing.T) {
+
+	t.Run("success if found", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 1
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		email, err := instance.getServiceUserEmailByUid(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744")
+		assert.NoError(t, err)
+		assert.Equal(t, "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com", email)
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("returns ResourceNotFoundError if not found", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674745",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674745@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 1
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		_, err := instance.getServiceUserEmailByUid(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744")
+		rnfErr := &ResourceNotFoundError{}
+		assert.ErrorAs(t, err, &rnfErr)
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("returns an error if multiple are found", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    },
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 2
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		_, err := instance.getServiceUserEmailByUid(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744")
+		assert.ErrorContains(t, err, "found multiple service users")
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("returns an error if list failed", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusBadRequest,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		_, err := instance.getServiceUserEmailByUid(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674745")
+		assert.Error(t, err)
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("returns an error if response empty", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		_, err := instance.getServiceUserEmailByUid(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674745")
+		assert.ErrorContains(t, err, "the received data are empty")
+		assert.Equal(t, 1, server.Calls())
+	})
+}
+
+func TestClient_getServiceUserEmailByName(t *testing.T) {
+
+	t.Run("success if found", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 1
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		email, err := instance.getServiceUserEmailByName(t.Context(), "service-user")
+		assert.NoError(t, err)
+		assert.Equal(t, "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com", email)
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("returns ResourceNotFoundError if not found", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674745",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674745@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 1
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		_, err := instance.getServiceUserEmailByName(t.Context(), "another-service-user")
+		rnfErr := &ResourceNotFoundError{}
+		assert.ErrorAs(t, err, &rnfErr)
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("returns an error if multiple are found", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    },
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 2
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		_, err := instance.getServiceUserEmailByName(t.Context(), "service-user")
+		assert.ErrorContains(t, err, "found multiple service users")
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("returns an error if list failed", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusBadRequest,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		_, err := instance.getServiceUserEmailByName(t.Context(), "service-user")
+		assert.Error(t, err)
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("returns an error if response empty", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		_, err := instance.getServiceUserEmailByName(t.Context(), "service-user")
+		assert.ErrorContains(t, err, "the received data are empty")
+		assert.Equal(t, 1, server.Calls())
+	})
+}
+
+func TestClient_UpsertServiceUser(t *testing.T) {
+
+	t.Run("upsert with ID and update works", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users/8b78ac8d-74fd-456f-bb19-13e078674744", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		remoteId, err := instance.upsertServiceUser(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		assert.NoError(t, err)
+		assert.Equal(t, "8b78ac8d-74fd-456f-bb19-13e078674744", remoteId)
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("upsert with ID returns error if update fails", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusBadRequest,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users/8b78ac8d-74fd-456f-bb19-13e078674744", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		remoteId, err := instance.upsertServiceUser(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		assert.Empty(t, remoteId)
+		assert.ErrorContains(t, err, "failed to update service user")
+
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("upsert with ID returns error if service user not found", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusNotFound,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users/8b78ac8d-74fd-456f-bb19-13e078674744", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		remoteId, err := instance.upsertServiceUser(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		assert.Empty(t, remoteId)
+		assert.ErrorContains(t, err, "failed to update service user")
+
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("upsert with name succeeds", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 1
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users/8b78ac8d-74fd-456f-bb19-13e078674744", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		assert.Equal(t, "8b78ac8d-74fd-456f-bb19-13e078674744", remoteId)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 2, server.Calls())
+	})
+
+	t.Run("upsert with name list fails", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusBadRequest,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		assert.Empty(t, remoteId)
+		assert.ErrorContains(t, err, "failed to get service users")
+
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("upsert with name fails if multiple are found", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    },
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 2
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		assert.Empty(t, remoteId)
+		assert.ErrorContains(t, err, "found multiple service users")
+
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("upsert with name creates if not found", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 1
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+			{
+				POST: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "uuid": "8b78ac8d-74fd-456f-bb19-13e078674745"
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "another-service-user", Description: accountmanagement.PtrString("Another service user")})
+		assert.Equal(t, "8b78ac8d-74fd-456f-bb19-13e078674745", remoteId)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 2, server.Calls())
+	})
+
+	t.Run("upsert with name errors if not found but create fails", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 1
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+			{
+				POST: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusBadRequest,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "another-service-user", Description: accountmanagement.PtrString("Another service user")})
+		assert.Empty(t, remoteId)
+		assert.ErrorContains(t, err, "failed to create service user")
+
+		assert.Equal(t, 2, server.Calls())
+	})
+
+	t.Run("upsert with name errors if update fails", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{
+  "results": [
+    {
+      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+      "name": "service-user",
+      "surname": "string",
+      "description": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalCount": 1
+}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+				},
+			},
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusBadRequest,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users/8b78ac8d-74fd-456f-bb19-13e078674744", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		assert.Empty(t, remoteId)
+		assert.ErrorContains(t, err, "failed to update service user")
+
+		assert.Equal(t, 2, server.Calls())
+	})
+}
