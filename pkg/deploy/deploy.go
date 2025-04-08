@@ -284,6 +284,14 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 	}
 }
 
+type ErrUnknownConfigType struct {
+	configType config.TypeID
+}
+
+func (e ErrUnknownConfigType) Error() string {
+	return fmt.Sprintf("unknown config type (ID: %q)", e.configType)
+}
+
 func deployConfig(ctx context.Context, c *config.Config, clientset *client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
 	if concurrentDeploymentsLimiter != nil {
 		concurrentDeploymentsLimiter.Acquire()
@@ -330,28 +338,31 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		resolvedEntity, deployErr = document.Deploy(ctx, clientset.DocumentClient, properties, renderedConfig, c)
 
 	case config.OpenPipelineType:
-		if featureflags.OpenPipeline.Enabled() {
-			resolvedEntity, deployErr = openpipeline.Deploy(ctx, clientset.OpenPipelineClient, properties, renderedConfig, c)
-		} else {
-			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
+		if !featureflags.OpenPipeline.Enabled() {
+			deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
+			break
 		}
+
+		resolvedEntity, deployErr = openpipeline.Deploy(ctx, clientset.OpenPipelineClient, properties, renderedConfig, c)
 
 	case config.Segment:
-		if featureflags.Segments.Enabled() {
-			resolvedEntity, deployErr = segment.Deploy(ctx, clientset.SegmentClient, properties, renderedConfig, c)
-		} else {
-			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
+		if !featureflags.Segments.Enabled() {
+			deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
+			break
 		}
+
+		resolvedEntity, deployErr = segment.Deploy(ctx, clientset.SegmentClient, properties, renderedConfig, c)
 
 	case config.ServiceLevelObjective:
-		if featureflags.ServiceLevelObjective.Enabled() {
-			resolvedEntity, deployErr = slo.Deploy(ctx, clientset.ServiceLevelObjectiveClient, properties, renderedConfig, c)
-		} else {
-			deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
+		if !featureflags.ServiceLevelObjective.Enabled() {
+			deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
+			break
 		}
 
+		resolvedEntity, deployErr = slo.Deploy(ctx, clientset.ServiceLevelObjectiveClient, properties, renderedConfig, c)
+
 	default:
-		deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
+		deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
 	}
 
 	if deployErr != nil {
