@@ -154,11 +154,10 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 	errCount := 0
 	errChan := make(chan error, len(components))
 
-	resolvedEntities := entities.New()
 	// Iterate over components and launch a goroutine for each component deployment.
 	for i := range components {
 		go func(ctx context.Context, component graph.SortedComponent) {
-			errChan <- deployGraph(ctx, component.Graph, clientset, resolvedEntities)
+			errChan <- deployGraph(ctx, component.Graph, clientset)
 		}(context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(i)), components[i])
 	}
 
@@ -181,10 +180,10 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 	return nil
 }
 
-func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clientset *client.ClientSet, resolvedEntities *entities.EntityMap) error {
+func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clientset *client.ClientSet) error {
 	g := simple.NewDirectedGraph()
 	gonum.Copy(g, configGraph)
-
+	resolvedEntities := entities.New()
 	errCount := 0
 
 	errChan := make(chan error)
