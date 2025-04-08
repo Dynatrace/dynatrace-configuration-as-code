@@ -41,7 +41,7 @@ var mockAPISlo = api.API{ID: api.Slo, SingleConfiguration: true}
 var mockAPINotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
 
 var testReportsApi = api.API{ID: "reports", URLPath: "/api/config/v1/reports"}
-var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueName: true, DeprecatedBy: "dashboard-v2"}
+var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueName: true}
 var testMobileAppApi = api.API{ID: "application-mobile", URLPath: "/api/config/v1/applications/mobile"}
 var testServiceDetectionApi = api.API{ID: "service-detection-full-web-request", URLPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST"}
 var testSyntheticApi = api.API{ID: "synthetic-monitor", URLPath: "/api/environment/v1/synthetic/monitor"}

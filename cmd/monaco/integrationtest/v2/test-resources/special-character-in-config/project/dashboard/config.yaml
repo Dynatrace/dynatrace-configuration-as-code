@@ -34,5 +34,5 @@ configs:
 
 
 
-    template: overview-dashboard-dashboard-v2.json
+    template: overview-dashboard.json
     skip: false

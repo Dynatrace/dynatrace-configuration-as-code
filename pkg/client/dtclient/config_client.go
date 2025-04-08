@@ -507,7 +507,7 @@ func getLocationFromHeader(resp coreapi.Response) ([]string, bool) {
 }
 
 func isApiDashboard(a api.API) bool {
-	return a.ID == api.Dashboard || a.ID == api.DashboardV2
+	return a.ID == api.Dashboard
 }
 
 func isApiDashboardShareSettings(a api.API) bool {

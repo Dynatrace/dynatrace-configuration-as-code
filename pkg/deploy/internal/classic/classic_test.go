@@ -32,7 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 )
 
-var dashboardApi = api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}
+var dashboardApi = api.API{ID: "dashboard", URLPath: "dashboard"}
 var testApiMap = api.APIs{"dashboard": dashboardApi}
 
 func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
