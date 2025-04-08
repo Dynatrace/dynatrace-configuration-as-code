@@ -17,9 +17,10 @@
 package api
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"sync"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 )
 
 const (
@@ -29,7 +30,6 @@ const (
 	Autotag                              = "auto-tag"
 	Dashboard                            = "dashboard"
 	DashboardShareSettings               = "dashboard-share-settings"
-	DashboardV2                          = "dashboard-v2"
 	Notification                         = "notification"
 	Extension                            = "extension"
 	ExtensionElasticSearch               = "extension-elasticsearch"

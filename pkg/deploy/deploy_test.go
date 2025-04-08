@@ -48,9 +48,6 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-var dashboardApi = api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}
-var testApiMap = api.APIs{"dashboard": dashboardApi}
-
 func TestDeployConfigGraph_SingleConfig(t *testing.T) {
 	name := "test"
 	owner := "hansi"
