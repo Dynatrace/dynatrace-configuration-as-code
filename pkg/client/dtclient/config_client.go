@@ -146,6 +146,11 @@ func (d *ConfigClient) UpsertByName(ctx context.Context, a api.API, name string,
 			return DynatraceEntity{}, valErr
 		}
 	}
+	if isApiDashboard(a) {
+		if valErr := ValidateDashboardPayload(payload, true); valErr != nil {
+			return DynatraceEntity{}, valErr
+		}
+	}
 	return d.upsertDynatraceObject(ctx, a, name, payload)
 }
 
@@ -895,5 +900,35 @@ func validateSloV1Payload(payload []byte) error {
 	if parsedPayload.EvaluationType == "" {
 		return errors.New("tried to deploy an slo-v2 configuration to slo-v1")
 	}
+	return nil
+}
+
+// ValidateDashboardPayload returns an error if the JSON data is invalid or if the payload is not a V1 payload
+// expectV1: if true it's expected to be a V1 dashboard, else V2
+// Classic dashboard: "tiles" is an array
+// Platform dashboard: "tiles" is an object
+func ValidateDashboardPayload(payload []byte, expectV1 bool) error {
+	type DashboardV2Keys struct {
+		Tiles any `json:"tiles"`
+	}
+	parsedPayload := DashboardV2Keys{}
+	err := json.Unmarshal(payload, &parsedPayload)
+	if err != nil {
+		return err
+	}
+
+	if expectV1 {
+		// map should only be used in V2
+		if _, isMap := parsedPayload.Tiles.(map[string]any); isMap {
+			return errors.New("tried to deploy a classic dashboard configuration to platform dashboard")
+		}
+		return nil
+	}
+
+	// array should only be used in V1
+	if _, isArray := parsedPayload.Tiles.([]any); isArray {
+		return errors.New("tried to deploy a platform dashboard configuration to classic dashboard")
+	}
+
 	return nil
 }

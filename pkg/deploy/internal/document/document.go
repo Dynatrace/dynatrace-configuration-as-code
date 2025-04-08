@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -54,6 +55,12 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	documentName, ok := properties[config.NameParameter].(string)
 	if !ok {
 		return entities.ResolvedEntity{}, errors.New("missing name parameter")
+	}
+
+	if documentType == documents.Dashboard {
+		if valErr := dtclient.ValidateDashboardPayload([]byte(renderedConfig), false); valErr != nil {
+			return entities.ResolvedEntity{}, valErr
+		}
 	}
 
 	// strategy 1: if an origin id is available, try to update that document
