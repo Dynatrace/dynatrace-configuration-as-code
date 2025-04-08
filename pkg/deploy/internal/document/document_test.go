@@ -26,7 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	gomock "go.uber.org/mock/gomock"
+	"go.uber.org/mock/gomock"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -37,6 +37,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 )
 
@@ -217,9 +218,29 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 	})
 }
 
+func TestDeploy_WithV1Payload_Fails(t *testing.T) {
+	documentConfig := &config.Config{
+		Type:       config.DocumentType{Kind: config.DashboardKind},
+		Coordinate: documentConfigCoordinate,
+		Template:   template.NewInMemoryTemplate("dashboard-v1", `{"tiles": []}`),
+		Parameters: testutils.ToParameterMap([]parameter.NamedParameter{{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: documentName,
+			},
+		}}),
+	}
+
+	cl := NewMockClient(gomock.NewController(t))
+	_, err := runDeployTest(t, cl, documentConfig)
+	assert.ErrorContains(t, err, "tried to deploy")
+}
+
 func runDeployTest(t *testing.T, client Client, c *config.Config) (entities.ResolvedEntity, error) {
 	parameters, errs := c.ResolveParameterValues(entities.New())
 	require.Empty(t, errs)
+	content, err := c.Render(parameters)
+	require.NoError(t, err)
 
-	return Deploy(t.Context(), client, parameters, "", c)
+	return Deploy(t.Context(), client, parameters, content, c)
 }
