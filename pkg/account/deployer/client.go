@@ -283,6 +283,12 @@ func (d *accountManagementClient) createServiceUser(ctx context.Context, dto acc
 func (d *accountManagementClient) updateServiceUser(ctx context.Context, serviceUserId string, dto accountmanagement.ServiceUserDto) (string, error) {
 	resp, err := d.client.ServiceUserManagementAPI.UpdateServiceUserForAccount(ctx, d.accountInfo.AccountUUID, serviceUserId).ServiceUserDto(dto).Execute()
 	defer closeResponseBody(resp)
+
+	// handle a 404 here if need be as handleClientResponseError discards it!
+	if is404(resp) {
+		return "", ResourceNotFoundError{Identifier: serviceUserId}
+	}
+
 	if err = handleClientResponseError(resp, err, "failed to update service user"); err != nil {
 		return "", err
 	}
@@ -495,6 +501,10 @@ func (d *accountManagementClient) updateGroupBindings(ctx context.Context, userI
 		return err
 	}
 	return nil
+}
+
+func is404(resp *http.Response) bool {
+	return resp != nil && resp.StatusCode == http.StatusNotFound
 }
 
 func handleClientResponseError(resp *http.Response, clientErr error, errMessage string) error {

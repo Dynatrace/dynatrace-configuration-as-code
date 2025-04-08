@@ -1579,7 +1579,7 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
 		remoteId, err := instance.upsertServiceUser(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
 		assert.Empty(t, remoteId)
-		assert.ErrorContains(t, err, "failed to update service user")
+		assert.ErrorContains(t, err, "not found")
 
 		assert.Equal(t, 1, server.Calls())
 	})
