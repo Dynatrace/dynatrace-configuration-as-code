@@ -323,6 +323,7 @@ func (c *accountManagementClient) getServiceUserEmailByName(ctx context.Context,
 	return serviceUser.Email, nil
 }
 
+//nolint:dupl
 func (c *accountManagementClient) getServiceUserByName(ctx context.Context, name string) (*accountmanagement.ExternalServiceUserDto, error) {
 	serviceUsers, err := c.getServiceUsers(ctx)
 	if err != nil {
@@ -354,6 +355,7 @@ func (c *accountManagementClient) getServiceUserEmailByUid(ctx context.Context, 
 	return serviceUser.Email, nil
 }
 
+//nolint:dupl
 func (c *accountManagementClient) getServiceUserByUid(ctx context.Context, uid string) (*accountmanagement.ExternalServiceUserDto, error) {
 	serviceUsers, err := c.getServiceUsers(ctx)
 	if err != nil {
