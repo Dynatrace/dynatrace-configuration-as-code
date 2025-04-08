@@ -228,16 +228,6 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 	details := report.GetDetailerFromContextOrDiscard(ctx).GetAll()
 
 	if err != nil {
-		if errors.Is(err, skipError) {
-			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateExcluded, details, nil)
-		} else {
-			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateError, details, err)
-		}
-	} else {
-		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateSuccess, details, nil)
-	}
-
-	if err != nil {
 		failed := !errors.Is(err, skipError)
 
 		lock.Lock()
@@ -245,12 +235,15 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 		lock.Unlock()
 
 		if failed {
+			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateError, details, err)
 			return err
 		}
+		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateExcluded, details, nil)
 		return nil
 	}
 
 	resolvedEntities.Put(resolvedEntity)
+	report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateSuccess, details, nil)
 	log.WithCtxFields(ctx).WithFields(field.StatusDeployed()).Info("Deployment successful")
 	return nil
 }
