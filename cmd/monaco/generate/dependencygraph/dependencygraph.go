@@ -20,6 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+
+	"github.com/spf13/afero"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -29,9 +33,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"path/filepath"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 // ExportError is returned in case any error occurs while creating a dependency graph file

@@ -17,15 +17,17 @@
 package download
 
 import (
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 func Test_validateOutputFolder(t *testing.T) {

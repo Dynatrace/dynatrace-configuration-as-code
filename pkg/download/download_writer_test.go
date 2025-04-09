@@ -17,17 +17,19 @@
 package download
 
 import (
+	"path/filepath"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"path/filepath"
-	"testing"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 const (
@@ -66,7 +68,7 @@ func TestWriteToDisk(t *testing.T) {
 
 	type args struct {
 		fs                afero.Fs
-		downloadedConfigs v2.ConfigsPerType
+		downloadedConfigs project.ConfigsPerType
 		projectName       string
 		tokenEnvVarName   string
 		environmentUrl    manifest.URLDefinition
@@ -86,7 +88,7 @@ func TestWriteToDisk(t *testing.T) {
 			"creates expected files",
 			args{
 				fs: emptyTestFs(),
-				downloadedConfigs: v2.ConfigsPerType{
+				downloadedConfigs: project.ConfigsPerType{
 					"test-api": []config.Config{
 						{
 							Type:        config.ClassicApiType{Api: "test-api"},
@@ -120,7 +122,7 @@ func TestWriteToDisk(t *testing.T) {
 			"creates 'download_{TIMESTAMP}' output if no output folder is defined",
 			args{
 				fs: emptyTestFs(),
-				downloadedConfigs: v2.ConfigsPerType{
+				downloadedConfigs: project.ConfigsPerType{
 					"test-api": []config.Config{
 						{
 							Type:        config.ClassicApiType{Api: "test-api"},
@@ -154,7 +156,7 @@ func TestWriteToDisk(t *testing.T) {
 			"creates 'manifest_{TIMESTAMP}' if a manifest.yaml already exists",
 			args{
 				fs: testFsWithWithExistingManifest("test-output"),
-				downloadedConfigs: v2.ConfigsPerType{
+				downloadedConfigs: project.ConfigsPerType{
 					"test-api": []config.Config{
 						{
 							Type:        config.ClassicApiType{Api: "test-api"},
@@ -188,7 +190,7 @@ func TestWriteToDisk(t *testing.T) {
 			"overwrites existing manifest.yaml if forced overwrite",
 			args{
 				fs: testFsWithWithExistingManifest("test-output"),
-				downloadedConfigs: v2.ConfigsPerType{
+				downloadedConfigs: project.ConfigsPerType{
 					"test-api": []config.Config{
 						{
 							Type:        config.ClassicApiType{Api: "test-api"},
@@ -265,7 +267,7 @@ func TestWriteToDisk(t *testing.T) {
 
 func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
 	//GIVEN
-	downloadedConfigs := v2.ConfigsPerType{
+	downloadedConfigs := project.ConfigsPerType{
 		"test-api": []config.Config{
 			{
 				Type:        config.ClassicApiType{Api: "test-api"},

@@ -39,12 +39,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-func Download(ctx context.Context, client client.ConfigClient, projectName string, apisToDownload api.APIs, filters ContentFilters) (projectv2.ConfigsPerType, error) {
+func Download(ctx context.Context, client client.ConfigClient, projectName string, apisToDownload api.APIs, filters ContentFilters) (project.ConfigsPerType, error) {
 	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
-	results := make(projectv2.ConfigsPerType, len(apisToDownload))
+	results := make(project.ConfigsPerType, len(apisToDownload))
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	wg.Add(len(apisToDownload))

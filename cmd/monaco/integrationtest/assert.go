@@ -45,7 +45,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/sort"
 )
 
 type entityLookup map[coordinate.Coordinate]entities.ResolvedEntity

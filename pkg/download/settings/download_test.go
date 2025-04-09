@@ -41,7 +41,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 func TestDownloadAll(t *testing.T) {
@@ -65,7 +65,7 @@ func TestDownloadAll(t *testing.T) {
 		filters    map[string]Filter
 		schemas    []config.SettingsType
 		envVars    map[string]string
-		want       v2.ConfigsPerType
+		want       project.ConfigsPerType
 	}{
 		{
 			name: "DownloadSettings - List Schemas fails",
@@ -100,7 +100,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				ListSettingsCalls: 2,
 			},
-			want: v2.ConfigsPerType{},
+			want: project.ConfigsPerType{},
 		},
 		{
 			name: "DownloadSettings - invalid (empty) value payload",
@@ -124,7 +124,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"id1": {}},
+			want: project.ConfigsPerType{"id1": {}},
 		},
 		{
 			name: "DownloadSettings - valid value payload",
@@ -148,7 +148,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"id1": {
+			want: project.ConfigsPerType{"id1": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
@@ -194,7 +194,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"id1": {}},
+			want: project.ConfigsPerType{"id1": {}},
 		},
 		{
 			name: "DownloadSettings - discard unmodifable settings",
@@ -231,7 +231,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"id1": {
+			want: project.ConfigsPerType{"id1": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
@@ -279,7 +279,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"id1": {
+			want: project.ConfigsPerType{"id1": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
@@ -351,7 +351,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"id1": {
+			want: project.ConfigsPerType{"id1": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
@@ -452,7 +452,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"id1": {
+			want: project.ConfigsPerType{"id1": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
@@ -568,7 +568,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"id1": {
+			want: project.ConfigsPerType{"id1": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
@@ -646,7 +646,7 @@ func TestDownloadAll(t *testing.T) {
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 0,
 			},
-			want: v2.ConfigsPerType{},
+			want: project.ConfigsPerType{},
 		},
 		{
 			name:    "DownloadSettings - Settings found",
@@ -672,7 +672,7 @@ func TestDownloadAll(t *testing.T) {
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"builtin:alerting-profile": {
+			want: project.ConfigsPerType{"builtin:alerting-profile": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
@@ -716,7 +716,7 @@ func TestDownloadAll(t *testing.T) {
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"builtin:host.monitoring.mode": {}},
+			want: project.ConfigsPerType{"builtin:host.monitoring.mode": {}},
 		},
 		{
 			name:    "Downloading builtin:host.monitoring.mode does not discard them if the DownloadFilter FF is inactive",
@@ -744,7 +744,7 @@ func TestDownloadAll(t *testing.T) {
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 1,
 			},
-			want: v2.ConfigsPerType{"builtin:host.monitoring.mode": {
+			want: project.ConfigsPerType{"builtin:host.monitoring.mode": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
@@ -802,7 +802,7 @@ func TestDownloadAll(t *testing.T) {
 				GetPermissionCalls: 1,
 			},
 			schemas: []config.SettingsType{{SchemaId: "app:my-app:schema"}},
-			want: v2.ConfigsPerType{"app:my-app:schema": {
+			want: project.ConfigsPerType{"app:my-app:schema": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
@@ -856,7 +856,7 @@ func TestDownloadAll(t *testing.T) {
 				featureflags.AccessControlSettings.EnvName(): "false",
 			},
 			schemas: []config.SettingsType{{SchemaId: "app:my-app:schema"}},
-			want: v2.ConfigsPerType{"app:my-app:schema": {
+			want: project.ConfigsPerType{"app:my-app:schema": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
 					Coordinate: coordinate.Coordinate{
@@ -913,7 +913,7 @@ func TestDownloadAll(t *testing.T) {
 				GetPermissionCalls: 1,
 			},
 			schemas: []config.SettingsType{{SchemaId: "app:my-app:schema"}},
-			want:    v2.ConfigsPerType{},
+			want:    project.ConfigsPerType{},
 		},
 	}
 	for _, tt := range tests {

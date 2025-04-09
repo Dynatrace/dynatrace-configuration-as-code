@@ -32,7 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 func Test_gatherPreloadConfigTypeEntries_OneEntryPerConfigType(t *testing.T) {

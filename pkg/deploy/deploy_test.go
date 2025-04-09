@@ -45,7 +45,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 func TestDeployConfigGraph_SingleConfig(t *testing.T) {

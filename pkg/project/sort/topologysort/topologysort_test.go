@@ -19,15 +19,17 @@
 package topologysort
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/errors"
 	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/sort/errors"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/stretchr/testify/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 func TestSortConfigs(t *testing.T) {

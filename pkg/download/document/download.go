@@ -30,7 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 var documentMapping = map[string]config.DocumentKind{
@@ -39,7 +39,7 @@ var documentMapping = map[string]config.DocumentKind{
 	documents.Launchpad: config.LaunchpadKind,
 }
 
-func Download(ctx context.Context, client client.DocumentClient, projectName string) (v2.ConfigsPerType, error) {
+func Download(ctx context.Context, client client.DocumentClient, projectName string) (project.ConfigsPerType, error) {
 	// due to the current test setup, the types must be downloaded in order. This should be changed eventually
 	var typesToDownload = []documents.DocumentType{
 		documents.Dashboard,
@@ -53,7 +53,7 @@ func Download(ctx context.Context, client client.DocumentClient, projectName str
 		allConfigs = append(allConfigs, configs...)
 	}
 
-	return v2.ConfigsPerType{
+	return project.ConfigsPerType{
 		string(config.DocumentTypeID): allConfigs,
 	}, nil
 }

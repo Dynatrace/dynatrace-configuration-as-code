@@ -38,7 +38,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 var automationTypesToResources = map[config.AutomationType]automationAPI.ResourceType{
@@ -49,12 +49,12 @@ var automationTypesToResources = map[config.AutomationType]automationAPI.Resourc
 
 // Download downloads all automation resources for a given project
 // If automationTypes is given it will just download those types of automation resources
-func Download(ctx context.Context, cl client.AutomationClient, projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
+func Download(ctx context.Context, cl client.AutomationClient, projectName string, automationTypes ...config.AutomationType) (project.ConfigsPerType, error) {
 	if len(automationTypes) == 0 {
 		automationTypes = maps.Keys(automationTypesToResources)
 	}
 
-	configsPerType := make(v2.ConfigsPerType)
+	configsPerType := make(project.ConfigsPerType)
 	for _, at := range automationTypes {
 		lg := log.WithFields(field.Type(at.Resource))
 

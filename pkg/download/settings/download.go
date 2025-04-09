@@ -41,7 +41,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 type schema struct {
@@ -50,7 +50,7 @@ type schema struct {
 	ownerBasedAccessControl *bool
 }
 
-func Download(ctx context.Context, client client.SettingsClient, projectName string, filters Filters, schemaIDs ...config.SettingsType) (v2.ConfigsPerType, error) {
+func Download(ctx context.Context, client client.SettingsClient, projectName string, filters Filters, schemaIDs ...config.SettingsType) (project.ConfigsPerType, error) {
 	if len(schemaIDs) == 0 {
 		return downloadAll(ctx, client, projectName, filters)
 	}
@@ -61,7 +61,7 @@ func Download(ctx context.Context, client client.SettingsClient, projectName str
 	return downloadSpecific(ctx, client, projectName, schemas, filters)
 }
 
-func downloadAll(ctx context.Context, client client.SettingsClient, projectName string, filters Filters) (v2.ConfigsPerType, error) {
+func downloadAll(ctx context.Context, client client.SettingsClient, projectName string, filters Filters) (project.ConfigsPerType, error) {
 	log.Debug("Fetching all schemas to download")
 	schemas, err := fetchAllSchemas(ctx, client)
 	if err != nil {
@@ -71,10 +71,10 @@ func downloadAll(ctx context.Context, client client.SettingsClient, projectName 
 	return download(ctx, client, schemas, projectName, filters), nil
 }
 
-func downloadSpecific(ctx context.Context, client client.SettingsClient, projectName string, schemaIDs []string, filters Filters) (v2.ConfigsPerType, error) {
+func downloadSpecific(ctx context.Context, client client.SettingsClient, projectName string, schemaIDs []string, filters Filters) (project.ConfigsPerType, error) {
 	schemas, err := fetchSchemas(ctx, client, schemaIDs)
 	if err != nil {
-		return v2.ConfigsPerType{}, err
+		return project.ConfigsPerType{}, err
 	}
 
 	if ok, unknownSchemas := validateSpecificSchemas(schemas, schemaIDs); !ok {
@@ -131,8 +131,8 @@ func fetchSchemas(ctx context.Context, cl client.SettingsClient, schemaIds []str
 	return schemas, nil
 }
 
-func download(ctx context.Context, client client.SettingsClient, schemas []schema, projectName string, filters Filters) v2.ConfigsPerType {
-	results := make(v2.ConfigsPerType, len(schemas))
+func download(ctx context.Context, client client.SettingsClient, schemas []schema, projectName string, filters Filters) project.ConfigsPerType {
+	results := make(project.ConfigsPerType, len(schemas))
 	downloadMutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	wg.Add(len(schemas))

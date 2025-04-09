@@ -17,7 +17,7 @@
 package download
 
 import (
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 func CreateProjectData(downloadedConfigs project.ConfigsPerType, projectName string) project.Project {

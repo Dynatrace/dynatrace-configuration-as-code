@@ -47,7 +47,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
