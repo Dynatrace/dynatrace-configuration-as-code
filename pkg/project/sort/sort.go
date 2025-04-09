@@ -18,7 +18,7 @@ package sort
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 // ConfigsPerEnvironment returns a sorted slice of configurations for each environment. If configurations depend

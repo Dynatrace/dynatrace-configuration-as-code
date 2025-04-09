@@ -18,7 +18,7 @@ package graph
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 // SortProjects is a convenience method to make Graph based sorting an easy plugin for the old toposort variant.

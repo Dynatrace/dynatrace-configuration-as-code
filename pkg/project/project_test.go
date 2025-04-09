@@ -14,7 +14,7 @@
 
 //go:build unit
 
-package v2_test
+package project_test
 
 import (
 	"testing"
@@ -23,7 +23,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 func TestGetConfigFor(t *testing.T) {

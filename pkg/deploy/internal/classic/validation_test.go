@@ -23,7 +23,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 
 	"github.com/stretchr/testify/assert"
 

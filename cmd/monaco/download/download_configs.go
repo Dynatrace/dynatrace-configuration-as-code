@@ -43,8 +43,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 type downloadCmdOptions struct {
@@ -272,14 +271,14 @@ func escapeGoTemplating(c *config.Config) error {
 }
 
 type downloadFn struct {
-	classicDownload      func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error)
-	settingsDownload     func(context.Context, client.SettingsClient, string, settings.Filters, ...config.SettingsType) (projectv2.ConfigsPerType, error)
-	automationDownload   func(context.Context, client.AutomationClient, string, ...config.AutomationType) (projectv2.ConfigsPerType, error)
-	bucketDownload       func(context.Context, client.BucketClient, string) (projectv2.ConfigsPerType, error)
-	documentDownload     func(context.Context, client.DocumentClient, string) (projectv2.ConfigsPerType, error)
-	openPipelineDownload func(context.Context, client.OpenPipelineClient, string) (projectv2.ConfigsPerType, error)
-	segmentDownload      func(context.Context, segment.DownloadSegmentClient, string) (projectv2.ConfigsPerType, error)
-	sloDownload          func(context.Context, slo.DownloadSloClient, string) (projectv2.ConfigsPerType, error)
+	classicDownload      func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (project.ConfigsPerType, error)
+	settingsDownload     func(context.Context, client.SettingsClient, string, settings.Filters, ...config.SettingsType) (project.ConfigsPerType, error)
+	automationDownload   func(context.Context, client.AutomationClient, string, ...config.AutomationType) (project.ConfigsPerType, error)
+	bucketDownload       func(context.Context, client.BucketClient, string) (project.ConfigsPerType, error)
+	documentDownload     func(context.Context, client.DocumentClient, string) (project.ConfigsPerType, error)
+	openPipelineDownload func(context.Context, client.OpenPipelineClient, string) (project.ConfigsPerType, error)
+	segmentDownload      func(context.Context, segment.DownloadSegmentClient, string) (project.ConfigsPerType, error)
+	sloDownload          func(context.Context, slo.DownloadSloClient, string) (project.ConfigsPerType, error)
 }
 
 var defaultDownloadFn = downloadFn{

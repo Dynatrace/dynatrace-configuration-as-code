@@ -17,17 +17,18 @@
 package topologysort
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
-	errors2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/errors"
 	"strings"
 	"sync"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
+	errors2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/sort/errors"
 
 	s "sort"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 type projectsPerEnvironment map[string][]project.Project

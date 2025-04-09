@@ -44,7 +44,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	projectLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 // compareOptions holds all options we require for the tests to not be flaky.
@@ -116,7 +116,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 
 	var _ config.Type = config.ClassicApiType{}
 
-	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, project.ConfigsPerType{
 		fakeApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-1"},
@@ -187,7 +187,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	configs, found := p.Configs[projectName]
 	assert.True(t, found)
 
-	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, project.ConfigsPerType{
 		fakeApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-1"},
@@ -281,7 +281,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	configs, found := p.Configs[projectName]
 	assert.True(t, found)
 
-	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, project.ConfigsPerType{
 		fakeApi1.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.ID, ConfigId: "id-1"},
@@ -405,7 +405,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	assert.True(t, found)
 	assert.Len(t, configs, 1)
 
-	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, project.ConfigsPerType{
 		fakeApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "fake-id"},
@@ -477,7 +477,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	assert.True(t, found)
 	assert.Len(t, configs, 1)
 
-	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, project.ConfigsPerType{
 		syntheticLocationApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: syntheticLocationApi.ID, ConfigId: "id-2"},
@@ -553,7 +553,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 
 	assert.Len(t, configs["dashboard"], 3)
 
-	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, project.ConfigsPerType{
 		dashboardApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-1"},
@@ -656,7 +656,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 
 	assert.Len(t, configs["dashboard"], 5)
 
-	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, project.ConfigsPerType{
 		dashboardApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-1"},
@@ -774,7 +774,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	assert.True(t, found)
 	assert.Len(t, configs, 1)
 
-	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, project.ConfigsPerType{
 		dashboardApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "b836ff25-24e3-496d-8dce-d94110815ab5"},
@@ -924,7 +924,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			assert.True(t, found)
 			assert.Len(t, configs, 1)
 
-			diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
+			diff := cmp.Diff(configs, project.ConfigsPerType{
 				hostAutoUpdateApi.ID: testcase.expectedConfigs,
 			}, compareOptions...)
 
@@ -988,7 +988,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 		}
 	}
 
-	projects, errs := projectLoader.LoadProjects(t.Context(), fs, projectLoader.ProjectLoaderContext{
+	projects, errs := project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
 		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      testBasePath,
 		Manifest:        man,
@@ -1013,7 +1013,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	assert.True(t, found)
 	assert.Len(t, configs, 1)
 
-	diff := cmp.Diff(configs, projectLoader.ConfigsPerType{
+	diff := cmp.Diff(configs, project.ConfigsPerType{
 		fakeApi.ID: []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-1"},
@@ -1362,7 +1362,7 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 	}
 }
 
-func loadDownloadedProjects(t *testing.T, fs afero.Fs, apis api.APIs) ([]projectLoader.Project, []error) {
+func loadDownloadedProjects(t *testing.T, fs afero.Fs, apis api.APIs) ([]project.Project, []error) {
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: "out/manifest.yaml",
@@ -1372,7 +1372,7 @@ func loadDownloadedProjects(t *testing.T, fs afero.Fs, apis api.APIs) ([]project
 		return nil, errs
 	}
 
-	return projectLoader.LoadProjects(t.Context(), fs, projectLoader.ProjectLoaderContext{
+	return project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
 		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      "out",
 		Manifest:        man,

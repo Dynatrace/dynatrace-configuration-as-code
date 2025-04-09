@@ -40,7 +40,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 func TestDownloadConfigsBehaviour(t *testing.T) {
@@ -343,49 +343,49 @@ func TestDownload_Options(t *testing.T) {
 			}
 
 			fn := downloadFn{
-				classicDownload: func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (projectv2.ConfigsPerType, error) {
+				classicDownload: func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (project.ConfigsPerType, error) {
 					if !tt.want.config {
 						t.Fatalf("classic config download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				settingsDownload: func(ctx context.Context, settingsClient client.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (projectv2.ConfigsPerType, error) {
+				settingsDownload: func(ctx context.Context, settingsClient client.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (project.ConfigsPerType, error) {
 					if !tt.want.settings {
 						t.Fatalf("settings download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				automationDownload: func(ctx context.Context, a client.AutomationClient, s string, automationType ...config.AutomationType) (projectv2.ConfigsPerType, error) {
+				automationDownload: func(ctx context.Context, a client.AutomationClient, s string, automationType ...config.AutomationType) (project.ConfigsPerType, error) {
 					if !tt.want.automation {
 						t.Fatalf("automation download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				bucketDownload: func(ctx context.Context, b client.BucketClient, s string) (projectv2.ConfigsPerType, error) {
+				bucketDownload: func(ctx context.Context, b client.BucketClient, s string) (project.ConfigsPerType, error) {
 					if !tt.want.bucket {
 						t.Fatalf("automation download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				documentDownload: func(ctx context.Context, b client.DocumentClient, s string) (projectv2.ConfigsPerType, error) {
+				documentDownload: func(ctx context.Context, b client.DocumentClient, s string) (project.ConfigsPerType, error) {
 					if !tt.want.document {
 						t.Fatalf("document download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				openPipelineDownload: func(ctx context.Context, b client.OpenPipelineClient, s string) (projectv2.ConfigsPerType, error) {
+				openPipelineDownload: func(ctx context.Context, b client.OpenPipelineClient, s string) (project.ConfigsPerType, error) {
 					if !tt.want.openpipeline {
 						t.Fatalf("openpipeline download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				segmentDownload: func(ctx context.Context, b segment.DownloadSegmentClient, s string) (projectv2.ConfigsPerType, error) {
+				segmentDownload: func(ctx context.Context, b segment.DownloadSegmentClient, s string) (project.ConfigsPerType, error) {
 					if !tt.want.segment {
 						t.Fatalf("segment download was not meant to be called but was")
 					}
 					return nil, nil
 				},
-				sloDownload: func(ctx context.Context, b slo.DownloadSloClient, s string) (projectv2.ConfigsPerType, error) {
+				sloDownload: func(ctx context.Context, b slo.DownloadSloClient, s string) (project.ConfigsPerType, error) {
 					if !tt.want.slo {
 						t.Fatalf("slo-v2 download was not meant to be called but was")
 					}
@@ -606,8 +606,8 @@ func Test_downloadConfigsOptions_valid(t *testing.T) {
 
 func Test_copyConfigs(t *testing.T) {
 	t.Run("Copy configs to empty", func(t *testing.T) {
-		dest := projectv2.ConfigsPerType{}
-		copyConfigs(dest, projectv2.ConfigsPerType{
+		dest := project.ConfigsPerType{}
+		copyConfigs(dest, project.ConfigsPerType{
 			"dashboard": []config.Config{
 				{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}}},
 			"notebook": []config.Config{
@@ -626,10 +626,10 @@ func Test_copyConfigs(t *testing.T) {
 	})
 
 	t.Run("Copying configs of same type should merge", func(t *testing.T) {
-		dest := projectv2.ConfigsPerType{"dashboard": []config.Config{
+		dest := project.ConfigsPerType{"dashboard": []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}},
 		}}
-		copyConfigs(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
+		copyConfigs(dest, project.ConfigsPerType{"dashboard": []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-2"}},
 		}})
 
@@ -643,10 +643,10 @@ func Test_copyConfigs(t *testing.T) {
 	})
 
 	t.Run("Copy configs of different types", func(t *testing.T) {
-		dest := projectv2.ConfigsPerType{"notebook": []config.Config{
+		dest := project.ConfigsPerType{"notebook": []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "notebook-1"}},
 		}}
-		copyConfigs(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
+		copyConfigs(dest, project.ConfigsPerType{"dashboard": []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-1"}}}})
 
 		assert.Len(t, dest, 2)
@@ -663,7 +663,7 @@ func Test_copyConfigs(t *testing.T) {
 	})
 
 	t.Run("Merge configs of same and different types", func(t *testing.T) {
-		dest := projectv2.ConfigsPerType{
+		dest := project.ConfigsPerType{
 			"notebook": []config.Config{
 				{Coordinate: coordinate.Coordinate{ConfigId: "notebook-1"}},
 			},
@@ -672,7 +672,7 @@ func Test_copyConfigs(t *testing.T) {
 			},
 		}
 
-		copyConfigs(dest, projectv2.ConfigsPerType{"dashboard": []config.Config{
+		copyConfigs(dest, project.ConfigsPerType{"dashboard": []config.Config{
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-2"}},
 		}})
 

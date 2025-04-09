@@ -34,8 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
@@ -184,7 +183,7 @@ func validateProjectsWithEnvironments(ctx context.Context, projects []project.Pr
 	return errors.Join(errs...)
 }
 
-func collectOpenPipelineCoordinatesByKind(cfgPerType v2.ConfigsPerType, dest KindCoordinates) {
+func collectOpenPipelineCoordinatesByKind(cfgPerType project.ConfigsPerType, dest KindCoordinates) {
 	for cfg := range cfgPerType.AllConfigs {
 		if cfg.Skip {
 			continue
@@ -196,7 +195,7 @@ func collectOpenPipelineCoordinatesByKind(cfgPerType v2.ConfigsPerType, dest Kin
 	}
 }
 
-func collectPlatformCoordinates(cfgPerType v2.ConfigsPerType) []coordinate.Coordinate {
+func collectPlatformCoordinates(cfgPerType project.ConfigsPerType) []coordinate.Coordinate {
 	plaformCoordinates := []coordinate.Coordinate{}
 
 	for cfg := range cfgPerType.AllConfigs {

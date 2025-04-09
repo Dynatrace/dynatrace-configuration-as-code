@@ -31,7 +31,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/templatetools"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 type skipErr struct {
@@ -42,8 +42,8 @@ func (s skipErr) Error() string {
 	return s.msg
 }
 
-func Download(ctx context.Context, client client.BucketClient, projectName string) (v2.ConfigsPerType, error) {
-	result := make(v2.ConfigsPerType)
+func Download(ctx context.Context, client client.BucketClient, projectName string) (project.ConfigsPerType, error) {
+	result := make(project.ConfigsPerType)
 	response, err := client.List(ctx)
 	if err != nil {
 		log.WithFields(field.Type("bucket"), field.Error(err)).Error("Failed to fetch all bucket definitions: %v", err)

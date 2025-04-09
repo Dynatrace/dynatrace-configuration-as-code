@@ -28,12 +28,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/templatetools"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-func Download(ctx context.Context, client client.OpenPipelineClient, projectName string) (v2.ConfigsPerType, error) {
+func Download(ctx context.Context, client client.OpenPipelineClient, projectName string) (project.ConfigsPerType, error) {
 
-	result := v2.ConfigsPerType{string(config.OpenPipelineTypeID): nil}
+	result := project.ConfigsPerType{string(config.OpenPipelineTypeID): nil}
 
 	all, err := client.GetAll(ctx)
 	if err != nil {
