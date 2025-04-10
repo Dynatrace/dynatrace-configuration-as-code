@@ -30,7 +30,7 @@ type DeployConfigsOptions struct {
 	// DryRun states that the deployment shall just run in dry-run mode, meaning
 	// that actual deployment of the configuration to a tenant will be skipped
 	DryRun bool
-	// MaxConcurrentDeployments sets the max amount of concurrent deployments
+	// ConcurrentDeploymentsLimiter limits the amount of concurrent deployments
 	ConcurrentDeploymentsLimiter *rest.ConcurrentRequestLimiter
 }
 
