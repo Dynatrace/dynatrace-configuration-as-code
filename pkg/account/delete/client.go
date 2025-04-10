@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
@@ -120,8 +121,7 @@ func (c *AccountAPIClient) getServiceUserIDByName(ctx context.Context, accountUU
 func (c *AccountAPIClient) getServiceUsers(ctx context.Context, accountUUID string) ([]accountmanagement.ExternalServiceUserDto, error) {
 	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
 	const pageSize = 1000
-	page := (int32)(1)
-	for {
+	for page := 1; page < math.MaxInt; page++ {
 		r, err := c.getServiceUsersPage(ctx, accountUUID, page, pageSize)
 		if err != nil {
 			return nil, err
@@ -132,13 +132,12 @@ func (c *AccountAPIClient) getServiceUsers(ctx context.Context, accountUUID stri
 		if r.NextPageKey == nil {
 			break
 		}
-		page++
 	}
 
 	return serviceUsers, nil
 }
 
-func (c *AccountAPIClient) getServiceUsersPage(ctx context.Context, accountUUID string, page int32, pageSize int32) (*accountmanagement.ExternalServiceUsersPageDto, error) {
+func (c *AccountAPIClient) getServiceUsersPage(ctx context.Context, accountUUID string, page int, pageSize int) (*accountmanagement.ExternalServiceUsersPageDto, error) {
 	r, resp, err := c.client.ServiceUserManagementAPI.GetServiceUsersFromAccount(ctx, accountUUID).Page(page).PageSize(pageSize).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "failed to get service users"); err != nil {

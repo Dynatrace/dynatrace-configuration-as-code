@@ -45,7 +45,7 @@ func (c *Client) GetUsers(ctx context.Context, accountUUID string) ([]accountman
 func (c *Client) GetServiceUsers(ctx context.Context, accountUUID string) ([]accountmanagement.ExternalServiceUserDto, error) {
 	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
 	const pageSize = 100
-	for page := (int32)(1); page < math.MaxInt32; page++ {
+	for page := 1; page < math.MaxInt; page++ {
 		r, err := c.getServiceUsersPage(ctx, accountUUID, page, pageSize)
 		if err != nil {
 			return nil, err
@@ -61,7 +61,7 @@ func (c *Client) GetServiceUsers(ctx context.Context, accountUUID string) ([]acc
 	return serviceUsers, nil
 }
 
-func (c *Client) getServiceUsersPage(ctx context.Context, accountUUID string, page int32, pageSize int32) (*accountmanagement.ExternalServiceUsersPageDto, error) {
+func (c *Client) getServiceUsersPage(ctx context.Context, accountUUID string, page int, pageSize int) (*accountmanagement.ExternalServiceUsersPageDto, error) {
 	r, resp, err := c.ServiceUserManagementAPI.GetServiceUsersFromAccount(ctx, accountUUID).Page(page).PageSize(pageSize).Execute()
 	defer closeResponseBody(resp)
 	if err = getErrorMessageFromResponse(resp, err); err != nil {
