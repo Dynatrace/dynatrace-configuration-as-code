@@ -267,17 +267,17 @@ func (c *accountManagementClient) upsertServiceUser(ctx context.Context, service
 }
 
 func (c *accountManagementClient) createServiceUser(ctx context.Context, dto accountmanagement.ServiceUserDto) (string, error) {
-	uuidDto, resp, err := c.client.ServiceUserManagementAPI.CreateServiceUserForAccount(ctx, c.accountInfo.AccountUUID).ServiceUserDto(dto).Execute()
+	externalServiceUserWithGroupUuidDto, resp, err := c.client.ServiceUserManagementAPI.CreateServiceUserForAccount(ctx, c.accountInfo.AccountUUID).ServiceUserDto(dto).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "failed to create service user"); err != nil {
 		return "", err
 	}
 
-	if uuidDto == nil {
+	if externalServiceUserWithGroupUuidDto == nil {
 		return "", errors.New("the received data are empty")
 	}
 
-	return uuidDto.Uuid, nil
+	return externalServiceUserWithGroupUuidDto.Uid, nil
 }
 
 func (c *accountManagementClient) updateServiceUser(ctx context.Context, serviceUserId string, dto accountmanagement.ServiceUserDto) (string, error) {
@@ -323,7 +323,6 @@ func (c *accountManagementClient) getServiceUserEmailByName(ctx context.Context,
 	return serviceUser.Email, nil
 }
 
-//nolint:dupl
 func (c *accountManagementClient) getServiceUserByName(ctx context.Context, name string) (*accountmanagement.ExternalServiceUserDto, error) {
 	serviceUsers, err := c.getServiceUsers(ctx)
 	if err != nil {
@@ -355,27 +354,20 @@ func (c *accountManagementClient) getServiceUserEmailByUid(ctx context.Context, 
 	return serviceUser.Email, nil
 }
 
-//nolint:dupl
-func (c *accountManagementClient) getServiceUserByUid(ctx context.Context, uid string) (*accountmanagement.ExternalServiceUserDto, error) {
-	serviceUsers, err := c.getServiceUsers(ctx)
-	if err != nil {
+func (c *accountManagementClient) getServiceUserByUid(ctx context.Context, uid string) (*accountmanagement.ExternalServiceUserWithGroupUuidDto, error) {
+	serviceUser, resp, err := c.client.ServiceUserManagementAPI.GetServiceUser(ctx, c.accountInfo.AccountUUID, uid).Execute()
+	defer closeResponseBody(resp)
+
+	if is404(resp) {
+		return nil, ResourceNotFoundError{Identifier: uid}
+	}
+	if err = handleClientResponseError(resp, err, "failed to get service users"); err != nil {
 		return nil, err
 	}
-
-	var foundServiceUser *accountmanagement.ExternalServiceUserDto
-	for _, s := range serviceUsers {
-		if s.Uid == uid {
-			if foundServiceUser != nil {
-				return nil, fmt.Errorf("found multiple service users with id '%s'", uid)
-			}
-			foundServiceUser = &s
-		}
+	if serviceUser == nil {
+		return nil, errors.New("the received data are empty")
 	}
-	if foundServiceUser == nil {
-		return nil, &ResourceNotFoundError{Identifier: uid}
-	}
-
-	return foundServiceUser, nil
+	return serviceUser, nil
 }
 
 func (c *accountManagementClient) getServiceUsers(ctx context.Context) ([]accountmanagement.ExternalServiceUserDto, error) {

@@ -1183,22 +1183,18 @@ func TestClient_getServiceUserEmailByUid(t *testing.T) {
 					return testutils.Response{
 						ResponseCode: http.StatusOK,
 						ResponseBody: `{
-  "results": [
-    {
-      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
-      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
-      "name": "service-user",
-      "surname": "string",
-      "description": "string",
-      "createdAt": "string"
-    }
-  ],
-  "totalCount": 1
+  "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
+  "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
+  "name": "service-user",
+  "surname": "string",
+  "description": "string",
+  "createdAt": "string",
+  "groupUuid": "string"
 }`,
 					}
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users/8b78ac8d-74fd-456f-bb19-13e078674744", request.URL.String())
 				},
 			},
 		}
@@ -1218,24 +1214,16 @@ func TestClient_getServiceUserEmailByUid(t *testing.T) {
 			{
 				GET: func(t *testing.T, request *http.Request) testutils.Response {
 					return testutils.Response{
-						ResponseCode: http.StatusOK,
+						ResponseCode: http.StatusNotFound,
 						ResponseBody: `{
-  "results": [
-    {
-      "uid": "8b78ac8d-74fd-456f-bb19-13e078674745",
-      "email": "8b78ac8d-74fd-456f-bb19-13e078674745@service.sso.dynatrace.com",
-      "name": "service-user",
-      "surname": "string",
-      "description": "string",
-      "createdAt": "string"
-    }
-  ],
-  "totalCount": 1
+  "error": true,
+  "payload": null,
+  "message": "Requested service user not found"
 }`,
 					}
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users/8b78ac8d-74fd-456f-bb19-13e078674744", request.URL.String())
 				},
 			},
 		}
@@ -1245,56 +1233,12 @@ func TestClient_getServiceUserEmailByUid(t *testing.T) {
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
 		_, err := instance.getServiceUserEmailByUid(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744")
-		rnfErr := &ResourceNotFoundError{}
+		rnfErr := ResourceNotFoundError{}
 		assert.ErrorAs(t, err, &rnfErr)
 		assert.Equal(t, 1, server.Calls())
 	})
 
-	t.Run("returns an error if multiple are found", func(t *testing.T) {
-		responses := []testutils.ResponseDef{
-			{
-				GET: func(t *testing.T, request *http.Request) testutils.Response {
-					return testutils.Response{
-						ResponseCode: http.StatusOK,
-						ResponseBody: `{
-  "results": [
-    {
-      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
-      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
-      "name": "service-user",
-      "surname": "string",
-      "description": "string",
-      "createdAt": "string"
-    },
-    {
-      "uid": "8b78ac8d-74fd-456f-bb19-13e078674744",
-      "email": "8b78ac8d-74fd-456f-bb19-13e078674744@service.sso.dynatrace.com",
-      "name": "service-user",
-      "surname": "string",
-      "description": "string",
-      "createdAt": "string"
-    }
-  ],
-  "totalCount": 2
-}`,
-					}
-				},
-				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
-				},
-			},
-		}
-
-		server := testutils.NewHTTPTestServer(t, responses)
-		defer server.Close()
-
-		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		_, err := instance.getServiceUserEmailByUid(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744")
-		assert.ErrorContains(t, err, "found multiple service users")
-		assert.Equal(t, 1, server.Calls())
-	})
-
-	t.Run("returns an error if list failed", func(t *testing.T) {
+	t.Run("returns an error if failed", func(t *testing.T) {
 		responses := []testutils.ResponseDef{
 			{
 				GET: func(t *testing.T, request *http.Request) testutils.Response {
@@ -1303,7 +1247,7 @@ func TestClient_getServiceUserEmailByUid(t *testing.T) {
 					}
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
 				},
 			},
 		}
@@ -1326,7 +1270,7 @@ func TestClient_getServiceUserEmailByUid(t *testing.T) {
 					}
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/iam/v1/accounts/abcde/service-users?page=1&page-size=1000", request.URL.String())
+					assert.Equal(t, "/iam/v1/accounts/abcde/service-users/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
 				},
 			},
 		}
@@ -1733,7 +1677,13 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 					return testutils.Response{
 						ResponseCode: http.StatusOK,
 						ResponseBody: `{
-  "uuid": "8b78ac8d-74fd-456f-bb19-13e078674745"
+  "uid": "8b78ac8d-74fd-456f-bb19-13e078674745",
+  "email": "8b78ac8d-74fd-456f-bb19-13e078674745@service.sso.dynatrace.com",
+  "name": "another-service-user",
+  "surname": "string",
+  "description": "string",
+  "createdAt": "string",
+  "groupUuid": "string"
 }`,
 					}
 				},
