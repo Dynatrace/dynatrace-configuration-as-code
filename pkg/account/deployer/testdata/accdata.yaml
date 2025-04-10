@@ -4,6 +4,13 @@ users:
       - type: reference
         id: monaco-group
 
+
+service-users:
+  - name: service-user
+    groups:
+      - type: reference
+        id: monaco-group
+
 groups:
   - name: Monaco Test Group
     id: monaco-group
@@ -42,3 +49,4 @@ policies:
     description: Just a monaco test policy 2
     policy: |-
       ALLOW automation:workflows:read;
+
