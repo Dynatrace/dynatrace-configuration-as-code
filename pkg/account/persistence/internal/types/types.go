@@ -112,9 +112,9 @@ func (r *Reference) UnmarshalYAML(unmarshal func(any) error) error {
 		return err
 	}
 
-	switch data.(type) {
+	switch data := data.(type) {
 	case string:
-		r.Value = data.(string)
+		r.Value = data
 	default:
 		if err := mapstructure.Decode(data, &r); err != nil {
 			return fmt.Errorf("failed to parse reference: %w", err)
@@ -138,7 +138,7 @@ type ReferenceSlice []Reference
 
 // JSONSchema defines a custom schema definition for ReferenceSlice as it contains either Reference objects or strings
 // when being parsed, but our schema generator can not resolve such a nested "one-of" relation correctly for slices
-func (_ ReferenceSlice) JSONSchema() *jsonschema.Schema {
+func (ReferenceSlice) JSONSchema() *jsonschema.Schema {
 	base := jsonutils.ReflectJSONSchema(Reference{})
 
 	return &jsonschema.Schema{

@@ -106,7 +106,7 @@ func WithCtxFields(ctx context.Context) loggers.Logger {
 		f = append(f, field.Environment(e.Name, e.Group))
 	}
 
-	if a, ok := ctx.Value(CtxKeyAccount{}).(any); ok {
+	if a := ctx.Value(CtxKeyAccount{}); a != nil {
 		f = append(f, field.F("account", a))
 	}
 

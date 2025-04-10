@@ -87,8 +87,8 @@ func (e JsonValidationError) PrettyError() string {
 		lengthOfLineNum := len(strconv.Itoa(e.LineNumber))
 		whiteSpace := strings.Repeat(" ", lengthOfLineNum)
 		whiteSpaceOffset := strings.Repeat(" ", e.CharacterNumberInLine-1)
-		lineContent := strings.Replace(e.LineContent, "\t", " ", -1)
-		previousLineContent := strings.Replace(e.PreviousLineContent, "\t", " ", -1)
+		lineContent := strings.ReplaceAll(e.LineContent, "\t", " ")
+		previousLineContent := strings.ReplaceAll(e.PreviousLineContent, "\t", " ")
 
 		return fmt.Sprintf(errorTemplate,
 			e.Location.TemplateFilePath, e.LineNumber, e.CharacterNumberInLine,

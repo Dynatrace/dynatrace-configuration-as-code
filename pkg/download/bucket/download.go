@@ -116,7 +116,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 	}
 
 	// skip unmodifiable buckets
-	if b.Updatable != nil && *b.Updatable == false || buckettools.IsDefault(b.Name) {
+	if b.Updatable != nil && !*b.Updatable || buckettools.IsDefault(b.Name) {
 		return config.Config{}, skipErr{fmt.Sprintf("bucket %q is immutable", b.Name)}
 	}
 

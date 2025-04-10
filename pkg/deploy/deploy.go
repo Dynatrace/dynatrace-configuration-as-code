@@ -65,7 +65,7 @@ var (
 	lock                         sync.Mutex
 	concurrentDeploymentsLimiter *rest.ConcurrentRequestLimiter
 
-	skipError = errors.New("skip error")
+	errSkip = errors.New("skip error")
 )
 
 func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
@@ -227,7 +227,7 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 	details := report.GetDetailerFromContextOrDiscard(ctx).GetAll()
 
 	if err != nil {
-		failed := !errors.Is(err, skipError)
+		failed := !errors.Is(err, errSkip)
 
 		lock.Lock()
 		removeChildren(ctx, n, n, configGraph, failed)
@@ -299,7 +299,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 
 	if c.Skip {
 		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
-		return entities.ResolvedEntity{}, skipError // fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
+		return entities.ResolvedEntity{}, errSkip // fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
 	}
 
 	properties, errs := c.ResolveParameterValues(resolvedEntities)

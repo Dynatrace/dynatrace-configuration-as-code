@@ -20,11 +20,12 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	"github.com/google/uuid"
 	"regexp"
+
+	"github.com/google/uuid"
 )
 
-var uuidRegex = regexp.MustCompile(".*?([0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}).*?")
+var uuidRegex = regexp.MustCompile(`.*?([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}).*?`)
 
 // GetNumericIDForObjectID parses the Settings Object ID of a Dynatrace Management Zone (only object with numeric IDs)
 // into a numeric identifier. To achieve this it replicates the en-/decoding logic used in Dynatrace as closely as possible.
