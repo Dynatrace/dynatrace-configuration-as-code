@@ -77,9 +77,9 @@ func GetDetailerFromContextOrDiscard(ctx context.Context) Detailer {
 // discardDetailer implements Detailer interface but does nothing.
 type discardDetailer struct{}
 
-func (_ *discardDetailer) Add(_ Detail) {}
+func (*discardDetailer) Add(_ Detail) {}
 
-func (_ *discardDetailer) GetAll() []Detail { return nil }
+func (*discardDetailer) GetAll() []Detail { return nil }
 
 type defaultDetailer struct {
 	details []Detail

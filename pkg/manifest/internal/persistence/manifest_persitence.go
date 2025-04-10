@@ -18,6 +18,7 @@ package persistence
 
 import (
 	"fmt"
+
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -53,10 +54,10 @@ func (c *TypedValue) UnmarshalYAML(unmarshal func(any) error) error {
 		return err
 	}
 
-	switch data.(type) {
+	switch data := data.(type) {
 	case string:
 		c.Type = TypeValue
-		c.Value = data.(string)
+		c.Value = data
 	default:
 		if err := mapstructure.Decode(data, c); err != nil {
 			return fmt.Errorf("failed to parse accountUUID: %w", err)

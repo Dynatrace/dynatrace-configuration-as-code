@@ -256,7 +256,7 @@ func buildDependencyGraph(projects []project.Project, environment string, nodeOp
 	log.Debug("Added %d config nodes to graph", g.Nodes().Len())
 	log.Debug("Adding edges between dependent config nodes...")
 	for c, refs := range configReferences {
-		for other, _ := range refs {
+		for other := range refs {
 			if c == other {
 				continue // configs may have references between their own parameters, but self-edges must not be added to the dependency graph
 			}

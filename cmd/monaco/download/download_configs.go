@@ -167,7 +167,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 }
 
 func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOptions downloadCmdOptions) error {
-	a, errs := cmdOptions.auth.mapToAuth()
+	a, errs := cmdOptions.mapToAuth()
 	errs = append(errs, validateParameters(cmdOptions.environmentURL, cmdOptions.projectName)...)
 
 	if len(errs) > 0 {

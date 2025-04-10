@@ -17,8 +17,9 @@
 package persistence
 
 import (
-	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/invopop/jsonschema"
+
+	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 )
 
 // FileDefinition represents a loaded YAML delete file consisting of a list of delete entries called 'delete'
@@ -59,7 +60,7 @@ type DeleteEntries []DeleteEntry
 
 // JSONSchema defines a custom schema definition for ReferenceSlice as it contains either Reference objects or strings
 // when being parsed, but our schema generator can not resolve such a nested "one-of" relation correctly for slices
-func (_ DeleteEntries) JSONSchema() *jsonschema.Schema {
+func (DeleteEntries) JSONSchema() *jsonschema.Schema {
 	base := jsonutils.ReflectJSONSchema(DeleteEntry{})
 
 	return &jsonschema.Schema{

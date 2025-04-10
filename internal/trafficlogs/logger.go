@@ -130,7 +130,7 @@ func (l *trafficLogger) logRequest(id string, request *http.Request, body io.Rea
 	}
 
 	// write id
-	_, err = l.reqBufWriter.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
+	_, err = fmt.Fprintf(l.reqBufWriter, "Request-ID: %s\n", id)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func (l *trafficLogger) logResponse(id string, response *http.Response, body io.
 	}
 
 	// write id
-	_, err = l.respBufWriter.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
+	_, err = fmt.Fprintf(l.respBufWriter, "Request-ID: %s\n", id)
 	if err != nil {
 		return err
 	}

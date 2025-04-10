@@ -1034,7 +1034,7 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 	}
 
 	// endpoint for POST is different to PUT
-	path = strings.Replace(settingsPermissionAPIPath, "{objectId}", objectID, -1)
+	path = strings.ReplaceAll(settingsPermissionAPIPath, "{objectId}", objectID)
 	_, err = coreapi.AsResponseOrError(d.client.POST(
 		ctx,
 		path,
@@ -1073,5 +1073,5 @@ func getPermissionPathWithID(id string) (string, error) {
 		return "", fmt.Errorf("id cannot be empty")
 	}
 
-	return strings.Replace(settingsPermissionAllUsersAPIPath, "{objectId}", id, -1), nil
+	return strings.ReplaceAll(settingsPermissionAllUsersAPIPath, "{objectId}", id), nil
 }

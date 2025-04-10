@@ -61,7 +61,7 @@ type (
 // JSONSchema manually defines the schema for account DeleteEntry as the nature of this structs dependent required
 // fields makes it impossible to simply generate the schema via reflection.
 // This definition likely needs to change if the DeleteEntry changes
-func (_ Entries) JSONSchema() *jsonschema.Schema {
+func (Entries) JSONSchema() *jsonschema.Schema {
 	base := jsonutils.ReflectJSONSchema(DeleteEntry{})
 
 	props := base.Properties

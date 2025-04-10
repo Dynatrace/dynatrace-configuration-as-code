@@ -85,7 +85,7 @@ func NewInsertAfterSameScopeError(source, target coordinate.Coordinate, cause er
 // This only works if both scopes are 'static' data and not references or something similar.
 type InsertAfterSameScopeValidator struct{}
 
-func (_ InsertAfterSameScopeValidator) Validate(projects []project.Project, conf config.Config) error {
+func (InsertAfterSameScopeValidator) Validate(projects []project.Project, conf config.Config) error {
 
 	if conf.Skip {
 		return nil
