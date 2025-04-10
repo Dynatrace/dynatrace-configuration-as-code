@@ -146,6 +146,11 @@ func (d *ConfigClient) UpsertByName(ctx context.Context, a api.API, name string,
 			return DynatraceEntity{}, valErr
 		}
 	}
+	if isApiDashboard(a) {
+		if valErr := validateDashboardPayload(payload); valErr != nil {
+			return DynatraceEntity{}, valErr
+		}
+	}
 	return d.upsertDynatraceObject(ctx, a, name, payload)
 }
 
@@ -894,6 +899,23 @@ func validateSloV1Payload(payload []byte) error {
 	}
 	if parsedPayload.EvaluationType == "" {
 		return errors.New("tried to deploy an slo-v2 configuration to slo-v1")
+	}
+	return nil
+}
+
+// validateDashboardPayload returns an error if the JSON data is invalid or if the payload is not a V1 payload
+func validateDashboardPayload(payload []byte) error {
+	type DashboardKeys struct {
+		Tiles any `json:"tiles"`
+	}
+	parsedPayload := DashboardKeys{}
+	err := json.Unmarshal(payload, &parsedPayload)
+	if err != nil {
+		return err
+	}
+	// map should only be used in V2
+	if _, isMap := parsedPayload.Tiles.(map[string]any); isMap {
+		return errors.New("tried to deploy a classic dashboard configuration to dashboard")
 	}
 	return nil
 }

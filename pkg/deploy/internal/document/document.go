@@ -18,6 +18,7 @@ package document
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -55,6 +56,12 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	documentName, ok := properties[config.NameParameter].(string)
 	if !ok {
 		return entities.ResolvedEntity{}, errors.New("missing name parameter")
+	}
+
+	if documentType == documents.Dashboard {
+		if valErr := validateDashboardPayload([]byte(renderedConfig)); valErr != nil {
+			return entities.ResolvedEntity{}, valErr
+		}
 	}
 
 	// strategy 1: if an origin id is available, try to update that document
@@ -153,4 +160,23 @@ func getDocumentAttributesFromConfigType(t config.Type) (doctype string, private
 	}
 
 	return kind, documentType.Private, nil
+}
+
+// validateDashboardPayload returns an error if the JSON data is invalid or if the payload is not a V2 payload
+func validateDashboardPayload(payload []byte) error {
+	type DashboardKeys struct {
+		Tiles any `json:"tiles"`
+	}
+	parsedPayload := DashboardKeys{}
+	err := json.Unmarshal(payload, &parsedPayload)
+	if err != nil {
+		return err
+	}
+
+	// array should only be used in V1
+	if _, isArray := parsedPayload.Tiles.([]any); isArray {
+		return errors.New("tried to deploy a dashboard configuration to classic dashboard")
+	}
+
+	return nil
 }
