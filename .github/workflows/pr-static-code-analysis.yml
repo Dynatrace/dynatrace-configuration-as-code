@@ -33,8 +33,9 @@ jobs:
         run: make vet
 
       - name: 🔎 golangci-lint
-        uses: reviewdog/action-golangci-lint@f9bba13753278f6a73b27a56a3ffb1bfda90ed71 #v2.8.0
+        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd #v7.0.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-pr-check
-          golangci_lint_version: "v1.64.8"
+          only-new-issues: 'true'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: v2.0.2
+          args: "--output.checkstyle.path=lint-result.xml"
