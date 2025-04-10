@@ -24,8 +24,10 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deployoptions"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -36,7 +38,7 @@ import (
 func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	var dryRun, continueOnError bool
 	var manifestName string
-	var environment, project, groups []string
+	var selectedEnvs, project, groups []string
 
 	deployCmd = &cobra.Command{
 		Use:               "deploy <manifest.yaml>",
@@ -56,11 +58,26 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 				return err
 			}
 
-			return deployConfigs(ctx, fs, manifestName, groups, environment, project, continueOnError, dryRun)
+			var limiter *rest.ConcurrentRequestLimiter
+			maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
+
+			if maxConcurrentDeployments > 0 {
+				log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
+				limiter = rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
+			}
+
+			deployOptions := deployoptions.DeployConfigsOptions{
+				ContinueOnErr:                continueOnError,
+				DryRun:                       dryRun,
+				ConcurrentDeploymentsLimiter: limiter,
+			}
+			ctx = deployoptions.NewContextWithDeployOptions(ctx, deployOptions)
+
+			return deployConfigs(ctx, fs, manifestName, groups, selectedEnvs, project)
 		},
 	}
 
-	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", []string{},
+	deployCmd.Flags().StringSliceVarP(&selectedEnvs, "environment", "e", []string{},
 		"Specify one (or multiple) environment(s) to deploy to. "+
 			"To set multiple environments either repeat this flag, or separate them using a comma (,). "+
 			"This flag is mutually exclusive with '--group'.")

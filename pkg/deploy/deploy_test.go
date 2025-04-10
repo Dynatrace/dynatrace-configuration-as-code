@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deployoptions"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 
@@ -106,7 +107,7 @@ func TestDeployConfigGraph_SingleConfig(t *testing.T) {
 		dynatrace.EnvironmentInfo{Name: "env"}: clientSet,
 	}
 
-	errors := deploy.DeployForAllEnvironments(t.Context(), p, c, deploy.DeployConfigsOptions{})
+	errors := deploy.DeployForAllEnvironments(t.Context(), p, c)
 
 	assert.Emptyf(t, errors, "errors: %v", errors)
 
@@ -171,7 +172,7 @@ func TestDeployConfigGraph_SettingShouldFailUpsert(t *testing.T) {
 		dynatrace.EnvironmentInfo{Name: "env"}: &client.ClientSet{SettingsClient: c},
 	}
 
-	errors := deploy.DeployForAllEnvironments(t.Context(), p, clients, deploy.DeployConfigsOptions{})
+	errors := deploy.DeployForAllEnvironments(t.Context(), p, clients)
 	assert.NotEmpty(t, errors)
 }
 
@@ -194,7 +195,7 @@ func TestDeployConfigGraph_DoesNotFailOnEmptyConfigs(t *testing.T) {
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
 	}
 
-	errors := deploy.DeployForAllEnvironments(t.Context(), p, c, deploy.DeployConfigsOptions{})
+	errors := deploy.DeployForAllEnvironments(t.Context(), p, c)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
@@ -208,7 +209,7 @@ func TestDeployConfigGraph_DoesNotFailOnEmptyProject(t *testing.T) {
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
 	}
 
-	errors := deploy.DeployForAllEnvironments(t.Context(), p, c, deploy.DeployConfigsOptions{})
+	errors := deploy.DeployForAllEnvironments(t.Context(), p, c)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
@@ -218,7 +219,7 @@ func TestDeployConfigGraph_DoesNotFailNilProject(t *testing.T) {
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
 	}
 
-	errors := deploy.DeployForAllEnvironments(t.Context(), nil, c, deploy.DeployConfigsOptions{})
+	errors := deploy.DeployForAllEnvironments(t.Context(), nil, c)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
@@ -244,7 +245,7 @@ func TestDeployConfigGraph_DoesNotDeploySkippedConfig(t *testing.T) {
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
 	}
 
-	errors := deploy.DeployForAllEnvironments(t.Context(), p, c, deploy.DeployConfigsOptions{})
+	errors := deploy.DeployForAllEnvironments(t.Context(), p, c)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 	createdEntities, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
 	assert.False(t, found, "expected NO entries for dashboard API to exist")
@@ -295,7 +296,7 @@ func TestDeployConfigGraph_DeploysSetting(t *testing.T) {
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
 	}
 
-	errors := deploy.DeployForAllEnvironments(t.Context(), p, clients, deploy.DeployConfigsOptions{})
+	errors := deploy.DeployForAllEnvironments(t.Context(), p, clients)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
@@ -343,7 +344,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
 	}
 
-	errors := deploy.DeployForAllEnvironments(t.Context(), p, clients, deploy.DeployConfigsOptions{})
+	errors := deploy.DeployForAllEnvironments(t.Context(), p, clients)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
@@ -391,7 +392,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 		dynatrace.EnvironmentInfo{Name: "env"}: &clientSet,
 	}
 
-	errors := deploy.DeployForAllEnvironments(t.Context(), p, clients, deploy.DeployConfigsOptions{})
+	errors := deploy.DeployForAllEnvironments(t.Context(), p, clients)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
@@ -445,7 +446,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 
 	t.Run("deployment error - always continues on error", func(t *testing.T) {
 
-		err := deploy.DeployForAllEnvironments(t.Context(), p, c, deploy.DeployConfigsOptions{}) // continues even without option set
+		err := deploy.DeployForAllEnvironments(t.Context(), p, c) // continues even without option set
 		assert.Error(t, err)
 
 		envErrs := make(errors.EnvironmentDeploymentErrors)
@@ -572,7 +573,7 @@ func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *test
 		dynatrace.EnvironmentInfo{Name: environmentName}: &clientSet,
 	}
 
-	errs := deploy.DeployForAllEnvironments(t.Context(), projects, clients, deploy.DeployConfigsOptions{})
+	errs := deploy.DeployForAllEnvironments(t.Context(), projects, clients)
 	assert.NoError(t, errs)
 	assert.Zero(t, dummyClient.CreatedObjects())
 }
@@ -686,7 +687,7 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {
 		dynatrace.EnvironmentInfo{Name: environmentName}: &clientSet,
 	}
 
-	errs := deploy.DeployForAllEnvironments(t.Context(), projects, clients, deploy.DeployConfigsOptions{})
+	errs := deploy.DeployForAllEnvironments(t.Context(), projects, clients)
 	assert.NoError(t, errs)
 
 	dashboards, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
@@ -805,7 +806,8 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations_IfContinuingAfterFai
 		dynatrace.EnvironmentInfo{Name: environmentName}: &clientSet,
 	}
 
-	errs := deploy.DeployForAllEnvironments(t.Context(), projects, clients, deploy.DeployConfigsOptions{ContinueOnErr: true})
+	ctx := deployoptions.NewContextWithDeployOptions(t.Context(), deployoptions.DeployConfigsOptions{ContinueOnErr: true})
+	errs := deploy.DeployForAllEnvironments(ctx, projects, clients)
 	assert.Len(t, errs, 1)
 
 	dashboards, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
@@ -1191,7 +1193,7 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 				dynatrace.EnvironmentInfo{Name: "env2"}: &clientSet,
 			}
 
-			err := deploy.DeployForAllEnvironments(t.Context(), tc.given, c, deploy.DeployConfigsOptions{})
+			err := deploy.DeployForAllEnvironments(t.Context(), tc.given, c)
 			if len(tc.wantErrsContain) == 0 {
 				assert.NoError(t, err)
 			} else {
@@ -1282,7 +1284,7 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 	}
 
 	t.Run("stop on error - returns validation errors", func(t *testing.T) {
-		errs := deploy.DeployForAllEnvironments(t.Context(), p, c, deploy.DeployConfigsOptions{})
+		errs := deploy.DeployForAllEnvironments(t.Context(), p, c)
 		assert.Error(t, errs)
 
 		var envErrs errors.EnvironmentDeploymentErrors
@@ -1293,7 +1295,8 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 	})
 
 	t.Run("continue on error - returns validation and deployment", func(t *testing.T) {
-		errs := deploy.DeployForAllEnvironments(t.Context(), p, c, deploy.DeployConfigsOptions{ContinueOnErr: true})
+		ctx := deployoptions.NewContextWithDeployOptions(t.Context(), deployoptions.DeployConfigsOptions{ContinueOnErr: true})
+		errs := deploy.DeployForAllEnvironments(ctx, p, c)
 		assert.Error(t, errs)
 
 		var envErrs errors.EnvironmentDeploymentErrors
@@ -1402,12 +1405,12 @@ func TestDeployConfigFF(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name+" | FF Enabled", func(t *testing.T) {
 			t.Setenv(tt.featureFlag, "true")
-			err := deploy.DeployForAllEnvironments(t.Context(), tt.projects, c, deploy.DeployConfigsOptions{})
+			err := deploy.DeployForAllEnvironments(t.Context(), tt.projects, c)
 			assert.Errorf(t, err, "unimplemented")
 		})
 		t.Run(tt.name+" | FF Disabled", func(t *testing.T) {
 			t.Setenv(tt.featureFlag, "false")
-			err := deploy.DeployForAllEnvironments(t.Context(), tt.projects, c, deploy.DeployConfigsOptions{})
+			err := deploy.DeployForAllEnvironments(t.Context(), tt.projects, c)
 			assert.Errorf(t, err, fmt.Sprintf("unknown config-type (ID: %q)", tt.configType))
 		})
 	}
@@ -1485,7 +1488,7 @@ func TestLogResponseErrors(t *testing.T) {
 				dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
 			}
 
-			err := deploy.DeployForAllEnvironments(t.Context(), projects, c, deploy.DeployConfigsOptions{})
+			err := deploy.DeployForAllEnvironments(t.Context(), projects, c)
 			assert.NotNil(t, err)
 			assert.Contains(t, logSpy.String(), tt.expectedErrLog)
 			logSpy.Reset()
@@ -1600,7 +1603,8 @@ func TestDeployDryRun(t *testing.T) {
 	t.Setenv(featureflags.Segments.EnvName(), "true")
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 	t.Run("dry-run", func(t *testing.T) {
-		err := deploy.DeployForAllEnvironments(t.Context(), projects, c, deploy.DeployConfigsOptions{DryRun: true})
+		ctx := deployoptions.NewContextWithDeployOptions(t.Context(), deployoptions.DeployConfigsOptions{DryRun: true})
+		err := deploy.DeployForAllEnvironments(ctx, projects, c)
 		assert.Empty(t, err)
 	})
 }
