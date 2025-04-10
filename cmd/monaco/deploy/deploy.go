@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/internal/logging"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deployoptions"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -38,7 +39,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
-func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
+func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string) error {
 	absManifestPath, err := absPath(manifestPath)
 	if err != nil {
 		formattedErr := fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
@@ -51,7 +52,7 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 		return err
 	}
 
-	ok := verifyEnvironmentGen(ctx, loadedManifest.Environments, dryRun)
+	ok := verifyEnvironmentGen(ctx, loadedManifest.Environments)
 	if !ok {
 		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
@@ -75,19 +76,19 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 		return formattedErr
 	}
 
-	clientSets, err := dynatrace.CreateEnvironmentClients(ctx, loadedManifest.Environments, dryRun)
+	clientSets, err := dynatrace.CreateEnvironmentClients(ctx, loadedManifest.Environments)
 	if err != nil {
 		formattedErr := fmt.Errorf("failed to create API clients: %w", err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
 		return formattedErr
 	}
 
-	err = deploy.DeployForAllEnvironments(ctx, loadedProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun})
+	err = deploy.DeployForAllEnvironments(ctx, loadedProjects, clientSets)
 	if err != nil {
-		return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
+		return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(ctx), err)
 	}
 
-	log.Info("%s finished without errors", logging.GetOperationNounForLogging(dryRun))
+	log.Info("%s finished without errors", logging.GetOperationNounForLogging(ctx))
 	return nil
 }
 
@@ -117,8 +118,9 @@ func loadManifest(ctx context.Context, fs afero.Fs, manifestPath string, groups 
 	return &m, nil
 }
 
-func verifyEnvironmentGen(ctx context.Context, environments manifest.Environments, dryRun bool) bool {
-	if !dryRun {
+func verifyEnvironmentGen(ctx context.Context, environments manifest.Environments) bool {
+	options := deployoptions.GetDeploymentOptionsFromContext(ctx)
+	if !options.DryRun {
 		return dynatrace.VerifyEnvironmentGeneration(ctx, environments)
 
 	}

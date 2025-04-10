@@ -25,9 +25,8 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deployoptions"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -51,29 +50,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
-// DeployConfigsOptions defines additional options used by DeployConfigs
-type DeployConfigsOptions struct {
-	// ContinueOnErr states that the deployment continues even when there happens to be an
-	// error while deploying a certain configuration
-	ContinueOnErr bool
-	// DryRun states that the deployment shall just run in dry-run mode, meaning
-	// that actual deployment of the configuration to a tenant will be skipped
-	DryRun bool
-}
-
 var (
-	lock                         sync.Mutex
-	concurrentDeploymentsLimiter *rest.ConcurrentRequestLimiter
-
+	lock      sync.Mutex
 	skipError = errors.New("skip error")
 )
 
-func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
-	maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
-	if maxConcurrentDeployments > 0 {
-		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
-		concurrentDeploymentsLimiter = rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
-	}
+func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients) error {
+	opts := deployoptions.GetDeploymentOptionsFromContext(ctx)
 	deploymentErrs := make(deployErrors.EnvironmentDeploymentErrors)
 
 	// note: Currently the validation works 'environment-independent', but that might be something we should reconsider to improve error messages
@@ -292,9 +275,10 @@ func (e ErrUnknownConfigType) Error() string {
 }
 
 func deployConfig(ctx context.Context, c *config.Config, clientset *client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
-	if concurrentDeploymentsLimiter != nil {
-		concurrentDeploymentsLimiter.Acquire()
-		defer concurrentDeploymentsLimiter.Release()
+	options := deployoptions.GetDeploymentOptionsFromContext(ctx)
+	if options.ConcurrentDeploymentsLimiter != nil {
+		options.ConcurrentDeploymentsLimiter.Acquire()
+		defer options.ConcurrentDeploymentsLimiter.Release()
 	}
 
 	if c.Skip {

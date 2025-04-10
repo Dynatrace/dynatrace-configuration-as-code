@@ -17,6 +17,9 @@
 package logging
 
 import (
+	"context"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deployoptions"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -54,16 +57,10 @@ func LogEnvironmentsInfo(environments manifest.Environments) {
 		log.Info("  - %s", name)
 	}
 }
-func LogDeploymentInfo(dryRun bool, envName string) {
-	if dryRun {
-		log.Info("Validating configurations for environment `%s`...", envName)
-	} else {
-		log.Info("Deploying configurations to environment `%s`...", envName)
-	}
-}
 
-func GetOperationNounForLogging(dryRun bool) string {
-	if dryRun {
+func GetOperationNounForLogging(ctx context.Context) string {
+	deployOptions := deployoptions.GetDeploymentOptionsFromContext(ctx)
+	if deployOptions.DryRun {
 		return "Validation"
 	}
 	return "Deployment"

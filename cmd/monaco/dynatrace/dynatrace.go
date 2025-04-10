@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deployoptions"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -184,10 +185,11 @@ func (e EnvironmentClients) Names() []string {
 }
 
 // CreateEnvironmentClients gives back clients to use for specific environments
-func CreateEnvironmentClients(ctx context.Context, environments manifest.Environments, dryRun bool) (EnvironmentClients, error) {
+func CreateEnvironmentClients(ctx context.Context, environments manifest.Environments) (EnvironmentClients, error) {
 	clients := make(EnvironmentClients, len(environments))
+	deployOptions := deployoptions.GetDeploymentOptionsFromContext(ctx)
 	for _, env := range environments {
-		if dryRun {
+		if deployOptions.DryRun {
 			clients[EnvironmentInfo{
 				Name:  env.Name,
 				Group: env.Group,
