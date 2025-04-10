@@ -18,6 +18,7 @@ package document
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -27,7 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -58,7 +58,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	}
 
 	if documentType == documents.Dashboard {
-		if valErr := dtclient.ValidateDashboardPayload([]byte(renderedConfig), false); valErr != nil {
+		if valErr := validateDashboardPayload([]byte(renderedConfig)); valErr != nil {
 			return entities.ResolvedEntity{}, valErr
 		}
 	}
@@ -159,4 +159,23 @@ func getDocumentAttributesFromConfigType(t config.Type) (doctype string, private
 	}
 
 	return kind, documentType.Private, nil
+}
+
+// validateDashboardPayload returns an error if the JSON data is invalid or if the payload is not a V2 payload
+func validateDashboardPayload(payload []byte) error {
+	type DashboardKeys struct {
+		Tiles any `json:"tiles"`
+	}
+	parsedPayload := DashboardKeys{}
+	err := json.Unmarshal(payload, &parsedPayload)
+	if err != nil {
+		return err
+	}
+
+	// array should only be used in V1
+	if _, isArray := parsedPayload.Tiles.([]any); isArray {
+		return errors.New("tried to deploy a dashboard configuration to classic dashboard")
+	}
+
+	return nil
 }
