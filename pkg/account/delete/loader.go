@@ -120,14 +120,14 @@ func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 			if err != nil {
 				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, err.Error())
 			}
-			serviceUsers = append(serviceUsers, ServiceUser{Name: parsed.Name})
+			serviceUsers = append(serviceUsers, ServiceUser(parsed))
 		case "group":
 			var parsed GroupDeleteEntry
 			err := mapstructure.Decode(e, &parsed)
 			if err != nil {
 				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, err.Error())
 			}
-			groups = append(groups, Group{Name: parsed.Name})
+			groups = append(groups, Group(parsed))
 		case "policy":
 			var parsed PolicyDeleteEntry
 			err := mapstructure.Decode(e, &parsed)

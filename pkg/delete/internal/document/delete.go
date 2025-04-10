@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -32,7 +31,7 @@ import (
 
 type client interface {
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
-	Delete(ctx context.Context, id string) (libAPI.Response, error)
+	Delete(ctx context.Context, id string) (api.Response, error)
 }
 
 func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {

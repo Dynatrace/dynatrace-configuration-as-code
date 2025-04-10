@@ -50,10 +50,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 
 	nextPageKey, expectedTotalCount := getPaginationValues(body)
 	emptyResponseRetryCount := 0
-	for {
-		if nextPageKey == "" {
-			break
-		}
+	for nextPageKey != "" {
 
 		body, receivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(endpoint, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
 		if err != nil {
