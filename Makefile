@@ -39,11 +39,6 @@ vet: mocks
 	@echo "Vetting files"
 	@go vet -tags '!unit' ./...
 
-check:
-	@echo "Static code analysis"
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1
-	@golangci-lint run ./...
-
 compile: mocks
 	@echo "Compiling sources..."
 	@go build -tags "unit integration nightly cleanup integration_v1 download_restore" ./...
