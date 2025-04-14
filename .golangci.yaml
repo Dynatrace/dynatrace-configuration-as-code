@@ -1,24 +1,59 @@
+version: "2"
 linters:
   enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - contextcheck
+    - dupl
+    - durationcheck
+    - errchkjson
+    - errorlint
+    - exhaustive
+    - gocheckcompilerdirectives
+    - gochecksumtype
     - gocognit
     - godox
-    - dupl
-    - tenv
-  presets:
-    - bugs
-    - unused
+    - gosec
+    - gosmopolitan
+    - loggercheck
+    - makezero
+    - musttag
+    - nilerr
+    - nilnesserr
+    - noctx
+    - protogetter
+    - reassign
+    - recvcheck
+    - rowserrcheck
+    - spancheck
+    - sqlclosecheck
+    - testifylint
+    - unparam
+    - zerologlint
   disable:
-    - varcheck # deprecated
-    - deadcode # deprecated
-    - scopelint # deprecated
-    - structcheck # deprecated
     - bodyclose
-
-linters-settings:
-  gocognit:
-    min-complexity: 25
-  dupl:
-    threshold: 75
-run:
-  skip-files:
-    - '.*_test\.go$'
+  settings:
+    dupl:
+      threshold: 75
+    gocognit:
+      min-complexity: 25
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - .*_test\.go$
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
