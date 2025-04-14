@@ -204,7 +204,7 @@ func fetchResources(ctx context.Context, fetchFunc func(ctx context.Context) err
 	errCh <- fetchFunc(ctx)
 }
 
-func (d *AccountDeployer) deployPolicies(ctx context.Context, policies map[string]account.Policy, dispatcher *Dispatcher) { // nolint:dupl
+func (d *AccountDeployer) deployPolicies(ctx context.Context, policies map[string]account.Policy, dispatcher *Dispatcher) {
 	for _, policy := range policies {
 		policy := policy
 		deployPolicyJob := func(wg *sync.WaitGroup, errCh chan error) {
@@ -220,7 +220,7 @@ func (d *AccountDeployer) deployPolicies(ctx context.Context, policies map[strin
 	}
 }
 
-func (d *AccountDeployer) deployGroups(ctx context.Context, groups map[string]account.Group, dispatcher *Dispatcher) { // nolint:dupl
+func (d *AccountDeployer) deployGroups(ctx context.Context, groups map[string]account.Group, dispatcher *Dispatcher) {
 	for _, group := range groups {
 		group := group
 		deployGroupJob := func(wg *sync.WaitGroup, errCh chan error) {
@@ -253,7 +253,6 @@ func (d *AccountDeployer) deployUsers(ctx context.Context, users map[string]acco
 	}
 }
 
-//nolint:dupl
 func (d *AccountDeployer) deployServiceUsers(ctx context.Context, serviceUsers []account.ServiceUser, dispatcher *Dispatcher) {
 	for _, serviceUser := range serviceUsers {
 		serviceUser := serviceUser
@@ -307,7 +306,6 @@ func (d *AccountDeployer) deployUserBindings(ctx context.Context, users map[acco
 	}
 }
 
-//nolint:dupl
 func (d *AccountDeployer) deployServiceUserBindings(ctx context.Context, serviceUsers []account.ServiceUser, dispatcher *Dispatcher) {
 	for _, serviceUser := range serviceUsers {
 		serviceUser := serviceUser
