@@ -20,9 +20,10 @@ import "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 
 func NewAccountManagementResources() *Resources {
 	resources := Resources{
-		Groups:   make(map[GroupId]Group),
-		Policies: make(map[PolicyId]Policy),
-		Users:    make(map[UserId]User),
+		Groups:       make(map[GroupId]Group),
+		Policies:     make(map[PolicyId]Policy),
+		Users:        make(map[UserId]User),
+		ServiceUsers: []ServiceUser{},
 	}
 	return &resources
 }
