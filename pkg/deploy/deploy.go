@@ -26,8 +26,8 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -62,18 +62,24 @@ type DeployConfigsOptions struct {
 }
 
 var (
-	lock                         sync.Mutex
-	concurrentDeploymentsLimiter *rest.ConcurrentRequestLimiter
-
+	lock    sync.Mutex
 	errSkip = errors.New("skip error")
 )
 
-func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
-	maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
-	if maxConcurrentDeployments > 0 {
-		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
-		concurrentDeploymentsLimiter = rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
+type ctxDeploymentLimiter struct{}
+
+func NewContextWithDeploymentLimiter(ctx context.Context, limiter *rest.ConcurrentRequestLimiter) context.Context {
+	return context.WithValue(ctx, ctxDeploymentLimiter{}, limiter)
+}
+
+func GetDeploymentLimiterFromContext(ctx context.Context) *rest.ConcurrentRequestLimiter {
+	if limiter, ok := ctx.Value(ctxDeploymentLimiter{}).(*rest.ConcurrentRequestLimiter); ok {
+		return limiter
 	}
+	return nil
+}
+
+func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
 	deploymentErrs := make(deployErrors.EnvironmentDeploymentErrors)
 
 	// note: Currently the validation works 'environment-independent', but that might be something we should reconsider to improve error messages
@@ -292,9 +298,9 @@ func (e ErrUnknownConfigType) Error() string {
 }
 
 func deployConfig(ctx context.Context, c *config.Config, clientset *client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
-	if concurrentDeploymentsLimiter != nil {
-		concurrentDeploymentsLimiter.Acquire()
-		defer concurrentDeploymentsLimiter.Release()
+	if limiter := GetDeploymentLimiterFromContext(ctx); limiter != nil {
+		limiter.Acquire()
+		defer limiter.Release()
 	}
 
 	if c.Skip {
