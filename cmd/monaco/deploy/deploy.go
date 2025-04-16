@@ -276,7 +276,7 @@ func validateAuthenticationWithProjectConfigs(projects []project.Project, enviro
 		for envName, env := range p.Configs {
 			for _, file := range env {
 				for _, conf := range file {
-					if conf.Skip == true {
+					if conf.Skip {
 						continue
 					}
 

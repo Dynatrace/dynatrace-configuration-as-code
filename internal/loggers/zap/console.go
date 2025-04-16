@@ -62,9 +62,9 @@ func (e fixedFieldsConsoleEncoder) Clone() zapcore.Encoder {
 
 func (e fixedFieldsConsoleEncoder) EncodeEntry(entry zapcore.Entry, _ []zapcore.Field) (*buffer.Buffer, error) {
 	line := Get()
-	line.AppendString(fmt.Sprintf("%s", entry.Time.Format(time.RFC3339)))
+	line.AppendString(entry.Time.Format(time.RFC3339))
 	line.AppendString("\t")
-	line.AppendString(fmt.Sprintf("%s", entry.Level))
+	line.AppendString(entry.Level.String())
 	line.AppendString("\t")
 
 	additionalTab := false

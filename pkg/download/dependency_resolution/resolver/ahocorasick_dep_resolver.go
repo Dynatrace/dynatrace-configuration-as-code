@@ -65,7 +65,7 @@ func AhoCorasickResolver(configsById map[string]config.Config) (ahocorasickResol
 // toRuneSlices converts a given slice of string config ids to a slice of rune slices
 // this is the format the aho-corasick implementation expects to receive search keys in
 func toRuneSlices(ids []string) [][]rune {
-	dict := make([][]rune, len(ids), len(ids))
+	dict := make([][]rune, len(ids))
 	for i, s := range ids {
 		dict[i] = []rune(s)
 	}

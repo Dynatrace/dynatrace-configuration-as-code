@@ -95,14 +95,11 @@ func (d *Dispatcher) Wait() error {
 }
 
 func (d *Dispatcher) dispatch() {
-	for {
-		select {
-		case job := <-d.jobQueue:
-			go func(job Runnable) {
-				jobChannel := <-d.workerPool
-				jobChannel <- job
-			}(job)
-		}
+	for job := range d.jobQueue {
+		go func(job Runnable) {
+			jobChannel := <-d.workerPool
+			jobChannel <- job
+		}(job)
 	}
 }
 

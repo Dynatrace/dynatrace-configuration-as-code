@@ -243,10 +243,10 @@ func (d *defaultReporter) Stop() {
 
 type discardReporter struct{}
 
-func (_ *discardReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error) {
+func (*discardReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error) {
 }
-func (_ *discardReporter) ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate) {
+func (*discardReporter) ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate) {
 }
-func (_ *discardReporter) ReportInfo(message string) {}
-func (_ *discardReporter) GetSummary() string        { return "" }
-func (_ *discardReporter) Stop()                     {}
+func (*discardReporter) ReportInfo(message string) {}
+func (*discardReporter) GetSummary() string        { return "" }
+func (*discardReporter) Stop()                     {}

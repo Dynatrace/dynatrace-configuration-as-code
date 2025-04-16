@@ -235,7 +235,7 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 }
 
 func parseAuthSecret(context *Context, s *persistence.AuthSecret) (manifest.AuthSecret, error) {
-	if !(s.Type == persistence.TypeEnvironment || s.Type == "") {
+	if s.Type != persistence.TypeEnvironment && s.Type != "" {
 		return manifest.AuthSecret{}, errors.New("type must be 'environment'")
 	}
 

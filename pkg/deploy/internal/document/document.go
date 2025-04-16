@@ -24,7 +24,6 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -39,8 +38,8 @@ import (
 type Client interface {
 	Get(ctx context.Context, id string) (documents.Response, error)
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
-	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
-	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
+	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (api.Response, error)
+	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (api.Response, error)
 }
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {

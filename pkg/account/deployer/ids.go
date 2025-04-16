@@ -63,9 +63,7 @@ func (d *idMap) addPolicies(policies map[string]remoteId) {
 func (d *idMap) addMZones(mzones []ManagementZone) {
 	d.mzMu.Lock()
 	defer d.mzMu.Unlock()
-	for _, m := range mzones {
-		d.mzIds = append(d.mzIds, m)
-	}
+	d.mzIds = append(d.mzIds, mzones...)
 }
 
 func (d *idMap) addGroups(groups map[string]remoteId) {
