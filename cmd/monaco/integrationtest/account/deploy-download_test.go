@@ -29,12 +29,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 )
 
 func TestIdempotenceOfDeployment(t *testing.T) {
+	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 
 	deploy := func(project string, fs afero.Fs) *account.Resources {
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco account deploy --project %s --verbose", project))
@@ -72,6 +74,9 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	for _, u := range deploy1st.Users {
 		assert.Contains(t, download1st.Users, u.Email.Value())
 	}
+	for _, deployedServiceUser := range deploy1st.ServiceUsers {
+		_, _ = assertElementInSlice(t, download1st.ServiceUsers, func(su account.ServiceUser) bool { return su.Name == deployedServiceUser.Name })
+	}
 	for _, p := range deploy1st.Policies {
 		assert.Contains(t, download1st.Policies, toID(p.Name)) // when downloading, ID is generated from name
 	}
@@ -85,6 +90,13 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 
 	for _, u := range deploy1st.Users {
 		assert.Equal(t, download1st.Users[u.Email.Value()], download2nd.Users[u.Email.Value()])
+	}
+	for _, deployedServiceUser := range deploy1st.ServiceUsers {
+		e1, found := assertElementInSlice(t, download1st.ServiceUsers, func(su account.ServiceUser) bool { return su.Name == deployedServiceUser.Name })
+		require.True(t, found)
+		e2, found := assertElementInSlice(t, download2nd.ServiceUsers, func(su account.ServiceUser) bool { return su.Name == deployedServiceUser.Name })
+		require.True(t, found)
+		assert.Equal(t, *e1, *e2)
 	}
 	for _, p := range deploy1st.Policies {
 		p.ID = toID(p.Name)

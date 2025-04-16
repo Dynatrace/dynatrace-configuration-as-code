@@ -30,6 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
@@ -37,11 +38,13 @@ import (
 
 func TestDeployAndDelete_AllResources(t *testing.T) {
 	createMZone(t)
+	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 
 	RunAccountTestCase(t, "resources/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[account.AccountInfo]*accounts.Client, o options) {
 
 		accountName := o.accountName
 		accountUUID := o.accountUUID
+		myServiceUserName := "monaco service user %RAND%"
 		myEmail := "monaco+%RAND%@dynatrace.com"
 		myGroup := "My Group%RAND%"
 		mySAMLGroup := "My SAML Group%RAND%"
@@ -75,6 +78,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 		// CHECK IF RESOURCES ARE INDEED DEPLOYED
 		check.UserAvailable(t, accountUUID, myEmail)
+		check.ServiceUserAvailable(t, accountUUID, myServiceUserName)
 		check.PolicyAvailable(t, "account", accountUUID, myPolicy)
 		check.PolicyAvailable(t, "environment", envVkb, myPolicy2)
 		check.GroupAvailable(t, accountUUID, myGroup)
@@ -158,6 +162,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 		// CHECK IF RESOURCES ARE DELETED
 		check.UserNotAvailable(t, accountUUID, myEmail)
+		check.ServiceUserNotAvailable(t, accountUUID, myServiceUserName)
 		check.PolicyNotAvailable(t, "account", accountUUID, myPolicy)
 		check.PolicyNotAvailable(t, "environment", envVkb, myPolicy2)
 		check.GroupNotAvailable(t, accountUUID, myGroup)
@@ -192,6 +197,18 @@ func getGroupIdByName(ctx context.Context, cl *accounts.Client, accountUUID, nam
 type AccountResourceChecker struct {
 	Client      *accounts.Client
 	RandomizeFn func(string) string
+}
+
+func (a AccountResourceChecker) ServiceUserAvailable(t *testing.T, accountUUID, name string) {
+	expectedName := a.randomize(name)
+	allServiceUsers := a.getAllServiceUsers(t, accountUUID)
+	assertElementInSlice(t, allServiceUsers, func(s accountmanagement.ExternalServiceUserDto) bool { return s.Name == expectedName })
+}
+
+func (a AccountResourceChecker) ServiceUserNotAvailable(t *testing.T, accountUUID, name string) {
+	expectedName := a.randomize(name)
+	allServiceUsers := a.getAllServiceUsers(t, accountUUID)
+	assertElementNotInSlice(t, allServiceUsers, func(s accountmanagement.ExternalServiceUserDto) bool { return s.Name == expectedName })
 }
 
 func (a AccountResourceChecker) UserAvailable(t *testing.T, accountUUID, email string) {
@@ -337,6 +354,29 @@ func (a AccountResourceChecker) PermissionBindingsCount(t *testing.T, accountUUI
 
 func (a AccountResourceChecker) randomize(in string) string {
 	return a.RandomizeFn(in)
+}
+
+func (a AccountResourceChecker) getAllServiceUsers(t *testing.T, accountUUID string) []accountmanagement.ExternalServiceUserDto {
+	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
+	const pageSize = 1000
+	page := (int32)(1)
+	for {
+		r := a.getServiceUsersPage(t, accountUUID, page, pageSize)
+		serviceUsers = append(serviceUsers, r.Results...)
+		if r.NextPageKey == nil {
+			break
+		}
+		page++
+	}
+	return serviceUsers
+}
+
+func (a AccountResourceChecker) getServiceUsersPage(t *testing.T, accountUUID string, page int32, pageSize int32) *accountmanagement.ExternalServiceUsersPageDto {
+	r, resp, err := a.Client.ServiceUserManagementAPI.GetServiceUsersFromAccount(t.Context(), accountUUID).Page(page).PageSize(pageSize).Execute()
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	defer resp.Body.Close()
+	return r
 }
 
 func assertElementNotInSlice[K any](t *testing.T, sl []K, check func(el K) bool) {
