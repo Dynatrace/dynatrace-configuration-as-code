@@ -22,10 +22,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/require"
 )
 
 func createMZone(t *testing.T) {
@@ -57,4 +59,24 @@ func randomizeConfiguration(t *testing.T, fs afero.Fs, path string, randomStr st
 			t.Fatal(err)
 		}
 	}
+}
+
+func assertElementNotInSlice[K any](t *testing.T, sl []K, check func(el K) bool) {
+	_, found := getElementInSlice(sl, check)
+	assert.False(t, found)
+}
+
+func assertElementInSlice[K any](t *testing.T, sl []K, check func(el K) bool) (*K, bool) {
+	e, found := getElementInSlice(sl, check)
+	assert.True(t, found)
+	return e, found
+}
+
+func getElementInSlice[K any](sl []K, check func(el K) bool) (*K, bool) {
+	for _, e := range sl {
+		if check(e) {
+			return &e, true
+		}
+	}
+	return nil, false
 }

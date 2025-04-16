@@ -378,22 +378,3 @@ func (a AccountResourceChecker) getServiceUsersPage(t *testing.T, accountUUID st
 	defer resp.Body.Close()
 	return r
 }
-
-func assertElementNotInSlice[K any](t *testing.T, sl []K, check func(el K) bool) {
-	_, found := getElementInSlice(sl, check)
-	assert.False(t, found)
-}
-
-func assertElementInSlice[K any](t *testing.T, sl []K, check func(el K) bool) (*K, bool) {
-	e, found := getElementInSlice(sl, check)
-	assert.True(t, found)
-	return e, found
-}
-func getElementInSlice[K any](sl []K, check func(el K) bool) (*K, bool) {
-	for _, e := range sl {
-		if check(e) {
-			return &e, true
-		}
-	}
-	return nil, false
-}
