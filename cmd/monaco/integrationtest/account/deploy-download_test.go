@@ -77,39 +77,60 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	deploy1st := deploy(project, baseFs)
 	download1st := download(project, afero.NewCopyOnWriteFs(baseFs, afero.NewMemMapFs()))
 
+	allDeployedItemsDownloaded := true
 	for _, u := range deploy1st.Users {
-		assert.Contains(t, download1st.Users, u.Email.Value())
+		if !assert.Contains(t, download1st.Users, u.Email.Value()) {
+			allDeployedItemsDownloaded = false
+		}
 	}
 	for _, deployedServiceUser := range deploy1st.ServiceUsers {
-		_, _ = assertElementInSlice(t, download1st.ServiceUsers, func(su account.ServiceUser) bool { return su.Name == deployedServiceUser.Name })
+		_, found := assertElementInSlice(t, download1st.ServiceUsers, func(su account.ServiceUser) bool { return su.Name == deployedServiceUser.Name })
+		if !found {
+			allDeployedItemsDownloaded = false
+		}
 	}
 	for _, p := range deploy1st.Policies {
-		assert.Contains(t, download1st.Policies, toID(p.Name)) // when downloading, ID is generated from name
+		if !assert.Contains(t, download1st.Policies, toID(p.Name)) { // when downloading, ID is generated from name
+			allDeployedItemsDownloaded = false
+		}
 	}
 	for _, g := range deploy1st.Groups {
-		assert.Contains(t, download1st.Groups, toID(g.Name)) // when downloading, ID is generated from name
+		if !assert.Contains(t, download1st.Groups, toID(g.Name)) { // when downloading, ID is generated from name
+			allDeployedItemsDownloaded = false
+		}
 	}
+
+	require.True(t, allDeployedItemsDownloaded, "Not all deployed items were downloaded")
 
 	deploy2nd := deploy(project, baseFs)
 	download2nd := download(project, afero.NewCopyOnWriteFs(baseFs, afero.NewMemMapFs()))
 	assert.Equal(t, deploy2nd, deploy1st)
 
+	redownloadedItemsAreIdentical := true
 	for _, u := range deploy1st.Users {
-		assert.Equal(t, download1st.Users[u.Email.Value()], download2nd.Users[u.Email.Value()])
+		if !assert.Equal(t, download1st.Users[u.Email.Value()], download2nd.Users[u.Email.Value()]) {
+			redownloadedItemsAreIdentical = false
+		}
 	}
 	for _, deployedServiceUser := range deploy1st.ServiceUsers {
-		e1, found := assertElementInSlice(t, download1st.ServiceUsers, func(su account.ServiceUser) bool { return su.Name == deployedServiceUser.Name })
-		require.True(t, found)
-		e2, found := assertElementInSlice(t, download2nd.ServiceUsers, func(su account.ServiceUser) bool { return su.Name == deployedServiceUser.Name })
-		require.True(t, found)
-		assert.Equal(t, *e1, *e2)
+		e1, found1 := assertElementInSlice(t, download1st.ServiceUsers, func(su account.ServiceUser) bool { return su.Name == deployedServiceUser.Name })
+		e2, found2 := assertElementInSlice(t, download2nd.ServiceUsers, func(su account.ServiceUser) bool { return su.Name == deployedServiceUser.Name })
+		if !found1 || !found2 || !assert.Equal(t, *e1, *e2) {
+			redownloadedItemsAreIdentical = false
+		}
 	}
 	for _, p := range deploy1st.Policies {
 		p.ID = toID(p.Name)
-		assert.Equal(t, download1st.Policies[p.ID], download2nd.Policies[p.ID])
+		if !assert.Equal(t, download1st.Policies[p.ID], download2nd.Policies[p.ID]) {
+			redownloadedItemsAreIdentical = false
+		}
 	}
 	for _, g := range deploy1st.Groups {
 		g.ID = toID(g.Name)
-		assert.Equal(t, download1st.Groups[g.ID], download2nd.Groups[g.ID])
+		if !assert.Equal(t, download1st.Groups[g.ID], download2nd.Groups[g.ID]) {
+			redownloadedItemsAreIdentical = false
+		}
 	}
+
+	require.True(t, redownloadedItemsAreIdentical, "Not all redownloaded items were identical")
 }
