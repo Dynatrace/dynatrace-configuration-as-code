@@ -110,6 +110,6 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	}
 	for _, g := range deploy1st.Groups {
 		g.ID = toID(g.Name)
-		assert.Equal(t, deploy1st.Groups[g.ID], deploy2nd.Groups[g.ID])
+		assert.Equal(t, download1st.Groups[g.ID], download2nd.Groups[g.ID])
 	}
 }
