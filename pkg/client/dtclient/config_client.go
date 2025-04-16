@@ -903,19 +903,24 @@ func validateSloV1Payload(payload []byte) error {
 	return nil
 }
 
-// validateDashboardPayload returns an error if the JSON data is invalid or if the payload is not a V1 payload
+var errWrongPayloadType = errors.New("can't deploy a Dynatrace platform dashboard using 'api: dashboard'. Either use 'type: document' with 'kind: dashboard' to deploy a Dynatrace platform dashboard or update your payload to a Dynatrace classic dashboard")
+
+// validateDashboardPayload returns an error if the JSON data is 1) malformed or 2) if the payload is not a Dynatrace platform classic dashboard payload.
 func validateDashboardPayload(payload []byte) error {
 	type DashboardKeys struct {
 		Tiles any `json:"tiles"`
 	}
+
 	parsedPayload := DashboardKeys{}
 	err := json.Unmarshal(payload, &parsedPayload)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal dashboard payload: %w", err)
 	}
-	// map should only be used in V2
+
+	// Tiles should only be a map if Dynatrace platform dashboards configs are defined.
+	// For Dynatrace Platform Dashboards, an array is used.
 	if _, isMap := parsedPayload.Tiles.(map[string]any); isMap {
-		return errors.New("tried to deploy a classic dashboard configuration to dashboard")
+		return errWrongPayloadType
 	}
 	return nil
 }

@@ -233,7 +233,7 @@ func TestDeploy_WithV1Payload_Fails(t *testing.T) {
 
 	cl := NewMockClient(gomock.NewController(t))
 	_, err := runDeployTest(t, cl, documentConfig)
-	assert.ErrorContains(t, err, "tried to deploy")
+	assert.ErrorIs(t, err, errWrongPayloadType)
 }
 
 func runDeployTest(t *testing.T, client Client, c *config.Config) (entities.ResolvedEntity, error) {

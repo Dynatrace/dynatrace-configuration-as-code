@@ -887,7 +887,7 @@ func TestDocumentV2ToDocumentV1_Fails(t *testing.T) {
 			}
 		}
 	}`))
-	assert.ErrorContains(t, err, "tried to deploy")
+	assert.ErrorIs(t, err, errWrongPayloadType)
 }
 
 func TestCallWithRetryOnKnowTimingIssue_IgnoreRetryOn(t *testing.T) {
