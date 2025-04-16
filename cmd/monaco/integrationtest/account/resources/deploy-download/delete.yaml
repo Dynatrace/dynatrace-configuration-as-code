@@ -1,6 +1,8 @@
 delete:
   - type: user
     email: monaco+%RAND%@dynatrace.com
+  - type: service-user
+    name: monaco service user %RAND%
   - type: group
     name: My Group%RAND%
   - type: policy
@@ -12,3 +14,4 @@ delete:
     level:
       type: environment
       environment: vkb66581
+
