@@ -918,7 +918,7 @@ func validateDashboardPayload(payload []byte) error {
 	}
 
 	// Tiles should only be a map if Dynatrace platform dashboards configs are defined.
-	// For Dynatrace Platform Dashboards, an array is used.
+	// For Dynatrace classic dashboards, an array is used.
 	if _, isMap := parsedPayload.Tiles.(map[string]any); isMap {
 		return errWrongPayloadType
 	}
