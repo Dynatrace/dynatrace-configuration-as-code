@@ -71,6 +71,22 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		require.NotZero(t, mzoneID, "Could not get exact management zone id for assertions")
 
 		cli := runner.BuildCmd(o.fs)
+
+		defer func() {
+			t.Log("Starting cleanup")
+			// DELETE RESOURCES
+			cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "delete.yaml", "--account", accountName})
+			err = cli.Execute()
+			require.NoError(t, err)
+
+			// CHECK IF RESOURCES ARE DELETED
+			check.UserNotAvailable(t, accountUUID, myEmail)
+			check.ServiceUserNotAvailable(t, accountUUID, myServiceUserName)
+			check.PolicyNotAvailable(t, "account", accountUUID, myPolicy)
+			check.PolicyNotAvailable(t, "environment", envVkb, myPolicy2)
+			check.GroupNotAvailable(t, accountUUID, myGroup)
+		}()
+
 		// DEPLOY RESOURCES
 		cli.SetArgs([]string{"account", "deploy", "-m", "manifest-account.yaml"})
 		err = cli.Execute()
@@ -154,18 +170,6 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 0)
 		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 0)
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 0)
-
-		// DELETE RESOURCES
-		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "delete.yaml", "--account", accountName})
-		err = cli.Execute()
-		require.NoError(t, err)
-
-		// CHECK IF RESOURCES ARE DELETED
-		check.UserNotAvailable(t, accountUUID, myEmail)
-		check.ServiceUserNotAvailable(t, accountUUID, myServiceUserName)
-		check.PolicyNotAvailable(t, "account", accountUUID, myPolicy)
-		check.PolicyNotAvailable(t, "environment", envVkb, myPolicy2)
-		check.GroupNotAvailable(t, accountUUID, myGroup)
 	})
 }
 

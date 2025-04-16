@@ -68,6 +68,12 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	randomizeConfiguration(t, baseFs, "delete.yaml", randomString)
 	baseFs = afero.NewReadOnlyFs(baseFs)
 
+	defer func() {
+		t.Log("Starting cleanup")
+		err := monaco.Run(t, baseFs, "monaco account delete --manifest manifest.yaml --file delete.yaml")
+		require.NoError(t, err)
+	}()
+
 	deploy1st := deploy(project, baseFs)
 	download1st := download(project, afero.NewCopyOnWriteFs(baseFs, afero.NewMemMapFs()))
 
@@ -106,7 +112,4 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 		g.ID = toID(g.Name)
 		assert.Equal(t, deploy1st.Groups[g.ID], deploy2nd.Groups[g.ID])
 	}
-
-	err := monaco.Run(t, baseFs, "monaco account delete --manifest manifest.yaml --file delete.yaml")
-	require.NoError(t, err)
 }
