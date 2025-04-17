@@ -111,7 +111,7 @@ func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, err.Error())
 			}
 			users = append(users, User{Email: secret.Email(parsed.Email)})
-		case "service-user":
+		case "serviceUser":
 			if !featureflags.ServiceUsers.Enabled() {
 				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown type %q - needs to be one of "user", "group" or "policy"`, parsed.Type))
 			}
@@ -144,7 +144,7 @@ func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 			}
 		default:
 			if featureflags.ServiceUsers.Enabled() {
-				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown type %q - needs to be one of "user", "service-user", "group" or "policy"`, parsed.Type))
+				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown type %q - needs to be one of "user", "serviceUser", "group" or "policy"`, parsed.Type))
 			}
 			return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown type %q - needs to be one of "user", "group" or "policy"`, parsed.Type))
 		}

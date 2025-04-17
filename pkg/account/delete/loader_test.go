@@ -34,7 +34,7 @@ func TestLoader_BasicAllTypesSucceeds(t *testing.T) {
 	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
   - type: user
     email: test.account.1@user.com
-  - type: service-user
+  - type: serviceUser
     name: my-service-user
   - type: group
     name: Log viewer
@@ -83,7 +83,7 @@ func TestLoader_BasicAllTypesSucceeds(t *testing.T) {
 
 func TestLoader_ServiceUserProducesErrorWithoutFeatureFlag(t *testing.T) {
 	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
-  - type: service-user
+  - type: serviceUser
     name: my-service-user`)
 
 	_, err := delete.LoadResourcesToDelete(fs, deleteFilename)

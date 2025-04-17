@@ -103,7 +103,7 @@ func (Entries) JSONSchema() *jsonschema.Schema {
 	if featureflags.ServiceUsers.Enabled() {
 		conditionalRequiredFields = append(conditionalRequiredFields, &jsonschema.Schema{
 			Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
-				orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "service-user"}})),
+				orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "serviceUser"}})),
 			Required: []string{"name"},
 		})
 	}

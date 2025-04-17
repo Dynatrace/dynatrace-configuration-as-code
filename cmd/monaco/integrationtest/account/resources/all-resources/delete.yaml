@@ -1,7 +1,7 @@
 delete:
   - type: user
     email: monaco+%RAND%@dynatrace.com
-  - type: service-user
+  - type: serviceUser
     name: monaco service user %RAND%
   - type: group
     name: My Group%RAND%
