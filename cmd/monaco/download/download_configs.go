@@ -273,11 +273,18 @@ func escapeGoTemplating(c *config.Config) error {
 	return nil
 }
 
+type Downloadable interface {
+
+	// Download returns downloaded project.ConfigsPerType, and an error, if something went wrong during the download.
+	// The string projectName is used to set the Project attribute of each downloaded config.
+	Download(ctx context.Context, projectName string) (project.ConfigsPerType, error)
+}
+
 type downloadFn struct {
 	classicDownload      func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (project.ConfigsPerType, error)
 	settingsDownload     func(context.Context, client.SettingsClient, string, settings.Filters, ...config.SettingsType) (project.ConfigsPerType, error)
 	automationDownload   func(context.Context, client.AutomationClient, string, ...config.AutomationType) (project.ConfigsPerType, error)
-	bucketDownload       func(context.Context, client.BucketClient, string) (project.ConfigsPerType, error)
+	bucketDownload       func(client.BucketClient) Downloadable
 	documentDownload     func(context.Context, client.DocumentClient, string) (project.ConfigsPerType, error)
 	openPipelineDownload func(context.Context, client.OpenPipelineClient, string) (project.ConfigsPerType, error)
 	segmentDownload      func(context.Context, segment.DownloadSegmentClient, string) (project.ConfigsPerType, error)
@@ -285,10 +292,12 @@ type downloadFn struct {
 }
 
 var defaultDownloadFn = downloadFn{
-	classicDownload:      classic.Download,
-	settingsDownload:     settings.Download,
-	automationDownload:   automation.Download,
-	bucketDownload:       bucket.Download,
+	classicDownload:    classic.Download,
+	settingsDownload:   settings.Download,
+	automationDownload: automation.Download,
+	bucketDownload: func(bucketClient client.BucketClient) Downloadable {
+		return bucket.NewBucketAPI(bucketClient)
+	},
 	documentDownload:     document.Download,
 	openPipelineDownload: openpipeline.Download,
 	segmentDownload:      segment.Download,
@@ -332,7 +341,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 
 	if shouldDownloadBuckets(opts) && opts.auth.OAuth != nil {
 		log.Info("Downloading Grail buckets")
-		bucketCfgs, err := fn.bucketDownload(ctx, clientSet.BucketClient, opts.projectName)
+		bucketCfgs, err := fn.bucketDownload(clientSet.BucketClient).Download(ctx, opts.projectName)
 		if err != nil {
 			return nil, err
 		}
