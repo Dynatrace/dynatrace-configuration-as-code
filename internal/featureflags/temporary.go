@@ -60,7 +60,7 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	OpenPipeline:                       true,
 	IgnoreSkippedConfigs:               false,
 	Segments:                           true,
-	ServiceUsers:                       false,
+	ServiceUsers:                       true,
 	OnlyCreateReferencesInStringValues: false,
 	ServiceLevelObjective:              true,
 	AccessControlSettings:              false,

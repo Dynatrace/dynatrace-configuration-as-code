@@ -52,8 +52,10 @@ func TestDownloader_EmptyAccount(t *testing.T) {
 	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{}, nil)
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, uncomment the following:
-	//client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	// Once temporary featureflags.ServiceUsers is removed, remove the following:
+	if featureflags.ServiceUsers.Enabled() {
+		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	}
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -88,8 +90,10 @@ func TestDownloader_AccountPolicy(t *testing.T) {
 
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, uncomment the following:
-	//client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	// Once temporary featureflags.ServiceUsers is removed, remove the following:
+	if featureflags.ServiceUsers.Enabled() {
+		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	}
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -137,8 +141,10 @@ func TestDownloader_EnvironmentPolicy(t *testing.T) {
 
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, uncomment the following:
-	//client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	// Once temporary featureflags.ServiceUsers is removed, remove the following:
+	if featureflags.ServiceUsers.Enabled() {
+		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	}
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -182,8 +188,10 @@ func TestDownloader_GlobalPolicy(t *testing.T) {
 
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, uncomment the following:
-	//client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	// Once temporary featureflags.ServiceUsers is removed, remove the following:
+	if featureflags.ServiceUsers.Enabled() {
+		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	}
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -233,8 +241,10 @@ func TestDownloader_OnlyUser(t *testing.T) {
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{{Email: "usert@some.org"}}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "usert@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "usert@some.org"}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, uncomment the following:
-	//client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	// Once temporary featureflags.ServiceUsers is removed, remove the following:
+	if featureflags.ServiceUsers.Enabled() {
+		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	}
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -271,8 +281,10 @@ func TestDownloader_UserWithOneGroup(t *testing.T) {
 		Email:  "usert@some.org",
 		Groups: []accountmanagement.AccountGroupDto{{Uuid: groupUUID1}},
 	}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, uncomment the following:
-	//client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	// Once temporary featureflags.ServiceUsers is removed, remove the following:
+	if featureflags.ServiceUsers.Enabled() {
+		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	}
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -332,8 +344,10 @@ func TestDownloader_EmptyGroup(t *testing.T) {
 	client.EXPECT().GetPermissionFor(gomock.Any(), accountUUID, gomock.Any()).Return(&accountmanagement.PermissionsGroupDto{}, nil)
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, uncomment the following:
-	//client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	// Once temporary featureflags.ServiceUsers is removed, remove the following:
+	if featureflags.ServiceUsers.Enabled() {
+		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	}
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -371,8 +385,10 @@ func TestDownloader_GroupWithFederatedAttributeValues(t *testing.T) {
 	client.EXPECT().GetPermissionFor(gomock.Any(), accountUUID, gomock.Any()).Return(&accountmanagement.PermissionsGroupDto{}, nil)
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, uncomment the following:
-	//client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	// Once temporary featureflags.ServiceUsers is removed, remove the following:
+	if featureflags.ServiceUsers.Enabled() {
+		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	}
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -459,8 +475,10 @@ func TestDownloader_GroupsWithPolicies(t *testing.T) {
 	}, nil)
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, uncomment the following:
-	//client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	// Once temporary featureflags.ServiceUsers is removed, remove the following:
+	if featureflags.ServiceUsers.Enabled() {
+		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	}
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -610,8 +628,10 @@ func TestDownloader_GroupsWithPermissions(t *testing.T) {
 	client.EXPECT().GetPolicyGroupBindings(gomock.Any(), "environment", "abc12345").Return(&accountmanagement.LevelPolicyBindingDto{}, nil)
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, uncomment the following:
-	//client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	// Once temporary featureflags.ServiceUsers is removed, remove the following:
+	if featureflags.ServiceUsers.Enabled() {
+		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	}
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
