@@ -1061,8 +1061,8 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	opts := setupTestingDownloadOptions(t, server, projectName)
-	opts.onlySettings = false
-	opts.onlyAPIs = false
+	opts.onlyOptions[OnlySettings] = false
+	opts.onlyOptions[OnlyApis] = false
 
 	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
@@ -1118,8 +1118,8 @@ func TestDownloadGoTemplateExpressionsAreEscaped(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	opts := setupTestingDownloadOptions(t, server, projectName)
-	opts.onlySettings = false
-	opts.onlyAPIs = false
+	opts.onlyOptions[OnlySettings] = false
+	opts.onlyOptions[OnlyApis] = false
 
 	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
@@ -1186,8 +1186,8 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	opts := setupTestingDownloadOptions(t, server, projectName)
-	opts.onlySettings = false
-	opts.onlyAPIs = true
+	opts.onlyOptions[OnlySettings] = false
+	opts.onlyOptions[OnlyApis] = true
 
 	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
@@ -1241,8 +1241,8 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	opts := setupTestingDownloadOptions(t, server, projectName)
-	opts.onlySettings = true
-	opts.onlyAPIs = false
+	opts.onlyOptions[OnlySettings] = true
+	opts.onlyOptions[OnlyApis] = false
 
 	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
@@ -1299,8 +1299,8 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	fs := afero.NewMemMapFs()
 
 	opts := setupTestingDownloadOptions(t, server, projectName)
-	opts.onlySettings = true
-	opts.onlyAPIs = false
+	opts.onlyOptions[OnlySettings] = true
+	opts.onlyOptions[OnlyApis] = false
 
 	configClient, err := dtclient.NewClassicConfigClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
@@ -1362,7 +1362,9 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 			outputFolder: "out",
 			projectName:  projectName,
 		},
-		onlyAPIs: true,
+		onlyOptions: OnlyOptions{
+			OnlyApis: true,
+		},
 	}
 }
 

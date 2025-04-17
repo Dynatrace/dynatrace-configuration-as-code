@@ -38,6 +38,7 @@ import (
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	var f downloadCmdOptions
+	var onlySettings, onlyApis, onlyOpenPipeline, onlySegments, onlySloV2, onlyDocuments, onlyBuckets, onlyAutomation bool
 
 	cmd = &cobra.Command{
 		Short: "Download configuration from Dynatrace",
@@ -57,6 +58,15 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
+			f.onlyOptions = OnlyOptions{
+				OnlySettings:     onlySettings || len(f.specificSchemas) > 0,
+				OnlyApis:         onlyApis || len(f.specificAPIs) > 0,
+				OnlySegments:     onlySegments,
+				OnlySloV2:        onlySloV2,
+				OnlyOpenPipeline: onlyOpenPipeline,
+				OnlyDocuments:    onlyDocuments,
+				OnlyBuckets:      onlyBuckets,
+			}
 
 			if f.environmentURL != "" {
 				f.manifestFile = ""
@@ -83,28 +93,26 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	// download options
 	cmd.Flags().StringSliceVarP(&f.specificAPIs, "api", "a", nil, "Download one or more classic configuration APIs, including deprecated ones. (Repeat flag or use comma-separated values)")
 	cmd.Flags().StringSliceVarP(&f.specificSchemas, "settings-schema", "s", nil, "Download settings 2.0 objects of one or more settings 2.0 schemas. (Repeat flag or use comma-separated values)")
-	cmd.Flags().BoolVar(&f.onlyAPIs, "only-apis", false, "Download only classic configuration APIs. Deprecated configuration APIs will not be included.")
-	cmd.Flags().BoolVar(&f.onlySettings, "only-settings", false, "Download only settings 2.0 objects")
-	cmd.Flags().BoolVar(&f.onlyAutomation, "only-automation", false, "Only download automation objects, skip all other configuration types")
-	cmd.Flags().BoolVar(&f.onlyDocuments, "only-documents", false, "Only download documents, skip all other configuration types")
-	cmd.Flags().BoolVar(&f.onlyBuckets, "only-buckets", false, "Only download buckets, skip all other configuration types")
+	cmd.Flags().BoolVar(&onlyApis, OnlyApis, false, "Download only classic configuration APIs. Deprecated configuration APIs will not be included.")
+	cmd.Flags().BoolVar(&onlySettings, OnlySettings, false, "Download only settings 2.0 objects")
+	cmd.Flags().BoolVar(&onlyAutomation, OnlyAutomation, false, "Only download automation objects, skip all other configuration types")
+	cmd.Flags().BoolVar(&onlyDocuments, OnlyDocuments, false, "Only download documents, skip all other configuration types")
+	cmd.Flags().BoolVar(&onlyBuckets, OnlyBuckets, false, "Only download buckets, skip all other configuration types")
 
 	// combinations
-	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation")
-	cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation")
-	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation", "only-documents")
-	cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation", "only-documents")
+	cmd.MarkFlagsMutuallyExclusive("settings-schema", OnlySettings)
+	cmd.MarkFlagsMutuallyExclusive("api", OnlyApis)
 
 	if featureflags.OpenPipeline.Enabled() {
-		cmd.Flags().BoolVar(&f.onlyOpenPipeline, "only-openpipeline", false, "Only download openpipeline configurations, skip all other configuration types")
+		cmd.Flags().BoolVar(&onlyOpenPipeline, OnlyOpenPipeline, false, "Only download openpipeline configurations, skip all other configuration types")
 	}
 
 	if featureflags.Segments.Enabled() {
-		cmd.Flags().BoolVar(&f.onlySegments, "only-segments", false, "Only download segment configurations, skip all other configuration types")
+		cmd.Flags().BoolVar(&onlySegments, OnlySegments, false, "Only download segment configurations, skip all other configuration types")
 	}
 
 	if featureflags.ServiceLevelObjective.Enabled() {
-		cmd.Flags().BoolVar(&f.onlySLOsV2, "only-slo-v2", false, fmt.Sprintf("Only download %s, skip all other configuration types", config.ServiceLevelObjectiveID))
+		cmd.Flags().BoolVar(&onlySloV2, OnlySloV2, false, fmt.Sprintf("Only download %s, skip all other configuration types", config.ServiceLevelObjectiveID))
 	}
 
 	err := errors.Join(

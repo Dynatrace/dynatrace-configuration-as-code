@@ -26,16 +26,9 @@ import (
 
 type downloadConfigsOptions struct {
 	downloadOptionsShared
-	specificAPIs     []string
-	specificSchemas  []string
-	onlyAPIs         bool
-	onlySettings     bool
-	onlyAutomation   bool
-	onlyDocuments    bool
-	onlyOpenPipeline bool
-	onlySegment      bool
-	onlySLOV2        bool
-	onlyBuckets      bool
+	specificAPIs    []string
+	specificSchemas []string
+	onlyOptions     OnlyOptions
 }
 
 func (opts downloadConfigsOptions) valid() []error {
@@ -53,21 +46,11 @@ func (opts downloadConfigsOptions) valid() []error {
 func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
 	apis = apis.Filter(api.RemoveDisabled)
 	switch {
-	case opts.onlyOpenPipeline:
-		return nil
-	case opts.onlyDocuments:
-		return nil
-	case opts.onlyAutomation:
-		return nil
-	case opts.onlySettings:
-		return nil
-	case opts.onlySegment:
-		return nil
-	case opts.onlyAPIs:
-		return apis.Filter(removeSkipDownload, removeDeprecated(withWarn()))
 	case len(opts.specificAPIs) > 0:
 		return apis.Filter(api.RetainByName(opts.specificAPIs), removeSkipDownload, warnDeprecated())
-	case len(opts.specificSchemas) == 0:
+	case opts.onlyOptions.IsSingleOption(OnlyApis):
+		return apis.Filter(removeSkipDownload, removeDeprecated(withWarn()))
+	case opts.onlyOptions.ShouldDownload(OnlyApis):
 		return apis.Filter(removeSkipDownload, removeDeprecated())
 	default:
 		return nil
