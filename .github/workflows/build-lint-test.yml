@@ -122,7 +122,15 @@ jobs:
         with:
           name: lint-report
 
-      - name: ⬆️ SonarQube Scan
+      - name: 🏷️ Get latest tag
+        id: get_latest_tag
+        run: |
+          echo "GIT_TAG=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+
+      - name: 🔍 SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8b4250a32bb97 # nosemgrep false detection of commit v5.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: |
+            -Dsonar.projectVersion=${{steps.get_latest_tag.outputs.GIT_TAG}}
