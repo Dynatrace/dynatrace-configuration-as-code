@@ -248,6 +248,15 @@ func TestDownload_Options(t *testing.T) {
 			want: wantDownload{document: true},
 		},
 		{
+			name: "only buckets requested",
+			given: downloadConfigsOptions{
+				onlyBuckets: true,
+				downloadOptionsShared: downloadOptionsShared{
+					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
+				}},
+			want: wantDownload{bucket: true},
+		},
+		{
 			name: "only openpipeline requested",
 			given: downloadConfigsOptions{
 				onlyOpenPipeline: true,

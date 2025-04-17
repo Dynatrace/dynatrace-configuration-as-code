@@ -35,6 +35,7 @@ type downloadConfigsOptions struct {
 	onlyOpenPipeline bool
 	onlySegment      bool
 	onlySLOV2        bool
+	onlyBuckets      bool
 }
 
 func (opts downloadConfigsOptions) valid() []error {
