@@ -21,6 +21,7 @@ package download
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -81,8 +82,6 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			givenOpts: downloadConfigsOptions{
 				specificAPIs:          nil,
 				specificSchemas:       nil,
-				onlyAPIs:              false,
-				onlySettings:          false,
 				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
@@ -97,10 +96,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Specific Settings: downloads defined Settings only",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:          nil,
-				specificSchemas:       []string{"builtin:magic.secret"},
-				onlyAPIs:              false,
-				onlySettings:          false,
+				specificAPIs:    nil,
+				specificSchemas: []string{"builtin:magic.secret"},
+				onlyOptions: OnlyOptions{
+					OnlySettings: true,
+				},
 				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
@@ -116,10 +116,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Specific APIs: downloads defined APIs only",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:          []string{"alerting-profile"},
-				specificSchemas:       nil,
-				onlyAPIs:              false,
-				onlySettings:          false,
+				specificAPIs:    []string{"alerting-profile"},
+				specificSchemas: nil,
+				onlyOptions: OnlyOptions{
+					OnlyApis: true,
+				},
 				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
@@ -134,10 +135,12 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Specific APIs and Settings: downloads defined APIs and Schemas",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:          []string{"alerting-profile"},
-				specificSchemas:       []string{"builtin:magic.secret"},
-				onlyAPIs:              false,
-				onlySettings:          false,
+				specificAPIs:    []string{"alerting-profile"},
+				specificSchemas: []string{"builtin:magic.secret"},
+				onlyOptions: OnlyOptions{
+					OnlySettings: true,
+					OnlyApis:     true,
+				},
 				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
@@ -153,10 +156,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Only APIs: downloads APIs only",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:          nil,
-				specificSchemas:       nil,
-				onlyAPIs:              true,
-				onlySettings:          false,
+				specificAPIs:    nil,
+				specificSchemas: nil,
+				onlyOptions: OnlyOptions{
+					OnlyApis: true,
+				},
 				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
@@ -171,10 +175,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		{
 			name: "Only Settings: downloads Settings only",
 			givenOpts: downloadConfigsOptions{
-				specificAPIs:          nil,
-				specificSchemas:       nil,
-				onlyAPIs:              false,
-				onlySettings:          true,
+				specificAPIs:    nil,
+				specificSchemas: nil,
+				onlyOptions: OnlyOptions{
+					OnlySettings: true,
+				},
 				downloadOptionsShared: downloadOptions,
 			},
 			expectedConfigBehaviour: func(c *client.MockConfigClient) {
@@ -233,7 +238,9 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only settings requested",
 			given: downloadConfigsOptions{
-				onlySettings: true,
+				onlyOptions: OnlyOptions{
+					OnlySettings: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
 				}},
@@ -243,6 +250,9 @@ func TestDownload_Options(t *testing.T) {
 			name: "specific settings requested",
 			given: downloadConfigsOptions{
 				specificSchemas: []string{"some:schema"},
+				onlyOptions: OnlyOptions{
+					OnlySettings: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
 				}},
@@ -251,7 +261,9 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only documents requested",
 			given: downloadConfigsOptions{
-				onlyDocuments: true,
+				onlyOptions: OnlyOptions{
+					OnlyDocuments: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
@@ -260,7 +272,9 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only buckets requested",
 			given: downloadConfigsOptions{
-				onlyBuckets: true,
+				onlyOptions: OnlyOptions{
+					OnlyBuckets: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
@@ -269,7 +283,9 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only openpipeline requested",
 			given: downloadConfigsOptions{
-				onlyOpenPipeline: true,
+				onlyOptions: OnlyOptions{
+					OnlyOpenPipeline: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
@@ -278,7 +294,9 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only segment requested with FF on",
 			given: downloadConfigsOptions{
-				onlySegment: true,
+				onlyOptions: OnlyOptions{
+					OnlySegments: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
@@ -288,7 +306,9 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only segment requested with FF off",
 			given: downloadConfigsOptions{
-				onlySegment: true,
+				onlyOptions: OnlyOptions{
+					OnlySegments: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
@@ -298,7 +318,9 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only slo-v2 requested with FF on",
 			given: downloadConfigsOptions{
-				onlySLOV2: true,
+				onlyOptions: OnlyOptions{
+					OnlySloV2: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
@@ -308,7 +330,9 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only slo-v2 requested with FF off",
 			given: downloadConfigsOptions{
-				onlySLOV2: true,
+				onlyOptions: OnlyOptions{
+					OnlySloV2: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
@@ -318,7 +342,9 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only apis requested",
 			given: downloadConfigsOptions{
-				onlyAPIs: true,
+				onlyOptions: OnlyOptions{
+					OnlyApis: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
 				}},
@@ -327,6 +353,9 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "specific config apis requested",
 			given: downloadConfigsOptions{
+				onlyOptions: OnlyOptions{
+					OnlyApis: true,
+				},
 				specificAPIs: []string{"alerting-profile"},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
@@ -336,10 +365,12 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only automations requested",
 			given: downloadConfigsOptions{
+				onlyOptions: OnlyOptions{
+					OnlyAutomation: true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				},
-				onlyAutomation: true,
 			},
 			want: wantDownload{automation: true},
 		},
@@ -348,6 +379,10 @@ func TestDownload_Options(t *testing.T) {
 			given: downloadConfigsOptions{
 				specificAPIs:    []string{"alerting-profile"},
 				specificSchemas: []string{"some:schema"},
+				onlyOptions: OnlyOptions{
+					OnlySettings: true,
+					OnlyApis:     true,
+				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
 				}},
@@ -431,8 +466,6 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          nil,
 				specificSchemas:       nil,
-				onlyAPIs:              false,
-				onlySettings:          false,
 			},
 			want: true,
 		},
@@ -442,8 +475,9 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          nil,
 				specificSchemas:       nil,
-				onlyAPIs:              false,
-				onlySettings:          true,
+				onlyOptions: OnlyOptions{
+					OnlySettings: true,
+				},
 			},
 			want: true,
 		},
@@ -453,8 +487,9 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          nil,
 				specificSchemas:       []string{"some-schema", "other-schema"},
-				onlyAPIs:              false,
-				onlySettings:          false,
+				onlyOptions: OnlyOptions{
+					OnlySettings: true,
+				},
 			},
 			want: true,
 		},
@@ -464,8 +499,9 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          []string{"some-api", "other-api"},
 				specificSchemas:       nil,
-				onlyAPIs:              false,
-				onlySettings:          false,
+				onlyOptions: OnlyOptions{
+					OnlyApis: true,
+				},
 			},
 			want: false,
 		},
@@ -475,8 +511,10 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          []string{"some-api", "other-api"},
 				specificSchemas:       []string{"some-schema", "other-schema"},
-				onlyAPIs:              false,
-				onlySettings:          false,
+				onlyOptions: OnlyOptions{
+					OnlyApis:     true,
+					OnlySettings: true,
+				},
 			},
 			want: true,
 		},
@@ -486,15 +524,16 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          []string{"some-api", "other-api"},
 				specificSchemas:       nil,
-				onlyAPIs:              true,
-				onlySettings:          false,
+				onlyOptions: OnlyOptions{
+					OnlyApis: true,
+				},
 			},
 			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, shouldDownloadSettings(tt.given), "shouldDownloadSettings(%v)", tt.given)
+			assert.Equalf(t, tt.want, tt.given.onlyOptions.ShouldDownload(OnlySettings), "shouldDownloadSettings(%v)", tt.given)
 		})
 	}
 }
@@ -503,7 +542,9 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 
 	givenOpts := downloadConfigsOptions{
 		specificSchemas: []string{"UNKNOWN SCHEMA"},
-		onlySettings:    false,
+		onlyOptions: OnlyOptions{
+			OnlySettings: false,
+		},
 		downloadOptionsShared: downloadOptionsShared{
 			environmentURL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -585,18 +626,82 @@ func TestMapToAuth(t *testing.T) {
 	})
 }
 
-func TestDownloadConfigs_OnlyAutomationWithoutAutomationCredentials(t *testing.T) {
+func TestDownloadConfigs_ErrorIfOAuthMissing(t *testing.T) {
+	flags := []OnlyFlag{OnlyAutomation, OnlyDocuments, OnlyBuckets, OnlyOpenPipeline, OnlySloV2, OnlySegments}
+
+	sharedOptionsWithToken := downloadOptionsShared{
+		environmentURL: manifest.URLDefinition{
+			Type:  manifest.ValueURLType,
+			Value: "testurl.com",
+		},
+		auth: manifest.Auth{
+			Token: &manifest.AuthSecret{
+				Name:  "TEST_TOKEN_VAR",
+				Value: "test.token",
+			},
+		},
+		outputFolder:           "folder",
+		projectName:            "project",
+		forceOverwriteManifest: false,
+	}
+
+	for _, flag := range flags {
+		t.Run(fmt.Sprintf("Errors for %s", flag), func(t *testing.T) {
+			opts := downloadConfigsOptions{
+				onlyOptions: OnlyOptions{
+					flag: true,
+				},
+				downloadOptionsShared: sharedOptionsWithToken,
+			}
+
+			err := doDownloadConfigs(t.Context(), testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
+			assert.ErrorContains(t, err, "no OAuth credentials")
+		})
+	}
+}
+
+func TestDownloadConfigs_ErrorIfTokenMissing(t *testing.T) {
+	sharedOptionsWithOAuth := downloadOptionsShared{
+		environmentURL: manifest.URLDefinition{
+			Type:  manifest.ValueURLType,
+			Value: "testurl.com",
+		},
+		auth: manifest.Auth{
+			OAuth: &manifest.OAuth{},
+		},
+		outputFolder:           "folder",
+		projectName:            "project",
+		forceOverwriteManifest: false,
+	}
+
 	opts := downloadConfigsOptions{
-		onlyAutomation: true,
+		onlyOptions: OnlyOptions{
+			OnlyApis: true,
+		},
+		downloadOptionsShared: sharedOptionsWithOAuth,
 	}
 
 	err := doDownloadConfigs(t.Context(), testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
-	assert.ErrorContains(t, err, "no OAuth credentials configured")
+	assert.ErrorContains(t, err, "requires token")
 }
 
 func TestDownloadConfigs_OnlySettings(t *testing.T) {
 	opts := downloadConfigsOptions{
-		onlySettings: true,
+		onlyOptions: OnlyOptions{
+			OnlySettings: true,
+		},
+		downloadOptionsShared: downloadOptionsShared{
+			environmentURL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Value: "testurl.com",
+			},
+			auth: manifest.Auth{
+				OAuth: &manifest.OAuth{},
+			},
+			outputFolder:           "folder",
+			projectName:            "project",
+			forceOverwriteManifest: false,
+		},
 	}
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().ListSchemas(gomock.Any()).Return(dtclient.SchemaList{{SchemaId: "builtin:auto.schema"}}, nil)
@@ -713,7 +818,9 @@ func Test_copyConfigs(t *testing.T) {
 func Test_EscapingSkip_Buckets(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	opts := downloadConfigsOptions{
-		onlyBuckets: true,
+		onlyOptions: OnlyOptions{
+			OnlyBucketsFlag: true,
+		},
 		downloadOptionsShared: downloadOptionsShared{
 			environmentURL: manifest.URLDefinition{},
 			auth: manifest.Auth{

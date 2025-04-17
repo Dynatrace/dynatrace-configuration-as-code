@@ -56,14 +56,7 @@ type downloadCmdOptions struct {
 	specificEnvironmentName string
 	specificAPIs            []string
 	specificSchemas         []string
-	onlyAPIs                bool
-	onlySettings            bool
-	onlyAutomation          bool
-	onlyDocuments           bool
-	onlyOpenPipeline        bool
-	onlySegments            bool
-	onlySLOsV2              bool
-	onlyBuckets             bool
+	onlyOptions             OnlyOptions
 }
 
 type auth struct {
@@ -143,16 +136,9 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 			projectName:            cmdOptions.projectName,
 			forceOverwriteManifest: cmdOptions.forceOverwrite,
 		},
-		specificAPIs:     cmdOptions.specificAPIs,
-		specificSchemas:  cmdOptions.specificSchemas,
-		onlyAPIs:         cmdOptions.onlyAPIs,
-		onlySettings:     cmdOptions.onlySettings,
-		onlyAutomation:   cmdOptions.onlyAutomation,
-		onlyDocuments:    cmdOptions.onlyDocuments,
-		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
-		onlySegment:      cmdOptions.onlySegments,
-		onlySLOV2:        cmdOptions.onlySLOsV2,
-		onlyBuckets:      cmdOptions.onlyBuckets,
+		specificAPIs:    cmdOptions.specificAPIs,
+		specificSchemas: cmdOptions.specificSchemas,
+		onlyOptions:     cmdOptions.onlyOptions,
 	}
 
 	if errs := options.valid(); len(errs) != 0 {
@@ -187,14 +173,9 @@ func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOpt
 			projectName:            cmdOptions.projectName,
 			forceOverwriteManifest: cmdOptions.forceOverwrite,
 		},
-		specificAPIs:     cmdOptions.specificAPIs,
-		specificSchemas:  cmdOptions.specificSchemas,
-		onlyAPIs:         cmdOptions.onlyAPIs,
-		onlySettings:     cmdOptions.onlySettings,
-		onlyAutomation:   cmdOptions.onlyAutomation,
-		onlyDocuments:    cmdOptions.onlyDocuments,
-		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
-		onlyBuckets:      cmdOptions.onlyBuckets,
+		specificAPIs:    cmdOptions.specificAPIs,
+		specificSchemas: cmdOptions.specificSchemas,
+		onlyOptions:     cmdOptions.onlyOptions,
 	}
 
 	if errs := options.valid(); len(errs) != 0 {
@@ -306,20 +287,28 @@ var defaultDownloadFn = downloadFn{
 	sloDownload: slo.Download,
 }
 
+const oAuthSkipMsg = "Skipped downloading %s due to missing OAuth credentials"
+const authSkipMsg = "Skipped downloading %s due to missing token"
+
 func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
 	configs := make(project.ConfigsPerType)
-	if shouldDownloadConfigs(opts) {
-		if opts.auth.Token == nil {
+	if opts.onlyOptions.ShouldDownload(OnlyApis) {
+		if opts.auth.Token != nil {
+			log.Info("Downloading configuration objects")
+			classicCfgs, err := fn.classicDownload(ctx, clientSet.ConfigClient, opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
+			if err != nil {
+				return nil, err
+			}
+			copyConfigs(configs, classicCfgs)
+		} else if opts.onlyOptions.IsSingleOption(OnlyApis) {
 			return nil, errors.New("classic client config requires token")
+		} else {
+			log.Warn(authSkipMsg, "configuration objects")
 		}
-		classicCfgs, err := fn.classicDownload(ctx, clientSet.ConfigClient, opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
-		if err != nil {
-			return nil, err
-		}
-		copyConfigs(configs, classicCfgs)
 	}
 
-	if shouldDownloadSettings(opts) {
+	if opts.onlyOptions.ShouldDownload(OnlySettings) {
+		// auth is already validated during load that either token or OAuth is set
 		log.Info("Downloading settings objects")
 		settingCfgs, err := fn.settingsDownload(ctx, clientSet.SettingsClient, opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
 		if err != nil {
@@ -328,7 +317,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 		copyConfigs(configs, settingCfgs)
 	}
 
-	if shouldDownloadAutomationResources(opts) {
+	if opts.onlyOptions.ShouldDownload(OnlyAutomation) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading automation resources")
 			automationCfgs, err := fn.automationDownload(ctx, clientSet.AutClient, opts.projectName)
@@ -336,21 +325,29 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 				return nil, err
 			}
 			copyConfigs(configs, automationCfgs)
-		} else if opts.onlyAutomation {
+		} else if opts.onlyOptions.IsSingleOption(OnlyAutomation) {
 			return nil, errors.New("can't download automation resources: no OAuth credentials configured")
+		} else {
+			log.Warn(oAuthSkipMsg, "automation resources")
 		}
 	}
 
-	if shouldDownloadBuckets(opts) && opts.auth.OAuth != nil {
-		log.Info("Downloading Grail buckets")
-		bucketCfgs, err := fn.bucketDownload(clientSet.BucketClient).Download(ctx, opts.projectName)
-		if err != nil {
-			return nil, err
+	if opts.onlyOptions.ShouldDownload(OnlyBuckets) {
+		if opts.auth.OAuth != nil {
+			log.Info("Downloading Grail buckets")
+			bucketCfgs, err := fn.bucketDownload(clientSet.BucketClient).Download(ctx, opts.projectName)
+			if err != nil {
+				return nil, err
+			}
+			copyConfigs(configs, bucketCfgs)
+		} else if opts.onlyOptions.IsSingleOption(OnlyBuckets) {
+			return nil, errors.New("can't download buckets: no OAuth credentials configured")
+		} else {
+			log.Warn(oAuthSkipMsg, "Grail buckets")
 		}
-		copyConfigs(configs, bucketCfgs)
 	}
 
-	if shouldDownloadDocuments(opts) {
+	if opts.onlyOptions.ShouldDownload(OnlyDocuments) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading documents")
 			documentCfgs, err := fn.documentDownload(ctx, clientSet.DocumentClient, opts.projectName)
@@ -358,50 +355,55 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 				return nil, err
 			}
 			copyConfigs(configs, documentCfgs)
-		} else if opts.onlyDocuments {
+		} else if opts.onlyOptions.IsSingleOption(OnlyDocuments) {
 			return nil, errors.New("can't download documents: no OAuth credentials configured")
+		} else {
+			log.Warn(oAuthSkipMsg, "documents")
 		}
 	}
 
-	if featureflags.OpenPipeline.Enabled() {
-		if shouldDownloadOpenPipeline(opts) {
-			if opts.auth.OAuth != nil {
-				openPipelineCfgs, err := fn.openPipelineDownload(ctx, clientSet.OpenPipelineClient, opts.projectName)
-				if err != nil {
-					return nil, err
-				}
-				copyConfigs(configs, openPipelineCfgs)
-			} else if opts.onlyOpenPipeline {
-				return nil, errors.New("can't download openpipeline resources: no OAuth credentials configured")
+	if featureflags.OpenPipeline.Enabled() && opts.onlyOptions.ShouldDownload(OnlyOpenPipeline) {
+		if opts.auth.OAuth != nil {
+			log.Info("Downloading openpipelines")
+			openPipelineCfgs, err := fn.openPipelineDownload(ctx, clientSet.OpenPipelineClient, opts.projectName)
+			if err != nil {
+				return nil, err
 			}
+			copyConfigs(configs, openPipelineCfgs)
+		} else if opts.onlyOptions.IsSingleOption(OnlyOpenPipeline) {
+			return nil, errors.New("can't download openpipeline resources: no OAuth credentials configured")
+		} else {
+			log.Warn(oAuthSkipMsg, "openpipelines")
 		}
 	}
 
-	if featureflags.Segments.Enabled() {
-		if shouldDownloadSegments(opts) {
-			if opts.auth.OAuth != nil {
-				segmentCgfs, err := fn.segmentDownload(clientSet.SegmentClient).Download(ctx, opts.projectName)
-				if err != nil {
-					return nil, err
-				}
-				copyConfigs(configs, segmentCgfs)
-			} else if opts.onlySegment {
-				return nil, errors.New("can't download segment resources: no OAuth credentials configured")
+	if featureflags.Segments.Enabled() && opts.onlyOptions.ShouldDownload(OnlySegments) {
+		if opts.auth.OAuth != nil {
+			log.Info("Downloading segments")
+			segmentCgfs, err := fn.segmentDownload(clientSet.SegmentClient).Download(ctx, opts.projectName)
+			if err != nil {
+				return nil, err
 			}
+			copyConfigs(configs, segmentCgfs)
+		} else if opts.onlyOptions.IsSingleOption(OnlySegments) {
+			return nil, errors.New("can't download segment resources: no OAuth credentials configured")
+		} else {
+			log.Warn(oAuthSkipMsg, "segments")
 		}
 	}
 
-	if featureflags.ServiceLevelObjective.Enabled() {
-		if shouldDownloadSLOsV2(opts) {
-			if opts.auth.OAuth != nil {
-				sloCgfs, err := fn.sloDownload(ctx, clientSet.ServiceLevelObjectiveClient, opts.projectName)
-				if err != nil {
-					return nil, err
-				}
-				copyConfigs(configs, sloCgfs)
-			} else if opts.onlySLOV2 {
-				return nil, fmt.Errorf("can't download %s resources: no OAuth credentials configured", config.ServiceLevelObjectiveID)
+	if featureflags.ServiceLevelObjective.Enabled() && opts.onlyOptions.ShouldDownload(OnlySloV2) {
+		if opts.auth.OAuth != nil {
+			log.Info("Downloading SLO-V2")
+			sloCgfs, err := fn.sloDownload(ctx, clientSet.ServiceLevelObjectiveClient, opts.projectName)
+			if err != nil {
+				return nil, err
 			}
+			copyConfigs(configs, sloCgfs)
+		} else if opts.onlyOptions.IsSingleOption(OnlySloV2) {
+			return nil, fmt.Errorf("can't download %s resources: no OAuth credentials configured", config.ServiceLevelObjectiveID)
+		} else {
+			log.Warn(oAuthSkipMsg, "SLO-V2")
 		}
 	}
 
@@ -420,90 +422,4 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 	for k, v := range src {
 		dest[k] = append(dest[k], v...)
 	}
-}
-
-// shouldDownloadConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
-func shouldDownloadConfigs(opts downloadConfigsOptions) bool {
-	return (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0) &&
-		!opts.onlyAutomation &&
-		!opts.onlySettings &&
-		!opts.onlyDocuments &&
-		!opts.onlyOpenPipeline &&
-		!opts.onlySegment &&
-		!opts.onlySLOV2 &&
-		!opts.onlyBuckets
-}
-
-// shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
-func shouldDownloadSettings(opts downloadConfigsOptions) bool {
-	return (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0) &&
-		!opts.onlyAPIs &&
-		!opts.onlyAutomation &&
-		!opts.onlyDocuments &&
-		!opts.onlyOpenPipeline &&
-		!opts.onlySegment &&
-		!opts.onlySLOV2 &&
-		!opts.onlyBuckets
-}
-
-// shouldDownloadAutomationResources returns true unless download is limited to settings or config API types
-func shouldDownloadAutomationResources(opts downloadConfigsOptions) bool {
-	return !opts.onlyAPIs && len(opts.specificSchemas) == 0 &&
-		!opts.onlySettings && len(opts.specificAPIs) == 0 &&
-		!opts.onlyDocuments &&
-		!opts.onlyOpenPipeline &&
-		!opts.onlySegment &&
-		!opts.onlySLOV2 &&
-		!opts.onlyBuckets
-}
-
-// shouldDownloadBuckets returns true if download is not limited to another specific type
-func shouldDownloadBuckets(opts downloadConfigsOptions) bool {
-	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 &&
-		!opts.onlySettings && len(opts.specificSchemas) == 0 &&
-		!opts.onlyAutomation &&
-		!opts.onlyDocuments &&
-		!opts.onlyOpenPipeline &&
-		!opts.onlySegment &&
-		!opts.onlySLOV2
-}
-
-func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
-	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
-		!opts.onlyAutomation &&
-		!opts.onlyOpenPipeline &&
-		!opts.onlySegment &&
-		!opts.onlySLOV2 &&
-		!opts.onlyBuckets
-}
-
-func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
-	return !opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
-		!opts.onlyAutomation &&
-		!opts.onlyDocuments &&
-		!opts.onlySegment &&
-		!opts.onlySLOV2 &&
-		!opts.onlyBuckets
-}
-
-func shouldDownloadSegments(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlyAutomation &&
-		!opts.onlyDocuments &&
-		!opts.onlyOpenPipeline &&
-		!opts.onlySLOV2 &&
-		!opts.onlyBuckets
-}
-
-func shouldDownloadSLOsV2(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && len(opts.specificSchemas) == 0 && // only settings requested
-		!opts.onlyAPIs && len(opts.specificAPIs) == 0 && // only Config APIs requested
-		!opts.onlyAutomation &&
-		!opts.onlyDocuments &&
-		!opts.onlyOpenPipeline &&
-		!opts.onlySegment &&
-		!opts.onlyBuckets
 }
