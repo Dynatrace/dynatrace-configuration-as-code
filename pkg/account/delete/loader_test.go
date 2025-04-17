@@ -82,12 +82,24 @@ func TestLoader_BasicAllTypesSucceeds(t *testing.T) {
 }
 
 func TestLoader_ServiceUserProducesErrorWithoutFeatureFlag(t *testing.T) {
+	t.Setenv(featureflags.ServiceUsers.EnvName(), "false")
+
 	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
   - type: serviceUser
     name: my-service-user`)
 
 	_, err := delete.LoadResourcesToDelete(fs, deleteFilename)
 	assert.Error(t, err)
+}
+
+func TestLoader_ServiceUserProducesNoErrorWithFeatureFlag(t *testing.T) {
+	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
+	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
+  - type: serviceUser
+    name: my-service-user`)
+
+	_, err := delete.LoadResourcesToDelete(fs, deleteFilename)
+	assert.NoError(t, err)
 }
 
 func TestLoader_NoEntriesSucceeds(t *testing.T) {
