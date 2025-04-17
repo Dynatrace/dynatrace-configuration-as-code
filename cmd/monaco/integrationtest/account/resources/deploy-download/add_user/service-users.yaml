@@ -1,0 +1,7 @@
+service-users:
+  - name: monaco service user %RAND%
+    description: Description of service user %RAND%
+    groups:
+      - type: reference
+        id: my-group
+      - Log viewer

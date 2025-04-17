@@ -30,6 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
@@ -37,11 +38,13 @@ import (
 
 func TestDeployAndDelete_AllResources(t *testing.T) {
 	createMZone(t)
+	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 
 	RunAccountTestCase(t, "resources/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[account.AccountInfo]*accounts.Client, o options) {
 
 		accountName := o.accountName
 		accountUUID := o.accountUUID
+		myServiceUserName := "monaco service user %RAND%"
 		myEmail := "monaco+%RAND%@dynatrace.com"
 		myGroup := "My Group%RAND%"
 		mySAMLGroup := "My SAML Group%RAND%"
@@ -68,6 +71,22 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		require.NotZero(t, mzoneID, "Could not get exact management zone id for assertions")
 
 		cli := runner.BuildCmd(o.fs)
+
+		defer func() {
+			t.Log("Starting cleanup")
+			// DELETE RESOURCES
+			cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "delete.yaml", "--account", accountName})
+			err = cli.Execute()
+			require.NoError(t, err)
+
+			// CHECK IF RESOURCES ARE DELETED
+			check.UserNotAvailable(t, accountUUID, myEmail)
+			check.ServiceUserNotAvailable(t, accountUUID, myServiceUserName)
+			check.PolicyNotAvailable(t, "account", accountUUID, myPolicy)
+			check.PolicyNotAvailable(t, "environment", envVkb, myPolicy2)
+			check.GroupNotAvailable(t, accountUUID, myGroup)
+		}()
+
 		// DEPLOY RESOURCES
 		cli.SetArgs([]string{"account", "deploy", "-m", "manifest-account.yaml"})
 		err = cli.Execute()
@@ -75,6 +94,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 		// CHECK IF RESOURCES ARE INDEED DEPLOYED
 		check.UserAvailable(t, accountUUID, myEmail)
+		check.ServiceUserAvailable(t, accountUUID, myServiceUserName)
 		check.PolicyAvailable(t, "account", accountUUID, myPolicy)
 		check.PolicyAvailable(t, "environment", envVkb, myPolicy2)
 		check.GroupAvailable(t, accountUUID, myGroup)
@@ -150,17 +170,6 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 0)
 		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 0)
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 0)
-
-		// DELETE RESOURCES
-		cli.SetArgs([]string{"account", "delete", "--manifest", "manifest-account.yaml", "--file", "delete.yaml", "--account", accountName})
-		err = cli.Execute()
-		require.NoError(t, err)
-
-		// CHECK IF RESOURCES ARE DELETED
-		check.UserNotAvailable(t, accountUUID, myEmail)
-		check.PolicyNotAvailable(t, "account", accountUUID, myPolicy)
-		check.PolicyNotAvailable(t, "environment", envVkb, myPolicy2)
-		check.GroupNotAvailable(t, accountUUID, myGroup)
 	})
 }
 
@@ -192,6 +201,18 @@ func getGroupIdByName(ctx context.Context, cl *accounts.Client, accountUUID, nam
 type AccountResourceChecker struct {
 	Client      *accounts.Client
 	RandomizeFn func(string) string
+}
+
+func (a AccountResourceChecker) ServiceUserAvailable(t *testing.T, accountUUID, name string) {
+	expectedName := a.randomize(name)
+	allServiceUsers := a.getAllServiceUsers(t, accountUUID)
+	assertElementInSlice(t, allServiceUsers, func(s accountmanagement.ExternalServiceUserDto) bool { return s.Name == expectedName })
+}
+
+func (a AccountResourceChecker) ServiceUserNotAvailable(t *testing.T, accountUUID, name string) {
+	expectedName := a.randomize(name)
+	allServiceUsers := a.getAllServiceUsers(t, accountUUID)
+	assertElementNotInSlice(t, allServiceUsers, func(s accountmanagement.ExternalServiceUserDto) bool { return s.Name == expectedName })
 }
 
 func (a AccountResourceChecker) UserAvailable(t *testing.T, accountUUID, email string) {
@@ -339,21 +360,25 @@ func (a AccountResourceChecker) randomize(in string) string {
 	return a.RandomizeFn(in)
 }
 
-func assertElementNotInSlice[K any](t *testing.T, sl []K, check func(el K) bool) {
-	_, found := getElementInSlice(sl, check)
-	assert.False(t, found)
+func (a AccountResourceChecker) getAllServiceUsers(t *testing.T, accountUUID string) []accountmanagement.ExternalServiceUserDto {
+	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
+	const pageSize = 1000
+	page := (int32)(1)
+	for {
+		r := a.getServiceUsersPage(t, accountUUID, page, pageSize)
+		serviceUsers = append(serviceUsers, r.Results...)
+		if r.NextPageKey == nil {
+			break
+		}
+		page++
+	}
+	return serviceUsers
 }
 
-func assertElementInSlice[K any](t *testing.T, sl []K, check func(el K) bool) (*K, bool) {
-	e, found := getElementInSlice(sl, check)
-	assert.True(t, found)
-	return e, found
-}
-func getElementInSlice[K any](sl []K, check func(el K) bool) (*K, bool) {
-	for _, e := range sl {
-		if check(e) {
-			return &e, true
-		}
-	}
-	return nil, false
+func (a AccountResourceChecker) getServiceUsersPage(t *testing.T, accountUUID string, page int32, pageSize int32) *accountmanagement.ExternalServiceUsersPageDto {
+	r, resp, err := a.Client.ServiceUserManagementAPI.GetServiceUsersFromAccount(t.Context(), accountUUID).Page(page).PageSize(pageSize).Execute()
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	defer resp.Body.Close()
+	return r
 }
