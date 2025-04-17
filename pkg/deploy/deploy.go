@@ -26,8 +26,8 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -66,20 +66,26 @@ var (
 	errSkip = errors.New("skip error")
 )
 
-type ctxDeploymentLimiter struct{}
+type ctxDeploymentLimiterKey struct{}
 
 func NewContextWithDeploymentLimiter(ctx context.Context, limiter *rest.ConcurrentRequestLimiter) context.Context {
-	return context.WithValue(ctx, ctxDeploymentLimiter{}, limiter)
+	return context.WithValue(ctx, ctxDeploymentLimiterKey{}, limiter)
 }
 
 func GetDeploymentLimiterFromContext(ctx context.Context) *rest.ConcurrentRequestLimiter {
-	if limiter, ok := ctx.Value(ctxDeploymentLimiter{}).(*rest.ConcurrentRequestLimiter); ok {
+	if limiter, ok := ctx.Value(ctxDeploymentLimiterKey{}).(*rest.ConcurrentRequestLimiter); ok {
 		return limiter
 	}
 	return nil
 }
 
 func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
+	maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
+	if maxConcurrentDeployments > 0 {
+		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
+		limiter := rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
+		ctx = NewContextWithDeploymentLimiter(ctx, limiter)
+	}
 	deploymentErrs := make(deployErrors.EnvironmentDeploymentErrors)
 
 	// note: Currently the validation works 'environment-independent', but that might be something we should reconsider to improve error messages
