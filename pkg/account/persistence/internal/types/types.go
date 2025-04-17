@@ -37,7 +37,7 @@ type (
 		Policies     []Policy      `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies to configure for this account."`
 		Groups       []Group       `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups to configure for this account."`
 		Users        []User        `yaml:"users,omitempty" json:"users,omitempty" jsonschema:"description=Users to configure for this account."`
-		ServiceUsers []ServiceUser `yaml:"service-users,omitempty" json:"serviceUsers,omitempty" jsonschema:"description=Service users to configure for this account."`
+		ServiceUsers []ServiceUser `yaml:"serviceUsers,omitempty" json:"serviceUsers,omitempty" jsonschema:"description=Service users to configure for this account."`
 	}
 
 	Policy struct {
@@ -162,7 +162,7 @@ func (ReferenceSlice) JSONSchema() *jsonschema.Schema {
 
 const (
 	KeyUsers        string = "users"
-	KeyServiceUsers string = "service-users"
+	KeyServiceUsers string = "serviceUsers"
 	KeyGroups       string = "groups"
 	KeyPolicies     string = "policies"
 )

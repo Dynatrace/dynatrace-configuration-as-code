@@ -5,7 +5,7 @@ users:
         id: monaco-group
 
 
-service-users:
+serviceUsers:
   - name: service-user
     groups:
       - type: reference

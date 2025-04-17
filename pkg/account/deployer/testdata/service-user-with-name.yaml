@@ -1,4 +1,4 @@
-service-users:
+serviceUsers:
   - name: service-user
     description: A service user
     groups:

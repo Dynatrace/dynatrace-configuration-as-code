@@ -41,7 +41,7 @@ policies:
     policy: |-
       ALLOW a:b:c;
 
-service-users:
+serviceUsers:
   - name: Service User 1
     originObjectId: 12345678-1234-1234-1234-123456781234
     description: Description

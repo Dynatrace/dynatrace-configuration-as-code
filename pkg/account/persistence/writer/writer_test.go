@@ -262,7 +262,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{serviceUsers: `service-users:
+			want{serviceUsers: `serviceUsers:
 - name: Service User 1
   description: Description of service user
   groups:
@@ -296,7 +296,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{serviceUsers: `service-users:
+			want{serviceUsers: `serviceUsers:
 - name: Service User
   description: Description of service user
   groups:
@@ -325,7 +325,7 @@ func TestWriteAccountResources(t *testing.T) {
 				},
 			},
 			want{
-				serviceUsers: `service-users:
+				serviceUsers: `serviceUsers:
 - name: Service User 1
   description: Description of service user
 `,
@@ -430,7 +430,7 @@ func TestWriteAccountResources(t *testing.T) {
   description: This is my policy. There's many like it, but this one is mine.
   policy: ALLOW a:b:c;
 `,
-				serviceUsers: `service-users:
+				serviceUsers: `serviceUsers:
 - name: Service User 1
   description: Description of service user
   groups:
@@ -544,7 +544,7 @@ func TestWriteAccountResources(t *testing.T) {
   policy: ALLOW a:b:c;
   originObjectId: ObjectID-456
 `,
-				serviceUsers: `service-users:
+				serviceUsers: `serviceUsers:
 - name: Service User 1
   description: Description of service user
   groups:
@@ -741,7 +741,7 @@ func TestWriteAccountResources(t *testing.T) {
   description: This is my policy. There's many like it, but this one is mine.
   policy: ALLOW a:b:c;
 `,
-				serviceUsers: `service-users:
+				serviceUsers: `serviceUsers:
 - name: First service user
   description: Description of service user
   groups:

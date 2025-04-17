@@ -1,4 +1,4 @@
-service-users:
+serviceUsers:
   - description: Description
     groups:
       - type: reference
