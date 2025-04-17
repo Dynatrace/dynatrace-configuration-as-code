@@ -229,9 +229,9 @@ func doDownloadConfigs(ctx context.Context, fs afero.Fs, clientSet *client.Clien
 
 	for c := range downloadedConfigs.AllConfigs {
 		// We would need quite a huge refactoring to support Classic- and Automation-APIS here.
-		// Automation already also does what we do here, but does set custom {{.variables}} that we can't easily escape here.
+		// Automation and Buckets already also does what we do here, but does set custom {{.variables}} that we can't easily escape here.
 		// To fix this, it might be better do extract the variables at a later place instead of doing it before.
-		if c.Type.ID() == config.ClassicApiTypeID || c.Type.ID() == config.AutomationTypeID {
+		if c.Type.ID() == config.ClassicApiTypeID || c.Type.ID() == config.AutomationTypeID || c.Type.ID() == config.BucketTypeID {
 			continue
 		}
 
