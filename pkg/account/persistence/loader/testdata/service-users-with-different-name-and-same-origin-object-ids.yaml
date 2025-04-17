@@ -1,4 +1,4 @@
-service-users:
+serviceUsers:
   - name: Service User 1
     originObjectId: abc1
     description: Description

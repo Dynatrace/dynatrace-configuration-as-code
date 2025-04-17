@@ -1,4 +1,4 @@
-service-users:
+serviceUsers:
   - name: service-user
     originObjectId: 26d0af94-26d0-4464-a469-3d8563612554
     description: A service user 1
