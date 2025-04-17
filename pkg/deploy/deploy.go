@@ -62,17 +62,29 @@ type DeployConfigsOptions struct {
 }
 
 var (
-	lock                         sync.Mutex
-	concurrentDeploymentsLimiter *rest.ConcurrentRequestLimiter
-
+	lock    sync.Mutex
 	errSkip = errors.New("skip error")
 )
+
+type ctxDeploymentLimiterKey struct{}
+
+func NewContextWithDeploymentLimiter(ctx context.Context, limiter *rest.ConcurrentRequestLimiter) context.Context {
+	return context.WithValue(ctx, ctxDeploymentLimiterKey{}, limiter)
+}
+
+func GetDeploymentLimiterFromContext(ctx context.Context) *rest.ConcurrentRequestLimiter {
+	if limiter, ok := ctx.Value(ctxDeploymentLimiterKey{}).(*rest.ConcurrentRequestLimiter); ok {
+		return limiter
+	}
+	return nil
+}
 
 func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
 	maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
 	if maxConcurrentDeployments > 0 {
 		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
-		concurrentDeploymentsLimiter = rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
+		limiter := rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
+		ctx = NewContextWithDeploymentLimiter(ctx, limiter)
 	}
 	deploymentErrs := make(deployErrors.EnvironmentDeploymentErrors)
 
@@ -292,9 +304,9 @@ func (e ErrUnknownConfigType) Error() string {
 }
 
 func deployConfig(ctx context.Context, c *config.Config, clientset *client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
-	if concurrentDeploymentsLimiter != nil {
-		concurrentDeploymentsLimiter.Acquire()
-		defer concurrentDeploymentsLimiter.Release()
+	if limiter := GetDeploymentLimiterFromContext(ctx); limiter != nil {
+		limiter.Acquire()
+		defer limiter.Release()
 	}
 
 	if c.Skip {
