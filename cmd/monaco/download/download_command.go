@@ -87,6 +87,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&f.onlySettings, "only-settings", false, "Download only settings 2.0 objects")
 	cmd.Flags().BoolVar(&f.onlyAutomation, "only-automation", false, "Only download automation objects, skip all other configuration types")
 	cmd.Flags().BoolVar(&f.onlyDocuments, "only-documents", false, "Only download documents, skip all other configuration types")
+	cmd.Flags().BoolVar(&f.onlyBuckets, "only-buckets", false, "Only download buckets, skip all other configuration types")
 
 	// combinations
 	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation")

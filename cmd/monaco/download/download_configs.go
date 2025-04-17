@@ -63,6 +63,7 @@ type downloadCmdOptions struct {
 	onlyOpenPipeline        bool
 	onlySegments            bool
 	onlySLOsV2              bool
+	onlyBuckets             bool
 }
 
 type auth struct {
@@ -151,6 +152,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
 		onlySegment:      cmdOptions.onlySegments,
 		onlySLOV2:        cmdOptions.onlySLOsV2,
+		onlyBuckets:      cmdOptions.onlyBuckets,
 	}
 
 	if errs := options.valid(); len(errs) != 0 {
@@ -192,6 +194,7 @@ func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOpt
 		onlyAutomation:   cmdOptions.onlyAutomation,
 		onlyDocuments:    cmdOptions.onlyDocuments,
 		onlyOpenPipeline: cmdOptions.onlyOpenPipeline,
+		onlyBuckets:      cmdOptions.onlyBuckets,
 	}
 
 	if errs := options.valid(); len(errs) != 0 {
@@ -416,7 +419,8 @@ func shouldDownloadConfigs(opts downloadConfigsOptions) bool {
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline &&
 		!opts.onlySegment &&
-		!opts.onlySLOV2
+		!opts.onlySLOV2 &&
+		!opts.onlyBuckets
 }
 
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
@@ -427,7 +431,8 @@ func shouldDownloadSettings(opts downloadConfigsOptions) bool {
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline &&
 		!opts.onlySegment &&
-		!opts.onlySLOV2
+		!opts.onlySLOV2 &&
+		!opts.onlyBuckets
 }
 
 // shouldDownloadAutomationResources returns true unless download is limited to settings or config API types
@@ -437,7 +442,8 @@ func shouldDownloadAutomationResources(opts downloadConfigsOptions) bool {
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline &&
 		!opts.onlySegment &&
-		!opts.onlySLOV2
+		!opts.onlySLOV2 &&
+		!opts.onlyBuckets
 }
 
 // shouldDownloadBuckets returns true if download is not limited to another specific type
@@ -457,7 +463,8 @@ func shouldDownloadDocuments(opts downloadConfigsOptions) bool {
 		!opts.onlyAutomation &&
 		!opts.onlyOpenPipeline &&
 		!opts.onlySegment &&
-		!opts.onlySLOV2
+		!opts.onlySLOV2 &&
+		!opts.onlyBuckets
 }
 
 func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
@@ -466,7 +473,8 @@ func shouldDownloadOpenPipeline(opts downloadConfigsOptions) bool {
 		!opts.onlyAutomation &&
 		!opts.onlyDocuments &&
 		!opts.onlySegment &&
-		!opts.onlySLOV2
+		!opts.onlySLOV2 &&
+		!opts.onlyBuckets
 }
 
 func shouldDownloadSegments(opts downloadConfigsOptions) bool {
@@ -475,7 +483,8 @@ func shouldDownloadSegments(opts downloadConfigsOptions) bool {
 		!opts.onlyAutomation &&
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline &&
-		!opts.onlySLOV2
+		!opts.onlySLOV2 &&
+		!opts.onlyBuckets
 }
 
 func shouldDownloadSLOsV2(opts downloadConfigsOptions) bool {
@@ -484,5 +493,6 @@ func shouldDownloadSLOsV2(opts downloadConfigsOptions) bool {
 		!opts.onlyAutomation &&
 		!opts.onlyDocuments &&
 		!opts.onlyOpenPipeline &&
-		!opts.onlySegment
+		!opts.onlySegment &&
+		!opts.onlyBuckets
 }
