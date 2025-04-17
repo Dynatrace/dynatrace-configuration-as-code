@@ -46,6 +46,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
+type DownloadableStub struct {
+}
+
+func (DownloadableStub) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+	return nil, nil
+}
+
 func TestDownloadConfigsBehaviour(t *testing.T) {
 	var downloadOptions = downloadOptionsShared{
 		environmentURL: manifest.URLDefinition{
@@ -373,11 +380,11 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return nil, nil
 				},
-				bucketDownload: func(ctx context.Context, b client.BucketClient, s string) (project.ConfigsPerType, error) {
+				bucketDownload: func(client client.BucketClient) Downloadable {
 					if !tt.want.bucket {
 						t.Fatalf("bucket download was not meant to be called but was")
 					}
-					return nil, nil
+					return DownloadableStub{}
 				},
 				documentDownload: func(ctx context.Context, b client.DocumentClient, s string) (project.ConfigsPerType, error) {
 					if !tt.want.document {
