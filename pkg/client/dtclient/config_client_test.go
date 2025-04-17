@@ -869,6 +869,27 @@ func TestSloV2ToSloV1(t *testing.T) {
 	assert.ErrorContains(t, err, "tried to deploy an slo-v2 configuration to slo-v1")
 }
 
+func TestDocumentV2ToDocumentV1_Fails(t *testing.T) {
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		http.Error(res, "", http.StatusForbidden)
+	}))
+	defer testServer.Close()
+
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
+	require.NoError(t, err)
+
+	_, err = client.UpsertByName(t.Context(), testDashboardApi, "test", []byte(`{
+		"tiles": {
+			"1": {
+			  "content": "my content",
+			  "title": "",
+			  "type": "markdown"
+			}
+		}
+	}`))
+	assert.ErrorIs(t, err, errWrongPayloadType)
+}
+
 func TestCallWithRetryOnKnowTimingIssue_IgnoreRetryOn(t *testing.T) {
 	testServer := httptest.NewTLSServer(http.NewServeMux())
 	defer testServer.Close()

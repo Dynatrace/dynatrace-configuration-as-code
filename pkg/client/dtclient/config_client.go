@@ -146,6 +146,11 @@ func (d *ConfigClient) UpsertByName(ctx context.Context, a api.API, name string,
 			return DynatraceEntity{}, valErr
 		}
 	}
+	if isApiDashboard(a) {
+		if valErr := validateDashboardPayload(payload); valErr != nil {
+			return DynatraceEntity{}, valErr
+		}
+	}
 	return d.upsertDynatraceObject(ctx, a, name, payload)
 }
 
@@ -894,6 +899,28 @@ func validateSloV1Payload(payload []byte) error {
 	}
 	if parsedPayload.EvaluationType == "" {
 		return errors.New("tried to deploy an slo-v2 configuration to slo-v1")
+	}
+	return nil
+}
+
+var errWrongPayloadType = errors.New("can't deploy a Dynatrace platform dashboard using 'api: dashboard'. Either use 'type: document' with 'kind: dashboard' to deploy a Dynatrace platform dashboard or update your payload to a Dynatrace classic dashboard")
+
+// validateDashboardPayload returns an error if the JSON data is 1) malformed or 2) if the payload is not a Dynatrace platform classic dashboard payload.
+func validateDashboardPayload(payload []byte) error {
+	type DashboardKeys struct {
+		Tiles any `json:"tiles"`
+	}
+
+	parsedPayload := DashboardKeys{}
+	err := json.Unmarshal(payload, &parsedPayload)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal dashboard payload: %w", err)
+	}
+
+	// Tiles should only be a map if Dynatrace platform dashboards configs are defined.
+	// For Dynatrace classic dashboards, an array is used.
+	if _, isMap := parsedPayload.Tiles.(map[string]any); isMap {
+		return errWrongPayloadType
 	}
 	return nil
 }

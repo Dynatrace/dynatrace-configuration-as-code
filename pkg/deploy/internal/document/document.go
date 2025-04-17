@@ -18,6 +18,7 @@ package document
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -54,6 +55,12 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	documentName, ok := properties[config.NameParameter].(string)
 	if !ok {
 		return entities.ResolvedEntity{}, errors.New("missing name parameter")
+	}
+
+	if documentType == documents.Dashboard {
+		if valErr := validateDashboardPayload(renderedConfig); valErr != nil {
+			return entities.ResolvedEntity{}, valErr
+		}
 	}
 
 	// strategy 1: if an origin id is available, try to update that document
@@ -152,4 +159,27 @@ func getDocumentAttributesFromConfigType(t config.Type) (doctype string, private
 	}
 
 	return kind, documentType.Private, nil
+}
+
+var errWrongPayloadType = errors.New("can't deploy a Dynatrace classic dashboard using the 'documents' type. Either use 'api: dashboard' to deploy a Dynatrace classic dashboard or update your payload to a Dynatrace platform dashboard")
+
+// validateDashboardPayload returns an error if the JSON data is 1) malformed or 2) if the payload is not a Dynatrace platform dashboard payload.
+func validateDashboardPayload(payload string) error {
+	type DashboardKeys struct {
+		Tiles any `json:"tiles"`
+	}
+
+	parsedPayload := DashboardKeys{}
+	err := json.Unmarshal([]byte(payload), &parsedPayload)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal dashboard payload: %w", err)
+	}
+
+	// Tiles should only be an array if Dynatrace classic dashboards configs are defined.
+	// For Dynatrace platform dashboards, a map is used.
+	if _, isArray := parsedPayload.Tiles.([]any); isArray {
+		return errWrongPayloadType
+	}
+
+	return nil
 }
