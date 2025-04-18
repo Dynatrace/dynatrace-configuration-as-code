@@ -61,7 +61,9 @@ func Test_parseConfigs(t *testing.T) {
 				},
 			},
 		},
-		ParametersSerDe: config.DefaultParameterParsers,
+		KnownEnvironments: map[string]struct{}{"env name": {}},
+		KnownGroups:       map[string]struct{}{"default": {}},
+		ParametersSerDe:   config.DefaultParameterParsers,
 	}
 
 	tests := []struct {

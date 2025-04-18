@@ -323,14 +323,7 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 	var configs []config.Config
 	var errs []error
 
-	loaderContext := &loader.LoaderContext{
-		ProjectId:       projectDefinition.Name,
-		Environments:    environments,
-		Path:            projectDefinition.Path,
-		KnownApis:       loadingContext.KnownApis,
-		ParametersSerDe: loadingContext.ParametersSerde,
-	}
-
+	loaderContext := newLoaderContext(loadingContext, projectDefinition, environments)
 	for _, file := range configFiles {
 		log.WithFields(field.F("file", file)).Debug("Loading configuration file %s", file)
 		loadedConfigs, configErrs := loader.LoadConfigFile(ctx, fs, loaderContext, file)
@@ -339,6 +332,26 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 		configs = append(configs, loadedConfigs...)
 	}
 	return configs, errs
+}
+
+func newLoaderContext(loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
+	environments []manifest.EnvironmentDefinition) *loader.LoaderContext {
+	knownEnvironments := map[string]struct{}{}
+	knownGroups := map[string]struct{}{}
+	for _, env := range environments {
+		knownEnvironments[env.Name] = struct{}{}
+		knownGroups[env.Group] = struct{}{}
+	}
+
+	return &loader.LoaderContext{
+		ProjectId:         projectDefinition.Name,
+		Environments:      environments,
+		Path:              projectDefinition.Path,
+		KnownApis:         loadingContext.KnownApis,
+		KnownEnvironments: knownEnvironments,
+		KnownGroups:       knownGroups,
+		ParametersSerDe:   loadingContext.ParametersSerde,
+	}
 }
 
 func findDuplicatedConfigIdentifiers(ctx context.Context, configs []config.Config, configErrorMap map[coordinate.Coordinate]struct{}) []error {

@@ -18,6 +18,7 @@ package errors
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -87,4 +88,20 @@ func (e ParameterDefinitionParserError) Error() string {
 func (e DefinitionParserError) Error() string {
 	return fmt.Sprintf("cannot parse definition in `%s`: %s",
 		e.Path, e.Reason)
+}
+
+type UnknownEnvironmentError struct {
+	EnvironmentName string
+}
+
+func (e UnknownEnvironmentError) Error() string {
+	return fmt.Sprintf("unknown environment '%s'", e.EnvironmentName)
+}
+
+type UnknownEnvironmentGroupError struct {
+	GroupName string
+}
+
+func (e UnknownEnvironmentGroupError) Error() string {
+	return fmt.Sprintf("unknown environment group '%s'", e.GroupName)
 }

@@ -32,6 +32,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
+
+	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 )
 
 // parseConfigEntry parses a single config entry and returns the (partial if error) loaded data and the error
@@ -55,15 +57,25 @@ func parseConfigEntry(
 		return nil, []error{newDefinitionParserError(configId, singleConfigContext, err.Error())}
 	}
 
-	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
-	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
-
 	var results []config.Config
 	var errs []error
+
+	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
+	for groupName, _ := range groupOverrideMap {
+		if _, groupExists := loaderContext.KnownGroups[groupName]; !groupExists {
+			errs = append(errs, configErrors.UnknownEnvironmentGroupError{GroupName: groupName})
+		}
+	}
+
+	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
+	for environmentName, _ := range environmentOverrideMap {
+		if _, environmentExists := loaderContext.KnownGroups[environmentName]; !environmentExists {
+			errs = append(errs, configErrors.UnknownEnvironmentError{EnvironmentName: environmentName})
+		}
+	}
+
 	for _, env := range loaderContext.Environments {
-
 		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env, definition, groupOverrideMap, environmentOverrideMap)
-
 		if definitionErrors != nil {
 			errs = append(errs, definitionErrors...)
 			continue
