@@ -1477,6 +1477,103 @@ func TestLoadProjects_NetworkZonesContainsParameterToSetting(t *testing.T) {
 	assert.Contains(t, networkZone2.Parameters, "__MONACO_NZONE_ENABLED__")
 }
 
+// TestLoadProjects_EnvironmentOverrideWithUndefinedEnvironmentReturnsError tests that referencing an undefined environment in an environment override returns an error.
+func TestLoadProjects_EnvironmentOverrideWithUndefinedEnvironmentReturnsError(t *testing.T) {
+	managementZoneConfig := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+  environmentOverrides:
+  - environment: prod
+    override:
+      skip: true
+`)
+
+	managementZoneJSON := []byte(`{ "name": "", "rules": [] }`)
+
+	testFs := testutils.TempFs(t)
+
+	require.NoError(t, testFs.MkdirAll("a/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	testContext := ProjectLoaderContext{
+		KnownApis:  map[string]struct{}{"builtin:management-zones": {}},
+		WorkingDir: ".",
+		Manifest: manifest.Manifest{
+			Projects: manifest.ProjectDefinitionByProjectID{
+				"a": {
+					Name: "a",
+					Path: "a/",
+				},
+			},
+			Environments: manifest.Environments{
+				"dev": {
+					Name: "dev",
+					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+				},
+			},
+		},
+		ParametersSerde: config.DefaultParameterParsers,
+	}
+
+	gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, nil)
+	require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects ")
+	require.Len(t, gotProjects, 1)
+}
+
+// TestLoadProjects_GroupOverrideWithUndefinedGroupReturnsError tests that referencing an undefined environment group in a group override returns an error.
+func TestLoadProjects_GroupOverrideWithUndefinedGroupReturnsError(t *testing.T) {
+	managementZoneConfig := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+  groupOverrides:
+  - group: prod
+    override:
+      skip: true
+`)
+
+	managementZoneJSON := []byte(`{ "name": "", "rules": [] }`)
+
+	testFs := testutils.TempFs(t)
+
+	require.NoError(t, testFs.MkdirAll("a/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+	testContext := ProjectLoaderContext{
+		KnownApis:  map[string]struct{}{"builtin:management-zones": {}},
+		WorkingDir: ".",
+		Manifest: manifest.Manifest{
+			Projects: manifest.ProjectDefinitionByProjectID{
+				"a": {
+					Name: "a",
+					Path: "a/",
+				},
+			},
+			Environments: manifest.Environments{
+				"dev": {
+					Name: "dev",
+					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+				},
+			},
+		},
+		ParametersSerde: config.DefaultParameterParsers,
+	}
+
+	gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, nil)
+	require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects ")
+	require.Len(t, gotProjects, 1)
+}
+
 type propResolver func(coordinate.Coordinate, string) (any, bool)
 
 func (p propResolver) GetResolvedProperty(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
