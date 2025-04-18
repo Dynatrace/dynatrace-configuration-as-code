@@ -372,7 +372,7 @@ func TestDownload_Options(t *testing.T) {
 				},
 				bucketDownload: func(ctx context.Context, b client.BucketClient, s string) (project.ConfigsPerType, error) {
 					if !tt.want.bucket {
-						t.Fatalf("automation download was not meant to be called but was")
+						t.Fatalf("bucket download was not meant to be called but was")
 					}
 					return nil, nil
 				},
