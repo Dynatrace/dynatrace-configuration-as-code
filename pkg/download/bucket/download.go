@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	escTemplate "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -105,8 +106,10 @@ type bucket struct {
 }
 
 func convertObject(o []byte, projectName string) (config.Config, error) {
+	// escape possible go templates before extracting parameters
+	escapedData := escTemplate.UseGoTemplatesForDoubleCurlyBraces(o)
 	var b bucket
-	if err := json.Unmarshal(o, &b); err != nil {
+	if err := json.Unmarshal(escapedData, &b); err != nil {
 		return config.Config{}, fmt.Errorf("failed to unmarshal bucket: %w", err)
 	}
 
@@ -126,7 +129,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 	}
 
 	// remove unnecessary fields
-	r, err := templatetools.NewJSONObject(o)
+	r, err := templatetools.NewJSONObject(escapedData)
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to unmarshal bucket: %w", err)
 	}

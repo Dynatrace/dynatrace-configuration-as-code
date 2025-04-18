@@ -26,8 +26,11 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -698,4 +701,38 @@ func Test_copyConfigs(t *testing.T) {
 			{Coordinate: coordinate.Coordinate{ConfigId: "dashboard-2"}},
 		})
 	})
+}
+
+func Test_EscapingSkip_Buckets(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	opts := downloadConfigsOptions{
+		onlyBuckets: true,
+		downloadOptionsShared: downloadOptionsShared{
+			environmentURL: manifest.URLDefinition{},
+			auth: manifest.Auth{
+				OAuth: &manifest.OAuth{},
+			},
+			outputFolder:           "out",
+			projectName:            "project",
+			forceOverwriteManifest: false,
+		},
+	}
+	c := client.NewMockBucketClient(gomock.NewController(t))
+	c.EXPECT().List(gomock.Any()).AnyTimes().Return(buckets.ListResponse{{
+		Response: coreapi.Response{},
+		Objects: [][]byte{[]byte(`{
+			"bucketName": "my-bucket",
+			"status": "ACTIVE",
+			"displayName": "my-display-name",
+			"retentionDays": 35,
+			"table": "logs"
+		}`)},
+	}}, nil)
+	err := doDownloadConfigs(t.Context(), fs, &client.ClientSet{BucketClient: c}, nil, opts)
+	require.NoError(t, err)
+
+	file, err := afero.ReadFile(fs, "./out/project/bucket/my-bucket.json")
+	require.NoError(t, err)
+
+	assert.Contains(t, string(file), "{{.displayName}}")
 }

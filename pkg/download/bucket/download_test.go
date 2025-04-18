@@ -36,7 +36,7 @@ import (
 )
 
 func TestDownloader_Download(t *testing.T) {
-	t.Run("download buckets - OK", func(t *testing.T) {
+	t.Run("download buckets - OK and escapes go-templates", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			switch req.URL.Path {
 			case "/platform/storage/management/v1/bucket-definitions":
@@ -58,7 +58,7 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Len(t, result["bucket"], 2) // there should be 2 buckets (default bucket shall be skipped)
 		expectedTemplate0 := `{
   "displayName": "{{.displayName}}",
-  "metricInterval": "PT1M",
+  "metricInterval": "` + "{{`{{`}}.PT1M{{`}}`}}" + `",
   "retentionDays": 462,
   "table": "metrics"
 }`
