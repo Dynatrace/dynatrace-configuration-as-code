@@ -722,14 +722,10 @@ func Test_loadProject_returnsErrorIfScopeForWebKUAhasWrongTypeOfParameter(t *tes
 }
 
 func getSimpleProjectLoaderContext(projects []string) ProjectLoaderContext {
-	return getTestProjectLoaderContext([]string{"alerting-profile", "dashboard", "key-user-actions-web"}, projects)
+	return getFullProjectLoaderContext([]string{"alerting-profile", "dashboard", "key-user-actions-web"}, projects, []string{"env"})
 }
 
-func getTestProjectLoaderContext(apis []string, projects []string) ProjectLoaderContext {
-	return getFullProjectLoaderContext(apis, projects, []string{"env"})
-}
-
-func getFullProjectLoaderContext(apis []string, projects []string, environments []string) ProjectLoaderContext {
+func getFullProjectLoaderContext(apis []string, projects []string, environmentNames []string) ProjectLoaderContext {
 
 	projectDefinitions := make(manifest.ProjectDefinitionByProjectID, len(projects))
 	for _, p := range projects {
@@ -739,8 +735,8 @@ func getFullProjectLoaderContext(apis []string, projects []string, environments 
 		}
 	}
 
-	envDefinitions := make(map[string]manifest.EnvironmentDefinition, len(environments))
-	for _, e := range environments {
+	envDefinitions := make(map[string]manifest.EnvironmentDefinition, len(environmentNames))
+	for _, e := range environmentNames {
 		envDefinitions[e] = manifest.EnvironmentDefinition{
 			Name: e,
 			Auth: manifest.Auth{
