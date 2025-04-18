@@ -89,7 +89,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 
 	loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, env)
 	projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
-	sortedConfigs, _ := graph.ConfigsPerEnvironment(projects, []string{env})
+	sortedConfigs, _ := graph.SortProjects(projects, []string{env})
 	environment := loadedManifest.Environments[env]
 	configToDeploy := sortedConfigs[env][0]
 

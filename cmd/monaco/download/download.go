@@ -85,7 +85,7 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 }
 
 func reportForCircularDependencies(p project.Project) error {
-	_, errs := graph.ConfigsPerEnvironment([]project.Project{p}, []string{p.Id})
+	_, errs := graph.SortProjects([]project.Project{p}, []string{p.Id})
 	if len(errs) != 0 {
 		errutils.PrintWarnings(errs)
 		return fmt.Errorf("there are circular dependencies between %d configurations that need to be resolved manually", len(errs))

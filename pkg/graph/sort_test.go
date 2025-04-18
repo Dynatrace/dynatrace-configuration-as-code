@@ -125,7 +125,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 }
 
 func assertSortingWorks(t *testing.T, projects []project.Project, environments []string, environmentName string, dashboardConfigCoordinate coordinate.Coordinate, autoTagCoordinates coordinate.Coordinate) {
-	sortedPerEnvironment, errors := graph.ConfigsPerEnvironment(projects, environments)
+	sortedPerEnvironment, errors := graph.SortProjects(projects, environments)
 
 	assert.Len(t, errors, 0, "should not return error")
 	assert.Len(t, sortedPerEnvironment, 1)

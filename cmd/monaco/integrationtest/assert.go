@@ -77,7 +77,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		envNames = append(envNames, env.Name)
 	}
 
-	sortedConfigs, errs := graph.ConfigsPerEnvironment(projects, envNames)
+	sortedConfigs, errs := graph.SortProjects(projects, envNames)
 	testutils.FailTestOnAnyError(t, errs, "sorting configurations failed")
 
 	checkString := "exist"
