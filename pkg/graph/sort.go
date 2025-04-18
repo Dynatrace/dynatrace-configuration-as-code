@@ -21,9 +21,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-// SortProjects is a convenience method to make Graph based sorting an easy plugin for the old toposort variant.
+// SortProjects returns a sorted slice of configurations for each environment. If configurations depend
+// on each other, the slices will contain them in the right order to deploy one after the other.
 // Internally it builds dependency graphs and uses these to sort and return the basic sorted configs per environment map.
-func SortProjects(projects []project.Project, environments []string) (map[string][]config.Config, []error) {
+func SortProjects(projects []project.Project, environments []string) (project.ConfigsPerEnvironment, []error) {
 	cfgsPerEnv := make(map[string][]config.Config)
 	var errs SortingErrors
 
