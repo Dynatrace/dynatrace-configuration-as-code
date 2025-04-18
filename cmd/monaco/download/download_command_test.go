@@ -18,6 +18,7 @@ package download
 
 import (
 	"io"
+	"maps"
 	"strings"
 	"testing"
 
@@ -27,6 +28,16 @@ import (
 )
 
 func TestGetDownloadCommand(t *testing.T) {
+	defaultOnlyOptions := OnlyOptions{
+		OnlySettings:     false,
+		OnlyApis:         false,
+		OnlySegments:     false,
+		OnlySloV2:        false,
+		OnlyOpenPipeline: false,
+		OnlyDocuments:    false,
+		OnlyBuckets:      false,
+	}
+
 	t.Run("url and token are mutually exclusive", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --manifest my-manifest.yaml")
 		assert.EqualError(t, err, "'url' and 'manifest' are mutually exclusive")
@@ -39,6 +50,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			manifestFile:            "path/to/my-manifest.yaml",
 			specificEnvironmentName: "my-environment1",
 			projectName:             "project",
+			onlyOptions:             defaultOnlyOptions,
 		}
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -54,6 +66,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			manifestFile:            "manifest.yaml",
 			specificEnvironmentName: "my-environment",
 			projectName:             "project",
+			onlyOptions:             defaultOnlyOptions,
 		}
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -74,6 +87,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			environmentURL: "http://some.url",
 			auth:           auth{token: "TOKEN"},
 			projectName:    "project",
+			onlyOptions:    defaultOnlyOptions,
 		}
 		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -93,6 +107,7 @@ func TestGetDownloadCommand(t *testing.T) {
 				clientSecret: "CLIENT_SECRET",
 			},
 			projectName: "project",
+			onlyOptions: defaultOnlyOptions,
 		}
 		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -124,6 +139,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			projectName:             "my-project",
 			outputFolder:            "path/to/my-folder",
 			forceOverwrite:          true,
+			onlyOptions:             defaultOnlyOptions,
 		}
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -139,6 +155,7 @@ func TestGetDownloadCommand(t *testing.T) {
 			manifestFile:            "manifest.yaml",
 			specificEnvironmentName: "my_environment",
 			projectName:             "project",
+			onlyOptions:             defaultOnlyOptions,
 		}
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -146,14 +163,34 @@ func TestGetDownloadCommand(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("Download multiple given configs", func(t *testing.T) {
+		m := newMonaco(t)
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlyApis] = true
+		onlyOptions[OnlySettings] = true
+		onlyOptions[OnlySegments] = true
+		expected := downloadCmdOptions{
+			manifestFile:            "manifest.yaml",
+			specificEnvironmentName: "myEnvironment",
+			projectName:             "project",
+			onlyOptions:             onlyOptions,
+		}
+		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
+
+		err := m.download("--environment myEnvironment --only-apis --only-settings --only-segments")
+		assert.NoError(t, err)
+	})
+
 	t.Run("Api selection - set of wanted api", func(t *testing.T) {
 		m := newMonaco(t)
-
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlyApis] = true
 		expected := downloadCmdOptions{
 			manifestFile:            "manifest.yaml",
 			specificEnvironmentName: "myEnvironment",
 			projectName:             "project",
 			specificAPIs:            []string{"test", "test2", "test3", "test4"},
+			onlyOptions:             onlyOptions,
 		}
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -162,11 +199,13 @@ func TestGetDownloadCommand(t *testing.T) {
 	})
 
 	t.Run("Api selection - download all api", func(t *testing.T) {
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlyApis] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			projectName:    "project",
-			onlyAPIs:       true,
+			onlyOptions:    onlyOptions,
 		}
 
 		m := newMonaco(t)
@@ -178,24 +217,20 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Api selection - mutually exclusive combination", func(t *testing.T) {
 		m := newMonaco(t)
-		var err error
 
-		err = m.download("--environment myEnvironment --api test,test2 --only-apis")
-		assert.Error(t, err)
-
-		err = m.download("--environment myEnvironment --api test,test2 --only-settings")
-		assert.Error(t, err)
-
-		err = m.download("--environment myEnvironment --only-apis --only-settings")
+		err := m.download("--environment myEnvironment --api test,test2 --only-apis")
 		assert.Error(t, err)
 	})
 
 	t.Run("Settings schema selection - set of wanted settings schema", func(t *testing.T) {
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlySettings] = true
 		expected := downloadCmdOptions{
 			manifestFile:            "manifest.yaml",
 			specificEnvironmentName: "myEnvironment",
 			projectName:             "project",
 			specificSchemas:         []string{"settings:schema:1", "settings:schema:2", "settings:schema:3", "settings:schema:4"},
+			onlyOptions:             onlyOptions,
 		}
 		m := newMonaco(t)
 		m.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), gomock.Any(), expected).Return(nil)
@@ -205,11 +240,13 @@ func TestGetDownloadCommand(t *testing.T) {
 	})
 
 	t.Run("Settings schema selection - download all settings schema", func(t *testing.T) {
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlySettings] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			projectName:    "project",
-			onlySettings:   true,
+			onlyOptions:    onlyOptions,
 		}
 
 		m := newMonaco(t)
@@ -221,15 +258,8 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Settings schema selection - mutually exclusive combination", func(t *testing.T) {
 		m := newMonaco(t)
-		var err error
 
-		err = m.download("--environment myEnvironment --settings-schema schema:1,schema:2 --only-apis")
-		assert.Error(t, err)
-
-		err = m.download("--environment myEnvironment --settings-schema schema:1,schema:2 --only-settings")
-		assert.Error(t, err)
-
-		err = m.download("--environment myEnvironment --only-apis --only-settings")
+		err := m.download("--environment myEnvironment --settings-schema schema:1,schema:2 --only-settings")
 		assert.Error(t, err)
 	})
 }
