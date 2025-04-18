@@ -21,6 +21,7 @@ import (
 	"path"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 
 	"github.com/spf13/afero"
@@ -29,7 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/sort"
 )
 
 //go:generate mockgen -source=download.go -destination=download_mock.go -package=download -write_package_comment=false Command
@@ -85,7 +85,7 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 }
 
 func reportForCircularDependencies(p project.Project) error {
-	_, errs := sort.ConfigsPerEnvironment([]project.Project{p}, []string{p.Id})
+	_, errs := graph.ConfigsPerEnvironment([]project.Project{p}, []string{p.Id})
 	if len(errs) != 0 {
 		errutils.PrintWarnings(errs)
 		return fmt.Errorf("there are circular dependencies between %d configurations that need to be resolved manually", len(errs))

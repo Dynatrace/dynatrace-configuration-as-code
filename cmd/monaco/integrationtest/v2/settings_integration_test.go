@@ -40,9 +40,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/sort"
 )
 
 // tests all configs for a single environment
@@ -89,7 +89,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 
 	loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, env)
 	projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
-	sortedConfigs, _ := sort.ConfigsPerEnvironment(projects, []string{env})
+	sortedConfigs, _ := graph.ConfigsPerEnvironment(projects, []string{env})
 	environment := loadedManifest.Environments[env]
 	configToDeploy := sortedConfigs[env][0]
 

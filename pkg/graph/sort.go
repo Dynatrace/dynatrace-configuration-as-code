@@ -43,3 +43,11 @@ func SortProjects(projects []project.Project, environments []string) (map[string
 	}
 	return cfgsPerEnv, nil
 }
+
+// ConfigsPerEnvironment returns a sorted slice of configurations for each environment. If configurations depend
+// on each other, the slices will contain them in the right order to deploy one after the other.
+// Depending on the configuration of featureflags.DependencyGraphBasedSort this will either use topologysort or a new graph datastructure
+// based sort. To use the full graph-based implementation use graph.New instead.
+func ConfigsPerEnvironment(projects []project.Project, environments []string) (sortedConfigsPerEnv project.ConfigsPerEnvironment, errs []error) {
+	return SortProjects(projects, environments)
+}
