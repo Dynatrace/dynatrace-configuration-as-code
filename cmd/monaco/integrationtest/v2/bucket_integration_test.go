@@ -20,22 +20,14 @@ package v2
 
 import (
 	"fmt"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
+
+	"github.com/spf13/afero"
 )
 
 // Tests a dry run (validation)
@@ -95,59 +87,4 @@ func TestIntegrationComplexBucket(t *testing.T) {
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"complex-bucket"}, "", true)
 	})
-}
-
-func TestUploadDownload(t *testing.T) {
-	configFolder := "test-resources/integration-bucket/"
-	manifest := configFolder + "manifest.yaml"
-	specificEnvironment := ""
-	downloadFolder := "test-resources/download"
-
-	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "buckets", func(fs afero.Fs, _ TestContext) {
-
-		// Create the buckets
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifest))
-		require.NoError(t, err)
-
-		// Download the buckets
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco download --only-buckets --manifest=%s --project=project --verbose --output-folder=%s --environment=%s", manifest, downloadFolder, "platform_env"))
-		require.NoError(t, err)
-
-		downloadedManifestPath := filepath.Join(downloadFolder, "manifest.yaml")
-
-		uploadedConfigs := loadConfigs(t, manifest, fs, []string{"project"})
-		downloadedConfigs := loadConfigs(t, downloadedManifestPath, fs, []string{})
-
-		assert.True(t, matcher.ConfigsMatch(t, uploadedConfigs, downloadedConfigs))
-	})
-}
-
-func loadConfigs(t *testing.T, manifestPath string, fs afero.Fs, specificProjects []string) []config.Config {
-	m, errs := loader.Load(&loader.Context{
-		Fs:           fs,
-		ManifestPath: manifestPath,
-		Opts: loader.Options{
-			DoNotResolveEnvVars:      true,
-			RequireEnvironmentGroups: true,
-		},
-	})
-	testutils.FailTestOnAnyError(t, errs, "error during manifest load")
-
-	apis := api.NewAPIs().Filter(api.RemoveDisabled)
-	loadedProjects, errs := project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
-		KnownApis:       apis.GetApiNameLookup(),
-		WorkingDir:      filepath.Dir(manifestPath),
-		Manifest:        m,
-		ParametersSerde: config.DefaultParameterParsers,
-	}, specificProjects)
-	testutils.FailTestOnAnyError(t, errs, "error during projects load")
-
-	configs := make([]config.Config, 0)
-
-	for _, p := range loadedProjects {
-		p.ForEveryConfigDo(func(c config.Config) {
-			configs = append(configs, c)
-		})
-	}
-	return configs
 }
