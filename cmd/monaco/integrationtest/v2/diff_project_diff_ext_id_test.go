@@ -30,7 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/sort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 )
 
 var diffProjectDiffExtIDFolder = "test-resources/integration-different-projects-different-extid/"
@@ -49,7 +49,7 @@ func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "")
 		environment := loadedManifest.Environments["platform_env"]
 		projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
-		sortedConfigs, _ := sort.ConfigsPerEnvironment(projects, []string{"platform_env"})
+		sortedConfigs, _ := graph.ConfigsPerEnvironment(projects, []string{"platform_env"})
 
 		extIDProject1, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
 		extIDProject2, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][1].Coordinate)

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sort_test
+package graph_test
 
 import (
 	"testing"
@@ -26,8 +26,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/sort"
 )
 
 func TestGetSortedConfigsForEnvironments(t *testing.T) {
@@ -125,7 +125,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 }
 
 func assertSortingWorks(t *testing.T, projects []project.Project, environments []string, environmentName string, dashboardConfigCoordinate coordinate.Coordinate, autoTagCoordinates coordinate.Coordinate) {
-	sortedPerEnvironment, errors := sort.ConfigsPerEnvironment(projects, environments)
+	sortedPerEnvironment, errors := graph.ConfigsPerEnvironment(projects, environments)
 
 	assert.Len(t, errors, 0, "should not return error")
 	assert.Len(t, sortedPerEnvironment, 1)

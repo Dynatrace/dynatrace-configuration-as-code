@@ -44,8 +44,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/sort"
 )
 
 type entityLookup map[coordinate.Coordinate]entities.ResolvedEntity
@@ -77,7 +77,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		envNames = append(envNames, env.Name)
 	}
 
-	sortedConfigs, errs := sort.ConfigsPerEnvironment(projects, envNames)
+	sortedConfigs, errs := graph.ConfigsPerEnvironment(projects, envNames)
 	testutils.FailTestOnAnyError(t, errs, "sorting configurations failed")
 
 	checkString := "exist"
