@@ -29,13 +29,13 @@ import (
 
 func TestGetDownloadCommand(t *testing.T) {
 	defaultOnlyOptions := OnlyOptions{
-		OnlySettings:     false,
-		OnlyApis:         false,
-		OnlySegments:     false,
-		OnlySloV2:        false,
-		OnlyOpenPipeline: false,
-		OnlyDocuments:    false,
-		OnlyBuckets:      false,
+		OnlySettingsFlag:     false,
+		OnlyApisFlag:         false,
+		OnlySegmentsFlag:     false,
+		OnlySloV2Flag:        false,
+		OnlyOpenPipelineFlag: false,
+		OnlyDocumentsFlag:    false,
+		OnlyBucketsFlag:      false,
 	}
 
 	t.Run("url and token are mutually exclusive", func(t *testing.T) {
@@ -166,9 +166,9 @@ func TestGetDownloadCommand(t *testing.T) {
 	t.Run("Download multiple given configs", func(t *testing.T) {
 		m := newMonaco(t)
 		onlyOptions := maps.Clone(defaultOnlyOptions)
-		onlyOptions[OnlyApis] = true
-		onlyOptions[OnlySettings] = true
-		onlyOptions[OnlySegments] = true
+		onlyOptions[OnlyApisFlag] = true
+		onlyOptions[OnlySettingsFlag] = true
+		onlyOptions[OnlySegmentsFlag] = true
 		expected := downloadCmdOptions{
 			manifestFile:            "manifest.yaml",
 			specificEnvironmentName: "myEnvironment",
@@ -184,7 +184,7 @@ func TestGetDownloadCommand(t *testing.T) {
 	t.Run("Api selection - set of wanted api", func(t *testing.T) {
 		m := newMonaco(t)
 		onlyOptions := maps.Clone(defaultOnlyOptions)
-		onlyOptions[OnlyApis] = true
+		onlyOptions[OnlyApisFlag] = true
 		expected := downloadCmdOptions{
 			manifestFile:            "manifest.yaml",
 			specificEnvironmentName: "myEnvironment",
@@ -200,7 +200,7 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Api selection - download all api", func(t *testing.T) {
 		onlyOptions := maps.Clone(defaultOnlyOptions)
-		onlyOptions[OnlyApis] = true
+		onlyOptions[OnlyApisFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
 			auth:           auth{token: "token"},
@@ -224,7 +224,7 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Settings schema selection - set of wanted settings schema", func(t *testing.T) {
 		onlyOptions := maps.Clone(defaultOnlyOptions)
-		onlyOptions[OnlySettings] = true
+		onlyOptions[OnlySettingsFlag] = true
 		expected := downloadCmdOptions{
 			manifestFile:            "manifest.yaml",
 			specificEnvironmentName: "myEnvironment",
@@ -241,7 +241,7 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Settings schema selection - download all settings schema", func(t *testing.T) {
 		onlyOptions := maps.Clone(defaultOnlyOptions)
-		onlyOptions[OnlySettings] = true
+		onlyOptions[OnlySettingsFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
 			auth:           auth{token: "token"},

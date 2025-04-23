@@ -99,7 +99,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				specificAPIs:    nil,
 				specificSchemas: []string{"builtin:magic.secret"},
 				onlyOptions: OnlyOptions{
-					OnlySettings: true,
+					OnlySettingsFlag: true,
 				},
 				downloadOptionsShared: downloadOptions,
 			},
@@ -119,7 +119,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				specificAPIs:    []string{"alerting-profile"},
 				specificSchemas: nil,
 				onlyOptions: OnlyOptions{
-					OnlyApis: true,
+					OnlyApisFlag: true,
 				},
 				downloadOptionsShared: downloadOptions,
 			},
@@ -138,8 +138,8 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				specificAPIs:    []string{"alerting-profile"},
 				specificSchemas: []string{"builtin:magic.secret"},
 				onlyOptions: OnlyOptions{
-					OnlySettings: true,
-					OnlyApis:     true,
+					OnlySettingsFlag: true,
+					OnlyApisFlag:     true,
 				},
 				downloadOptionsShared: downloadOptions,
 			},
@@ -159,7 +159,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				specificAPIs:    nil,
 				specificSchemas: nil,
 				onlyOptions: OnlyOptions{
-					OnlyApis: true,
+					OnlyApisFlag: true,
 				},
 				downloadOptionsShared: downloadOptions,
 			},
@@ -178,7 +178,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				specificAPIs:    nil,
 				specificSchemas: nil,
 				onlyOptions: OnlyOptions{
-					OnlySettings: true,
+					OnlySettingsFlag: true,
 				},
 				downloadOptionsShared: downloadOptions,
 			},
@@ -239,7 +239,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "only settings requested",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlySettings: true,
+					OnlySettingsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
@@ -251,7 +251,7 @@ func TestDownload_Options(t *testing.T) {
 			given: downloadConfigsOptions{
 				specificSchemas: []string{"some:schema"},
 				onlyOptions: OnlyOptions{
-					OnlySettings: true,
+					OnlySettingsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
@@ -262,7 +262,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "only documents requested",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlyDocuments: true,
+					OnlyDocumentsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
@@ -273,7 +273,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "only buckets requested",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlyBuckets: true,
+					OnlyBucketsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
@@ -284,7 +284,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "only openpipeline requested",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlyOpenPipeline: true,
+					OnlyOpenPipelineFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
@@ -295,7 +295,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "only segment requested with FF on",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlySegments: true,
+					OnlySegmentsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
@@ -307,7 +307,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "only segment requested with FF off",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlySegments: true,
+					OnlySegmentsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
@@ -319,7 +319,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "only slo-v2 requested with FF on",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlySloV2: true,
+					OnlySloV2Flag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
@@ -331,7 +331,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "only slo-v2 requested with FF off",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlySloV2: true,
+					OnlySloV2Flag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
@@ -343,7 +343,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "only apis requested",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlyApis: true,
+					OnlyApisFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
@@ -354,7 +354,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "specific config apis requested",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlyApis: true,
+					OnlyApisFlag: true,
 				},
 				specificAPIs: []string{"alerting-profile"},
 				downloadOptionsShared: downloadOptionsShared{
@@ -366,7 +366,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "only automations requested",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
-					OnlyAutomation: true,
+					OnlyAutomationFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
@@ -380,8 +380,8 @@ func TestDownload_Options(t *testing.T) {
 				specificAPIs:    []string{"alerting-profile"},
 				specificSchemas: []string{"some:schema"},
 				onlyOptions: OnlyOptions{
-					OnlySettings: true,
-					OnlyApis:     true,
+					OnlySettingsFlag: true,
+					OnlyApisFlag:     true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
@@ -476,7 +476,7 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				specificAPIs:          nil,
 				specificSchemas:       nil,
 				onlyOptions: OnlyOptions{
-					OnlySettings: true,
+					OnlySettingsFlag: true,
 				},
 			},
 			want: true,
@@ -488,7 +488,7 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				specificAPIs:          nil,
 				specificSchemas:       []string{"some-schema", "other-schema"},
 				onlyOptions: OnlyOptions{
-					OnlySettings: true,
+					OnlySettingsFlag: true,
 				},
 			},
 			want: true,
@@ -500,7 +500,7 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				specificAPIs:          []string{"some-api", "other-api"},
 				specificSchemas:       nil,
 				onlyOptions: OnlyOptions{
-					OnlyApis: true,
+					OnlyApisFlag: true,
 				},
 			},
 			want: false,
@@ -512,8 +512,8 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				specificAPIs:          []string{"some-api", "other-api"},
 				specificSchemas:       []string{"some-schema", "other-schema"},
 				onlyOptions: OnlyOptions{
-					OnlyApis:     true,
-					OnlySettings: true,
+					OnlyApisFlag:     true,
+					OnlySettingsFlag: true,
 				},
 			},
 			want: true,
@@ -525,7 +525,7 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				specificAPIs:          []string{"some-api", "other-api"},
 				specificSchemas:       nil,
 				onlyOptions: OnlyOptions{
-					OnlyApis: true,
+					OnlyApisFlag: true,
 				},
 			},
 			want: false,
@@ -533,7 +533,7 @@ func Test_shouldDownloadSettings(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, tt.given.onlyOptions.ShouldDownload(OnlySettings), "shouldDownloadSettings(%v)", tt.given)
+			assert.Equalf(t, tt.want, tt.given.onlyOptions.ShouldDownload(OnlySettingsFlag), "shouldDownloadSettings(%v)", tt.given)
 		})
 	}
 }
@@ -543,7 +543,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 	givenOpts := downloadConfigsOptions{
 		specificSchemas: []string{"UNKNOWN SCHEMA"},
 		onlyOptions: OnlyOptions{
-			OnlySettings: false,
+			OnlySettingsFlag: false,
 		},
 		downloadOptionsShared: downloadOptionsShared{
 			environmentURL: manifest.URLDefinition{
@@ -627,7 +627,7 @@ func TestMapToAuth(t *testing.T) {
 }
 
 func TestDownloadConfigs_ErrorIfOAuthMissing(t *testing.T) {
-	flags := []OnlyFlag{OnlyAutomation, OnlyDocuments, OnlyBuckets, OnlyOpenPipeline, OnlySloV2, OnlySegments}
+	flags := []OnlyFlag{OnlyAutomationFlag, OnlyDocumentsFlag, OnlyBucketsFlag, OnlyOpenPipelineFlag, OnlySloV2Flag, OnlySegmentsFlag}
 
 	sharedOptionsWithToken := downloadOptionsShared{
 		environmentURL: manifest.URLDefinition{
@@ -676,7 +676,7 @@ func TestDownloadConfigs_ErrorIfTokenMissing(t *testing.T) {
 
 	opts := downloadConfigsOptions{
 		onlyOptions: OnlyOptions{
-			OnlyApis: true,
+			OnlyApisFlag: true,
 		},
 		downloadOptionsShared: sharedOptionsWithOAuth,
 	}
@@ -688,7 +688,7 @@ func TestDownloadConfigs_ErrorIfTokenMissing(t *testing.T) {
 func TestDownloadConfigs_OnlySettings(t *testing.T) {
 	opts := downloadConfigsOptions{
 		onlyOptions: OnlyOptions{
-			OnlySettings: true,
+			OnlySettingsFlag: true,
 		},
 		downloadOptionsShared: downloadOptionsShared{
 			environmentURL: manifest.URLDefinition{
