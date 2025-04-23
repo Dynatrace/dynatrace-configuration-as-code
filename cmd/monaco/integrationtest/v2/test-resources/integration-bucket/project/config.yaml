@@ -3,8 +3,12 @@ configs:
     type: bucket
     config:
       template: bucket.json
+      parameters:
+        displayName: my-bucket
   - id: pre-existing-bucket
     type: bucket
     config:
       originObjectId: "my_preexisting_bucket"
       template: bucket.json
+      parameters:
+        displayName: pre-existing-bucket

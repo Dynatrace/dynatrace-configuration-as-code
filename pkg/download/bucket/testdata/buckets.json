@@ -6,7 +6,7 @@
             "displayName": "Default metrics (15 months)",
             "status": "active",
             "retentionDays": 462,
-            "metricInterval": "PT1M",
+            "metricInterval": "{{.PT1M}}",
             "version": 1,
             "updatable": true
         },
