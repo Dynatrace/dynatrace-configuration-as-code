@@ -287,7 +287,7 @@ type downloadFn struct {
 	bucketDownload       func(client.BucketClient) Downloadable
 	documentDownload     func(context.Context, client.DocumentClient, string) (project.ConfigsPerType, error)
 	openPipelineDownload func(context.Context, client.OpenPipelineClient, string) (project.ConfigsPerType, error)
-	segmentDownload      func(context.Context, segment.DownloadSegmentClient, string) (project.ConfigsPerType, error)
+	segmentDownload      func(segment.Source) Downloadable
 	sloDownload          func(context.Context, slo.DownloadSloClient, string) (project.ConfigsPerType, error)
 }
 
@@ -300,8 +300,10 @@ var defaultDownloadFn = downloadFn{
 	},
 	documentDownload:     document.Download,
 	openPipelineDownload: openpipeline.Download,
-	segmentDownload:      segment.Download,
-	sloDownload:          slo.Download,
+	segmentDownload: func(source segment.Source) Downloadable {
+		return segment.NewSegmentAPI(source)
+	},
+	sloDownload: slo.Download,
 }
 
 func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
@@ -378,7 +380,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 	if featureflags.Segments.Enabled() {
 		if shouldDownloadSegments(opts) {
 			if opts.auth.OAuth != nil {
-				segmentCgfs, err := fn.segmentDownload(ctx, clientSet.SegmentClient, opts.projectName)
+				segmentCgfs, err := fn.segmentDownload(clientSet.SegmentClient).Download(ctx, opts.projectName)
 				if err != nil {
 					return nil, err
 				}

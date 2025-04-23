@@ -30,14 +30,22 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-type DownloadSegmentClient interface {
+type Source interface {
 	GetAll(ctx context.Context) ([]segments.Response, error)
 }
 
-func Download(ctx context.Context, client DownloadSegmentClient, projectName string) (project.ConfigsPerType, error) {
+type SegmentAPI struct {
+	segmentSource Source
+}
+
+func NewSegmentAPI(segmentSource Source) *SegmentAPI {
+	return &SegmentAPI{segmentSource}
+}
+
+func (s SegmentAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{}
 
-	downloadedConfigs, err := client.GetAll(ctx)
+	downloadedConfigs, err := s.segmentSource.GetAll(ctx)
 	if err != nil {
 		log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to fetch the list of existing segments: %v", err)
 		return nil, nil

@@ -398,11 +398,11 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return nil, nil
 				},
-				segmentDownload: func(ctx context.Context, b segment.DownloadSegmentClient, s string) (project.ConfigsPerType, error) {
+				segmentDownload: func(source segment.Source) Downloadable {
 					if !tt.want.segment {
 						t.Fatalf("segment download was not meant to be called but was")
 					}
-					return nil, nil
+					return DownloadableStub{}
 				},
 				sloDownload: func(ctx context.Context, b slo.DownloadSloClient, s string) (project.ConfigsPerType, error) {
 					if !tt.want.slo {
