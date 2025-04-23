@@ -16,19 +16,6 @@
 
 package download
 
-type OnlyFlag = string
-
-const (
-	OnlyApis         OnlyFlag = "only-apis"
-	OnlySettings     OnlyFlag = "only-settings"
-	OnlyAutomation   OnlyFlag = "only-automation"
-	OnlyDocuments    OnlyFlag = "only-documents"
-	OnlyBuckets      OnlyFlag = "only-buckets"
-	OnlyOpenPipeline OnlyFlag = "only-openpipeline"
-	OnlySloV2        OnlyFlag = "only-slo-v2"
-	OnlySegments     OnlyFlag = "only-segments"
-)
-
 type OnlyOptions map[OnlyFlag]bool
 
 // OnlyCount returns the amount of enabled "only" flags

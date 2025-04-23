@@ -24,37 +24,37 @@ import (
 
 func TestOnlyOptions_IsSingleOption(t *testing.T) {
 	t.Run("Should return true if set and the only one", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettings: true}
+		onlyOption := OnlyOptions{OnlySettingsFlag: true}
 
-		got := onlyOption.IsSingleOption(OnlySettings)
+		got := onlyOption.IsSingleOption(OnlySettingsFlag)
 		assert.True(t, got)
 	})
 
 	t.Run("Should return false if set and not the only one", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettings: true, OnlyApis: true}
+		onlyOption := OnlyOptions{OnlySettingsFlag: true, OnlyApisFlag: true}
 
-		got := onlyOption.IsSingleOption(OnlySettings)
+		got := onlyOption.IsSingleOption(OnlySettingsFlag)
 		assert.False(t, got)
 	})
 
 	t.Run("Should return false if not set", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlyApis: true}
+		onlyOption := OnlyOptions{OnlyApisFlag: true}
 
-		got := onlyOption.IsSingleOption(OnlySettings)
+		got := onlyOption.IsSingleOption(OnlySettingsFlag)
 		assert.False(t, got)
 	})
 
 	t.Run("Should return false if set but false", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettings: false}
+		onlyOption := OnlyOptions{OnlySettingsFlag: false}
 
-		got := onlyOption.IsSingleOption(OnlySettings)
+		got := onlyOption.IsSingleOption(OnlySettingsFlag)
 		assert.False(t, got)
 	})
 }
 
 func TestOnlyOptions_OnlyCount(t *testing.T) {
 	t.Run("Should return the amount of enabled flags", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettings: false, OnlyApis: true, OnlySegments: true}
+		onlyOption := OnlyOptions{OnlySettingsFlag: false, OnlyApisFlag: true, OnlySegmentsFlag: true}
 
 		got := onlyOption.OnlyCount()
 		assert.Equal(t, got, 2)
@@ -65,28 +65,28 @@ func TestOnlyOptions_ShouldDownload(t *testing.T) {
 	t.Run("Should return true if no flags", func(t *testing.T) {
 		onlyOption := OnlyOptions{}
 
-		got := onlyOption.ShouldDownload(OnlySettings)
+		got := onlyOption.ShouldDownload(OnlySettingsFlag)
 		assert.True(t, got)
 	})
 
 	t.Run("Should return true if no true flags are set", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettings: false, OnlyApis: false, OnlySegments: false}
+		onlyOption := OnlyOptions{OnlySettingsFlag: false, OnlyApisFlag: false, OnlySegmentsFlag: false}
 
-		got := onlyOption.ShouldDownload(OnlySettings)
+		got := onlyOption.ShouldDownload(OnlySettingsFlag)
 		assert.True(t, got)
 	})
 
 	t.Run("Should return true if the only flag is set", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettings: true, OnlyApis: false, OnlySegments: true}
+		onlyOption := OnlyOptions{OnlySettingsFlag: true, OnlyApisFlag: false, OnlySegmentsFlag: true}
 
-		got := onlyOption.ShouldDownload(OnlySettings)
+		got := onlyOption.ShouldDownload(OnlySettingsFlag)
 		assert.True(t, got)
 	})
 
 	t.Run("Should return false", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettings: true, OnlyApis: false, OnlySegments: true}
+		onlyOption := OnlyOptions{OnlySettingsFlag: true, OnlyApisFlag: false, OnlySegmentsFlag: true}
 
-		got := onlyOption.ShouldDownload(OnlyApis)
+		got := onlyOption.ShouldDownload(OnlyApisFlag)
 		assert.False(t, got)
 	})
 }

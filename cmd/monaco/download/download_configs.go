@@ -292,7 +292,7 @@ const authSkipMsg = "Skipped downloading %s due to missing token"
 
 func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions, fn downloadFn) (project.ConfigsPerType, error) {
 	configs := make(project.ConfigsPerType)
-	if opts.onlyOptions.ShouldDownload(OnlyApis) {
+	if opts.onlyOptions.ShouldDownload(OnlyApisFlag) {
 		if opts.auth.Token != nil {
 			log.Info("Downloading configuration objects")
 			classicCfgs, err := fn.classicDownload(ctx, clientSet.ConfigClient, opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
@@ -300,14 +300,14 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 				return nil, err
 			}
 			copyConfigs(configs, classicCfgs)
-		} else if opts.onlyOptions.IsSingleOption(OnlyApis) {
+		} else if opts.onlyOptions.IsSingleOption(OnlyApisFlag) {
 			return nil, errors.New("classic client config requires token")
 		} else {
 			log.Warn(authSkipMsg, "configuration objects")
 		}
 	}
 
-	if opts.onlyOptions.ShouldDownload(OnlySettings) {
+	if opts.onlyOptions.ShouldDownload(OnlySettingsFlag) {
 		// auth is already validated during load that either token or OAuth is set
 		log.Info("Downloading settings objects")
 		settingCfgs, err := fn.settingsDownload(ctx, clientSet.SettingsClient, opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
@@ -317,7 +317,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 		copyConfigs(configs, settingCfgs)
 	}
 
-	if opts.onlyOptions.ShouldDownload(OnlyAutomation) {
+	if opts.onlyOptions.ShouldDownload(OnlyAutomationFlag) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading automation resources")
 			automationCfgs, err := fn.automationDownload(ctx, clientSet.AutClient, opts.projectName)
@@ -325,14 +325,14 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 				return nil, err
 			}
 			copyConfigs(configs, automationCfgs)
-		} else if opts.onlyOptions.IsSingleOption(OnlyAutomation) {
+		} else if opts.onlyOptions.IsSingleOption(OnlyAutomationFlag) {
 			return nil, errors.New("can't download automation resources: no OAuth credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "automation resources")
 		}
 	}
 
-	if opts.onlyOptions.ShouldDownload(OnlyBuckets) {
+	if opts.onlyOptions.ShouldDownload(OnlyBucketsFlag) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading Grail buckets")
 			bucketCfgs, err := fn.bucketDownload(clientSet.BucketClient).Download(ctx, opts.projectName)
@@ -340,14 +340,14 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 				return nil, err
 			}
 			copyConfigs(configs, bucketCfgs)
-		} else if opts.onlyOptions.IsSingleOption(OnlyBuckets) {
+		} else if opts.onlyOptions.IsSingleOption(OnlyBucketsFlag) {
 			return nil, errors.New("can't download buckets: no OAuth credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "Grail buckets")
 		}
 	}
 
-	if opts.onlyOptions.ShouldDownload(OnlyDocuments) {
+	if opts.onlyOptions.ShouldDownload(OnlyDocumentsFlag) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading documents")
 			documentCfgs, err := fn.documentDownload(ctx, clientSet.DocumentClient, opts.projectName)
@@ -355,14 +355,14 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 				return nil, err
 			}
 			copyConfigs(configs, documentCfgs)
-		} else if opts.onlyOptions.IsSingleOption(OnlyDocuments) {
+		} else if opts.onlyOptions.IsSingleOption(OnlyDocumentsFlag) {
 			return nil, errors.New("can't download documents: no OAuth credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "documents")
 		}
 	}
 
-	if featureflags.OpenPipeline.Enabled() && opts.onlyOptions.ShouldDownload(OnlyOpenPipeline) {
+	if featureflags.OpenPipeline.Enabled() && opts.onlyOptions.ShouldDownload(OnlyOpenPipelineFlag) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading openpipelines")
 			openPipelineCfgs, err := fn.openPipelineDownload(ctx, clientSet.OpenPipelineClient, opts.projectName)
@@ -370,14 +370,14 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 				return nil, err
 			}
 			copyConfigs(configs, openPipelineCfgs)
-		} else if opts.onlyOptions.IsSingleOption(OnlyOpenPipeline) {
+		} else if opts.onlyOptions.IsSingleOption(OnlyOpenPipelineFlag) {
 			return nil, errors.New("can't download openpipeline resources: no OAuth credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "openpipelines")
 		}
 	}
 
-	if featureflags.Segments.Enabled() && opts.onlyOptions.ShouldDownload(OnlySegments) {
+	if featureflags.Segments.Enabled() && opts.onlyOptions.ShouldDownload(OnlySegmentsFlag) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading segments")
 			segmentCgfs, err := fn.segmentDownload(clientSet.SegmentClient).Download(ctx, opts.projectName)
@@ -385,14 +385,14 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 				return nil, err
 			}
 			copyConfigs(configs, segmentCgfs)
-		} else if opts.onlyOptions.IsSingleOption(OnlySegments) {
+		} else if opts.onlyOptions.IsSingleOption(OnlySegmentsFlag) {
 			return nil, errors.New("can't download segment resources: no OAuth credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "segments")
 		}
 	}
 
-	if featureflags.ServiceLevelObjective.Enabled() && opts.onlyOptions.ShouldDownload(OnlySloV2) {
+	if featureflags.ServiceLevelObjective.Enabled() && opts.onlyOptions.ShouldDownload(OnlySloV2Flag) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading SLO-V2")
 			sloCgfs, err := fn.sloDownload(ctx, clientSet.ServiceLevelObjectiveClient, opts.projectName)
@@ -400,7 +400,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 				return nil, err
 			}
 			copyConfigs(configs, sloCgfs)
-		} else if opts.onlyOptions.IsSingleOption(OnlySloV2) {
+		} else if opts.onlyOptions.IsSingleOption(OnlySloV2Flag) {
 			return nil, fmt.Errorf("can't download %s resources: no OAuth credentials configured", config.ServiceLevelObjectiveID)
 		} else {
 			log.Warn(oAuthSkipMsg, "SLO-V2")

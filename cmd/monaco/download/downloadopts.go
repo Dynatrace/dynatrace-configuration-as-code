@@ -51,7 +51,7 @@ func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
 		return apis.Filter(api.RetainByName(opts.specificAPIs), removeSkipDownload, warnDeprecated())
 	}
 
-	if opts.onlyOptions.ShouldDownload(OnlyApis) {
+	if opts.onlyOptions.ShouldDownload(OnlyApisFlag) {
 		// Remove deprecated and warn
 		return apis.Filter(removeSkipDownload, removeDeprecated(withWarn()))
 	}
