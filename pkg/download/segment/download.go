@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -58,7 +57,7 @@ func Download(ctx context.Context, client DownloadSegmentClient, projectName str
 	return result, nil
 }
 
-func createConfig(projectName string, response openpipeline.Response) (config.Config, error) {
+func createConfig(projectName string, response segments.Response) (config.Config, error) {
 	jsonObj, err := templatetools.NewJSONObject(response.Data)
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to unmarshal payload: %w", err)
