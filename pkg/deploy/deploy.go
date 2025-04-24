@@ -68,11 +68,11 @@ var (
 
 type ctxDeploymentLimiterKey struct{}
 
-func NewContextWithDeploymentLimiter(ctx context.Context, limiter *rest.ConcurrentRequestLimiter) context.Context {
+func newContextWithDeploymentLimiter(ctx context.Context, limiter *rest.ConcurrentRequestLimiter) context.Context {
 	return context.WithValue(ctx, ctxDeploymentLimiterKey{}, limiter)
 }
 
-func GetDeploymentLimiterFromContext(ctx context.Context) *rest.ConcurrentRequestLimiter {
+func getDeploymentLimiterFromContext(ctx context.Context) *rest.ConcurrentRequestLimiter {
 	if limiter, ok := ctx.Value(ctxDeploymentLimiterKey{}).(*rest.ConcurrentRequestLimiter); ok {
 		return limiter
 	}
@@ -84,7 +84,7 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 	if maxConcurrentDeployments > 0 {
 		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
 		limiter := rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
-		ctx = NewContextWithDeploymentLimiter(ctx, limiter)
+		ctx = newContextWithDeploymentLimiter(ctx, limiter)
 	}
 	deploymentErrs := make(deployErrors.EnvironmentDeploymentErrors)
 
@@ -304,7 +304,7 @@ func (e ErrUnknownConfigType) Error() string {
 }
 
 func deployConfig(ctx context.Context, c *config.Config, clientset *client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
-	if limiter := GetDeploymentLimiterFromContext(ctx); limiter != nil {
+	if limiter := getDeploymentLimiterFromContext(ctx); limiter != nil {
 		limiter.Acquire()
 		defer limiter.Release()
 	}
