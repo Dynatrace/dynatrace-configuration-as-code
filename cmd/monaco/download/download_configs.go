@@ -277,7 +277,7 @@ var defaultDownloadFn = downloadFn{
 	settingsDownload:   settings.Download,
 	automationDownload: automation.Download,
 	bucketDownload: func(bucketClient client.BucketClient) Downloadable {
-		return bucket.NewBucketAPI(bucketClient)
+		return bucket.NewApi(bucketClient)
 	},
 	documentDownload:     document.Download,
 	openPipelineDownload: openpipeline.Download,

@@ -43,15 +43,15 @@ func (s skipErr) Error() string {
 	return s.msg
 }
 
-type BucketAPI struct {
+type Api struct {
 	client client.BucketClient
 }
 
-func NewBucketAPI(client client.BucketClient) *BucketAPI {
-	return &BucketAPI{client}
+func NewApi(client client.BucketClient) *Api {
+	return &Api{client}
 }
 
-func (b BucketAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (b Api) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	result := make(project.ConfigsPerType)
 	response, err := b.client.List(ctx)
 	if err != nil {

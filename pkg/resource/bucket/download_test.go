@@ -51,7 +51,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		baseUrl, err := url.Parse(server.URL)
 		assert.NoError(t, err)
-		bucketApi := NewBucketAPI(buckets.NewClient(rest.NewClient(baseUrl, server.Client())))
+		bucketApi := NewApi(buckets.NewClient(rest.NewClient(baseUrl, server.Client())))
 		result, err := bucketApi.Download(t.Context(), "projectName")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
@@ -84,7 +84,7 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		baseUrl, _ := url.Parse(server.URL)
-		bucketApi := NewBucketAPI(buckets.NewClient(rest.NewClient(baseUrl, server.Client())))
+		bucketApi := NewApi(buckets.NewClient(rest.NewClient(baseUrl, server.Client())))
 		result, err := bucketApi.Download(t.Context(), "projectName")
 		assert.Len(t, result, 0)
 		assert.NoError(t, err)
@@ -103,7 +103,7 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		baseUrl, _ := url.Parse(server.URL)
-		bucketApi := NewBucketAPI(buckets.NewClient(rest.NewClient(baseUrl, server.Client())))
+		bucketApi := NewApi(buckets.NewClient(rest.NewClient(baseUrl, server.Client())))
 		result, err := bucketApi.Download(t.Context(), "projectName")
 		assert.Len(t, result, 0)
 		assert.NoError(t, err)
