@@ -91,6 +91,19 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 	type args struct {
 		envs manifest.Environments
 	}
+	classicCheckPayload := []byte(`
+		{
+		  "id": "abc-xy",
+		  "name": "my-token",
+		  "enabled": true,
+		  "personalAccessToken": false,
+		  "owner": "my-owner-email",
+		  "creationDate": "2024-01-11T16:56:05.499Z",
+		  "scopes": [
+			"settings.read",
+			"settings.write"
+		  ]
+		}`)
 	tests := []struct {
 		name            string
 		args            args
@@ -124,7 +137,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 	t.Run("Call classic Version EP - ok", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(200)
-			_, _ = rw.Write([]byte(`{"version" : "1.262.0.20230303"}`))
+			_, _ = rw.Write(classicCheckPayload)
 		}))
 		defer server.Close()
 
@@ -157,7 +170,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 			}
 
 			rw.WriteHeader(200)
-			_, _ = rw.Write([]byte(`{"version" : "0.59.3.20231603"}`))
+			_, _ = rw.Write(classicCheckPayload)
 		}))
 		defer server.Close()
 
@@ -196,7 +209,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 			}
 
 			rw.WriteHeader(404)
-			_, _ = rw.Write([]byte(`{"version" : "0.59.1.20231603"}`))
+			_, _ = rw.Write(classicCheckPayload)
 		}))
 		defer server.Close()
 
