@@ -266,7 +266,7 @@ type downloadFn struct {
 	settingsDownload     func(context.Context, client.SettingsClient, string, settings.Filters, ...config.SettingsType) (project.ConfigsPerType, error)
 	automationDownload   func(automation.Source) Downloadable
 	bucketDownload       func(bucket.Source) Downloadable
-	documentDownload     func(context.Context, client.DocumentClient, string) (project.ConfigsPerType, error)
+	documentDownload     func(document.Source) Downloadable
 	openPipelineDownload func(context.Context, client.OpenPipelineClient, string) (project.ConfigsPerType, error)
 	segmentDownload      func(segment.Source) Downloadable
 	sloDownload          func(slo.Source) Downloadable
@@ -281,7 +281,9 @@ var defaultDownloadFn = downloadFn{
 	bucketDownload: func(source bucket.Source) Downloadable {
 		return bucket.NewAPI(source)
 	},
-	documentDownload:     document.Download,
+	documentDownload: func(source document.Source) Downloadable {
+		return document.NewAPI(source)
+	},
 	openPipelineDownload: openpipeline.Download,
 	segmentDownload: func(source segment.Source) Downloadable {
 		return segment.NewAPI(source)
@@ -354,7 +356,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 	if opts.onlyOptions.ShouldDownload(OnlyDocumentsFlag) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading documents")
-			documentCfgs, err := fn.documentDownload(ctx, clientSet.DocumentClient, opts.projectName)
+			documentCfgs, err := fn.documentDownload(clientSet.DocumentClient).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
 			}

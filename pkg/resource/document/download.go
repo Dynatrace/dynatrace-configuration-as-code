@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -39,7 +38,20 @@ var documentMapping = map[string]config.DocumentKind{
 	documents.Launchpad: config.LaunchpadKind,
 }
 
-func Download(ctx context.Context, client client.DocumentClient, projectName string) (project.ConfigsPerType, error) {
+type Source interface {
+	List(ctx context.Context, filter string) (documents.ListResponse, error)
+	Get(ctx context.Context, id string) (documents.Response, error)
+}
+
+type API struct {
+	documentSource Source
+}
+
+func NewAPI(documentSource Source) *API {
+	return &API{documentSource}
+}
+
+func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	// due to the current test setup, the types must be downloaded in order. This should be changed eventually
 	var typesToDownload = []documents.DocumentType{
 		documents.Dashboard,
@@ -49,7 +61,7 @@ func Download(ctx context.Context, client client.DocumentClient, projectName str
 
 	var allConfigs []config.Config
 	for _, docKind := range typesToDownload {
-		configs := downloadDocumentsOfType(ctx, client, projectName, docKind)
+		configs := downloadDocumentsOfType(ctx, a.documentSource, projectName, docKind)
 		allConfigs = append(allConfigs, configs...)
 	}
 
@@ -58,10 +70,10 @@ func Download(ctx context.Context, client client.DocumentClient, projectName str
 	}, nil
 }
 
-func downloadDocumentsOfType(ctx context.Context, client client.DocumentClient, projectName string, documentType string) []config.Config {
+func downloadDocumentsOfType(ctx context.Context, documentSource Source, projectName string, documentType string) []config.Config {
 	log.WithFields(field.Type("document")).Debug("Downloading documents of type '%s'", documentType)
 
-	listResponse, err := client.List(ctx, fmt.Sprintf("type=='%s'", documentType))
+	listResponse, err := documentSource.List(ctx, fmt.Sprintf("type=='%s'", documentType))
 	if err != nil {
 		log.WithFields(field.Type("document"), field.Error(err)).Error("Failed to list all documents of type '%s': %v", documentType, err)
 		return nil
@@ -75,12 +87,12 @@ func downloadDocumentsOfType(ctx context.Context, client client.DocumentClient, 
 			continue
 		}
 
-		config, err := convertDocumentResponse(ctx, client, projectName, response)
+		cfg, err := convertDocumentResponse(ctx, documentSource, projectName, response)
 		if err != nil {
 			log.WithFields(field.Type("document"), field.Error(err)).Error("Failed to convert document '%s' of type '%s': %v", response.ID, documentType, err)
 			continue
 		}
-		configs = append(configs, config)
+		configs = append(configs, cfg)
 	}
 
 	log.WithFields(field.Type("document")).Debug("Downloaded %d documents of type '%s'", len(configs), documentType)
@@ -92,7 +104,7 @@ func isReadyMadeByAnApp(metadata documents.Metadata) bool {
 	return (metadata.OriginAppID != nil) && (len(*metadata.OriginAppID) > 0)
 }
 
-func convertDocumentResponse(ctx context.Context, client client.DocumentClient, projectName string, response documents.Response) (config.Config, error) {
+func convertDocumentResponse(ctx context.Context, documentSource Source, projectName string, response documents.Response) (config.Config, error) {
 	documentType, err := validateDocumentType(response.Type)
 	if err != nil {
 		return config.Config{}, err
@@ -100,7 +112,7 @@ func convertDocumentResponse(ctx context.Context, client client.DocumentClient, 
 
 	documentType.Private = response.IsPrivate
 
-	documentResponse, err := client.Get(ctx, response.ID)
+	documentResponse, err := documentSource.Get(ctx, response.ID)
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to get document: %w", err)
 	}
@@ -109,13 +121,13 @@ func convertDocumentResponse(ctx context.Context, client client.DocumentClient, 
 		config.NameParameter: &value.ValueParameter{Value: documentResponse.Name},
 	}
 
-	template, err := createTemplateFromResponse(documentResponse)
+	templateFromResponse, err := createTemplateFromResponse(documentResponse)
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to create template: %w", err)
 	}
 
 	return config.Config{
-		Template: template,
+		Template: templateFromResponse,
 		Coordinate: coordinate.Coordinate{
 			Project:  projectName,
 			Type:     string(config.DocumentTypeID),
