@@ -34,18 +34,18 @@ type Source interface {
 	GetAll(ctx context.Context) ([]segments.Response, error)
 }
 
-type SegmentAPI struct {
+type Api struct {
 	segmentSource Source
 }
 
-func NewSegmentAPI(segmentSource Source) *SegmentAPI {
-	return &SegmentAPI{segmentSource}
+func NewApi(segmentSource Source) *Api {
+	return &Api{segmentSource}
 }
 
-func (s SegmentAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a Api) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{}
 
-	downloadedConfigs, err := s.segmentSource.GetAll(ctx)
+	downloadedConfigs, err := a.segmentSource.GetAll(ctx)
 	if err != nil {
 		log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to fetch the list of existing segments: %v", err)
 		return nil, nil
