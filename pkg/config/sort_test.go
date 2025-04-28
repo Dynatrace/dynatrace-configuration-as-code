@@ -19,11 +19,14 @@
 package config
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSortParameters(t *testing.T) {
@@ -102,7 +105,12 @@ func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
 
 	_, errs := getSortedParameters(c)
 
-	assert.True(t, len(errs) > 0, "should fail")
+	require.NotEmpty(t, errs, "should fail")
+
+	for _, err := range errs {
+		wantErr := &CircularDependencyParameterSortError{}
+		assert.ErrorAs(t, err, &wantErr)
+	}
 }
 
 func indexOfParam(t *testing.T, params []parameter.NamedParameter, name string) int {
