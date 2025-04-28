@@ -269,7 +269,7 @@ type downloadFn struct {
 	documentDownload     func(context.Context, client.DocumentClient, string) (project.ConfigsPerType, error)
 	openPipelineDownload func(context.Context, client.OpenPipelineClient, string) (project.ConfigsPerType, error)
 	segmentDownload      func(segment.Source) Downloadable
-	sloDownload          func(context.Context, slo.DownloadSloClient, string) (project.ConfigsPerType, error)
+	sloDownload          func(slo.Source) Downloadable
 }
 
 var defaultDownloadFn = downloadFn{
@@ -284,7 +284,9 @@ var defaultDownloadFn = downloadFn{
 	segmentDownload: func(source segment.Source) Downloadable {
 		return segment.NewAPI(source)
 	},
-	sloDownload: slo.Download,
+	sloDownload: func(source slo.Source) Downloadable {
+		return slo.NewAPI(source)
+	},
 }
 
 const oAuthSkipMsg = "Skipped downloading %s due to missing OAuth credentials"
@@ -395,7 +397,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 	if featureflags.ServiceLevelObjective.Enabled() && opts.onlyOptions.ShouldDownload(OnlySloV2Flag) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading SLO-V2")
-			sloCgfs, err := fn.sloDownload(ctx, clientSet.ServiceLevelObjectiveClient, opts.projectName)
+			sloCgfs, err := fn.sloDownload(clientSet.ServiceLevelObjectiveClient).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
 			}
