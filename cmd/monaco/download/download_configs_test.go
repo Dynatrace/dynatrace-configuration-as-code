@@ -43,6 +43,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
@@ -410,11 +411,11 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return nil, nil
 				},
-				automationDownload: func(ctx context.Context, a client.AutomationClient, s string, automationType ...config.AutomationType) (project.ConfigsPerType, error) {
+				automationDownload: func(source automation.Source, automationType ...config.AutomationType) Downloadable {
 					if !tt.want.automation {
 						t.Fatalf("automation download was not meant to be called but was")
 					}
-					return nil, nil
+					return DownloadableStub{}
 				},
 				bucketDownload: func(source bucket.Source) Downloadable {
 					if !tt.want.bucket {

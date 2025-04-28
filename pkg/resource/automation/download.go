@@ -32,7 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	templateEscaper "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -40,6 +39,23 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
+
+type Source interface {
+	List(context.Context, automationAPI.ResourceType) (automation.ListResponse, error)
+}
+
+type API struct {
+	automationSource Source
+	automationTypes  []config.AutomationType
+}
+
+func NewAPI(automationSource Source) *API {
+	return NewAPIWithTypes(automationSource, []config.AutomationType{})
+}
+
+func NewAPIWithTypes(automationSource Source, automationTypes []config.AutomationType) *API {
+	return &API{automationSource, automationTypes}
+}
 
 var automationTypesToResources = map[config.AutomationType]automationAPI.ResourceType{
 	config.AutomationType{Resource: config.Workflow}:         automationAPI.Workflows,
@@ -49,13 +65,13 @@ var automationTypesToResources = map[config.AutomationType]automationAPI.Resourc
 
 // Download downloads all automation resources for a given project
 // If automationTypes is given it will just download those types of automation resources
-func Download(ctx context.Context, cl client.AutomationClient, projectName string, automationTypes ...config.AutomationType) (project.ConfigsPerType, error) {
-	if len(automationTypes) == 0 {
-		automationTypes = maps.Keys(automationTypesToResources)
+func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+	if len(a.automationTypes) == 0 {
+		a.automationTypes = maps.Keys(automationTypesToResources)
 	}
 
 	configsPerType := make(project.ConfigsPerType)
-	for _, at := range automationTypes {
+	for _, at := range a.automationTypes {
 		lg := log.WithFields(field.Type(at.Resource))
 
 		resource, ok := automationTypesToResources[at]
@@ -66,7 +82,7 @@ func Download(ctx context.Context, cl client.AutomationClient, projectName strin
 		response, err := func() (automation.ListResponse, error) {
 			ctx, cancel := context.WithTimeout(ctx, time.Minute)
 			defer cancel()
-			return cl.List(ctx, resource)
+			return a.automationSource.List(ctx, resource)
 		}()
 
 		if err != nil {
