@@ -133,7 +133,7 @@ func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
 	for accInfo, accClient := range accountClients {
 		logger := log.WithFields(field.F("account", accInfo.Name))
 		accountDeployer := deployer.NewAccountDeployer(deployer.NewClient(accInfo, accClient), deployer.WithMaxConcurrentDeploys(maxConcurrentDeploys))
-		logger.Info("Deploying configuration for account: %s", accInfo.Name)
+		logger.Info("Deploying configuration for account '%s' (%s)", accInfo.Name, accInfo.AccountUUID)
 		logger.Info("Number of users to deploy: %d", len(resources.Users))
 		if featureflags.ServiceUsers.Enabled() {
 			logger.Info("Number of service users to deploy: %d", len(resources.ServiceUsers))
