@@ -55,7 +55,8 @@ func TestDownloader_Download(t *testing.T) {
 		serverURL, err := url.Parse(server.URL)
 		assert.NoError(t, err)
 		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-		result, err := Download(t.Context(), httpClient, "projectName")
+		automationApi := NewAPI(httpClient)
+		result, err := automationApi.Download(t.Context(), "projectName")
 		assert.Len(t, result, 3)
 		assert.Len(t, result[string(config.Workflow)], 3)
 		assert.Len(t, result[string(config.SchedulingRule)], 6)
@@ -83,8 +84,13 @@ func TestDownloader_Download(t *testing.T) {
 		serverURL, err := url.Parse(server.URL)
 		assert.NoError(t, err)
 		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-		result, err := Download(t.Context(), httpClient, "projectName",
-			config.AutomationType{Resource: config.Workflow}, config.AutomationType{Resource: config.BusinessCalendar})
+		automationApi := NewAPIWithTypes(
+			httpClient,
+			[]config.AutomationType{
+				{Resource: config.Workflow},
+				{Resource: config.BusinessCalendar}},
+		)
+		result, err := automationApi.Download(t.Context(), "projectName")
 		assert.Len(t, result, 2)
 		assert.Len(t, result[string(config.Workflow)], 3)
 		assert.Len(t, result[string(config.SchedulingRule)], 0)
@@ -107,7 +113,11 @@ func TestDownloader_Download(t *testing.T) {
 		assert.NoError(t, err)
 		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 
-		result, err := Download(t.Context(), httpClient, "projectName", config.AutomationType{Resource: config.Workflow})
+		automationApi := NewAPIWithTypes(
+			httpClient,
+			[]config.AutomationType{{Resource: config.Workflow}},
+		)
+		result, err := automationApi.Download(t.Context(), "projectName")
 		assert.NoError(t, err)
 
 		assert.Len(t, result, 1)
@@ -141,7 +151,8 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(t, err)
 	httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-	result, err := Download(t.Context(), httpClient, "projectName")
+	automationApi := NewAPI(httpClient)
+	result, err := automationApi.Download(t.Context(), "projectName")
 	assert.Len(t, result, 2)
 	assert.Len(t, result[string(config.Workflow)], 3)
 	assert.Len(t, result[string(config.SchedulingRule)], 6)

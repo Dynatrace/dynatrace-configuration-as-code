@@ -264,7 +264,7 @@ type Downloadable interface {
 type downloadFn struct {
 	classicDownload      func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (project.ConfigsPerType, error)
 	settingsDownload     func(context.Context, client.SettingsClient, string, settings.Filters, ...config.SettingsType) (project.ConfigsPerType, error)
-	automationDownload   func(context.Context, client.AutomationClient, string, ...config.AutomationType) (project.ConfigsPerType, error)
+	automationDownload   func(automation.Source, ...config.AutomationType) Downloadable
 	bucketDownload       func(bucket.Source) Downloadable
 	documentDownload     func(context.Context, client.DocumentClient, string) (project.ConfigsPerType, error)
 	openPipelineDownload func(context.Context, client.OpenPipelineClient, string) (project.ConfigsPerType, error)
@@ -273,9 +273,11 @@ type downloadFn struct {
 }
 
 var defaultDownloadFn = downloadFn{
-	classicDownload:    classic.Download,
-	settingsDownload:   settings.Download,
-	automationDownload: automation.Download,
+	classicDownload:  classic.Download,
+	settingsDownload: settings.Download,
+	automationDownload: func(source automation.Source, automationTypes ...config.AutomationType) Downloadable {
+		return automation.NewAPIWithTypes(source, automationTypes)
+	},
 	bucketDownload: func(source bucket.Source) Downloadable {
 		return bucket.NewAPI(source)
 	},
@@ -322,7 +324,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 	if opts.onlyOptions.ShouldDownload(OnlyAutomationFlag) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading automation resources")
-			automationCfgs, err := fn.automationDownload(ctx, clientSet.AutClient, opts.projectName)
+			automationCfgs, err := fn.automationDownload(clientSet.AutClient).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
 			}
