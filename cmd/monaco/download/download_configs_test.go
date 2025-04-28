@@ -44,6 +44,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 )
 
@@ -415,7 +416,7 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return nil, nil
 				},
-				bucketDownload: func(client client.BucketClient) Downloadable {
+				bucketDownload: func(source bucket.Source) Downloadable {
 					if !tt.want.bucket {
 						t.Fatalf("bucket download was not meant to be called but was")
 					}
