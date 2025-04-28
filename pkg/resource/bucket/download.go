@@ -47,15 +47,15 @@ type Source interface {
 	List(ctx context.Context) (buckets.ListResponse, error)
 }
 
-type Api struct {
+type API struct {
 	bucketSource Source
 }
 
-func NewApi(bucketSource Source) *Api {
-	return &Api{bucketSource}
+func NewAPI(bucketSource Source) *API {
+	return &API{bucketSource}
 }
 
-func (a Api) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	result := make(project.ConfigsPerType)
 	response, err := a.bucketSource.List(ctx)
 	if err != nil {

@@ -34,15 +34,15 @@ type Source interface {
 	GetAll(ctx context.Context) ([]segments.Response, error)
 }
 
-type Api struct {
+type API struct {
 	segmentSource Source
 }
 
-func NewApi(segmentSource Source) *Api {
-	return &Api{segmentSource}
+func NewAPI(segmentSource Source) *API {
+	return &API{segmentSource}
 }
 
-func (a Api) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{}
 
 	downloadedConfigs, err := a.segmentSource.GetAll(ctx)
