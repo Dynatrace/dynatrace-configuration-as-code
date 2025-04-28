@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package document
+package document_test
 
 import (
 	"net/http"
@@ -34,6 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 )
 
 func TestDownloader_Download(t *testing.T) {
@@ -224,7 +225,8 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		documentClient := documents.NewClient(rest.NewClient(server.URL(), server.Client()))
-		result, err := Download(t.Context(), documentClient, "project")
+		documentApi := document.NewAPI(documentClient)
+		result, err := documentApi.Download(t.Context(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
@@ -249,7 +251,8 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		documentClient := documents.NewClient(rest.NewClient(server.URL(), server.FaultyClient()))
-		result, err := Download(t.Context(), documentClient, "project")
+		documentApi := document.NewAPI(documentClient)
+		result, err := documentApi.Download(t.Context(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 		assert.True(t, true)
@@ -354,7 +357,8 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		documentClient := documents.NewClient(rest.NewClient(server.URL(), server.Client()))
-		result, err := Download(t.Context(), documentClient, "project")
+		documentApi := document.NewAPI(documentClient)
+		result, err := documentApi.Download(t.Context(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
