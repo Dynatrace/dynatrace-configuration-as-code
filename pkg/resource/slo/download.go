@@ -30,13 +30,21 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-type DownloadSloClient interface {
+type Source interface {
 	List(ctx context.Context) (api.PagedListResponse, error)
 }
 
-func Download(ctx context.Context, client DownloadSloClient, projectName string) (project.ConfigsPerType, error) {
+type API struct {
+	sloSource Source
+}
+
+func NewAPI(sloSource Source) *API {
+	return &API{sloSource}
+}
+
+func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{}
-	downloadedConfigs, err := client.List(ctx)
+	downloadedConfigs, err := a.sloSource.List(ctx)
 	if err != nil {
 		log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to fetch the list of existing %s configs: %v", config.ServiceLevelObjectiveID, err)
 		// error is ignored

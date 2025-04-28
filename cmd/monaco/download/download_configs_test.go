@@ -440,11 +440,11 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return DownloadableStub{}
 				},
-				sloDownload: func(ctx context.Context, b slo.DownloadSloClient, s string) (project.ConfigsPerType, error) {
+				sloDownload: func(source slo.Source) Downloadable {
 					if !tt.want.slo {
-						t.Fatalf("slo-v2 download was not meant to be called but was")
+						t.Fatalf("slo download was not meant to be called but was")
 					}
-					return nil, nil
+					return DownloadableStub{}
 				},
 			}
 
