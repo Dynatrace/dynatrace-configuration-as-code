@@ -277,12 +277,12 @@ var defaultDownloadFn = downloadFn{
 	settingsDownload:   settings.Download,
 	automationDownload: automation.Download,
 	bucketDownload: func(source bucket.Source) Downloadable {
-		return bucket.NewApi(source)
+		return bucket.NewAPI(source)
 	},
 	documentDownload:     document.Download,
 	openPipelineDownload: openpipeline.Download,
 	segmentDownload: func(source segment.Source) Downloadable {
-		return segment.NewApi(source)
+		return segment.NewAPI(source)
 	},
 	sloDownload: slo.Download,
 }
