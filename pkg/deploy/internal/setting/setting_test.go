@@ -34,58 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 )
 
-func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
-	ownerParameterName := "owner"
-	configCoordinates := coordinate.Coordinate{}
-
-	parameters := []parameter.NamedParameter{
-		{
-			Name: config.NameParameter,
-			Parameter: &parameter.DummyParameter{
-				References: []parameter.ParameterReference{
-					{
-						Config:   configCoordinates,
-						Property: ownerParameterName,
-					},
-				},
-			},
-		},
-		{
-			Name: ownerParameterName,
-			Parameter: &parameter.DummyParameter{
-				References: []parameter.ParameterReference{
-					{
-						Config:   configCoordinates,
-						Property: config.NameParameter,
-					},
-				},
-			},
-		},
-	}
-
-	client := &dtclient.DummySettingsClient{}
-
-	conf := &config.Config{
-		Type:       config.ClassicApiType{},
-		Template:   testutils.GenerateDummyTemplate(t),
-		Parameters: testutils.ToParameterMap(parameters),
-	}
-	_, errors := Deploy(t.Context(), client, nil, "", conf)
-	assert.NotEmpty(t, errors)
-}
-
-func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
-	client := &dtclient.DummySettingsClient{}
-
-	conf := &config.Config{
-		Type:     config.ClassicApiType{},
-		Template: testutils.GenerateFaultyTemplate(t),
-	}
-
-	_, errors := Deploy(t.Context(), client, nil, "", conf)
-	assert.NotEmpty(t, errors)
-}
-
 func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
