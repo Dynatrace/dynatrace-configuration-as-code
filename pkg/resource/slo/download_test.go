@@ -28,7 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/slo"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
 type stubClient struct {
