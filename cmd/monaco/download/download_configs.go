@@ -282,7 +282,7 @@ var defaultDownloadFn = downloadFn{
 	documentDownload:     document.Download,
 	openPipelineDownload: openpipeline.Download,
 	segmentDownload: func(source segment.Source) Downloadable {
-		return segment.NewSegmentAPI(source)
+		return segment.NewApi(source)
 	},
 	sloDownload: slo.Download,
 }

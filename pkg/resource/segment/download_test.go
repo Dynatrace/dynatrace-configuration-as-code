@@ -55,7 +55,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		segmentApi := segment.NewSegmentAPI(c)
+		segmentApi := segment.NewApi(c)
 		result, err := segmentApi.Download(t.Context(), "project")
 
 		assert.NoError(t, err)
@@ -92,7 +92,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		segmentApi := segment.NewSegmentAPI(c)
+		segmentApi := segment.NewApi(c)
 		result, err := segmentApi.Download(t.Context(), "project")
 
 		assert.NoError(t, err)
@@ -110,7 +110,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		segmentApi := segment.NewSegmentAPI(c)
+		segmentApi := segment.NewApi(c)
 		actual, err := segmentApi.Download(t.Context(), "project")
 
 		assert.NoError(t, err)
@@ -124,7 +124,7 @@ func TestDownloader_Download(t *testing.T) {
 			return []coreLib.Response{}, errors.New("some unexpected error")
 		}}
 
-		segmentApi := segment.NewSegmentAPI(c)
+		segmentApi := segment.NewApi(c)
 		result, err := segmentApi.Download(t.Context(), "project")
 		assert.NoError(t, err)
 		assert.Empty(t, result)
@@ -187,7 +187,7 @@ func TestDownloader_Download(t *testing.T) {
 			return []coreLib.Response{{StatusCode: http.StatusOK, Data: []byte(given)}}, nil
 		}}
 
-		segmentApi := segment.NewSegmentAPI(c)
+		segmentApi := segment.NewApi(c)
 		result, err := segmentApi.Download(t.Context(), "project")
 		assert.NoError(t, err)
 
