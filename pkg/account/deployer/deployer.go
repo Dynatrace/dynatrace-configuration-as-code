@@ -212,7 +212,7 @@ func (d *AccountDeployer) deployPolicies(ctx context.Context, policies map[strin
 			d.logger.Info("Deploying policy '%s'", policy.Name)
 			pUuid, err := d.upsertPolicy(d.logCtx(ctx), policy)
 			if err != nil {
-				errCh <- fmt.Errorf("unable to deploy policy for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+				errCh <- fmt.Errorf("unable to deploy policy '%s' for account %s: %w", policy.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
 			d.idMap.addPolicy(policy.ID, pUuid)
 		}
@@ -228,7 +228,7 @@ func (d *AccountDeployer) deployGroups(ctx context.Context, groups map[string]ac
 			d.logger.Info("Deploying group '%s'", group.Name)
 			gUuid, err := d.upsertGroup(d.logCtx(ctx), group)
 			if err != nil {
-				errCh <- fmt.Errorf("unable to deploy group for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+				errCh <- fmt.Errorf("unable to deploy group '%s' for account %s: %w", group.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
 			d.idMap.addGroup(group.ID, gUuid)
 
@@ -245,7 +245,7 @@ func (d *AccountDeployer) deployUsers(ctx context.Context, users map[string]acco
 			defer wg.Done()
 			d.logger.Info("Deploying user '%s'", user.Email)
 			if _, err := d.upsertUser(d.logCtx(ctx), user); err != nil {
-				errCh <- fmt.Errorf("unable to deploy user for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+				errCh <- fmt.Errorf("unable to deploy user '%s' for account %s: %w", user.Email, d.accClient.getAccountInfo().AccountUUID, err)
 			}
 		}
 		dispatcher.AddJob(deployUserJob)
@@ -260,7 +260,7 @@ func (d *AccountDeployer) deployServiceUsers(ctx context.Context, serviceUsers [
 			defer wg.Done()
 			d.logger.Info("Deploying service user '%s'", serviceUser.Name)
 			if _, err := d.upsertServiceUser(d.logCtx(ctx), serviceUser); err != nil {
-				errCh <- fmt.Errorf("unable to deploy service user for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+				errCh <- fmt.Errorf("unable to deploy service user '%s' for account %s: %w", serviceUser.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
 		}
 		dispatcher.AddJob(deployServiceUserJob)
@@ -276,11 +276,11 @@ func (d *AccountDeployer) deployGroupBindings(ctx context.Context, groups map[ac
 		updateBindingsJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
 			if err := d.updateGroupPolicyBindings(d.logCtx(ctx), group); err != nil {
-				errCh <- fmt.Errorf("unable to deploy policy binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+				errCh <- fmt.Errorf("unable to update policy bindings for group '%s' for account %s: %w", group.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
 
 			if err := d.updateGroupPermissions(d.logCtx(ctx), group); err != nil {
-				errCh <- fmt.Errorf("unable to deploy permissions for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+				errCh <- fmt.Errorf("unable to update permissions for group '%s' for account %s: %w", group.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
 		}
 
@@ -297,7 +297,7 @@ func (d *AccountDeployer) deployUserBindings(ctx context.Context, users map[acco
 				defer wg.Done()
 				d.logger.Info("Updating group bindings for user '%s'", user.Email)
 				if err := d.updateUserGroupBindings(d.logCtx(ctx), user); err != nil {
-					errCh <- fmt.Errorf("unable to deploy user binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+					errCh <- fmt.Errorf("unable to update bindings for user '%s' for account %s: %w", user.Email, d.accClient.getAccountInfo().AccountUUID, err)
 				}
 			}
 
@@ -314,7 +314,7 @@ func (d *AccountDeployer) deployServiceUserBindings(ctx context.Context, service
 				defer wg.Done()
 				d.logger.Info("Updating group bindings for service user '%s'", serviceUser.Name)
 				if err := d.updateServiceUserGroupBindings(d.logCtx(ctx), serviceUser); err != nil {
-					errCh <- fmt.Errorf("unable to deploy user binding for account %s: %w", d.accClient.getAccountInfo().AccountUUID, err)
+					errCh <- fmt.Errorf("unable to update bindings for service user '%s' for account %s: %w", serviceUser.Name, d.accClient.getAccountInfo().AccountUUID, err)
 				}
 			}
 		dispatcher.AddJob(deployUserBindingsJob)
