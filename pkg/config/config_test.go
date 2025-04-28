@@ -20,14 +20,18 @@ package config
 
 import (
 	"errors"
+	"testing"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
+	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type entityLookup map[coordinate.Coordinate]entities.ResolvedEntity
@@ -355,6 +359,17 @@ func TestValidateParameterReferencesShouldFailWhenReferencingUnknownConfig(t *te
 	assert.NotEmpty(t, errs, "should return errors (no errors: %d)", len(errs))
 }
 
+func TestConfig_Render_ErrorsOnInvalidJson(t *testing.T) {
+	c := Config{
+		Template:   generateFaultyTemplate(t),
+		Coordinate: coordinate.Coordinate{},
+		Type:       SettingsType{},
+	}
+
+	_, err := c.Render(nil)
+	assert.ErrorAs(t, err, &configErrors.InvalidJsonError{})
+}
+
 func toParameterMap(params []parameter.NamedParameter) map[string]parameter.Parameter {
 	result := make(map[string]parameter.Parameter)
 
@@ -370,6 +385,12 @@ func generateDummyTemplate(t *testing.T) template.Template {
 	assert.NoError(t, err)
 	templ := template.NewInMemoryTemplate("deploy_test-"+newUUID.String(), "{}")
 	return templ
+}
+
+func generateFaultyTemplate(t *testing.T) template.Template {
+	newUUID, err := uuid.NewUUID()
+	require.NoError(t, err)
+	return template.NewInMemoryTemplate("deploy_test-"+newUUID.String(), "{")
 }
 
 func TestConfigMethodsAreNilSafe(t *testing.T) {
