@@ -22,12 +22,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	escTemplate "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/templatetools"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -43,17 +43,21 @@ func (s skipErr) Error() string {
 	return s.msg
 }
 
+type Source interface {
+	List(ctx context.Context) (buckets.ListResponse, error)
+}
+
 type Api struct {
-	client client.BucketClient
+	bucketSource Source
 }
 
-func NewApi(client client.BucketClient) *Api {
-	return &Api{client}
+func NewApi(bucketSource Source) *Api {
+	return &Api{bucketSource}
 }
 
-func (b Api) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a Api) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	result := make(project.ConfigsPerType)
-	response, err := b.client.List(ctx)
+	response, err := a.bucketSource.List(ctx)
 	if err != nil {
 		log.WithFields(field.Type("bucket"), field.Error(err)).Error("Failed to fetch all bucket definitions: %v", err)
 		return nil, nil

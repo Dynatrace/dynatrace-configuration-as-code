@@ -265,7 +265,7 @@ type downloadFn struct {
 	classicDownload      func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (project.ConfigsPerType, error)
 	settingsDownload     func(context.Context, client.SettingsClient, string, settings.Filters, ...config.SettingsType) (project.ConfigsPerType, error)
 	automationDownload   func(context.Context, client.AutomationClient, string, ...config.AutomationType) (project.ConfigsPerType, error)
-	bucketDownload       func(client.BucketClient) Downloadable
+	bucketDownload       func(bucket.Source) Downloadable
 	documentDownload     func(context.Context, client.DocumentClient, string) (project.ConfigsPerType, error)
 	openPipelineDownload func(context.Context, client.OpenPipelineClient, string) (project.ConfigsPerType, error)
 	segmentDownload      func(segment.Source) Downloadable
@@ -276,8 +276,8 @@ var defaultDownloadFn = downloadFn{
 	classicDownload:    classic.Download,
 	settingsDownload:   settings.Download,
 	automationDownload: automation.Download,
-	bucketDownload: func(bucketClient client.BucketClient) Downloadable {
-		return bucket.NewApi(bucketClient)
+	bucketDownload: func(source bucket.Source) Downloadable {
+		return bucket.NewApi(source)
 	},
 	documentDownload:     document.Download,
 	openPipelineDownload: openpipeline.Download,
