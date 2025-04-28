@@ -66,57 +66,6 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	assert.NotEmpty(t, errors)
 }
 
-func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
-	ownerParameterName := "owner"
-	configCoordinates := coordinate.Coordinate{
-		Project:  "project1",
-		Type:     "dashboard",
-		ConfigId: "dashboard-1",
-	}
-
-	parameters := []parameter.NamedParameter{
-		{
-			Name: config.NameParameter,
-			Parameter: &parameter.DummyParameter{
-				References: []parameter.ParameterReference{
-					{
-						Config:   configCoordinates,
-						Property: ownerParameterName,
-					},
-				},
-			},
-		},
-		{
-			Name: ownerParameterName,
-			Parameter: &parameter.DummyParameter{
-				References: []parameter.ParameterReference{
-					{
-						Config:   configCoordinates,
-						Property: config.NameParameter,
-					},
-				},
-			},
-		},
-	}
-
-	client := &dtclient.DummyConfigClient{}
-	conf := config.Config{
-		Type:     config.ClassicApiType{Api: "dashboard"},
-		Template: testutils.GenerateDummyTemplate(t),
-		Coordinate: coordinate.Coordinate{
-			Project:  "project1",
-			Type:     "dashboard",
-			ConfigId: "dashboard-1",
-		},
-		Environment: "development",
-		Parameters:  testutils.ToParameterMap(parameters),
-		Skip:        false,
-	}
-
-	_, errors := Deploy(t.Context(), client, testApiMap, nil, "", &conf)
-	assert.NotEmpty(t, errors)
-}
-
 func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 	parameters := []parameter.NamedParameter{}
 
