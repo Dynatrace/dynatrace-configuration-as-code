@@ -411,7 +411,7 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return nil, nil
 				},
-				automationDownload: func(source automation.Source, automationType ...config.AutomationType) Downloadable {
+				automationDownload: func(source automation.Source) Downloadable {
 					if !tt.want.automation {
 						t.Fatalf("automation download was not meant to be called but was")
 					}
