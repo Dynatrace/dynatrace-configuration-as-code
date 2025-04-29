@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package openpipeline
+package openpipeline_test
 
 import (
 	"net/http"
@@ -26,11 +26,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	openpipelineClients "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 )
 
 func TestDownloader_Download(t *testing.T) {
@@ -115,8 +116,9 @@ func TestDownloader_Download(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
-		opClient := openpipeline.NewClient(rest.NewClient(server.URL(), server.Client()))
-		result, err := Download(t.Context(), opClient, "project")
+		opClient := openpipelineClients.NewClient(rest.NewClient(server.URL(), server.Client()))
+		api := openpipeline.NewAPI(opClient)
+		result, err := api.Download(t.Context(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
@@ -134,8 +136,9 @@ func TestDownloader_Download(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{})
 		defer server.Close()
 
-		opClient := openpipeline.NewClient(rest.NewClient(server.URL(), server.FaultyClient()))
-		result, err := Download(t.Context(), opClient, "project")
+		opClient := openpipelineClients.NewClient(rest.NewClient(server.URL(), server.FaultyClient()))
+		api := openpipeline.NewAPI(opClient)
+		result, err := api.Download(t.Context(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
