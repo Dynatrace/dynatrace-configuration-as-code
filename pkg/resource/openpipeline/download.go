@@ -24,18 +24,27 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/templatetools"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-func Download(ctx context.Context, client client.OpenPipelineClient, projectName string) (project.ConfigsPerType, error) {
+type Source interface {
+	GetAll(context.Context) ([]openpipeline.Response, error)
+}
 
+type API struct {
+	openPipelineSource Source
+}
+
+func NewAPI(source Source) *API {
+	return &API{source}
+}
+
+func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	result := project.ConfigsPerType{string(config.OpenPipelineTypeID): nil}
-
-	all, err := client.GetAll(ctx)
+	all, err := a.openPipelineSource.GetAll(ctx)
 	if err != nil {
 		log.WithFields(field.Type(config.OpenPipelineTypeID), field.Error(err)).Error("Failed to get all configs of type '%s': %v", config.OpenPipelineTypeID, err)
 		return result, nil

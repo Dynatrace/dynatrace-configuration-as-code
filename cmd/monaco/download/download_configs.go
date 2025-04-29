@@ -267,7 +267,7 @@ type downloadFn struct {
 	automationDownload   func(automation.Source) Downloadable
 	bucketDownload       func(bucket.Source) Downloadable
 	documentDownload     func(document.Source) Downloadable
-	openPipelineDownload func(context.Context, client.OpenPipelineClient, string) (project.ConfigsPerType, error)
+	openPipelineDownload func(source openpipeline.Source) Downloadable
 	segmentDownload      func(segment.Source) Downloadable
 	sloDownload          func(slo.Source) Downloadable
 }
@@ -284,7 +284,9 @@ var defaultDownloadFn = downloadFn{
 	documentDownload: func(source document.Source) Downloadable {
 		return document.NewAPI(source)
 	},
-	openPipelineDownload: openpipeline.Download,
+	openPipelineDownload: func(source openpipeline.Source) Downloadable {
+		return openpipeline.NewAPI(source)
+	},
 	segmentDownload: func(source segment.Source) Downloadable {
 		return segment.NewAPI(source)
 	},
@@ -371,7 +373,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 	if featureflags.OpenPipeline.Enabled() && opts.onlyOptions.ShouldDownload(OnlyOpenPipelineFlag) {
 		if opts.auth.OAuth != nil {
 			log.Info("Downloading openpipelines")
-			openPipelineCfgs, err := fn.openPipelineDownload(ctx, clientSet.OpenPipelineClient, opts.projectName)
+			openPipelineCfgs, err := fn.openPipelineDownload(clientSet.OpenPipelineClient).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
 			}

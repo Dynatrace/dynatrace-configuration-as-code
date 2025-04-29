@@ -46,6 +46,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
@@ -430,11 +431,11 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return DownloadableStub{}
 				},
-				openPipelineDownload: func(ctx context.Context, b client.OpenPipelineClient, s string) (project.ConfigsPerType, error) {
+				openPipelineDownload: func(source openpipeline.Source) Downloadable {
 					if !tt.want.openpipeline {
 						t.Fatalf("openpipeline download was not meant to be called but was")
 					}
-					return nil, nil
+					return DownloadableStub{}
 				},
 				segmentDownload: func(source segment.Source) Downloadable {
 					if !tt.want.segment {
