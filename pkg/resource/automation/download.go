@@ -40,38 +40,28 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-type Source interface {
-	List(context.Context, automationAPI.ResourceType) (automation.ListResponse, error)
-}
-
-type API struct {
-	automationSource Source
-	automationTypes  []config.AutomationType
-}
-
-func NewAPI(automationSource Source) *API {
-	return NewAPIWithTypes(automationSource, []config.AutomationType{})
-}
-
-func NewAPIWithTypes(automationSource Source, automationTypes []config.AutomationType) *API {
-	return &API{automationSource, automationTypes}
-}
-
 var automationTypesToResources = map[config.AutomationType]automationAPI.ResourceType{
 	config.AutomationType{Resource: config.Workflow}:         automationAPI.Workflows,
 	config.AutomationType{Resource: config.BusinessCalendar}: automationAPI.BusinessCalendars,
 	config.AutomationType{Resource: config.SchedulingRule}:   automationAPI.SchedulingRules,
 }
 
-// Download downloads all automation resources for a given project
-// If automationTypes is given it will just download those types of automation resources
-func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	if len(a.automationTypes) == 0 {
-		a.automationTypes = maps.Keys(automationTypesToResources)
-	}
+type Source interface {
+	List(context.Context, automationAPI.ResourceType) (automation.ListResponse, error)
+}
 
+type API struct {
+	automationSource Source
+}
+
+func NewAPI(automationSource Source) *API {
+	return &API{automationSource}
+}
+
+// Download downloads all automation resources for a given project
+func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	configsPerType := make(project.ConfigsPerType)
-	for _, at := range a.automationTypes {
+	for _, at := range maps.Keys(automationTypesToResources) {
 		lg := log.WithFields(field.Type(at.Resource))
 
 		resource, ok := automationTypesToResources[at]
