@@ -263,7 +263,7 @@ type Downloadable interface {
 
 type downloadFn struct {
 	classicDownload      func(classic.Source, api.APIs, classic.ContentFilters) Downloadable
-	settingsDownload     func(context.Context, client.SettingsClient, string, settings.Filters, ...config.SettingsType) (project.ConfigsPerType, error)
+	settingsDownload     func(settings.Source, settings.Filters, ...config.SettingsType) Downloadable
 	automationDownload   func(automation.Source) Downloadable
 	bucketDownload       func(bucket.Source) Downloadable
 	documentDownload     func(document.Source) Downloadable
@@ -276,7 +276,9 @@ var defaultDownloadFn = downloadFn{
 	classicDownload: func(source classic.Source, a api.APIs, filters classic.ContentFilters) Downloadable {
 		return classic.NewAPI(source, a, filters)
 	},
-	settingsDownload: settings.Download,
+	settingsDownload: func(source settings.Source, filters settings.Filters, schemaIDs ...config.SettingsType) Downloadable {
+		return settings.NewAPI(source, filters, schemaIDs...)
+	},
 	automationDownload: func(source automation.Source) Downloadable {
 		return automation.NewAPI(source)
 	},
@@ -320,7 +322,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 	if opts.onlyOptions.ShouldDownload(OnlySettingsFlag) {
 		// auth is already validated during load that either token or OAuth is set
 		log.Info("Downloading settings objects")
-		settingCfgs, err := fn.settingsDownload(ctx, clientSet.SettingsClient, opts.projectName, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...)
+		settingCfgs, err := fn.settingsDownload(clientSet.SettingsClient, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...).Download(ctx, opts.projectName)
 		if err != nil {
 			return nil, err
 		}

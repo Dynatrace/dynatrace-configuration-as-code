@@ -33,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -50,29 +49,47 @@ type schema struct {
 	ownerBasedAccessControl *bool
 }
 
-func Download(ctx context.Context, client client.SettingsClient, projectName string, filters Filters, schemaIDs ...config.SettingsType) (project.ConfigsPerType, error) {
-	if len(schemaIDs) == 0 {
-		return downloadAll(ctx, client, projectName, filters)
-	}
+type Source interface {
+	ListSchemas(context.Context) (dtclient.SchemaList, error)
+	List(context.Context, string, dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
+	GetPermission(context.Context, string) (dtclient.PermissionObject, error)
+}
+
+type API struct {
+	settingsSource  Source
+	filters         Filters
+	specificSchemas []string
+}
+
+func NewAPI(settingsSource Source, filters Filters, schemaIDs ...config.SettingsType) *API {
 	var schemas []string
 	for _, s := range schemaIDs {
 		schemas = append(schemas, s.SchemaId)
 	}
-	return downloadSpecific(ctx, client, projectName, schemas, filters)
+
+	return &API{settingsSource, filters, schemas}
 }
 
-func downloadAll(ctx context.Context, client client.SettingsClient, projectName string, filters Filters) (project.ConfigsPerType, error) {
+func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+	if len(a.specificSchemas) == 0 {
+		return downloadAll(ctx, a.settingsSource, projectName, a.filters)
+	}
+
+	return downloadSpecific(ctx, a.settingsSource, projectName, a.specificSchemas, a.filters)
+}
+
+func downloadAll(ctx context.Context, settingsSource Source, projectName string, filters Filters) (project.ConfigsPerType, error) {
 	log.Debug("Fetching all schemas to download")
-	schemas, err := fetchAllSchemas(ctx, client)
+	schemas, err := fetchAllSchemas(ctx, settingsSource)
 	if err != nil {
 		return nil, err
 	}
 
-	return download(ctx, client, schemas, projectName, filters), nil
+	return download(ctx, settingsSource, schemas, projectName, filters), nil
 }
 
-func downloadSpecific(ctx context.Context, client client.SettingsClient, projectName string, schemaIDs []string, filters Filters) (project.ConfigsPerType, error) {
-	schemas, err := fetchSchemas(ctx, client, schemaIDs)
+func downloadSpecific(ctx context.Context, settingsSource Source, projectName string, schemaIDs []string, filters Filters) (project.ConfigsPerType, error) {
+	schemas, err := fetchSchemas(ctx, settingsSource, schemaIDs)
 	if err != nil {
 		return project.ConfigsPerType{}, err
 	}
@@ -84,11 +101,11 @@ func downloadSpecific(ctx context.Context, client client.SettingsClient, project
 	}
 
 	log.Debug("Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
-	result := download(ctx, client, schemas, projectName, filters)
+	result := download(ctx, settingsSource, schemas, projectName, filters)
 	return result, nil
 }
 
-func fetchAllSchemas(ctx context.Context, cl client.SettingsClient) ([]schema, error) {
+func fetchAllSchemas(ctx context.Context, cl Source) ([]schema, error) {
 	dlSchemas, err := cl.ListSchemas(ctx)
 	if err != nil {
 		return nil, err
@@ -106,7 +123,7 @@ func fetchAllSchemas(ctx context.Context, cl client.SettingsClient) ([]schema, e
 	return schemas, nil
 }
 
-func fetchSchemas(ctx context.Context, cl client.SettingsClient, schemaIds []string) ([]schema, error) {
+func fetchSchemas(ctx context.Context, cl Source, schemaIds []string) ([]schema, error) {
 	dlSchemas, err := cl.ListSchemas(ctx)
 	if err != nil {
 		return nil, err
@@ -131,7 +148,7 @@ func fetchSchemas(ctx context.Context, cl client.SettingsClient, schemaIds []str
 	return schemas, nil
 }
 
-func download(ctx context.Context, client client.SettingsClient, schemas []schema, projectName string, filters Filters) project.ConfigsPerType {
+func download(ctx context.Context, settingsSource Source, schemas []schema, projectName string, filters Filters) project.ConfigsPerType {
 	results := make(project.ConfigsPerType, len(schemas))
 	downloadMutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
@@ -143,7 +160,7 @@ func download(ctx context.Context, client client.SettingsClient, schemas []schem
 			lg := log.WithFields(field.Type(s.id))
 
 			lg.Debug("Downloading all settings for schema '%s'", s.id)
-			objects, err := client.List(ctx, s.id, dtclient.ListSettingsOptions{})
+			objects, err := settingsSource.List(ctx, s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				errMsg := extractApiErrorMessage(err)
 				lg.WithFields(field.Error(err)).Error("Failed to fetch all settings for schema '%s': %v", s.id, errMsg)
@@ -153,7 +170,7 @@ func download(ctx context.Context, client client.SettingsClient, schemas []schem
 			permissions := make(map[string]dtclient.PermissionObject)
 			if s.ownerBasedAccessControl != nil && *s.ownerBasedAccessControl && featureflags.AccessControlSettings.Enabled() {
 				var permErr error
-				permissions, permErr = getObjectsPermission(ctx, client, objects)
+				permissions, permErr = getObjectsPermission(ctx, settingsSource, objects)
 				if permErr != nil {
 					errMsg := extractApiErrorMessage(permErr)
 					lg.WithFields(field.Error(permErr)).Error("Failed to fetch settings permissions for schema '%s': %v", s.id, errMsg)
@@ -190,7 +207,7 @@ func extractApiErrorMessage(err error) string {
 	return err.Error()
 }
 
-func getObjectsPermission(ctx context.Context, client client.SettingsClient, objects []dtclient.DownloadSettingsObject) (map[string]dtclient.PermissionObject, error) {
+func getObjectsPermission(ctx context.Context, settingsSource Source, objects []dtclient.DownloadSettingsObject) (map[string]dtclient.PermissionObject, error) {
 	type result struct {
 		Permission dtclient.PermissionObject
 		ObjectId   string
@@ -203,7 +220,7 @@ func getObjectsPermission(ctx context.Context, client client.SettingsClient, obj
 	permissions := make(map[string]dtclient.PermissionObject)
 	for _, obj := range objects {
 		go func(ctx context.Context, obj dtclient.DownloadSettingsObject) {
-			permission, err := client.GetPermission(ctx, obj.ObjectId)
+			permission, err := settingsSource.GetPermission(ctx, obj.ObjectId)
 			resChan <- result{permission, obj.ObjectId, err}
 		}(ctx, obj)
 	}

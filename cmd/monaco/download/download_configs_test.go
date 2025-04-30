@@ -407,11 +407,11 @@ func TestDownload_Options(t *testing.T) {
 					}
 					return DownloadableStub{}
 				},
-				settingsDownload: func(ctx context.Context, settingsClient client.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (project.ConfigsPerType, error) {
+				settingsDownload: func(source settings.Source, filters settings.Filters, settingsType ...config.SettingsType) Downloadable {
 					if !tt.want.settings {
 						t.Fatalf("settings download was not meant to be called but was")
 					}
-					return nil, nil
+					return DownloadableStub{}
 				},
 				automationDownload: func(source automation.Source) Downloadable {
 					if !tt.want.automation {
