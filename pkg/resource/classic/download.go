@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2024 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -39,7 +39,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
 func Download(ctx context.Context, client client.ConfigClient, projectName string, apisToDownload api.APIs, filters ContentFilters) (project.ConfigsPerType, error) {

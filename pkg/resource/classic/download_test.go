@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2024 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,8 +21,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -30,12 +28,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
 )
 
 func TestDownload_KeyUserActionMobile(t *testing.T) {
@@ -83,7 +82,7 @@ func TestDownload_KeyUserActionWeb(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
 	ctx := t.Context()
 	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
-	c.EXPECT().List(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
+	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID"))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}}, nil)
 	c.EXPECT().Get(ctx, gomock.Any(), "").Return([]byte(`{"keyUserActionList":[{"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"}]}`), nil)
 
 	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{api.KeyUserActionsWeb}))
@@ -105,7 +104,7 @@ func TestDownload_KeyUserActionWeb_Uniqness(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
 	ctx := t.Context()
 	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.ApplicationWeb))).Return([]dtclient.Value{{Id: "applicationID", Name: "web application name"}}, nil)
-	c.EXPECT().List(ctx, matcher.EqAPI((apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID2", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID3", Name: "the_name"}}, nil)
+	c.EXPECT().List(ctx, matcher.EqAPI(apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID"))).Return([]dtclient.Value{{Id: "APPLICATION_METHOD-ID", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID2", Name: "the_name"}, {Id: "APPLICATION_METHOD-ID3", Name: "the_name"}}, nil)
 	c.EXPECT().Get(ctx, matcher.EqAPI(apiGet(api.KeyUserActionsWeb).ApplyParentObjectID("applicationID")), "").Return([]byte(`{
 "keyUserActionList":[
   {"name":"the_name","actionType":"Load","domain":"dt.com","meIdentifier":"APPLICATION_METHOD-ID"},
