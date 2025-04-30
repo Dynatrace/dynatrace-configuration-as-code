@@ -1,8 +1,8 @@
 //go:build unit
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,10 +19,12 @@
 package classic
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func Test_AllDefinedApiFiltersHaveApis(t *testing.T) {
