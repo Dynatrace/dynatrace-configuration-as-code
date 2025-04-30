@@ -33,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
@@ -43,6 +42,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 

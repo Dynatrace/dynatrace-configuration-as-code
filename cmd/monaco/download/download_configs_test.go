@@ -39,7 +39,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
@@ -48,6 +47,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
