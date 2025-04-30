@@ -86,31 +86,49 @@ More examples can be found [here](https://www.conventionalcommits.org/en/v1.0.0/
 
 ## Code of Conduct and Shared Values
 
-Before contributing, please read and approve [our Code Of Conduct](https://github.com/dynatrace/dynatrace-configuration-as-code/blob/main/CODE_OF_CONDUCT.md) outlining our shared values and expectations. 
+Before contributing, please read and approve [our Code Of Conduct](./CODE_OF_CONDUCT.md) outlining our shared values and expectations. 
 
 ## Building the Dynatrace Configuration as Code Tool
 
-The `monaco` tool is written in [Go](https://golang.org/), so you'll need to have [installed Go](https://golang.org/dl/) to build it.  
+This section describes how to build and test Monaco.  
 
-To build the tool, run `make build` in the repository root folder.
+### Requirements
+* Latest [Go] version
 
-**_NOTE:_**  `$GOPATH/bin` is required to be loaded in your `$PATH`
+[Go]: https://golang.org/
 
-> This guide references the make target for each step. If you want to see the actual Go commands take a look at the [Makefile](./Makefile)
+### Building Monaco
+To build Monaco, execute the following command in the repository root folder:
+```shell
+go build ./cmd/monaco
+```
 
-To install the tool to your machine, run `make install` in the repository root folder.
+This command builds the `monaco` executable which then can be executed with:
+```shell
+./monaco version
+```
 
-This will create a `monaco` executable you can use.
+### Install Monaco from source
 
-To build a platform-specific executable, run: `GOOS={OS} GOARCH={ARCH} make build`.
+To install Monaco from source, execute the following command in the repository root folder:
+```shell
+go install ./cmd/monaco
+```
 
-For example, a Windows executable can be built with `GOOS=windows GOARCH=386 make build BINARY=monaco.exe`.
+This will create a `monaco` executable and install it inside the path `$GOBIN` (defaults to `$GOPATH/bin`).
 
 ## Testing the Dynatrace Configuration as Code Tool
 
-Run the unit tests for the whole module with `make test` in the root folder.
+To run the unit tests for Monaco, execute the following commands in the repository root folder:
+```shell
+# Generate mock files
+go generate ./...
 
-For convenience, single package tests can be run with `make test-package pkg={PACKAGE}` - e.g. `make test-package pkg=api`.
+# Execute all tests
+go test -tags=unit -v -race ./...
+```ª
+
+Note: The `go generate ./...` command must only be executed if the source files changed, not on every test run.
 
 ### Integration Tests
 
@@ -138,8 +156,6 @@ Instead, whenever you need to test a path, make sure to do it in one of these wa
 * Use the public function `ReplacePathSeparators`, which replaces path separators in a given string with `os.PathSeparator`
 
 We use [github.com/stretchr/testify](github.com/stretchr/testify) as our testing library.
-
-> You might still find `gotest.tools` used for asserts in a few places, as it's being replaced. If you change a test file using it, replace it.
  
 We use `require` for asserting test requirements after which it makes no sense to continue - e.g. no error was returned, a slice has the expected length, pointers aren't nil, etc. - as it will fail the test immediately and exit. 
 
