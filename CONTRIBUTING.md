@@ -1,31 +1,28 @@
-# Contributing to the Configuration as Code Tool Monaco
+# Contributing to the Configuration as Code Tool `Monaco`
 
-- [Contributing to the Configuration as Code Tool Monaco](#contributing-to-the-configuration-as-code-tool-monaco)
-  - [What to contribute](#what-to-contribute)
-  - [How to contribute](#how-to-contribute)
-  - [Examples of Commit Style Messages](#examples-of-commit-style-messages)
-  - [Code of Conduct and Shared Values](#code-of-conduct-and-shared-values)
-  - [Building the Dynatrace Configuration as Code Tool](#building-the-dynatrace-configuration-as-code-tool)
-  - [Testing the Dynatrace Configuration as Code Tool](#testing-the-dynatrace-configuration-as-code-tool)
-    - [Integration Tests](#integration-tests)
-    - [Writing Tests](#writing-tests)
-  - [Checking in go mod and sum files](#checking-in-go-mod-and-sum-files)
-  - [General information on code](#general-information-on-code)
-    - [Test Mocks](#test-mocks)
-    - [Formatting](#formatting)
-  - [Pre-Commit Hook](#pre-commit-hook)
-  - [A note on Dynatrace APIs](#a-note-on-dynatrace-apis)
+Thank you for considering contributing to Monaco.
+We welcome contributions from the community to help improve and expand Monaco's capabilities.
+Please follow the guidelines below to ensure a smooth contribution process.
+
+- [What to contribute](#what-to-contribute)
+- [How to contribute](#how-to-contribute)
+  - [Commit structure](#Commits)
+- [Code of Conduct and Shared Values](#code-of-conduct-and-shared-values)
+- [Building the Dynatrace Configuration as Code Tool](#building-the-dynatrace-configuration-as-code-tool)
+- [Testing the Dynatrace Configuration as Code Tool](#testing-the-dynatrace-configuration-as-code-tool)
+  - [Integration Tests](#integration-tests)
+  - [Writing Tests](#writing-tests)
+- [Checking in go mod and sum files](#checking-in-go-mod-and-sum-files)
+- [General information on code](#general-information-on-code)
+  - [Test Mocks](#test-mocks)
+  - [Formatting](#formatting)
+- [Pre-Commit Hook](#pre-commit-hook)
+- [A note on Dynatrace APIs](#a-note-on-dynatrace-apis)
 
 ## What to contribute
 
-This tool was created out of the following needs but not limited to:
-
-* Provide an easy way to deploy numerous Dynatrace configurations for several applications across different environments such as Development, Pre-production, and Production environments to maintain consistency.
-
+Monaco was created to easily manage Dynatrace configurations at scale across different Dynatrace environments and accounts.
 Thus, this tool aims to provide a way to reproducibly deploy Dynatrace configuration in a "configuration as code"-way.
-
-As with all things Dynatrace, scalability is an important requirement, both in the number of configuration files and the number of environments.
-This is also the area currently offering the most opportunity to improve the tool.
 
 ## How to contribute
 
@@ -38,39 +35,50 @@ This allows being respectful of the time of community contributors.
 
 The repo follows a relatively standard branching & PR workflow.
 
-Branches naming follows the `feature/{Issue}/{description}` or `bugfix/{Issue}/{description}` pattern.
-
-Branches are rebased, and only fast-forward merges to main are permitted. No merge commits.
+Branches naming follows the `feature/{Issue}/{description}` or `bugfix/{Issue}/{description}` pattern. \
+Branches are rebased, and only fast-forward merges to main are permitted. \
+No merge commits.
 
 By default, commits are not auto-squashed when merging a PR, so please ensure your commits are fit to go into main.
 
 For convenience auto-squashing all PR commits into a single one is an optional merge strategy - but we strive for [atomic commits](https://www.freshconsulting.com/insights/blog/atomic-commits/)
 with [good commit messages](https://cbea.ms/git-commit/) in main, so not auto-squashing is recommended.
 
-Commits should conform to  [Conventional Commit](https://www.conventionalcommits.org/) standard.
+### Commits
 
-### Examples of Commit Style Messages
+Each commit must conform to a [Conventional Commit], with a [good commit message] and [atomic commits].
 
-New Feature Changes
+[Conventional Commit]: https://www.conventionalcommits.org/
+[good commit message]: https://cbea.ms/git-commit/
+[atomic commits]: https://dev.to/samuelfaure/how-atomic-git-commits-dramatically-increased-my-productivity-and-will-increase-yours-too-4a84
+
+#### Conventional commits - prefixes
+
+* Production code
+  * `feat`: New code has been written to support a new feature
+  * `fix`: Bug fix of production code (not in build scripts)
+  * `refactor`: Refactor production code
+  * `test`: Add missing tests, refactor tests, ... 
+* Non-production code
+  * `ci`: Build system changes (workflows, linting, ...) 
+  * `chore`: Updating non-production code (that is not `ci:`) 
+  * `docs`: Changes to the documentation (not GoDoc documentation)
+
+#### Examples
+
+**New feature change**
 ``` 
-feat: allow provided config object to extend other configs
+feat: Add support for federated attribute values in account groups
+
+This change adds support for `federatedAttributeValues` to account groups.
+This allows Monaco to deploy groups with owner `SAML`.
 ```
 
 Bug Fix Changes
 ```
-fix: change function call
+fix: Very important feature misbehaved
 
-see the issue for details
-
-on typos fixed.
-
-Reviewed-by: Z
-Refs #133 
-```
-
-Documentation Changes
-```
-docs: correct getting started guide 
+Instead of thing A, B happened. This change fixes this behavior by introducing C and checking for D.
 ```
 
 More examples can be found [here](https://www.conventionalcommits.org/en/v1.0.0/#examples)
@@ -82,7 +90,7 @@ Before contributing, please read and approve [our Code Of Conduct](https://githu
 
 ## Building the Dynatrace Configuration as Code Tool
 
-The `monaco` tool is written in [Go](https://golang.org/), so you'll need to have [installed Go](https://golang.org/dl/) to build it.
+The `monaco` tool is written in [Go](https://golang.org/), so you'll need to have [installed Go](https://golang.org/dl/) to build it.  
 
 To build the tool, run `make build` in the repository root folder.
 
