@@ -262,7 +262,7 @@ type Downloadable interface {
 }
 
 type downloadFn struct {
-	classicDownload      func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (project.ConfigsPerType, error)
+	classicDownload      func(classic.Source, api.APIs, classic.ContentFilters) Downloadable
 	settingsDownload     func(context.Context, client.SettingsClient, string, settings.Filters, ...config.SettingsType) (project.ConfigsPerType, error)
 	automationDownload   func(automation.Source) Downloadable
 	bucketDownload       func(bucket.Source) Downloadable
@@ -273,7 +273,9 @@ type downloadFn struct {
 }
 
 var defaultDownloadFn = downloadFn{
-	classicDownload:  classic.Download,
+	classicDownload: func(source classic.Source, a api.APIs, filters classic.ContentFilters) Downloadable {
+		return classic.NewAPI(source, a, filters)
+	},
 	settingsDownload: settings.Download,
 	automationDownload: func(source automation.Source) Downloadable {
 		return automation.NewAPI(source)
@@ -303,7 +305,7 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 	if opts.onlyOptions.ShouldDownload(OnlyApisFlag) {
 		if opts.auth.Token != nil {
 			log.Info("Downloading configuration objects")
-			classicCfgs, err := fn.classicDownload(ctx, clientSet.ConfigClient, opts.projectName, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters)
+			classicCfgs, err := fn.classicDownload(clientSet.ConfigClient, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
 			}

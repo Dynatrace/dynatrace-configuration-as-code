@@ -51,7 +51,8 @@ func TestDownload_KeyUserActionMobile(t *testing.T) {
 	c.EXPECT().Get(t.Context(), apiMap[api.ApplicationMobile], applicationId).Return([]byte(`{"keyUserActions": [{"name": "abc"}]}`), nil).Times(1)
 	c.EXPECT().Get(t.Context(), apiMap[api.KeyUserActionsMobile].ApplyParentObjectID(applicationId), "").Return([]byte(`{}`), nil).Times(1)
 
-	configurations, err := classic.Download(t.Context(), c, "project", apiMap, classic.ApiContentFilters)
+	classicAPI := classic.NewAPI(c, apiMap, classic.ApiContentFilters)
+	configurations, err := classicAPI.Download(t.Context(), "project")
 	require.NoError(t, err)
 	assert.Len(t, configurations, 2, "Expected two configurations downloaded")
 
@@ -87,7 +88,8 @@ func TestDownload_KeyUserActionWeb(t *testing.T) {
 
 	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{api.KeyUserActionsWeb}))
 
-	configurations, err := classic.Download(t.Context(), c, "project", apiMap, map[string]classic.ContentFilter{})
+	classicAPI := classic.NewAPI(c, apiMap, map[string]classic.ContentFilter{})
+	configurations, err := classicAPI.Download(t.Context(), "project")
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 	gotConfig := configurations[api.KeyUserActionsWeb][0]
@@ -114,7 +116,8 @@ func TestDownload_KeyUserActionWeb_Uniqness(t *testing.T) {
 
 	apiMap := api.NewAPIs().Filter(api.RetainByName([]string{api.KeyUserActionsWeb}))
 
-	configurations, err := classic.Download(t.Context(), c, "project", apiMap, map[string]classic.ContentFilter{})
+	classicAPI := classic.NewAPI(c, apiMap, map[string]classic.ContentFilter{})
+	configurations, err := classicAPI.Download(t.Context(), "project")
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 	assert.Len(t, configurations[api.KeyUserActionsWeb], 3)
@@ -135,7 +138,8 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 		},
 	}}
 
-	configurations, err := classic.Download(t.Context(), c, "project", toAPIs(api1, api2), filters)
+	classicAPI := classic.NewAPI(c, toAPIs(api1, api2), filters)
+	configurations, err := classicAPI.Download(t.Context(), "project")
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
@@ -184,7 +188,8 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 			t.Setenv(featureflags.DownloadFilterClassicConfigs.EnvName(), strconv.FormatBool(tt.withFiltering))
 			t.Setenv(featureflags.DownloadFilter.EnvName(), strconv.FormatBool(tt.withFiltering))
 
-			configurations, err := classic.Download(t.Context(), c, "project", toAPIs(api1, api2), filters)
+			classicAPI := classic.NewAPI(c, toAPIs(api1, api2), filters)
+			configurations, err := classicAPI.Download(t.Context(), "project")
 			assert.NoError(t, err)
 			assert.Len(t, configurations, tt.wantDownloadedConfigs)
 		})
@@ -206,7 +211,8 @@ func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 		},
 	}}
 
-	configurations, err := classic.Download(t.Context(), c, "project", toAPIs(api1, api2), filters)
+	classicAPI := classic.NewAPI(c, toAPIs(api1, api2), filters)
+	configurations, err := classicAPI.Download(t.Context(), "project")
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
 }
@@ -312,7 +318,8 @@ func Test_generalCases(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), m.id).Return([]byte(m.response), m.err)
 			}
 
-			actual, err := classic.Download(t.Context(), c, "project", toAPIs(api1, api2), classic.ApiContentFilters)
+			classicAPI := classic.NewAPI(c, toAPIs(api1, api2), classic.ApiContentFilters)
+			actual, err := classicAPI.Download(t.Context(), "project")
 
 			require.NoError(t, err)
 			require.Len(t, actual, len(tc.expectedKeys))
@@ -357,7 +364,8 @@ func TestDownload_SkippedParentsSkipChildren(t *testing.T) {
 	c := client.NewMockConfigClient(gomock.NewController(t))
 	c.EXPECT().List(gomock.Any(), matcher.EqAPI(parentAPI)).Return([]dtclient.Value{{Id: "PARENT_ID_1", Name: "PARENT_NAME_1"}}, nil).Times(2)
 
-	configurations, err := classic.Download(t.Context(), c, "project", apiMap, contentFilters)
+	classicAPI := classic.NewAPI(c, apiMap, contentFilters)
+	configurations, err := classicAPI.Download(t.Context(), "project")
 	require.NoError(t, err)
 	assert.Len(t, configurations, 0, "Expected no configurations as everything is skipped")
 }

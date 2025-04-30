@@ -401,11 +401,11 @@ func TestDownload_Options(t *testing.T) {
 			}
 
 			fn := downloadFn{
-				classicDownload: func(context.Context, client.ConfigClient, string, api.APIs, classic.ContentFilters) (project.ConfigsPerType, error) {
+				classicDownload: func(source classic.Source, a api.APIs, filters classic.ContentFilters) Downloadable {
 					if !tt.want.config {
 						t.Fatalf("classic config download was not meant to be called but was")
 					}
-					return nil, nil
+					return DownloadableStub{}
 				},
 				settingsDownload: func(ctx context.Context, settingsClient client.SettingsClient, s string, filters settings.Filters, settingsType ...config.SettingsType) (project.ConfigsPerType, error) {
 					if !tt.want.settings {

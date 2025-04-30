@@ -31,7 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -42,20 +41,35 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-func Download(ctx context.Context, client client.ConfigClient, projectName string, apisToDownload api.APIs, filters ContentFilters) (project.ConfigsPerType, error) {
-	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
-	results := make(project.ConfigsPerType, len(apisToDownload))
+type Source interface {
+	Get(context.Context, api.API, string) ([]byte, error)
+	List(context.Context, api.API) ([]dtclient.Value, error)
+}
+
+type API struct {
+	configSource   Source
+	apisToDownload api.APIs
+	filters        ContentFilters
+}
+
+func NewAPI(configSource Source, apisToDownload api.APIs, filters ContentFilters) *API {
+	return &API{configSource, apisToDownload, filters}
+}
+
+func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(a.apisToDownload), "\n - "))
+	results := make(project.ConfigsPerType, len(a.apisToDownload))
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	wg.Add(len(apisToDownload))
+	wg.Add(len(a.apisToDownload))
 
 	log.Debug("Fetching configs to download")
 	startTime := time.Now()
-	for _, currentApi := range apisToDownload {
+	for _, currentApi := range a.apisToDownload {
 		go func() {
 			defer wg.Done()
 
-			foundValues, err := findConfigsToDownload(ctx, client, currentApi, filters)
+			foundValues, err := findConfigsToDownload(ctx, a.configSource, currentApi, a.filters)
 			if err != nil {
 				log.WithFields(field.Error(err), field.Type(currentApi.ID)).Error("Failed to fetch configs of type '%s', skipping download of this type. Reason: %v", currentApi.ID, err)
 				return
@@ -63,14 +77,14 @@ func Download(ctx context.Context, client client.ConfigClient, projectName strin
 
 			foundValues = checkAndRemoveValuesWithDuplicateIDs(currentApi, foundValues)
 
-			foundValues = filterConfigsToSkip(currentApi, foundValues, filters)
+			foundValues = filterConfigsToSkip(currentApi, foundValues, a.filters)
 			if len(foundValues) == 0 {
 				log.WithFields(field.Type(currentApi.ID)).Debug("No configs of type '%s' to download", currentApi.ID)
 				return
 			}
 
 			log.WithFields(field.Type(currentApi.ID)).Debug("Found %d configs of type '%s' to download", len(foundValues), currentApi.ID)
-			if configs := downloadConfigs(ctx, client, currentApi, foundValues, projectName, filters); len(configs) > 0 {
+			if configs := downloadConfigs(ctx, a.configSource, currentApi, foundValues, projectName, a.filters); len(configs) > 0 {
 				mutex.Lock()
 				results[currentApi.ID] = configs
 				mutex.Unlock()
@@ -100,7 +114,7 @@ func checkAndRemoveValuesWithDuplicateIDs(api api.API, originalValues values) va
 	return filteredValues
 }
 
-func downloadConfigs(ctx context.Context, client client.ConfigClient, api api.API, configsToDownload values, projectName string, filters ContentFilters) []config.Config {
+func downloadConfigs(ctx context.Context, configSource Source, api api.API, configsToDownload values, projectName string, filters ContentFilters) []config.Config {
 	var results []config.Config
 
 	mutex := sync.Mutex{}
@@ -110,7 +124,7 @@ func downloadConfigs(ctx context.Context, client client.ConfigClient, api api.AP
 		go func() {
 			defer wg.Done()
 
-			dlConfigs, err := download(ctx, client, api, v)
+			dlConfigs, err := download(ctx, configSource, api, v)
 			if err != nil {
 				log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Warn("Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
 				return
@@ -166,7 +180,7 @@ func (v value) id() string {
 
 // findConfigsToDownload tries to identify all values that should be downloaded from a Dynatrace environment for
 // the given API
-func findConfigsToDownload(ctx context.Context, client client.ConfigClient, apiToDownload api.API, filters ContentFilters) (values, error) {
+func findConfigsToDownload(ctx context.Context, configSource Source, apiToDownload api.API, filters ContentFilters) (values, error) {
 	if apiToDownload.SingleConfiguration && !apiToDownload.HasParent() {
 		log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching singleton-configuration '%v'", apiToDownload.ID)
 
@@ -178,7 +192,7 @@ func findConfigsToDownload(ctx context.Context, client client.ConfigClient, apiT
 
 	if apiToDownload.HasParent() {
 		var res values
-		parentAPIValues, err := client.List(ctx, *apiToDownload.Parent)
+		parentAPIValues, err := configSource.List(ctx, *apiToDownload.Parent)
 		if err != nil {
 			return values{}, err
 		}
@@ -194,7 +208,7 @@ func findConfigsToDownload(ctx context.Context, client client.ConfigClient, apiT
 				continue
 			}
 
-			apiValues, err := client.List(ctx, apiToDownload.ApplyParentObjectID(parentAPIValue.Id))
+			apiValues, err := configSource.List(ctx, apiToDownload.ApplyParentObjectID(parentAPIValue.Id))
 			if err != nil {
 				return values{}, err
 			}
@@ -206,7 +220,7 @@ func findConfigsToDownload(ctx context.Context, client client.ConfigClient, apiT
 	}
 
 	var res values
-	vals, err := client.List(ctx, apiToDownload)
+	vals, err := configSource.List(ctx, apiToDownload)
 	for _, v := range vals {
 		res = append(res, value{value: v})
 	}
@@ -255,7 +269,7 @@ func shouldFilter() bool {
 	return featureflags.DownloadFilter.Enabled() && featureflags.DownloadFilterClassicConfigs.Enabled()
 }
 
-func download(ctx context.Context, client client.ConfigClient, theApi api.API, value value) ([]map[string]any, error) {
+func download(ctx context.Context, configSource Source, theApi api.API, value value) ([]map[string]any, error) {
 	id := value.value.Id
 
 	// check if we should skip the id to enforce to read/download "all" configs instead of a single one
@@ -263,7 +277,7 @@ func download(ctx context.Context, client client.ConfigClient, theApi api.API, v
 		id = ""
 	}
 
-	response, err := client.Get(ctx, theApi.ApplyParentObjectID(value.parentConfigId), id)
+	response, err := configSource.Get(ctx, theApi.ApplyParentObjectID(value.parentConfigId), id)
 	if err != nil {
 		return nil, err
 	}
