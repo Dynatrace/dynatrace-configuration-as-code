@@ -25,9 +25,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	accountDelete "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 	account "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/writer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config"
+	manifest "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/writer"
 )
 
 func generateSchemaFiles(fs afero.Fs, outputfolder string) error {

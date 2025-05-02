@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package config
+package writer
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 )
 
 func GenerateJSONSchema() ([]byte, error) {
-	schema, err := json.GenerateJSONSchemaString(persistence.TopLevelDefinition{})
+	schema, err := json.GenerateJSONSchemaString(persistence.Manifest{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate JSON schema for config YAML: %w", err)
+		return nil, fmt.Errorf("failed to generate JSON schema for manifest: %w", err)
 	}
 	return schema, nil
 }
