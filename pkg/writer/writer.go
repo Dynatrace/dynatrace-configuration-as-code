@@ -18,8 +18,8 @@ import (
 	"path/filepath"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	configwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/writer"
 	manifestwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/writer"
-	configwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/writer"
 
 	"github.com/spf13/afero"
 
