@@ -26,9 +26,9 @@ import (
 	"testing"
 	"time"
 
-	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-
 	"github.com/stretchr/testify/assert"
+
+	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -254,7 +254,7 @@ func AssertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsTyp
 
 }
 
-func AssertPermission(t *testing.T, c client.SettingsClient, objectID string, permissions []dtclient.TypePermissions) {
+func AssertPermission(t *testing.T, c client.SettingsClient, objectID string, permissions []dtclient.PermissionType) {
 	resp, err := c.GetPermission(t.Context(), objectID)
 	if err != nil {
 		if len(permissions) == 0 && coreapi.IsNotFoundError(err) {

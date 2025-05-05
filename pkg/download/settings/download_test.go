@@ -793,7 +793,7 @@ func TestDownloadAll(t *testing.T) {
 				ListSettingsCalls: 1,
 				Permissions: func() (dtclient.PermissionObject, error) {
 					return dtclient.PermissionObject{
-						Permissions: []dtclient.TypePermissions{dtclient.Read, dtclient.Write},
+						Permissions: []dtclient.PermissionType{dtclient.Read, dtclient.Write},
 						Accessor: &dtclient.Accessor{
 							Type: dtclient.AllUsers,
 						},
