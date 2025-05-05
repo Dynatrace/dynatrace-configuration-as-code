@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	coresettings "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -150,7 +151,7 @@ func download(ctx context.Context, client client.SettingsClient, schemas []schem
 				return
 			}
 
-			permissions := make(map[string]dtclient.PermissionObject)
+			permissions := make(map[string]coresettings.PermissionObject)
 			if s.ownerBasedAccessControl != nil && *s.ownerBasedAccessControl && featureflags.AccessControlSettings.Enabled() {
 				var permErr error
 				permissions, permErr = getObjectsPermission(ctx, client, objects)
@@ -190,9 +191,9 @@ func extractApiErrorMessage(err error) string {
 	return err.Error()
 }
 
-func getObjectsPermission(ctx context.Context, client client.SettingsClient, objects []dtclient.DownloadSettingsObject) (map[string]dtclient.PermissionObject, error) {
+func getObjectsPermission(ctx context.Context, client client.SettingsClient, objects []dtclient.DownloadSettingsObject) (map[string]coresettings.PermissionObject, error) {
 	type result struct {
-		Permission dtclient.PermissionObject
+		Permission coresettings.PermissionObject
 		ObjectId   string
 		Err        error
 	}
@@ -200,7 +201,7 @@ func getObjectsPermission(ctx context.Context, client client.SettingsClient, obj
 	resChan := make(chan result, len(objects))
 	defer close(resChan)
 
-	permissions := make(map[string]dtclient.PermissionObject)
+	permissions := make(map[string]coresettings.PermissionObject)
 	for _, obj := range objects {
 		go func(ctx context.Context, obj dtclient.DownloadSettingsObject) {
 			permission, err := client.GetPermission(ctx, obj.ObjectId)
@@ -234,7 +235,7 @@ func asConcurrentErrMsg(err coreapi.APIError) string {
 	return fmt.Sprintf("%s\n%s", err.Error(), additionalMessage)
 }
 
-func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permissions map[string]dtclient.PermissionObject, projectName string, ordered bool, filters Filters) []config.Config {
+func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permissions map[string]coresettings.PermissionObject, projectName string, ordered bool, filters Filters) []config.Config {
 	result := make([]config.Config, 0, len(settingsObjects))
 
 	var previousConfigForScope = make(map[string]*config.Config)
@@ -291,12 +292,12 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permis
 	return result
 }
 
-func getObjectPermission(permissions map[string]dtclient.PermissionObject, objectID string) *config.AllUserPermissionKind {
-	if p, exists := permissions[objectID]; exists && p.Accessor != nil && p.Accessor.Type == dtclient.AllUsers {
-		if slices.Contains(p.Permissions, dtclient.Write) {
+func getObjectPermission(permissions map[string]coresettings.PermissionObject, objectID string) *config.AllUserPermissionKind {
+	if p, exists := permissions[objectID]; exists && p.Accessor.Type == coresettings.AllUsers {
+		if slices.Contains(p.Permissions, coresettings.Write) {
 			return pointer.Pointer(config.WritePermission)
 		}
-		if slices.Contains(p.Permissions, dtclient.Read) {
+		if slices.Contains(p.Permissions, coresettings.Read) {
 			return pointer.Pointer(config.ReadPermission)
 		}
 		return pointer.Pointer(config.NonePermission)

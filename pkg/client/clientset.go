@@ -34,6 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
+	coresettings "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -146,8 +147,8 @@ type SettingsClient interface {
 // AccessControl is an abstraction of the CRUD operations of `permissions` `all-users` endpoint.
 // UpsertPermission is first trying to update the remote object if a 404 is returned it will try to create it.
 type AccessControl interface {
-	GetPermission(context.Context, string) (dtclient.PermissionObject, error)
-	UpsertPermission(context.Context, string, dtclient.PermissionObject) error
+	GetPermission(context.Context, string) (coresettings.PermissionObject, error)
+	UpsertPermission(context.Context, string, coresettings.PermissionObject) error
 	DeletePermission(context.Context, string) error
 }
 
