@@ -39,7 +39,7 @@ func TestParametersAreLoadedAsExpected(t *testing.T) {
 
 	loaderContext := LoaderContext{
 		Environments: []manifest.EnvironmentDefinition{
-			{Name: "testEnv"},
+			{Enabled: true, Name: "testEnv"},
 		},
 		KnownApis:       map[string]struct{}{"some-api": {}},
 		ParametersSerDe: config.DefaultParameterParsers,

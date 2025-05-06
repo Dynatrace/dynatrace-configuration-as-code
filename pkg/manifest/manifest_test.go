@@ -20,13 +20,15 @@ package manifest_test
 
 import (
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	"path/filepath"
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 )
 
 func TestDefaultTokenEndpoint(t *testing.T) {
@@ -104,8 +106,9 @@ func TestManifestLoading(t *testing.T) {
 		},
 		Environments: manifest.Environments{
 			"test-env-1": manifest.EnvironmentDefinition{
-				Name:  "test-env-1",
-				Group: "dev",
+				Enabled: true,
+				Name:    "test-env-1",
+				Group:   "dev",
 				URL: manifest.URLDefinition{
 					Type:  manifest.EnvironmentURLType,
 					Name:  "ENV_URL",
@@ -134,8 +137,9 @@ func TestManifestLoading(t *testing.T) {
 				},
 			},
 			"test-env-2": manifest.EnvironmentDefinition{
-				Name:  "test-env-2",
-				Group: "dev",
+				Enabled: true,
+				Name:    "test-env-2",
+				Group:   "dev",
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "",
@@ -150,8 +154,9 @@ func TestManifestLoading(t *testing.T) {
 				},
 			},
 			"prod-env-1": manifest.EnvironmentDefinition{
-				Name:  "prod-env-1",
-				Group: "prod",
+				Enabled: true,
+				Name:    "prod-env-1",
+				Group:   "prod",
 				URL: manifest.URLDefinition{
 					Type:  manifest.EnvironmentURLType,
 					Name:  "ENV_URL",

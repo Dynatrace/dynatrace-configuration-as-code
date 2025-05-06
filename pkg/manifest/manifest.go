@@ -61,10 +61,11 @@ type Auth struct {
 
 // EnvironmentDefinition holds all information about a Dynatrace environment
 type EnvironmentDefinition struct {
-	Name  string
-	Group string
-	URL   URLDefinition
-	Auth  Auth
+	Enabled bool
+	Name    string
+	Group   string
+	URL     URLDefinition
+	Auth    Auth
 }
 
 // URLType describes from where the url is loaded.

@@ -63,6 +63,9 @@ func purge(ctx context.Context, fs afero.Fs, deploymentManifestPath string, envi
 func purgeConfigs(ctx context.Context, environments []manifest.EnvironmentDefinition, apis api.APIs) error {
 
 	for _, env := range environments {
+		if !env.Enabled {
+			continue
+		}
 		err := purgeForEnvironment(ctx, env, apis)
 		if err != nil {
 			return err

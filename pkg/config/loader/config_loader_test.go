@@ -53,9 +53,10 @@ func Test_parseConfigs(t *testing.T) {
 		KnownApis: map[string]struct{}{"some-api": {}, api.DashboardShareSettings: {}},
 		Environments: []manifest.EnvironmentDefinition{
 			{
-				Name:  "env name",
-				URL:   manifest.URLDefinition{Type: manifest.ValueURLType, Value: "env url"},
-				Group: "default",
+				Enabled: true,
+				Name:    "env name",
+				URL:     manifest.URLDefinition{Type: manifest.ValueURLType, Value: "env url"},
+				Group:   "default",
 				Auth: manifest.Auth{
 					Token: &manifest.AuthSecret{Name: "token var"},
 				},
