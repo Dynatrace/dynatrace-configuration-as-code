@@ -81,7 +81,8 @@ func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
 
 	ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 		"env": manifest.EnvironmentDefinition{
-			Name: "env",
+			Enabled: true,
+			Name:    "env",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
 				Name:  "URL",
@@ -89,7 +90,8 @@ func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
 			},
 		},
 		"env2": manifest.EnvironmentDefinition{
-			Name: "env2",
+			Enabled: true,
+			Name:    "env2",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
 				Name:  "URL",
@@ -144,7 +146,8 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 
 		ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
-				Name: "env",
+				Enabled: true,
+				Name:    "env",
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "URL",
@@ -177,7 +180,8 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 
 		ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
-				Name: "env",
+				Enabled: true,
+				Name:    "env",
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "URL",
@@ -216,7 +220,8 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 
 		ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 			"env1": manifest.EnvironmentDefinition{
-				Name: "env1",
+				Enabled: true,
+				Name:    "env1",
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "URL",
@@ -228,7 +233,8 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 
 		ok = VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
 			"env2": manifest.EnvironmentDefinition{
-				Name: "env2",
+				Enabled: true,
+				Name:    "env2",
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "URL",
