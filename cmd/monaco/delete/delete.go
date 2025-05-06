@@ -38,6 +38,9 @@ import (
 func Delete(ctx context.Context, environments manifest.Environments, entriesToDelete delete.DeleteEntries) error {
 	var envsWithDeleteErrs []string
 	for _, env := range environments {
+		if !env.Enabled {
+			continue
+		}
 		ctx := context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 		if containsPlatformTypes(entriesToDelete) && env.Auth.OAuth == nil {
 			log.WithCtxFields(ctx).Warn("Delete file contains Dynatrace Platform specific types, but no oAuth credentials are defined for environment %q - Dynatrace Platform configurations won't be deleted.", env.Name)

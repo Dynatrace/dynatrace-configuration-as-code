@@ -61,6 +61,9 @@ func parseConfigEntry(
 	var results []config.Config
 	var errs []error
 	for _, env := range loaderContext.Environments {
+		if !env.Enabled {
+			continue
+		}
 
 		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env, definition, groupOverrideMap, environmentOverrideMap)
 

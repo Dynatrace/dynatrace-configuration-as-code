@@ -716,7 +716,7 @@ func Test_loadProject_returnsErrorIfScopeForWebKUAhasWrongTypeOfParameter(t *tes
       name: key-user-actions-web
       scope: APPLICATION-3F2C9E73509D15B6`), 0644))
 	require.NoError(t, afero.WriteFile(testFs, "project/kua-web/kua-web.json", []byte("{}"), 0644))
-	_, gotErrs := loadProject(t.Context(), testFs, loaderContext, definition, []manifest.EnvironmentDefinition{{Name: "env"}})
+	_, gotErrs := loadProject(t.Context(), testFs, loaderContext, definition, []manifest.EnvironmentDefinition{{Enabled: true, Name: "env"}})
 	assert.Len(t, gotErrs, 1)
 	assert.ErrorContains(t, gotErrs[0], "scope parameter of config of type 'key-user-actions-web' with ID 'kua-web-1' needs to be a reference parameter to another web-application config")
 }
@@ -742,7 +742,8 @@ func getFullProjectLoaderContext(apis []string, projects []string, environments 
 	envDefinitions := make(map[string]manifest.EnvironmentDefinition, len(environments))
 	for _, e := range environments {
 		envDefinitions[e] = manifest.EnvironmentDefinition{
-			Name: e,
+			Enabled: true,
+			Name:    e,
 			Auth: manifest.Auth{
 				Token: &manifest.AuthSecret{Name: fmt.Sprintf("%s_VAR", e)},
 			},
@@ -845,8 +846,9 @@ func TestLoadProjects_Simple(t *testing.T) {
 			},
 			Environments: manifest.Environments{
 				"default": {
-					Name: "default",
-					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+					Enabled: true,
+					Name:    "default",
+					Auth:    manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
@@ -1067,12 +1069,14 @@ func TestLoadProjects_WithEnvironmentOverrides(t *testing.T) {
 			},
 			Environments: manifest.Environments{
 				"dev": {
-					Name: "dev",
-					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+					Enabled: true,
+					Name:    "dev",
+					Auth:    manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 				"prod": {
-					Name: "prod",
-					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+					Enabled: true,
+					Name:    "prod",
+					Auth:    manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
@@ -1185,8 +1189,9 @@ func TestLoadProjects_WithEnvironmentOverridesAndLimitedEnvironments(t *testing.
 			},
 			Environments: manifest.Environments{
 				"dev": {
-					Name: "dev",
-					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+					Enabled: true,
+					Name:    "dev",
+					Auth:    manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
@@ -1346,8 +1351,9 @@ func TestLoadProjects_DeepDependencies(t *testing.T) {
 			},
 			Environments: manifest.Environments{
 				"default": {
-					Name: "default",
-					Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+					Enabled: true,
+					Name:    "default",
+					Auth:    manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
 				},
 			},
 		},
