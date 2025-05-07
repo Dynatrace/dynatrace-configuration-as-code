@@ -30,6 +30,7 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	coresettings "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
@@ -56,7 +57,7 @@ func TestDownloadAll(t *testing.T) {
 		Settings          func() ([]dtclient.DownloadSettingsObject, error)
 		ListSettingsCalls int
 
-		Permissions        func() (dtclient.PermissionObject, error)
+		Permissions        func() (coresettings.PermissionObject, error)
 		GetPermissionCalls int
 	}
 	tests := []struct {
@@ -78,8 +79,8 @@ func TestDownloadAll(t *testing.T) {
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return nil, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 0,
 			},
@@ -95,8 +96,8 @@ func TestDownloadAll(t *testing.T) {
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return nil, coreapi.APIError{StatusCode: 0}
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 2,
 			},
@@ -119,8 +120,8 @@ func TestDownloadAll(t *testing.T) {
 						Value:         json.RawMessage{},
 					}}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -143,8 +144,8 @@ func TestDownloadAll(t *testing.T) {
 						Value:         json.RawMessage("{}"),
 					}}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -189,8 +190,8 @@ func TestDownloadAll(t *testing.T) {
 						Value:         json.RawMessage(`{"skip" : true}`),
 					}}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -226,8 +227,8 @@ func TestDownloadAll(t *testing.T) {
 						},
 					}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -274,8 +275,8 @@ func TestDownloadAll(t *testing.T) {
 						},
 					}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -346,8 +347,8 @@ func TestDownloadAll(t *testing.T) {
 						},
 					}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -447,8 +448,8 @@ func TestDownloadAll(t *testing.T) {
 						},
 					}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -563,8 +564,8 @@ func TestDownloadAll(t *testing.T) {
 						},
 					}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSettingsCalls: 1,
 			},
@@ -640,8 +641,8 @@ func TestDownloadAll(t *testing.T) {
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 0,
@@ -666,8 +667,8 @@ func TestDownloadAll(t *testing.T) {
 						Value:         json.RawMessage(`{}`),
 					}}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 1,
@@ -710,8 +711,8 @@ func TestDownloadAll(t *testing.T) {
 						Value:         json.RawMessage(`{}`),
 					}}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 1,
@@ -738,8 +739,8 @@ func TestDownloadAll(t *testing.T) {
 						Value:         json.RawMessage(`{}`),
 					}}, nil
 				},
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				ListSchemasCalls:  1,
 				ListSettingsCalls: 1,
@@ -791,11 +792,11 @@ func TestDownloadAll(t *testing.T) {
 					}}, nil
 				},
 				ListSettingsCalls: 1,
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{
-						Permissions: []dtclient.TypePermissions{dtclient.Read, dtclient.Write},
-						Accessor: &dtclient.Accessor{
-							Type: dtclient.AllUsers,
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{
+						Permissions: []coresettings.PermissionType{coresettings.Read, coresettings.Write},
+						Accessor: coresettings.Accessor{
+							Type: coresettings.AllUsers,
 						},
 					}, nil
 				},
@@ -847,8 +848,8 @@ func TestDownloadAll(t *testing.T) {
 					}}, nil
 				},
 				ListSettingsCalls: 1,
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, nil
 				},
 				GetPermissionCalls: 0,
 			},
@@ -903,8 +904,8 @@ func TestDownloadAll(t *testing.T) {
 					}}, nil
 				},
 				ListSettingsCalls: 1,
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, coreapi.APIError{
+				Permissions: func() (coresettings.PermissionObject, error) {
+					return coresettings.PermissionObject{}, coreapi.APIError{
 						StatusCode: http.StatusInternalServerError,
 						Body:       nil,
 						Request:    corerest.RequestInfo{},

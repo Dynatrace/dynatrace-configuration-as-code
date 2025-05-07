@@ -21,6 +21,8 @@ import (
 	"encoding/base64"
 
 	"github.com/google/uuid"
+
+	coresettings "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/settings"
 )
 
 type DummySettingsClient struct{}
@@ -68,11 +70,11 @@ func (c *DummySettingsClient) Delete(_ context.Context, _ string) error {
 	return nil
 }
 
-func (c *DummySettingsClient) GetPermission(_ context.Context, _ string) (PermissionObject, error) {
-	return PermissionObject{}, nil
+func (c *DummySettingsClient) GetPermission(_ context.Context, _ string) (coresettings.PermissionObject, error) {
+	return coresettings.PermissionObject{}, nil
 }
 
-func (c *DummySettingsClient) UpsertPermission(_ context.Context, _ string, _ PermissionObject) error {
+func (c *DummySettingsClient) UpsertPermission(_ context.Context, _ string, _ coresettings.PermissionObject) error {
 	return nil
 }
 

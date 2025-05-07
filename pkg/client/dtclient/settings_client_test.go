@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	coresettings "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -961,11 +962,11 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc(settingsPermissionAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions", func(w http.ResponseWriter, r *http.Request) {
 			t.Errorf("Called '%s' but it should not be called", r.Pattern)
 		})
 
-		mux.HandleFunc(settingsPermissionAllUsersAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users", func(w http.ResponseWriter, r *http.Request) {
 			t.Errorf("Called '%s' but it should not be called", r.Pattern)
 		})
 
@@ -1014,11 +1015,11 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc(settingsPermissionAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions", func(w http.ResponseWriter, r *http.Request) {
 			t.Errorf("Called '%s' but it should not be called", r.Pattern)
 		})
 
-		mux.HandleFunc(settingsPermissionAllUsersAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users", func(w http.ResponseWriter, r *http.Request) {
 			t.Errorf("Called '%s' but it should not be called", r.Pattern)
 		})
 
@@ -1068,11 +1069,11 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc(settingsPermissionAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions", func(w http.ResponseWriter, r *http.Request) {
 			t.Errorf("Called '%s' but it should not be called", r.Pattern)
 		})
 
-		mux.HandleFunc("DELETE "+settingsPermissionAllUsersAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("DELETE "+"/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users", func(w http.ResponseWriter, r *http.Request) {
 			deleteCalled = true
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
@@ -1121,19 +1122,19 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("POST "+settingsPermissionAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("POST /platform/classic/environment-api/v2/settings/objects/{objectId}/permissions", func(w http.ResponseWriter, r *http.Request) {
 			postPermissionCalled = true
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("GET "+settingsPermissionAllUsersAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc(settingsPermissionAllUsersAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users", func(w http.ResponseWriter, r *http.Request) {
 			t.Errorf("Called '%s' but it should not be called", r.Pattern)
 		})
 
@@ -1180,16 +1181,16 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc(settingsPermissionAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions", func(w http.ResponseWriter, r *http.Request) {
 			t.Errorf("Called '%s' but it should not be called", r.Pattern)
 		})
 
-		mux.HandleFunc("GET "+settingsPermissionAllUsersAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users", func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("PUT "+settingsPermissionAllUsersAPIPath, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("PUT /platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users", func(w http.ResponseWriter, r *http.Request) {
 			putPermissionCalled = true
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
@@ -2529,7 +2530,7 @@ func TestSettingsClient_GetPermission(t *testing.T) {
 		tests := []struct {
 			name             string
 			id               string
-			expectedResponse PermissionObject
+			expectedResponse coresettings.PermissionObject
 			response         testutils.Response
 		}{
 			{
@@ -2540,9 +2541,9 @@ func TestSettingsClient_GetPermission(t *testing.T) {
 					ResponseBody: `{"error": {"code": 404, "message": "No permissions found for accessor"}}`,
 					ContentType:  "application/json",
 				},
-				expectedResponse: PermissionObject{
-					Permissions: []TypePermissions{},
-					Accessor:    &Accessor{Type: TypeAccessor(AllUsers)},
+				expectedResponse: coresettings.PermissionObject{
+					Permissions: []coresettings.PermissionType{},
+					Accessor:    coresettings.Accessor{Type: coresettings.AllUsers},
 				},
 			},
 			{
@@ -2553,9 +2554,9 @@ func TestSettingsClient_GetPermission(t *testing.T) {
 					ResponseBody: `{"permissions": ["r"], "accessor": {"type": "all-users"}}`,
 					ContentType:  "application/json",
 				},
-				expectedResponse: PermissionObject{
-					Permissions: []TypePermissions{Read},
-					Accessor:    &Accessor{Type: TypeAccessor(AllUsers)},
+				expectedResponse: coresettings.PermissionObject{
+					Permissions: []coresettings.PermissionType{coresettings.Read},
+					Accessor:    coresettings.Accessor{Type: coresettings.AllUsers},
 				},
 			},
 			{
@@ -2566,9 +2567,9 @@ func TestSettingsClient_GetPermission(t *testing.T) {
 					ResponseBody: `{"permissions": ["r", "w"], "accessor": {"type": "all-users"}}`,
 					ContentType:  "application/json",
 				},
-				expectedResponse: PermissionObject{
-					Permissions: []TypePermissions{Read, Write},
-					Accessor:    &Accessor{Type: TypeAccessor(AllUsers)},
+				expectedResponse: coresettings.PermissionObject{
+					Permissions: []coresettings.PermissionType{coresettings.Read, coresettings.Write},
+					Accessor:    coresettings.Accessor{Type: coresettings.AllUsers},
 				},
 			},
 		}
@@ -2644,7 +2645,7 @@ func TestSettingsClient_GetPermission(t *testing.T) {
 				assert.NoError(t, err)
 
 				res, err := dcl.GetPermission(t.Context(), tt.id)
-				assert.Equal(t, PermissionObject{}, res)
+				assert.Equal(t, coresettings.PermissionObject{}, res)
 				assert.Error(t, err)
 			})
 		}
@@ -2656,7 +2657,7 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 		tests := []struct {
 			name             string
 			id               string
-			permissionObject PermissionObject
+			PermissionObject coresettings.PermissionObject
 			responses        []testutils.ResponseDef
 		}{
 			{
@@ -2682,8 +2683,9 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 						},
 					},
 				},
-				permissionObject: PermissionObject{
-					Permissions: []TypePermissions{Read, Write},
+				PermissionObject: coresettings.PermissionObject{
+					Permissions: []coresettings.PermissionType{coresettings.Read, coresettings.Write},
+					Accessor:    coresettings.Accessor{Type: coresettings.AllUsers},
 				},
 			},
 			{
@@ -2706,8 +2708,9 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 						},
 					},
 				},
-				permissionObject: PermissionObject{
-					Permissions: []TypePermissions{Write},
+				PermissionObject: coresettings.PermissionObject{
+					Permissions: []coresettings.PermissionType{coresettings.Write},
+					Accessor:    coresettings.Accessor{Type: coresettings.AllUsers},
 				},
 			},
 		}
@@ -2719,7 +2722,7 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 				assert.NoError(t, err)
 
-				err = dcl.UpsertPermission(t.Context(), tt.id, tt.permissionObject)
+				err = dcl.UpsertPermission(t.Context(), tt.id, tt.PermissionObject)
 				assert.NoError(t, err)
 			})
 		}
@@ -2728,7 +2731,7 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 		tests := []struct {
 			name             string
 			id               string
-			permissionObject PermissionObject
+			PermissionObject coresettings.PermissionObject
 			responses        []testutils.ResponseDef
 		}{
 			{
@@ -2751,8 +2754,9 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 						},
 					},
 				},
-				permissionObject: PermissionObject{
-					Permissions: []TypePermissions{Read, Write},
+				PermissionObject: coresettings.PermissionObject{
+					Permissions: []coresettings.PermissionType{coresettings.Read, coresettings.Write},
+					Accessor:    coresettings.Accessor{Type: coresettings.AllUsers},
 				},
 			},
 			{
@@ -2775,8 +2779,9 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 						},
 					},
 				},
-				permissionObject: PermissionObject{
-					Permissions: []TypePermissions{Read, Write},
+				PermissionObject: coresettings.PermissionObject{
+					Permissions: []coresettings.PermissionType{coresettings.Read, coresettings.Write},
+					Accessor:    coresettings.Accessor{Type: coresettings.AllUsers},
 				},
 			},
 			{
@@ -2792,8 +2797,9 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 						},
 					},
 				},
-				permissionObject: PermissionObject{
-					Permissions: []TypePermissions{Read, Write},
+				PermissionObject: coresettings.PermissionObject{
+					Permissions: []coresettings.PermissionType{coresettings.Read, coresettings.Write},
+					Accessor:    coresettings.Accessor{Type: coresettings.AllUsers},
 				},
 			},
 			{
@@ -2809,7 +2815,7 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 						},
 					},
 				},
-				permissionObject: PermissionObject{},
+				PermissionObject: coresettings.PermissionObject{},
 			},
 		}
 		for _, tt := range tests {
@@ -2820,7 +2826,7 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 				assert.NoError(t, err)
 
-				err = dcl.UpsertPermission(t.Context(), tt.id, tt.permissionObject)
+				err = dcl.UpsertPermission(t.Context(), tt.id, tt.PermissionObject)
 				assert.Error(t, err)
 			})
 		}
