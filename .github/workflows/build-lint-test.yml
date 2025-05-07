@@ -86,7 +86,7 @@ jobs:
         with:
           install-mode: 'goinstall' # install mode goinstall in order to use hashes for the version
           version: eabc2638a66daf5bb6c6fb052a32fa3ef7b6600d #v2.1.6
-          args: '--output.checkstyle.path=lint-report.xml'
+          args: '--output.checkstyle.path=lint-report.xml --issues-exit-code=0' # if issues are found, don't exit with "1". Sonar decides if it fails or not
 
       - name: ⬆️ Archive lint results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
