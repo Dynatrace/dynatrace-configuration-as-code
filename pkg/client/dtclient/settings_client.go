@@ -38,6 +38,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -580,7 +581,14 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		retrySetting = *upsertOptions.OverrideRetry
 	}
 
-	resp, err := SendWithRetryWithInitialTry(ctx, d.client.POST, d.settingsObjectAPIPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, payload, retrySetting)
+	resp, err := coreapi.AsResponseOrError(
+		d.client.POST(ctx, d.settingsObjectAPIPath, bytes.NewReader(payload), corerest.RequestOptions{
+			CustomShouldRetryFunc: func(response *http.Response) bool {
+				return corerest.ShouldRetry(response.StatusCode)
+			},
+			MaxRetries:      pointer.Pointer(retrySetting.MaxRetries),
+			DelayAfterRetry: pointer.Pointer(retrySetting.WaitTime),
+		}))
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update settings object with externalId %s: %w", externalID, err)
