@@ -81,21 +81,6 @@ func SendWithRetry(ctx context.Context, sendWithBody SendRequestWithBody, endpoi
 	return nil, fmt.Errorf("HTTP send request %s failed after %d retries: %w", endpoint, setting.MaxRetries, err)
 }
 
-// SendWithRetryWithInitialTry will try to call sendWithBody and if it didn't succeed call [SendWithRetry]
-func SendWithRetryWithInitialTry(ctx context.Context, sendWithBody SendRequestWithBody, endpoint string, requestOptions corerest.RequestOptions, body []byte, setting RetrySetting) (*coreapi.Response, error) {
-	resp, err := coreapi.AsResponseOrError(sendWithBody(ctx, endpoint, bytes.NewReader(body), requestOptions))
-	if err == nil {
-		return resp, nil
-	}
-
-	apiError := coreapi.APIError{}
-	if !errors.As(err, &apiError) || !corerest.ShouldRetry(apiError.StatusCode) {
-		return nil, err
-	}
-
-	return SendWithRetry(ctx, sendWithBody, endpoint, requestOptions, body, setting)
-}
-
 func GetWithRetry(ctx context.Context, c corerest.Client, endpoint string, requestOptions corerest.RequestOptions, settings RetrySetting) (resp *coreapi.Response, err error) {
 	resp, err = coreapi.AsResponseOrError(c.GET(ctx, endpoint, requestOptions))
 	if err == nil {

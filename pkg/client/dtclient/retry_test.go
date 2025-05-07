@@ -115,18 +115,6 @@ func Test_sendWithRetryReturnsIfNotSuccess(t *testing.T) {
 	assert.Equal(t, 400, apiError.StatusCode)
 }
 
-func Test_SendWithRetryWithInitialTry_RetryIgnoredIfForbidden(t *testing.T) {
-	i := 0
-	mockCall := SendRequestWithBody(func(ctx context.Context, url string, data io.Reader, options corerest.RequestOptions) (*http.Response, error) {
-		i++
-		return nil, coreapi.APIError{StatusCode: http.StatusForbidden}
-	})
-
-	_, err := SendWithRetryWithInitialTry(t.Context(), mockCall, "some/path", corerest.RequestOptions{}, []byte("body"), RetrySetting{MaxRetries: 10})
-	require.Error(t, err)
-	assert.Equal(t, 1, i)
-}
-
 func Test_GetWithRetry_RetryIgnoredIfForbidden(t *testing.T) {
 	i := 0
 	mux := http.NewServeMux()
