@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/apitoken"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -38,7 +39,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/classicheartbeat"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 
 	"golang.org/x/oauth2/clientcredentials"
@@ -66,16 +66,18 @@ func isValidEnvironment(ctx context.Context, env manifest.EnvironmentDefinition)
 	}
 
 	if env.Auth.OAuth == nil {
-		return isClassicEnvironment(ctx, env)
+		return canEstablishClassicConnection(ctx, env)
 	}
 
 	return isPlatformEnvironment(ctx, env)
 }
 
-func isClassicEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) bool {
+// canEstablishClassicConnection checks if a classic connection (via token) can be established. Scopes are not validated.
+func canEstablishClassicConnection(ctx context.Context, env manifest.EnvironmentDefinition) bool {
+	token := env.Auth.Token.Value.Value()
 	client, err := clients.Factory().
 		WithClassicURL(env.URL.Value).
-		WithAccessToken(env.Auth.Token.Value.Value()).
+		WithAccessToken(token).
 		WithRateLimiter(true).
 		WithRetryOptions(&client.DefaultRetryOptions).
 		CreateClassicClient()
@@ -85,7 +87,7 @@ func isClassicEnvironment(ctx context.Context, env manifest.EnvironmentDefinitio
 		return false
 	}
 
-	if _, err := version.GetDynatraceVersion(ctx, client); err != nil {
+	if _, err := apitoken.GetTokenMetadata(ctx, client, token); err != nil {
 		handleAuthError(ctx, env, err)
 		log.Error("Please verify that this environment is a Dynatrace Classic environment.")
 		return false

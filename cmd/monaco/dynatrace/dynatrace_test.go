@@ -32,6 +32,20 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
 
+var classicCheckPayload = []byte(`
+		{
+		  "id": "abc-xy",
+		  "name": "my-token",
+		  "enabled": true,
+		  "personalAccessToken": false,
+		  "owner": "my-owner-email",
+		  "creationDate": "2024-01-11T16:56:05.499Z",
+		  "scopes": [
+			"settings.read",
+			"settings.write"
+		  ]
+		}`)
+
 func TestVerifyEnvironmentGeneration_TurnedOffByFF(t *testing.T) {
 	t.Setenv("MONACO_FEAT_VERIFY_ENV_TYPE", "0")
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -60,7 +74,7 @@ func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
 			return
 		}
 		rw.WriteHeader(200)
-		_, _ = rw.Write([]byte(`{"version" : "1.262.0.20230303"}`))
+		_, _ = rw.Write(classicCheckPayload)
 		envCount++
 	}))
 	defer server.Close()
@@ -75,7 +89,7 @@ func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
 			},
 		},
 		"env2": manifest.EnvironmentDefinition{
-			Name: "env",
+			Name: "env2",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
 				Name:  "URL",
@@ -92,11 +106,11 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		envs manifest.Environments
 	}
 	tests := []struct {
-		name            string
-		args            args
-		versionApiFails bool
-		handler         http.HandlerFunc
-		wantErr         bool
+		name                 string
+		args                 args
+		classicEnvCheckFails bool
+		handler              http.HandlerFunc
+		wantErr              bool
 	}{
 		{
 			name: "empty environment - passes",
@@ -121,10 +135,10 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		})
 	}
 
-	t.Run("Call classic Version EP - ok", func(t *testing.T) {
+	t.Run("Call classic endpoint - ok", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(200)
-			_, _ = rw.Write([]byte(`{"version" : "1.262.0.20230303"}`))
+			_, _ = rw.Write(classicCheckPayload)
 		}))
 		defer server.Close()
 
@@ -142,7 +156,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		assert.True(t, ok)
 	})
 
-	t.Run("Call Platform Version EP - ok", func(t *testing.T) {
+	t.Run("Call Platform endpoint - ok", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if strings.HasSuffix(req.URL.Path, "sso") {
 				token := &oauth2.Token{
@@ -157,7 +171,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 			}
 
 			rw.WriteHeader(200)
-			_, _ = rw.Write([]byte(`{"version" : "0.59.3.20231603"}`))
+			_, _ = rw.Write(classicCheckPayload)
 		}))
 		defer server.Close()
 
@@ -181,7 +195,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		assert.True(t, ok)
 	})
 
-	t.Run("version EP not available ", func(t *testing.T) {
+	t.Run("classic endpoint not available ", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if strings.HasSuffix(req.URL.Path, "sso") {
 				token := &oauth2.Token{
@@ -196,7 +210,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 			}
 
 			rw.WriteHeader(404)
-			_, _ = rw.Write([]byte(`{"version" : "0.59.1.20231603"}`))
+			_, _ = rw.Write(classicCheckPayload)
 		}))
 		defer server.Close()
 
