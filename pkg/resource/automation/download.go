@@ -60,6 +60,7 @@ func NewAPI(automationSource Source) *API {
 
 // Download downloads all automation resources for a given project
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+	log.Info("Downloading automation resources")
 	configsPerType := make(project.ConfigsPerType)
 	for _, at := range maps.Keys(automationTypesToResources) {
 		lg := log.WithFields(field.Type(at.Resource))

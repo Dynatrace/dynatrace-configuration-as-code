@@ -43,6 +43,7 @@ func NewAPI(segmentSource Source) *API {
 }
 
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+	log.Info("Downloading segments")
 	result := project.ConfigsPerType{}
 
 	downloadedConfigs, err := a.segmentSource.GetAll(ctx)
