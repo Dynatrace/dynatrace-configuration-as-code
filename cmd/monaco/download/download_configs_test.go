@@ -19,9 +19,9 @@
 package download
 
 import (
-	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"testing"
 
@@ -50,13 +50,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
-
-type DownloadableStub struct {
-}
-
-func (DownloadableStub) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	return nil, nil
-}
 
 func TestDownloadConfigsBehaviour(t *testing.T) {
 	var downloadOptions = downloadOptionsShared{
@@ -205,7 +198,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			settingsClient := client.NewMockSettingsClient(gomock.NewController(t))
 			tt.expectedSettingsBehaviour(settingsClient)
 
-			_, err := downloadConfigs(t.Context(), &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, api.NewAPIs(), tt.givenOpts, defaultDownloadFn)
+			_, err := downloadConfigs(t.Context(), &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, api.NewAPIs(), tt.givenOpts)
 			assert.NoError(t, err)
 		})
 	}
@@ -400,60 +393,51 @@ func TestDownload_Options(t *testing.T) {
 				t.Setenv(string(ff), strconv.FormatBool(v))
 			}
 
-			fn := downloadFn{
-				classicDownload: func(source classic.Source, a api.APIs, filters classic.ContentFilters) Downloadable {
-					if !tt.want.config {
-						t.Fatalf("classic config download was not meant to be called but was")
-					}
-					return DownloadableStub{}
-				},
-				settingsDownload: func(source settings.Source, filters settings.Filters, settingsType ...config.SettingsType) Downloadable {
-					if !tt.want.settings {
-						t.Fatalf("settings download was not meant to be called but was")
-					}
-					return DownloadableStub{}
-				},
-				automationDownload: func(source automation.Source) Downloadable {
-					if !tt.want.automation {
-						t.Fatalf("automation download was not meant to be called but was")
-					}
-					return DownloadableStub{}
-				},
-				bucketDownload: func(source bucket.Source) Downloadable {
-					if !tt.want.bucket {
-						t.Fatalf("bucket download was not meant to be called but was")
-					}
-					return DownloadableStub{}
-				},
-				documentDownload: func(source document.Source) Downloadable {
-					if !tt.want.document {
-						t.Fatalf("document download was not meant to be called but was")
-					}
-					return DownloadableStub{}
-				},
-				openPipelineDownload: func(source openpipeline.Source) Downloadable {
-					if !tt.want.openpipeline {
-						t.Fatalf("openpipeline download was not meant to be called but was")
-					}
-					return DownloadableStub{}
-				},
-				segmentDownload: func(source segment.Source) Downloadable {
-					if !tt.want.segment {
-						t.Fatalf("segment download was not meant to be called but was")
-					}
-					return DownloadableStub{}
-				},
-				sloDownload: func(source slo.Source) Downloadable {
-					if !tt.want.slo {
-						t.Fatalf("slo download was not meant to be called but was")
-					}
-					return DownloadableStub{}
-				},
-			}
-
 			c := client.NewMockConfigClient(gomock.NewController(t))
-			_, err := downloadConfigs(t.Context(), &client.ClientSet{ConfigClient: c}, api.NewAPIs(), tt.given, fn)
+			downloadables, err := prepareDownloadables(api.NewAPIs(), tt.given, &client.ClientSet{ConfigClient: c})
 			assert.NoError(t, err)
+
+			classicDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+				_, ok := downloadable.(*classic.API)
+				return ok
+			})
+			settingsDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+				_, ok := downloadable.(*settings.API)
+				return ok
+			})
+			automationDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+				_, ok := downloadable.(*automation.API)
+				return ok
+			})
+			bucketDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+				_, ok := downloadable.(*bucket.API)
+				return ok
+			})
+			documentDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+				_, ok := downloadable.(*document.API)
+				return ok
+			})
+			openpipelineDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+				_, ok := downloadable.(*openpipeline.API)
+				return ok
+			})
+			sloDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+				_, ok := downloadable.(*slo.API)
+				return ok
+			})
+			segmentDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+				_, ok := downloadable.(*segment.API)
+				return ok
+			})
+
+			assert.Equal(t, tt.want.config, classicDownloadablePresent)
+			assert.Equal(t, tt.want.settings, settingsDownloadablePresent)
+			assert.Equal(t, tt.want.automation, automationDownloadablePresent)
+			assert.Equal(t, tt.want.bucket, bucketDownloadablePresent)
+			assert.Equal(t, tt.want.document, documentDownloadablePresent)
+			assert.Equal(t, tt.want.openpipeline, openpipelineDownloadablePresent)
+			assert.Equal(t, tt.want.slo, sloDownloadablePresent)
+			assert.Equal(t, tt.want.segment, segmentDownloadablePresent)
 		})
 	}
 }
