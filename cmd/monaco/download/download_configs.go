@@ -306,7 +306,6 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 	configs := make(project.ConfigsPerType)
 	if opts.onlyOptions.ShouldDownload(OnlyApisFlag) {
 		if opts.auth.Token != nil {
-			log.Info("Downloading configuration objects")
 			classicCfgs, err := fn.classicDownload(clientSet.ConfigClient, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
@@ -321,7 +320,6 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 
 	if opts.onlyOptions.ShouldDownload(OnlySettingsFlag) {
 		// auth is already validated during load that either token or OAuth is set
-		log.Info("Downloading settings objects")
 		settingCfgs, err := fn.settingsDownload(clientSet.SettingsClient, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...).Download(ctx, opts.projectName)
 		if err != nil {
 			return nil, err
@@ -331,7 +329,6 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 
 	if opts.onlyOptions.ShouldDownload(OnlyAutomationFlag) {
 		if opts.auth.OAuth != nil {
-			log.Info("Downloading automation resources")
 			automationCfgs, err := fn.automationDownload(clientSet.AutClient).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
@@ -346,7 +343,6 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 
 	if opts.onlyOptions.ShouldDownload(OnlyBucketsFlag) {
 		if opts.auth.OAuth != nil {
-			log.Info("Downloading Grail buckets")
 			bucketCfgs, err := fn.bucketDownload(clientSet.BucketClient).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
@@ -361,7 +357,6 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 
 	if opts.onlyOptions.ShouldDownload(OnlyDocumentsFlag) {
 		if opts.auth.OAuth != nil {
-			log.Info("Downloading documents")
 			documentCfgs, err := fn.documentDownload(clientSet.DocumentClient).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
@@ -376,7 +371,6 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 
 	if featureflags.OpenPipeline.Enabled() && opts.onlyOptions.ShouldDownload(OnlyOpenPipelineFlag) {
 		if opts.auth.OAuth != nil {
-			log.Info("Downloading openpipelines")
 			openPipelineCfgs, err := fn.openPipelineDownload(clientSet.OpenPipelineClient).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
@@ -391,7 +385,6 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 
 	if featureflags.Segments.Enabled() && opts.onlyOptions.ShouldDownload(OnlySegmentsFlag) {
 		if opts.auth.OAuth != nil {
-			log.Info("Downloading segments")
 			segmentCgfs, err := fn.segmentDownload(clientSet.SegmentClient).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err
@@ -406,7 +399,6 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 
 	if featureflags.ServiceLevelObjective.Enabled() && opts.onlyOptions.ShouldDownload(OnlySloV2Flag) {
 		if opts.auth.OAuth != nil {
-			log.Info("Downloading SLO-V2")
 			sloCgfs, err := fn.sloDownload(clientSet.ServiceLevelObjectiveClient).Download(ctx, opts.projectName)
 			if err != nil {
 				return nil, err

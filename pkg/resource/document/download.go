@@ -52,6 +52,7 @@ func NewAPI(documentSource Source) *API {
 }
 
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+	log.Info("Downloading documents")
 	// due to the current test setup, the types must be downloaded in order. This should be changed eventually
 	var typesToDownload = []documents.DocumentType{
 		documents.Dashboard,

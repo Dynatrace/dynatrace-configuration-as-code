@@ -71,6 +71,7 @@ func NewAPI(settingsSource Source, filters Filters, schemaIDs ...config.Settings
 }
 
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+	log.Info("Downloading settings objects")
 	if len(a.specificSchemas) == 0 {
 		return downloadAll(ctx, a.settingsSource, projectName, a.filters)
 	}
