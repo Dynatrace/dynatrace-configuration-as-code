@@ -17,6 +17,7 @@
 package project
 
 import (
+	"bytes"
 	"fmt"
 	"io/fs"
 	"reflect"
@@ -27,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -688,7 +690,7 @@ func Test_loadProject_returnsErrorIfProjectPathDoesNotExist(t *testing.T) {
 		Path: "this/does/not/exist",
 	}
 
-	_, gotErrs := loadProject(t.Context(), fs, loaderContext, definition, []manifest.EnvironmentDefinition{})
+	_, gotErrs := loadProject(t.Context(), fs, loaderContext, definition, manifest.Environments{})
 	assert.Len(t, gotErrs, 1)
 	assert.ErrorContains(t, gotErrs[0], "filepath `this/does/not/exist` does not exist")
 }
@@ -716,7 +718,14 @@ func Test_loadProject_returnsErrorIfScopeForWebKUAhasWrongTypeOfParameter(t *tes
       name: key-user-actions-web
       scope: APPLICATION-3F2C9E73509D15B6`), 0644))
 	require.NoError(t, afero.WriteFile(testFs, "project/kua-web/kua-web.json", []byte("{}"), 0644))
-	_, gotErrs := loadProject(t.Context(), testFs, loaderContext, definition, []manifest.EnvironmentDefinition{{Name: "env"}})
+	_, gotErrs := loadProject(t.Context(), testFs, loaderContext, definition, manifest.Environments{
+		SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
+			"testEnv": {Name: "testEnv"},
+		},
+		AllEnvironmentNames: map[string]struct{}{
+			"testenv": {},
+		},
+	})
 	assert.Len(t, gotErrs, 1)
 	assert.ErrorContains(t, gotErrs[0], "scope parameter of config of type 'key-user-actions-web' with ID 'kua-web-1' needs to be a reference parameter to another web-application config")
 }
@@ -1520,6 +1529,126 @@ func TestLoadProjects_NetworkZonesContainsParameterToSetting(t *testing.T) {
 
 	networkZone2 := findConfig(t, projects[0], "env", "network-zone", 1)
 	assert.Contains(t, networkZone2.Parameters, "__MONACO_NZONE_ENABLED__")
+}
+
+// TestLoadProjects_EnvironmentOverrideWithUndefinedEnvironmentProducesWarning tests that referencing an undefined environment in an environment override produces a warning.
+func TestLoadProjects_EnvironmentOverrideWithUndefinedEnvironmentProducesWarning(t *testing.T) {
+	managementZoneConfig := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+  environmentOverrides:
+  - environment: prod
+    override:
+      skip: true
+`)
+
+	managementZoneJSON := []byte(`{ "name": "", "rules": [] }`)
+
+	testFs := testutils.TempFs(t)
+	logSpy := bytes.Buffer{}
+	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), false, &logSpy, false, false)
+
+	require.NoError(t, testFs.MkdirAll("a/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+
+	testContext := ProjectLoaderContext{
+		KnownApis:  map[string]struct{}{"builtin:management-zones": {}},
+		WorkingDir: ".",
+		Manifest: manifest.Manifest{
+			Projects: manifest.ProjectDefinitionByProjectID{
+				"a": {
+					Name: "a",
+					Path: "a/",
+				},
+			},
+			Environments: manifest.Environments{
+				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
+					"dev": {
+						Name: "dev",
+						Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+					},
+				},
+				AllEnvironmentNames: map[string]struct{}{
+					"dev": {},
+				},
+			},
+		},
+		ParametersSerde: config.DefaultParameterParsers,
+	}
+
+	gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, nil)
+	assert.Len(t, gotErrs, 0, "Expected no errors loading dependent projects ")
+	assert.Len(t, gotProjects, 1)
+
+	assert.Contains(t, logSpy.String(), "environment override references unknown environment 'prod'")
+}
+
+// TestLoadProjects_GroupOverrideWithUndefinedGroupProducesWarning tests that referencing an undefined environment group in a group override produces a warning.
+func TestLoadProjects_GroupOverrideWithUndefinedGroupProducesWarning(t *testing.T) {
+	managementZoneConfig := []byte(`configs:
+- id: mz
+  config:
+    template: mz.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+  groupOverrides:
+  - group: prod
+    override:
+      skip: true
+`)
+
+	managementZoneJSON := []byte(`{ "name": "", "rules": [] }`)
+
+	testFs := testutils.TempFs(t)
+
+	logSpy := bytes.Buffer{}
+	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), false, &logSpy, false, false)
+
+	require.NoError(t, testFs.MkdirAll("a/builtinmanagement-zones", testDirectoryFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
+	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/mz.json", managementZoneJSON, testFileFileMode))
+	testContext := ProjectLoaderContext{
+		KnownApis:  map[string]struct{}{"builtin:management-zones": {}},
+		WorkingDir: ".",
+		Manifest: manifest.Manifest{
+			Projects: manifest.ProjectDefinitionByProjectID{
+				"a": {
+					Name: "a",
+					Path: "a/",
+				},
+			},
+			Environments: manifest.Environments{
+				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
+					"dev": {
+						Name:  "dev",
+						Group: "dev",
+						Auth:  manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+					},
+				},
+				AllEnvironmentNames: map[string]struct{}{
+					"dev": {},
+				},
+				AllGroupNames: map[string]struct{}{
+					"dev": {},
+				},
+			},
+		},
+		ParametersSerde: config.DefaultParameterParsers,
+	}
+
+	gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, nil)
+	assert.Len(t, gotErrs, 0, "Expected no errors loading dependent projects ")
+	assert.Len(t, gotProjects, 1)
+
+	assert.Contains(t, logSpy.String(), "group override references unknown group 'prod'")
 }
 
 type propResolver func(coordinate.Coordinate, string) (any, bool)

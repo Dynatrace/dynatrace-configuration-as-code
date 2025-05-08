@@ -51,14 +51,22 @@ func Test_parseConfigs(t *testing.T) {
 		ProjectId: "project",
 		Path:      "some-dir/",
 		KnownApis: map[string]struct{}{"some-api": {}, api.DashboardShareSettings: {}},
-		Environments: []manifest.EnvironmentDefinition{
-			{
-				Name:  "env name",
-				URL:   manifest.URLDefinition{Type: manifest.ValueURLType, Value: "env url"},
-				Group: "default",
-				Auth: manifest.Auth{
-					Token: &manifest.AuthSecret{Name: "token var"},
+		Environments: manifest.Environments{
+			SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
+				"env name": {
+					Name:  "env name",
+					URL:   manifest.URLDefinition{Type: manifest.ValueURLType, Value: "env url"},
+					Group: "default",
+					Auth: manifest.Auth{
+						Token: &manifest.AuthSecret{Name: "token var"},
+					},
 				},
+			},
+			AllEnvironmentNames: map[string]struct{}{
+				"env name": {},
+			},
+			AllGroupNames: map[string]struct{}{
+				"default": {},
 			},
 		},
 		ParametersSerDe: config.DefaultParameterParsers,

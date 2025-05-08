@@ -25,6 +25,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -55,12 +56,15 @@ func parseConfigEntry(
 		return nil, []error{newDefinitionParserError(configId, singleConfigContext, err.Error())}
 	}
 
+	warnForUndefinedGroups(loaderContext, definition.GroupOverrides)
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
+
+	warnForUndefinedEnvironments(loaderContext, definition.EnvironmentOverrides)
 	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
 
 	var results []config.Config
 	var errs []error
-	for _, env := range loaderContext.Environments {
+	for _, env := range loaderContext.Environments.SelectedEnvironments {
 
 		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env, definition, groupOverrideMap, environmentOverrideMap)
 
@@ -77,6 +81,22 @@ func parseConfigEntry(
 	}
 
 	return results, nil
+}
+
+func warnForUndefinedGroups(loaderContext *configFileLoaderContext, groupOverrides []persistence.GroupOverride) {
+	for _, group := range groupOverrides {
+		if _, exists := loaderContext.Environments.AllGroupNames[group.Group]; !exists {
+			log.Warn("group override references unknown group '%s' which is not defined in the manifest", group.Group)
+		}
+	}
+}
+
+func warnForUndefinedEnvironments(loaderContext *configFileLoaderContext, environmentOverrides []persistence.EnvironmentOverride) {
+	for _, environmentOverride := range environmentOverrides {
+		if _, exists := loaderContext.Environments.AllGroupNames[environmentOverride.Environment]; !exists {
+			log.Warn("environment override references unknown environment '%s' which is not defined in the manifest", environmentOverride.Environment)
+		}
+	}
 }
 
 func toEnvironmentOverrideMap(environments []persistence.EnvironmentOverride) map[string]persistence.EnvironmentOverride {

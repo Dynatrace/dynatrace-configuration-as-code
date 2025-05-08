@@ -38,7 +38,7 @@ import (
 type LoaderContext struct {
 	ProjectId       string
 	Path            string
-	Environments    []manifest.EnvironmentDefinition
+	Environments    manifest.Environments
 	KnownApis       map[string]struct{}
 	ParametersSerDe map[string]parameter.ParameterSerDe
 }

@@ -87,8 +87,6 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 		return nil, []error{fmt.Errorf("no projects defined in manifest")}
 	}
 
-	environments := toEnvironmentSlice(loaderContext.Manifest.Environments.SelectedEnvironments)
-
 	projectNamesToLoad, errs := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
 
 	seenProjectNames := make(map[string]struct{}, len(projectNamesToLoad))
@@ -109,7 +107,7 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 			continue
 		}
 
-		project, loadProjectErrs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, environments)
+		project, loadProjectErrs := loadProject(ctx, workingDirFs, loaderContext, projectDefinition, loaderContext.Manifest.Environments)
 
 		if len(loadProjectErrs) > 0 {
 			errs = append(errs, loadProjectErrs...)
@@ -119,7 +117,7 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 
 		loadedProjects = append(loadedProjects, project)
 
-		for _, environment := range environments {
+		for _, environment := range loaderContext.Manifest.Environments.SelectedEnvironments {
 			projectNamesToLoad = append(projectNamesToLoad, project.Dependencies[environment.Name]...)
 		}
 	}
@@ -168,17 +166,7 @@ func getProjectNamesToLoad(allProjectsDefinitions manifest.ProjectDefinitionByPr
 	return projectNamesToLoad, errs
 }
 
-func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) []manifest.EnvironmentDefinition {
-	var result []manifest.EnvironmentDefinition
-
-	for _, env := range environments {
-		result = append(result, env)
-	}
-
-	return result
-}
-
-func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) (Project, []error) {
+func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments manifest.Environments) (Project, []error) {
 	if exists, err := afero.Exists(fs, projectDefinition.Path); err != nil {
 		formattedErr := fmt.Errorf("failed to load project `%s` (%s): %w", projectDefinition.Name, projectDefinition.Path, err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
@@ -313,7 +301,7 @@ func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 
 // loadConfigsOfProject returns the (partial if errors) loaded configs and the errors
 func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
-	environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
+	environments manifest.Environments) ([]config.Config, []error) {
 
 	configFiles, err := files.FindYamlFiles(fs, projectDefinition.Path)
 	if err != nil {
@@ -323,13 +311,7 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 	var configs []config.Config
 	var errs []error
 
-	loaderContext := &loader.LoaderContext{
-		ProjectId:       projectDefinition.Name,
-		Environments:    environments,
-		Path:            projectDefinition.Path,
-		KnownApis:       loadingContext.KnownApis,
-		ParametersSerDe: loadingContext.ParametersSerde,
-	}
+	loaderContext := newLoaderContext(loadingContext, projectDefinition, environments)
 
 	for _, file := range configFiles {
 		log.WithFields(field.F("file", file)).Debug("Loading configuration file %s", file)
@@ -339,6 +321,18 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 		configs = append(configs, loadedConfigs...)
 	}
 	return configs, errs
+}
+
+func newLoaderContext(loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
+	environments manifest.Environments) *loader.LoaderContext {
+
+	return &loader.LoaderContext{
+		ProjectId:       projectDefinition.Name,
+		Environments:    environments,
+		Path:            projectDefinition.Path,
+		KnownApis:       loadingContext.KnownApis,
+		ParametersSerDe: loadingContext.ParametersSerde,
+	}
 }
 
 func findDuplicatedConfigIdentifiers(ctx context.Context, configs []config.Config, configErrorMap map[coordinate.Coordinate]struct{}) []error {
