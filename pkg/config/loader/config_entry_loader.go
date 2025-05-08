@@ -25,6 +25,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -55,12 +56,24 @@ func parseConfigEntry(
 		return nil, []error{newDefinitionParserError(configId, singleConfigContext, err.Error())}
 	}
 
+	for _, group := range definition.GroupOverrides {
+		if _, exists := loaderContext.Environments.AllGroupNames[group.Group]; !exists {
+			log.Warn("unknown group '%s'", group.Group)
+		}
+	}
+
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
+
+	for _, env := range definition.EnvironmentOverrides {
+		if _, exists := loaderContext.Environments.AllEnvironmentNames[env.Environment]; !exists {
+			log.Warn("unknown environment '%s'", env.Environment)
+		}
+	}
 	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
 
 	var results []config.Config
 	var errs []error
-	for _, env := range loaderContext.Environments {
+	for _, env := range loaderContext.Environments.SelectedEnvironments {
 
 		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env, definition, groupOverrideMap, environmentOverrideMap)
 
