@@ -89,7 +89,7 @@ func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
 			},
 		},
 		"env2": manifest.EnvironmentDefinition{
-			Name: "env",
+			Name: "env2",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
 				Name:  "URL",
