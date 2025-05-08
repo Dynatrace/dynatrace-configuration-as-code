@@ -38,8 +38,13 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewOsFs())
 
 	loaderContext := LoaderContext{
-		Environments: []manifest.EnvironmentDefinition{
-			{Name: "testEnv"},
+		Environments: manifest.Environments{
+			SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
+				"testEnv": {Name: "testEnv"},
+			},
+			AllEnvironmentNames: map[string]struct{}{
+				"testenv": {},
+			},
 		},
 		KnownApis:       map[string]struct{}{"some-api": {}},
 		ParametersSerDe: config.DefaultParameterParsers,
