@@ -67,7 +67,9 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 	}
 
 	if c.HasRefTo(string(config.BucketTypeID)) {
-		upsertOptions.OverrideRetry = &dtclient.RetrySetting{WaitTime: 10 * time.Second, MaxRetries: 6}
+		// some endpoints have a different datasource for the buckets, so it may take a while in order to show up
+		// 6 retries (1 minute) is too less and results in some flakiness
+		upsertOptions.OverrideRetry = &dtclient.RetrySetting{WaitTime: 10 * time.Second, MaxRetries: 12}
 	}
 
 	if c.HasRefTo(api.ApplicationWeb) {
