@@ -18,18 +18,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 
 	"github.com/spf13/afero"
 
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
+	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
+	versionClient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
@@ -375,4 +380,36 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 	for k, v := range src {
 		dest[k] = append(dest[k], v...)
 	}
+}
+
+// checkIfAbleToUploadToSameEnvironment function may display a warning message on the console,
+// notifying the user that downloaded objects cannot be uploaded to the same environment.
+// It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
+func checkIfAbleToUploadToSameEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) {
+	// ignore server version check if OAuth is provided (can't be below the specified version)
+	if env.Auth.OAuth != nil {
+		return
+	}
+
+	parsedUrl, err := url.Parse(env.URL.Value)
+	if err != nil {
+		log.Error("Invalid environment URL: %s", err)
+		return
+	}
+
+	httpClient := clientAuth.NewTokenAuthClient(env.Auth.Token.Value.Value())
+	serverVersion, err := versionClient.GetDynatraceVersion(ctx, corerest.NewClient(parsedUrl, httpClient, corerest.WithRateLimiter(), corerest.WithRetryOptions(&client.DefaultRetryOptions)))
+	if err != nil {
+		log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Warn("Unable to determine server version %q: %v", env.URL.Value, err)
+		return
+	}
+	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {
+		logUploadToSameEnvironmentWarning()
+	}
+}
+
+func logUploadToSameEnvironmentWarning() {
+	log.Warn("Uploading Settings 2.0 objects to the same environment is not possible due to your cluster version being below '1.262.0'. " +
+		"Monaco only reliably supports higher Dynatrace versions for updating downloaded settings without duplicating configurations. " +
+		"Consider upgrading to '1.262+'")
 }
