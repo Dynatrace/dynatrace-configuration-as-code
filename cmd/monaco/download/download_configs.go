@@ -18,18 +18,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
+	"net/url"
 
 	"github.com/spf13/afero"
 
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
+	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
+	versionClient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
@@ -57,46 +60,6 @@ type downloadCmdOptions struct {
 	specificAPIs            []string
 	specificSchemas         []string
 	onlyOptions             OnlyOptions
-}
-
-type auth struct {
-	token, clientID, clientSecret string
-}
-
-func (a auth) mapToAuth() (*manifest.Auth, []error) {
-	errs := make([]error, 0)
-	mAuth := manifest.Auth{}
-
-	if token, err := readEnvVariable(a.token); err != nil {
-		errs = append(errs, err)
-	} else {
-		mAuth.Token = &token
-	}
-
-	if a.clientID != "" && a.clientSecret != "" {
-		mAuth.OAuth = &manifest.OAuth{}
-		if clientId, err := readEnvVariable(a.clientID); err != nil {
-			errs = append(errs, err)
-		} else {
-			mAuth.OAuth.ClientID = clientId
-		}
-		if clientSecret, err := readEnvVariable(a.clientSecret); err != nil {
-			errs = append(errs, err)
-		} else {
-			mAuth.OAuth.ClientSecret = clientSecret
-		}
-	}
-	return &mAuth, errs
-}
-
-func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
-	var content string
-	if envVar == "" {
-		return manifest.AuthSecret{}, fmt.Errorf("unknown environment variable name")
-	} else if content = os.Getenv(envVar); content == "" {
-		return manifest.AuthSecret{}, fmt.Errorf("the content of the environment variable %q is not set", envVar)
-	}
-	return manifest.AuthSecret{Name: envVar, Value: secret.MaskedString(content)}, nil
 }
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs afero.Fs, cmdOptions downloadCmdOptions) error {
@@ -297,7 +260,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 
 	if opts.onlyOptions.ShouldDownload(OnlySettingsFlag) {
 		// auth is already validated during load that either token or OAuth is set
-		downloadables = append(downloadables, settings.NewAPI(clientSet.SettingsClient, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...))
+		downloadables = append(downloadables, settings.NewAPI(clientSet.SettingsClient, settings.DefaultSettingsFilters, opts.specificSchemas))
 	}
 
 	if opts.onlyOptions.ShouldDownload(OnlyAutomationFlag) {
@@ -363,16 +326,40 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 	return downloadables, nil
 }
 
-func makeSettingTypes(specificSchemas []string) []config.SettingsType {
-	var settingTypes []config.SettingsType
-	for _, schema := range specificSchemas {
-		settingTypes = append(settingTypes, config.SettingsType{SchemaId: schema})
-	}
-	return settingTypes
-}
-
 func copyConfigs(dest, src project.ConfigsPerType) {
 	for k, v := range src {
 		dest[k] = append(dest[k], v...)
 	}
+}
+
+// checkIfAbleToUploadToSameEnvironment function may display a warning message on the console,
+// notifying the user that downloaded objects cannot be uploaded to the same environment.
+// It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
+func checkIfAbleToUploadToSameEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) {
+	// ignore server version check if OAuth is provided (can't be below the specified version)
+	if env.Auth.OAuth != nil {
+		return
+	}
+
+	parsedUrl, err := url.Parse(env.URL.Value)
+	if err != nil {
+		log.Error("Invalid environment URL: %s", err)
+		return
+	}
+
+	httpClient := clientAuth.NewTokenAuthClient(env.Auth.Token.Value.Value())
+	serverVersion, err := versionClient.GetDynatraceVersion(ctx, corerest.NewClient(parsedUrl, httpClient, corerest.WithRateLimiter(), corerest.WithRetryOptions(&client.DefaultRetryOptions)))
+	if err != nil {
+		log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Warn("Unable to determine server version %q: %v", env.URL.Value, err)
+		return
+	}
+	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {
+		logUploadToSameEnvironmentWarning()
+	}
+}
+
+func logUploadToSameEnvironmentWarning() {
+	log.Warn("Uploading Settings 2.0 objects to the same environment is not possible due to your cluster version being below '1.262.0'. " +
+		"Monaco only reliably supports higher Dynatrace versions for updating downloaded settings without duplicating configurations. " +
+		"Consider upgrading to '1.262+'")
 }
