@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 
 	"github.com/spf13/afero"
 
@@ -28,7 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -62,46 +60,6 @@ type downloadCmdOptions struct {
 	specificAPIs            []string
 	specificSchemas         []string
 	onlyOptions             OnlyOptions
-}
-
-type auth struct {
-	token, clientID, clientSecret string
-}
-
-func (a auth) mapToAuth() (*manifest.Auth, []error) {
-	errs := make([]error, 0)
-	mAuth := manifest.Auth{}
-
-	if token, err := readEnvVariable(a.token); err != nil {
-		errs = append(errs, err)
-	} else {
-		mAuth.Token = &token
-	}
-
-	if a.clientID != "" && a.clientSecret != "" {
-		mAuth.OAuth = &manifest.OAuth{}
-		if clientId, err := readEnvVariable(a.clientID); err != nil {
-			errs = append(errs, err)
-		} else {
-			mAuth.OAuth.ClientID = clientId
-		}
-		if clientSecret, err := readEnvVariable(a.clientSecret); err != nil {
-			errs = append(errs, err)
-		} else {
-			mAuth.OAuth.ClientSecret = clientSecret
-		}
-	}
-	return &mAuth, errs
-}
-
-func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
-	var content string
-	if envVar == "" {
-		return manifest.AuthSecret{}, fmt.Errorf("unknown environment variable name")
-	} else if content = os.Getenv(envVar); content == "" {
-		return manifest.AuthSecret{}, fmt.Errorf("the content of the environment variable %q is not set", envVar)
-	}
-	return manifest.AuthSecret{Name: envVar, Value: secret.MaskedString(content)}, nil
 }
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs afero.Fs, cmdOptions downloadCmdOptions) error {
