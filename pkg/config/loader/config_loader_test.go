@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
@@ -2106,6 +2107,108 @@ func Test_validateParameter(t *testing.T) {
 			tt.wantErr(t, validateParameter(&ctx, "paramName", tt.given.param), fmt.Sprintf("validateParameter - given %s", tt.given))
 		})
 	}
+}
+
+// TestLoadConfigFile_ConfigsGeneratedForNonSkippedEnvironments tests that a config will be created for each non-skipped environment.
+func TestLoadConfigFile_ConfigsGeneratedForNonSkippedEnvironments(t *testing.T) {
+	testLoaderContext := &LoaderContext{
+		ProjectId: "project",
+		Path:      "some-dir/",
+		Environments: []manifest.EnvironmentDefinition{
+			{
+				Name:  "environment1",
+				URL:   manifest.URLDefinition{Type: manifest.ValueURLType, Value: "env url"},
+				Group: "group1",
+				Auth: manifest.Auth{
+					Token: &manifest.AuthSecret{Name: "token var"},
+				},
+			},
+			{
+				Name:  "environment2",
+				URL:   manifest.URLDefinition{Type: manifest.ValueURLType, Value: "env url"},
+				Group: "group1",
+				Auth: manifest.Auth{
+					Token: &manifest.AuthSecret{Name: "token var"},
+				},
+			},
+		},
+		ParametersSerDe: config.DefaultParameterParsers,
+	}
+
+	testFs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(testFs, "config.yaml", []byte(`configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope:
+        type: value
+        value: environment`), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "profile.json", []byte("{}"), 0644))
+
+	configs, errs := LoadConfigFile(t.Context(), testFs, testLoaderContext, "config.yaml")
+
+	require.Empty(t, errs)
+	require.Len(t, configs, 2)
+	assert.Equal(t, "environment1", configs[0].Environment)
+	assert.Equal(t, "group1", configs[0].Group)
+	assert.Equal(t, "environment2", configs[1].Environment)
+	assert.Equal(t, "group1", configs[1].Group)
+}
+
+// TestLoadConfigFile_NoConfigsGeneratedForSkippedEnvironments tests that no config will be created for a skipped environment.
+func TestLoadConfigFile_NoConfigsGeneratedForSkippedEnvironments(t *testing.T) {
+	testLoaderContext := &LoaderContext{
+		ProjectId: "project",
+		Path:      "some-dir/",
+		Environments: []manifest.EnvironmentDefinition{
+			{
+				Name:  "environment1",
+				URL:   manifest.URLDefinition{Type: manifest.ValueURLType, Value: "env url"},
+				Group: "group1",
+				Auth: manifest.Auth{
+					Token: &manifest.AuthSecret{Name: "token var"},
+				},
+			},
+			{
+				Skip:  true,
+				Name:  "environment2",
+				URL:   manifest.URLDefinition{Type: manifest.ValueURLType, Value: "env url"},
+				Group: "group1",
+				Auth: manifest.Auth{
+					Token: &manifest.AuthSecret{Name: "token var"},
+				},
+			},
+		},
+		ParametersSerDe: config.DefaultParameterParsers,
+	}
+
+	testFs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(testFs, "config.yaml", []byte(`configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope:
+        type: value
+        value: environment`), 0644))
+	require.NoError(t, afero.WriteFile(testFs, "profile.json", []byte("{}"), 0644))
+
+	configs, errs := LoadConfigFile(t.Context(), testFs, testLoaderContext, "config.yaml")
+	require.Empty(t, errs)
+	require.Len(t, configs, 1)
+	assert.Equal(t, "environment1", configs[0].Environment)
+	assert.Equal(t, "group1", configs[0].Group)
 }
 
 func makeCompoundParam(t *testing.T, refs []parameter.ParameterReference) *compound.CompoundParameter {
