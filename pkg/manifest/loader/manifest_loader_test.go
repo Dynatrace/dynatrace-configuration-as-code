@@ -755,8 +755,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
-						Enabled: true,
-						Name:    "c",
+						Name: "c",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "d",
@@ -791,8 +790,7 @@ environmentGroups:
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
-						Enabled: true,
-						Name:    "envA",
+						Name: "envA",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -806,8 +804,7 @@ environmentGroups:
 						},
 					},
 					"envB": {
-						Enabled: true,
-						Name:    "envB",
+						Name: "envB",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -844,8 +841,7 @@ environmentGroups:
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
-						Enabled: true,
-						Name:    "envA",
+						Name: "envA",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -859,8 +855,7 @@ environmentGroups:
 						},
 					},
 					"envB": {
-						Enabled: true,
-						Name:    "envB",
+						Name: "envB",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -896,8 +891,7 @@ environmentGroups:
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
-						Enabled: true,
-						Name:    "envA",
+						Name: "envA",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -911,9 +905,9 @@ environmentGroups:
 						},
 					},
 					"envB": {
-						Enabled: false,
-						Name:    "envB",
-						Group:   "groupB",
+						Skip:  true,
+						Name:  "envB",
+						Group: "groupB",
 					},
 				},
 				Accounts: map[string]manifest.Account{},
@@ -938,8 +932,7 @@ environmentGroups:
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
-						Enabled: true,
-						Name:    "envA",
+						Name: "envA",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -953,9 +946,9 @@ environmentGroups:
 						},
 					},
 					"envB": {
-						Enabled: false,
-						Name:    "envB",
-						Group:   "groupB",
+						Skip:  true,
+						Name:  "envB",
+						Group: "groupB",
 					},
 				},
 				Accounts: map[string]manifest.Account{},
@@ -982,8 +975,7 @@ environmentGroups:
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
-						Enabled: true,
-						Name:    "envA",
+						Name: "envA",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -997,8 +989,7 @@ environmentGroups:
 						},
 					},
 					"envB": {
-						Enabled: true,
-						Name:    "envB",
+						Name: "envB",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -1012,9 +1003,9 @@ environmentGroups:
 						},
 					},
 					"envC": {
-						Enabled: false,
-						Name:    "envC",
-						Group:   "groupC",
+						Skip:  true,
+						Name:  "envC",
+						Group: "groupC",
 					},
 				},
 				Accounts: map[string]manifest.Account{},
@@ -1040,8 +1031,7 @@ environmentGroups:
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
-						Enabled: true,
-						Name:    "envA",
+						Name: "envA",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -1055,8 +1045,7 @@ environmentGroups:
 						},
 					},
 					"envB": {
-						Enabled: true,
-						Name:    "envB",
+						Name: "envB",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -1070,9 +1059,9 @@ environmentGroups:
 						},
 					},
 					"envC": {
-						Enabled: false,
-						Name:    "envC",
-						Group:   "groupC",
+						Skip:  true,
+						Name:  "envC",
+						Group: "groupC",
 					},
 				},
 				Accounts: map[string]manifest.Account{},
@@ -1098,8 +1087,7 @@ environmentGroups:
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
-						Enabled: true,
-						Name:    "envA",
+						Name: "envA",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -1113,8 +1101,7 @@ environmentGroups:
 						},
 					},
 					"envB": {
-						Enabled: true,
-						Name:    "envB",
+						Name: "envB",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -1128,9 +1115,9 @@ environmentGroups:
 						},
 					},
 					"envC": {
-						Enabled: false,
-						Name:    "envC",
-						Group:   "groupC",
+						Skip:  true,
+						Name:  "envC",
+						Group: "groupC",
 					},
 				},
 				Accounts: map[string]manifest.Account{},
@@ -1157,8 +1144,7 @@ environmentGroups:
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
-						Enabled: true,
-						Name:    "envA",
+						Name: "envA",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -1172,8 +1158,7 @@ environmentGroups:
 						},
 					},
 					"envB": {
-						Enabled: true,
-						Name:    "envB",
+						Name: "envB",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
@@ -1187,9 +1172,9 @@ environmentGroups:
 						},
 					},
 					"envC": {
-						Enabled: false,
-						Name:    "envC",
-						Group:   "groupC",
+						Skip:  true,
+						Name:  "envC",
+						Group: "groupC",
 					},
 				},
 				Accounts: map[string]manifest.Account{},
@@ -1268,8 +1253,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				Projects: manifest.ProjectDefinitionByProjectID{},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
-						Enabled: true,
-						Name:    "c",
+						Name: "c",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "d",
@@ -1315,8 +1299,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				Projects: manifest.ProjectDefinitionByProjectID{},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
-						Enabled: true,
-						Name:    "c",
+						Name: "c",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "d",
@@ -1444,8 +1427,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
-						Enabled: true,
-						Name:    "c",
+						Name: "c",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "d",
@@ -1479,8 +1461,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
-						Enabled: true,
-						Name:    "c",
+						Name: "c",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "d",
@@ -1525,8 +1506,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
-						Enabled: true,
-						Name:    "c",
+						Name: "c",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "d",
@@ -1574,8 +1554,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
-						Enabled: true,
-						Name:    "c",
+						Name: "c",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "d",
@@ -1624,8 +1603,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {o
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
-						Enabled: true,
-						Name:    "c",
+						Name: "c",
 						URL: manifest.URLDefinition{
 							Type:  manifest.ValueURLType,
 							Value: "d",
@@ -1714,8 +1692,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {type: environment, 
 				},
 				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
-						Enabled: true,
-						Name:    "c",
+						Name: "c",
 						URL: manifest.URLDefinition{
 							Type:  manifest.EnvironmentURLType,
 							Value: "mock token",

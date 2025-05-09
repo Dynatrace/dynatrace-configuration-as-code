@@ -380,7 +380,7 @@ func parseEnvironments(context *Context, groups []persistence.Group) (map[string
 			// skip actually loading if environments is not empty, the environments does not contain the env name, or the group should not be included
 			if shouldSkipEnv(context, group, env) {
 				log.WithFields(field.F("manifestPath", context.ManifestPath)).Debug("skipping loading of environment %q", env.Name)
-				environments[env.Name] = manifest.EnvironmentDefinition{Enabled: false, Name: env.Name, Group: group.Name}
+				environments[env.Name] = manifest.EnvironmentDefinition{Skip: true, Name: env.Name, Group: group.Name}
 				continue
 			}
 
@@ -450,11 +450,10 @@ func parseSingleEnvironment(context *Context, config persistence.Environment, gr
 	}
 
 	return manifest.EnvironmentDefinition{
-		Enabled: true,
-		Name:    config.Name,
-		URL:     urlDef,
-		Auth:    a,
-		Group:   group,
+		Name:  config.Name,
+		URL:   urlDef,
+		Auth:  a,
+		Group: group,
 	}, nil
 }
 

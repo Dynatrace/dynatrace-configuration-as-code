@@ -74,7 +74,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	envNames := make([]string, 0, len(loadedManifest.Environments))
 
 	for _, env := range loadedManifest.Environments {
-		if !env.Enabled {
+		if env.Skip {
 			continue
 		}
 		envNames = append(envNames, env.Name)
