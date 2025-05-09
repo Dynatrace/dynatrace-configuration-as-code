@@ -61,13 +61,8 @@ type API struct {
 	specificSchemas []string
 }
 
-func NewAPI(settingsSource Source, filters Filters, schemaIDs ...config.SettingsType) *API {
-	var schemas []string
-	for _, s := range schemaIDs {
-		schemas = append(schemas, s.SchemaId)
-	}
-
-	return &API{settingsSource, filters, schemas}
+func NewAPI(settingsSource Source, filters Filters, specificSchemas []string) *API {
+	return &API{settingsSource, filters, specificSchemas}
 }
 
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
