@@ -63,7 +63,7 @@ func TestDownloadAll(t *testing.T) {
 		name       string
 		mockValues mockValues
 		filters    map[string]Filter
-		schemas    []config.SettingsType
+		schemas    []string
 		envVars    map[string]string
 		want       project.ConfigsPerType
 	}{
@@ -650,7 +650,7 @@ func TestDownloadAll(t *testing.T) {
 		},
 		{
 			name:    "DownloadSettings - Settings found",
-			schemas: []config.SettingsType{{SchemaId: "builtin:alerting-profile"}},
+			schemas: []string{"builtin:alerting-profile"},
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "builtin:alerting-profile"}}, nil
@@ -694,7 +694,7 @@ func TestDownloadAll(t *testing.T) {
 		},
 		{
 			name:    "Downloading builtin:host.monitoring.mode discards all by default",
-			schemas: []config.SettingsType{{SchemaId: "builtin:host.monitoring.mode"}},
+			schemas: []string{"builtin:host.monitoring.mode"},
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{{SchemaId: "builtin:host.monitoring.mode"}}, nil
@@ -720,7 +720,7 @@ func TestDownloadAll(t *testing.T) {
 		},
 		{
 			name:    "Downloading builtin:host.monitoring.mode does not discard them if the DownloadFilter FF is inactive",
-			schemas: []config.SettingsType{{SchemaId: "builtin:host.monitoring.mode"}},
+			schemas: []string{"builtin:host.monitoring.mode"},
 			envVars: map[string]string{
 				featureflags.DownloadFilter.EnvName(): "false",
 			},
@@ -801,7 +801,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				GetPermissionCalls: 1,
 			},
-			schemas: []config.SettingsType{{SchemaId: "app:my-app:schema"}},
+			schemas: []string{"app:my-app:schema"},
 			want: project.ConfigsPerType{"app:my-app:schema": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
@@ -855,7 +855,7 @@ func TestDownloadAll(t *testing.T) {
 			envVars: map[string]string{
 				featureflags.AccessControlSettings.EnvName(): "false",
 			},
-			schemas: []config.SettingsType{{SchemaId: "app:my-app:schema"}},
+			schemas: []string{"app:my-app:schema"},
 			want: project.ConfigsPerType{"app:my-app:schema": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
@@ -912,7 +912,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				GetPermissionCalls: 1,
 			},
-			schemas: []config.SettingsType{{SchemaId: "app:my-app:schema"}},
+			schemas: []string{"app:my-app:schema"},
 			want:    project.ConfigsPerType{},
 		},
 	}
@@ -935,7 +935,7 @@ func TestDownloadAll(t *testing.T) {
 
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			settingsAPI := NewAPI(c, tt.filters, tt.schemas...)
+			settingsAPI := NewAPI(c, tt.filters, tt.schemas)
 			res, err := settingsAPI.Download(t.Context(), "projectName")
 
 			assert.Equal(t, tt.want, res)

@@ -260,7 +260,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 
 	if opts.onlyOptions.ShouldDownload(OnlySettingsFlag) {
 		// auth is already validated during load that either token or OAuth is set
-		downloadables = append(downloadables, settings.NewAPI(clientSet.SettingsClient, settings.DefaultSettingsFilters, makeSettingTypes(opts.specificSchemas)...))
+		downloadables = append(downloadables, settings.NewAPI(clientSet.SettingsClient, settings.DefaultSettingsFilters, opts.specificSchemas))
 	}
 
 	if opts.onlyOptions.ShouldDownload(OnlyAutomationFlag) {
@@ -324,14 +324,6 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 	}
 
 	return downloadables, nil
-}
-
-func makeSettingTypes(specificSchemas []string) []config.SettingsType {
-	var settingTypes []config.SettingsType
-	for _, schema := range specificSchemas {
-		settingTypes = append(settingTypes, config.SettingsType{SchemaId: schema})
-	}
-	return settingTypes
 }
 
 func copyConfigs(dest, src project.ConfigsPerType) {
