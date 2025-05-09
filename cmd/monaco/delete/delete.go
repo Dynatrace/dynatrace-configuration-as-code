@@ -38,7 +38,7 @@ import (
 func Delete(ctx context.Context, environments manifest.Environments, entriesToDelete delete.DeleteEntries) error {
 	var envsWithDeleteErrs []string
 	for _, env := range environments {
-		if !env.Enabled {
+		if env.Skip {
 			continue
 		}
 		ctx := context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})

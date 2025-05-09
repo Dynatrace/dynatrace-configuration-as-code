@@ -106,9 +106,8 @@ func TestManifestLoading(t *testing.T) {
 		},
 		Environments: manifest.Environments{
 			"test-env-1": manifest.EnvironmentDefinition{
-				Enabled: true,
-				Name:    "test-env-1",
-				Group:   "dev",
+				Name:  "test-env-1",
+				Group: "dev",
 				URL: manifest.URLDefinition{
 					Type:  manifest.EnvironmentURLType,
 					Name:  "ENV_URL",
@@ -137,9 +136,8 @@ func TestManifestLoading(t *testing.T) {
 				},
 			},
 			"test-env-2": manifest.EnvironmentDefinition{
-				Enabled: true,
-				Name:    "test-env-2",
-				Group:   "dev",
+				Name:  "test-env-2",
+				Group: "dev",
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "",
@@ -154,9 +152,8 @@ func TestManifestLoading(t *testing.T) {
 				},
 			},
 			"prod-env-1": manifest.EnvironmentDefinition{
-				Enabled: true,
-				Name:    "prod-env-1",
-				Group:   "prod",
+				Name:  "prod-env-1",
+				Group: "prod",
 				URL: manifest.URLDefinition{
 					Type:  manifest.EnvironmentURLType,
 					Name:  "ENV_URL",

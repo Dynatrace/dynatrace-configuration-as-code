@@ -61,7 +61,7 @@ func parseConfigEntry(
 	var results []config.Config
 	var errs []error
 	for _, env := range loaderContext.Environments {
-		if !env.Enabled {
+		if env.Skip {
 			continue
 		}
 

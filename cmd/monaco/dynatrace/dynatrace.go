@@ -51,7 +51,7 @@ func VerifyEnvironmentGeneration(ctx context.Context, envs manifest.Environments
 		return true
 	}
 	for _, env := range envs {
-		if !env.Enabled {
+		if env.Skip {
 			continue
 		}
 		if !isValidEnvironment(ctx, env) {
@@ -192,7 +192,7 @@ func (e EnvironmentClients) Names() []string {
 func CreateEnvironmentClients(ctx context.Context, environments manifest.Environments, dryRun bool) (EnvironmentClients, error) {
 	clients := make(EnvironmentClients, len(environments))
 	for _, env := range environments {
-		if !env.Enabled {
+		if env.Skip {
 			continue
 		}
 		if dryRun {
