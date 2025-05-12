@@ -36,11 +36,13 @@ import (
 )
 
 type LoaderContext struct {
-	ProjectId       string
-	Path            string
-	Environments    []manifest.EnvironmentDefinition
-	KnownApis       map[string]struct{}
-	ParametersSerDe map[string]parameter.ParameterSerDe
+	ProjectId         string
+	Path              string
+	Environments      []manifest.EnvironmentDefinition
+	KnownApis         map[string]struct{}
+	KnownEnvironments map[string]struct{}
+	KnownGroups       map[string]struct{}
+	ParametersSerDe   map[string]parameter.ParameterSerDe
 }
 
 // configFileLoaderContext is a context for each config-file
