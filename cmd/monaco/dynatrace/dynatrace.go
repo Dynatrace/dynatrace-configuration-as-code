@@ -208,4 +208,3 @@ func CreateEnvironmentClients(ctx context.Context, environments manifest.Environ
 
 	return clients, nil
 }
-

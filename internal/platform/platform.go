@@ -18,11 +18,14 @@ package platform
 
 import (
 	"context"
+	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
 	"golang.org/x/oauth2/clientcredentials"
 
+	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -56,12 +59,14 @@ func findSimpleClassicURL(ctx context.Context, platformURL string) (classicUrl s
 	}
 	classicUrl = strings.Replace(platformURL, ".apps.", replaceWith, 1)
 
-	client, err := clients.Factory().WithClassicURL(classicUrl).CreateClassicClient()
+	parsedUrl, err := url.Parse(classicUrl)
 	if err != nil {
+		log.Debug("Invalid environment URL: %s", err)
 		return "", false
 	}
+	cl := corerest.NewClient(parsedUrl, &http.Client{}, corerest.WithRateLimiter())
 
-	if classicheartbeat.TestClassic(ctx, *client) {
+	if classicheartbeat.TestClassic(ctx, *cl) {
 		log.Debug("Found classic environment URL based on Platform URL: %s", classicUrl)
 		return classicUrl, true
 	}
