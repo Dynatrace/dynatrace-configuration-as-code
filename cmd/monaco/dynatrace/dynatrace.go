@@ -20,8 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/platform"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/apitoken"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 
@@ -37,8 +37,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/classicheartbeat"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 
 	"golang.org/x/oauth2/clientcredentials"
@@ -102,7 +100,7 @@ func isPlatformEnvironment(ctx context.Context, env manifest.EnvironmentDefiniti
 		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
 
-	if _, err := getDynatraceClassicURL(ctx, env.URL.Value, oauthCreds); err != nil {
+	if _, err := platform.GetDynatraceClassicURL(ctx, env.URL.Value, oauthCreds); err != nil {
 		handleAuthError(ctx, env, err)
 		log.Error("Please verify that this environment is a Dynatrace Platform environment.")
 		return false
@@ -211,37 +209,3 @@ func CreateEnvironmentClients(ctx context.Context, environments manifest.Environ
 	return clients, nil
 }
 
-func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds clientcredentials.Config) (string, error) {
-	if featureflags.BuildSimpleClassicURL.Enabled() {
-		if classicURL, ok := findSimpleClassicURL(ctx, platformURL); ok {
-			return classicURL, nil
-		}
-	}
-
-	client, err := clients.Factory().WithPlatformURL(platformURL).WithOAuthCredentials(oauthCreds).CreatePlatformClient(ctx)
-	if err != nil {
-		return "", err
-	}
-	return metadata.GetDynatraceClassicURL(ctx, *client)
-}
-
-func findSimpleClassicURL(ctx context.Context, platformURL string) (classicUrl string, ok bool) {
-	if !strings.Contains(platformURL, ".apps.") {
-		log.Debug("Environment URL not matching expected Platform URL pattern, unable to build Classic environment URL directly.")
-		return "", false
-	}
-
-	classicUrl = strings.Replace(platformURL, ".apps.", ".live.", 1)
-
-	client, err := clients.Factory().WithClassicURL(classicUrl).CreateClassicClient()
-	if err != nil {
-		return "", false
-	}
-
-	if classicheartbeat.TestClassic(ctx, *client) {
-		log.Debug("Found classic environment URL based on Platform URL: %s", classicUrl)
-		return classicUrl, true
-	}
-
-	return "", false
-}

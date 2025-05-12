@@ -37,10 +37,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/platform"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
@@ -328,7 +328,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
-		classicURL, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
+		classicURL, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth)
 		if err != nil {
 			return nil, err
 		}
@@ -367,11 +367,15 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	}, nil
 }
 
-func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth, client *rest.Client) (string, error) {
-	classicUrl := url
-	if auth != nil && client != nil {
-		return metadata.GetDynatraceClassicURL(ctx, *client)
+func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth) (string, error) {
+	if auth == nil {
+		return url, nil
 	}
 
-	return classicUrl, nil
+	oauthCreds := clientcredentials.Config{
+		ClientID:     auth.ClientID.Value.Value(),
+		ClientSecret: auth.ClientSecret.Value.Value(),
+		TokenURL:     auth.GetTokenEndpointValue(),
+	}
+	return platform.GetDynatraceClassicURL(ctx, url, oauthCreds)
 }
