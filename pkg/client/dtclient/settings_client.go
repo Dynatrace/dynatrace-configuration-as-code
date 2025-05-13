@@ -404,7 +404,7 @@ func (d *SettingsClient) ClearCache() {
 
 func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, err error) {
 	queryParams := url.Values{}
-	queryParams.Add("fields", "ordered,schemaId")
+	queryParams.Add("fields", "ordered,schemaId,ownerBasedAccessControl")
 
 	// getting all schemas does not have pagination
 	resp, err := coreapi.AsResponseOrError(d.client.GET(ctx, d.settingsSchemaAPIPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
@@ -422,46 +422,7 @@ func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, e
 		log.Warn("Total count of settings 2.0 schemas (=%d) does not match with count of actually downloaded settings 2.0 schemas (=%d)", result.TotalCount, len(result.Items))
 	}
 
-	if featureflags.AccessControlSettings.Enabled() {
-		return d.addOwnerBasedAccessControl(ctx, result.Items)
-	}
 	return result.Items, nil
-}
-
-// addACLToSchemas adds the correct ownerBasedAccessControl information to the schemas
-func (d *SettingsClient) addOwnerBasedAccessControl(ctx context.Context, schemas SchemaList) (SchemaList, error) {
-	type result struct {
-		Err    error
-		Schema SchemaItem
-	}
-	resChan := make(chan result, len(schemas))
-
-	for _, s := range schemas {
-		go func(s SchemaItem) {
-			fullSchema, err := d.GetSchema(ctx, s.SchemaId)
-			s.OwnerBasedAccessControl = fullSchema.OwnerBasedAccessControl
-
-			resChan <- result{Schema: s, Err: err}
-		}(s)
-	}
-
-	errs := make([]error, 0, len(schemas))
-	updatedSchemas := make(SchemaList, 0, len(schemas))
-
-	for i := 0; i < len(schemas); i++ {
-		if res := <-resChan; res.Err != nil {
-			errs = append(errs, res.Err)
-		} else {
-			updatedSchemas = append(updatedSchemas, res.Schema)
-		}
-	}
-
-	close(resChan)
-
-	if len(errs) > 0 {
-		return nil, errors.Join(errs...)
-	}
-	return updatedSchemas, nil
 }
 
 func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constraints Schema, err error) {
