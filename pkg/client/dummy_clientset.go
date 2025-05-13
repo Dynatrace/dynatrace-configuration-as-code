@@ -27,7 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 )
 
@@ -161,28 +160,28 @@ func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) 
 
 type DummySegmentClient struct{}
 
-func (c *DummySegmentClient) List(_ context.Context) (segments.Response, error) {
-	return segments.Response{}, nil
+func (c *DummySegmentClient) List(_ context.Context) (api.Response, error) {
+	return api.Response{}, nil
 }
 
-func (c *DummySegmentClient) GetAll(_ context.Context) ([]segments.Response, error) {
-	return []segments.Response{}, nil
+func (c *DummySegmentClient) GetAll(_ context.Context) ([]api.Response, error) {
+	return []api.Response{}, nil
 }
 
-func (c *DummySegmentClient) Delete(_ context.Context, _ string) (segments.Response, error) {
-	return segments.Response{}, nil
+func (c *DummySegmentClient) Delete(_ context.Context, _ string) (api.Response, error) {
+	return api.Response{}, nil
 }
 
-func (c *DummySegmentClient) Create(_ context.Context, _ []byte) (segments.Response, error) {
-	return segments.Response{Data: []byte(`{}`)}, nil
+func (c *DummySegmentClient) Create(_ context.Context, _ []byte) (api.Response, error) {
+	return api.Response{Data: []byte(`{}`)}, nil
 }
 
-func (c *DummySegmentClient) Update(_ context.Context, _ string, _ []byte) (segments.Response, error) {
-	return segments.Response{}, nil
+func (c *DummySegmentClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
+	return api.Response{}, nil
 }
 
-func (c *DummySegmentClient) Get(_ context.Context, _ string) (segments.Response, error) {
-	return segments.Response{}, nil
+func (c *DummySegmentClient) Get(_ context.Context, _ string) (api.Response, error) {
+	return api.Response{}, nil
 }
 
 type DummyServiceLevelObjectClient struct{}

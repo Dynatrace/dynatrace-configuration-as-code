@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	libSegment "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
@@ -36,15 +35,15 @@ import (
 
 type stubClient struct {
 	called bool
-	delete func(id string) (libSegment.Response, error)
-	list   func() (libSegment.Response, error)
+	delete func(id string) (libAPI.Response, error)
+	list   func() (libAPI.Response, error)
 }
 
-func (s *stubClient) List(_ context.Context) (libSegment.Response, error) {
+func (s *stubClient) List(_ context.Context) (libAPI.Response, error) {
 	return s.list()
 }
 
-func (s *stubClient) Delete(_ context.Context, id string) (libSegment.Response, error) {
+func (s *stubClient) Delete(_ context.Context, id string) (libAPI.Response, error) {
 	s.called = true
 	return s.delete(id)
 }
@@ -59,12 +58,12 @@ func TestDeleteByCoordinate(t *testing.T) {
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 
 		c := stubClient{
-			list: func() (libSegment.Response, error) {
-				return libSegment.Response{Data: []byte(fmt.Sprintf(`[{"uid": "uid_1", "externalId":"%s"},{"uid": "uid_2", "externalId":"wrong"}]`, externalID))}, nil
+			list: func() (libAPI.Response, error) {
+				return libAPI.Response{Data: []byte(fmt.Sprintf(`[{"uid": "uid_1", "externalId":"%s"},{"uid": "uid_2", "externalId":"wrong"}]`, externalID))}, nil
 			},
-			delete: func(id string) (libSegment.Response, error) {
+			delete: func(id string) (libAPI.Response, error) {
 				assert.Equal(t, "uid_1", id)
-				return libSegment.Response{}, nil
+				return libAPI.Response{}, nil
 			},
 		}
 
@@ -81,8 +80,8 @@ func TestDeleteByCoordinate(t *testing.T) {
 		}
 
 		c := stubClient{
-			list: func() (libSegment.Response, error) {
-				return libSegment.Response{Data: []byte(`[{"uid": "uid_2", "externalId":"wrong"}]`)}, nil
+			list: func() (libAPI.Response, error) {
+				return libAPI.Response{Data: []byte(`[{"uid": "uid_2", "externalId":"wrong"}]`)}, nil
 			},
 		}
 
@@ -99,8 +98,8 @@ func TestDeleteByCoordinate(t *testing.T) {
 
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 		c := stubClient{
-			list: func() (libSegment.Response, error) {
-				return libSegment.Response{Data: []byte(fmt.Sprintf(`[{"uid": "uid_1", "externalId":"%s"},{"uid": "uid_2", "externalId":"%s"}]`, externalID, externalID))}, nil
+			list: func() (libAPI.Response, error) {
+				return libAPI.Response{Data: []byte(fmt.Sprintf(`[{"uid": "uid_1", "externalId":"%s"},{"uid": "uid_2", "externalId":"%s"}]`, externalID, externalID))}, nil
 			},
 		}
 
@@ -117,8 +116,8 @@ func TestDeleteByCoordinate(t *testing.T) {
 		}
 
 		c := stubClient{
-			list: func() (libSegment.Response, error) {
-				return libSegment.Response{}, errors.New("some unpredictable error")
+			list: func() (libAPI.Response, error) {
+				return libAPI.Response{}, errors.New("some unpredictable error")
 			},
 		}
 
@@ -135,9 +134,9 @@ func TestDeleteByObjectId(t *testing.T) {
 		}
 
 		c := stubClient{
-			delete: func(id string) (libSegment.Response, error) {
+			delete: func(id string) (libAPI.Response, error) {
 				assert.Equal(t, given.OriginObjectId, id)
-				return libSegment.Response{}, nil
+				return libAPI.Response{}, nil
 			},
 		}
 
@@ -153,7 +152,7 @@ func TestDeleteByObjectId(t *testing.T) {
 		}
 
 		c := stubClient{
-			delete: func(id string) (libSegment.Response, error) {
+			delete: func(id string) (libAPI.Response, error) {
 				assert.Equal(t, given.OriginObjectId, id)
 				return libAPI.Response{}, libAPI.APIError{StatusCode: http.StatusNotFound}
 			},
@@ -171,8 +170,8 @@ func TestDeleteByObjectId(t *testing.T) {
 		}
 
 		c := stubClient{
-			delete: func(_ string) (libSegment.Response, error) {
-				return libSegment.Response{}, errors.New("some unpredictable error")
+			delete: func(_ string) (libAPI.Response, error) {
+				return libAPI.Response{}, errors.New("some unpredictable error")
 			},
 		}
 
@@ -188,7 +187,7 @@ func TestDeleteByObjectId(t *testing.T) {
 		}
 
 		c := stubClient{
-			delete: func(_ string) (libSegment.Response, error) {
+			delete: func(_ string) (libAPI.Response, error) {
 				return libAPI.Response{}, libAPI.APIError{StatusCode: http.StatusInternalServerError}
 			},
 		}
@@ -205,11 +204,11 @@ func TestDeleteByObjectId(t *testing.T) {
 		}
 
 		c := stubClient{
-			delete: func(uid string) (libSegment.Response, error) {
+			delete: func(uid string) (libAPI.Response, error) {
 				if uid == given.OriginObjectId {
-					return libSegment.Response{}, nil
+					return libAPI.Response{}, nil
 				}
-				return libSegment.Response{}, errors.New("some unpredictable error")
+				return libAPI.Response{}, errors.New("some unpredictable error")
 			},
 		}
 
@@ -221,12 +220,12 @@ func TestDeleteByObjectId(t *testing.T) {
 func TestDeleteAll(t *testing.T) {
 	t.Run("simple case", func(t *testing.T) {
 		c := stubClient{
-			list: func() (libSegment.Response, error) {
-				return libSegment.Response{Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
+			list: func() (libAPI.Response, error) {
+				return libAPI.Response{Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
 			},
-			delete: func(uid string) (libSegment.Response, error) {
+			delete: func(uid string) (libAPI.Response, error) {
 				assert.Contains(t, []string{"uid_1", "uid_2", "uid_3"}, uid)
-				return libSegment.Response{StatusCode: http.StatusOK}, nil
+				return libAPI.Response{StatusCode: http.StatusOK}, nil
 			},
 		}
 
@@ -236,15 +235,15 @@ func TestDeleteAll(t *testing.T) {
 
 	t.Run("deletion continues even if error occurs during delete", func(t *testing.T) {
 		c := stubClient{
-			list: func() (libSegment.Response, error) {
-				return libSegment.Response{Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
+			list: func() (libAPI.Response, error) {
+				return libAPI.Response{Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
 			},
-			delete: func(uid string) (libSegment.Response, error) {
+			delete: func(uid string) (libAPI.Response, error) {
 				assert.Contains(t, []string{"uid_1", "uid_2", "uid_3"}, uid)
 				if uid == "uid_2" {
-					return libSegment.Response{}, errors.New("some unpredictable error")
+					return libAPI.Response{}, errors.New("some unpredictable error")
 				}
-				return libSegment.Response{StatusCode: http.StatusOK}, nil
+				return libAPI.Response{StatusCode: http.StatusOK}, nil
 			},
 		}
 

@@ -25,7 +25,6 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	segment "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -35,9 +34,9 @@ import (
 )
 
 type deploySegmentClient interface {
-	Update(ctx context.Context, id string, data []byte) (segment.Response, error)
-	Create(ctx context.Context, data []byte) (segment.Response, error)
-	GetAll(ctx context.Context) ([]segment.Response, error)
+	Update(ctx context.Context, id string, data []byte) (api.Response, error)
+	Create(ctx context.Context, data []byte) (api.Response, error)
+	GetAll(ctx context.Context) ([]api.Response, error)
 }
 type jsonResponse struct {
 	UID        string `json:"uid"`
@@ -133,7 +132,7 @@ func createResolveEntity(id string, properties parameter.Properties, c *config.C
 	}
 }
 
-func getJsonResponseFromSegmentsResponse(rawResponse segment.Response) (jsonResponse, error) {
+func getJsonResponseFromSegmentsResponse(rawResponse api.Response) (jsonResponse, error) {
 	var response jsonResponse
 	err := json.Unmarshal(rawResponse.Data, &response)
 	if err != nil {

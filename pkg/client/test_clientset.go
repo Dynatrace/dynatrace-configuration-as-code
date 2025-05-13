@@ -22,34 +22,33 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 )
 
 // TestSegmentsClient is a fake client that returns an unimplemented error on every execution of any method.
 type TestSegmentsClient struct{}
 
-func (TestSegmentsClient) List(ctx context.Context) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
+func (TestSegmentsClient) List(ctx context.Context) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
 }
 
-func (TestSegmentsClient) GetAll(ctx context.Context) ([]segments.Response, error) {
-	return []segments.Response{}, fmt.Errorf("unimplemented")
+func (TestSegmentsClient) GetAll(ctx context.Context) ([]api.Response, error) {
+	return []api.Response{}, fmt.Errorf("unimplemented")
 }
 
-func (TestSegmentsClient) Delete(ctx context.Context, id string) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
+func (TestSegmentsClient) Delete(ctx context.Context, id string) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
 }
 
-func (TestSegmentsClient) Update(ctx context.Context, id string, data []byte) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
+func (TestSegmentsClient) Update(ctx context.Context, id string, data []byte) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
 }
 
-func (TestSegmentsClient) Create(ctx context.Context, data []byte) (segments.Response, error) {
-	return segments.Response{}, nil
+func (TestSegmentsClient) Create(ctx context.Context, data []byte) (api.Response, error) {
+	return api.Response{}, nil
 }
 
-func (TestSegmentsClient) Get(ctx context.Context, id string) (segments.Response, error) {
-	return segments.Response{}, fmt.Errorf("unimplemented")
+func (TestSegmentsClient) Get(ctx context.Context, id string) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
 }
 
 // TestServiceLevelObjectiveClient is a fake client that returns an unimplemented error on every execution of any method.

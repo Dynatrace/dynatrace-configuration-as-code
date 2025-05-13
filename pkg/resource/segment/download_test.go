@@ -22,27 +22,27 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	coreLib "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 )
 
 type stubClient struct {
-	getAll func() ([]coreLib.Response, error)
+	getAll func() ([]api.Response, error)
 }
 
-func (s stubClient) GetAll(_ context.Context) ([]coreLib.Response, error) {
+func (s stubClient) GetAll(_ context.Context) ([]api.Response, error) {
 	return s.getAll()
 }
 
 func TestDownloader_Download(t *testing.T) {
 	t.Run("download segments works", func(t *testing.T) {
-		c := stubClient{getAll: func() ([]coreLib.Response, error) {
-			return []coreLib.Response{
+		c := stubClient{getAll: func() ([]api.Response, error) {
+			return []api.Response{
 				{
 					StatusCode: http.StatusOK,
 					Data: []byte(`{
@@ -79,8 +79,8 @@ func TestDownloader_Download(t *testing.T) {
 	})
 
 	t.Run("segment without uio is ignored", func(t *testing.T) {
-		c := stubClient{getAll: func() ([]coreLib.Response, error) {
-			return []coreLib.Response{
+		c := stubClient{getAll: func() ([]api.Response, error) {
+			return []api.Response{
 				{
 					StatusCode: http.StatusOK,
 					Data: []byte(`{
@@ -102,8 +102,8 @@ func TestDownloader_Download(t *testing.T) {
 	})
 
 	t.Run("Downloading multiple segments works", func(t *testing.T) {
-		c := stubClient{getAll: func() ([]coreLib.Response, error) {
-			return []coreLib.Response{
+		c := stubClient{getAll: func() ([]api.Response, error) {
+			return []api.Response{
 				{Data: []byte(`{"uid": "uid1","externalId": "some_external_ID","version": 1,"name": "segment_name"}`), StatusCode: http.StatusOK},
 				{Data: []byte(`{"uid": "uid2","externalId": "some_external_ID","version": 1,"name": "segment_name"}`), StatusCode: http.StatusOK},
 				{Data: []byte(`{"uid": "uid3","externalId": "some_external_ID","version": 1,"name": "segment_name"}`), StatusCode: http.StatusOK},
@@ -120,8 +120,8 @@ func TestDownloader_Download(t *testing.T) {
 	})
 
 	t.Run("no error downloading segments with faulty client", func(t *testing.T) {
-		c := stubClient{getAll: func() ([]coreLib.Response, error) {
-			return []coreLib.Response{}, errors.New("some unexpected error")
+		c := stubClient{getAll: func() ([]api.Response, error) {
+			return []api.Response{}, errors.New("some unexpected error")
 		}}
 
 		segmentApi := segment.NewAPI(c)
@@ -183,8 +183,8 @@ func TestDownloader_Download(t *testing.T) {
   ]
 }`
 
-		c := stubClient{getAll: func() ([]coreLib.Response, error) {
-			return []coreLib.Response{{StatusCode: http.StatusOK, Data: []byte(given)}}, nil
+		c := stubClient{getAll: func() ([]api.Response, error) {
+			return []api.Response{{StatusCode: http.StatusOK, Data: []byte(given)}}, nil
 		}}
 
 		segmentApi := segment.NewAPI(c)
