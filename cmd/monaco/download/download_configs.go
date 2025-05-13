@@ -62,6 +62,21 @@ type downloadCmdOptions struct {
 	onlyOptions             OnlyOptions
 }
 
+func (d downloadCmdOptions) toDownloadConfigsOptions(url manifest.URLDefinition, auth manifest.Auth) downloadConfigsOptions {
+	return downloadConfigsOptions{
+		downloadOptionsShared: downloadOptionsShared{
+			environmentURL:         url,
+			auth:                   auth,
+			outputFolder:           d.outputFolder,
+			projectName:            d.projectName,
+			forceOverwriteManifest: d.forceOverwrite,
+		},
+		specificAPIs:    d.specificAPIs,
+		specificSchemas: d.specificSchemas,
+		onlyOptions:     d.onlyOptions,
+	}
+}
+
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs afero.Fs, cmdOptions downloadCmdOptions) error {
 
 	m, errs := manifestloader.Load(&manifestloader.Context{
@@ -91,19 +106,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	options := downloadConfigsOptions{
-		downloadOptionsShared: downloadOptionsShared{
-			environmentURL:         env.URL,
-			auth:                   env.Auth,
-			outputFolder:           cmdOptions.outputFolder,
-			projectName:            cmdOptions.projectName,
-			forceOverwriteManifest: cmdOptions.forceOverwrite,
-		},
-		specificAPIs:    cmdOptions.specificAPIs,
-		specificSchemas: cmdOptions.specificSchemas,
-		onlyOptions:     cmdOptions.onlyOptions,
-	}
-
+	options := cmdOptions.toDownloadConfigsOptions(env.URL, env.Auth)
 	if errs := options.valid(); len(errs) != 0 {
 		err := printAndFormatErrors(errs, "command options are not valid")
 		return err
@@ -125,21 +128,8 @@ func (d DefaultCommand) DownloadConfigs(ctx context.Context, fs afero.Fs, cmdOpt
 		return printAndFormatErrors(errs, "not all necessary information is present to start downloading configurations")
 	}
 
-	options := downloadConfigsOptions{
-		downloadOptionsShared: downloadOptionsShared{
-			environmentURL: manifest.URLDefinition{
-				Type:  manifest.ValueURLType,
-				Value: cmdOptions.environmentURL,
-			},
-			auth:                   *a,
-			outputFolder:           cmdOptions.outputFolder,
-			projectName:            cmdOptions.projectName,
-			forceOverwriteManifest: cmdOptions.forceOverwrite,
-		},
-		specificAPIs:    cmdOptions.specificAPIs,
-		specificSchemas: cmdOptions.specificSchemas,
-		onlyOptions:     cmdOptions.onlyOptions,
-	}
+	options := cmdOptions.toDownloadConfigsOptions(
+		manifest.URLDefinition{Type: manifest.ValueURLType, Value: cmdOptions.environmentURL}, *a)
 
 	if errs := options.valid(); len(errs) != 0 {
 		err := printAndFormatErrors(errs, "command options are not valid")
