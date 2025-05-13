@@ -33,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -183,12 +182,12 @@ type OpenPipelineClient interface {
 }
 
 type SegmentClient interface {
-	List(ctx context.Context) (segments.Response, error)
-	GetAll(ctx context.Context) ([]segments.Response, error)
-	Delete(ctx context.Context, id string) (segments.Response, error)
-	Create(ctx context.Context, data []byte) (segments.Response, error)
-	Update(ctx context.Context, id string, data []byte) (segments.Response, error)
-	Get(ctx context.Context, id string) (segments.Response, error)
+	List(ctx context.Context) (libAPI.Response, error)
+	GetAll(ctx context.Context) ([]libAPI.Response, error)
+	Delete(ctx context.Context, id string) (libAPI.Response, error)
+	Create(ctx context.Context, data []byte) (libAPI.Response, error)
+	Update(ctx context.Context, id string, data []byte) (libAPI.Response, error)
+	Get(ctx context.Context, id string) (libAPI.Response, error)
 }
 
 type ServiceLevelObjectiveClient interface {

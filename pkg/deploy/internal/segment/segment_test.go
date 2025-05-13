@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/segments"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -37,20 +36,20 @@ import (
 )
 
 type testClient struct {
-	updateStub func() (segments.Response, error)
-	createStub func() (segments.Response, error)
-	getAllStub func() ([]segments.Response, error)
+	updateStub func() (api.Response, error)
+	createStub func() (api.Response, error)
+	getAllStub func() ([]api.Response, error)
 }
 
-func (tc *testClient) Update(_ context.Context, _ string, _ []byte) (segments.Response, error) {
+func (tc *testClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
 	return tc.updateStub()
 }
 
-func (tc *testClient) GetAll(_ context.Context) ([]segments.Response, error) {
+func (tc *testClient) GetAll(_ context.Context) ([]api.Response, error) {
 	return tc.getAllStub()
 }
 
-func (tc *testClient) Create(_ context.Context, _ []byte) (segments.Response, error) {
+func (tc *testClient) Create(_ context.Context, _ []byte) (api.Response, error) {
 	return tc.createStub()
 }
 
@@ -63,9 +62,9 @@ func TestDeploy(t *testing.T) {
 	tests := []struct {
 		name        string
 		inputConfig config.Config
-		updateStub  func() (segments.Response, error)
-		createStub  func() (segments.Response, error)
-		getAllStub  func() ([]segments.Response, error)
+		updateStub  func() (api.Response, error)
+		createStub  func() (api.Response, error)
+		getAllStub  func() ([]api.Response, error)
 		expected    entities.ResolvedEntity
 		expectErr   bool
 	}{
@@ -79,17 +78,17 @@ func TestDeploy(t *testing.T) {
 				Parameters:     config.Parameters{},
 				Skip:           false,
 			},
-			updateStub: func() (segments.Response, error) {
-				return segments.Response{
+			updateStub: func() (api.Response, error) {
+				return api.Response{
 					StatusCode: http.StatusOK,
 				}, nil
 			},
-			createStub: func() (segments.Response, error) {
-				return segments.Response{
+			createStub: func() (api.Response, error) {
+				return api.Response{
 					StatusCode: http.StatusOK,
 				}, nil
 			},
-			getAllStub: func() ([]segments.Response, error) {
+			getAllStub: func() ([]api.Response, error) {
 				t.Fatalf("should not be called")
 				return nil, nil
 			},
@@ -112,15 +111,15 @@ func TestDeploy(t *testing.T) {
 				Parameters:     config.Parameters{},
 				Skip:           false,
 			},
-			createStub: func() (segments.Response, error) {
-				return segments.Response{
+			createStub: func() (api.Response, error) {
+				return api.Response{
 					StatusCode: http.StatusOK,
 				}, nil
 			},
-			updateStub: func() (segments.Response, error) {
-				return segments.Response{}, fmt.Errorf("error")
+			updateStub: func() (api.Response, error) {
+				return api.Response{}, fmt.Errorf("error")
 			},
-			getAllStub: func() ([]segments.Response, error) {
+			getAllStub: func() ([]api.Response, error) {
 				t.Fatalf("should not be called")
 				return nil, nil
 			},
@@ -136,11 +135,11 @@ func TestDeploy(t *testing.T) {
 				Parameters:     config.Parameters{},
 				Skip:           false,
 			},
-			updateStub: func() (segments.Response, error) {
-				return segments.Response{}, api.NewAPIErrorFromResponse(&http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("{}"))})
+			updateStub: func() (api.Response, error) {
+				return api.Response{}, api.NewAPIErrorFromResponse(&http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("{}"))})
 			},
-			createStub: func() (segments.Response, error) {
-				return segments.Response{
+			createStub: func() (api.Response, error) {
+				return api.Response{
 					StatusCode: http.StatusOK,
 					Data: marshal(map[string]any{
 						"uid":         "JMhNaJ0Zbf9",
@@ -152,8 +151,8 @@ func TestDeploy(t *testing.T) {
 					}, t),
 				}, nil
 			},
-			getAllStub: func() ([]segments.Response, error) {
-				var response []segments.Response
+			getAllStub: func() ([]api.Response, error) {
+				var response []api.Response
 				return response, nil
 			},
 			expected: entities.ResolvedEntity{
@@ -174,13 +173,13 @@ func TestDeploy(t *testing.T) {
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
-			updateStub: func() (segments.Response, error) {
-				return segments.Response{
+			updateStub: func() (api.Response, error) {
+				return api.Response{
 					StatusCode: http.StatusOK,
 				}, nil
 			},
-			getAllStub: func() ([]segments.Response, error) {
-				response := []segments.Response{
+			getAllStub: func() ([]api.Response, error) {
+				response := []api.Response{
 					{
 						StatusCode: http.StatusOK,
 						Data: marshal(map[string]any{
@@ -224,13 +223,13 @@ func TestDeploy(t *testing.T) {
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
-			createStub: func() (segments.Response, error) {
-				return segments.Response{}, api.APIError{
+			createStub: func() (api.Response, error) {
+				return api.Response{}, api.APIError{
 					StatusCode: http.StatusBadRequest,
 				}
 			},
-			getAllStub: func() ([]segments.Response, error) {
-				var response []segments.Response
+			getAllStub: func() ([]api.Response, error) {
+				var response []api.Response
 				return response, nil
 			},
 			expectErr: true,
@@ -244,12 +243,12 @@ func TestDeploy(t *testing.T) {
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
-			updateStub: func() (segments.Response, error) {
+			updateStub: func() (api.Response, error) {
 				t.Fatalf("should not be called")
-				return segments.Response{}, nil
+				return api.Response{}, nil
 			},
-			getAllStub: func() ([]segments.Response, error) {
-				var response []segments.Response
+			getAllStub: func() ([]api.Response, error) {
+				var response []api.Response
 				return response, api.APIError{
 					StatusCode: http.StatusBadRequest,
 				}
