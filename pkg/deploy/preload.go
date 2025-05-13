@@ -68,11 +68,11 @@ func preloadSettingsValuesForSchemaId(ctx context.Context, client client.Setting
 	if err := client.Cache(ctx, schemaId); err != nil {
 		message := fmt.Sprintf("Could not cache settings values for schema %s: %s", schemaId, err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateWarn, nil, message, nil)
-		log.Warn(message)
+		log.Warn("%s", message)
 		return
 	}
 	message := fmt.Sprintf("Cached settings values for schema %s", schemaId)
-	log.Debug(message)
+	log.Debug("%s", message)
 	report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, message, nil)
 }
 
@@ -88,12 +88,12 @@ func preloadValuesForApi(ctx context.Context, client client.ConfigClient, theApi
 	if err != nil {
 		message := fmt.Sprintf("Could not cache values for API %s: %s", theApi, err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateWarn, nil, message, nil)
-		log.Warn(message)
+		log.Warn("%s", message)
 		return
 	}
 	message := fmt.Sprintf("Cached values for API %s", theApi)
 	report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, message, nil)
-	log.Debug(message)
+	log.Debug("%s", message)
 }
 
 // gatherPreloadConfigTypeEntries scans the projects to determine which config types should be cached by which clients.

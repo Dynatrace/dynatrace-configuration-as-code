@@ -20,15 +20,17 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers/console"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers/zap"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
@@ -37,6 +39,10 @@ const (
 	LogDirectory                 = ".logs"
 	LogFileTimestampPrefixFormat = "20060102-150405"
 )
+
+const envVarLogFormat = "MONACO_LOG_FORMAT"
+const envVarLogTime = "MONACO_LOG_TIME"
+const envVarLogSource = "MONACO_LOG_SOURCE"
 
 // CtxKeyCoord context key used for contextual coordinate information
 type CtxKeyCoord struct{}
@@ -59,45 +65,75 @@ type CtxKeyAccount struct{}
 // CtxValGraphComponentId context value used for correlating logs that belong to deployment of a sub graph
 type CtxValGraphComponentId int
 
-var (
-	_ loggers.Logger = (*zap.Logger)(nil)
-	_ loggers.Logger = (*console.Logger)(nil)
-)
-
-func Fatal(msg string, a ...interface{}) {
-	std.Fatal(msg, a...)
+type WrappedLogger struct {
+	logger *slog.Logger
 }
 
-func Error(msg string, a ...interface{}) {
-	std.Error(msg, a...)
+func (w *WrappedLogger) Fatal(msg string, a ...any) {
+	w.logger.Error(fmt.Sprintf(msg, a...))
+	os.Exit(1)
 }
 
-func Warn(msg string, a ...interface{}) {
-	std.Warn(msg, a...)
+func (w *WrappedLogger) Error(msg string, a ...interface{}) {
+	w.logger.Error(fmt.Sprintf(msg, a...))
 }
 
-func Info(msg string, a ...interface{}) {
-	std.Info(msg, a...)
+func (w *WrappedLogger) Warn(msg string, a ...interface{}) {
+	w.logger.Warn(fmt.Sprintf(msg, a...))
 }
 
-func Debug(msg string, a ...interface{}) {
-	std.Debug(msg, a...)
+func (w *WrappedLogger) Info(msg string, a ...interface{}) {
+	w.logger.Info(fmt.Sprintf(msg, a...))
 }
 
-func Level() loggers.LogLevel {
-	return std.Level()
+func (w *WrappedLogger) Debug(msg string, a ...interface{}) {
+	w.logger.Debug(fmt.Sprintf(msg, a...))
+}
+
+func (w *WrappedLogger) SLogger() *slog.Logger {
+	return w.logger
 }
 
 // WithFields adds additional [field.Field] for structured logs
 // It accepts vararg fields and should not be called more than once per log call
-func WithFields(fields ...field.Field) loggers.Logger {
-	return std.WithFields(fields...)
+func (w *WrappedLogger) WithFields(fields ...field.Field) *WrappedLogger {
+	logger := w.logger
+	for _, f := range fields {
+		logger = logger.With(f.Key, f.Value)
+	}
+	return &WrappedLogger{logger: logger}
+}
+
+func Fatal(msg string, a ...any) {
+	slog.Error(fmt.Sprintf(msg, a...))
+	os.Exit(1)
+}
+
+func Error(msg string, a ...interface{}) {
+	slog.Error(fmt.Sprintf(msg, a...))
+}
+
+func Warn(msg string, a ...interface{}) {
+	slog.Warn(fmt.Sprintf(msg, a...))
+}
+
+func Info(msg string, a ...interface{}) {
+	slog.Info(fmt.Sprintf(msg, a...))
+}
+
+func Debug(msg string, a ...interface{}) {
+	slog.Debug(fmt.Sprintf(msg, a...))
+}
+
+// WithFields adds additional [field.Field] for structured logs
+// It accepts vararg fields and should not be called more than once per log call
+func WithFields(fields ...field.Field) *WrappedLogger {
+	return (&WrappedLogger{logger: slog.Default()}).WithFields(fields...)
 }
 
 // WithCtxFields creates a logger instance with preset structured logging [field.Field] based on the Context
 // Coordinate (via [CtxKeyCoord]) and environment (via [CtxKeyEnv] [CtxValEnv]) information is added to logs from the Context
-func WithCtxFields(ctx context.Context) loggers.Logger {
-	loggr := std
+func WithCtxFields(ctx context.Context) *WrappedLogger {
 	f := make([]field.Field, 0, 2)
 	if c, ok := ctx.Value(CtxKeyCoord{}).(coordinate.Coordinate); ok {
 		f = append(f, field.Coordinate(c))
@@ -105,48 +141,108 @@ func WithCtxFields(ctx context.Context) loggers.Logger {
 	if e, ok := ctx.Value(CtxKeyEnv{}).(CtxValEnv); ok {
 		f = append(f, field.Environment(e.Name, e.Group))
 	}
-
-	if a := ctx.Value(CtxKeyAccount{}); a != nil {
+	if a, ok := ctx.Value(CtxKeyAccount{}).(any); ok {
 		f = append(f, field.F("account", a))
 	}
-
 	if c, ok := ctx.Value(CtxGraphComponentId{}).(CtxValGraphComponentId); ok {
 		f = append(f, field.F("gid", c))
 	}
-	return loggr.WithFields(f...)
+	return WithFields(f...)
 }
 
-var (
-	std loggers.Logger = console.Instance
-)
-
 func PrepareLogging(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging bool, enableMemstatLogging bool) {
-	loglevel := loggers.LevelInfo
-	if verbose {
-		loglevel = loggers.LevelDebug
-	}
+	handlers := []slog.Handler{}
 
-	var logFile, errFile afero.File
-	var err error
 	if fileLogging && fs != nil {
-		logFile, errFile, err = prepareLogFiles(ctx, fs, enableMemstatLogging)
+		logFile, errorFile, err := prepareLogFiles(ctx, fs, enableMemstatLogging)
+		if err != nil {
+			Warn("Error preparing log files: %s", err.Error())
+		}
+
+		if logFile != nil {
+			handlers = append(handlers, getHandler(logFile, getLevelFromVerbose(verbose)))
+		}
+
+		if errorFile != nil {
+			handlers = append(handlers, getHandler(errorFile, slog.LevelError))
+		}
 	}
 
-	logFormat := loggers.ParseLogFormat(os.Getenv(loggers.EnvVarLogFormat))
-	logTime := loggers.ParseLogTimeMode(os.Getenv(loggers.EnvVarLogTime))
+	if loggerSpy != nil {
+		handlers = append(handlers, getHandler(loggerSpy, getLevelFromVerbose(verbose)))
+	}
 
-	setDefaultLogger(loggers.LogOptions{
-		File:        logFile,
-		ErrorFile:   errFile,
-		JSONLogging: logFormat == loggers.LogFormatJSON,
-		LogLevel:    loglevel,
-		LogSpy:      loggerSpy,
-		LogTimeMode: logTime,
+	handlers = append(handlers, getHandler(os.Stderr, getLevelFromVerbose(verbose)))
+
+	var handler slog.Handler = NewTeeHandler(handlers...)
+	if len(handlers) == 1 {
+		handler = handlers[0]
+	}
+
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+}
+
+func getLevelFromVerbose(verbose bool) slog.Level {
+	if verbose {
+		return slog.LevelDebug
+	}
+
+	return slog.LevelInfo
+}
+
+func getHandler(w io.Writer, level slog.Leveler) slog.Handler {
+	if shouldUseJSON() {
+		return slog.NewJSONHandler(w, &slog.HandlerOptions{
+			AddSource:   shouldAddSource(),
+			Level:       level,
+			ReplaceAttr: getReplaceAttrFunc(),
+		})
+	}
+
+	return slog.NewTextHandler(w, &slog.HandlerOptions{
+		AddSource:   shouldAddSource(),
+		Level:       level,
+		ReplaceAttr: getReplaceAttrFunc(),
 	})
+}
 
-	if err != nil {
-		Warn(err.Error())
+func getReplaceAttrFunc() func(groups []string, a slog.Attr) slog.Attr {
+	useUTC := shouldUseUTC()
+	return func(groups []string, a slog.Attr) slog.Attr {
+		if a.Key == slog.TimeKey && useUTC {
+			t := a.Value.Time()
+			t = t.UTC()
+			return slog.Attr{Key: slog.TimeKey, Value: slog.StringValue(t.Format(time.RFC3339))}
+		}
+
+		return a
 	}
+}
+
+func shouldUseJSON() bool {
+	v := os.Getenv(envVarLogFormat)
+	return strings.ToLower(v) == "json"
+}
+
+func shouldUseUTC() bool {
+	v := os.Getenv(envVarLogTime)
+	return strings.ToLower(v) == "utc"
+}
+
+func shouldAddSource() bool {
+	return getFeatureFlagValue(envVarLogSource, false)
+}
+
+func getFeatureFlagValue(envName string, d bool) bool {
+	if val, ok := os.LookupEnv(envName); ok {
+		value, err := strconv.ParseBool(strings.ToLower(val))
+		if err != nil {
+			return d
+		}
+		return value
+	}
+	return d
 }
 
 // LogFilePath returns the path of a logfile for the current execution time - depending on when this function is called such a file may not yet exist
@@ -180,13 +276,13 @@ func prepareLogFiles(ctx context.Context, fs afero.Fs, enableMemstatLogging bool
 	logFilePath := LogFilePath()
 	logFile, err = fs.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to prepare log file in %s directory: %w", LogDirectory, err)
+		return nil, nil, fmt.Errorf("unable to prepare log file %s: %w", logFilePath, err)
 	}
 
 	errFilePath := ErrorFilePath()
 	errFile, err = fs.OpenFile(errFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		return logFile, nil, fmt.Errorf("unable to prepare error file in %s directory: %w", LogDirectory, err)
+		return logFile, nil, fmt.Errorf("unable to prepare error file %s: %w", errFilePath, err)
 	}
 
 	if enableMemstatLogging {
@@ -199,13 +295,4 @@ func prepareLogFiles(ctx context.Context, fs afero.Fs, enableMemstatLogging bool
 	}
 
 	return logFile, errFile, nil
-
-}
-
-func setDefaultLogger(opts loggers.LogOptions) {
-	logger, err := zap.New(opts)
-	if err != nil {
-		panic(err)
-	}
-	std = logger
 }

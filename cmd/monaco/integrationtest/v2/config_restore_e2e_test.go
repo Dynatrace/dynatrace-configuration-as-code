@@ -377,7 +377,7 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 	// Shows you the downloaded files list in the command line
 	_ = afero.Walk(fs, downloadFolder+"/", func(path string, info os.FileInfo, err error) error {
 		fpath, err := filepath.Abs(path)
-		log.Info("file " + fpath)
+		log.Info("file %s", fpath)
 		return nil
 	})
 
