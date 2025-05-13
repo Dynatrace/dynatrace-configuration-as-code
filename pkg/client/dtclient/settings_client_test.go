@@ -2898,35 +2898,22 @@ func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
 	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 	testSchema1 := "schema1"
 	testSchema2 := "schema2"
-	fullSchemas := map[string]schemaDetailsResponse{
-		testSchema1: {
-			SchemaId:                testSchema1,
-			OwnerBasedAccessControl: pointer.Pointer(true),
+	schemas := SchemaListResponse{
+		Items: SchemaList{
+			SchemaItem{
+				SchemaId:                testSchema1,
+				OwnerBasedAccessControl: pointer.Pointer(true),
+			},
+			SchemaItem{
+				SchemaId:                testSchema2,
+				OwnerBasedAccessControl: pointer.Pointer(false),
+			},
 		},
-		testSchema2: {
-			SchemaId:                testSchema2,
-			OwnerBasedAccessControl: pointer.Pointer(false),
-		},
-	}
-
-	schemas := SchemaListResponse{}
-	for schemaId := range fullSchemas {
-		schemas.Items = append(schemas.Items, SchemaItem{SchemaId: schemaId})
 	}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/v2/settings/schemas", func(w http.ResponseWriter, r *http.Request) {
 		payload, err := json.Marshal(schemas)
-		assert.NoError(t, err)
-
-		_, err = w.Write(payload)
-		assert.NoError(t, err)
-	})
-
-	mux.HandleFunc("GET /api/v2/settings/schemas/{schema}", func(w http.ResponseWriter, r *http.Request) {
-		schemaId := r.PathValue("schema")
-
-		payload, err := json.Marshal(fullSchemas[schemaId])
 		assert.NoError(t, err)
 
 		_, err = w.Write(payload)
@@ -2959,48 +2946,6 @@ func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
 			OwnerBasedAccessControl: pointer.Pointer(false),
 		},
 	}, gotSchemas)
-}
-
-func TestSettingsClient_ListSchemas_WithAclAndErrorOnGetSchema(t *testing.T) {
-	testSchema1 := "schema1"
-	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
-	schemas := SchemaListResponse{
-		Items: SchemaList{
-			{
-				SchemaId: testSchema1,
-			},
-		},
-		TotalCount: 1,
-	}
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /api/v2/settings/schemas", func(w http.ResponseWriter, r *http.Request) {
-		payload, err := json.Marshal(schemas)
-		assert.NoError(t, err)
-
-		_, err = w.Write(payload)
-		assert.NoError(t, err)
-	})
-
-	mux.HandleFunc("GET /api/v2/settings/schemas/{schema}", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadRequest)
-		_, err := w.Write([]byte("{}"))
-		assert.NoError(t, err)
-	})
-
-	server := httptest.NewTLSServer(mux)
-	defer server.Close()
-
-	serverURL, err := url.Parse(server.URL)
-	require.NoError(t, err)
-
-	restClient := corerest.NewClient(serverURL, server.Client())
-
-	c, err := NewClassicSettingsClient(restClient)
-	require.NoError(t, err)
-
-	_, err = c.ListSchemas(t.Context())
-	assert.Error(t, err)
 }
 
 func TestSettingsClient_ListSchemas_WithoutAcl(t *testing.T) {
