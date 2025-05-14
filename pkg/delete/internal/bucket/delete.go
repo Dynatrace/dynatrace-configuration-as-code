@@ -19,7 +19,6 @@ package bucket
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -53,16 +52,11 @@ func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) erro
 		logger.Debug("Deleting bucket: %s.", e, bucketName)
 		_, err := c.Delete(ctx, bucketName)
 		if err != nil {
-			var apiErr api.APIError
-			if errors.As(err, &apiErr) {
-				if !api.IsNotFoundError(apiErr) {
-					logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration - rejected by API: %v", e, bucketName, err)
-					deleteErrs++
-				}
-			} else {
-				logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration - network error: %v", e, bucketName, err)
+			if !api.IsNotFoundError(err) {
+				logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket '%s': %v", bucketName, err)
 				deleteErrs++
 			}
+
 		}
 	}
 
@@ -111,15 +105,8 @@ func DeleteAll(ctx context.Context, c client) error {
 
 		_, err := c.Delete(ctx, bucketName.BucketName)
 		if err != nil {
-			var apiErr api.APIError
-			if errors.As(err, &apiErr) {
-				if !api.IsNotFoundError(apiErr) {
-					logger.Error("Failed to delete bucket %q - rejected by API: %v", bucketName.BucketName, err)
-					errs++
-					continue
-				}
-			} else {
-				logger.Error("Failed to delete bucket %q - network error: %v", bucketName.BucketName, err)
+			if !api.IsNotFoundError(err) {
+				logger.Error("Failed to delete Grail Bucket '%s': %v", bucketName.BucketName, err)
 				errs++
 				continue
 			}
