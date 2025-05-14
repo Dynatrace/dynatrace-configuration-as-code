@@ -86,7 +86,7 @@ func DeleteAll(ctx context.Context, c client) error {
 	}
 
 	logger.Info("Deleting %d objects of type %q...", len(response.All()), "bucket")
-	errs := 0
+	errCount := 0
 	for _, obj := range response.All() {
 		var bucketName struct {
 			BucketName string `json:"bucketName"`
@@ -94,7 +94,7 @@ func DeleteAll(ctx context.Context, c client) error {
 
 		if err := json.Unmarshal(obj, &bucketName); err != nil {
 			logger.Error("Failed to parse bucket JSON: %v", err)
-			errs++
+			errCount++
 			continue
 		}
 
@@ -107,15 +107,15 @@ func DeleteAll(ctx context.Context, c client) error {
 		if err != nil {
 			if !api.IsNotFoundError(err) {
 				logger.Error("Failed to delete Grail Bucket '%s': %v", bucketName.BucketName, err)
-				errs++
+				errCount++
 				continue
 			}
 
 		}
 	}
 
-	if errs > 0 {
-		return fmt.Errorf("failed to delete %d Grail Bucket configuration(s)", errs)
+	if errCount > 0 {
+		return fmt.Errorf("failed to delete %d Grail Bucket configuration(s)", errCount)
 	}
 
 	return nil

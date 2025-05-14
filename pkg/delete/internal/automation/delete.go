@@ -86,7 +86,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
 func DeleteAll(ctx context.Context, c client) error {
-	errs := 0
+	errCount := 0
 
 	resources := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
 	for _, resource := range resources {
@@ -95,34 +95,33 @@ func DeleteAll(ctx context.Context, c client) error {
 		t, err := automationutils.ClientResourceTypeFromConfigType(resource)
 		if err != nil {
 			logger.Error("Failed to delete Automation objects of type %q: %v", err)
-			errs++
+			errCount++
 			continue
 		}
 
 		logger.Info("Collecting Automation objects of type %q...", resource)
 		resp, err := c.List(ctx, t)
 		if err != nil {
-
 			logger.Error("Failed to collect Automation objects of type '%s': %v", resource, err)
-			errs++
+			errCount++
 			continue
 		}
 
 		objects, err := automationutils.DecodeListResponse(resp)
 		if err != nil {
 			logger.WithFields(field.Error(err)).Error("Failed to collect Automation objects of type '%s': %v", resource, err)
-			errs++
+			errCount++
 			continue
 		}
 
 		logger.Info("Deleting %d objects of type %q...", len(objects), resource)
 		for _, o := range objects {
-			errs += deleteSingle(ctx, c, pointer.DeletePointer{Type: automationTypesToResources[t], OriginObjectId: o.ID})
+			errCount += deleteSingle(ctx, c, pointer.DeletePointer{Type: automationTypesToResources[t], OriginObjectId: o.ID})
 		}
 	}
 
-	if errs > 0 {
-		return fmt.Errorf("failed to delete %d Automation object(s)", errs)
+	if errCount > 0 {
+		return fmt.Errorf("failed to delete %d Automation object(s)", errCount)
 	}
 
 	return nil

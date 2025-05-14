@@ -109,7 +109,7 @@ func getFilter(deletePointer pointer.DeletePointer) (dtclient.ListSettingsFilter
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
 func DeleteAll(ctx context.Context, c client.SettingsClient) error {
-	errs := 0
+	errCount := 0
 
 	schemas, err := c.ListSchemas(ctx)
 	if err != nil {
@@ -131,7 +131,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 		settingsObjects, err := c.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
 			logger.WithFields(field.Error(err)).Error("Failed to collect object for schema %q: %v", s, err)
-			errs++
+			errCount++
 			continue
 		}
 
@@ -145,13 +145,13 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 			err := c.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
 				logger.Error("Failed to delete settings object with object ID '%s': %v", settingsObject.ObjectId, err)
-				errs++
+				errCount++
 			}
 		}
 	}
 
-	if errs > 0 {
-		return fmt.Errorf("failed to delete %d setting(s)", errs)
+	if errCount > 0 {
+		return fmt.Errorf("failed to delete %d setting(s)", errCount)
 	}
 
 	return nil
