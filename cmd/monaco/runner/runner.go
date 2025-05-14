@@ -16,10 +16,13 @@ package runner
 
 import (
 	"context"
+	"crypto/tls"
 	"io"
+	"net/http"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/delete"
@@ -81,7 +84,10 @@ Examples:
 				cobra.OnFinalize(writeSupportArchive(fs))
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
-
+			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{Transport: &http.Transport{
+				TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+			}})
+			cmd.SetContext(ctx)
 			fileBasedLogging := featureflags.LogToFile.Enabled() || supportArchive
 			memStatLogging := featureflags.LogMemStats.Enabled()
 			log.PrepareLogging(cmd.Context(), fs, verbose, logSpy, fileBasedLogging, memStatLogging)
