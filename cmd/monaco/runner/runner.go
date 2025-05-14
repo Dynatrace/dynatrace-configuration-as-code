@@ -205,8 +205,8 @@ Examples:
 					//ExpectContinueTimeout: 1 * time.Second,  // Wait time for 100-continue response
 					//MaxIdleConns:          100,              // Max idle connections across all hosts
 					//MaxIdleConnsPerHost:   10,               // Max idle connections per host
-					DisableKeepAlives: true,
-					MaxIdleConnsPerHost: -1,
+					//DisableKeepAlives:   true,
+					//MaxIdleConnsPerHost: -1,
 				},
 			})
 			cmd.SetContext(ctx)
