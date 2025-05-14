@@ -184,9 +184,14 @@ Examples:
 			//	fmt.Println(err)
 			//	return
 			//}
+
+			server := &http.Server{Addr: ":8080", Handler: http.HandlerFunc(getProxy)}
+			cobra.OnFinalize(func() {
+				server.Close()
+			})
 			go func() {
-				serveErr := http.ListenAndServe(":8080", http.HandlerFunc(getProxy))
-				fmt.Println(serveErr)
+				err = server.ListenAndServe()
+				fmt.Print(err)
 			}()
 			if supportArchive {
 				cobra.OnFinalize(writeSupportArchive(fs))
