@@ -130,7 +130,7 @@ func list(ctx context.Context, c client) (items, error) {
 
 	var items items
 	if err = json.Unmarshal(listResp.Data, &items); err != nil {
-		return nil, fmt.Errorf("problem with reading recieved data: %w", err)
+		return nil, fmt.Errorf("problem with reading received data: %w", err)
 	}
 
 	return items, nil
