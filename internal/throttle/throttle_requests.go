@@ -18,8 +18,9 @@ package throttle
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
@@ -34,7 +35,7 @@ func ThrottleCallAfterError(backoffMultiplier int, message string, a ...any) {
 	sleepDuration, humanReadableTimestamp := GenerateSleepDuration(backoffMultiplier, timelineProvider)
 	sleepDuration = ApplyMinMaxDefaults(sleepDuration)
 
-	log.Debug("simpleSleepRateLimitStrategy: %s, waiting %d seconds until %s to avoid Too Many Request errors", fmt.Sprintf(message, a...), sleepDuration.Seconds(), humanReadableTimestamp)
+	log.Debug("simpleSleepRateLimitStrategy: %s, waiting %f seconds until %s to avoid Too Many Request errors", fmt.Sprintf(message, a...), sleepDuration.Seconds(), humanReadableTimestamp)
 	timelineProvider.Sleep(sleepDuration)
 	log.Debug("simpleSleepRateLimitStrategy: Slept for %f seconds", sleepDuration.Seconds())
 }

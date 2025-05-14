@@ -49,7 +49,7 @@ func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) erro
 			bucketName = idutils.GenerateBucketName(e.AsCoordinate())
 		}
 
-		logger.Debug("Deleting bucket: %s.", e, bucketName)
+		logger.Debug("Deleting bucket '%s'", bucketName)
 		_, err := c.Delete(ctx, bucketName)
 		if err != nil {
 			if !api.IsNotFoundError(err) {
