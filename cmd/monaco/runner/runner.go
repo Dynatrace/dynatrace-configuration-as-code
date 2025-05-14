@@ -85,7 +85,8 @@ Examples:
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
 			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{Transport: &http.Transport{
-				TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+				DisableKeepAlives: true,
+				TLSNextProto:      make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
 			}})
 			cmd.SetContext(ctx)
 			fileBasedLogging := featureflags.LogToFile.Enabled() || supportArchive
