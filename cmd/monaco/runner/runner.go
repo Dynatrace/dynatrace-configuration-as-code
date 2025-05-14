@@ -179,11 +179,11 @@ Examples:
 				fmt.Println(err)
 				return
 			}
-			err = changeToHttp("PLATFORM_URL_ENVIRONMENT_1", "PLATFORM_URL_ENVIRONMENT_2")
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
+			//err = changeToHttp("PLATFORM_URL_ENVIRONMENT_1", "PLATFORM_URL_ENVIRONMENT_2")
+			//if err != nil {
+			//	fmt.Println(err)
+			//	return
+			//}
 			go func() {
 				serveErr := http.ListenAndServe(":8080", http.HandlerFunc(getProxy))
 				fmt.Println(serveErr)
@@ -205,6 +205,8 @@ Examples:
 					//ExpectContinueTimeout: 1 * time.Second,  // Wait time for 100-continue response
 					//MaxIdleConns:          100,              // Max idle connections across all hosts
 					//MaxIdleConnsPerHost:   10,               // Max idle connections per host
+					DisableKeepAlives: true,
+					MaxIdleConnsPerHost: -1,
 				},
 			})
 			cmd.SetContext(ctx)

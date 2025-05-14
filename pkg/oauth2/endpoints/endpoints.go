@@ -21,5 +21,5 @@ import (
 )
 
 var Dynatrace = oauth2.Endpoint{
-	TokenURL: "http://sso.dynatrace.com/sso/oauth2/token",
+	TokenURL: "https://sso.dynatrace.com/sso/oauth2/token",
 }
