@@ -64,7 +64,7 @@ func Write(writerContext Context, resources account.Resources) error {
 		policies := toPersistencePolicies(resources.Policies)
 		if err := persistToFile(persistence.File{Policies: policies}, writerContext.Fs, filepath.Join(projectFolder, "policies.yaml")); err != nil {
 			errOccurred = true
-			log.Error("Failed to persist policies: %w", err)
+			log.Error("Failed to persist policies: %v", err)
 		}
 	}
 
@@ -72,7 +72,7 @@ func Write(writerContext Context, resources account.Resources) error {
 		groups := toPersistenceGroups(resources.Groups)
 		if err := persistToFile(persistence.File{Groups: groups}, writerContext.Fs, filepath.Join(projectFolder, "groups.yaml")); err != nil {
 			errOccurred = true
-			log.Error("Failed to persist groups: %w", err)
+			log.Error("Failed to persist groups: %v", err)
 		}
 	}
 
@@ -80,7 +80,7 @@ func Write(writerContext Context, resources account.Resources) error {
 		users := toPersistenceUsers(resources.Users)
 		if err := persistToFile(persistence.File{Users: users}, writerContext.Fs, filepath.Join(projectFolder, "users.yaml")); err != nil {
 			errOccurred = true
-			log.Error("Failed to persist users: %w", err)
+			log.Error("Failed to persist users: %v", err)
 		}
 	}
 
@@ -88,7 +88,7 @@ func Write(writerContext Context, resources account.Resources) error {
 		serviceUsers := toPersistenceServiceUsers(resources.ServiceUsers)
 		if err := persistToFile(persistence.File{ServiceUsers: serviceUsers}, writerContext.Fs, filepath.Join(projectFolder, "service-users.yaml")); err != nil {
 			errOccurred = true
-			log.Error("Failed to persist service users: %w", err)
+			log.Error("Failed to persist service users: %v", err)
 		}
 	}
 
