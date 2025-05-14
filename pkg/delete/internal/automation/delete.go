@@ -110,7 +110,7 @@ func DeleteAll(ctx context.Context, c client) error {
 
 		objects, err := automationutils.DecodeListResponse(resp)
 		if err != nil {
-			logger.WithFields(field.Error(err)).Error("ailed to collect Automation objects of type %q: %v", resource, err)
+			logger.WithFields(field.Error(err)).Error("Failed to collect Automation objects of type '%s': %v", resource, err)
 			errs++
 			continue
 		}
