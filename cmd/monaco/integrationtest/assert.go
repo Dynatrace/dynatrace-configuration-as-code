@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"testing"
 	"time"
 
@@ -98,6 +99,12 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		}
 	}
 
+	ctx, server := runner.StartServerAndSetContext(t.Context())
+
+	if server != nil {
+		defer server.Close()
+	}
+
 	for envName, configs := range sortedConfigs {
 
 		env := loadedManifest.Environments[envName]
@@ -139,7 +146,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 				var foundID string
 				switch typ := theConfig.Type.(type) {
 				case config.SettingsType:
-					foundID = AssertSetting(t, clients.SettingsClient, typ, env.Name, available, theConfig)
+					foundID = AssertSetting(t, clients.SettingsClient, typ, env.Name, available, theConfig, ctx)
 				case config.ClassicApiType:
 					assert.NotEmpty(t, configName, "classic API config %v is missing name, can not assert if it exists", theConfig.Coordinate)
 
@@ -152,19 +159,19 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						theApi = theApi.ApplyParentObjectID(scope)
 					}
 
-					foundID = AssertConfig(t, clients.ConfigClient, theApi, env, available, theConfig, configName)
+					foundID = AssertConfig(t, clients.ConfigClient, theApi, env, available, theConfig, configName, ctx)
 				case config.AutomationType:
 					if clients.AutClient == nil {
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
 						return
 					}
-					foundID = AssertAutomation(t, clients.AutClient, env, available, typ.Resource, theConfig)
+					foundID = AssertAutomation(t, clients.AutClient, env, available, typ.Resource, theConfig, ctx)
 				case config.BucketType:
 					if clients.BucketClient == nil {
 						t.Errorf("can not assert existience of Bucket config %q) because no BucketClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
 						return
 					}
-					foundID = AssertBucket(t, clients.BucketClient, env, available, theConfig)
+					foundID = AssertBucket(t, clients.BucketClient, env, available, theConfig, ctx)
 				case config.DocumentType:
 					if clients.DocumentClient == nil {
 						t.Errorf("can not assert existience of Document config %q) because no DocumentClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
@@ -182,14 +189,14 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
-func newContextWithLogConfig(t *testing.T, config config.Config) context.Context {
-	ctx := context.WithValue(t.Context(), log.CtxKeyCoord{}, config.Coordinate)
+func newContextWithLogConfig(tctx context.Context, config config.Config) context.Context {
+	ctx := context.WithValue(tctx, log.CtxKeyCoord{}, config.Coordinate)
 	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: config.Environment, Group: config.Group})
 	return ctx
 }
 
-func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) (id string) {
-	ctx := newContextWithLogConfig(t, config)
+func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string, tctx context.Context) (id string) {
+	ctx := newContextWithLogConfig(tctx, config)
 	configType := config.Coordinate.Type
 
 	var exists bool
@@ -218,8 +225,8 @@ func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.API, envi
 	return id
 }
 
-func AssertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config) (id string) {
-	ctx := newContextWithLogConfig(t, config)
+func AssertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config, tctx context.Context) (id string) {
+	ctx := newContextWithLogConfig(tctx, config)
 	expectedExtId, err := idutils.GenerateExternalIDForSettingsObject(config.Coordinate)
 	if err != nil {
 		t.Errorf("Unable to generate external id: %v", err)
@@ -254,8 +261,8 @@ func AssertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsTyp
 
 }
 
-func AssertPermission(t *testing.T, c client.SettingsClient, objectID string, permissions []dtclient.TypePermissions) {
-	resp, err := c.GetPermission(t.Context(), objectID)
+func AssertPermission(t *testing.T, c client.SettingsClient, objectID string, permissions []dtclient.TypePermissions, ctx context.Context) {
+	resp, err := c.GetPermission(ctx, objectID)
 	if err != nil {
 		if len(permissions) == 0 && coreapi.IsNotFoundError(err) {
 			return
@@ -266,7 +273,7 @@ func AssertPermission(t *testing.T, c client.SettingsClient, objectID string, pe
 	assert.Equal(t, permissions, resp.Permissions)
 }
 
-func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) (id string) {
+func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config, ctx context.Context) (id string) {
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(resource)
 	assert.NoError(t, err, "failed to get resource type for: %s", cfg.Coordinate)
 
@@ -277,7 +284,7 @@ func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.Envi
 		expectedId = idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
 	}
 
-	_, err = c.Get(t.Context(), resourceType, expectedId)
+	_, err = c.Get(ctx, resourceType, expectedId)
 	exists := err == nil
 
 	if cfg.Skip {
@@ -293,7 +300,7 @@ func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.Envi
 	return expectedId
 }
 
-func AssertBucket(t *testing.T, client client.BucketClient, env manifest.EnvironmentDefinition, available bool, cfg config.Config) (id string) {
+func AssertBucket(t *testing.T, client client.BucketClient, env manifest.EnvironmentDefinition, available bool, cfg config.Config, ctx context.Context) (id string) {
 
 	var expectedId string
 	if cfg.OriginObjectId != "" {
@@ -302,7 +309,7 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 		expectedId = idutils.GenerateBucketName(cfg.Coordinate)
 	}
 
-	err := waitForBucketToExist(t.Context(), client, expectedId, 120)
+	err := waitForBucketToExist(ctx, client, expectedId, 120)
 
 	exists := true
 	apiErr := coreapi.APIError{}

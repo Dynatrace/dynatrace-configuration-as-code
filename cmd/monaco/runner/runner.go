@@ -102,7 +102,7 @@ func forward(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, resp.Body)
 }
 
-func getProxy(w http.ResponseWriter, req *http.Request) {
+func GetProxy(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Host == "" {
 		return
 	}
@@ -158,6 +158,43 @@ func changeToHttp(envs ...string) error {
 	return nil
 }
 
+func StartServerAndSetContext(ctx context.Context) (context.Context, *http.Server) {
+	proxyUrl, err := url.Parse("http://localhost:8080")
+	if err != nil {
+		fmt.Println(err)
+		return ctx, nil
+	}
+	//err = changeToHttp("PLATFORM_URL_ENVIRONMENT_1", "PLATFORM_URL_ENVIRONMENT_2")
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return
+	//}
+
+	server := &http.Server{Addr: ":8080", Handler: http.HandlerFunc(GetProxy)}
+	go func() {
+		err = server.ListenAndServe()
+		fmt.Print(err)
+	}()
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+			//TLSNextProto:        make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+			//TLSHandshakeTimeout: 5 * time.Second,
+			//DialContext: (&net.Dialer{
+			//	Timeout:   5 * time.Second,  // Timeout for establishing TCP connection
+			//	KeepAlive: 30 * time.Second, // Keep-alive period for TCP connection
+			//}).DialContext,
+			//IdleConnTimeout:       90 * time.Second, // How long idle connections stay in the pool
+			//ExpectContinueTimeout: 1 * time.Second,  // Wait time for 100-continue response
+			//MaxIdleConns:          100,              // Max idle connections across all hosts
+			//MaxIdleConnsPerHost:   10,               // Max idle connections per host
+			//DisableKeepAlives:   true,
+			//MaxIdleConnsPerHost: -1,
+		},
+	})
+	return ctx, server
+}
+
 func BuildCmdWithLogSpy(fs afero.Fs, logSpy io.Writer) *cobra.Command {
 	var verbose bool
 	var supportArchive bool
@@ -174,46 +211,19 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			proxyUrl, err := url.Parse("http://localhost:8080")
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			//err = changeToHttp("PLATFORM_URL_ENVIRONMENT_1", "PLATFORM_URL_ENVIRONMENT_2")
-			//if err != nil {
-			//	fmt.Println(err)
-			//	return
-			//}
+			ctx, server := StartServerAndSetContext(cmd.Context())
 
-			server := &http.Server{Addr: ":8080", Handler: http.HandlerFunc(getProxy)}
-			cobra.OnFinalize(func() {
-				server.Close()
-			})
-			go func() {
-				err = server.ListenAndServe()
-				fmt.Print(err)
-			}()
+			if server != nil {
+				cobra.OnFinalize(func() {
+					server.Close()
+				})
+			}
+
 			if supportArchive {
 				cobra.OnFinalize(writeSupportArchive(fs))
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
-			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{
-				Transport: &http.Transport{
-					Proxy: http.ProxyURL(proxyUrl),
-					//TLSNextProto:        make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
-					//TLSHandshakeTimeout: 5 * time.Second,
-					//DialContext: (&net.Dialer{
-					//	Timeout:   5 * time.Second,  // Timeout for establishing TCP connection
-					//	KeepAlive: 30 * time.Second, // Keep-alive period for TCP connection
-					//}).DialContext,
-					//IdleConnTimeout:       90 * time.Second, // How long idle connections stay in the pool
-					//ExpectContinueTimeout: 1 * time.Second,  // Wait time for 100-continue response
-					//MaxIdleConns:          100,              // Max idle connections across all hosts
-					//MaxIdleConnsPerHost:   10,               // Max idle connections per host
-					//DisableKeepAlives:   true,
-					//MaxIdleConnsPerHost: -1,
-				},
-			})
+
 			cmd.SetContext(ctx)
 
 			fileBasedLogging := featureflags.LogToFile.Enabled() || supportArchive

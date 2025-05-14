@@ -19,7 +19,9 @@
 package v2
 
 import (
+	"context"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"strconv"
 	"testing"
 
@@ -123,13 +125,18 @@ func TestSkip(t *testing.T) {
 				assert.True(t, ok, "expected to find client for environment ", tt.given.environment)
 
 				log.Info("Asserting configs were deployed: %v", tt.want.deployedConfigIDs)
+				ctx, server := runner.StartServerAndSetContext(t.Context())
+
+				if server != nil {
+					defer server.Close()
+				}
 				for _, id := range tt.want.deployedConfigIDs {
-					assertTestConfig(t, tc, client, tt.given.environment, id, true)
+					assertTestConfig(t, tc, client, tt.given.environment, id, true, ctx)
 				}
 
 				log.Info("Asserting configs were skipped: %v", tt.want.skippedConfigIDs)
 				for _, id := range tt.want.skippedConfigIDs {
-					assertTestConfig(t, tc, client, tt.given.environment, id, false)
+					assertTestConfig(t, tc, client, tt.given.environment, id, false, ctx)
 				}
 
 			})
@@ -137,7 +144,7 @@ func TestSkip(t *testing.T) {
 	}
 }
 
-func assertTestConfig(t *testing.T, tc TestContext, client client.SettingsClient, envName string, configID string, shouldExist bool) {
+func assertTestConfig(t *testing.T, tc TestContext, client client.SettingsClient, envName string, configID string, shouldExist bool, ctx context.Context) {
 	configID = fmt.Sprintf("%s_%s", configID, tc.suffix)
 
 	integrationtest.AssertSetting(t, client, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, shouldExist, config.Config{
@@ -146,5 +153,5 @@ func assertTestConfig(t *testing.T, tc TestContext, client client.SettingsClient
 			Type:     "builtin:tags.auto-tagging",
 			ConfigId: configID,
 		},
-	})
+	}, ctx)
 }
