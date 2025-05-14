@@ -18,7 +18,9 @@ import (
 	"context"
 	"crypto/tls"
 	"io"
+	"net"
 	"net/http"
+	"time"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -85,8 +87,16 @@ Examples:
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
 			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{Transport: &http.Transport{
-				DisableKeepAlives: true,
-				TLSNextProto:      make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+				TLSNextProto:        make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+				TLSHandshakeTimeout: 5 * time.Second,
+				DialContext: (&net.Dialer{
+					Timeout:   5 * time.Second,  // Timeout for establishing TCP connection
+					KeepAlive: 30 * time.Second, // Keep-alive period for TCP connection
+				}).DialContext,
+				IdleConnTimeout:       90 * time.Second, // How long idle connections stay in the pool
+				ExpectContinueTimeout: 1 * time.Second,  // Wait time for 100-continue response
+				MaxIdleConns:          100,              // Max idle connections across all hosts
+				MaxIdleConnsPerHost:   10,               // Max idle connections per host
 			}})
 			cmd.SetContext(ctx)
 			fileBasedLogging := featureflags.LogToFile.Enabled() || supportArchive

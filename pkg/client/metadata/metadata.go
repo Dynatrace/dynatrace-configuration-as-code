@@ -51,7 +51,7 @@ func (u classicEnvURL) GetURL() string {
 // The call has a timeout of 15 seconds.
 func GetDynatraceClassicURL(ctx context.Context, platformClient corerest.Client) (string, error) {
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 	defer cancel()
 
 	resp, err := coreapi.AsResponseOrError(platformClient.GET(ctx, ClassicEnvironmentDomainPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
