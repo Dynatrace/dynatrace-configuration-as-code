@@ -16,10 +16,13 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
-	"time"
+	"net/url"
+	"os"
+	"strings"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -65,6 +68,96 @@ func writeSupportArchive(fs afero.Fs) func() {
 	}
 }
 
+func forward(w http.ResponseWriter, r *http.Request) {
+	// Create new request to target
+	r.RequestURI = strings.Replace(r.RequestURI, "http://", "https://", 1)
+	fmt.Printf("forward: %s\n", r.RequestURI)
+	proxyReq, err := http.NewRequest(r.Method, r.RequestURI, r.Body)
+	if err != nil {
+		http.Error(w, "Failed to create request", http.StatusInternalServerError)
+		return
+	}
+
+	// Copy headers
+	proxyReq.Header = r.Header
+	if len(proxyReq.Header.Get("Authorization")) == 0 {
+		fmt.Println("Authorization is not set")
+	}
+
+	// Use default HTTPS client
+	resp, err := http.DefaultClient.Do(proxyReq)
+	if err != nil {
+		http.Error(w, "Failed to reach target", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Copy response headers and status
+	for k, v := range resp.Header {
+		w.Header()[k] = v
+	}
+	w.WriteHeader(resp.StatusCode)
+
+	// Copy response body
+	io.Copy(w, resp.Body)
+}
+
+func getProxy(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Host == "" {
+		return
+	}
+	if req.Method != http.MethodConnect {
+		forward(w, req)
+		return
+	}
+	// tunnel
+	fmt.Println("tunnel:", req.Method, req.RequestURI)
+	conn, err := net.Dial("tcp", req.URL.Host)
+	if err != nil {
+		w.WriteHeader(502)
+		return
+	}
+
+	client, _, err := w.(http.Hijacker).Hijack()
+	if err != nil {
+		w.WriteHeader(502)
+		conn.Close()
+		return
+	}
+	client.Write([]byte("HTTP/1.0 200 OK\r\n\r\n"))
+
+	//hr, hw := io.Pipe()
+	//go func() {
+	//	io.Copy(os.Stdout, hr)
+	//	hr.Close()
+	//}()
+
+	go func() {
+		//io.Copy(io.MultiWriter(client, hw), conn)
+		io.Copy(io.MultiWriter(client), conn)
+		client.Close()
+		conn.Close()
+		//hw.Close()
+	}()
+	go func() {
+		io.Copy(conn, client)
+		client.Close()
+		conn.Close()
+	}()
+}
+
+func changeToHttp(envs ...string) error {
+	for _, envName := range envs {
+		if env, ok := os.LookupEnv(envName); ok {
+			err := os.Setenv(envName, strings.Replace(env, "https", "http", 1))
+			if err != nil {
+				return fmt.Errorf("Error while setting env %s, %w", envName, err)
+			}
+		}
+	}
+	return nil
+}
+
 func BuildCmdWithLogSpy(fs afero.Fs, logSpy io.Writer) *cobra.Command {
 	var verbose bool
 	var supportArchive bool
@@ -81,23 +174,41 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			proxyUrl, err := url.Parse("http://localhost:8080")
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			err = changeToHttp("PLATFORM_URL_ENVIRONMENT_1", "PLATFORM_URL_ENVIRONMENT_2")
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			go func() {
+				serveErr := http.ListenAndServe(":8080", http.HandlerFunc(getProxy))
+				fmt.Println(serveErr)
+			}()
 			if supportArchive {
 				cobra.OnFinalize(writeSupportArchive(fs))
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
-			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{Transport: &http.Transport{
-				//TLSNextProto:        make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
-				TLSHandshakeTimeout: 5 * time.Second,
-				DialContext: (&net.Dialer{
-					Timeout:   5 * time.Second,  // Timeout for establishing TCP connection
-					KeepAlive: 30 * time.Second, // Keep-alive period for TCP connection
-				}).DialContext,
-				IdleConnTimeout:       90 * time.Second, // How long idle connections stay in the pool
-				ExpectContinueTimeout: 1 * time.Second,  // Wait time for 100-continue response
-				MaxIdleConns:          100,              // Max idle connections across all hosts
-				MaxIdleConnsPerHost:   10,               // Max idle connections per host
-			}})
+			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{
+				Transport: &http.Transport{
+					Proxy: http.ProxyURL(proxyUrl),
+					//TLSNextProto:        make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+					//TLSHandshakeTimeout: 5 * time.Second,
+					//DialContext: (&net.Dialer{
+					//	Timeout:   5 * time.Second,  // Timeout for establishing TCP connection
+					//	KeepAlive: 30 * time.Second, // Keep-alive period for TCP connection
+					//}).DialContext,
+					//IdleConnTimeout:       90 * time.Second, // How long idle connections stay in the pool
+					//ExpectContinueTimeout: 1 * time.Second,  // Wait time for 100-continue response
+					//MaxIdleConns:          100,              // Max idle connections across all hosts
+					//MaxIdleConnsPerHost:   10,               // Max idle connections per host
+				},
+			})
 			cmd.SetContext(ctx)
+
 			fileBasedLogging := featureflags.LogToFile.Enabled() || supportArchive
 			memStatLogging := featureflags.LogMemStats.Enabled()
 			log.PrepareLogging(cmd.Context(), fs, verbose, logSpy, fileBasedLogging, memStatLogging)
