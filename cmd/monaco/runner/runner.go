@@ -16,7 +16,6 @@ package runner
 
 import (
 	"context"
-	"crypto/tls"
 	"io"
 	"net"
 	"net/http"
@@ -87,7 +86,7 @@ Examples:
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
 			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{Transport: &http.Transport{
-				TLSNextProto:        make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+				//TLSNextProto:        make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
 				TLSHandshakeTimeout: 5 * time.Second,
 				DialContext: (&net.Dialer{
 					Timeout:   5 * time.Second,  // Timeout for establishing TCP connection
