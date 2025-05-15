@@ -18,11 +18,12 @@ package writer
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
-	"path/filepath"
-	"strings"
 
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -71,7 +72,7 @@ func Write(context *Context, manifestToWrite manifest.Manifest) error {
 	}
 
 	projects := toWriteableProjects(manifestToWrite.Projects)
-	groups := toWriteableEnvironmentGroups(manifestToWrite.Environments)
+	groups := toWriteableEnvironmentGroups(manifestToWrite.SelectedEnvironments)
 
 	m := persistence.Manifest{
 		ManifestVersion:   version.ManifestVersion,

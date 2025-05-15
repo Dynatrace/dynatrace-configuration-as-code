@@ -134,8 +134,8 @@ type Manifest struct {
 	// Projects defined in the manifest, split by project-name
 	Projects ProjectDefinitionByProjectID
 
-	// Environments defined in the manifest, split by environment-name
-	Environments EnvironmentDefinitionsByName
+	// SelectedEnvironments is the subset of environments from the manifest selected for use.
+	SelectedEnvironments EnvironmentDefinitionsByName
 
 	// Accounts holds all accounts defined in the manifest. Key is the user-defined account name.
 	Accounts map[string]Account

@@ -81,7 +81,7 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 				return fmt.Errorf("encountered errors while parsing %s: %w", deleteFile, err)
 			}
 
-			return Delete(cmd.Context(), manifest.Environments, entriesToDelete)
+			return Delete(cmd.Context(), manifest.SelectedEnvironments, entriesToDelete)
 		},
 		ValidArgsFunction: completion.DeleteCompletion,
 	}

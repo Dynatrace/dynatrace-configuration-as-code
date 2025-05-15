@@ -590,7 +590,7 @@ func TestWrite(t *testing.T) {
 						Path: "projects/p1",
 					},
 				},
-				Environments: manifest.EnvironmentDefinitionsByName{
+				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 					"env1": {
 						Name: "env1",
 						URL: manifest.URLDefinition{
@@ -630,7 +630,7 @@ environmentGroups:
 						Path: "projects/p1",
 					},
 				},
-				Environments: manifest.EnvironmentDefinitionsByName{
+				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 					"env1": {
 						Name: "env1",
 						URL: manifest.URLDefinition{

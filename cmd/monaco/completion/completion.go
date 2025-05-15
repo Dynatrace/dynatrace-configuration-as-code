@@ -97,7 +97,7 @@ func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCom
 		ManifestPath: manifestPath,
 	})
 
-	return maps.Keys(man.Environments), cobra.ShellCompDirectiveDefault
+	return maps.Keys(man.SelectedEnvironments), cobra.ShellCompDirectiveDefault
 }
 
 func AccountsByManifestFlag(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {

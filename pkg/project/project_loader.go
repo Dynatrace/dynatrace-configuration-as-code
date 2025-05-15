@@ -87,7 +87,7 @@ func LoadProjects(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderC
 		return nil, []error{fmt.Errorf("no projects defined in manifest")}
 	}
 
-	environments := toEnvironmentSlice(loaderContext.Manifest.Environments)
+	environments := toEnvironmentSlice(loaderContext.Manifest.SelectedEnvironments)
 
 	projectNamesToLoad, errs := getProjectNamesToLoad(loaderContext.Manifest.Projects, specificProjectNames)
 

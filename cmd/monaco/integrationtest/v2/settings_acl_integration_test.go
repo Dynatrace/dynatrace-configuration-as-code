@@ -81,7 +81,7 @@ func TestSettingsWithACL(t *testing.T) {
 				require.NoError(t, err)
 
 				loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, environment)
-				environmentDefinition := loadedManifest.Environments[environment]
+				environmentDefinition := loadedManifest.SelectedEnvironments[environment]
 				client := createSettingsClientPlatform(t, environmentDefinition)
 
 				coord := coordinate.Coordinate{
