@@ -53,10 +53,6 @@ func GetLatestVersion(ctx context.Context, client *http.Client, url string) (Ver
 		return UnknownVersion, fmt.Errorf("unable to parse response data: %w", err)
 	}
 
-	if err != nil {
-		return UnknownVersion, err
-	}
-
 	tagName, _ := strings.CutPrefix(release.TagName, "v")
 	if parsedVersion, err := ParseVersion(tagName); err != nil {
 		return UnknownVersion, err
