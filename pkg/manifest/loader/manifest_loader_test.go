@@ -20,17 +20,19 @@ package loader
 
 import (
 	"fmt"
-	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
 	"math"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
+
+	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
 
 func Test_extractUrlType(t *testing.T) {
@@ -902,6 +904,11 @@ environmentGroups:
 							},
 						},
 					},
+					"envB": {
+						Skip:  true,
+						Name:  "envB",
+						Group: "groupB",
+					},
 				},
 				Accounts: map[string]manifest.Account{},
 			},
@@ -937,6 +944,11 @@ environmentGroups:
 								Value: "mock token",
 							},
 						},
+					},
+					"envB": {
+						Skip:  true,
+						Name:  "envB",
+						Group: "groupB",
 					},
 				},
 				Accounts: map[string]manifest.Account{},
@@ -990,6 +1002,11 @@ environmentGroups:
 							},
 						},
 					},
+					"envC": {
+						Skip:  true,
+						Name:  "envC",
+						Group: "groupC",
+					},
 				},
 				Accounts: map[string]manifest.Account{},
 			},
@@ -1040,6 +1057,11 @@ environmentGroups:
 								Value: "mock token",
 							},
 						},
+					},
+					"envC": {
+						Skip:  true,
+						Name:  "envC",
+						Group: "groupC",
 					},
 				},
 				Accounts: map[string]manifest.Account{},
@@ -1092,6 +1114,11 @@ environmentGroups:
 							},
 						},
 					},
+					"envC": {
+						Skip:  true,
+						Name:  "envC",
+						Group: "groupC",
+					},
 				},
 				Accounts: map[string]manifest.Account{},
 			},
@@ -1143,6 +1170,11 @@ environmentGroups:
 								Value: "mock token",
 							},
 						},
+					},
+					"envC": {
+						Skip:  true,
+						Name:  "envC",
+						Group: "groupC",
 					},
 				},
 				Accounts: map[string]manifest.Account{},

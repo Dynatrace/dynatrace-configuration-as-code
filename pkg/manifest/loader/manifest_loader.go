@@ -377,9 +377,10 @@ func parseEnvironments(context *Context, groups []persistence.Group) (map[string
 			}
 			envNames[env.Name] = true
 
-			// skip loading if environments is not empty, the environments does not contain the env name, or the group should not be included
+			// skip actually loading if environments is not empty, the environments does not contain the env name, or the group should not be included
 			if shouldSkipEnv(context, group, env) {
 				log.WithFields(field.F("manifestPath", context.ManifestPath)).Debug("skipping loading of environment %q", env.Name)
+				environments[env.Name] = manifest.EnvironmentDefinition{Skip: true, Name: env.Name, Group: group.Name}
 				continue
 			}
 
