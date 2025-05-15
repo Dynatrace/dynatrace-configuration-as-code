@@ -41,7 +41,7 @@ import (
 // resources immediately after they've been created (e.g. to assert that they exist)
 func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefinition) *client.ClientSet {
 	clients, err := client.CreateClientSetWithOptions(
-		t.Context(),
+		newContextWithHttpClient(t),
 		environment.URL.Value,
 		environment.Auth,
 		client.ClientOptions{
