@@ -186,7 +186,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 }
 
 func NewContextWithHttpClient(t *testing.T) context.Context {
-	transport := &http.Transport{}
+	transport := &http.Transport{MaxIdleConnsPerHost: 100}
 	t.Cleanup(func(){
 		transport.CloseIdleConnections()
 	})
