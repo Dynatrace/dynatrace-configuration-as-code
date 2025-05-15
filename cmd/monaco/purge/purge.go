@@ -57,7 +57,7 @@ func purge(ctx context.Context, fs afero.Fs, deploymentManifestPath string, envi
 		return errors.New("error while loading manifest")
 	}
 
-	return purgeConfigs(ctx, maps.Values(mani.Environments), apis)
+	return purgeConfigs(ctx, maps.Values(mani.SelectedEnvironments), apis)
 }
 
 func purgeConfigs(ctx context.Context, environments []manifest.EnvironmentDefinition, apis api.APIs) error {

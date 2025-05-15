@@ -20,17 +20,19 @@ package loader
 
 import (
 	"fmt"
-	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
 	"math"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
+
+	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
 
 func Test_extractUrlType(t *testing.T) {
@@ -751,7 +753,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						Path: "p",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
 						URL: manifest.URLDefinition{
@@ -786,7 +788,7 @@ environmentGroups:
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
 						URL: manifest.URLDefinition{
@@ -837,7 +839,7 @@ environmentGroups:
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
 						URL: manifest.URLDefinition{
@@ -887,7 +889,7 @@ environmentGroups:
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
 						URL: manifest.URLDefinition{
@@ -923,7 +925,7 @@ environmentGroups:
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
 						URL: manifest.URLDefinition{
@@ -961,7 +963,7 @@ environmentGroups:
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
 						URL: manifest.URLDefinition{
@@ -1012,7 +1014,7 @@ environmentGroups:
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
 						URL: manifest.URLDefinition{
@@ -1063,7 +1065,7 @@ environmentGroups:
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
 						URL: manifest.URLDefinition{
@@ -1115,7 +1117,7 @@ environmentGroups:
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
 						URL: manifest.URLDefinition{
@@ -1219,7 +1221,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 `,
 			expectedManifest: manifest.Manifest{
 				Projects: manifest.ProjectDefinitionByProjectID{},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
 						URL: manifest.URLDefinition{
@@ -1251,8 +1253,8 @@ projects: [{name: projectA}]
 						Path: "projectA",
 					},
 				},
-				Environments: nil,
-				Accounts:     map[string]manifest.Account{},
+				SelectedEnvironments: nil,
+				Accounts:             map[string]manifest.Account{},
 			},
 			errsContain: []string{},
 		},
@@ -1265,7 +1267,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 `,
 			expectedManifest: manifest.Manifest{
 				Projects: manifest.ProjectDefinitionByProjectID{},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
 						URL: manifest.URLDefinition{
@@ -1393,7 +1395,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						Path: "p",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
 						URL: manifest.URLDefinition{
@@ -1427,7 +1429,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						Path: "p",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
 						URL: manifest.URLDefinition{
@@ -1472,7 +1474,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						Path: "p",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
 						URL: manifest.URLDefinition{
@@ -1520,7 +1522,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						Path: "p",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
 						URL: manifest.URLDefinition{
@@ -1569,7 +1571,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {o
 						Path: "p",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
 						URL: manifest.URLDefinition{
@@ -1658,7 +1660,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {type: environment, 
 						Path: "p",
 					},
 				},
-				Environments: map[string]manifest.EnvironmentDefinition{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
 						URL: manifest.URLDefinition{

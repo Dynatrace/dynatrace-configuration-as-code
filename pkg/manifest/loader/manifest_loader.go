@@ -202,9 +202,9 @@ func Load(context *Context) (manifest.Manifest, []error) {
 	}
 
 	return manifest.Manifest{
-		Projects:     projectDefinitions,
-		Environments: environmentDefinitions,
-		Accounts:     accounts,
+		Projects:             projectDefinitions,
+		SelectedEnvironments: environmentDefinitions,
+		Accounts:             accounts,
 	}, nil
 }
 

@@ -67,7 +67,7 @@ func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext Te
 	})
 	assert.Empty(t, errs)
 
-	environmentDefinition := man.Environments[environment]
+	environmentDefinition := man.SelectedEnvironments[environment]
 	clientSet := integrationtest.CreateDynatraceClients(t, environmentDefinition)
 	apis := api.NewAPIs()
 

@@ -51,7 +51,7 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 		return err
 	}
 
-	ok := verifyEnvironmentGen(ctx, loadedManifest.Environments, dryRun)
+	ok := verifyEnvironmentGen(ctx, loadedManifest.SelectedEnvironments, dryRun)
 	if !ok {
 		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
@@ -61,21 +61,21 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 		return err
 	}
 
-	if err := validateProjectsWithEnvironments(ctx, loadedProjects, loadedManifest.Environments); err != nil {
+	if err := validateProjectsWithEnvironments(ctx, loadedProjects, loadedManifest.SelectedEnvironments); err != nil {
 		return err
 	}
 
 	logging.LogProjectsInfo(loadedProjects)
-	logging.LogEnvironmentsInfo(loadedManifest.Environments)
+	logging.LogEnvironmentsInfo(loadedManifest.SelectedEnvironments)
 
-	err = validateAuthenticationWithProjectConfigs(loadedProjects, loadedManifest.Environments)
+	err = validateAuthenticationWithProjectConfigs(loadedProjects, loadedManifest.SelectedEnvironments)
 	if err != nil {
 		formattedErr := fmt.Errorf("manifest auth field misconfigured: %w", err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
 		return formattedErr
 	}
 
-	clientSets, err := dynatrace.CreateEnvironmentClients(ctx, loadedManifest.Environments, dryRun)
+	clientSets, err := dynatrace.CreateEnvironmentClients(ctx, loadedManifest.SelectedEnvironments, dryRun)
 	if err != nil {
 		formattedErr := fmt.Errorf("failed to create API clients: %w", err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, formattedErr, "", nil)
