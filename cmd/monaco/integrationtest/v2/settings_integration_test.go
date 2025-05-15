@@ -490,7 +490,7 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 	client, err := clientFactory.CreatePlatformClient(t.Context())
 	require.NoError(t, err)
 
-	classicURL, err := metadata.GetDynatraceClassicURL(t.Context(), *client)
+	classicURL, err := metadata.GetDynatraceClassicURL(integrationtest.NewContextWithHttpClient(t), *client)
 	require.NoError(t, err)
 
 	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(env.Auth.Token.Value.Value())
