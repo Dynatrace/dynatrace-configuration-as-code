@@ -180,12 +180,12 @@ func Load(context *Context) (manifest.Manifest, []error) {
 	}
 
 	// environments
-	var environmentDefinitions map[string]manifest.EnvironmentDefinition
+	var environments manifest.Environments
 	if len(manifestYAML.EnvironmentGroups) > 0 {
 		var manifestErrors []error
-		if environmentDefinitions, manifestErrors = parseEnvironments(context, manifestYAML.EnvironmentGroups); manifestErrors != nil {
+		if environments, manifestErrors = parseEnvironments(context, manifestYAML.EnvironmentGroups); len(manifestErrors) > 0 {
 			errs = append(errs, manifestErrors...)
-		} else if len(environmentDefinitions) == 0 {
+		} else if len(environments.AllEnvironmentNames) == 0 {
 			errs = append(errs, newManifestLoaderError(context.ManifestPath, "no environments defined in manifest"))
 		}
 	}
@@ -202,9 +202,9 @@ func Load(context *Context) (manifest.Manifest, []error) {
 	}
 
 	return manifest.Manifest{
-		Projects:             projectDefinitions,
-		SelectedEnvironments: environmentDefinitions,
-		Accounts:             accounts,
+		Projects:     projectDefinitions,
+		Environments: environments,
+		Accounts:     accounts,
 	}, nil
 }
 
@@ -346,23 +346,23 @@ func validateVersion(m persistence.Manifest) error {
 	return nil
 }
 
-func parseEnvironments(context *Context, groups []persistence.Group) (map[string]manifest.EnvironmentDefinition, []error) { // nolint:gocognit
+func parseEnvironments(context *Context, groups []persistence.Group) (manifest.Environments, []error) { // nolint:gocognit
 	var errors []error
-	environments := make(map[string]manifest.EnvironmentDefinition)
+	selectedEnvironments := make(map[string]manifest.EnvironmentDefinition)
 
-	groupNames := make(map[string]bool, len(groups))
-	envNames := make(map[string]bool, len(groups))
+	allGroupNames := make(map[string]struct{}, len(groups))
+	allEnvironmentNames := make(map[string]struct{}, len(groups))
 
 	for i, group := range groups {
 		if group.Name == "" {
 			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("missing group name on index `%d`", i)))
 		}
 
-		if groupNames[group.Name] {
+		if _, exists := allGroupNames[group.Name]; exists {
 			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated group name %q", group.Name)))
 		}
 
-		groupNames[group.Name] = true
+		allGroupNames[group.Name] = struct{}{}
 
 		for j, env := range group.Environments {
 
@@ -371,11 +371,11 @@ func parseEnvironments(context *Context, groups []persistence.Group) (map[string
 				continue
 			}
 
-			if envNames[env.Name] {
+			if _, exists := allEnvironmentNames[env.Name]; exists {
 				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated environment name %q", env.Name)))
 				continue
 			}
-			envNames[env.Name] = true
+			allEnvironmentNames[env.Name] = struct{}{}
 
 			// skip loading if environments is not empty, the environments does not contain the env name, or the group should not be included
 			if shouldSkipEnv(context, group, env) {
@@ -390,28 +390,32 @@ func parseEnvironments(context *Context, groups []persistence.Group) (map[string
 				continue
 			}
 
-			environments[parsedEnv.Name] = parsedEnv
+			selectedEnvironments[parsedEnv.Name] = parsedEnv
 		}
 	}
 
 	// validate that all required groups & environments are included
 	for _, g := range context.Groups {
-		if !groupNames[g] {
+		if _, exists := allGroupNames[g]; !exists {
 			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("requested group %q not found", g)))
 		}
 	}
 
 	for _, e := range context.Environments {
-		if !envNames[e] {
+		if _, exists := allEnvironmentNames[e]; !exists {
 			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("requested environment %q not found", e)))
 		}
 	}
 
 	if errors != nil {
-		return nil, errors
+		return manifest.Environments{}, errors
 	}
 
-	return environments, nil
+	return manifest.Environments{
+		SelectedEnvironments: selectedEnvironments,
+		AllEnvironmentNames:  allEnvironmentNames,
+		AllGroupNames:        allGroupNames,
+	}, nil
 }
 
 func shouldSkipEnv(context *Context, group persistence.Group, env persistence.Environment) bool {

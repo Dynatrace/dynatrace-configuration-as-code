@@ -103,7 +103,7 @@ func TestSkip(t *testing.T) {
 	loadedManifest := integrationtest.LoadManifest(t, afero.OsFs{}, manifest, "")
 	clients := make(map[string]client.SettingsClient)
 
-	for name, def := range loadedManifest.SelectedEnvironments {
+	for name, def := range loadedManifest.Environments.SelectedEnvironments {
 		set := integrationtest.CreateDynatraceClients(t, def)
 		clients[name] = set.SettingsClient
 	}

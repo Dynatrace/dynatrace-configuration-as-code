@@ -166,7 +166,7 @@ func createSegmentsClient(t *testing.T, fs afero.Fs, manifestPath string, enviro
 	})
 	assert.Empty(t, errs)
 
-	clientSet := integrationtest.CreateDynatraceClients(t, man.SelectedEnvironments[environment])
+	clientSet := integrationtest.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
 	return clientSet.SegmentClient
 }
 
