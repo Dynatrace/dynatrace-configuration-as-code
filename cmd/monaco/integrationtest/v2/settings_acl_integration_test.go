@@ -82,7 +82,8 @@ func TestSettingsWithACL(t *testing.T) {
 
 				loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, environment)
 				environmentDefinition := loadedManifest.Environments[environment]
-				client := createSettingsClientPlatform(t, environmentDefinition)
+				ctx := integrationtest.NewContextWithHttpClient(t)
+				client := createSettingsClientPlatform(t, environmentDefinition, ctx)
 
 				coord := coordinate.Coordinate{
 					Project:  project,

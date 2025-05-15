@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -98,14 +99,15 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	}()
 
 	// first deploy with external id generate that does not consider the project name
-	c := createSettingsClient(t, environment, dtclient.WithExternalIDGenerator(func(input coordinate.Coordinate) (string, error) {
+	ctx := integrationtest.NewContextWithHttpClient(t)
+	c := createSettingsClient(t, environment, ctx, dtclient.WithExternalIDGenerator(func(input coordinate.Coordinate) (string, error) {
 		input.Project = ""
 		id, _ := idutils.GenerateExternalIDForSettingsObject(input)
 		return id, nil
 	}))
 	content, err := configToDeploy.Template.Content()
 	assert.NoError(t, err)
-	_, err = c.Upsert(t.Context(), dtclient.SettingsObject{
+	_, err = c.Upsert(ctx, dtclient.SettingsObject{
 		Coordinate:     configToDeploy.Coordinate,
 		SchemaId:       configToDeploy.Type.(config.SettingsType).SchemaId,
 		SchemaVersion:  configToDeploy.Type.(config.SettingsType).SchemaVersion,
@@ -120,8 +122,8 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	extID, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
 
 	// Check if settings 2.0 object with "new" external ID exists
-	c = createSettingsClient(t, environment)
-	settings, _ := c.List(t.Context(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+	c = createSettingsClient(t, environment, ctx)
+	settings, _ := c.List(ctx, "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == extID
 	}})
 	assert.Len(t, settings, 1)
@@ -130,7 +132,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	coord := sortedConfigs["platform_env"][0].Coordinate
 	coord.Project = ""
 	legacyExtID, _ := idutils.GenerateExternalIDForSettingsObject(coord)
-	settings, _ = c.List(t.Context(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+	settings, _ = c.List(ctx, "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == legacyExtID
 	}})
 	assert.Len(t, settings, 0)
@@ -211,9 +213,10 @@ func TestOrderedSettings(t *testing.T) {
 
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
-		settingsClient := createSettingsClient(t, environment)
+		ctx := integrationtest.NewContextWithHttpClient(t)
+		settingsClient := createSettingsClient(t, environment, ctx)
 
-		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
+		results, err := settingsClient.List(ctx, "builtin:processavailability", dtclient.ListSettingsOptions{
 			DiscardValue: true,
 			Filter:       filterObjectsForScope(host),
 		})
@@ -236,9 +239,10 @@ func TestOrderedSettings(t *testing.T) {
 
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
-		settingsClient := createSettingsClient(t, environment)
+		ctx := integrationtest.NewContextWithHttpClient(t)
+		settingsClient := createSettingsClient(t, environment, ctx)
 
-		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
+		results, err := settingsClient.List(ctx, "builtin:processavailability", dtclient.ListSettingsOptions{
 			DiscardValue: true,
 			Filter:       filterObjectsForScope(host),
 		})
@@ -268,8 +272,9 @@ func TestOrderedSettingsCrossProjects(t *testing.T) {
 
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 		environment := loadedManifest.Environments["platform_env"]
-		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+		ctx := integrationtest.NewContextWithHttpClient(t)
+		settingsClient := createSettingsClient(t, environment, ctx)
+		results, err := settingsClient.List(ctx, schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
 			Filter:       filterObjectsForScope(pgiMeId),
 		})
@@ -307,7 +312,8 @@ func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
-		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+		ctx := integrationtest.NewContextWithHttpClient(t)
+		list, err := sClient.List(ctx, schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
 			Filter:       filterObjectsForScope(pgiMeId),
 		})
@@ -342,7 +348,8 @@ func TestOrdered_InsertAtFrontWorks(t *testing.T) {
 
 		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+		ctx := integrationtest.NewContextWithHttpClient(t)
+		list, err := sClient.List(ctx, schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
 			Filter:       filterObjectsForScope(pgiMeId),
 		})
@@ -377,9 +384,10 @@ func TestOrdered_InsertAtBackWorks(t *testing.T) {
 		require.NoError(t, err)
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
+		ctx := integrationtest.NewContextWithHttpClient(t)
 		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+		list, err := sClient.List(ctx, schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
 			Filter:       filterObjectsForScope(pgiMeId),
 		})
@@ -412,7 +420,8 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 
 		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+		ctx := integrationtest.NewContextWithHttpClient(t)
+		list, err := sClient.List(ctx, schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
 			Filter:       filterObjectsForScope(pgiMeId),
 		})
@@ -454,7 +463,8 @@ func TestOrdered_InsertAtFrontAndBackWorksDeployTwice(t *testing.T) {
 
 		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+		ctx := integrationtest.NewContextWithHttpClient(t)
+		list, err := sClient.List(ctx, schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
 			Filter:       filterObjectsForScope(pgiMeId),
 		})
@@ -477,7 +487,7 @@ func filterObjectsForScope(pgiMeId string) func(object dtclient.DownloadSettings
 	}
 }
 
-func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.SettingsClient)) client.SettingsClient {
+func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, ctx context.Context, opts ...func(dynatraceClient *dtclient.SettingsClient)) client.SettingsClient {
 
 	clientFactory := clients.Factory().
 		WithOAuthCredentials(clientcredentials.Config{
@@ -487,10 +497,10 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 		}).
 		WithPlatformURL(env.URL.Value)
 
-	client, err := clientFactory.CreatePlatformClient(t.Context())
+	client, err := clientFactory.CreatePlatformClient(ctx)
 	require.NoError(t, err)
 
-	classicURL, err := metadata.GetDynatraceClassicURL(integrationtest.NewContextWithHttpClient(t), *client)
+	classicURL, err := metadata.GetDynatraceClassicURL(ctx, *client)
 	require.NoError(t, err)
 
 	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(env.Auth.Token.Value.Value())
@@ -507,7 +517,7 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 	return dtClient
 }
 
-func createSettingsClientPlatform(t *testing.T, env manifest.EnvironmentDefinition) client.SettingsClient {
+func createSettingsClientPlatform(t *testing.T, env manifest.EnvironmentDefinition, ctx context.Context) client.SettingsClient {
 	clientFactory := clients.Factory().
 		WithOAuthCredentials(clientcredentials.Config{
 			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
@@ -516,7 +526,7 @@ func createSettingsClientPlatform(t *testing.T, env manifest.EnvironmentDefiniti
 		}).
 		WithPlatformURL(env.URL.Value)
 
-	c, err := clientFactory.CreatePlatformClient(t.Context())
+	c, err := clientFactory.CreatePlatformClient(ctx)
 	require.NoError(t, err)
 
 	dtClient, err := dtclient.NewPlatformSettingsClient(c)
