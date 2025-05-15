@@ -20,7 +20,6 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"path/filepath"
 	"testing"
 	"time"
@@ -259,18 +258,13 @@ environmentGroups:
 	clientSet := integrationtest.CreateDynatraceClients(t, env)
 
 	// check the setting was deleted
-	ctx, server := runner.StartServerAndSetContext(t.Context())
-
-	if server != nil {
-		defer server.Close()
-	}
 	integrationtest.AssertSetting(t, clientSet.SettingsClient, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "builtin:tags.auto-tagging",
 			ConfigId: tagID,
 		},
-	}, ctx)
+	})
 
 	// check the workflow still exists after deletion was skipped without error
 	integrationtest.AssertAutomation(t, clientSet.AutClient, env, true, config.Workflow, config.Config{
@@ -279,7 +273,7 @@ environmentGroups:
 			Type:     "workflow",
 			ConfigId: workflowID,
 		},
-	}, ctx)
+	})
 
 	// check the bucket still exists after deletion was skipped without error
 	integrationtest.AssertBucket(t, clientSet.BucketClient, env, true, config.Config{
@@ -288,7 +282,7 @@ environmentGroups:
 			Type:     "bucket",
 			ConfigId: bucketID,
 		},
-	}, ctx)
+	})
 }
 
 func TestDeleteSubPathAPIConfigurations(t *testing.T) {
@@ -380,17 +374,12 @@ configs:
 	require.NoError(t, err)
 
 	// Assert key-user-action is deleted
-	ctx, server := runner.StartServerAndSetContext(t.Context())
-
-	if server != nil {
-		defer server.Close()
-	}
 	integrationtest.AssertConfig(t, clientSet.ConfigClient, apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "key-user-actions-mobile",
 			ConfigId: "action",
-		}}, actionName, ctx)
+		}}, actionName)
 
 	// DELETE all
 	fullDeleteTemplate := `delete:

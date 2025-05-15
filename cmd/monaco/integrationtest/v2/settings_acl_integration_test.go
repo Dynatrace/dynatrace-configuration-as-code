@@ -71,6 +71,7 @@ func TestSettingsWithACL(t *testing.T) {
 				WantPermission: []dtclient.TypePermissions{},
 			},
 		}
+
 		RunIntegrationWithCleanup(t, configFolder, defaultManifest, environment, "settings-ACL", func(fs afero.Fs, testContext TestContext) {
 			for _, update := range updates {
 				t.Logf("Update permission with '%s'", update.ManifestFolder)
@@ -88,15 +89,10 @@ func TestSettingsWithACL(t *testing.T) {
 					Type:     schemaId,
 					ConfigId: "config-acl_" + testContext.suffix,
 				}
-				ctx, server := runner.StartServerAndSetContext(t.Context())
-
 				objectId := integrationtest.AssertSetting(t, client, settingsType, environment, true, config.Config{
 					Coordinate: coord,
-				}, ctx)
-				integrationtest.AssertPermission(t, client, objectId, update.WantPermission, ctx)
-				if server != nil {
-					server.Close()
-				}
+				})
+				integrationtest.AssertPermission(t, client, objectId, update.WantPermission)
 			}
 		})
 	})
