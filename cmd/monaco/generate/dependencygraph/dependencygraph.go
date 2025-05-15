@@ -104,7 +104,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		})
 	}
 
-	graphs := graph.New(projects, m.SelectedEnvironments.Names(), opts...)
+	graphs := graph.New(projects, m.Environments.SelectedEnvironments.Names(), opts...)
 
 	folderPath, err := filepath.Abs(outputFolder)
 	if err != nil {
@@ -128,7 +128,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		}
 	}
 
-	for _, e := range m.SelectedEnvironments.Names() {
+	for _, e := range m.Environments.SelectedEnvironments.Names() {
 		b, err := graphs.EncodeToDOT(e)
 		if err != nil {
 			return ExportError{

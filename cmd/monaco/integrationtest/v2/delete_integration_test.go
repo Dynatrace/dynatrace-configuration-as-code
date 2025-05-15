@@ -254,7 +254,7 @@ environmentGroups:
 	assert.Empty(t, errs)
 
 	envName := "environment"
-	env := man.SelectedEnvironments[envName]
+	env := man.Environments.SelectedEnvironments[envName]
 	clientSet := integrationtest.CreateDynatraceClients(t, env)
 
 	// check the setting was deleted
@@ -339,7 +339,7 @@ configs:
 	assert.Empty(t, errs)
 
 	envName := "environment"
-	env := man.SelectedEnvironments[envName]
+	env := man.Environments.SelectedEnvironments[envName]
 	clientSet := integrationtest.CreateDynatraceClients(t, env)
 	apis := api.NewAPIs()
 

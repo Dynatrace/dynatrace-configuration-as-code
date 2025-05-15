@@ -105,6 +105,17 @@ type AuthSecret struct {
 
 type ProjectDefinitionByProjectID map[string]ProjectDefinition
 
+type Environments struct {
+	// SelectedEnvironments is the subset of environments from the manifest selected for use.
+	SelectedEnvironments EnvironmentDefinitionsByName
+
+	// AllEnvironmentNames is the set of all environment names defined in the manifest.
+	AllEnvironmentNames map[string]struct{}
+
+	// AllGroupNames is the set of all group names defined in the manifest.
+	AllGroupNames map[string]struct{}
+}
+
 // EnvironmentDefinitionsByName is a map of environment-name -> EnvironmentDefinition
 type EnvironmentDefinitionsByName map[string]EnvironmentDefinition
 
@@ -134,8 +145,8 @@ type Manifest struct {
 	// Projects defined in the manifest, split by project-name
 	Projects ProjectDefinitionByProjectID
 
-	// SelectedEnvironments is the subset of environments from the manifest selected for use.
-	SelectedEnvironments EnvironmentDefinitionsByName
+	// Environments defined in the manifest.
+	Environments Environments
 
 	// Accounts holds all accounts defined in the manifest. Key is the user-defined account name.
 	Accounts map[string]Account

@@ -71,9 +71,9 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 	projects := LoadProjects(t, fs, manifestPath, loadedManifest)
 
-	envNames := make([]string, 0, len(loadedManifest.SelectedEnvironments))
+	envNames := make([]string, 0, len(loadedManifest.Environments.SelectedEnvironments))
 
-	for _, env := range loadedManifest.SelectedEnvironments {
+	for _, env := range loadedManifest.Environments.SelectedEnvironments {
 		envNames = append(envNames, env.Name)
 	}
 
@@ -100,7 +100,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 	for envName, configs := range sortedConfigs {
 
-		env := loadedManifest.SelectedEnvironments[envName]
+		env := loadedManifest.Environments.SelectedEnvironments[envName]
 
 		clients := CreateDynatraceClients(t, env)
 

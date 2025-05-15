@@ -72,7 +72,8 @@ func Write(context *Context, manifestToWrite manifest.Manifest) error {
 	}
 
 	projects := toWriteableProjects(manifestToWrite.Projects)
-	groups := toWriteableEnvironmentGroups(manifestToWrite.SelectedEnvironments)
+
+	groups := toWriteableEnvironmentGroups(manifestToWrite.Environments)
 
 	m := persistence.Manifest{
 		ManifestVersion:   version.ManifestVersion,
@@ -145,10 +146,10 @@ func extractGroupedProjectDetails(projectDefinition manifest.ProjectDefinition) 
 	return groupName, groupPath
 }
 
-func toWriteableEnvironmentGroups(environments map[string]manifest.EnvironmentDefinition) (result []persistence.Group) {
+func toWriteableEnvironmentGroups(environments manifest.Environments) (result []persistence.Group) {
 	environmentPerGroup := make(map[string][]persistence.Environment)
 
-	for name, env := range environments {
+	for name, env := range environments.SelectedEnvironments {
 		e := persistence.Environment{
 			Name: name,
 			URL:  toWriteableURL(env.URL),

@@ -70,12 +70,20 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 
 	manifest := manifest.Manifest{
 		Projects: projectDefinition,
-		SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
-			writerContext.ProjectToWrite.Id: {
-				Name:  writerContext.ProjectToWrite.Id,
-				URL:   writerContext.EnvironmentUrl,
-				Group: "default",
-				Auth:  writerContext.Auth,
+		Environments: manifest.Environments{
+			SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
+				writerContext.ProjectToWrite.Id: {
+					Name:  writerContext.ProjectToWrite.Id,
+					URL:   writerContext.EnvironmentUrl,
+					Group: "default",
+					Auth:  writerContext.Auth,
+				},
+			},
+			AllEnvironmentNames: map[string]struct{}{
+				writerContext.ProjectToWrite.Id: {},
+			},
+			AllGroupNames: map[string]struct{}{
+				"default": {},
 			},
 		},
 	}

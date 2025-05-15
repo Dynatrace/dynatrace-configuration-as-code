@@ -90,7 +90,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, env)
 	projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
 	sortedConfigs, _ := graph.SortProjects(projects, []string{env})
-	environment := loadedManifest.SelectedEnvironments[env]
+	environment := loadedManifest.Environments.SelectedEnvironments[env]
 	configToDeploy := sortedConfigs[env][0]
 
 	defer func() {
@@ -210,7 +210,7 @@ func TestOrderedSettings(t *testing.T) {
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
-		environment := loadedManifest.SelectedEnvironments["platform_env"]
+		environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
 
 		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
@@ -235,7 +235,7 @@ func TestOrderedSettings(t *testing.T) {
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
-		environment := loadedManifest.SelectedEnvironments["platform_env"]
+		environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
 
 		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
@@ -267,7 +267,7 @@ func TestOrderedSettingsCrossProjects(t *testing.T) {
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"source"}, "platform_env", true)
 
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
-		environment := loadedManifest.SelectedEnvironments["platform_env"]
+		environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
 		settingsClient := createSettingsClient(t, environment)
 		results, err := settingsClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
 			DiscardValue: true,
@@ -556,7 +556,7 @@ func createSettingsClientFromManifest(t *testing.T, fs afero.Fs, manifestPath st
 	})
 	assert.Empty(t, errs)
 
-	clientSet := integrationtest.CreateDynatraceClients(t, man.SelectedEnvironments[environment])
+	clientSet := integrationtest.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
 	return clientSet.SettingsClient
 }
 
