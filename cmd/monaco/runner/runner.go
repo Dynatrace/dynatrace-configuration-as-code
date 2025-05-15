@@ -20,7 +20,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 
@@ -174,45 +173,35 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			proxyUrl, err := url.Parse("http://localhost:8080")
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
+			//proxyUrl, err := url.Parse("http://localhost:8080")
+			//if err != nil {
+			//	fmt.Println(err)
+			//	return
+			//}
 			//err = changeToHttp("PLATFORM_URL_ENVIRONMENT_1", "PLATFORM_URL_ENVIRONMENT_2")
 			//if err != nil {
 			//	fmt.Println(err)
 			//	return
 			//}
 
-			server := &http.Server{Addr: ":8080", Handler: http.HandlerFunc(getProxy)}
-			cobra.OnFinalize(func() {
-				server.Close()
-			})
-			go func() {
-				err = server.ListenAndServe()
-				fmt.Print(err)
-			}()
+			//server := &http.Server{Addr: ":8080", Handler: http.HandlerFunc(getProxy)}
+			//cobra.OnFinalize(func() {
+			//	server.Close()
+			//})
+			//go func() {
+			//	err = server.ListenAndServe()
+			//	fmt.Print(err)
+			//}()
 			if supportArchive {
 				cobra.OnFinalize(writeSupportArchive(fs))
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
+			transport := &http.Transport{}
 			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{
-				Transport: &http.Transport{
-					Proxy: http.ProxyURL(proxyUrl),
-					//TLSNextProto:        make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
-					//TLSHandshakeTimeout: 5 * time.Second,
-					//DialContext: (&net.Dialer{
-					//	Timeout:   5 * time.Second,  // Timeout for establishing TCP connection
-					//	KeepAlive: 30 * time.Second, // Keep-alive period for TCP connection
-					//}).DialContext,
-					//IdleConnTimeout:       90 * time.Second, // How long idle connections stay in the pool
-					//ExpectContinueTimeout: 1 * time.Second,  // Wait time for 100-continue response
-					//MaxIdleConns:          100,              // Max idle connections across all hosts
-					//MaxIdleConnsPerHost:   10,               // Max idle connections per host
-					//DisableKeepAlives:   true,
-					//MaxIdleConnsPerHost: -1,
-				},
+				Transport: transport,
+			})
+			cobra.OnFinalize(func() {
+				transport.CloseIdleConnections()
 			})
 			cmd.SetContext(ctx)
 

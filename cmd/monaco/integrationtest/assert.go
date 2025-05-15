@@ -23,8 +23,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
+
+	"golang.org/x/oauth2"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 
@@ -182,8 +185,17 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
+func newContextWithHttpClient(t *testing.T) context.Context {
+	transport := &http.Transport{}
+	t.Cleanup(func(){
+		transport.CloseIdleConnections()
+	})
+	return context.WithValue(t.Context(), oauth2.HTTPClient, &http.Client{Transport: transport})
+}
+
 func newContextWithLogConfig(t *testing.T, config config.Config) context.Context {
-	ctx := context.WithValue(t.Context(), log.CtxKeyCoord{}, config.Coordinate)
+	ctx := newContextWithHttpClient(t)
+	ctx = context.WithValue(ctx, log.CtxKeyCoord{}, config.Coordinate)
 	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: config.Environment, Group: config.Group})
 	return ctx
 }
@@ -255,7 +267,7 @@ func AssertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsTyp
 }
 
 func AssertPermission(t *testing.T, c client.SettingsClient, objectID string, permissions []dtclient.TypePermissions) {
-	resp, err := c.GetPermission(t.Context(), objectID)
+	resp, err := c.GetPermission(newContextWithHttpClient(t), objectID)
 	if err != nil {
 		if len(permissions) == 0 && coreapi.IsNotFoundError(err) {
 			return
@@ -277,7 +289,7 @@ func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.Envi
 		expectedId = idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
 	}
 
-	_, err = c.Get(t.Context(), resourceType, expectedId)
+	_, err = c.Get(newContextWithHttpClient(t), resourceType, expectedId)
 	exists := err == nil
 
 	if cfg.Skip {
@@ -302,7 +314,7 @@ func AssertBucket(t *testing.T, client client.BucketClient, env manifest.Environ
 		expectedId = idutils.GenerateBucketName(cfg.Coordinate)
 	}
 
-	err := waitForBucketToExist(t.Context(), client, expectedId, 120)
+	err := waitForBucketToExist(newContextWithHttpClient(t), client, expectedId, 120)
 
 	exists := true
 	apiErr := coreapi.APIError{}
