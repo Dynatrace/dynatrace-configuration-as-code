@@ -104,7 +104,7 @@ func TestManifestLoading(t *testing.T) {
 				Path:  "grouping",
 			},
 		},
-		Environments: manifest.EnvironmentDefinitionsByName{
+		SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 			"test-env-1": manifest.EnvironmentDefinition{
 				Name:  "test-env-1",
 				Group: "dev",
