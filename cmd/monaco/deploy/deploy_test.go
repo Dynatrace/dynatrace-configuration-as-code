@@ -157,7 +157,7 @@ func Test_checkEnvironments(t *testing.T) {
 					},
 				},
 			},
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				env1Id: env1Definition,
 			})
 		assert.NoError(t, err)
@@ -174,7 +174,7 @@ func Test_checkEnvironments(t *testing.T) {
 					},
 				},
 			},
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				env1Id: env1Definition,
 			})
 		assert.ErrorContains(t, err, "undefined environment")
@@ -193,7 +193,7 @@ func Test_checkEnvironments(t *testing.T) {
 					},
 				},
 			},
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				env1Id: env1Definition,
 			})
 		assert.NoError(t, err)
@@ -212,7 +212,7 @@ func Test_checkEnvironments(t *testing.T) {
 					},
 				},
 			},
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				env1Id: env1DefinitionWithoutPlatform,
 			})
 		assert.ErrorContains(t, err, "environment \"env1\" is not configured to access platform")
@@ -234,7 +234,7 @@ func Test_checkEnvironments(t *testing.T) {
 					},
 				},
 			},
-			manifest.Environments{env1Id: env1Definition})
+			manifest.EnvironmentDefinitionsByName{env1Id: env1Definition})
 		assert.NoError(t, err)
 	})
 
@@ -263,7 +263,7 @@ func Test_checkEnvironments(t *testing.T) {
 					},
 				},
 			},
-			manifest.Environments{env1Id: env1Definition})
+			manifest.EnvironmentDefinitionsByName{env1Id: env1Definition})
 		assert.NoError(t, err)
 	})
 
@@ -287,7 +287,7 @@ func Test_checkEnvironments(t *testing.T) {
 					},
 				},
 			},
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				env1Id: env1Definition,
 				env2Id: env2Definition,
 			})
@@ -319,7 +319,7 @@ func Test_checkEnvironments(t *testing.T) {
 					},
 				},
 			},
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				env1Id: env1Definition,
 				env2Id: env2Definition,
 			})
@@ -342,7 +342,7 @@ func Test_checkEnvironments(t *testing.T) {
 					},
 				},
 			},
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				env1Id: env1Definition,
 				env2Id: env2Definition,
 			})
@@ -374,7 +374,7 @@ func Test_checkEnvironments(t *testing.T) {
 					},
 				},
 			},
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				env1Id: env1Definition,
 			})
 		assert.ErrorContains(t, err, "has multiple openpipeline configurations of kind")
@@ -422,13 +422,13 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 
 	success_tests := []struct {
 		name                 string
-		environments         manifest.Environments
+		environments         manifest.EnvironmentDefinitionsByName
 		configs              project.ConfigsPerType
 		expectedErrorMessage string
 	}{
 		{
 			"oAuth manifest with document api",
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{
@@ -440,7 +440,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		},
 		{
 			"token manifest with classic api",
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{
@@ -452,7 +452,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		},
 		{
 			"token and oAuth manifest with classic and document api",
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{
@@ -468,7 +468,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		},
 		{
 			"token manifest with document api expect validation error",
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{
@@ -480,7 +480,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		},
 		{
 			"oAuth manifest with document and classic api expect validation error",
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{
@@ -494,7 +494,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		},
 		{
 			"oAuth manifest with document and classic api classic api with skip true, expect no error",
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{
@@ -506,7 +506,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		},
 		{
 			"token manifest with document and classic api document api with skip true, expect no error",
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{
@@ -520,7 +520,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		},
 		{
 			"OAuth manifest with settings api",
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{
@@ -533,7 +533,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		},
 		{
 			"OAuth manifest with settings api and permissions",
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{
@@ -546,7 +546,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		},
 		{
 			"token manifest with settings api and permissions",
-			manifest.Environments{
+			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{

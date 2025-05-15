@@ -19,15 +19,17 @@
 package writer
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
-	"github.com/google/uuid"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/google/uuid"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 )
 
 func Test_toWriteableProjects(t *testing.T) {
@@ -588,7 +590,7 @@ func TestWrite(t *testing.T) {
 						Path: "projects/p1",
 					},
 				},
-				Environments: manifest.Environments{
+				Environments: manifest.EnvironmentDefinitionsByName{
 					"env1": {
 						Name: "env1",
 						URL: manifest.URLDefinition{
@@ -628,7 +630,7 @@ environmentGroups:
 						Path: "projects/p1",
 					},
 				},
-				Environments: manifest.Environments{
+				Environments: manifest.EnvironmentDefinitionsByName{
 					"env1": {
 						Name: "env1",
 						URL: manifest.URLDefinition{

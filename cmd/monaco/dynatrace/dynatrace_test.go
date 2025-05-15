@@ -53,7 +53,7 @@ func TestVerifyEnvironmentGeneration_TurnedOffByFF(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
+	ok := VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
 		"env": manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
@@ -79,7 +79,7 @@ func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
+	ok := VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
 		"env": manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
@@ -103,7 +103,7 @@ func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
 
 func TestVerifyEnvironmentGen(t *testing.T) {
 	type args struct {
-		envs manifest.Environments
+		envs manifest.EnvironmentDefinitionsByName
 	}
 	tests := []struct {
 		name                 string
@@ -115,14 +115,14 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		{
 			name: "empty environment - passes",
 			args: args{
-				envs: manifest.Environments{},
+				envs: manifest.EnvironmentDefinitionsByName{},
 			},
 			wantErr: false,
 		},
 		{
 			name: "single environment without fields set - fails",
 			args: args{
-				envs: manifest.Environments{},
+				envs: manifest.EnvironmentDefinitionsByName{},
 			},
 			wantErr: false,
 		},
@@ -142,7 +142,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
+		ok := VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				URL: manifest.URLDefinition{
@@ -175,7 +175,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
+		ok := VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				URL: manifest.URLDefinition{
@@ -214,7 +214,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
+		ok := VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
 			"env1": manifest.EnvironmentDefinition{
 				Name: "env1",
 				URL: manifest.URLDefinition{
@@ -226,7 +226,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 		})
 		assert.False(t, ok)
 
-		ok = VerifyEnvironmentGeneration(t.Context(), manifest.Environments{
+		ok = VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
 			"env2": manifest.EnvironmentDefinition{
 				Name: "env2",
 				URL: manifest.URLDefinition{
