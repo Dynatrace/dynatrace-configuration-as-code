@@ -57,7 +57,7 @@ func TestDocuments(t *testing.T) {
 		assert.Empty(t, errs)
 
 		// check isPrivate == false
-		clientSet := integrationtest.CreateDynatraceClients(t, man.SelectedEnvironments[environment])
+		clientSet := integrationtest.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
 		result, err := clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
 		assert.NoError(t, err)
 		assert.Len(t, result.Responses, 1)
