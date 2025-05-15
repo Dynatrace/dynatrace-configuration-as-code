@@ -117,7 +117,7 @@ func loadManifest(ctx context.Context, fs afero.Fs, manifestPath string, groups 
 	return &m, nil
 }
 
-func verifyEnvironmentGen(ctx context.Context, environments manifest.Environments, dryRun bool) bool {
+func verifyEnvironmentGen(ctx context.Context, environments manifest.EnvironmentDefinitionsByName, dryRun bool) bool {
 	if !dryRun {
 		return dynatrace.VerifyEnvironmentGeneration(ctx, environments)
 
@@ -148,7 +148,7 @@ type KindCoordinates map[string][]coordinate.Coordinate
 type KindCoordinatesPerEnvironment map[string]KindCoordinates
 type CoordinatesPerEnvironment map[string][]coordinate.Coordinate
 
-func validateProjectsWithEnvironments(ctx context.Context, projects []project.Project, envs manifest.Environments) error {
+func validateProjectsWithEnvironments(ctx context.Context, projects []project.Project, envs manifest.EnvironmentDefinitionsByName) error {
 	undefinedEnvironments := map[string]struct{}{}
 	openPipelineKindCoordinatesPerEnvironment := KindCoordinatesPerEnvironment{}
 	platformCoordinatesPerEnvironment := CoordinatesPerEnvironment{}
@@ -249,7 +249,7 @@ func coordinateSliceAsString(coordinates []coordinate.Coordinate) string {
 	return strings.Join(coordinateStrings, ", ")
 }
 
-func collectRequiresPlatformErrors(platformCoordinatesPerEnvironment CoordinatesPerEnvironment, envs manifest.Environments) []error {
+func collectRequiresPlatformErrors(platformCoordinatesPerEnvironment CoordinatesPerEnvironment, envs manifest.EnvironmentDefinitionsByName) []error {
 	errs := []error{}
 	for envName, coordinates := range platformCoordinatesPerEnvironment {
 		env, found := envs[envName]
@@ -271,7 +271,7 @@ func platformEnvironment(e manifest.EnvironmentDefinition) bool {
 
 // validateAuthenticationWithProjectConfigs validates each config entry against the manifest if required credentials are set
 // it takes into consideration the project, environments and the skip parameter in each config entry
-func validateAuthenticationWithProjectConfigs(projects []project.Project, environments manifest.Environments) error {
+func validateAuthenticationWithProjectConfigs(projects []project.Project, environments manifest.EnvironmentDefinitionsByName) error {
 	for _, p := range projects {
 		for envName, env := range p.Configs {
 			for _, file := range env {

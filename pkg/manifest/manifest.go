@@ -105,11 +105,11 @@ type AuthSecret struct {
 
 type ProjectDefinitionByProjectID map[string]ProjectDefinition
 
-// Environments is a map of environment-name -> EnvironmentDefinition
-type Environments map[string]EnvironmentDefinition
+// EnvironmentDefinitionsByName is a map of environment-name -> EnvironmentDefinition
+type EnvironmentDefinitionsByName map[string]EnvironmentDefinition
 
 // Names returns the slice of environment names
-func (e Environments) Names() []string {
+func (e EnvironmentDefinitionsByName) Names() []string {
 	return maps.Keys(e)
 }
 
@@ -135,7 +135,7 @@ type Manifest struct {
 	Projects ProjectDefinitionByProjectID
 
 	// Environments defined in the manifest, split by environment-name
-	Environments Environments
+	Environments EnvironmentDefinitionsByName
 
 	// Accounts holds all accounts defined in the manifest. Key is the user-defined account name.
 	Accounts map[string]Account

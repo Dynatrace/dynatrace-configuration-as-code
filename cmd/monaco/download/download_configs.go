@@ -95,7 +95,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 		return fmt.Errorf("environment %q was not available in manifest %q", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
-	ok := dynatrace.VerifyEnvironmentGeneration(ctx, manifest.Environments{env.Name: env})
+	ok := dynatrace.VerifyEnvironmentGeneration(ctx, manifest.EnvironmentDefinitionsByName{env.Name: env})
 	if !ok {
 		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}

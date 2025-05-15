@@ -20,13 +20,15 @@ package manifest_test
 
 import (
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	"path/filepath"
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 )
 
 func TestDefaultTokenEndpoint(t *testing.T) {
@@ -102,7 +104,7 @@ func TestManifestLoading(t *testing.T) {
 				Path:  "grouping",
 			},
 		},
-		Environments: manifest.Environments{
+		Environments: manifest.EnvironmentDefinitionsByName{
 			"test-env-1": manifest.EnvironmentDefinition{
 				Name:  "test-env-1",
 				Group: "dev",
