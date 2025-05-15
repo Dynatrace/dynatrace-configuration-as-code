@@ -48,7 +48,7 @@ func logConfigInfo(projects []project.Project) {
 	}
 }
 
-func LogEnvironmentsInfo(environments manifest.Environments) {
+func LogEnvironmentsInfo(environments manifest.EnvironmentDefinitionsByName) {
 	log.Info("Environments to deploy to (%d):", len(environments))
 	for _, name := range environments.Names() {
 		log.Info("  - %s", name)
