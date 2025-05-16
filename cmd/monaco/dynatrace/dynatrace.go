@@ -46,7 +46,7 @@ import (
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
 // using the configured credentials
-func VerifyEnvironmentGeneration(ctx context.Context, envs manifest.Environments) bool {
+func VerifyEnvironmentGeneration(ctx context.Context, envs manifest.EnvironmentDefinitionsByName) bool {
 	if !featureflags.VerifyEnvironmentType.Enabled() {
 		return true
 	}
@@ -186,7 +186,7 @@ func (e EnvironmentClients) Names() []string {
 }
 
 // CreateEnvironmentClients gives back clients to use for specific environments
-func CreateEnvironmentClients(ctx context.Context, environments manifest.Environments, dryRun bool) (EnvironmentClients, error) {
+func CreateEnvironmentClients(ctx context.Context, environments manifest.EnvironmentDefinitionsByName, dryRun bool) (EnvironmentClients, error) {
 	clients := make(EnvironmentClients, len(environments))
 	for _, env := range environments {
 		if dryRun {

@@ -20,13 +20,15 @@ package manifest_test
 
 import (
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	"path/filepath"
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 )
 
 func TestDefaultTokenEndpoint(t *testing.T) {
@@ -103,67 +105,78 @@ func TestManifestLoading(t *testing.T) {
 			},
 		},
 		Environments: manifest.Environments{
-			"test-env-1": manifest.EnvironmentDefinition{
-				Name:  "test-env-1",
-				Group: "dev",
-				URL: manifest.URLDefinition{
-					Type:  manifest.EnvironmentURLType,
-					Name:  "ENV_URL",
-					Value: "https://some.url",
-				},
-				Auth: manifest.Auth{
-					Token: &manifest.AuthSecret{
-						Name:  "ENV_TOKEN",
-						Value: "dt01.token",
+			SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
+				"test-env-1": manifest.EnvironmentDefinition{
+					Name:  "test-env-1",
+					Group: "dev",
+					URL: manifest.URLDefinition{
+						Type:  manifest.EnvironmentURLType,
+						Name:  "ENV_URL",
+						Value: "https://some.url",
 					},
-					OAuth: &manifest.OAuth{
-						ClientID: manifest.AuthSecret{
-							Name:  "ENV_CLIENT_ID",
-							Value: "dt02.id",
+					Auth: manifest.Auth{
+						Token: &manifest.AuthSecret{
+							Name:  "ENV_TOKEN",
+							Value: "dt01.token",
 						},
-						ClientSecret: manifest.AuthSecret{
-							Name:  "ENV_CLIENT_SECRET",
-							Value: "dt02.secret",
+						OAuth: &manifest.OAuth{
+							ClientID: manifest.AuthSecret{
+								Name:  "ENV_CLIENT_ID",
+								Value: "dt02.id",
+							},
+							ClientSecret: manifest.AuthSecret{
+								Name:  "ENV_CLIENT_SECRET",
+								Value: "dt02.secret",
+							},
+							TokenEndpoint: &manifest.URLDefinition{
+								Type:  manifest.ValueURLType,
+								Name:  "",
+								Value: "https://my-token.url",
+							},
 						},
-						TokenEndpoint: &manifest.URLDefinition{
-							Type:  manifest.ValueURLType,
-							Name:  "",
-							Value: "https://my-token.url",
+					},
+				},
+				"test-env-2": manifest.EnvironmentDefinition{
+					Name:  "test-env-2",
+					Group: "dev",
+					URL: manifest.URLDefinition{
+						Type:  manifest.ValueURLType,
+						Name:  "",
+						Value: "https://ddd.bbb.cc",
+					},
+					Auth: manifest.Auth{
+						Token: &manifest.AuthSecret{
+							Name:  "ENV_TOKEN",
+							Value: "dt01.token",
 						},
+						OAuth: nil,
+					},
+				},
+				"prod-env-1": manifest.EnvironmentDefinition{
+					Name:  "prod-env-1",
+					Group: "prod",
+					URL: manifest.URLDefinition{
+						Type:  manifest.EnvironmentURLType,
+						Name:  "ENV_URL",
+						Value: "https://some.url",
+					},
+					Auth: manifest.Auth{
+						Token: &manifest.AuthSecret{
+							Name:  "ENV_TOKEN",
+							Value: "dt01.token",
+						},
+						OAuth: nil,
 					},
 				},
 			},
-			"test-env-2": manifest.EnvironmentDefinition{
-				Name:  "test-env-2",
-				Group: "dev",
-				URL: manifest.URLDefinition{
-					Type:  manifest.ValueURLType,
-					Name:  "",
-					Value: "https://ddd.bbb.cc",
-				},
-				Auth: manifest.Auth{
-					Token: &manifest.AuthSecret{
-						Name:  "ENV_TOKEN",
-						Value: "dt01.token",
-					},
-					OAuth: nil,
-				},
+			AllEnvironmentNames: map[string]struct{}{
+				"test-env-1": {},
+				"test-env-2": {},
+				"prod-env-1": {},
 			},
-			"prod-env-1": manifest.EnvironmentDefinition{
-				Name:  "prod-env-1",
-				Group: "prod",
-				URL: manifest.URLDefinition{
-					Type:  manifest.EnvironmentURLType,
-					Name:  "ENV_URL",
-					Value: "https://some.url",
-				},
-				Auth: manifest.Auth{
-					Token: &manifest.AuthSecret{
-						Name:  "ENV_TOKEN",
-						Value: "dt01.token",
-					},
-					OAuth: nil,
-				},
+			AllGroupNames: map[string]struct{}{
+				"dev":  {},
+				"prod": {},
 			},
 		},
 		Accounts: map[string]manifest.Account{

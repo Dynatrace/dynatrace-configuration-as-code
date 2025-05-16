@@ -19,15 +19,17 @@
 package writer
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
-	"github.com/google/uuid"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/google/uuid"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 )
 
 func Test_toWriteableProjects(t *testing.T) {
@@ -148,105 +150,107 @@ func Test_toWriteableProjects(t *testing.T) {
 func Test_toWriteableEnvironmentGroups(t *testing.T) {
 	tests := []struct {
 		name       string
-		input      map[string]manifest.EnvironmentDefinition
+		input      manifest.Environments
 		wantResult []persistence.Group
 	}{
 		{
-			"correctly transforms simple env groups",
-			map[string]manifest.EnvironmentDefinition{
-				"env1": {
-					Name: "env1",
-					URL: manifest.URLDefinition{
-						Value: "www.an.Url",
-					},
-					Group: "group1",
-					Auth: manifest.Auth{
-						Token: &manifest.AuthSecret{
-							Name: "TokenTest",
+			name: "correctly transforms simple env groups",
+			input: manifest.Environments{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
+					"env1": {
+						Name: "env1",
+						URL: manifest.URLDefinition{
+							Value: "www.an.Url",
 						},
-					},
-				},
-				"env2": {
-					Name: "env2",
-					URL: manifest.URLDefinition{
-						Value: "www.an.Url",
-					},
-					Group: "group1",
-					Auth: manifest.Auth{
-						Token: &manifest.AuthSecret{},
-						OAuth: &manifest.OAuth{
-							ClientID: manifest.AuthSecret{
-								Name:  "client-id-key",
-								Value: "client-id-val",
-							},
-							ClientSecret: manifest.AuthSecret{
-								Name:  "client-secret-key",
-								Value: "client-secret-val",
-							},
-							TokenEndpoint: &manifest.URLDefinition{
-								Value: endpoints.Dynatrace.TokenURL,
-								Type:  manifest.EnvironmentURLType,
-								Name:  "ENV_TOKEN_ENDPOINT",
+						Group: "group1",
+						Auth: manifest.Auth{
+							Token: &manifest.AuthSecret{
+								Name: "TokenTest",
 							},
 						},
 					},
-				},
-				"env2a": {
-					Name: "env2",
-					URL: manifest.URLDefinition{
-						Value: "www.an.Url",
-					},
-					Group: "group1",
-					Auth: manifest.Auth{
-						Token: &manifest.AuthSecret{},
-						OAuth: &manifest.OAuth{
-							ClientID: manifest.AuthSecret{
-								Name:  "client-id-key",
-								Value: "client-id-val",
-							},
-							ClientSecret: manifest.AuthSecret{
-								Name:  "client-secret-key",
-								Value: "client-secret-val",
+					"env2": {
+						Name: "env2",
+						URL: manifest.URLDefinition{
+							Value: "www.an.Url",
+						},
+						Group: "group1",
+						Auth: manifest.Auth{
+							Token: &manifest.AuthSecret{},
+							OAuth: &manifest.OAuth{
+								ClientID: manifest.AuthSecret{
+									Name:  "client-id-key",
+									Value: "client-id-val",
+								},
+								ClientSecret: manifest.AuthSecret{
+									Name:  "client-secret-key",
+									Value: "client-secret-val",
+								},
+								TokenEndpoint: &manifest.URLDefinition{
+									Value: endpoints.Dynatrace.TokenURL,
+									Type:  manifest.EnvironmentURLType,
+									Name:  "ENV_TOKEN_ENDPOINT",
+								},
 							},
 						},
 					},
-				},
-				"env2b": {
-					Name: "env2",
-					URL: manifest.URLDefinition{
-						Value: "www.an.Url",
-					},
-					Group: "group1",
-					Auth: manifest.Auth{
-						Token: &manifest.AuthSecret{},
-						OAuth: &manifest.OAuth{
-							ClientID: manifest.AuthSecret{
-								Name:  "client-id-key",
-								Value: "client-id-val",
-							},
-							ClientSecret: manifest.AuthSecret{
-								Name:  "client-secret-key",
-								Value: "client-secret-val",
-							},
-							TokenEndpoint: &manifest.URLDefinition{
-								Value: "http://custom.sso.token.endpoint",
-								Type:  manifest.ValueURLType,
+					"env2a": {
+						Name: "env2",
+						URL: manifest.URLDefinition{
+							Value: "www.an.Url",
+						},
+						Group: "group1",
+						Auth: manifest.Auth{
+							Token: &manifest.AuthSecret{},
+							OAuth: &manifest.OAuth{
+								ClientID: manifest.AuthSecret{
+									Name:  "client-id-key",
+									Value: "client-id-val",
+								},
+								ClientSecret: manifest.AuthSecret{
+									Name:  "client-secret-key",
+									Value: "client-secret-val",
+								},
 							},
 						},
 					},
-				},
-				"env3": {
-					Name: "env3",
-					URL: manifest.URLDefinition{
-						Value: "www.an.Url",
+					"env2b": {
+						Name: "env2",
+						URL: manifest.URLDefinition{
+							Value: "www.an.Url",
+						},
+						Group: "group1",
+						Auth: manifest.Auth{
+							Token: &manifest.AuthSecret{},
+							OAuth: &manifest.OAuth{
+								ClientID: manifest.AuthSecret{
+									Name:  "client-id-key",
+									Value: "client-id-val",
+								},
+								ClientSecret: manifest.AuthSecret{
+									Name:  "client-secret-key",
+									Value: "client-secret-val",
+								},
+								TokenEndpoint: &manifest.URLDefinition{
+									Value: "http://custom.sso.token.endpoint",
+									Type:  manifest.ValueURLType,
+								},
+							},
+						},
 					},
-					Group: "group2",
-					Auth: manifest.Auth{
-						Token: &manifest.AuthSecret{},
+					"env3": {
+						Name: "env3",
+						URL: manifest.URLDefinition{
+							Value: "www.an.Url",
+						},
+						Group: "group2",
+						Auth: manifest.Auth{
+							Token: &manifest.AuthSecret{},
+						},
 					},
 				},
 			},
-			[]persistence.Group{
+			wantResult: []persistence.Group{
 				{
 					Name: "group1",
 					Environments: []persistence.Environment{
@@ -330,8 +334,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 				},
 				{
-					"group2",
-					[]persistence.Environment{
+					Name: "group2",
+					Environments: []persistence.Environment{
 						{
 							Name: "env3",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
@@ -347,9 +351,9 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 			},
 		},
 		{
-			"returns empty groups for empty env definition",
-			map[string]manifest.EnvironmentDefinition{},
-			[]persistence.Group{},
+			name:       "returns empty groups for empty env definition",
+			input:      manifest.Environments{},
+			wantResult: []persistence.Group{},
 		},
 	}
 	for _, tt := range tests {
@@ -580,8 +584,8 @@ func TestWrite(t *testing.T) {
 		wantJSON      string
 	}{
 		{
-			"writes manifest",
-			manifest.Manifest{
+			name: "writes manifest",
+			givenManifest: manifest.Manifest{
 				Projects: manifest.ProjectDefinitionByProjectID{
 					"p1": {
 						Name: "p1",
@@ -589,21 +593,29 @@ func TestWrite(t *testing.T) {
 					},
 				},
 				Environments: manifest.Environments{
-					"env1": {
-						Name: "env1",
-						URL: manifest.URLDefinition{
-							Value: "https://a.dynatrace.environment",
-						},
-						Group: "group1",
-						Auth: manifest.Auth{
-							Token: &manifest.AuthSecret{
-								Name: "TOKEN_VAR",
+					SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
+						"env1": {
+							Name: "env1",
+							URL: manifest.URLDefinition{
+								Value: "https://a.dynatrace.environment",
+							},
+							Group: "group1",
+							Auth: manifest.Auth{
+								Token: &manifest.AuthSecret{
+									Name: "TOKEN_VAR",
+								},
 							},
 						},
 					},
+					AllEnvironmentNames: map[string]struct{}{
+						"env1": {},
+					},
+					AllGroupNames: map[string]struct{}{
+						"group1": {},
+					},
 				},
 			},
-			`manifestVersion: "1.0"
+			wantJSON: `manifestVersion: "1.0"
 projects:
 - name: p1
   path: projects/p1
@@ -620,8 +632,8 @@ environmentGroups:
 `,
 		},
 		{
-			"writes manifest with accounts if FF active",
-			manifest.Manifest{
+			name: "writes manifest with accounts if FF active",
+			givenManifest: manifest.Manifest{
 				Projects: manifest.ProjectDefinitionByProjectID{
 					"p1": {
 						Name: "p1",
@@ -629,17 +641,25 @@ environmentGroups:
 					},
 				},
 				Environments: manifest.Environments{
-					"env1": {
-						Name: "env1",
-						URL: manifest.URLDefinition{
-							Value: "https://a.dynatrace.environment",
-						},
-						Group: "group1",
-						Auth: manifest.Auth{
-							Token: &manifest.AuthSecret{
-								Name: "TOKEN_VAR",
+					SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
+						"env1": {
+							Name: "env1",
+							URL: manifest.URLDefinition{
+								Value: "https://a.dynatrace.environment",
+							},
+							Group: "group1",
+							Auth: manifest.Auth{
+								Token: &manifest.AuthSecret{
+									Name: "TOKEN_VAR",
+								},
 							},
 						},
+					},
+					AllEnvironmentNames: map[string]struct{}{
+						"env1": {},
+					},
+					AllGroupNames: map[string]struct{}{
+						"group1": {},
 					},
 				},
 				Accounts: map[string]manifest.Account{
@@ -659,7 +679,7 @@ environmentGroups:
 					},
 				},
 			},
-			`manifestVersion: "1.0"
+			wantJSON: `manifestVersion: "1.0"
 projects:
 - name: p1
   path: projects/p1
