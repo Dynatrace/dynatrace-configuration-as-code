@@ -581,14 +581,18 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		retrySetting = *upsertOptions.OverrideRetry
 	}
 
-	resp, err := coreapi.AsResponseOrError(
-		d.client.POST(ctx, d.settingsObjectAPIPath, bytes.NewReader(payload), corerest.RequestOptions{
-			CustomShouldRetryFunc: func(response *http.Response) bool {
-				return corerest.ShouldRetry(response.StatusCode)
-			},
-			MaxRetries:      pointer.Pointer(retrySetting.MaxRetries),
-			DelayAfterRetry: pointer.Pointer(retrySetting.WaitTime),
-		}))
+	httpResp, err := d.client.POST(ctx, d.settingsObjectAPIPath, bytes.NewReader(payload), corerest.RequestOptions{
+		CustomShouldRetryFunc: func(response *http.Response) bool {
+			return corerest.ShouldRetry(response.StatusCode)
+		},
+		MaxRetries:      pointer.Pointer(retrySetting.MaxRetries),
+		DelayAfterRetry: pointer.Pointer(retrySetting.WaitTime),
+	})
+	if err != nil {
+		d.settingsCache.Delete(obj.SchemaId)
+		return DynatraceEntity{}, fmt.Errorf("failed to create or update settings object with externalId %s: %w", externalID, err)
+	}
+	resp, err := coreapi.NewResponseFromHTTPResponse(httpResp)
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update settings object with externalId %s: %w", externalID, err)
