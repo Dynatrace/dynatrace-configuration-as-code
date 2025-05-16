@@ -196,7 +196,7 @@ Examples:
 				cobra.OnFinalize(writeSupportArchive(fs))
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
-			transport := &http.Transport{MaxIdleConnsPerHost: 100}
+			transport := &http.Transport{MaxIdleConnsPerHost: 100, DisableKeepAlives: true}
 			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{
 				Transport: transport,
 			})
