@@ -16,10 +16,17 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"net"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/delete"
@@ -61,6 +68,96 @@ func writeSupportArchive(fs afero.Fs) func() {
 	}
 }
 
+func forward(w http.ResponseWriter, r *http.Request) {
+	// Create new request to target
+	r.RequestURI = strings.Replace(r.RequestURI, "http://", "https://", 1)
+	fmt.Printf("forward: %s\n", r.RequestURI)
+	proxyReq, err := http.NewRequest(r.Method, r.RequestURI, r.Body)
+	if err != nil {
+		http.Error(w, "Failed to create request", http.StatusInternalServerError)
+		return
+	}
+
+	// Copy headers
+	proxyReq.Header = r.Header
+	if len(proxyReq.Header.Get("Authorization")) == 0 {
+		fmt.Println("Authorization is not set")
+	}
+
+	// Use default HTTPS client
+	resp, err := http.DefaultClient.Do(proxyReq)
+	if err != nil {
+		http.Error(w, "Failed to reach target", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Copy response headers and status
+	for k, v := range resp.Header {
+		w.Header()[k] = v
+	}
+	w.WriteHeader(resp.StatusCode)
+
+	// Copy response body
+	io.Copy(w, resp.Body)
+}
+
+func getProxy(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Host == "" {
+		return
+	}
+	if req.Method != http.MethodConnect {
+		forward(w, req)
+		return
+	}
+	// tunnel
+	fmt.Println("tunnel:", req.Method, req.RequestURI)
+	conn, err := net.Dial("tcp", req.URL.Host)
+	if err != nil {
+		w.WriteHeader(502)
+		return
+	}
+
+	client, _, err := w.(http.Hijacker).Hijack()
+	if err != nil {
+		w.WriteHeader(502)
+		conn.Close()
+		return
+	}
+	client.Write([]byte("HTTP/1.0 200 OK\r\n\r\n"))
+
+	//hr, hw := io.Pipe()
+	//go func() {
+	//	io.Copy(os.Stdout, hr)
+	//	hr.Close()
+	//}()
+
+	go func() {
+		//io.Copy(io.MultiWriter(client, hw), conn)
+		io.Copy(io.MultiWriter(client), conn)
+		client.Close()
+		conn.Close()
+		//hw.Close()
+	}()
+	go func() {
+		io.Copy(conn, client)
+		client.Close()
+		conn.Close()
+	}()
+}
+
+func changeToHttp(envs ...string) error {
+	for _, envName := range envs {
+		if env, ok := os.LookupEnv(envName); ok {
+			err := os.Setenv(envName, strings.Replace(env, "https", "http", 1))
+			if err != nil {
+				return fmt.Errorf("Error while setting env %s, %w", envName, err)
+			}
+		}
+	}
+	return nil
+}
+
 func BuildCmdWithLogSpy(fs afero.Fs, logSpy io.Writer) *cobra.Command {
 	var verbose bool
 	var supportArchive bool
@@ -77,10 +174,38 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			//proxyUrl, err := url.Parse("http://localhost:8080")
+			//if err != nil {
+			//	fmt.Println(err)
+			//	return
+			//}
+			//err = changeToHttp("PLATFORM_URL_ENVIRONMENT_1", "PLATFORM_URL_ENVIRONMENT_2")
+			//if err != nil {
+			//	fmt.Println(err)
+			//	return
+			//}
+
+			//server := &http.Server{Addr: ":8080", Handler: http.HandlerFunc(getProxy)}
+			//cobra.OnFinalize(func() {
+			//	server.Close()
+			//})
+			//go func() {
+			//	err = server.ListenAndServe()
+			//	fmt.Print(err)
+			//}()
 			if supportArchive {
 				cobra.OnFinalize(writeSupportArchive(fs))
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
+			transport := &http.Transport{MaxIdleConnsPerHost: 100}
+			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{
+				Timeout: 1*time.Minute,
+				Transport: transport,
+			})
+			cobra.OnFinalize(func() {
+				transport.CloseIdleConnections()
+			})
+			cmd.SetContext(ctx)
 
 			fileBasedLogging := featureflags.LogToFile.Enabled() || supportArchive
 			memStatLogging := featureflags.LogMemStats.Enabled()
