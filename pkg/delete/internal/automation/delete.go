@@ -94,7 +94,7 @@ func DeleteAll(ctx context.Context, c client) error {
 
 		t, err := automationutils.ClientResourceTypeFromConfigType(resource)
 		if err != nil {
-			logger.Error("Failed to delete Automation objects of type %q: %v", err)
+			logger.Error("Failed to delete Automation objects of type '%s': %v", resource, err)
 			errCount++
 			continue
 		}
@@ -102,7 +102,7 @@ func DeleteAll(ctx context.Context, c client) error {
 		logger.Info("Collecting Automation objects of type %q...", resource)
 		resp, err := c.List(ctx, t)
 		if err != nil {
-			logger.Error("Failed to collect Automation objects of type '%s': %v", resource, err)
+			logger.WithFields(field.Error(err)).Error("Failed to collect Automation objects of type '%s': %v", resource, err)
 			errCount++
 			continue
 		}

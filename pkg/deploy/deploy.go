@@ -286,7 +286,7 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 			skipDeploymentWarning = fmt.Sprintf("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
 		}
 
-		l.Warn(skipDeploymentWarning)
+		l.Warn("%s", skipDeploymentWarning)
 		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.StateSkipped, []report.Detail{{Type: report.DetailTypeWarn, Message: skipDeploymentWarning}}, nil)
 
 		removeChildren(ctx, child, root, configGraph, failed)
