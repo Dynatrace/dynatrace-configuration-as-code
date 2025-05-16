@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -196,8 +197,9 @@ Examples:
 				cobra.OnFinalize(writeSupportArchive(fs))
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
-			transport := &http.Transport{MaxIdleConnsPerHost: 100, DisableKeepAlives: true}
+			transport := &http.Transport{MaxIdleConnsPerHost: 100}
 			ctx := context.WithValue(cmd.Context(), oauth2.HTTPClient, &http.Client{
+				Timeout: 1*time.Minute,
 				Transport: transport,
 			})
 			cobra.OnFinalize(func() {
