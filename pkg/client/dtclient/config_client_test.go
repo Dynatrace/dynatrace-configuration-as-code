@@ -907,6 +907,30 @@ func TestCallWithRetryOnKnowTimingIssue_IgnoreRetryOn(t *testing.T) {
 	assert.Equal(t, 1, i)
 }
 
+func TestCallWithRetryOnKnowTimingIssue(t *testing.T) {
+	i := 0
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		i++
+		rw.WriteHeader(http.StatusBadRequest)
+		_, err := rw.Write([]byte("Metric selector invalid"))
+		require.NoError(t, err)
+	}))
+	defer testServer.Close()
+
+	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client(), WithRetrySettingsForClassic(
+		RetrySettings{
+			// no wait time and only the one that we want to test has a retry
+			Normal:   RetrySetting{MaxRetries: 2},
+			Long:     RetrySetting{},
+			VeryLong: RetrySetting{},
+		},
+	))
+	require.NoError(t, err)
+	_, err = client.callWithRetryOnKnowTimingIssue(t.Context(), client.client.POST, "some/path", []byte("{}"), api.API{}, corerest.RequestOptions{})
+	assert.Error(t, err)
+	assert.Equal(t, 3, i)
+}
+
 func TestConfigClient_ClearCache(t *testing.T) {
 	body := Value{
 		Id:           "c-id",

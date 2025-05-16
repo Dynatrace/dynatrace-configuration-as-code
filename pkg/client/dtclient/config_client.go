@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -35,6 +36,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
@@ -48,6 +50,9 @@ type ConfigClient struct {
 	// configCache caches config API values
 	configCache cache.Cache[[]Value]
 }
+
+// SendRequestWithBody is a function doing a PUT or POST HTTP request
+type SendRequestWithBody func(ctx context.Context, endpoint string, body io.Reader, options corerest.RequestOptions) (*http.Response, error)
 
 // WithRetrySettings sets the retry settings to be used by the ConfigClient
 func WithRetrySettingsForClassic(retrySettings RetrySettings) func(*ConfigClient) {
@@ -263,7 +268,7 @@ func (d *ConfigClient) createDynatraceObject(ctx context.Context, objectName str
 		return DynatraceEntity{}, err
 	}
 
-	return unmarshalCreateResponse(ctx, *resp, theApi.ID, objectName)
+	return unmarshalCreateResponse(ctx, resp, theApi.ID, objectName)
 }
 
 func unmarshalCreateResponse(ctx context.Context, resp coreapi.Response, configType string, objectName string) (DynatraceEntity, error) {
@@ -379,15 +384,21 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of known errors on upload.
-func (d *ConfigClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall SendRequestWithBody, endpoint string, requestBody []byte, theApi api.API, options corerest.RequestOptions) (*coreapi.Response, error) {
-	resp, err := coreapi.AsResponseOrError(restCall(ctx, endpoint, bytes.NewReader(requestBody), options))
+func (d *ConfigClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall SendRequestWithBody, endpoint string, requestBody []byte, theApi api.API, options corerest.RequestOptions) (coreapi.Response, error) {
+	var resp coreapi.Response
+	httpResp, err := restCall(ctx, endpoint, bytes.NewReader(requestBody), options)
+
 	if err == nil {
-		return resp, nil
+		resp, err = coreapi.NewResponseFromHTTPResponse(httpResp)
+
+		if err == nil {
+			return resp, nil
+		}
 	}
 
 	apiError := coreapi.APIError{}
 	if !errors.As(err, &apiError) || !corerest.ShouldRetry(apiError.StatusCode) {
-		return nil, err
+		return coreapi.Response{}, err
 	}
 
 	var rs RetrySetting
@@ -418,7 +429,19 @@ func (d *ConfigClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restC
 	}
 
 	if rs.MaxRetries > 0 {
-		return SendWithRetry(ctx, restCall, endpoint, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, requestBody, rs)
+		httpResp, err = restCall(ctx, endpoint, bytes.NewReader(requestBody), corerest.RequestOptions{
+			QueryParams: options.QueryParams,
+			ContentType: options.ContentType,
+			CustomShouldRetryFunc: func(resp *http.Response) bool {
+				return corerest.ShouldRetry(resp.StatusCode)
+			},
+			DelayAfterRetry: pointer.Pointer(rs.WaitTime),
+			MaxRetries:      pointer.Pointer(rs.MaxRetries - 1), // one call was already done
+		})
+		if err != nil {
+			return coreapi.Response{}, err
+		}
+		resp, err = coreapi.NewResponseFromHTTPResponse(httpResp)
 	}
 
 	return resp, err
@@ -607,7 +630,19 @@ func (d *ConfigClient) List(ctx context.Context, theApi api.API) ([]Value, error
 		retrySetting = d.retrySettings.Normal
 	}
 
-	resp, err := GetWithRetry(ctx, *d.client, theApi.URLPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
+	httpResp, err := d.client.GET(ctx, theApi.URLPath, corerest.RequestOptions{
+		QueryParams: queryParams,
+		CustomShouldRetryFunc: func(resp *http.Response) bool {
+			return corerest.ShouldRetry(resp.StatusCode)
+		},
+		DelayAfterRetry: pointer.Pointer(retrySetting.WaitTime),
+		MaxRetries:      pointer.Pointer(retrySetting.MaxRetries),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := coreapi.NewResponseFromHTTPResponse(httpResp)
 	if err != nil {
 		return nil, err
 	}
@@ -626,9 +661,20 @@ func (d *ConfigClient) List(ctx context.Context, theApi api.API) ([]Value, error
 			break
 		}
 
-		resp, err = GetWithRetry(ctx, *d.client, theApi.URLPath, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, retrySetting)
+		httpResp, err = d.client.GET(ctx, theApi.URLPath, corerest.RequestOptions{
+			QueryParams: makeQueryParamsWithNextPageKey(theApi.URLPath, queryParams, nextPageKey),
+			CustomShouldRetryFunc: func(resp *http.Response) bool {
+				return corerest.ShouldRetry(resp.StatusCode)
+			},
+			DelayAfterRetry: pointer.Pointer(retrySetting.WaitTime),
+			MaxRetries:      pointer.Pointer(retrySetting.MaxRetries),
+		})
 		if err != nil {
+			return nil, err
+		}
+		resp, err = coreapi.NewResponseFromHTTPResponse(httpResp)
 
+		if err != nil {
 			apiError := coreapi.APIError{}
 			if errors.As(err, &apiError) && apiError.StatusCode == http.StatusBadRequest {
 				log.WithCtxFields(ctx).Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(apiError.Body))
