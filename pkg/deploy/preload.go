@@ -67,13 +67,13 @@ func clearCaches(clientSet *client.ClientSet) {
 func preloadSettingsValuesForSchemaId(ctx context.Context, client client.SettingsClient, schemaId string) {
 	if err := client.Cache(ctx, schemaId); err != nil {
 		message := fmt.Sprintf("Could not cache settings values for schema %s: %s", schemaId, err)
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateWarn, nil, message, nil)
+		report.GetReporterFromContextOrDiscard(ctx).ReportCaching(report.StateWarn, message)
 		log.Warn("%s", message)
 		return
 	}
 	message := fmt.Sprintf("Cached settings values for schema %s", schemaId)
 	log.Debug("%s", message)
-	report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, message, nil)
+	report.GetReporterFromContextOrDiscard(ctx).ReportCaching(report.StateSuccess, message)
 }
 
 func preloadValuesForApi(ctx context.Context, client client.ConfigClient, theApi string) {
@@ -87,12 +87,12 @@ func preloadValuesForApi(ctx context.Context, client client.ConfigClient, theApi
 	err := client.Cache(ctx, a)
 	if err != nil {
 		message := fmt.Sprintf("Could not cache values for API %s: %s", theApi, err)
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateWarn, nil, message, nil)
+		report.GetReporterFromContextOrDiscard(ctx).ReportCaching(report.StateWarn, message)
 		log.Warn("%s", message)
 		return
 	}
 	message := fmt.Sprintf("Cached values for API %s", theApi)
-	report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateSuccess, nil, message, nil)
+	report.GetReporterFromContextOrDiscard(ctx).ReportCaching(report.StateSuccess, message)
 	log.Debug("%s", message)
 }
 

@@ -31,6 +31,7 @@ type RecordType = string
 const (
 	TypeDeploy RecordType = "DEPLOY"
 	TypeLoad   RecordType = "LOAD"
+	TypeCache  RecordType = "CACHE"
 	TypeInfo   RecordType = "INFO"
 )
 
