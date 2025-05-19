@@ -70,7 +70,7 @@ func Write(fs afero.Fs) error {
 		return err
 	}
 
-	log.Info("Saving support archive to " + filepath.Join(workingDir, zipFileName))
+	log.Info("Saving support archive to %s", filepath.Join(workingDir, zipFileName))
 	return zip.Create(fs, zipFileName, files, false)
 }
 
