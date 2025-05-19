@@ -32,6 +32,7 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	coresettings "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/settings/permissions"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
@@ -174,6 +175,9 @@ type SettingsClient struct {
 	// client is a rest client used to target platform enabled environments
 	client *corerest.Client
 
+	// permissionClient is used for CRUD operations on settings object permissions
+	permissionClient *coresettings.Client
+
 	// settingsSchemaAPIPath is the API path to use for accessing settings schemas
 	settingsSchemaAPIPath string
 
@@ -247,10 +251,18 @@ type (
 
 	Accessor struct {
 		Type TypeAccessor `json:"type"`
+		// ID is only needed and valid for TypeAccessor Group and User, but not for AllUsers
+		ID string `json:"id,omitempty"`
 	}
+	// PermissionObject contains the Accessor, and a slice of Permissions.
 	PermissionObject struct {
+		Accessor *Accessor `json:"accessor,omitempty"`
+
+		// Explanation:
+		// 	- If Permissions is empty, the Accessor has no permissions
+		// 	- If Permissions contains "r", the Accessor has read access
+		// 	- If Permissions contains "w", the Accessor has write access
 		Permissions []TypePermissions `json:"permissions"`
-		Accessor    *Accessor         `json:"accessor,omitempty"`
 	}
 
 	postResponse struct {
@@ -282,12 +294,10 @@ type (
 )
 
 const (
-	settingsSchemaAPIPathClassic      = "/api/v2/settings/schemas"
-	settingsSchemaAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/schemas"
-	settingsObjectAPIPathClassic      = "/api/v2/settings/objects"
-	settingsObjectAPIPathPlatform     = "/platform/classic/environment-api/v2/settings/objects"
-	settingsPermissionAllUsersAPIPath = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users" // GET, PUT, DELETE
-	settingsPermissionAPIPath         = "/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions"           // POST
+	settingsSchemaAPIPathClassic  = "/api/v2/settings/schemas"
+	settingsSchemaAPIPathPlatform = "/platform/classic/environment-api/v2/settings/schemas"
+	settingsObjectAPIPathClassic  = "/api/v2/settings/objects"
+	settingsObjectAPIPathPlatform = "/platform/classic/environment-api/v2/settings/objects"
 )
 
 func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *SettingsClient) {
@@ -350,6 +360,7 @@ func NewPlatformSettingsClient(client *corerest.Client, opts ...func(dynatraceCl
 	d := &SettingsClient{
 		serverVersion:         version.Version{},
 		client:                client,
+		permissionClient:      coresettings.NewClient(client),
 		retrySettings:         DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
 		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
@@ -373,6 +384,7 @@ func NewClassicSettingsClient(client *corerest.Client, opts ...func(dynatraceCli
 	d := &SettingsClient{
 		serverVersion:         version.Version{},
 		client:                client,
+		permissionClient:      coresettings.NewClient(client),
 		retrySettings:         DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
 		settingsObjectAPIPath: settingsObjectAPIPathClassic,
@@ -626,7 +638,7 @@ func (d *SettingsClient) modifyPermission(ctx context.Context, objectID string, 
 	if permissions != nil {
 		return d.UpsertPermission(ctx, objectID, PermissionObject{
 			Permissions: permissions,
-			Accessor:    &Accessor{AllUsers},
+			Accessor:    &Accessor{Type: AllUsers},
 		})
 	}
 
@@ -937,16 +949,7 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 }
 
 func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (PermissionObject, error) {
-	path, err := getPermissionPathWithID(objectID)
-	if err != nil {
-		return PermissionObject{}, err
-	}
-
-	resp, err := coreapi.AsResponseOrError(d.client.GET(
-		ctx,
-		path,
-		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
-	))
+	resp, err := d.permissionClient.GetAllUsersAccessor(ctx, objectID)
 
 	// when the API returns a 404 it means that you don't have permission (no-access), or the object does not exist
 	if coreapi.IsNotFoundError(err) {
@@ -974,26 +977,11 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 		return fmt.Errorf("failed to marshal permission: %w", err)
 	}
 
-	path, err := getPermissionPathWithID(objectID)
-	if err != nil {
-		return err
-	}
-
-	_, err = coreapi.AsResponseOrError(d.client.GET(
-		ctx,
-		path,
-		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
-	))
+	_, err = d.permissionClient.GetAllUsersAccessor(ctx, objectID)
 
 	// When there is no error the object is found and we update it.
 	if err == nil {
-		_, err = coreapi.AsResponseOrError(d.client.PUT(
-			ctx,
-			path,
-			bytes.NewReader(payload),
-			corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
-		))
-
+		_, err = d.permissionClient.UpdateAllUsersAccessor(ctx, objectID, payload)
 		if err != nil {
 			return fmt.Errorf("failed to update permission: %w", err)
 		}
@@ -1001,20 +989,12 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 		return nil
 	}
 
-	// On a 404 we step throw and try to create the object on remote in any other error we exit
+	// On a 404 we step through and try to create the object on remote in any other error we exit
 	if !coreapi.IsNotFoundError(err) {
 		return fmt.Errorf("failed to get permission: %w", err)
 	}
 
-	// endpoint for POST is different to PUT
-	path = strings.ReplaceAll(settingsPermissionAPIPath, "{objectId}", objectID)
-	_, err = coreapi.AsResponseOrError(d.client.POST(
-		ctx,
-		path,
-		bytes.NewReader(payload),
-		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
-	))
-
+	_, err = d.permissionClient.Create(ctx, objectID, payload)
 	if err != nil {
 		return fmt.Errorf("failed to create permission: %w", err)
 	}
@@ -1023,28 +1003,11 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 }
 
 func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) error {
-	path, err := getPermissionPathWithID(objectID)
-	if err != nil {
-		return err
-	}
-	_, err = coreapi.AsResponseOrError(d.client.DELETE(
-		ctx,
-		path,
-		corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests},
-	))
+	_, err := d.permissionClient.DeleteAllUsersAccessor(ctx, objectID)
 
 	// deployments with "none" for all-user will always try to delete. This could be an update (restricted to shared) or it stays the same (delete 404)
 	if err != nil && !coreapi.IsNotFoundError(err) {
 		return fmt.Errorf("failed to delete permission object: %w", err)
 	}
 	return nil
-}
-
-// When using the settingsPermissionAllUsersAPIPath we need to add the objectID into path
-func getPermissionPathWithID(id string) (string, error) {
-	if id == "" {
-		return "", fmt.Errorf("id cannot be empty")
-	}
-
-	return strings.ReplaceAll(settingsPermissionAllUsersAPIPath, "{objectId}", id), nil
 }
