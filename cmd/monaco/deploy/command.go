@@ -104,6 +104,6 @@ func finishReport(ctx context.Context) {
 	r.Stop()
 
 	if summary := r.GetSummary(); len(summary) > 0 {
-		log.Info(summary)
+		log.Info("%s", summary)
 	}
 }

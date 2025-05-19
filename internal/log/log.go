@@ -145,7 +145,7 @@ func PrepareLogging(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io
 	})
 
 	if err != nil {
-		Warn(err.Error())
+		Warn("%s", err.Error())
 	}
 }
 

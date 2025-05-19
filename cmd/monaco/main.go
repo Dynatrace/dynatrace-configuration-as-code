@@ -81,5 +81,5 @@ func notifyUser(msg string) {
 	if msg == "" {
 		return
 	}
-	log.Info(msg)
+	log.Info("%s", msg)
 }
