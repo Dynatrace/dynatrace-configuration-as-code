@@ -60,6 +60,8 @@ type Reporter interface {
 	ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error)
 	// ReportLoading reports the result of a load config
 	ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate)
+	// ReportCaching reports the result of caching actions, like settings.
+	ReportCaching(state RecordState, message string)
 	// ReportInfo reports info messages like monaco version or that the deployment succeeded
 	ReportInfo(message string)
 
@@ -171,7 +173,7 @@ func (d *defaultReporter) updateSummaryFromRecord(r Record) {
 	case StateError:
 		d.deploymentsErrorCount++
 	default:
-		panic(fmt.Sprintf("unexpected state for deployment event: %s", r.State))
+		return
 	}
 }
 
@@ -199,6 +201,16 @@ func (d *defaultReporter) ReportLoading(state RecordState, err error, message st
 		State:   state,
 		Message: message,
 		Config:  config,
+	}
+}
+
+// ReportCaching reports the result of caching actions, like settings.
+func (d *defaultReporter) ReportCaching(state RecordState, message string) {
+	d.queue <- Record{
+		Type:    TypeCache,
+		Time:    JSONTime(d.clockFunc()),
+		State:   state,
+		Message: message,
 	}
 }
 
@@ -246,6 +258,8 @@ type discardReporter struct{}
 func (*discardReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error) {
 }
 func (*discardReporter) ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate) {
+}
+func (*discardReporter) ReportCaching(state RecordState, message string) {
 }
 func (*discardReporter) ReportInfo(message string) {}
 func (*discardReporter) GetSummary() string        { return "" }
