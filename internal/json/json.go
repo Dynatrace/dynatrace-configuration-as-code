@@ -19,11 +19,12 @@ package json
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"strconv"
-	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
@@ -60,7 +61,7 @@ var (
 
 func (e JsonValidationError) Error() string {
 	return fmt.Sprintf("rendered template `%s` is not a valid json: Error: %s",
-		e.Location.TemplateFilePath, e.Err.Error())
+		e.Location.TemplateFilePath, e.Err)
 }
 
 var (
@@ -95,7 +96,7 @@ func (e JsonValidationError) PrettyError() string {
 			whiteSpace, previousLineContent,
 			e.LineNumber, lineContent,
 			whiteSpace, whiteSpaceOffset,
-			whiteSpace, e.Err.Error())
+			whiteSpace, e.Err)
 	}
 
 	return e.Error()

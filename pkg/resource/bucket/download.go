@@ -79,7 +79,7 @@ func convertAllObjects(projectName string, objects [][]byte) []config.Config {
 		c, err := convertObject(o, projectName)
 		if err != nil {
 			if errors.As(err, &skipErr{}) {
-				lg.Debug("Skipping bucket: %s", err.Error())
+				lg.Debug("Skipping bucket: %s", err)
 			} else {
 				lg.WithFields(field.Error(err)).Error("Failed to decode API response objects for bucket resource: %v", err)
 			}

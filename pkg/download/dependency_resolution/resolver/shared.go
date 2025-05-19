@@ -78,7 +78,7 @@ func replaceAll(content string, key string, s string) string {
 			return result
 		}
 
-		log.Debug("Failed to replace %q with %q in string values in %q: %s", key, s, content, err.Error())
+		log.Debug("Failed to replace %q with %q in string values in %q: %s", key, s, content, err)
 	}
 	return replaceAllUsingRegEx(content, key, s)
 }

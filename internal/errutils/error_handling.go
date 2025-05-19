@@ -48,7 +48,7 @@ func PrintError(err error) {
 	if errors.As(err, &prettyPrintError) {
 		log.WithFields(field.Error(err)).Error("%s", prettyPrintError.PrettyError())
 	} else if err != nil {
-		log.WithFields(field.Error(err)).Error("%s", err.Error())
+		log.WithFields(field.Error(err)).Error("%s", err)
 	}
 }
 
@@ -60,7 +60,7 @@ func PrintErrors(errors []error) {
 
 func CheckError(err error, msg string) bool {
 	if err != nil {
-		log.WithFields(field.Error(err)).Error("%s: %s", msg, err.Error())
+		log.WithFields(field.Error(err)).Error("%s: %s", msg, err)
 		return true
 	}
 	return false
@@ -74,7 +74,7 @@ func PrintWarning(err error) {
 	if errors.As(err, &prettyPrintError) {
 		log.WithFields(field.Error(err)).Warn("%s", prettyPrintError.PrettyError())
 	} else if err != nil {
-		log.WithFields(field.Error(err)).Warn("%s", err.Error())
+		log.WithFields(field.Error(err)).Warn("%s", err)
 	}
 }
 

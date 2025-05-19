@@ -211,7 +211,7 @@ func (c *DummyConfigClient) writeRequest(a api.API, name string, payload []byte)
 	err := afero.WriteFile(c.Fs, filepath.Join(dir, filename), payload, 0664)
 
 	if err != nil {
-		log.Error("%s", err.Error())
+		log.Error("%s", err)
 	}
 }
 
