@@ -244,7 +244,7 @@ func asConcurrentErrMsg(err coreapi.APIError) string {
 
 	concurrentDownloadLimit := environment.GetEnvValueInt(environment.ConcurrentRequestsEnvKey)
 	additionalMessage := fmt.Sprintf("\n\n    A 403 error code probably means too many requests.\n    Reduce the number of concurrent requests by setting the %q environment variable (current value: %d). \n    Then wait a few minutes and retry ", environment.ConcurrentRequestsEnvKey, concurrentDownloadLimit)
-	return fmt.Sprintf("%s\n%s", err.Error(), additionalMessage)
+	return fmt.Sprintf("%s\n%s", err, additionalMessage)
 }
 
 func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permissions map[string]dtclient.PermissionObject, projectName string, ordered bool, filters Filters) []config.Config {

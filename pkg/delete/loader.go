@@ -22,10 +22,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mitchellh/mapstructure"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
-	"github.com/mitchellh/mapstructure"
 
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -55,7 +56,7 @@ func (p parseErrors) Error() string {
 
 	sb.WriteString("failed to parse delete file:")
 	for _, err := range p {
-		sb.WriteString(fmt.Sprintf("\n\t%s", err.Error()))
+		sb.WriteString(fmt.Sprintf("\n\t%s", err))
 	}
 
 	return sb.String()
