@@ -181,7 +181,7 @@ func validateParameter(ctx *singleConfigEntryLoadContext, paramName string, para
 			if _, referencesAPI := ctx.KnownApis[ref.Config.Type]; !referencesAPI &&
 				ref.Property == config.IdParameter &&
 				(ref.Config.Type != "builtin:management-zones" || !featureflags.ManagementZoneSettingsNumericIDs.Enabled()) { // leniently handle Management Zone numeric IDs which are the same for Settings
-				return fmt.Errorf("config api type (%s) configuration can only reference IDs of other config api types - parameter %q references %q type", ctx.Type, paramName, ref.Config.Type)
+				return fmt.Errorf("config api type (%s) configuration can only reference IDs of other config api types - parameter '%s' references '%s' type", ctx.Type, paramName, ref.Config.Type)
 			}
 		}
 	}

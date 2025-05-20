@@ -122,14 +122,14 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 		ctx = newContextWithEnvironment(ctx, env)
 
 		if depErr := Deploy(ctx, clientSet, projects, sortedConfigs, env.Name); depErr != nil {
-			log.WithFields(field.Environment(env.Name, env.Group), field.Error(depErr)).Error("Deployment failed for environment %q: %v", env.Name, depErr)
+			log.WithFields(field.Environment(env.Name, env.Group), field.Error(depErr)).Error("Deployment failed for environment '%s': %v", env.Name, depErr)
 			deploymentErrs = deploymentErrs.Append(env.Name, depErr)
 
 			if !opts.ContinueOnErr && !opts.DryRun {
 				return deploymentErrs
 			}
 		} else {
-			log.WithFields(field.Environment(env.Name, env.Group)).Info("Deployment successful for environment %q", env.Name)
+			log.WithFields(field.Environment(env.Name, env.Group)).Info("Deployment successful for environment '%s'", env.Name)
 		}
 	}
 
