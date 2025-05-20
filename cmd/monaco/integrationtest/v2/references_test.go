@@ -183,40 +183,44 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 				manifestFile := configFolder + "manifest.yaml"
 				proj := tt.project
 
-				fs := testutils.CreateTestFileSystem()
+				Run(t, configFolder,
+					Options{
+						WithManifestPath(manifestFile),
+						WithSuffix(testName),
+						WithEnvironment(env),
+					},
+					func(fs afero.Fs, ctx TestContext) {
 
-				RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, testName, func(fs afero.Fs, ctx TestContext) {
+						// upsert
+						err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj))
+						require.NoError(t, err, "create: did not expect error")
 
-					// upsert
-					err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj))
-					require.NoError(t, err, "create: did not expect error")
+						// download
+						err = monaco.Run(t, fs, fmt.Sprintf("monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, tt.downloadOpts))
+						require.NoError(t, err, "download: did not expect error")
 
-					// download
-					err = monaco.Run(t, fs, fmt.Sprintf("monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose %s", manifestFile, env, tt.downloadOpts))
-					require.NoError(t, err, "download: did not expect error")
+						// assert
+						mani, errs := manifestloader.Load(&manifestloader.Context{
+							Fs:           fs,
+							ManifestPath: "download/manifest.yaml",
+							Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
+						})
+						assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
 
-					// assert
-					mani, errs := manifestloader.Load(&manifestloader.Context{
-						Fs:           fs,
-						ManifestPath: "download/manifest.yaml",
-						Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
+						projects, errs := project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
+							KnownApis:       api.NewAPIs().GetApiNameLookup(),
+							WorkingDir:      "download",
+							Manifest:        mani,
+							ParametersSerde: config.DefaultParameterParsers,
+						}, nil)
+						assert.Empty(t, errs, "load project: did not expect do get error(s)")
+
+						projectAndEnvName := "proj_" + env // for manifest downloads proj + env name
+
+						confsPerType := findConfigs(t, projects, projectAndEnvName)
+
+						tt.validate(t, ctx, confsPerType)
 					})
-					assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
-
-					projects, errs := project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
-						KnownApis:       api.NewAPIs().GetApiNameLookup(),
-						WorkingDir:      "download",
-						Manifest:        mani,
-						ParametersSerde: config.DefaultParameterParsers,
-					}, nil)
-					assert.Empty(t, errs, "load project: did not expect do get error(s)")
-
-					projectAndEnvName := "proj_" + env // for manifest downloads proj + env name
-
-					confsPerType := findConfigs(t, projects, projectAndEnvName)
-
-					tt.validate(t, ctx, confsPerType)
-				})
 			})
 		}
 	}
