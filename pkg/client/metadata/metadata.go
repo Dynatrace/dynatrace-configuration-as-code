@@ -50,7 +50,7 @@ func (u classicEnvURL) GetURL() string {
 // GetDynatraceClassicURL tries to fetch the URL of the classic environment using the API of a platform enabled environment.
 // The call has a timeout of 15 seconds.
 func GetDynatraceClassicURL(ctx context.Context, platformClient corerest.Client) (string, error) {
-	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
+	ctx = logr.NewContextWithSlogLogger(ctx, log.WithCtxFields(ctx).SLogger())
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 

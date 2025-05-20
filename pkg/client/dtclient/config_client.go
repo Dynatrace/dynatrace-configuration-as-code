@@ -737,7 +737,7 @@ func (d *ConfigClient) findUnique(ctx context.Context, values []Value, payload [
 	}
 
 	if matchingObjectsFound > 1 {
-		log.WithCtxFields(ctx).Warn("Found %d configs with same name. Please delete duplicates.", matchingObjectsFound)
+		log.WithCtxFields(ctx).Warn("Found %d configs with the same name. Please delete duplicates.", matchingObjectsFound)
 	}
 
 	return objectId, nil
