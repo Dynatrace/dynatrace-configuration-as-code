@@ -20,15 +20,16 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
 func TestPaginationClassic(t *testing.T) {
@@ -62,27 +63,34 @@ func testPagination(t *testing.T, specificEnvironment string) {
 	err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
 	assert.NoError(t, err)
 
-	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestPath, specificEnvironment, "Pagination", func(fs afero.Fs, _ TestContext) {
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix("Pagination"),
+			WithEnvironment(specificEnvironment),
+			WithFs(fs),
+		},
+		func(fs afero.Fs, _ TestContext) {
 
-		// Create/POST all 550 Settings
-		logOutput := strings.Builder{}
-		cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
-		err := cmd.Execute()
-		assert.NoError(t, err)
-		assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
+			// Create/POST all 550 Settings
+			logOutput := strings.Builder{}
+			cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
+			cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
+			err := cmd.Execute()
+			assert.NoError(t, err)
+			assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
 
-		logOutput.Reset()
+			logOutput.Reset()
 
-		// Update/PUT all 550 Settings - means that all previously created ones were found, and more than one 500 element page retrieved
-		cmd = runner.BuildCmdWithLogSpy(fs, &logOutput)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
-		err = cmd.Execute()
-		assert.NoError(t, err)
-		assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
+			// Update/PUT all 550 Settings - means that all previously created ones were found, and more than one 500 element page retrieved
+			cmd = runner.BuildCmdWithLogSpy(fs, &logOutput)
+			cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
+			err = cmd.Execute()
+			assert.NoError(t, err)
+			assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
-	})
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
+		})
 }
