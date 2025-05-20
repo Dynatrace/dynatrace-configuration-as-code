@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,23 +16,82 @@
  * limitations under the License.
  */
 
-package log
+package log_test
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
+
+// TestPrepareLogging_JSONLogFormat tests that logging is in JSON format if specified via MONACO_LOG_FORMAT environment variable.
+func TestPrepareLogging_JSONLogFormat(t *testing.T) {
+	tests := []struct {
+		name         string
+		logFormatEnv string
+		wantJSON     bool
+	}{
+		{
+			name:         "log format JSON uses JSON",
+			logFormatEnv: "json",
+			wantJSON:     true,
+		},
+		{
+			name:         "no log format value does not use JSON",
+			logFormatEnv: "",
+			wantJSON:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if len(tt.logFormatEnv) > 0 {
+				t.Setenv("MONACO_LOG_FORMAT", tt.logFormatEnv)
+			}
+
+			builder := strings.Builder{}
+			log.PrepareLogging(t.Context(), nil, true, &builder, false, false)
+			log.Debug("hello")
+
+			o := map[string]any{}
+			err := json.Unmarshal([]byte(builder.String()), &o)
+			if tt.wantJSON {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+}
+
+// TestPrepareLogging_SupportsUTC tests that logs are written using time entries in UTC if explicitly enabled.
+// The case where the feature is disabled is not tested as the logger may still log in UTC due to the testing environment setup.
+func TestPrepareLogging_SupportsUTC(t *testing.T) {
+	t.Setenv("MONACO_LOG_FORMAT", "json")
+	t.Setenv("MONACO_LOG_TIME", "utc")
+
+	builder := strings.Builder{}
+	log.PrepareLogging(t.Context(), nil, true, &builder, false, false)
+	log.Debug("hello")
+
+	// assert that entry is JSON and can be unmarshaled
+	o := map[string]any{}
+	err := json.Unmarshal([]byte(builder.String()), &o)
+	require.NoError(t, err)
+
+	// assert that the entry has a time field that ends with Z, an indication of UTC
+	entrytime, containsTime := o["time"].(string)
+	assert.True(t, containsTime)
+	assert.True(t, strings.HasSuffix(entrytime, "Z"))
+}
 
 func TestPrepareLogging(t *testing.T) {
 	type pathsWithPermission map[string]os.FileMode
@@ -65,7 +124,7 @@ func TestPrepareLogging(t *testing.T) {
 		{
 			name:           "fails if log file creation fails",
 			givenFolders:   pathsWithPermission{".logs/": 0777},
-			givenFiles:     pathsWithPermission{LogFilePath(): 0000}, // logFile exists and can't be accessed
+			givenFiles:     pathsWithPermission{log.LogFilePath(): 0000}, // logFile exists and can't be accessed
 			wantLogFile:    false,
 			wantErrLogFile: false,
 			wantError:      true,
@@ -73,7 +132,7 @@ func TestPrepareLogging(t *testing.T) {
 		{
 			name:           "creates log file even though err file creation fails",
 			givenFolders:   pathsWithPermission{".logs/": 0777},
-			givenFiles:     pathsWithPermission{ErrorFilePath(): 0000}, // errFile exists and can't be accessed
+			givenFiles:     pathsWithPermission{log.ErrorFilePath(): 0000}, // errFile exists and can't be accessed
 			wantLogFile:    true,
 			wantErrLogFile: false,
 			wantError:      true,
@@ -98,7 +157,7 @@ func TestPrepareLogging(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			file, errFile, err := prepareLogFiles(t.Context(), fs, false)
+			file, errFile, err := log.PrepareLogFiles(t.Context(), fs, false)
 
 			if tt.wantLogFile {
 				assert.NotNil(t, file)
@@ -121,60 +180,53 @@ func TestPrepareLogging(t *testing.T) {
 	}
 }
 
-// TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly is separate from the other log file tests, as there is no portable
+// TestPrepareLogFiles_ReturnsErrIfParentDirIsReadOnly is separate from the other log file tests, as there is no portable
 // way of handling folder permissions on a real filesystem. (Go has no way to set Windows folder permissions:https://github.com/golang/go/issues/35042)
 // Thus it tests the "can't write even the .logs/ dir" case by setting the whole afero FS to read only... In the real world,
 // this would happen if the Windows folder is marked read only, or POSIX permissions don't allow writing to it.
 func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
-	file, errFile, err := prepareLogFiles(t.Context(), fs, false)
+	file, errFile, err := log.PrepareLogFiles(t.Context(), fs, false)
 	assert.Nil(t, file)
 	assert.Nil(t, errFile)
 	assert.Error(t, err)
 }
 
-func TestWithFields(t *testing.T) {
-	logSpy := bytes.Buffer{}
-	setDefaultLogger(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy})
-	WithFields(
-		field.Field{"Title", "Captain"},
-		field.Field{"Name", "Iglo"},
-		field.Coordinate(coordinate.Coordinate{"p1", "t1", "c1"}),
-		field.Environment("env1", "group")).Info("Logging with %s", "fields")
+// TestDefaultLoggerFunctions tests that the default logger functions work as expected.
+func TestDefaultLoggerFunctions(t *testing.T) {
 
-	var data map[string]interface{}
-	err := json.Unmarshal(logSpy.Bytes(), &data)
-	assert.NoError(t, err)
-	assert.Equal(t, "Logging with fields", data["msg"])
-	assert.Equal(t, "Captain", data["Title"])
-	assert.Equal(t, "Iglo", data["Name"])
-	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["project"])
-	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["type"])
-	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["configID"])
-	assert.Equal(t, "p1:t1:c1", data["coordinate"].(map[string]interface{})["reference"])
-	assert.Equal(t, "env1", data["environment"].(map[string]interface{})["name"])
-	assert.Equal(t, "group", data["environment"].(map[string]interface{})["group"])
-}
+	builder := strings.Builder{}
+	log.PrepareLogging(t.Context(), nil, true, &builder, false, false)
 
-func TestFromCtx(t *testing.T) {
-	logSpy := bytes.Buffer{}
-	setDefaultLogger(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy})
-	c := coordinate.Coordinate{"p1", "t1", "c1"}
-	e := "e1"
-	g := "g"
+	t.Run("debug", func(t *testing.T) {
+		builder.Reset()
+		log.Debug("code %s reached", "here")
 
-	logger := WithCtxFields(context.WithValue(context.WithValue(t.Context(), CtxKeyCoord{}, c), CtxKeyEnv{}, CtxValEnv{Name: e, Group: g}))
-	logger.Info("Hi with context")
+		assert.Contains(t, builder.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(builder.String()), "debug")
+	})
 
-	var data map[string]interface{}
-	err := json.Unmarshal(logSpy.Bytes(), &data)
-	assert.NoError(t, err)
-	assert.Equal(t, "Hi with context", data["msg"])
-	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["project"])
-	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["type"])
-	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["configID"])
-	assert.Equal(t, "p1:t1:c1", data["coordinate"].(map[string]interface{})["reference"])
-	assert.Equal(t, "e1", data["environment"].(map[string]interface{})["name"])
-	assert.Equal(t, "g", data["environment"].(map[string]interface{})["group"])
+	t.Run("info", func(t *testing.T) {
+		builder.Reset()
+		log.Info("code %s reached", "here")
 
+		assert.Contains(t, builder.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(builder.String()), "info")
+	})
+
+	t.Run("warn", func(t *testing.T) {
+		builder.Reset()
+		log.Warn("code %s reached", "here")
+
+		assert.Contains(t, builder.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(builder.String()), "warn")
+	})
+
+	t.Run("error", func(t *testing.T) {
+		builder.Reset()
+		log.Error("code %s reached", "here")
+
+		assert.Contains(t, builder.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(builder.String()), "error")
+	})
 }
