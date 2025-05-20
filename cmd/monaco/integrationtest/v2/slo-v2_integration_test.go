@@ -81,24 +81,31 @@ func TestSloV2(t *testing.T) {
 	t.Run("With a disabled FF the deploy should fail", func(t *testing.T) {
 		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "false")
 
-		RunIntegrationWithoutCleanup(t, configFolder, manifestPath, environment, "SLO-V2", func(fs afero.Fs, testContext TestContext) {
-			// when deploying once
-			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
-			assert.Error(t, err)
+		Run(t, configFolder,
+			Options{
+				WithManifestPath(manifestPath),
+				WithSuffix("SLO-V2"),
+				WithEnvironment(environment),
+				WithoutCleanup(),
+			},
+			func(fs afero.Fs, testContext TestContext) {
+				// when deploying once
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
+				assert.Error(t, err)
 
-			sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
-			result, err := sloV2Client.List(t.Context())
-			assert.NoError(t, err)
-			externalIDs := extractExternalIDs(t, result)
+				sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
+				result, err := sloV2Client.List(t.Context())
+				assert.NoError(t, err)
+				externalIDs := extractExternalIDs(t, result)
 
-			coord := coordinate.Coordinate{
-				Project:  project,
-				Type:     string(config.ServiceLevelObjectiveID),
-				ConfigId: "custom-sli_" + testContext.suffix,
-			}
-			externalID := idutils.GenerateExternalID(coord)
-			assert.NotContains(t, externalIDs, externalID)
-		})
+				coord := coordinate.Coordinate{
+					Project:  project,
+					Type:     string(config.ServiceLevelObjectiveID),
+					ConfigId: "custom-sli_" + testContext.suffix,
+				}
+				externalID := idutils.GenerateExternalID(coord)
+				assert.NotContains(t, externalIDs, externalID)
+			})
 	})
 }
 
