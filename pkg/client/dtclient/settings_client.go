@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -468,43 +467,13 @@ func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constr
 	return ret, nil
 }
 
-// handleUpsertUnsupportedVersion implements special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
-// Tenants with versions < 1.262 are not able to handle updates of existing
-// settings 2.0 objects that are non-deletable.
-// So we check if the object with originObjectID already exists, if yes and the tenant is older than 1.262
-// then we cannot perform the upsert operation
-func (d *SettingsClient) handleUpsertUnsupportedVersion(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
-
-	fetchedSettingObj, err := d.Get(ctx, obj.OriginObjectId)
-	if err != nil {
-		apiErr := coreapi.APIError{}
-		// Settings API returns 400 StatusBadRequest for 404 StatusNotFound
-		if !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusBadRequest || coreapi.IsNotFoundError(apiErr) {
-			return DynatraceEntity{}, fmt.Errorf("unable to fetch settings object with object id %q: %w", obj.OriginObjectId, err)
-		}
-	}
-
-	log.WithCtxFields(ctx).Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace environment with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
-	return DynatraceEntity{
-		Id:   fetchedSettingObj.ObjectId,
-		Name: fetchedSettingObj.ObjectId,
-	}, nil
-
-}
-
 // Upsert creates or updates remote settings objects.
 // The logic to find the correct object to update is as follows:
 //  1. We try to match the unique-constrains of the object
 //  2. We try to find the correct object by checking the legacy-external-id, the external-id, as well as the given originObjectId
 //
 // If we find an object, we update it. If we don't, a new one will be created.
-//
-// Note: If the Dynatrace version of the remote system is <262, nothing will be performed and an error is returned.
 func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertOptions UpsertSettingsOptions) (result DynatraceEntity, err error) {
-	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
-		return d.handleUpsertUnsupportedVersion(ctx, obj)
-	}
-
 	// The objectID of the object we want to update
 	remoteObjectId := ""
 

@@ -818,23 +818,6 @@ func TestUpsertSettings(t *testing.T) {
 			listSettingsResponseCode:    http.StatusOK,
 			listSettingsResponseContent: `{"items":[{"externalId":"","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}]}`,
 		},
-		{
-			name:                       "Upsert existing settings 2.0 object on tenant < 1.262.0",
-			expectSettingsRequestValue: "{}",
-			serverVersion: version.Version{
-				Major: 1,
-				Minor: 260,
-				Patch: 0,
-			},
-			expectError: false,
-			expectEntity: DynatraceEntity{
-				Id:   "anObjectID",
-				Name: "anObjectID",
-			},
-			getSettingsResponseCode:     200,
-			postSettingsResponseContent: `{"objectId": "entity-id"}`,
-			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
