@@ -31,21 +31,26 @@ import (
 func TestIntegrationScopeParameters(t *testing.T) {
 	configFolder := "test-resources/integration-scope-parameters/"
 	manifest := configFolder + "/manifest.yaml"
-	specificEnvironment := ""
 
 	envVars := map[string]string{
 		"SCOPE_TEST_ENV_VAR": "environment",
 	}
 
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "ScopeParameters", envVars, func(fs afero.Fs, _ TestContext) {
-		// This causes Creation of all Settings
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
-		assert.NoError(t, err)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifest),
+			WithSuffix("ScopeParameters"),
+			WithEnvVars(envVars),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			// This causes Creation of all Settings
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+			assert.NoError(t, err)
 
-		// This causes an Update of all Settings
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
-		assert.NoError(t, err)
-	})
+			// This causes an Update of all Settings
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+			assert.NoError(t, err)
+		})
 }
 
 // Tests a dry run (validation)

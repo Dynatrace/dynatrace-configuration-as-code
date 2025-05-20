@@ -162,20 +162,6 @@ func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specifi
 		testFunc)
 }
 
-// Deprecated: Use Run instead with:
-//
-//	Run(t, configFolder, Options{WithEnvironment, WithManifestPath, WithSuffix, WithEnvVars}, testFunc)
-func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifestPath),
-			WithSuffix(suffixTest),
-			WithEnvironment(specificEnvironment),
-			WithEnvVars(envVars),
-		},
-		testFunc)
-}
-
 func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 	configFolder, _ := filepath.Abs(opts.configFolder)
 

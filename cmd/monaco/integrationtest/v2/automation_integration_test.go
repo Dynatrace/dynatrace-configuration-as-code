@@ -35,22 +35,27 @@ func TestIntegrationAutomation(t *testing.T) {
 
 	configFolder := "test-resources/integration-automation/"
 	manifest := configFolder + "manifest.yaml"
-	specificEnvironment := ""
 
 	envs := map[string]string{}
 	if isHardeningEnvironment() {
 		envs["WORKFLOW_ACTOR"] = os.Getenv("WORKFLOW_ACTOR")
 	}
 
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "Automation", envs, func(fs afero.Fs, _ TestContext) {
-		// This causes Creation of all automation objects
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
-		assert.NoError(t, err)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifest),
+			WithSuffix("Automation"),
+			WithEnvVars(envs),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			// This causes Creation of all automation objects
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+			assert.NoError(t, err)
 
-		// This causes an Update of all automation objects
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
-		assert.NoError(t, err)
+			// This causes an Update of all automation objects
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+			assert.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
-	})
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
+		})
 }

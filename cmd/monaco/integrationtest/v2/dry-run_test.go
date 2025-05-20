@@ -42,23 +42,30 @@ func TestDryRun(t *testing.T) {
 		featureflags.AccessControlSettings.EnvName(): "true",
 	}
 
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "AllConfigs", envVars, func(fs afero.Fs, _ TestContext) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			t.Fatalf("unexpected HTTP request made during dry run: %s", req.RequestURI)
-		}))
-		defer server.Close()
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifest),
+			WithSuffix("AllConfigs"),
+			WithEnvironment(specificEnvironment),
+			WithEnvVars(envVars),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				t.Fatalf("unexpected HTTP request made during dry run: %s", req.RequestURI)
+			}))
+			defer server.Close()
 
-		// ensure all URLs used in the manifest point at the test server
-		setAllURLEnvironmentVariables(t, server.URL)
+			// ensure all URLs used in the manifest point at the test server
+			setAllURLEnvironmentVariables(t, server.URL)
 
-		// This causes a POST for all configs:
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment))
-		assert.NoError(t, err)
+			// This causes a POST for all configs:
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment))
+			assert.NoError(t, err)
 
-		// This causes a PUT for all configs:
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment))
-		assert.NoError(t, err)
-	})
+			// This causes a PUT for all configs:
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", manifest, specificEnvironment))
+			assert.NoError(t, err)
+		})
 }
 
 func setAllURLEnvironmentVariables(t *testing.T, url string) {
