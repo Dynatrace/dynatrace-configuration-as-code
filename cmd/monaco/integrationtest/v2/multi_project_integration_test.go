@@ -36,13 +36,19 @@ var multiProjectSpecificEnvironment = ""
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectManifest, multiProjectSpecificEnvironment, "MultiProject", func(fs afero.Fs, _ TestContext) {
-		// This causes a POST for all configs:
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", multiProjectManifest))
-		assert.NoError(t, err)
+	Run(t, multiProjectFolder,
+		Options{
+			WithManifestPath(multiProjectManifest),
+			WithSuffix("MultiProject"),
+			WithEnvironment(multiProjectSpecificEnvironment),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			// This causes a POST for all configs:
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", multiProjectManifest))
+			assert.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
-	})
+			integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
+		})
 }
 
 // Tests a dry run (validation)
@@ -54,16 +60,22 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectManifest, multiProjectSpecificEnvironment, "MultiProjectOnProject", func(fs afero.Fs, _ TestContext) {
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=star-trek --verbose", multiProjectManifest))
-		assert.NoError(t, err)
+	Run(t, multiProjectFolder,
+		Options{
+			WithManifestPath(multiProjectManifest),
+			WithSuffix("MultiProjectOnProject"),
+			WithEnvironment(multiProjectSpecificEnvironment),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=star-trek --verbose", multiProjectManifest))
+			assert.NoError(t, err)
 
-		// Validate Star Trek sub-projects were deployed
-		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"star-trek.star-wars", "star-trek.star-gate"}, multiProjectSpecificEnvironment, true)
+			// Validate Star Trek sub-projects were deployed
+			integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"star-trek.star-wars", "star-trek.star-gate"}, multiProjectSpecificEnvironment, true)
 
-		// Validate movies project was not deployed
-		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"movies.science fiction.the-hitchhikers-guide-to-the-galaxy"}, multiProjectSpecificEnvironment, false)
-	})
+			// Validate movies project was not deployed
+			integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"movies.science fiction.the-hitchhikers-guide-to-the-galaxy"}, multiProjectSpecificEnvironment, false)
+		})
 }
 
 func TestIntegrationMultiProject_ReturnsErrorOnInvalidProjectDefinitions(t *testing.T) {

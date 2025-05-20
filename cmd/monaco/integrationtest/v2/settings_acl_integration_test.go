@@ -72,29 +72,35 @@ func TestSettingsWithACL(t *testing.T) {
 			},
 		}
 
-		RunIntegrationWithCleanup(t, configFolder, defaultManifest, environment, "settings-ACL", func(fs afero.Fs, testContext TestContext) {
-			for _, update := range updates {
-				t.Logf("Update permission with '%s'", update.ManifestFolder)
+		Run(t, configFolder,
+			Options{
+				WithManifestPath(defaultManifest),
+				WithSuffix("settings-ACL"),
+				WithEnvironment(environment),
+			},
+			func(fs afero.Fs, testContext TestContext) {
+				for _, update := range updates {
+					t.Logf("Update permission with '%s'", update.ManifestFolder)
 
-				manifestPath := configFolder + update.ManifestFolder + "/manifest.yaml"
-				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
-				require.NoError(t, err)
+					manifestPath := configFolder + update.ManifestFolder + "/manifest.yaml"
+					err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
+					require.NoError(t, err)
 
-				loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, environment)
-				environmentDefinition := loadedManifest.Environments.SelectedEnvironments[environment]
-				client := createSettingsClientPlatform(t, environmentDefinition)
+					loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, environment)
+					environmentDefinition := loadedManifest.Environments.SelectedEnvironments[environment]
+					client := createSettingsClientPlatform(t, environmentDefinition)
 
-				coord := coordinate.Coordinate{
-					Project:  project,
-					Type:     schemaId,
-					ConfigId: "config-acl_" + testContext.suffix,
+					coord := coordinate.Coordinate{
+						Project:  project,
+						Type:     schemaId,
+						ConfigId: "config-acl_" + testContext.suffix,
+					}
+					objectId := integrationtest.AssertSetting(t, client, settingsType, environment, true, config.Config{
+						Coordinate: coord,
+					})
+					integrationtest.AssertPermission(t, client, objectId, update.WantPermission)
 				}
-				objectId := integrationtest.AssertSetting(t, client, settingsType, environment, true, config.Config{
-					Coordinate: coord,
-				})
-				integrationtest.AssertPermission(t, client, objectId, update.WantPermission)
-			}
-		})
+			})
 	})
 
 	t.Run("With a disabled FF the deploy should fail", func(t *testing.T) {

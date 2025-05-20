@@ -47,35 +47,41 @@ func TestSloV2(t *testing.T) {
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
 	t.Run("When deploying two configs, two configs exist", func(t *testing.T) {
-		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "SLO-V2", func(fs afero.Fs, testContext TestContext) {
-			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
-			assert.NoError(t, err)
+		Run(t, configFolder,
+			Options{
+				WithManifestPath(manifestPath),
+				WithSuffix("SLO-V2"),
+				WithEnvironment(environment),
+			},
+			func(fs afero.Fs, testContext TestContext) {
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
+				assert.NoError(t, err)
 
-			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
-			assert.NoError(t, err)
+				err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
+				assert.NoError(t, err)
 
-			sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
-			result, err := sloV2Client.List(t.Context())
-			assert.NoError(t, err)
-			externalIDs := extractExternalIDs(t, result)
+				sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
+				result, err := sloV2Client.List(t.Context())
+				assert.NoError(t, err)
+				externalIDs := extractExternalIDs(t, result)
 
-			cSliCoord := coordinate.Coordinate{
-				Project:  project,
-				Type:     string(config.ServiceLevelObjectiveID),
-				ConfigId: "custom-sli_" + testContext.suffix,
-			}
-			sliRefCoord := coordinate.Coordinate{
-				Project:  project,
-				Type:     string(config.ServiceLevelObjectiveID),
-				ConfigId: "sli-reference_" + testContext.suffix,
-			}
+				cSliCoord := coordinate.Coordinate{
+					Project:  project,
+					Type:     string(config.ServiceLevelObjectiveID),
+					ConfigId: "custom-sli_" + testContext.suffix,
+				}
+				sliRefCoord := coordinate.Coordinate{
+					Project:  project,
+					Type:     string(config.ServiceLevelObjectiveID),
+					ConfigId: "sli-reference_" + testContext.suffix,
+				}
 
-			cSliExternalID := idutils.GenerateExternalID(cSliCoord)
-			sliRefExternalID := idutils.GenerateExternalID(sliRefCoord)
+				cSliExternalID := idutils.GenerateExternalID(cSliCoord)
+				sliRefExternalID := idutils.GenerateExternalID(sliRefCoord)
 
-			assert.Contains(t, externalIDs, cSliExternalID)
-			assert.Contains(t, externalIDs, sliRefExternalID)
-		})
+				assert.Contains(t, externalIDs, cSliExternalID)
+				assert.Contains(t, externalIDs, sliRefExternalID)
+			})
 	})
 
 	t.Run("With a disabled FF the deploy should fail", func(t *testing.T) {

@@ -50,19 +50,23 @@ func TestIntegrationSettings(t *testing.T) {
 
 	configFolder := "test-resources/integration-settings/"
 	manifest := configFolder + "manifest.yaml"
-	specificEnvironment := ""
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "SettingsTwo", func(fs afero.Fs, _ TestContext) {
-		// This causes Creation of all Settings
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
-		assert.NoError(t, err)
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifest),
+			WithSuffix("SettingsTwo"),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			// This causes Creation of all Settings
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+			assert.NoError(t, err)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
 
-		// This causes an Update of all Settings
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
-		assert.NoError(t, err)
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
-	})
+			// This causes an Update of all Settings
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+			assert.NoError(t, err)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
+		})
 }
 
 // Tests a dry run (validation)
@@ -146,18 +150,23 @@ func TestDeploySettingsWithUniqueProperties(t *testing.T) {
 	configFolder := "test-resources/settings-unique-properties"
 	manifestPath := configFolder + "/manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsUniqueProps", func(fs afero.Fs, _ TestContext) {
-		// create with project1 values
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project1", manifestPath))
-		assert.NoError(t, err)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix("SettingsUniqueProps"),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			// create with project1 values
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project1", manifestPath))
+			assert.NoError(t, err)
 
-		// update based on unique properties with project2 values
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project2", manifestPath))
-		assert.NoError(t, err)
+			// update based on unique properties with project2 values
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project2", manifestPath))
+			assert.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project1"}, "platform_env", false) // updated to project2 externalIds
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project2"}, "platform_env", true)
-	})
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project1"}, "platform_env", false) // updated to project2 externalIds
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project2"}, "platform_env", true)
+		})
 }
 
 // TestDeploySettingsWithUniqueProperties_ConsidersScopes is an extension of TestDeploySettingsWithUniqueProperties
@@ -173,18 +182,23 @@ func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 	configFolder := "test-resources/settings-unique-properties"
 	manifestPath := configFolder + "/manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsUniqueProps", func(fs afero.Fs, _ TestContext) {
-		// create with project3 values
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project3", manifestPath))
-		assert.NoError(t, err)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix("SettingsUniqueProps"),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			// create with project3 values
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project3", manifestPath))
+			assert.NoError(t, err)
 
-		// update based on unique properties with project4 values and extend by one config
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project4", manifestPath))
-		assert.NoError(t, err)
+			// update based on unique properties with project4 values and extend by one config
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project4", manifestPath))
+			assert.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project3"}, "platform_env", false) // updated to project3 externalId
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project4"}, "platform_env", true)  // 1 setting updated, 1 newly created
-	})
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project3"}, "platform_env", false) // updated to project3 externalId
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project4"}, "platform_env", true)  // 1 setting updated, 1 newly created
+		})
 }
 
 // TestOrderedSettings tries to deploy two entity-scoped setting objects two times. The first time with "bbb" insert after "aaa", the second time with "aaa" insert after "bbb".
@@ -232,27 +246,32 @@ func TestOrderedSettings(t *testing.T) {
 	configFolder = "test-resources/settings-ordered/order2"
 	manifestPath = configFolder + "/manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, tc TestContext) {
-		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.suffix)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix("SettingsOrdered"),
+		},
+		func(fs afero.Fs, tc TestContext) {
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.suffix)
 
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
-		require.NoError(t, err)
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
+			require.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
-		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
-		environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
-		settingsClient := createSettingsClient(t, environment)
+			loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
+			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
+			settingsClient := createSettingsClient(t, environment)
 
-		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
-			DiscardValue: true,
-			Filter:       filterObjectsForScope(host),
+			results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
+				DiscardValue: true,
+				Filter:       filterObjectsForScope(host),
+			})
+			require.NoError(t, err)
+			require.Len(t, results, 2)
+			assert.Equal(t, 0, findPositionWithExternalId(t, results, expectedExternalIdForBBB))
+			assert.Equal(t, 1, findPositionWithExternalId(t, results, expectedExternalIdForAAA))
 		})
-		require.NoError(t, err)
-		require.Len(t, results, 2)
-		assert.Equal(t, 0, findPositionWithExternalId(t, results, expectedExternalIdForBBB))
-		assert.Equal(t, 1, findPositionWithExternalId(t, results, expectedExternalIdForAAA))
-	})
 }
 
 // TestOrderedSettingsCrossProjects tries to deploy two setting objects A and B, while both are in different projects.
@@ -263,35 +282,40 @@ func TestOrderedSettingsCrossProjects(t *testing.T) {
 
 	const schema = "builtin:url-based-sampling"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, tc TestContext) {
-		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
-		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix("SettingsOrdered"),
+		},
+		func(fs afero.Fs, tc TestContext) {
+			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=source", manifestPath))
-		require.NoError(t, err)
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"source"}, "platform_env", true)
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=source", manifestPath))
+			require.NoError(t, err)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"source"}, "platform_env", true)
 
-		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
-		environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
-		settingsClient := createSettingsClient(t, environment)
-		results, err := settingsClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
-			DiscardValue: true,
-			Filter:       filterObjectsForScope(pgiMeId),
+			loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
+			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
+			settingsClient := createSettingsClient(t, environment)
+			results, err := settingsClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+				DiscardValue: true,
+				Filter:       filterObjectsForScope(pgiMeId),
+			})
+			assert.NoError(t, err)
+
+			assert.Len(t, results, 2)
+
+			// target is first, as source 'insertsAfter' target
+			targetConfigExternalId := settingsExternalIdForTest(t, coordinate.Coordinate{Project: "target", Type: schema, ConfigId: "target-id"}, tc)
+			assert.NoError(t, err)
+			assert.Equal(t, targetConfigExternalId, results[0].ExternalId)
+
+			sourceConfigExternalId := settingsExternalIdForTest(t, coordinate.Coordinate{Project: "source", Type: schema, ConfigId: "source-id"}, tc)
+			assert.NoError(t, err)
+			assert.Equal(t, sourceConfigExternalId, results[1].ExternalId)
 		})
-		assert.NoError(t, err)
-
-		assert.Len(t, results, 2)
-
-		// target is first, as source 'insertsAfter' target
-		targetConfigExternalId := settingsExternalIdForTest(t, coordinate.Coordinate{Project: "target", Type: schema, ConfigId: "target-id"}, tc)
-		assert.NoError(t, err)
-		assert.Equal(t, targetConfigExternalId, results[0].ExternalId)
-
-		sourceConfigExternalId := settingsExternalIdForTest(t, coordinate.Coordinate{Project: "source", Type: schema, ConfigId: "source-id"}, tc)
-		assert.NoError(t, err)
-		assert.Equal(t, sourceConfigExternalId, results[1].ExternalId)
-	})
 }
 
 func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
@@ -303,29 +327,35 @@ func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
 	const project = "insert-after-not-set"
 	const schema = "builtin:url-based-sampling"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAfterNotSet", func(fs afero.Fs, tc TestContext) {
-		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
-		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestFile),
+			WithSuffix("InsertAfterNotSet"),
+			WithEnvironment(specificEnvironment),
+		},
+		func(fs afero.Fs, tc TestContext) {
+			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
-		require.NoError(t, err)
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
+			require.NoError(t, err)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
-		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
-		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
-			DiscardValue: true,
-			Filter:       filterObjectsForScope(pgiMeId),
+			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+				DiscardValue: true,
+				Filter:       filterObjectsForScope(pgiMeId),
+			})
+
+			assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
+
+			first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
+			second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
+
+			assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
+			assert.Equal(t, 1, findPositionWithExternalId(t, list, second))
 		})
-
-		assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
-
-		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
-		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
-
-		assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
-		assert.Equal(t, 1, findPositionWithExternalId(t, list, second))
-	})
 }
 
 func TestOrdered_InsertAtFrontWorks(t *testing.T) {
@@ -337,32 +367,38 @@ func TestOrdered_InsertAtFrontWorks(t *testing.T) {
 	const project = "insert-after-set-to-front"
 	const schema = "builtin:url-based-sampling"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtFrontWorks", func(fs afero.Fs, tc TestContext) {
-		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
-		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestFile),
+			WithSuffix("InsertAtFrontWorks"),
+			WithEnvironment(specificEnvironment),
+		},
+		func(fs afero.Fs, tc TestContext) {
+			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
-		require.NoError(t, err)
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
+			require.NoError(t, err)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
-		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
-			DiscardValue: true,
-			Filter:       filterObjectsForScope(pgiMeId),
+			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+				DiscardValue: true,
+				Filter:       filterObjectsForScope(pgiMeId),
+			})
+
+			assert.Len(t, list, 3, "Exactly three configs should be deployed")
+
+			first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
+			second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
+			third := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "third"}, tc)
+
+			assert.Equal(t, 0, findPositionWithExternalId(t, list, second))
+			assert.Equal(t, 1, findPositionWithExternalId(t, list, third))
+			assert.Equal(t, 2, findPositionWithExternalId(t, list, first))
 		})
-
-		assert.Len(t, list, 3, "Exactly three configs should be deployed")
-
-		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
-		second := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
-		third := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "third"}, tc)
-
-		assert.Equal(t, 0, findPositionWithExternalId(t, list, second))
-		assert.Equal(t, 1, findPositionWithExternalId(t, list, third))
-		assert.Equal(t, 2, findPositionWithExternalId(t, list, first))
-	})
 }
 
 func TestOrdered_InsertAtBackWorks(t *testing.T) {
@@ -374,28 +410,34 @@ func TestOrdered_InsertAtBackWorks(t *testing.T) {
 	const project = "insert-after-set-to-back"
 	const schema = "builtin:url-based-sampling"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtBackWorks", func(fs afero.Fs, tc TestContext) {
-		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
-		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestFile),
+			WithSuffix("InsertAtBackWorks"),
+			WithEnvironment(specificEnvironment),
+		},
+		func(fs afero.Fs, tc TestContext) {
+			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
-		require.NoError(t, err)
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
+			require.NoError(t, err)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
-		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
-			DiscardValue: true,
-			Filter:       filterObjectsForScope(pgiMeId),
+			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+				DiscardValue: true,
+				Filter:       filterObjectsForScope(pgiMeId),
+			})
+
+			assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
+
+			// Verify that last is actually the last object
+			last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
+			assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
 		})
-
-		assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
-
-		// Verify that last is actually the last object
-		last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "second"}, tc)
-		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
-	})
 }
 
 func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
@@ -407,32 +449,38 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 	const project = "both-back-and-front-are-set-with-initial"
 	const schema = "builtin:url-based-sampling"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtBackWorks", func(fs afero.Fs, tc TestContext) {
-		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
-		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestFile),
+			WithSuffix("InsertAtBackWorks"),
+			WithEnvironment(specificEnvironment),
+		},
+		func(fs afero.Fs, tc TestContext) {
+			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
-		require.NoError(t, err)
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
+			require.NoError(t, err)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
-		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
-			DiscardValue: true,
-			Filter:       filterObjectsForScope(pgiMeId),
+			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+				DiscardValue: true,
+				Filter:       filterObjectsForScope(pgiMeId),
+			})
+
+			assert.Equal(t, 3, len(list), "Exactly three configs should be deployed")
+
+			// Verify that last is actually the first object
+			first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
+			assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
+
+			// Verify that last is actually the last object
+			last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "last"}, tc)
+			assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
 		})
-
-		assert.Equal(t, 3, len(list), "Exactly three configs should be deployed")
-
-		// Verify that last is actually the first object
-		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
-		assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
-
-		// Verify that last is actually the last object
-		last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "last"}, tc)
-		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
-	})
 }
 
 func TestOrdered_InsertAtFrontAndBackWorksDeployTwice(t *testing.T) {
@@ -444,37 +492,43 @@ func TestOrdered_InsertAtFrontAndBackWorksDeployTwice(t *testing.T) {
 	const project = "both-back-and-front-are-set-deploy-twice"
 	const schema = "builtin:url-based-sampling"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestFile, specificEnvironment, "InsertAtBackWorks", func(fs afero.Fs, tc TestContext) {
-		pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
-		t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestFile),
+			WithSuffix("InsertAtBackWorks"),
+			WithEnvironment(specificEnvironment),
+		},
+		func(fs afero.Fs, tc TestContext) {
+			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
-		// first
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
-		require.NoError(t, err)
-		// second
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
-		require.NoError(t, err)
+			// first
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
+			require.NoError(t, err)
+			// second
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
+			require.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
-		sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
+			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-		list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
-			DiscardValue: true,
-			Filter:       filterObjectsForScope(pgiMeId),
+			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+				DiscardValue: true,
+				Filter:       filterObjectsForScope(pgiMeId),
+			})
+
+			assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
+
+			// Verify that last is actually the first object
+			first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
+			assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
+
+			// Verify that last is actually the last object
+			last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "last"}, tc)
+			assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
 		})
-
-		assert.Equal(t, 2, len(list), "Exactly two configs should be deployed")
-
-		// Verify that last is actually the first object
-		first := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "first"}, tc)
-		assert.Equal(t, 0, findPositionWithExternalId(t, list, first))
-
-		// Verify that last is actually the last object
-		last := settingsExternalIdForTest(t, coordinate.Coordinate{Project: project, Type: schema, ConfigId: "last"}, tc)
-		assert.Equal(t, len(list)-1, findPositionWithExternalId(t, list, last))
-	})
 }
 
 func filterObjectsForScope(pgiMeId string) func(object dtclient.DownloadSettingsObject) bool {

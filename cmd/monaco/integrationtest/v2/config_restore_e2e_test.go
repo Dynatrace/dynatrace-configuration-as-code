@@ -213,20 +213,25 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			RunIntegrationWithCleanup(t, configsFolder, configsFolderManifest, "", "", func(fs afero.Fs, _ TestContext) {
-				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s", configsFolderManifest))
-				require.NoError(t, err)
+			Run(t, configsFolder,
+				Options{
+					WithManifestPath(configsFolderManifest),
+					WithSuffix(""),
+				},
+				func(fs afero.Fs, _ TestContext) {
+					err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s", configsFolderManifest))
+					require.NoError(t, err)
 
-				t.Log("Downloading configs")
-				err = tc.downloadFunc(t, tc.fs, downloadFolder, tc.manifest, tc.apisToDownload, tc.settingsToDownload, false)
-				assert.Equal(t, tc.wantErr, err != nil)
-				for _, f := range tc.expectedFolders {
-					folderExists, _ := afero.DirExists(tc.fs, f)
-					assert.Truef(t, folderExists, "folder %s does not exist", f)
-				}
-				files, _ := afero.ReadDir(tc.fs, tc.projectFolder)
-				assert.Equal(t, len(tc.expectedFolders), len(files))
-			})
+					t.Log("Downloading configs")
+					err = tc.downloadFunc(t, tc.fs, downloadFolder, tc.manifest, tc.apisToDownload, tc.settingsToDownload, false)
+					assert.Equal(t, tc.wantErr, err != nil)
+					for _, f := range tc.expectedFolders {
+						folderExists, _ := afero.DirExists(tc.fs, f)
+						assert.Truef(t, folderExists, "folder %s does not exist", f)
+					}
+					files, _ := afero.ReadDir(tc.fs, tc.projectFolder)
+					assert.Equal(t, len(tc.expectedFolders), len(files))
+				})
 		})
 	}
 }

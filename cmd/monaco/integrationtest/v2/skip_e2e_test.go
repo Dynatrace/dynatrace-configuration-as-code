@@ -111,28 +111,34 @@ func TestSkip(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			RunIntegrationWithCleanup(t, projectFolder, manifest, tt.given.environment, "SkipTest", func(fs afero.Fs, tc TestContext) {
+			Run(t, projectFolder,
+				Options{
+					WithManifestPath(manifest),
+					WithSuffix("SkipTest"),
+					WithEnvironment(tt.given.environment),
+				},
+				func(fs afero.Fs, tc TestContext) {
 
-				testCaseVar := "SKIPPED_VAR_" + tc.suffix
-				t.Setenv(testCaseVar, strconv.FormatBool(tt.given.skipVarValue))
+					testCaseVar := "SKIPPED_VAR_" + tc.suffix
+					t.Setenv(testCaseVar, strconv.FormatBool(tt.given.skipVarValue))
 
-				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
-				assert.NoError(t, err)
+					err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
+					assert.NoError(t, err)
 
-				client, ok := clients[tt.given.environment]
-				assert.True(t, ok, "expected to find client for environment ", tt.given.environment)
+					client, ok := clients[tt.given.environment]
+					assert.True(t, ok, "expected to find client for environment ", tt.given.environment)
 
-				log.Info("Asserting configs were deployed: %v", tt.want.deployedConfigIDs)
-				for _, id := range tt.want.deployedConfigIDs {
-					assertTestConfig(t, tc, client, tt.given.environment, id, true)
-				}
+					log.Info("Asserting configs were deployed: %v", tt.want.deployedConfigIDs)
+					for _, id := range tt.want.deployedConfigIDs {
+						assertTestConfig(t, tc, client, tt.given.environment, id, true)
+					}
 
-				log.Info("Asserting configs were skipped: %v", tt.want.skippedConfigIDs)
-				for _, id := range tt.want.skippedConfigIDs {
-					assertTestConfig(t, tc, client, tt.given.environment, id, false)
-				}
+					log.Info("Asserting configs were skipped: %v", tt.want.skippedConfigIDs)
+					for _, id := range tt.want.skippedConfigIDs {
+						assertTestConfig(t, tc, client, tt.given.environment, id, false)
+					}
 
-			})
+				})
 		})
 	}
 }

@@ -44,72 +44,78 @@ func TestDocuments(t *testing.T) {
 	manifestPath := configFolder + "manifest.yaml"
 	environment := "platform_env"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Documents", func(fs afero.Fs, testContext TestContext) {
-		// deploy
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifestPath))
-		assert.NoError(t, err)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix("Documents"),
+			WithEnvironment(environment),
+		},
+		func(fs afero.Fs, testContext TestContext) {
+			// deploy
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifestPath))
+			assert.NoError(t, err)
 
-		man, errs := manifestloader.Load(&manifestloader.Context{
-			Fs:           fs,
-			ManifestPath: manifestPath,
-			Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
+			man, errs := manifestloader.Load(&manifestloader.Context{
+				Fs:           fs,
+				ManifestPath: manifestPath,
+				Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
+			})
+			assert.Empty(t, errs)
+
+			// check isPrivate == false
+			clientSet := integrationtest.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
+			result, err := clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+			assert.NoError(t, err)
+			assert.Len(t, result.Responses, 1)
+			assert.False(t, result.Responses[0].IsPrivate)
+
+			// check isPrivate == true
+			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+			assert.NoError(t, err)
+			assert.Len(t, result.Responses, 1)
+			assert.True(t, result.Responses[0].IsPrivate)
+
+			// change private field to true
+			abFilePath, err := filepath.Abs(configFolder + "/project/document-notebook/config.yaml") // in monaco we are expecting files in absolute coordinates
+			assert.NoError(t, err)
+			file, err := fs.Open(abFilePath)
+			assert.NoError(t, err)
+			content, err := afero.ReadFile(fs, file.Name())
+			assert.NoError(t, err)
+			content = []byte(strings.ReplaceAll(string(content), "private: false", "private: true"))
+			err = afero.WriteFile(fs, abFilePath, content, 0644)
+			assert.NoError(t, err)
+
+			// change private field to false
+			abFilePath, err = filepath.Abs(configFolder + "/project/document-dashboard/config.yaml") // in monaco we are expecting files in absolute coordinates
+			assert.NoError(t, err)
+			file, err = fs.Open(abFilePath)
+			assert.NoError(t, err)
+			content, err = afero.ReadFile(fs, file.Name())
+			assert.NoError(t, err)
+			content = []byte(strings.ReplaceAll(string(content), "private: true", "private: false"))
+			err = afero.WriteFile(fs, abFilePath, content, 0644)
+			assert.NoError(t, err)
+
+			// deploy again
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifestPath))
+			assert.NoError(t, err)
+
+			// check if isPrivate was changed to true
+			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+			assert.NoError(t, err)
+			assert.Len(t, result.Responses, 1)
+			assert.True(t, result.Responses[0].IsPrivate)
+
+			// check if isPrivate was changed to false
+			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+			assert.NoError(t, err)
+			assert.Len(t, result.Responses, 1)
+			assert.False(t, result.Responses[0].IsPrivate)
+
+			// check if both launchpads were created successfully
+			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("(name='my_empty_launchpad_%s' and type='launchpad') or (name='my_monaco_launchpad_%s' and type='launchpad')", testContext.suffix, testContext.suffix))
+			assert.NoError(t, err)
+			assert.Len(t, result.Responses, 2)
 		})
-		assert.Empty(t, errs)
-
-		// check isPrivate == false
-		clientSet := integrationtest.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
-		result, err := clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
-		assert.NoError(t, err)
-		assert.Len(t, result.Responses, 1)
-		assert.False(t, result.Responses[0].IsPrivate)
-
-		// check isPrivate == true
-		result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
-		assert.NoError(t, err)
-		assert.Len(t, result.Responses, 1)
-		assert.True(t, result.Responses[0].IsPrivate)
-
-		// change private field to true
-		abFilePath, err := filepath.Abs(configFolder + "/project/document-notebook/config.yaml") // in monaco we are expecting files in absolute coordinates
-		assert.NoError(t, err)
-		file, err := fs.Open(abFilePath)
-		assert.NoError(t, err)
-		content, err := afero.ReadFile(fs, file.Name())
-		assert.NoError(t, err)
-		content = []byte(strings.ReplaceAll(string(content), "private: false", "private: true"))
-		err = afero.WriteFile(fs, abFilePath, content, 0644)
-		assert.NoError(t, err)
-
-		// change private field to false
-		abFilePath, err = filepath.Abs(configFolder + "/project/document-dashboard/config.yaml") // in monaco we are expecting files in absolute coordinates
-		assert.NoError(t, err)
-		file, err = fs.Open(abFilePath)
-		assert.NoError(t, err)
-		content, err = afero.ReadFile(fs, file.Name())
-		assert.NoError(t, err)
-		content = []byte(strings.ReplaceAll(string(content), "private: true", "private: false"))
-		err = afero.WriteFile(fs, abFilePath, content, 0644)
-		assert.NoError(t, err)
-
-		// deploy again
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifestPath))
-		assert.NoError(t, err)
-
-		// check if isPrivate was changed to true
-		result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
-		assert.NoError(t, err)
-		assert.Len(t, result.Responses, 1)
-		assert.True(t, result.Responses[0].IsPrivate)
-
-		// check if isPrivate was changed to false
-		result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
-		assert.NoError(t, err)
-		assert.Len(t, result.Responses, 1)
-		assert.False(t, result.Responses[0].IsPrivate)
-
-		// check if both launchpads were created successfully
-		result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("(name='my_empty_launchpad_%s' and type='launchpad') or (name='my_monaco_launchpad_%s' and type='launchpad')", testContext.suffix, testContext.suffix))
-		assert.NoError(t, err)
-		assert.Len(t, result.Responses, 2)
-	})
 }
