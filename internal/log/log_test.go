@@ -90,6 +90,49 @@ func TestPrepareLogging_LogFormat(t *testing.T) {
 	}
 }
 
+// TestPrepareLogging_LogSource tests that source is included in logs if enabled by MONACO_LOG_SOURCE environment variable.
+func TestPrepareLogging_LogSource(t *testing.T) {
+	tests := []struct {
+		name         string
+		logSourceEnv string
+		wantSource   bool
+	}{
+		{
+			name:         "log source enabled",
+			logSourceEnv: "true",
+			wantSource:   true,
+		},
+		{
+			name:         "log source disabled",
+			logSourceEnv: "false",
+			wantSource:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("MONACO_LOG_FORMAT", "json")
+			t.Setenv("MONACO_LOG_SOURCE", tt.logSourceEnv)
+
+			builder := strings.Builder{}
+			log.PrepareLogging(t.Context(), nil, true, &builder, false, false)
+			log.Debug("hello")
+
+			o := map[string]any{}
+			err := json.Unmarshal([]byte(builder.String()), &o)
+			require.NoError(t, err)
+
+			_, containsSource := o["source"]
+			if tt.wantSource {
+				assert.True(t, containsSource, "missing source")
+			} else {
+				assert.False(t, containsSource, "unexpected source")
+			}
+
+		})
+	}
+}
+
 // TestPrepareLogging_SupportsUTC tests that logs are written using time entries in UTC if explicitly enabled.
 // The case where the feature is disabled is not tested as the logger may still log in UTC due to the testing environment setup.
 func TestPrepareLogging_SupportsUTC(t *testing.T) {

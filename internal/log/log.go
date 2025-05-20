@@ -23,6 +23,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -67,6 +68,8 @@ type CtxKeyAccount struct{}
 
 // CtxValGraphComponentId context value used for correlating logs that belong to deployment of a sub graph
 type CtxValGraphComponentId int
+
+const envVarLogSource = "MONACO_LOG_SOURCE"
 
 func Fatal(msg string, a ...interface{}) {
 	slog.Error(fmt.Sprintf(msg, a...))
@@ -156,6 +159,7 @@ func getLevelFromVerbose(verbose bool) slog.Level {
 
 func getHandlerOptions(level slog.Leveler) *slog.HandlerOptions {
 	return &slog.HandlerOptions{
+		AddSource:   shouldAddSource(),
 		Level:       level,
 		ReplaceAttr: getReplaceAttrFunc(),
 	}
@@ -205,6 +209,20 @@ func shouldUseJSON() bool {
 func shouldUseUTC() bool {
 	v := os.Getenv(envVarLogTime)
 	return strings.ToLower(v) == "utc"
+}
+
+func shouldAddSource() bool {
+	val, ok := os.LookupEnv(envVarLogSource)
+	if !ok {
+		return false
+	}
+
+	value, err := strconv.ParseBool(val)
+	if err != nil {
+		return false
+	}
+
+	return value
 }
 
 // LogFilePath returns the path of a logfile for the current execution time - depending on when this function is called such a file may not yet exist
