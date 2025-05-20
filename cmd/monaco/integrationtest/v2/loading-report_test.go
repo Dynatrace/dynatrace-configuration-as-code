@@ -93,7 +93,7 @@ func TestLoadingReport(t *testing.T) {
 					Type:  report.TypeLoad,
 					Time:  report.JSONTime(time.Now()),
 					State: report.StateError,
-					Error: "config api type (notification) configuration can only reference IDs of other config api types - parameter \"alertingProfileId\" references \"builtin:alerting.profile\" type",
+					Error: "config api type (notification) configuration can only reference IDs of other config api types - parameter 'alertingProfileId' references 'builtin:alerting.profile' type",
 				},
 			},
 		},
