@@ -37,7 +37,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
@@ -51,53 +50,6 @@ func TestNewClassicSettingsClient(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, settingsSchemaAPIPathClassic, client.settingsSchemaAPIPath)
 		assert.Equal(t, settingsObjectAPIPathClassic, client.settingsObjectAPIPath)
-	})
-}
-
-func TestNewClassicSettingsClientWithAutoServerVersion(t *testing.T) {
-	t.Run("Valid server version is parsed correctly", func(t *testing.T) {
-
-		responses := []testutils.ResponseDef{
-			{
-				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					return testutils.Response{
-						ResponseCode: http.StatusOK,
-						ResponseBody: `{"version" : "1.262.0.20230214-193525"}`,
-						ContentType:  "application/json",
-					}
-				},
-			},
-		}
-
-		server := testutils.NewHTTPTestServer(t, responses)
-		defer server.Close()
-
-		dcl, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()), WithAutoServerVersion(t.Context()))
-
-		server.Close()
-		assert.NoError(t, err)
-		assert.Equal(t, version.Version{Major: 1, Minor: 262}, dcl.serverVersion)
-	})
-
-	t.Run("Invalid server version is parsed to unknown", func(t *testing.T) {
-		responses := []testutils.ResponseDef{
-			{
-				GET: func(t *testing.T, req *http.Request) testutils.Response {
-					return testutils.Response{
-						ResponseCode: http.StatusOK,
-						ResponseBody: `{}`,
-						ContentType:  "application/json",
-					}
-				},
-			},
-		}
-
-		server := testutils.NewHTTPTestServer(t, responses)
-		defer server.Close()
-
-		dcl, err := NewClassicSettingsClient(corerest.NewClient(server.URL(), server.Client()), WithAutoServerVersion(t.Context()))
-		assert.NoError(t, err)
-		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)
 	})
 }
 
@@ -641,7 +593,6 @@ func TestUpsertSettings(t *testing.T) {
 		name                        string
 		expectSettingsRequestValue  string
 		expectOriginObjectID        string
-		serverVersion               version.Version
 		expectError                 bool
 		expectEntity                DynatraceEntity
 		postSettingsResponseCode    int
@@ -676,12 +627,7 @@ func TestUpsertSettings(t *testing.T) {
 			listSettingsResponseContent: `{"items":[{"externalId":"","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}]}`,
 		},
 		{
-			name: "Correct call where the remote Object-ID cannot be found",
-			serverVersion: version.Version{
-				Major: 1,
-				Minor: 262,
-				Patch: 0,
-			},
+			name:                       "Correct call where the remote Object-ID cannot be found",
 			expectSettingsRequestValue: "{}",
 			expectOriginObjectID:       "",
 			expectError:                false,
@@ -694,12 +640,7 @@ func TestUpsertSettings(t *testing.T) {
 			listSettingsResponseContent: `{"items":[{"externalId":"","objectId":"ORIGIN_OBJECT_ID","scope":"tenant"}]}`,
 		},
 		{
-			name: "Correct call where the remote Object-ID is found",
-			serverVersion: version.Version{
-				Major: 1,
-				Minor: 262,
-				Patch: 0,
-			},
+			name:                       "Correct call where the remote Object-ID is found",
 			expectSettingsRequestValue: "{}",
 			expectOriginObjectID:       "anObjectID",
 			expectError:                false,
@@ -713,7 +654,6 @@ func TestUpsertSettings(t *testing.T) {
 		},
 		{
 			name:                       "Updating an object where there are two objects, first one with the correct externalId and second one with the correct objectId, works correctly.",
-			serverVersion:              version.Version{Major: 1, Minor: 262, Patch: 0},
 			expectSettingsRequestValue: "{}",
 			expectOriginObjectID:       "", // no origin object id is important for this test
 			expectError:                false,
@@ -730,7 +670,6 @@ func TestUpsertSettings(t *testing.T) {
 		},
 		{
 			name:                       "Updating an object where there are two objects, second one with the correct externalId and first one with the correct objectId, works correctly.",
-			serverVersion:              version.Version{Major: 1, Minor: 262, Patch: 0},
 			expectSettingsRequestValue: "{}",
 			expectOriginObjectID:       "", // no origin object id is important for this test
 			expectError:                false,
@@ -746,12 +685,7 @@ func TestUpsertSettings(t *testing.T) {
 				`]}`, exId),
 		},
 		{
-			name: "Correct call where the remote Object-ID is found with a matching externalID in the same object",
-			serverVersion: version.Version{
-				Major: 1,
-				Minor: 262,
-				Patch: 0,
-			},
+			name:                       "Correct call where the remote Object-ID is found with a matching externalID in the same object",
 			expectSettingsRequestValue: "{}",
 			expectOriginObjectID:       "anObjectID",
 			expectError:                false,
@@ -764,12 +698,7 @@ func TestUpsertSettings(t *testing.T) {
 			listSettingsResponseContent: fmt.Sprintf(`{"items":[{"externalId":"%s","objectId":"anObjectID","scope":"tenant"}]}`, exId),
 		},
 		{
-			name: "Valid call with valid response - Object with external ID already exists",
-			serverVersion: version.Version{
-				Major: 1,
-				Minor: 262,
-				Patch: 0,
-			},
+			name:                       "Valid call with valid response - Object with external ID already exists",
 			expectSettingsRequestValue: "{}",
 			expectOriginObjectID:       "ORIGIN_OBJECT_ID",
 			expectError:                false,
@@ -882,7 +811,6 @@ func TestUpsertSettings(t *testing.T) {
 			restClient := corerest.NewClient(serverURL, server.Client(), corerest.WithRateLimiter(), corerest.WithConcurrentRequestLimit(5))
 
 			c, err := NewClassicSettingsClient(restClient,
-				WithServerVersion(test.serverVersion),
 				WithRetrySettings(testRetrySettings),
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
