@@ -119,22 +119,29 @@ func TestSegments(t *testing.T) {
 	t.Run("With a disabled FF the deploy should fail", func(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "false")
 
-		RunIntegrationWithoutCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
-			// when deploying once
-			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
-			assert.Error(t, err)
+		Run(t, configFolder,
+			Options{
+				WithManifestPath(manifestPath),
+				WithSuffix("Segments"),
+				WithEnvironment(environment),
+				WithoutCleanup(),
+			},
+			func(fs afero.Fs, testContext TestContext) {
+				// when deploying once
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
+				assert.Error(t, err)
 
-			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-			result, err := segmentsClient.GetAll(t.Context())
-			assert.NoError(t, err)
+				segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
+				result, err := segmentsClient.GetAll(t.Context())
+				assert.NoError(t, err)
 
-			coord := coordinate.Coordinate{
-				Project:  "standalone-segment",
-				Type:     "segment",
-				ConfigId: "my-segment_" + testContext.suffix,
-			}
-			assertSegmentIsInResponse(t, false, result, coord)
-		})
+				coord := coordinate.Coordinate{
+					Project:  "standalone-segment",
+					Type:     "segment",
+					ConfigId: "my-segment_" + testContext.suffix,
+				}
+				assertSegmentIsInResponse(t, false, result, coord)
+			})
 	})
 
 	t.Run("Segments can be referenced from other configs", func(t *testing.T) {

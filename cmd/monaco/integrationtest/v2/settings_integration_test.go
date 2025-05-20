@@ -201,27 +201,33 @@ func TestOrderedSettings(t *testing.T) {
 	configFolder := "test-resources/settings-ordered/order1"
 	manifestPath := configFolder + "/manifest.yaml"
 
-	RunIntegrationWithoutCleanup(t, configFolder, manifestPath, "", "SettingsOrdered", func(fs afero.Fs, tc TestContext) {
-		setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.suffix)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix("SettingsOrdered"),
+			WithoutCleanup(),
+		},
+		func(fs afero.Fs, tc TestContext) {
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.suffix)
 
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
-		require.NoError(t, err)
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
+			require.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
-		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
-		environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
-		settingsClient := createSettingsClient(t, environment)
+			loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
+			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
+			settingsClient := createSettingsClient(t, environment)
 
-		results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
-			DiscardValue: true,
-			Filter:       filterObjectsForScope(host),
+			results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
+				DiscardValue: true,
+				Filter:       filterObjectsForScope(host),
+			})
+			require.NoError(t, err)
+			require.Len(t, results, 2)
+			assert.Equal(t, 0, findPositionWithExternalId(t, results, expectedExternalIdForAAA))
+			assert.Equal(t, 1, findPositionWithExternalId(t, results, expectedExternalIdForBBB))
 		})
-		require.NoError(t, err)
-		require.Len(t, results, 2)
-		assert.Equal(t, 0, findPositionWithExternalId(t, results, expectedExternalIdForAAA))
-		assert.Equal(t, 1, findPositionWithExternalId(t, results, expectedExternalIdForBBB))
-	})
 
 	configFolder = "test-resources/settings-ordered/order2"
 	manifestPath = configFolder + "/manifest.yaml"
