@@ -39,8 +39,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
-	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
@@ -167,10 +165,6 @@ type ListSettingsOptions struct {
 type ListSettingsFilter func(DownloadSettingsObject) bool
 
 type SettingsClient struct {
-	// serverVersion is the Dynatrace server version the
-	// client will be interacting with
-	serverVersion version.Version
-
 	// client is a rest client used to target platform enabled environments
 	client *corerest.Client
 
@@ -312,35 +306,6 @@ func WithRetrySettings(retrySettings RetrySettings) func(*SettingsClient) {
 	}
 }
 
-// WithServerVersion sets the Dynatrace version of the Dynatrace server/tenant the client will be interacting with
-func WithServerVersion(serverVersion version.Version) func(client *SettingsClient) {
-	return func(d *SettingsClient) {
-		d.serverVersion = serverVersion
-	}
-}
-
-// WithAutoServerVersion can be used to let the client automatically determine the Dynatrace server version
-// during creation using newDynatraceClient. If the server version is already known WithServerVersion should be used.
-// Do not use this with NewPlatformSettingsClient() as the client will not work and cause an error to be logged.
-func WithAutoServerVersion(ctx context.Context) func(client *SettingsClient) {
-	return func(d *SettingsClient) {
-		var serverVersion version.Version
-		var err error
-
-		d.serverVersion = version.UnknownVersion
-		if d.client == nil {
-			return
-		}
-
-		serverVersion, err = dtVersion.GetDynatraceVersion(ctx, d.client) //this will send the default user-agent
-		if err != nil {
-			log.WithFields(field.Error(err)).Warn("Unable to determine Dynatrace server version: %v", err)
-			return
-		}
-		d.serverVersion = serverVersion
-	}
-}
-
 // WithCachingDisabled allows disabling the client's builtin caching mechanism for schema constraints and settings objects.
 // Disabling the caching is recommended in situations where configs are fetched immediately after their creation (e.g. in test scenarios).
 func WithCachingDisabled(disabled bool) func(client *SettingsClient) {
@@ -357,7 +322,6 @@ func WithCachingDisabled(disabled bool) func(client *SettingsClient) {
 //nolint:dupl
 func NewPlatformSettingsClient(client *corerest.Client, opts ...func(dynatraceClient *SettingsClient)) (*SettingsClient, error) {
 	d := &SettingsClient{
-		serverVersion:         version.Version{},
 		client:                client,
 		permissionClient:      coresettings.NewClient(client),
 		retrySettings:         DefaultRetrySettings,
@@ -381,7 +345,6 @@ func NewPlatformSettingsClient(client *corerest.Client, opts ...func(dynatraceCl
 //nolint:dupl
 func NewClassicSettingsClient(client *corerest.Client, opts ...func(dynatraceClient *SettingsClient)) (*SettingsClient, error) {
 	d := &SettingsClient{
-		serverVersion:         version.Version{},
 		client:                client,
 		permissionClient:      coresettings.NewClient(client),
 		retrySettings:         DefaultRetrySettings,
