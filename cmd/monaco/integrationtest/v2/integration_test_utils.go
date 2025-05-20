@@ -20,6 +20,7 @@ package v2
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -29,11 +30,110 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
+// TestContext contains all information necessary for the test-run
 type TestContext struct {
+	// suffix contains the suffix which is generated for the test-run.
 	suffix string
 }
 
+type testOptions struct {
+	fs                                                      afero.Fs
+	configFolder, manifestPath, specificEnvironment, suffix string
+	envVars                                                 map[string]string
+
+	// skipCleanup skips the Monaco cleanup that generates the delete file and deletes all created resources.
+	// It is false by default, thus the cleanup must be disabled intentionally
+	skipCleanup bool
+}
+
+// TestFunc is the function which is executed for the test-run.
+// Within this function, all Monaco calls should be executed that are necessary for the test
 type TestFunc func(fs afero.Fs, ctx TestContext)
+
+type Option func(options *testOptions)
+type Options []Option
+
+func WithFs(fs afero.Fs) Option {
+	return func(options *testOptions) {
+		options.fs = fs
+	}
+}
+
+// WithManifestPath is used to set the relative path of the manifest based from the current working directory of the test
+func WithManifestPath(manifestPath string) Option {
+	return func(options *testOptions) {
+		options.manifestPath = manifestPath
+	}
+}
+
+// WithManifest is used to set the manifest's name, relative to the passed configFolder.
+//
+//	(defaults to `{configFolder}/manifest.yaml`).
+func WithManifest(relativePath string) Option {
+	return func(options *testOptions) {
+		options.manifestPath = path.Join(options.configFolder, relativePath)
+	}
+}
+
+func WithoutCleanup() Option {
+	return func(options *testOptions) {
+		options.skipCleanup = true
+	}
+}
+func WithSuffix(suffix string) Option {
+	return func(options *testOptions) {
+		options.suffix = suffix
+	}
+}
+
+func WithEnvironment(env string) Option {
+	return func(options *testOptions) {
+		options.specificEnvironment = env
+	}
+}
+
+func WithEnvVars(env map[string]string) Option {
+	return func(options *testOptions) {
+		if options.envVars == nil {
+			options.envVars = map[string]string{}
+		}
+
+		for k, v := range env {
+			options.envVars[k] = v
+		}
+	}
+}
+
+// Run is the main entry point for integration tests.
+//
+// Run uses the [workingDirectory] as the main working directory to execute the test-cases.
+// Run rewrites the names and IDs of all configurations to include a randomly-generated suffix. This ensures that they have a unique name and do not confliect with each other config when running integration tests in parallel.
+// Run then executes the provided TestFunc which should contain the integration test.
+// After the test ran, the configurations are automatically deleted.
+//
+// By default, Run
+//   - utilizes an in-memory file system, which copies the files read into an in-memory data structure. All subsequent writes will be written to this in-memory data structure. This behaviro can be overwritten using [WithFs].
+//   - uses the file `manifest.yaml` as default manifest file inside the working-directory. This can be overwritten using [WithManifest]
+//   - cleans up configurations. This can be overwritten using [WithoutCleanup]. The cleanup runs immediately after the test function fn finished.
+//   - uses the suffix in the form of `<original name>_<current timestamp><defined suffix>`. The <defined suffix> can be overwritten using [WithSuffix].
+//   - does not provide additional environment variables. You can use [WithEnvVars], [WithEnvVar].
+//   - uses all environments for deletion. This can be overwritten using [WithEnvironment]
+func Run(t *testing.T, workingDirectory string, opts Options, fn TestFunc) {
+	options := testOptions{
+		fs:                  testutils.CreateTestFileSystem(),
+		configFolder:        workingDirectory,
+		manifestPath:        path.Join(workingDirectory, "manifest.yaml"),
+		specificEnvironment: "",
+		suffix:              t.Name(),
+		envVars:             nil,
+	}
+
+	for _, optFn := range opts {
+		optFn(&options)
+	}
+
+	runIntegration(t, options, fn)
+}
 
 // RunIntegrationWithCleanup runs an integration test and cleans up the created configs afterwards
 // This is done by using InMemoryFileReader, which rewrites the names of the read configs internally. It ready all the
@@ -48,81 +148,60 @@ type TestFunc func(fs afero.Fs, ctx TestContext)
 //
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
+//
+// Deprecated: Use Run instead with:
+//
+//	Run(t, configFolder, Options{WithEnvironment, WithManifestPath, WithSuffix}, testFunc)
 func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
-	opts := testOptions{
-		fs:                  testutils.CreateTestFileSystem(),
-		configFolder:        configFolder,
-		manifestPath:        manifestPath,
-		specificEnvironment: specificEnvironment,
-		suffix:              suffixTest,
-		envVars:             nil,
-	}
-
-	runIntegration(t, opts, testFunc)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix(suffixTest),
+			WithEnvironment(specificEnvironment),
+		},
+		testFunc)
 }
 
+// Deprecated: Use Run instead with:
+//
+//	Run(t, configFolder, Options{WithEnvironment, WithManifestPath, WithSuffix, WithoutCleanup}, testFunc)
 func RunIntegrationWithoutCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
-	opts := testOptions{
-		fs:                  testutils.CreateTestFileSystem(),
-		configFolder:        configFolder,
-		manifestPath:        manifestPath,
-		specificEnvironment: specificEnvironment,
-		suffix:              suffixTest,
-		envVars:             nil,
-		skipCleanup:         true,
-	}
-
-	runIntegration(t, opts, testFunc)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix(suffixTest),
+			WithEnvironment(specificEnvironment),
+			WithoutCleanup(),
+		},
+		testFunc)
 }
 
+// Deprecated: Use Run instead with:
+//
+//	Run(t, configFolder, Options{WithEnvironment, WithManifestPath, WithSuffix, WithFs}, testFunc)
 func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
-	opts := testOptions{
-		fs:                  testFs,
-		configFolder:        configFolder,
-		manifestPath:        manifestPath,
-		specificEnvironment: specificEnvironment,
-		suffix:              suffixTest,
-		envVars:             nil,
-	}
-
-	runIntegration(t, opts, testFunc)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix(suffixTest),
+			WithEnvironment(specificEnvironment),
+			WithFs(testFs),
+		},
+		testFunc)
 }
 
-func RunIntegrationWithCleanupOnGivenFsAndEnvs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
-	opts := testOptions{
-		fs:                  testFs,
-		configFolder:        configFolder,
-		manifestPath:        manifestPath,
-		specificEnvironment: specificEnvironment,
-		suffix:              suffixTest,
-		envVars:             envVars,
-	}
-
-	runIntegration(t, opts, testFunc)
-}
-
+// Deprecated: Use Run instead with:
+//
+//	Run(t, configFolder, Options{WithEnvironment, WithManifestPath, WithSuffix, WithEnvVars}, testFunc)
 func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
-	opts := testOptions{
-		fs:                  testutils.CreateTestFileSystem(),
-		configFolder:        configFolder,
-		manifestPath:        manifestPath,
-		specificEnvironment: specificEnvironment,
-		suffix:              suffixTest,
-		envVars:             envVars,
-	}
-
-	runIntegration(t, opts, testFunc)
-
-}
-
-type testOptions struct {
-	fs                                                      afero.Fs
-	configFolder, manifestPath, specificEnvironment, suffix string
-	envVars                                                 map[string]string
-
-	// skipCleanup skips the Monaco cleanup that generates the delete file and deletes all created resources.
-	// It is false by default, thus the cleanup must be disabled intentionally
-	skipCleanup bool
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix(suffixTest),
+			WithEnvironment(specificEnvironment),
+			WithEnvVars(envVars),
+		},
+		testFunc)
 }
 
 func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
