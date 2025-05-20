@@ -46,7 +46,7 @@ func (v *DeprecatedSchemaValidator) Validate(_ []project.Project, c config.Confi
 	}
 
 	if msg, deprecated := deprecatedSchemas[s.SchemaId]; deprecated {
-		log.WithFields(field.Coordinate(c.Coordinate), field.Environment(c.Environment, c.Group)).Warn("Schema %q is deprecated - please update your configurations: %s", s.SchemaId, msg)
+		log.WithFields(field.Coordinate(c.Coordinate), field.Environment(c.Environment, c.Group)).Warn("Schema '%s' is deprecated - please update your configurations: %s", s.SchemaId, msg)
 	}
 
 	return nil
