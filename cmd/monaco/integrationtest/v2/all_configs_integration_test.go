@@ -43,13 +43,19 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 	targetEnvironment := "classic_env"
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, targetEnvironment, "AllConfigs", func(fs afero.Fs, _ TestContext) {
-		// This causes a POST for all configs:
-		runDeployCommand(t, fs, manifest, targetEnvironment)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifest),
+			WithSuffix("AllConfigs"),
+			WithEnvironment(targetEnvironment),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			// This causes a POST for all configs:
+			runDeployCommand(t, fs, manifest, targetEnvironment)
 
-		// This causes a PUT for all configs:
-		runDeployCommand(t, fs, manifest, targetEnvironment)
-	})
+			// This causes a PUT for all configs:
+			runDeployCommand(t, fs, manifest, targetEnvironment)
+		})
 }
 
 func TestIntegrationAllConfigsPlatform(t *testing.T) {
@@ -62,13 +68,19 @@ func TestIntegrationAllConfigsPlatform(t *testing.T) {
 
 	targetEnvironment := "platform_env"
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, targetEnvironment, "AllConfigs", func(fs afero.Fs, _ TestContext) {
-		// This causes a POST for all configs:
-		runDeployCommand(t, fs, manifest, targetEnvironment)
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifest),
+			WithSuffix("AllConfigs"),
+			WithEnvironment(targetEnvironment),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			// This causes a POST for all configs:
+			runDeployCommand(t, fs, manifest, targetEnvironment)
 
-		// This causes a PUT for all configs:
-		runDeployCommand(t, fs, manifest, targetEnvironment)
-	})
+			// This causes a PUT for all configs:
+			runDeployCommand(t, fs, manifest, targetEnvironment)
+		})
 }
 
 func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment string) {

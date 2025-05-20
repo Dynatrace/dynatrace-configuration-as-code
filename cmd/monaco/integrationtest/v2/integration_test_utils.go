@@ -135,33 +135,6 @@ func Run(t *testing.T, workingDirectory string, opts Options, fn TestFunc) {
 	runIntegration(t, options, fn)
 }
 
-// RunIntegrationWithCleanup runs an integration test and cleans up the created configs afterwards
-// This is done by using InMemoryFileReader, which rewrites the names of the read configs internally. It ready all the
-// configs once and holds them in memory. Any subsequent modification of a config (applying them to an environment)
-// is done based on the data in memory. The re-writing of config names ensures, that they have an unique name and don't
-// conflict with other configs created by other integration tests.
-//
-// After the test run, the unique name also helps with finding the applied configs in all the environments and calling
-// the respective DELETE api.
-//
-// The new naming scheme of created configs is defined in a transformer function. By default, this is:
-//
-// <original name>_<current timestamp><defined suffix>
-// e.g. my-config_1605258980000_Suffix
-//
-// Deprecated: Use Run instead with:
-//
-//	Run(t, configFolder, Options{WithEnvironment, WithManifestPath, WithSuffix}, testFunc)
-func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifestPath),
-			WithSuffix(suffixTest),
-			WithEnvironment(specificEnvironment),
-		},
-		testFunc)
-}
-
 func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 	configFolder, _ := filepath.Abs(opts.configFolder)
 

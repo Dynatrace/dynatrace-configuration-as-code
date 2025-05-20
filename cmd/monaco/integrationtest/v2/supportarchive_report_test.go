@@ -86,39 +86,45 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 			t.Setenv(environment.DeploymentReportFilename, tt.reportFilename)
 			t.Setenv(featureflags.LogMemStats.EnvName(), strconv.FormatBool(tt.enableMemstatlog))
 
-			RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "SupportArchive", func(fs afero.Fs, _ TestContext) {
-				err := cleanupLogsDir()
-				assert.NoError(t, err)
+			Run(t, configFolder,
+				Options{
+					WithManifestPath(manifest),
+					WithSuffix("SupportArchive"),
+					WithEnvironment("valid_env"),
+				},
+				func(fs afero.Fs, _ TestContext) {
+					err := cleanupLogsDir()
+					assert.NoError(t, err)
 
-				_ = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose --support-archive", manifest))
+					_ = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose --support-archive", manifest))
 
-				archive := "support-archive-" + fixedTime + ".zip"
-				expectedFiles := []string{
-					fixedTime + "-" + "req.log",
-					fixedTime + "-" + "resp.log",
-					fixedTime + ".log",
-					fixedTime + "-errors.log",
-					fixedTime + "-featureflag_state.log",
-				}
+					archive := "support-archive-" + fixedTime + ".zip"
+					expectedFiles := []string{
+						fixedTime + "-" + "req.log",
+						fixedTime + "-" + "resp.log",
+						fixedTime + ".log",
+						fixedTime + "-errors.log",
+						fixedTime + "-featureflag_state.log",
+					}
 
-				if tt.expectReport {
-					expectedFiles = append(expectedFiles, tt.reportFilename)
-				}
+					if tt.expectReport {
+						expectedFiles = append(expectedFiles, tt.reportFilename)
+					}
 
-				if tt.expectMemstatlog {
-					expectedFiles = append(expectedFiles, fixedTime+"-memstat.log")
-				}
+					if tt.expectMemstatlog {
+						expectedFiles = append(expectedFiles, fixedTime+"-memstat.log")
+					}
 
-				assertSupportArchive(t, fs, archive, expectedFiles)
+					assertSupportArchive(t, fs, archive, expectedFiles)
 
-				zipReader := readZipArchive(t, fs, archive)
-				logFile, err := zipReader.Open(fixedTime + ".log")
-				defer logFile.Close()
-				assert.NoError(t, err)
-				content, err := io.ReadAll(logFile)
-				assert.NoError(t, err)
-				assert.Contains(t, string(content), "debug", "expected log file to contain debug log entries")
-			})
+					zipReader := readZipArchive(t, fs, archive)
+					logFile, err := zipReader.Open(fixedTime + ".log")
+					defer logFile.Close()
+					assert.NoError(t, err)
+					content, err := io.ReadAll(logFile)
+					assert.NoError(t, err)
+					assert.Contains(t, string(content), "debug", "expected log file to contain debug log entries")
+				})
 		})
 	}
 }
@@ -191,20 +197,26 @@ func TestDeployReport(t *testing.T) {
 
 		t.Setenv(environment.DeploymentReportFilename, reportFile)
 
-		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, tc TestContext) {
-			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
-			require.NoError(t, err)
+		Run(t, configFolder,
+			Options{
+				WithManifestPath(manifest),
+				WithSuffix(""),
+				WithEnvironment("valid_env"),
+			},
+			func(fs afero.Fs, tc TestContext) {
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
+				require.NoError(t, err)
 
-			assertReport(t, fs, reportFile, true)
+				assertReport(t, fs, reportFile, true)
 
-			// assert report contains a DEPLOY record for config that was skipped together with details of the reason
-			records := readReport(t, fs, reportFile)
-			record, exists := matcher.FindRecord(records, report.Record{Type: report.TypeDeploy, State: report.StateSkipped, Config: &coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "profile3_" + tc.suffix}})
-			assert.True(t, exists)
-			require.Len(t, record.Details, 1)
-			assert.Equal(t, "WARN", record.Details[0].Type)
-			assert.Contains(t, record.Details[0].Message, "Skipping deployment")
-		})
+				// assert report contains a DEPLOY record for config that was skipped together with details of the reason
+				records := readReport(t, fs, reportFile)
+				record, exists := matcher.FindRecord(records, report.Record{Type: report.TypeDeploy, State: report.StateSkipped, Config: &coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "profile3_" + tc.suffix}})
+				assert.True(t, exists)
+				require.Len(t, record.Details, 1)
+				assert.Equal(t, "WARN", record.Details[0].Type)
+				assert.Contains(t, record.Details[0].Message, "Skipping deployment")
+			})
 	})
 
 	t.Run("ensure that monaco runs without generating report", func(t *testing.T) {
@@ -212,10 +224,16 @@ func TestDeployReport(t *testing.T) {
 			configFolder = "test-resources/support-archive/"
 			manifest     = configFolder + "manifest.yaml"
 		)
-		RunIntegrationWithCleanup(t, configFolder, manifest, "valid_env", "", func(fs afero.Fs, _ TestContext) {
-			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
-			require.NoError(t, err)
-		})
+		Run(t, configFolder,
+			Options{
+				WithManifestPath(manifest),
+				WithSuffix(""),
+				WithEnvironment("valid_env"),
+			},
+			func(fs afero.Fs, _ TestContext) {
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
+				require.NoError(t, err)
+			})
 	})
 }
 

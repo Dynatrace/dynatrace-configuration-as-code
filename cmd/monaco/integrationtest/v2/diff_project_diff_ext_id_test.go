@@ -41,25 +41,30 @@ var diffProjectDiffExtIDFolderManifest = diffProjectDiffExtIDFolder + "manifest.
 // two different settings objects deployed on the environment
 func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, diffProjectDiffExtIDFolder, diffProjectDiffExtIDFolderManifest, "", "DifferentProjectsGetDifferentExternalID", func(fs afero.Fs, _ TestContext) {
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", diffProjectDiffExtIDFolderManifest))
-		assert.NoError(t, err)
+	Run(t, diffProjectDiffExtIDFolder,
+		Options{
+			WithManifestPath(diffProjectDiffExtIDFolderManifest),
+			WithSuffix("DifferentProjectsGetDifferentExternalID"),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", diffProjectDiffExtIDFolderManifest))
+			assert.NoError(t, err)
 
-		var manifestPath = diffProjectDiffExtIDFolderManifest
-		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "")
-		environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
-		projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
-		sortedConfigs, _ := graph.SortProjects(projects, []string{"platform_env"})
+			var manifestPath = diffProjectDiffExtIDFolderManifest
+			loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "")
+			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
+			projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
+			sortedConfigs, _ := graph.SortProjects(projects, []string{"platform_env"})
 
-		extIDProject1, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
-		extIDProject2, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][1].Coordinate)
+			extIDProject1, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
+			extIDProject2, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][1].Coordinate)
 
-		clientSet, err := client.CreateClientSet(t.Context(), environment.URL.Value, environment.Auth)
-		assert.NoError(t, err)
-		c := clientSet.SettingsClient
-		settings, _ := c.List(t.Context(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
-			return object.ExternalId == extIDProject1 || object.ExternalId == extIDProject2
-		}})
-		assert.Len(t, settings, 2)
-	})
+			clientSet, err := client.CreateClientSet(t.Context(), environment.URL.Value, environment.Auth)
+			assert.NoError(t, err)
+			c := clientSet.SettingsClient
+			settings, _ := c.List(t.Context(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+				return object.ExternalId == extIDProject1 || object.ExternalId == extIDProject2
+			}})
+			assert.Len(t, settings, 2)
+		})
 }

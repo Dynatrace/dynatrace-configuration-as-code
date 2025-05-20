@@ -53,38 +53,46 @@ func TestIntegrationBucket(t *testing.T) {
 
 	configFolder := "test-resources/integration-bucket/"
 	manifest := configFolder + "manifest.yaml"
-	specificEnvironment := ""
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "Buckets", func(fs afero.Fs, _ TestContext) {
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifest),
+			WithSuffix("Buckets"),
+		},
+		func(fs afero.Fs, _ TestContext) {
 
-		// Create the buckets
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifest))
-		assert.NoError(t, err)
+			// Create the buckets
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifest))
+			assert.NoError(t, err)
 
-		// Update the buckets
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifest))
-		assert.NoError(t, err)
+			// Update the buckets
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifest))
+			assert.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"project"}, "", true)
-	})
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"project"}, "", true)
+		})
 }
 
 func TestIntegrationComplexBucket(t *testing.T) {
 
 	configFolder := "test-resources/integration-bucket/"
 	manifest := configFolder + "manifest.yaml"
-	specificEnvironment := ""
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "ComplexBuckets", func(fs afero.Fs, _ TestContext) {
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifest),
+			WithSuffix("ComplexBuckets"),
+		},
+		func(fs afero.Fs, _ TestContext) {
 
-		// Create the buckets
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=complex-bucket --verbose", manifest))
-		assert.NoError(t, err)
+			// Create the buckets
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=complex-bucket --verbose", manifest))
+			assert.NoError(t, err)
 
-		// Update the buckets
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=complex-bucket --verbose", manifest))
-		assert.NoError(t, err)
+			// Update the buckets
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=complex-bucket --verbose", manifest))
+			assert.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"complex-bucket"}, "", true)
-	})
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"complex-bucket"}, "", true)
+		})
 }

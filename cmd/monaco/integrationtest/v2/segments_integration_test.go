@@ -47,73 +47,91 @@ func TestSegments(t *testing.T) {
 
 	t.Run("Simple deployment creates the segment", func(t *testing.T) {
 
-		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
-			// when deploying once
-			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
-			assert.NoError(t, err)
+		Run(t, configFolder,
+			Options{
+				WithManifestPath(manifestPath),
+				WithSuffix("Segments"),
+				WithEnvironment(environment),
+			},
+			func(fs afero.Fs, testContext TestContext) {
+				// when deploying once
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
+				assert.NoError(t, err)
 
-			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-			result, err := segmentsClient.GetAll(t.Context())
-			assert.NoError(t, err)
+				segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
+				result, err := segmentsClient.GetAll(t.Context())
+				assert.NoError(t, err)
 
-			coord := coordinate.Coordinate{
-				Project:  "standalone-segment",
-				Type:     "segment",
-				ConfigId: "my-segment_" + testContext.suffix,
-			}
-			assertSegmentIsInResponse(t, true, result, coord)
-		})
+				coord := coordinate.Coordinate{
+					Project:  "standalone-segment",
+					Type:     "segment",
+					ConfigId: "my-segment_" + testContext.suffix,
+				}
+				assertSegmentIsInResponse(t, true, result, coord)
+			})
 	})
 
 	t.Run("Deploying the config twice does not create a second segment", func(t *testing.T) {
-		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
-			// when deploying twice
-			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
-			assert.NoError(t, err)
+		Run(t, configFolder,
+			Options{
+				WithManifestPath(manifestPath),
+				WithSuffix("Segments"),
+				WithEnvironment(environment),
+			},
+			func(fs afero.Fs, testContext TestContext) {
+				// when deploying twice
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
+				assert.NoError(t, err)
 
-			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
-			assert.NoError(t, err)
+				err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
+				assert.NoError(t, err)
 
-			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-			result, err := segmentsClient.GetAll(t.Context())
-			assert.NoError(t, err)
+				segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
+				result, err := segmentsClient.GetAll(t.Context())
+				assert.NoError(t, err)
 
-			coord := coordinate.Coordinate{
-				Project:  "standalone-segment",
-				Type:     "segment",
-				ConfigId: "my-segment_" + testContext.suffix,
-			}
-			assertSegmentIsInResponse(t, true, result, coord)
-		})
+				coord := coordinate.Coordinate{
+					Project:  "standalone-segment",
+					Type:     "segment",
+					ConfigId: "my-segment_" + testContext.suffix,
+				}
+				assertSegmentIsInResponse(t, true, result, coord)
+			})
 	})
 
 	t.Run("When deploying two configs, two configs exist", func(t *testing.T) {
-		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
-			// when deploying twice, just to make sure
-			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=two-segments --verbose", manifestPath))
-			assert.NoError(t, err)
+		Run(t, configFolder,
+			Options{
+				WithManifestPath(manifestPath),
+				WithSuffix("Segments"),
+				WithEnvironment(environment),
+			},
+			func(fs afero.Fs, testContext TestContext) {
+				// when deploying twice, just to make sure
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=two-segments --verbose", manifestPath))
+				assert.NoError(t, err)
 
-			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=two-segments --verbose", manifestPath))
-			assert.NoError(t, err)
+				err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=two-segments --verbose", manifestPath))
+				assert.NoError(t, err)
 
-			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-			result, err := segmentsClient.GetAll(t.Context())
-			assert.NoError(t, err)
+				segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
+				result, err := segmentsClient.GetAll(t.Context())
+				assert.NoError(t, err)
 
-			coord := coordinate.Coordinate{
-				Project:  "two-segments",
-				Type:     "segment",
-				ConfigId: "my-segment_" + testContext.suffix,
-			}
-			assertSegmentIsInResponse(t, true, result, coord)
+				coord := coordinate.Coordinate{
+					Project:  "two-segments",
+					Type:     "segment",
+					ConfigId: "my-segment_" + testContext.suffix,
+				}
+				assertSegmentIsInResponse(t, true, result, coord)
 
-			coord = coordinate.Coordinate{
-				Project:  "two-segments",
-				Type:     "segment",
-				ConfigId: "second-segment_" + testContext.suffix,
-			}
-			assertSegmentIsInResponse(t, true, result, coord)
-		})
+				coord = coordinate.Coordinate{
+					Project:  "two-segments",
+					Type:     "segment",
+					ConfigId: "second-segment_" + testContext.suffix,
+				}
+				assertSegmentIsInResponse(t, true, result, coord)
+			})
 	})
 
 	t.Run("With a disabled FF the deploy should fail", func(t *testing.T) {
@@ -146,22 +164,28 @@ func TestSegments(t *testing.T) {
 
 	t.Run("Segments can be referenced from other configs", func(t *testing.T) {
 
-		RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "Segments", func(fs afero.Fs, testContext TestContext) {
-			// when deploying once
-			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=referenced-segment --verbose", manifestPath))
-			assert.NoError(t, err)
+		Run(t, configFolder,
+			Options{
+				WithManifestPath(manifestPath),
+				WithSuffix("Segments"),
+				WithEnvironment(environment),
+			},
+			func(fs afero.Fs, testContext TestContext) {
+				// when deploying once
+				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=referenced-segment --verbose", manifestPath))
+				assert.NoError(t, err)
 
-			segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-			result, err := segmentsClient.GetAll(t.Context())
-			assert.NoError(t, err)
+				segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
+				result, err := segmentsClient.GetAll(t.Context())
+				assert.NoError(t, err)
 
-			coord := coordinate.Coordinate{
-				Project:  "referenced-segment",
-				Type:     "segment",
-				ConfigId: "segment_" + testContext.suffix,
-			}
-			assertSegmentIsInResponse(t, true, result, coord)
-		})
+				coord := coordinate.Coordinate{
+					Project:  "referenced-segment",
+					Type:     "segment",
+					ConfigId: "segment_" + testContext.suffix,
+				}
+				assertSegmentIsInResponse(t, true, result, coord)
+			})
 	})
 }
 

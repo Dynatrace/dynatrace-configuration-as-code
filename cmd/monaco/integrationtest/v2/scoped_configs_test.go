@@ -40,23 +40,29 @@ func TestDeployScopedConfigurations(t *testing.T) {
 	environment := "classic_env"
 	manifestPath := configFolder + "manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifestPath, environment, "ScopedConfigs", func(fs afero.Fs, testContext TestContext) {
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifestPath),
+			WithSuffix("ScopedConfigs"),
+			WithEnvironment(environment),
+		},
+		func(fs afero.Fs, testContext TestContext) {
 
-		// deploy with sharing turned off and assert state
-		setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.suffix)
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
-		require.NoError(t, err)
+			// deploy with sharing turned off and assert state
+			setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.suffix)
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
+			require.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, nil, environment, true)
-		assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, false)
+			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, nil, environment, true)
+			assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, false)
 
-		// deploy with sharing turned on and assert state
-		setTestEnvVar(t, dashboardSharedEnvName, "true", testContext.suffix)
-		err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
-		require.NoError(t, err)
+			// deploy with sharing turned on and assert state
+			setTestEnvVar(t, dashboardSharedEnvName, "true", testContext.suffix)
+			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
+			require.NoError(t, err)
 
-		assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, true)
-	})
+			assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, true)
+		})
 }
 
 func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext TestContext, manifestPath string, environment string, expectShared bool) {

@@ -35,10 +35,15 @@ func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
 	specialCharConfigFolder := "test-resources/special-character-in-config/"
 	specialCharManifest := filepath.Join(specialCharConfigFolder, "manifest.yaml")
 
-	RunIntegrationWithCleanup(t, specialCharConfigFolder, specialCharManifest, "", "SpecialCharacterInConfig", func(fs afero.Fs, _ TestContext) {
-		err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", specialCharManifest))
-		assert.NoError(t, err)
+	Run(t, specialCharConfigFolder,
+		Options{
+			WithManifestPath(specialCharManifest),
+			WithSuffix("SpecialCharacterInConfig"),
+		},
+		func(fs afero.Fs, _ TestContext) {
+			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", specialCharManifest))
+			assert.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, specialCharManifest, []string{}, "", true)
-	})
+			integrationtest.AssertAllConfigsAvailability(t, fs, specialCharManifest, []string{}, "", true)
+		})
 }

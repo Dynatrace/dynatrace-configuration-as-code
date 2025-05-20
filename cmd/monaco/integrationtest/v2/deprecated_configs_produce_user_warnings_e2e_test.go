@@ -23,27 +23,33 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
 func TestDeprecatedConfigsProduceWarnings(t *testing.T) {
 	configFolder := "test-resources/deprecated-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, "", "DeprecatedConfig", func(fs afero.Fs, _ TestContext) {
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifest),
+			WithSuffix("DeprecatedConfig"),
+		},
+		func(fs afero.Fs, _ TestContext) {
 
-		logOutput := strings.Builder{}
-		cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
-		err := cmd.Execute()
-		require.NoError(t, err)
+			logOutput := strings.Builder{}
+			cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
+			cmd.SetArgs([]string{"deploy", "--verbose", manifest})
+			err := cmd.Execute()
+			require.NoError(t, err)
 
-		expectedRegexp := regexp.MustCompile(`API 'auto-tag' is deprecated. Please migrate to 'builtin:tags.auto-tagging'.`)
-		found := expectedRegexp.FindAllString(logOutput.String(), -1)
-		assert.Len(t, found, 1)
-	})
+			expectedRegexp := regexp.MustCompile(`API 'auto-tag' is deprecated. Please migrate to 'builtin:tags.auto-tagging'.`)
+			found := expectedRegexp.FindAllString(logOutput.String(), -1)
+			assert.Len(t, found, 1)
+		})
 }

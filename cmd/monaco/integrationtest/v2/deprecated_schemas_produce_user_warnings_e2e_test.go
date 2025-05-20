@@ -19,30 +19,36 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
 func TestDeprecatedSettingsSchemasProduceWarnings(t *testing.T) {
 	configFolder := "test-resources/deprecated-settings-schemas/"
 	manifest := configFolder + "manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, "", "DeprecatedSchema", func(fs afero.Fs, _ TestContext) {
+	Run(t, configFolder,
+		Options{
+			WithManifestPath(manifest),
+			WithSuffix("DeprecatedSchema"),
+		},
+		func(fs afero.Fs, _ TestContext) {
 
-		logOutput := strings.Builder{}
-		cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
-		err := cmd.Execute()
+			logOutput := strings.Builder{}
+			cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
+			cmd.SetArgs([]string{"deploy", "--verbose", manifest})
+			err := cmd.Execute()
 
-		assert.NoError(t, err)
+			assert.NoError(t, err)
 
-		runLog := strings.ToLower(logOutput.String())
-		assert.Regexp(t, `.*?warn.*?project:builtin:span-attribute:span-attr.*?schema "builtin:span-attribute" is deprecated.*`, runLog)
-		assert.Regexp(t, `.*?warn.*?project:builtin:span-event-attribute:span-event.*?schema "builtin:span-event-attribute" is deprecated.*`, runLog)
-	})
+			runLog := strings.ToLower(logOutput.String())
+			assert.Regexp(t, `.*?warn.*?project:builtin:span-attribute:span-attr.*?schema "builtin:span-attribute" is deprecated.*`, runLog)
+			assert.Regexp(t, `.*?warn.*?project:builtin:span-event-attribute:span-event.*?schema "builtin:span-event-attribute" is deprecated.*`, runLog)
+		})
 }
