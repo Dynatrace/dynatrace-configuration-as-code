@@ -140,24 +140,28 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 		name           string
 		manifestFile   string
 		environment    string
-		expectAllFiles bool
+		expectRequest  bool
+		expectResponse bool
 	}{
 		{
 			"Full archive in case of HTTP auth errors",
 			"manifest.yaml",
 			"unauthorized_env", // has wrong Config API token
 			true,
+			true,
 		},
 		{
 			"Partial archive in case of invalid URL",
 			"manifest.yaml",
 			"invalid_env", // has an invalid URL
+			true,
 			false,
 		},
 		{
 			"Partial archive in case of invalid manifest",
 			"invalid-manifest.yaml", // will fail on loading manifest, before any API calls are made
 			"",
+			false,
 			false,
 		},
 	}
@@ -179,8 +183,11 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 				fixedTime + "-errors.log",
 				fixedTime + "-featureflag_state.log",
 			}
-			if tt.expectAllFiles {
-				expectedFiles = append(expectedFiles, fixedTime+"-"+"req.log", fixedTime+"-"+"resp.log")
+			if tt.expectRequest {
+				expectedFiles = append(expectedFiles, fixedTime+"-"+"req.log")
+			}
+			if tt.expectResponse {
+				expectedFiles = append(expectedFiles, fixedTime+"-"+"resp.log")
 			}
 
 			assertSupportArchive(t, fs, archive, expectedFiles)
