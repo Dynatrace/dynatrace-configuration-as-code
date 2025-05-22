@@ -18,6 +18,7 @@ package errors
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
