@@ -39,7 +39,7 @@ type Client interface {
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	//create new context to carry logger
-	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
+	ctx = logr.NewContextWithSlogLogger(ctx, log.WithCtxFields(ctx).SLogger())
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 

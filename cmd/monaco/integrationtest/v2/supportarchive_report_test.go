@@ -25,6 +25,7 @@ import (
 	"io"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -123,7 +124,7 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 					assert.NoError(t, err)
 					content, err := io.ReadAll(logFile)
 					assert.NoError(t, err)
-					assert.Contains(t, string(content), "debug", "expected log file to contain debug log entries")
+					assert.Contains(t, strings.ToLower(string(content)), "debug", "expected log file to contain debug log entries")
 				})
 		})
 	}
