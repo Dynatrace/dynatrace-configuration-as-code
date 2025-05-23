@@ -24,7 +24,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/lmittmann/tint"
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
@@ -35,7 +37,9 @@ const (
 	LogFileTimestampPrefixFormat = "20060102-150405"
 
 	// MONACO_LOG_FORMAT is an environment variable that specifies the format use when logging.
-	// When set to "json", log entries are emitted as JSON lines. The plain text default logger is used in other cases.
+	// - When set to "json", log entries are emitted as JSON lines.
+	// - When set to "color", console logs are colorized.
+	// - The plain text default logger is used in other cases.
 	envVarLogFormat = "MONACO_LOG_FORMAT"
 
 	// MONACO_LOG_TIME is an environment variable that specifies the time format used for timestamps when logging.
@@ -93,10 +97,10 @@ func PrepareLogging(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io
 
 func prepareHandler(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging bool, enableMemstatLogging bool) slog.Handler {
 	handlerOptions := getHandlerOptions(getLevelFromVerbose(verbose))
-	handlers := []slog.Handler{getHandler(os.Stderr, handlerOptions)}
+	handlers := []slog.Handler{getHandler(os.Stderr, handlerOptions, true)}
 
 	if loggerSpy != nil {
-		handlers = append(handlers, getHandler(loggerSpy, handlerOptions))
+		handlers = append(handlers, getHandler(loggerSpy, handlerOptions, true))
 	}
 
 	if fileLogging && fs != nil {
@@ -106,11 +110,11 @@ func prepareHandler(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io
 		}
 
 		if logFile != nil {
-			handlers = append(handlers, getHandler(logFile, handlerOptions))
+			handlers = append(handlers, getHandler(logFile, handlerOptions, false))
 		}
 
 		if errorFile != nil {
-			handlers = append(handlers, getHandler(errorFile, getHandlerOptions(slog.LevelError)))
+			handlers = append(handlers, getHandler(errorFile, getHandlerOptions(slog.LevelError), false))
 		}
 	}
 
@@ -136,9 +140,18 @@ func getHandlerOptions(level slog.Leveler) *slog.HandlerOptions {
 	}
 }
 
-func getHandler(w io.Writer, options *slog.HandlerOptions) slog.Handler {
+func getHandler(w io.Writer, options *slog.HandlerOptions, supportColor bool) slog.Handler {
 	if shouldUseJSON() {
 		return slog.NewJSONHandler(w, options)
+	}
+
+	if supportColor && shouldUseColor() {
+		return tint.NewHandler(w, &tint.Options{
+			AddSource:   options.AddSource,
+			Level:       options.Level,
+			ReplaceAttr: options.ReplaceAttr,
+			TimeFormat:  time.Kitchen,
+		})
 	}
 
 	return slog.NewTextHandler(w, options)
@@ -156,6 +169,11 @@ func getReplaceAttrFunc() func(groups []string, a slog.Attr) slog.Attr {
 	}
 
 	return nil
+}
+
+func shouldUseColor() bool {
+	v := os.Getenv(envVarLogFormat)
+	return strings.ToLower(v) == "color"
 }
 
 func shouldUseJSON() bool {

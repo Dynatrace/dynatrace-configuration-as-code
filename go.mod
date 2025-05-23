@@ -6,10 +6,10 @@ require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
 	github.com/dynatrace/dynatrace-configuration-as-code-core v0.8.1-0.20250516114212-0186e259e881
 	github.com/go-logr/logr v1.4.3
-	github.com/go-logr/zapr v1.3.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/invopop/jsonschema v0.13.0
+	github.com/lmittmann/tint v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.14.0
