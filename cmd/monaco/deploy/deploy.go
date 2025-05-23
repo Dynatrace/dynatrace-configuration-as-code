@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/internal/logging"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -51,9 +52,12 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 		return err
 	}
 
-	ok := verifyEnvironmentGen(ctx, loadedManifest.Environments.SelectedEnvironments, dryRun)
-	if !ok {
-		return fmt.Errorf("unable to verify Dynatrace environment generation")
+	if !dryRun && featureflags.VerifyEnvironmentType.Enabled() {
+		if err := dynatrace.VerifyEnvironmentsAuthentication(ctx, loadedManifest.Environments.SelectedEnvironments); err != nil {
+			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, err, "", nil)
+			log.Error("%s", err)
+			return err
+		}
 	}
 
 	loadedProjects, err := loadProjects(ctx, fs, absManifestPath, loadedManifest, specificProjects)
@@ -115,14 +119,6 @@ func loadManifest(ctx context.Context, fs afero.Fs, manifestPath string, groups 
 	}
 
 	return &m, nil
-}
-
-func verifyEnvironmentGen(ctx context.Context, environments manifest.EnvironmentDefinitionsByName, dryRun bool) bool {
-	if !dryRun {
-		return dynatrace.VerifyEnvironmentGeneration(ctx, environments)
-
-	}
-	return true
 }
 
 func loadProjects(ctx context.Context, fs afero.Fs, manifestPath string, man *manifest.Manifest, specificProjects []string) ([]project.Project, error) {
