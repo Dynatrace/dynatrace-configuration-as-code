@@ -19,6 +19,7 @@ package environment
 import (
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
@@ -30,6 +31,7 @@ const (
 	KeyUserActionWebWaitSecondsEnvKey = "MONACO_KUA_WEB_WAIT_SECONDS"
 	MaxFilenameLenKey                 = "MONACO_MAX_FILENAME_LEN"
 	DeploymentReportFilename          = "MONACO_DEPLOYMENT_REPORT_FILENAME"
+	AdditionalHttpHeaders             = "MONACO_ADDITIONAL_HTTP_HEADERS"
 )
 
 var defaultValuesInt = map[string]int{
@@ -104,4 +106,33 @@ func GetEnvValueIntLog(env string) int {
 	log.Debug(logMessage, value, env)
 
 	return value
+}
+
+// GetAdditionalHttpHeadersFromEnv gets the content of the env var MONACO_ADDITIONAL_HTTP_HEADERS and parses
+// a map of http headers from it, if present. Headers are separated via '\n'
+// Headers consist of a mandatory key part and a value part which can be empty. Key and value part are separated via ':'
+func GetAdditionalHttpHeadersFromEnv() map[string]string {
+	headersString := os.Getenv(AdditionalHttpHeaders)
+	if headersString == "" {
+		return nil
+	}
+
+	result := make(map[string]string)
+
+	headers := strings.Split(headersString, "\n")
+	for _, header := range headers {
+		headerKeyAndValue := strings.SplitN(header, ":", 2)
+		key := strings.TrimSpace(headerKeyAndValue[0])
+		if key == "" {
+			continue // header key must not be empty
+		}
+
+		if len(headerKeyAndValue) != 2 {
+			result[key] = ""
+		} else {
+			result[key] = strings.TrimSpace(headerKeyAndValue[1])
+		}
+	}
+
+	return result
 }
