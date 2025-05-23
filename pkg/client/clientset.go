@@ -264,16 +264,18 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		serviceLevelObjectiveClient ServiceLevelObjectiveClient
 		err                         error
 	)
-	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	if err = validateURL(url); err != nil {
 		return nil, err
 	}
 
+	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
+	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	cFactory := clients.Factory().
 		WithConcurrentRequestLimit(concurrentReqLimit).
 		WithUserAgent(opts.getUserAgentString()).
 		WithRetryOptions(&DefaultRetryOptions).
-		WithRateLimiter(true)
+		WithRateLimiter(true).
+		WithCustomHeaders(additionalHeaders)
 
 	if supportarchive.IsEnabled(ctx) {
 		cFactory = cFactory.WithHTTPListener(&rest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
