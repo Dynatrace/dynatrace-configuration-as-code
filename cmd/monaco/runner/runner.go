@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/delete"
@@ -29,6 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/purge"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	versionCommand "github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -96,6 +98,11 @@ Examples:
 			}
 
 			memory.SetDefaultLimit()
+
+			additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
+			if len(additionalHeaders) > 0 {
+				log.Info("Additional headers %q from '%s' environment variable will be added to HTTP requests", maps.Keys(additionalHeaders), environment.AdditionalHTTPHeaders)
+			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = cmd.Help()
