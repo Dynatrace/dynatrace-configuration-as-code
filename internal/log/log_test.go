@@ -32,22 +32,34 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
-// TestPrepareLogging_JSONLogFormat tests that logging is in JSON format if specified via MONACO_LOG_FORMAT environment variable.
-func TestPrepareLogging_JSONLogFormat(t *testing.T) {
+// TestPrepareLogging_LogFormat tests that logging is in plain, JSON, or color format if specified via MONACO_LOG_FORMAT environment variable.
+func TestPrepareLogging_LogFormat(t *testing.T) {
+	const resetColorControlSequence = "\x1b[0m"
+
 	tests := []struct {
 		name         string
 		logFormatEnv string
 		wantJSON     bool
+		wantColor    bool
 	}{
 		{
-			name:         "log format JSON uses JSON",
-			logFormatEnv: "json",
-			wantJSON:     true,
-		},
-		{
-			name:         "no log format value does not use JSON",
+			name:         "no log format value does not use JSON or color",
 			logFormatEnv: "",
 			wantJSON:     false,
+			wantColor:    false,
+		},
+		{
+			name:         "log format JSON uses JSON and no color",
+			logFormatEnv: "json",
+			wantJSON:     true,
+			wantColor:    false,
+		},
+
+		{
+			name:         "color does not use JSON but does use color",
+			logFormatEnv: "color",
+			wantJSON:     false,
+			wantColor:    true,
 		},
 	}
 
@@ -67,6 +79,12 @@ func TestPrepareLogging_JSONLogFormat(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
+			}
+
+			if tt.wantColor {
+				assert.Contains(t, builder.String(), resetColorControlSequence, "wanted color but log entry does not contain default color sequence")
+			} else {
+				assert.NotContains(t, builder.String(), resetColorControlSequence, "did not want color but log entry contains default color sequence")
 			}
 		})
 	}
