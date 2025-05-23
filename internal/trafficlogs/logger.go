@@ -21,18 +21,20 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
-	"github.com/spf13/afero"
 	"io"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"path"
 	"sync"
+
+	"github.com/spf13/afero"
+
+	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 )
 
 const TrafficLogFilePrefixFormat = log.LogFileTimestampPrefixFormat
@@ -92,6 +94,7 @@ func (l *trafficLogger) Sync() error {
 	defer l.lock.Unlock()
 	var errs []error
 	if l.reqLogFile != nil {
+		defer l.reqLogFile.Close()
 		if err := l.reqBufWriter.Flush(); err != nil {
 			errs = append(errs, err)
 		}
@@ -102,6 +105,7 @@ func (l *trafficLogger) Sync() error {
 	}
 
 	if l.respLogFile != nil {
+		defer l.respLogFile.Close()
 		if err := l.respBufWriter.Flush(); err != nil {
 			errs = append(errs, err)
 		}
