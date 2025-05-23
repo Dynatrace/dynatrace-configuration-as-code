@@ -25,7 +25,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/lmittmann/tint"
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
@@ -90,10 +92,10 @@ func PrepareLogging(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io
 
 func prepareHandler(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging bool, enableMemstatLogging bool) slog.Handler {
 	handlerOptions := getHandlerOptions(getLevelFromVerbose(verbose))
-	handlers := []slog.Handler{getHandler(os.Stderr, handlerOptions)}
+	handlers := []slog.Handler{getConsoleHandler(os.Stderr, handlerOptions)}
 
 	if loggerSpy != nil {
-		handlers = append(handlers, getHandler(loggerSpy, handlerOptions))
+		handlers = append(handlers, getConsoleHandler(loggerSpy, handlerOptions))
 	}
 
 	if fileLogging && fs != nil {
@@ -103,11 +105,11 @@ func prepareHandler(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io
 		}
 
 		if logFile != nil {
-			handlers = append(handlers, getHandler(logFile, handlerOptions))
+			handlers = append(handlers, getFileHandler(logFile, handlerOptions))
 		}
 
 		if errorFile != nil {
-			handlers = append(handlers, getHandler(errorFile, getHandlerOptions(slog.LevelError)))
+			handlers = append(handlers, getFileHandler(errorFile, getHandlerOptions(slog.LevelError)))
 		}
 	}
 
@@ -116,6 +118,31 @@ func prepareHandler(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io
 	}
 
 	return NewTeeHandler(handlers...)
+}
+
+func getConsoleHandler(w io.Writer, options *slog.HandlerOptions) slog.Handler {
+	if shouldUseJSON() {
+		return slog.NewJSONHandler(w, options)
+	}
+
+	if shouldUseColor() {
+		return tint.NewHandler(w, &tint.Options{
+			AddSource:   options.AddSource,
+			Level:       options.Level,
+			ReplaceAttr: options.ReplaceAttr,
+			TimeFormat:  time.Kitchen,
+		})
+	}
+
+	return slog.NewTextHandler(w, options)
+}
+
+func getFileHandler(w io.Writer, options *slog.HandlerOptions) slog.Handler {
+	if shouldUseJSON() {
+		return slog.NewJSONHandler(w, options)
+	}
+
+	return slog.NewTextHandler(w, options)
 }
 
 func getLevelFromVerbose(verbose bool) slog.Level {
@@ -134,14 +161,6 @@ func getHandlerOptions(level slog.Leveler) *slog.HandlerOptions {
 	}
 }
 
-func getHandler(w io.Writer, options *slog.HandlerOptions) slog.Handler {
-	if shouldUseJSON() {
-		return slog.NewJSONHandler(w, options)
-	}
-
-	return slog.NewTextHandler(w, options)
-}
-
 func getReplaceAttrFunc() func(groups []string, a slog.Attr) slog.Attr {
 	useUTC := shouldUseUTC()
 	return func(groups []string, a slog.Attr) slog.Attr {
@@ -149,9 +168,13 @@ func getReplaceAttrFunc() func(groups []string, a slog.Attr) slog.Attr {
 			t := a.Value.Time()
 			return slog.Attr{Key: slog.TimeKey, Value: slog.TimeValue(t.UTC())}
 		}
-
 		return a
 	}
+}
+
+func shouldUseColor() bool {
+	v := os.Getenv(envVarLogFormat)
+	return strings.ToLower(v) == "color"
 }
 
 func shouldUseJSON() bool {
