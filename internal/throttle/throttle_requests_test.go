@@ -29,25 +29,25 @@ import (
 
 func TestDurationStaysTheSameIfInputIsWithinMinMaxLimits(t *testing.T) {
 
-	value := ApplyMinMaxDefaults(6 * time.Second)
+	value := applyMinMaxDefaults(6 * time.Second)
 	require.Equal(t, 6, int(value.Seconds()))
-	value = ApplyMinMaxDefaults(59 * time.Second)
+	value = applyMinMaxDefaults(59 * time.Second)
 	require.Equal(t, 59, int(value.Seconds()))
 }
 
 func TestDurationWillBeTheMinimumIfInputIsSmallerThanMinLimit(t *testing.T) {
 
-	value := ApplyMinMaxDefaults(500 * time.Millisecond)
+	value := applyMinMaxDefaults(500 * time.Millisecond)
 	require.Equal(t, 1, int(value.Seconds()))
-	value = ApplyMinMaxDefaults(-19 * time.Second)
+	value = applyMinMaxDefaults(-19 * time.Second)
 	require.Equal(t, 1, int(value.Seconds()))
 }
 
 func TestDurationWillBeTheMaximumIfInputIsLargerThanMaxLimit(t *testing.T) {
 
-	value := ApplyMinMaxDefaults(61 * time.Second)
+	value := applyMinMaxDefaults(61 * time.Second)
 	require.Equal(t, 60, int(value.Seconds()))
-	value = ApplyMinMaxDefaults(3600 * time.Second)
+	value = applyMinMaxDefaults(3600 * time.Second)
 	require.Equal(t, 60, int(value.Seconds()))
 }
 
@@ -58,7 +58,7 @@ func TestGeneratedSleepDurationsAreWithinExpectedBoundsAndDistribution(t *testin
 
 	producedDurations := map[time.Duration]int{}
 	for i := 0; i < 100; i++ {
-		gotSleepDuration, _ := GenerateSleepDuration(1)
+		gotSleepDuration, _ := generateSleepDuration(1)
 		assert.Greater(t, gotSleepDuration, expectedMinSleepDuration)
 		assert.LessOrEqual(t, gotSleepDuration, expectedMaxSleepDuration)
 
@@ -75,7 +75,7 @@ func TestGenerateSleepDurationSetsBackoffMultiplierOfAtLeastOne(t *testing.T) {
 	expectedMaxSleepDuration := 2 * MinWaitDuration
 
 	synctest.Run(func() {
-		gotSleepDuration, _ := GenerateSleepDuration(0)
+		gotSleepDuration, _ := generateSleepDuration(0)
 		require.Greater(t, gotSleepDuration, expectedMinSleepDuration, "if backoff multiplier was >=1 sleep duration should be more than min wait")
 		require.LessOrEqual(t, gotSleepDuration, expectedMaxSleepDuration)
 
@@ -87,7 +87,7 @@ func TestGenerateSleepDurationProducesHumanReadableTimestamp(t *testing.T) {
 	synctest.Run(func() {
 		nowFormatted := time.Now().UTC().Format(time.RFC3339)
 
-		_, gotHumanReadableTimestamp := GenerateSleepDuration(1)
+		_, gotHumanReadableTimestamp := generateSleepDuration(1)
 		require.Contains(t, gotHumanReadableTimestamp, nowFormatted, "expected human readable timestamp containing timestamp")
 	})
 }
