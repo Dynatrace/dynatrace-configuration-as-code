@@ -41,18 +41,10 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-type authType = string
+var ErrorMissingAuth = errors.New("no authentication credentials provided")
 
-const (
-	oAuthType authType = "OAuth"
-	tokenType authType = "token"
-)
-
-var ErrorMissingAuth = errors.New("no token or oAuth credentials provided in the manifest")
-
-// VerifyEnvironmentsAuthentication takes a manifestEnvironments map and tries to verify that each environment can be reached
-// using the configured credentials.
-// The first found error of the environments is returned
+// VerifyEnvironmentsAuthentication verifies that all environments can be reached with the defined credentials.
+// It returns the first error encountered
 func VerifyEnvironmentsAuthentication(ctx context.Context, envs manifest.EnvironmentDefinitionsByName) error {
 	for _, env := range envs {
 		if err := VerifyEnvironmentAuthentication(ctx, env); err != nil {
@@ -79,7 +71,7 @@ func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.Environme
 		}
 		var err error
 		if classicUrl, err = getDynatraceClassicURL(ctx, env.URL.Value, oauthCreds); err != nil {
-			err = formatAuthError(env, env.URL.Value, err, oAuthType)
+			err = formatAuthError(env, env.URL.Value, err, "OAuth")
 			return fmt.Errorf("please verify that this environment is a Dynatrace Platform environment. %w", err)
 		}
 	}
@@ -106,19 +98,19 @@ func validateEstablishClassicConnection(ctx context.Context, env manifest.Enviro
 	}
 
 	if _, err := apitoken.GetTokenMetadata(ctx, client, token); err != nil {
-		err = formatAuthError(env, classicURL, err, tokenType)
+		err = formatAuthError(env, classicURL, err, "token")
 		return fmt.Errorf("please verify that this environment is a Dynatrace Classic environment. %w", err)
 	}
 	return nil
 }
 
 // formatAuthError takes the provided error and wraps it into a more useful error message.
-func formatAuthError(env manifest.EnvironmentDefinition, url string, err error, auth authType) error {
+func formatAuthError(env manifest.EnvironmentDefinition, url string, err error, authType string) error {
 	var apiErr coreapi.APIError
 	if errors.As(err, &apiErr) {
-		return fmt.Errorf("could not authorize against the environment with name %q (%s) using %s authorization: %w", env.Name, url, auth, err)
+		return fmt.Errorf("could not authorize against the environment with name %q (%s) using %s authorization: %w", env.Name, url, authType, err)
 	}
-	return fmt.Errorf("could not connect to environment %q (%s) using %s authorization: %w", env.Name, url, auth, err)
+	return fmt.Errorf("could not connect to environment %q (%s) using %s authorization: %w", env.Name, url, authType, err)
 }
 
 // CreateAccountClients gives back clients to use for specific accounts
