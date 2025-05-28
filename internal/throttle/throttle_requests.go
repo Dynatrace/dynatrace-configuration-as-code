@@ -17,7 +17,6 @@
 package throttle
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -28,11 +27,11 @@ import (
 const MinWaitDuration = 1 * time.Second
 
 // ThrottleCallAfterError sleeps a bit after an error message to avoid hitting rate limits and getting the IP banned
-func ThrottleCallAfterError(backoffMultiplier int, message string, a ...any) {
+func ThrottleCallAfterError(backoffMultiplier int, message string) {
 	sleepDuration, humanReadableTimestamp := generateSleepDuration(backoffMultiplier)
 	sleepDuration = applyMinMaxDefaults(sleepDuration)
 
-	log.Debug("simpleSleepRateLimitStrategy: %s, waiting %f seconds until %s to avoid Too Many Request errors", fmt.Sprintf(message, a...), sleepDuration.Seconds(), humanReadableTimestamp)
+	log.Debug("simpleSleepRateLimitStrategy: %s, waiting %f seconds until %s to avoid 'Too Many Request' errors", message, sleepDuration.Seconds(), humanReadableTimestamp)
 	time.Sleep(sleepDuration)
 	log.Debug("simpleSleepRateLimitStrategy: Slept for %f seconds", sleepDuration.Seconds())
 }
