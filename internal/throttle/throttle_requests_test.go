@@ -19,21 +19,13 @@
 package throttle
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
+	"testing"
+	"testing/synctest"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
-	"testing"
-	"time"
 )
-
-func createTimelineProviderMock(t *testing.T) *timeutils.MockTimelineProvider {
-
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	return timeutils.NewMockTimelineProvider(mockCtrl)
-}
 
 func TestDurationStaysTheSameIfInputIsWithinMinMaxLimits(t *testing.T) {
 
@@ -61,15 +53,12 @@ func TestDurationWillBeTheMaximumIfInputIsLargerThanMaxLimit(t *testing.T) {
 
 func TestGeneratedSleepDurationsAreWithinExpectedBoundsAndDistribution(t *testing.T) {
 
-	timelineProvider := createTimelineProviderMock(t)
-	timelineProvider.EXPECT().Now().Times(100).Return(time.Unix(0, 0))
-
 	expectedMinSleepDuration := MinWaitDuration
 	expectedMaxSleepDuration := 2 * MinWaitDuration
 
 	producedDurations := map[time.Duration]int{}
 	for i := 0; i < 100; i++ {
-		gotSleepDuration, _ := GenerateSleepDuration(1, timelineProvider)
+		gotSleepDuration, _ := GenerateSleepDuration(1)
 		assert.Greater(t, gotSleepDuration, expectedMinSleepDuration)
 		assert.LessOrEqual(t, gotSleepDuration, expectedMaxSleepDuration)
 
@@ -82,22 +71,39 @@ func TestGeneratedSleepDurationsAreWithinExpectedBoundsAndDistribution(t *testin
 }
 
 func TestGenerateSleepDurationSetsBackoffMultiplierOfAtLeastOne(t *testing.T) {
-
-	timelineProvider := createTimelineProviderMock(t)
-	timelineProvider.EXPECT().Now().Return(time.Unix(0, 0))
-
 	expectedMinSleepDuration := MinWaitDuration
 	expectedMaxSleepDuration := 2 * MinWaitDuration
 
-	gotSleepDuration, _ := GenerateSleepDuration(0, timelineProvider)
-	require.Greater(t, gotSleepDuration, expectedMinSleepDuration, "if backoff multiplier was >=1 sleep duration should be more than min wait")
-	require.LessOrEqual(t, gotSleepDuration, expectedMaxSleepDuration)
+	synctest.Run(func() {
+		gotSleepDuration, _ := GenerateSleepDuration(0)
+		require.Greater(t, gotSleepDuration, expectedMinSleepDuration, "if backoff multiplier was >=1 sleep duration should be more than min wait")
+		require.LessOrEqual(t, gotSleepDuration, expectedMaxSleepDuration)
+
+	})
+
 }
 
 func TestGenerateSleepDurationProducesHumanReadableTimestamp(t *testing.T) {
+	synctest.Run(func() {
+		nowFormatted := time.Now().UTC().Format(time.RFC3339)
 
-	timelineProvider := createTimelineProviderMock(t)
-	timelineProvider.EXPECT().Now().Return(time.Date(2022, 10, 18, 0, 0, 0, 0, time.UTC))
-	_, gotHumanReadableTimestamp := GenerateSleepDuration(1, timelineProvider)
-	require.Containsf(t, gotHumanReadableTimestamp, "2022-10-18T00:00:", "expected human readable timestamp containing '2022-10-18T00:00:' but got '%s'", gotHumanReadableTimestamp)
+		_, gotHumanReadableTimestamp := GenerateSleepDuration(1)
+		require.Contains(t, gotHumanReadableTimestamp, nowFormatted, "expected human readable timestamp containing timestamp")
+	})
+}
+
+func TestThrottleCallAfterError(t *testing.T) {
+	expectedMinSleepDuration := MinWaitDuration
+	expectedMaxSleepDuration := 2 * MinWaitDuration
+
+	synctest.Run(func() {
+		start := time.Now().UTC()
+
+		ThrottleCallAfterError(1, "test")
+
+		after := time.Now().UTC()
+
+		require.Greater(t, after, start.Add(expectedMinSleepDuration))
+		require.LessOrEqual(t, after, start.Add(expectedMaxSleepDuration))
+	})
 }

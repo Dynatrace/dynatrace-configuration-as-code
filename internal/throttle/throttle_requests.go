@@ -22,26 +22,24 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 )
 
 const MinWaitDuration = 1 * time.Second
 
 // ThrottleCallAfterError sleeps a bit after an error message to avoid hitting rate limits and getting the IP banned
 func ThrottleCallAfterError(backoffMultiplier int, message string, a ...any) {
-	timelineProvider := timeutils.NewTimelineProvider()
-	sleepDuration, humanReadableTimestamp := GenerateSleepDuration(backoffMultiplier, timelineProvider)
+	sleepDuration, humanReadableTimestamp := GenerateSleepDuration(backoffMultiplier)
 	sleepDuration = ApplyMinMaxDefaults(sleepDuration)
 
 	log.Debug("simpleSleepRateLimitStrategy: %s, waiting %f seconds until %s to avoid Too Many Request errors", fmt.Sprintf(message, a...), sleepDuration.Seconds(), humanReadableTimestamp)
-	timelineProvider.Sleep(sleepDuration)
+	time.Sleep(sleepDuration)
 	log.Debug("simpleSleepRateLimitStrategy: Slept for %f seconds", sleepDuration.Seconds())
 }
 
 // GenerateSleepDuration will generate a random sleep duration time between minWaitTime and minWaitTime * backoffMultiplier
 // generated sleep durations are used in case the API did not reply with a limit and reset time
 // and called with the current retry iteration count to implement increasing possible wait times per iteration
-func GenerateSleepDuration(backoffMultiplier int, timelineProvider timeutils.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string) {
+func GenerateSleepDuration(backoffMultiplier int) (sleepDuration time.Duration, humanReadableResetTimestamp string) {
 
 	if backoffMultiplier < 1 {
 		backoffMultiplier = 1
@@ -55,7 +53,7 @@ func GenerateSleepDuration(backoffMultiplier int, timelineProvider timeutils.Tim
 
 	sleepDuration = MinWaitDuration + time.Duration(addedWaitMillis*int64(backoffMultiplier))
 
-	humanReadableResetTimestamp = timelineProvider.Now().Add(sleepDuration).Format(time.RFC3339)
+	humanReadableResetTimestamp = time.Now().UTC().Format(time.RFC3339)
 
 	return sleepDuration, humanReadableResetTimestamp
 }
