@@ -39,7 +39,7 @@ import (
 func TestSlogger(t *testing.T) {
 	options := slog.HandlerOptions{Level: slog.LevelDebug}
 	t.Run("debug", func(t *testing.T) {
-		handler := newTestHandler(&options)
+		handler := NewTestHandler(&options)
 
 		logger := &log.Slogger{Logger: slog.New(handler)}
 		logger.Debug("code %s reached", "here")
@@ -49,7 +49,7 @@ func TestSlogger(t *testing.T) {
 	})
 
 	t.Run("info", func(t *testing.T) {
-		handler := newTestHandler(&options)
+		handler := NewTestHandler(&options)
 
 		logger := &log.Slogger{Logger: slog.New(handler)}
 		logger.Info("code %s reached", "here")
@@ -59,7 +59,7 @@ func TestSlogger(t *testing.T) {
 	})
 
 	t.Run("warn", func(t *testing.T) {
-		handler := newTestHandler(&options)
+		handler := NewTestHandler(&options)
 
 		logger := &log.Slogger{Logger: slog.New(handler)}
 		logger.Warn("code %s reached", "here")
@@ -69,7 +69,7 @@ func TestSlogger(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		handler := newTestHandler(&options)
+		handler := NewTestHandler(&options)
 
 		logger := &log.Slogger{Logger: slog.New(handler)}
 		logger.Error("code %s reached", "here")

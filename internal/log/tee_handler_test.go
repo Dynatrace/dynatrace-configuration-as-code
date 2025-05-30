@@ -33,8 +33,8 @@ import (
 func TestTeeHandler_Enabled(t *testing.T) {
 	t.Run("all enabled if both have level debug", func(t *testing.T) {
 		testingHandler := log.NewTeeHandler(
-			newTestHandler(&slog.HandlerOptions{Level: slog.LevelDebug}),
-			newTestHandler(&slog.HandlerOptions{Level: slog.LevelDebug}),
+			NewTestHandler(&slog.HandlerOptions{Level: slog.LevelDebug}),
+			NewTestHandler(&slog.HandlerOptions{Level: slog.LevelDebug}),
 		)
 
 		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelDebug))
@@ -45,8 +45,8 @@ func TestTeeHandler_Enabled(t *testing.T) {
 
 	t.Run("all enabled if one has level debug, other info", func(t *testing.T) {
 		testingHandler := log.NewTeeHandler(
-			newTestHandler(&slog.HandlerOptions{Level: slog.LevelDebug}),
-			newTestHandler(&slog.HandlerOptions{Level: slog.LevelInfo}),
+			NewTestHandler(&slog.HandlerOptions{Level: slog.LevelDebug}),
+			NewTestHandler(&slog.HandlerOptions{Level: slog.LevelInfo}),
 		)
 
 		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelDebug))
@@ -57,8 +57,8 @@ func TestTeeHandler_Enabled(t *testing.T) {
 
 	t.Run("all enabled if both have level info", func(t *testing.T) {
 		testingHandler := log.NewTeeHandler(
-			newTestHandler(&slog.HandlerOptions{Level: slog.LevelInfo}),
-			newTestHandler(&slog.HandlerOptions{Level: slog.LevelInfo}),
+			NewTestHandler(&slog.HandlerOptions{Level: slog.LevelInfo}),
+			NewTestHandler(&slog.HandlerOptions{Level: slog.LevelInfo}),
 		)
 
 		assert.False(t, testingHandler.Enabled(t.Context(), slog.LevelDebug))
@@ -71,8 +71,8 @@ func TestTeeHandler_Enabled(t *testing.T) {
 // TestHandler_Handle tests records are handled correctly.
 func TestHandler_Handle(t *testing.T) {
 	t.Run("without attributes", func(t *testing.T) {
-		handler1 := newTestHandler(&slog.HandlerOptions{})
-		handler2 := newTestHandler(&slog.HandlerOptions{})
+		handler1 := NewTestHandler(&slog.HandlerOptions{})
+		handler2 := NewTestHandler(&slog.HandlerOptions{})
 
 		testingHandler := log.NewTeeHandler(handler1, handler2)
 
@@ -87,8 +87,8 @@ func TestHandler_Handle(t *testing.T) {
 	})
 
 	t.Run("with attributes", func(t *testing.T) {
-		handler1 := newTestHandler(&slog.HandlerOptions{})
-		handler2 := newTestHandler(&slog.HandlerOptions{})
+		handler1 := NewTestHandler(&slog.HandlerOptions{})
+		handler2 := NewTestHandler(&slog.HandlerOptions{})
 
 		testingHandler := log.NewTeeHandler(handler1, handler2)
 
@@ -108,8 +108,8 @@ func TestHandler_Handle(t *testing.T) {
 
 // TestHandler_WithAttrs tests that a TeeHandler is returned that applies the given attributes to each handled record.
 func TestHandler_WithAttrs(t *testing.T) {
-	handler1 := newTestHandler(&slog.HandlerOptions{})
-	handler2 := newTestHandler(&slog.HandlerOptions{})
+	handler1 := NewTestHandler(&slog.HandlerOptions{})
+	handler2 := NewTestHandler(&slog.HandlerOptions{})
 
 	testingHandler := log.NewTeeHandler(handler1, handler2).WithAttrs([]slog.Attr{slog.String("key", "value")})
 
@@ -125,8 +125,8 @@ func TestHandler_WithAttrs(t *testing.T) {
 
 // TestHandler_WithGroup tests that a TeeHandler is returned which applies the given group to handled records.
 func TestHandler_WithGroup(t *testing.T) {
-	handler1 := newTestHandler(&slog.HandlerOptions{})
-	handler2 := newTestHandler(&slog.HandlerOptions{})
+	handler1 := NewTestHandler(&slog.HandlerOptions{})
+	handler2 := NewTestHandler(&slog.HandlerOptions{})
 
 	testingHandler := log.NewTeeHandler(handler1, handler2).WithGroup("group1").WithAttrs([]slog.Attr{slog.String("key", "value")})
 
@@ -146,7 +146,7 @@ type testHandler struct {
 	Output *strings.Builder
 }
 
-func newTestHandler(options *slog.HandlerOptions) *testHandler {
+func NewTestHandler(options *slog.HandlerOptions) *testHandler {
 	output := &strings.Builder{}
 	return &testHandler{
 		TextHandler: slog.NewTextHandler(output, options),
