@@ -112,7 +112,7 @@ func DebugContext(ctx context.Context, msg string, a ...interface{}) {
 
 // PrepareLogging sets up the default slog.Logger using the specified options.
 func PrepareLogging(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging bool, enableMemstatLogging bool) {
-	logger := slog.New(prepareHandler(ctx, fs, verbose, loggerSpy, fileLogging, enableMemstatLogging))
+	logger := slog.New(NewContextHandler(prepareHandler(ctx, fs, verbose, loggerSpy, fileLogging, enableMemstatLogging)))
 	slog.SetDefault(logger)
 }
 
