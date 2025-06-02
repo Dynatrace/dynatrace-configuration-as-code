@@ -87,7 +87,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 
 	env, found := m.Environments.SelectedEnvironments[cmdOptions.specificEnvironmentName]
 	if !found {
-		return fmt.Errorf("environment %q was not available in manifest %q", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
+		return fmt.Errorf("environment '%s' is not defined in manifest '%s'", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
 	if featureflags.VerifyEnvironmentType.Enabled() {

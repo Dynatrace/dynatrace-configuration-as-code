@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"strings"
 
-	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
@@ -71,46 +70,37 @@ func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.Environme
 		}
 		var err error
 		if classicUrl, err = getDynatraceClassicURL(ctx, env.URL.Value, oauthCreds); err != nil {
-			err = formatAuthError(env, env.URL.Value, err, "OAuth")
-			return fmt.Errorf("please verify that this environment is a Dynatrace Platform environment. %w", err)
+			return fmt.Errorf("could not authorize against environment '%s' (%s) using OAuth authorization: %w", env.Name, env.URL.Value, err)
 		}
 	}
 
 	if env.Auth.Token != nil {
-		if err := validateEstablishClassicConnection(ctx, env, classicUrl); err != nil {
-			return err
+		if err := checkClassicConnection(ctx, classicUrl, env.Auth.Token.Value.Value()); err != nil {
+			return fmt.Errorf("could not authorize against environment '%s' (%s) using token authorization: %w", env.Name, classicUrl, err)
 		}
 	}
 	return nil
 }
 
-// validateEstablishClassicConnection checks if a classic connection (via token) can be established. Scopes are not validated.
-func validateEstablishClassicConnection(ctx context.Context, env manifest.EnvironmentDefinition, classicURL string) error {
-	token := env.Auth.Token.Value.Value()
-	client, err := clients.Factory().
+// checkClassicConnection checks if a classic connection (via token) can be established. Scopes are not validated.
+func checkClassicConnection(ctx context.Context, classicURL string, token string) error {
+	factory := clients.Factory().
 		WithClassicURL(classicURL).
 		WithAccessToken(token).
 		WithRateLimiter(true).
-		WithRetryOptions(&client.DefaultRetryOptions).
-		CreateClassicClient()
+		WithRetryOptions(&client.DefaultRetryOptions)
+
+	if supportarchive.IsEnabled(ctx) {
+		factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
+	}
+
+	client, err := factory.CreateClassicClient()
 	if err != nil {
-		return fmt.Errorf("could not create client %q (%s): %w", env.Name, classicURL, err)
+		return fmt.Errorf("could not create client: %w", err)
 	}
 
-	if _, err := apitoken.GetTokenMetadata(ctx, client, token); err != nil {
-		err = formatAuthError(env, classicURL, err, "token")
-		return fmt.Errorf("please verify that this environment is a Dynatrace Classic environment. %w", err)
-	}
-	return nil
-}
-
-// formatAuthError takes the provided error and wraps it into a more useful error message.
-func formatAuthError(env manifest.EnvironmentDefinition, url string, err error, authType string) error {
-	var apiErr coreapi.APIError
-	if errors.As(err, &apiErr) {
-		return fmt.Errorf("could not authorize against the environment with name %q (%s) using %s authorization: %w", env.Name, url, authType, err)
-	}
-	return fmt.Errorf("could not connect to environment %q (%s) using %s authorization: %w", env.Name, url, authType, err)
+	_, err = apitoken.GetTokenMetadata(ctx, client, token)
+	return err
 }
 
 // CreateAccountClients gives back clients to use for specific accounts
