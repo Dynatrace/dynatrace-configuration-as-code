@@ -207,7 +207,7 @@ func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds 
 	}
 	client, err := factory.CreatePlatformClient(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not create client: %w", err)
 	}
 	return metadata.GetDynatraceClassicURL(ctx, *client)
 }
