@@ -287,15 +287,15 @@ func validateAuthenticationWithProjectConfigs(projects []project.Project, enviro
 						}
 					case config.SettingsType:
 						t, ok := conf.Type.(config.SettingsType)
-						if ok && t.AllUserPermission != nil && environments[envName].Auth.OAuth == nil {
-							return fmt.Errorf("using permission property on settings API requires OAuth, schema '%s' enviroment '%s'", t.SchemaId, envName)
+						if ok && t.AllUserPermission != nil && environments[envName].Auth.OAuth == nil && environments[envName].Auth.PlatformToken == nil {
+							return fmt.Errorf("using permission property on settings API requires OAuth or a platform token, schema '%s' enviroment '%s'", t.SchemaId, envName)
 						}
-						if environments[envName].Auth.Token == nil && environments[envName].Auth.OAuth == nil {
-							return fmt.Errorf("API of type '%s' requires a token or OAuth for environment '%s'", conf.Type, envName)
+						if environments[envName].Auth.Token == nil && environments[envName].Auth.OAuth == nil && environments[envName].Auth.PlatformToken == nil {
+							return fmt.Errorf("API of type '%s' requires a token, a platform token or OAuth for environment '%s'", conf.Type, envName)
 						}
 					default:
-						if environments[envName].Auth.OAuth == nil {
-							return fmt.Errorf("API of type '%s' requires OAuth for environment '%s'", conf.Type, envName)
+						if environments[envName].Auth.OAuth == nil && environments[envName].Auth.PlatformToken == nil {
+							return fmt.Errorf("API of type '%s' requires OAuth or a platform token for environment '%s'", conf.Type, envName)
 						}
 					}
 				}

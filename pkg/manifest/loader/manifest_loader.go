@@ -211,8 +211,8 @@ func Load(context *Context) (manifest.Manifest, []error) {
 func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 	var mAuth manifest.Auth
 
-	if a.Token == nil && a.OAuth == nil {
-		return manifest.Auth{}, errors.New("no token or OAuth credentials provided")
+	if a.Token == nil && a.OAuth == nil && a.PlatformToken == nil {
+		return manifest.Auth{}, errors.New("no token, platform token or OAuth credentials provided")
 	}
 
 	if a.Token != nil {
@@ -229,6 +229,14 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 			return manifest.Auth{}, fmt.Errorf("failed to parse OAuth credentials: %w", err)
 		}
 		mAuth.OAuth = oauth
+	}
+
+	if a.PlatformToken != nil {
+		token, err := parseAuthSecret(context, a.PlatformToken)
+		if err != nil {
+			return manifest.Auth{}, fmt.Errorf("failed to parse platform token: %w", err)
+		}
+		mAuth.PlatformToken = &token
 	}
 
 	return mAuth, nil

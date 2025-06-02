@@ -36,6 +36,7 @@ const (
 	TokenFlag                     = "token"
 	OAuthIdFlag                   = "oauth-client-id"
 	OAuthSecretFlag               = "oauth-client-secret"
+	PlatformTokenFlag             = "platform-token"
 	ApiFlag                       = "api"
 	SettingsSchemaFlag            = "settings-schema"
 	ProjectFlag                   = "project"
@@ -102,8 +103,9 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 		fmt.Sprintf("In case of connecting to a Dynatrace Platform, an OAuth Client ID, as well as an OAuth Client Secret, needs to be provided as well using the flags '--%s' and '--%s'. ", OAuthIdFlag, OAuthSecretFlag)+
 		fmt.Sprintf("This flag is not combinable with the flag '--%s.'", ManifestFlag))
 	cmd.Flags().StringVar(&f.token, TokenFlag, "", fmt.Sprintf("API-Token environment variable. Required when using the flag '--%s'", UrlFlag))
-	cmd.Flags().StringVar(&f.clientID, OAuthIdFlag, "", fmt.Sprintf("OAuth client ID environment variable. Required when using the flag '--%s' and connecting to a Dynatrace Platform.", UrlFlag))
-	cmd.Flags().StringVar(&f.clientSecret, OAuthSecretFlag, "", fmt.Sprintf("OAuth client secret environment variable. Required when using the flag '--%s' and connecting to a Dynatrace Platform.", UrlFlag))
+	cmd.Flags().StringVar(&f.clientID, OAuthIdFlag, "", fmt.Sprintf("OAuth client ID environment variable. This flag and '--%s' or '--%s' is required when using the flag '--%s' and connecting to a Dynatrace Platform.", OAuthSecretFlag, PlatformTokenFlag, UrlFlag))
+	cmd.Flags().StringVar(&f.clientSecret, OAuthSecretFlag, "", fmt.Sprintf("OAuth client secret environment variable. This flag and '--%s' or '--%s' is required when using the flag '--%s' and connecting to a Dynatrace Platform.", OAuthIdFlag, PlatformTokenFlag, UrlFlag))
+	cmd.Flags().StringVar(&f.platformToken, PlatformTokenFlag, "", fmt.Sprintf("Platform token environment variable. This flag or '--%s' is required when using  and connecting to a Dynatrace Platform.", UrlFlag))
 
 	// download options
 	cmd.Flags().StringSliceVarP(&f.specificAPIs, ApiFlag, "a", nil, "Download one or more classic configuration APIs, including deprecated ones. (Repeat flag or use comma-separated values)")

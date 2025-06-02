@@ -59,17 +59,22 @@ func VerifyEnvironmentGeneration(ctx context.Context, envs manifest.EnvironmentD
 }
 
 func isValidEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) bool {
-	if env.Auth.Token == nil && env.Auth.OAuth == nil {
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, errors.New("no token or oAuth credentials provided in the manifest"), "", nil)
+	if env.Auth.Token == nil && env.Auth.OAuth == nil && env.Auth.PlatformToken == nil {
+		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, errors.New("no token, platform token or oAuth credentials provided in the manifest"), "", nil)
 		log.Error("No token or oAuth credentials provided in the manifest")
 		return false
 	}
 
-	if env.Auth.OAuth == nil {
-		return canEstablishClassicConnection(ctx, env)
+	if env.Auth.Token != nil {
+		if valid := canEstablishClassicConnection(ctx, env); !valid {
+			return false
+		}
 	}
 
-	return isPlatformEnvironment(ctx, env)
+	if env.Auth.OAuth != nil || env.Auth.PlatformToken != nil {
+		return isPlatformEnvironment(ctx, env)
+	}
+	return false
 }
 
 // canEstablishClassicConnection checks if a classic connection (via token) can be established. Scopes are not validated.
@@ -96,13 +101,7 @@ func canEstablishClassicConnection(ctx context.Context, env manifest.Environment
 }
 
 func isPlatformEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) bool {
-	oauthCreds := clientcredentials.Config{
-		ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
-		ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
-		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
-	}
-
-	if _, err := getDynatraceClassicURL(ctx, env.URL.Value, oauthCreds); err != nil {
+	if _, err := getDynatraceClassicURL(ctx, env); err != nil {
 		handleAuthError(ctx, env, err)
 		log.Error("Please verify that this environment is a Dynatrace Platform environment.")
 		return false
@@ -211,14 +210,28 @@ func CreateEnvironmentClients(ctx context.Context, environments manifest.Environ
 	return clients, nil
 }
 
-func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds clientcredentials.Config) (string, error) {
+func getDynatraceClassicURL(ctx context.Context, env manifest.EnvironmentDefinition) (string, error) {
+	platformURL := env.URL.Value
 	if featureflags.BuildSimpleClassicURL.Enabled() {
 		if classicURL, ok := findSimpleClassicURL(ctx, platformURL); ok {
 			return classicURL, nil
 		}
 	}
 
-	client, err := clients.Factory().WithPlatformURL(platformURL).WithOAuthCredentials(oauthCreds).CreatePlatformClient(ctx)
+	factory := clients.Factory().WithPlatformURL(platformURL)
+	if env.Auth.OAuth != nil {
+		oauthCreds := clientcredentials.Config{
+			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
+			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
+		}
+		factory = factory.WithOAuthCredentials(oauthCreds)
+	}
+	if env.Auth.PlatformToken != nil {
+		factory = factory.WithPlatformToken(env.Auth.PlatformToken.Value.Value())
+	}
+
+	client, err := factory.CreatePlatformClient(ctx)
 	if err != nil {
 		return "", err
 	}

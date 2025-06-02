@@ -57,6 +57,7 @@ func (o OAuth) GetTokenEndpointValue() string {
 type Auth struct {
 	Token *AuthSecret
 	OAuth *OAuth
+	PlatformToken *AuthSecret
 }
 
 // EnvironmentDefinition holds all information about a Dynatrace environment
