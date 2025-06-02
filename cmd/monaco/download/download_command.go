@@ -22,12 +22,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/options"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 )
-
-type OnlyFlag = string
 
 const (
 	EnvironmentFlag               = "environment"
@@ -41,14 +40,6 @@ const (
 	ProjectFlag                   = "project"
 	OutputFolderFlag              = "output-folder"
 	ForceFlag                     = "force"
-	OnlyApisFlag         OnlyFlag = "only-apis"
-	OnlySettingsFlag     OnlyFlag = "only-settings"
-	OnlyAutomationFlag   OnlyFlag = "only-automation"
-	OnlyDocumentsFlag    OnlyFlag = "only-documents"
-	OnlyBucketsFlag      OnlyFlag = "only-buckets"
-	OnlyOpenPipelineFlag OnlyFlag = "only-openpipeline"
-	OnlySloV2Flag        OnlyFlag = "only-slo-v2"
-	OnlySegmentsFlag     OnlyFlag = "only-segments"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
@@ -73,14 +64,14 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
-			f.onlyOptions = OnlyOptions{
-				OnlySettingsFlag:     onlySettings || len(f.specificSchemas) > 0,
-				OnlyApisFlag:         onlyApis || len(f.specificAPIs) > 0,
-				OnlySegmentsFlag:     onlySegments,
-				OnlySloV2Flag:        onlySloV2,
-				OnlyOpenPipelineFlag: onlyOpenPipeline,
-				OnlyDocumentsFlag:    onlyDocuments,
-				OnlyBucketsFlag:      onlyBuckets,
+			f.onlyOptions = options.OnlyOptions{
+				options.OnlySettingsFlag:     onlySettings || len(f.specificSchemas) > 0,
+				options.OnlyApisFlag:         onlyApis || len(f.specificAPIs) > 0,
+				options.OnlySegmentsFlag:     onlySegments,
+				options.OnlySloV2Flag:        onlySloV2,
+				options.OnlyOpenPipelineFlag: onlyOpenPipeline,
+				options.OnlyDocumentsFlag:    onlyDocuments,
+				options.OnlyBucketsFlag:      onlyBuckets,
 			}
 
 			if f.environmentURL != "" {
@@ -108,26 +99,26 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	// download options
 	cmd.Flags().StringSliceVarP(&f.specificAPIs, ApiFlag, "a", nil, "Download one or more classic configuration APIs, including deprecated ones. (Repeat flag or use comma-separated values)")
 	cmd.Flags().StringSliceVarP(&f.specificSchemas, SettingsSchemaFlag, "s", nil, "Download settings 2.0 objects of one or more settings 2.0 schemas. (Repeat flag or use comma-separated values)")
-	cmd.Flags().BoolVar(&onlyApis, OnlyApisFlag, false, "Download only classic configuration APIs. Deprecated configuration APIs will not be included.")
-	cmd.Flags().BoolVar(&onlySettings, OnlySettingsFlag, false, "Download only settings 2.0 objects")
-	cmd.Flags().BoolVar(&onlyAutomation, OnlyAutomationFlag, false, "Only download automation objects, skip all other configuration types")
-	cmd.Flags().BoolVar(&onlyDocuments, OnlyDocumentsFlag, false, "Only download documents, skip all other configuration types")
-	cmd.Flags().BoolVar(&onlyBuckets, OnlyBucketsFlag, false, "Only download buckets, skip all other configuration types")
+	cmd.Flags().BoolVar(&onlyApis, options.OnlyApisFlag, false, "Download only classic configuration APIs. Deprecated configuration APIs will not be included.")
+	cmd.Flags().BoolVar(&onlySettings, options.OnlySettingsFlag, false, "Download only settings 2.0 objects")
+	cmd.Flags().BoolVar(&onlyAutomation, options.OnlyAutomationFlag, false, "Only download automation objects, skip all other configuration types")
+	cmd.Flags().BoolVar(&onlyDocuments, options.OnlyDocumentsFlag, false, "Only download documents, skip all other configuration types")
+	cmd.Flags().BoolVar(&onlyBuckets, options.OnlyBucketsFlag, false, "Only download buckets, skip all other configuration types")
 
 	// combinations
-	cmd.MarkFlagsMutuallyExclusive(SettingsSchemaFlag, OnlySettingsFlag)
-	cmd.MarkFlagsMutuallyExclusive(ApiFlag, OnlyApisFlag)
+	cmd.MarkFlagsMutuallyExclusive(SettingsSchemaFlag, options.OnlySettingsFlag)
+	cmd.MarkFlagsMutuallyExclusive(ApiFlag, options.OnlyApisFlag)
 
 	if featureflags.OpenPipeline.Enabled() {
-		cmd.Flags().BoolVar(&onlyOpenPipeline, OnlyOpenPipelineFlag, false, "Only download openpipeline configurations, skip all other configuration types")
+		cmd.Flags().BoolVar(&onlyOpenPipeline, options.OnlyOpenPipelineFlag, false, "Only download openpipeline configurations, skip all other configuration types")
 	}
 
 	if featureflags.Segments.Enabled() {
-		cmd.Flags().BoolVar(&onlySegments, OnlySegmentsFlag, false, "Only download segment configurations, skip all other configuration types")
+		cmd.Flags().BoolVar(&onlySegments, options.OnlySegmentsFlag, false, "Only download segment configurations, skip all other configuration types")
 	}
 
 	if featureflags.ServiceLevelObjective.Enabled() {
-		cmd.Flags().BoolVar(&onlySloV2, OnlySloV2Flag, false, fmt.Sprintf("Only download %s, skip all other configuration types", config.ServiceLevelObjectiveID))
+		cmd.Flags().BoolVar(&onlySloV2, options.OnlySloV2Flag, false, fmt.Sprintf("Only download %s, skip all other configuration types", config.ServiceLevelObjectiveID))
 	}
 
 	err := errors.Join(

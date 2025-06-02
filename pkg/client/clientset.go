@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/url"
 	"runtime"
-	"time"
 
 	"golang.org/x/oauth2/clientcredentials"
 
@@ -33,14 +32,22 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/options"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
 
@@ -204,16 +211,16 @@ var DefaultRetryOptions = rest.RetryOptions{MaxRetries: 10, ShouldRetryFunc: res
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
-type ClientSet struct {
-	ConfigClient                ConfigClient
-	SettingsClient              SettingsClient
-	AutClient                   AutomationClient
-	BucketClient                BucketClient
-	DocumentClient              DocumentClient
-	OpenPipelineClient          OpenPipelineClient
-	SegmentClient               SegmentClient
-	ServiceLevelObjectiveClient ServiceLevelObjectiveClient
-}
+//type ClientSet struct {
+//	ConfigClient                ConfigClient
+//	SettingsClient              SettingsClient
+//	AutClient                   AutomationClient
+//	BucketClient                BucketClient
+//	DocumentClient              DocumentClient
+//	OpenPipelineClient          OpenPipelineClient
+//	SegmentClient               SegmentClient
+//	ServiceLevelObjectiveClient ServiceLevelObjectiveClient
+//}
 
 type ClientOptions struct {
 	CustomUserAgent string
@@ -248,26 +255,61 @@ func validateURL(dtURL string) error {
 	return nil
 }
 
-func CreateClientSet(ctx context.Context, url string, auth manifest.Auth) (*ClientSet, error) {
-	return CreateClientSetWithOptions(ctx, url, auth, ClientOptions{})
+func CreateClientSet(ctx context.Context, url string, auth manifest.Auth, onlyOptions options.OnlyOptions, apis api.APIs) ([]Resource, error) {
+	return CreateClientSetWithOptions(ctx, url, auth, ClientOptions{}, onlyOptions, apis)
 }
 
-func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
+type Downloadable interface {
+
+	// Download returns downloaded project.ConfigsPerType, and an error, if something went wrong during the download.
+	// The string projectName is used to set the Project attribute of each downloaded config.
+	Download(ctx context.Context, projectName string) (project.ConfigsPerType, error)
+}
+
+type Deployable interface {
+	Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error)
+	Is(c config.Type) bool
+	Preload(c config.Type)
+	ClearCache()
+}
+
+type Deletable interface {
+	IsDeletePointer(t string) bool
+	DeletePriority(t string) int
+	Delete(ctx context.Context, entries []pointer.DeletePointer) error
+	DeleteAll(ctx context.Context) error
+}
+
+//type Purge interface {
+//	DeleteAll
+//}
+
+type Resource interface {
+	Type() string
+	Deployable
+	Deletable
+	Downloadable
+}
+
+func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions, onlyOpts options.OnlyOptions, apis api.APIs) ([]Resource, error) {
 	var (
-		configClient                ConfigClient
-		settingsClient              SettingsClient
-		bucketClient                BucketClient
-		autClient                   AutomationClient
-		documentClient              DocumentClient
-		openPipelineClient          OpenPipelineClient
-		segmentClient               SegmentClient
-		serviceLevelObjectiveClient ServiceLevelObjectiveClient
-		err                         error
+		//configClient                ConfigClient
+		//settingsClient SettingsClient
+		//bucketClient                BucketClient
+		//autClient                   AutomationClient
+		//documentClient              DocumentClient
+		//openPipelineClient          OpenPipelineClient
+		//segmentClient               SegmentClient
+		//serviceLevelObjectiveClient ServiceLevelObjectiveClient
+		err error
 	)
+	cls := make([]Resource, 0)
 	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	if err = validateURL(url); err != nil {
 		return nil, err
 	}
+
+	// TODO: settings client should be added at the very last because of the delete (if nothing matches => settings)
 
 	cFactory := clients.Factory().
 		WithConcurrentRequestLimit(concurrentReqLimit).
@@ -292,40 +334,43 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
-		bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, time.Second, 5*time.Minute)
-		if err != nil {
-			return nil, err
+		//bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, time.Second, 5*time.Minute)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//
+		//autClient, err = cFactory.AutomationClient(ctx)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//
+		//documentClient, err = cFactory.DocumentClient(ctx)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//
+		//openPipelineClient, err = cFactory.OpenPipelineClient(ctx)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//
+		//segmentClient, err = cFactory.SegmentsClient(ctx)
+		//if err != nil {
+		//	return nil, err
+		//}
+
+		if featureflags.ServiceLevelObjective.Enabled() && (onlyOpts == nil || onlyOpts.ShouldDownload(options.OnlySloV2Flag)) {
+			serviceLevelObjectiveClient, err := cFactory.SLOClient(ctx)
+			if err != nil {
+				return nil, err
+			}
+			cls = append(cls, slo.NewDeployAPI(serviceLevelObjectiveClient))
 		}
 
-		autClient, err = cFactory.AutomationClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		documentClient, err = cFactory.DocumentClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		openPipelineClient, err = cFactory.OpenPipelineClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		segmentClient, err = cFactory.SegmentsClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		serviceLevelObjectiveClient, err = cFactory.SLOClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
-		if err != nil {
-			return nil, err
-		}
+		//settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
+		//if err != nil {
+		//	return nil, err
+		//}
 
 		classicURL, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
 		if err != nil {
@@ -336,34 +381,25 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	if auth.Token != nil {
 		cFactory = cFactory.WithAccessToken(auth.Token.Value.Value()).
 			WithClassicURL(classicURL)
-		client, err := cFactory.CreateClassicClient()
-		if err != nil {
-			return nil, err
-		}
+		//client, err := cFactory.CreateClassicClient()
+		//if err != nil {
+		//	return nil, err
+		//}
 
-		configClient, err = dtclient.NewClassicConfigClient(client, dtclient.WithCachingDisabledForConfigClient(opts.CachingDisabled))
-		if err != nil {
-			return nil, err
-		}
+		//configClient, err = dtclient.NewClassicConfigClient(client, dtclient.WithCachingDisabledForConfigClient(opts.CachingDisabled))
+		//if err != nil {
+		//	return nil, err
+		//}
 
-		if settingsClient == nil {
-			settingsClient, err = dtclient.NewClassicSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
-			if err != nil {
-				return nil, err
-			}
-		}
+		//if settingsClient == nil {
+		//	settingsClient, err = dtclient.NewClassicSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
+		//	if err != nil {
+		//		return nil, err
+		//	}
+		//}
 	}
 
-	return &ClientSet{
-		ConfigClient:                configClient,
-		SettingsClient:              settingsClient,
-		AutClient:                   autClient,
-		BucketClient:                bucketClient,
-		DocumentClient:              documentClient,
-		OpenPipelineClient:          openPipelineClient,
-		SegmentClient:               segmentClient,
-		ServiceLevelObjectiveClient: serviceLevelObjectiveClient,
-	}, nil
+	return cls, nil
 }
 
 func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth, client *rest.Client) (string, error) {

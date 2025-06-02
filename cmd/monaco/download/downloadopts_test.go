@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/options"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
@@ -35,31 +36,31 @@ func Test_prepareAPIs(t *testing.T) {
 		}{
 			{
 				name:  "onlySettings",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlySettingsFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlySettingsFlag: true}},
 			},
 			{
 				name:  "onlyDocuments",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyDocumentsFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyDocumentsFlag: true}},
 			},
 			{
 				name:  "onlyOpenpipeline",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyOpenPipelineFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyOpenPipelineFlag: true}},
 			},
 			{
 				name:  "onlyAutomation",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyAutomationFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyAutomationFlag: true}},
 			},
 			{
 				name:  "onlyFilterSegments",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlySegmentsFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlySegmentsFlag: true}},
 			},
 			{
 				name:  "onlyFilterBuckets",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyBucketsFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyBucketsFlag: true}},
 			},
 			{
 				name:  "onlyFilterSloV2",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlySloV2Flag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlySloV2Flag: true}},
 			},
 		}
 
@@ -78,35 +79,35 @@ func Test_prepareAPIs(t *testing.T) {
 		}{
 			{
 				name:  "onlyAutomation",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyAutomationFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyAutomationFlag: true}},
 			},
 			{
 				name:  "onlySettings",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlySettingsFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlySettingsFlag: true}},
 			},
 			{
 				name:  "onlyDocuments",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyDocumentsFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyDocumentsFlag: true}},
 			},
 			{
 				name:  "onlyBuckets",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyBucketsFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyBucketsFlag: true}},
 			},
 			{
 				name:  "onlyOpenpipeline",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyOpenPipelineFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyOpenPipelineFlag: true}},
 			},
 			{
 				name:  "onlySegment",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlySegmentsFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlySegmentsFlag: true}},
 			},
 			{
 				name:  "onlyAPIs",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyApisFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyApisFlag: true}},
 			},
 			{
 				name:  "specificAPIs is marked as 'skip'",
-				given: downloadConfigsOptions{specificAPIs: []string{"extension"}, onlyOptions: OnlyOptions{OnlyApisFlag: true}},
+				given: downloadConfigsOptions{specificAPIs: []string{"extension"}, onlyOptions: options.OnlyOptions{OnlyApisFlag: true}},
 			},
 			{
 				name: "without special cases",
@@ -176,11 +177,11 @@ func Test_prepareAPIs(t *testing.T) {
 		}{
 			{
 				name:  "onlyAPIs",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyApisFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyApisFlag: true}},
 			},
 			{
 				name:  "specificAPIs is marked as 'skip'",
-				given: downloadConfigsOptions{specificAPIs: []string{"extension"}, onlyOptions: OnlyOptions{OnlyApisFlag: true}},
+				given: downloadConfigsOptions{specificAPIs: []string{"extension"}, onlyOptions: options.OnlyOptions{OnlyApisFlag: true}},
 			},
 			{
 				name: "without special cases",
@@ -210,11 +211,11 @@ func Test_prepareAPIs(t *testing.T) {
 		}{
 			{
 				name:  "onlyAPIs",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyApisFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyApisFlag: true}},
 			},
 			{
 				name:  "specificAPIs is marked as 'skip'",
-				given: downloadConfigsOptions{specificAPIs: []string{"extension"}, onlyOptions: OnlyOptions{OnlyApisFlag: true}},
+				given: downloadConfigsOptions{specificAPIs: []string{"extension"}, onlyOptions: options.OnlyOptions{OnlyApisFlag: true}},
 			},
 			{
 				name: "without special cases",
@@ -244,39 +245,39 @@ func Test_prepareAPIs(t *testing.T) {
 		}{
 			{
 				name:       "onlySegment",
-				given:      downloadConfigsOptions{onlyOptions: OnlyOptions{OnlySegmentsFlag: true}},
+				given:      downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlySegmentsFlag: true}},
 				deprecated: false,
 			},
 			{
 				name:       "onlyAutomation",
-				given:      downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyAutomationFlag: true}},
+				given:      downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyAutomationFlag: true}},
 				deprecated: false,
 			},
 			{
 				name:       "onlySettings",
-				given:      downloadConfigsOptions{onlyOptions: OnlyOptions{OnlySettingsFlag: true}},
+				given:      downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlySettingsFlag: true}},
 				deprecated: false,
 			},
 			{
 				name:  "onlyDocuments",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyDocumentsFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyDocumentsFlag: true}},
 			},
 			{
 				name:  "onlyBuckets",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyBucketsFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyBucketsFlag: true}},
 			},
 			{
 				name:  "onlyOpenpipeline",
-				given: downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyOpenPipelineFlag: true}},
+				given: downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyOpenPipelineFlag: true}},
 			},
 			{
 				name:       "onlyAPIs",
-				given:      downloadConfigsOptions{onlyOptions: OnlyOptions{OnlyOpenPipelineFlag: true}},
+				given:      downloadConfigsOptions{onlyOptions: options.OnlyOptions{OnlyOpenPipelineFlag: true}},
 				deprecated: false,
 			},
 			{
 				name:       "specificAPI marked with 'deprecatedBy' is not filtered out",
-				given:      downloadConfigsOptions{specificAPIs: []string{"auto-tag"}, onlyOptions: OnlyOptions{OnlyApisFlag: true}},
+				given:      downloadConfigsOptions{specificAPIs: []string{"auto-tag"}, onlyOptions: options.OnlyOptions{OnlyApisFlag: true}},
 				deprecated: true,
 			},
 			{

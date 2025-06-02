@@ -28,7 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/multierror"
@@ -37,14 +36,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/document"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/openpipeline"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
@@ -140,7 +131,7 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 	return nil
 }
 
-func Deploy(ctx context.Context, clientSet *client.ClientSet, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
+func Deploy(ctx context.Context, clientSet []client.Resource, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
 	preloadCaches(ctx, projects, clientSet, environment)
 	defer clearCaches(clientSet)
 	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", environment)
@@ -161,7 +152,7 @@ func getSortedEnvConfigs(g graph.ConfigGraphPerEnvironment, envNames []string) (
 	return envConfigs, nil
 }
 
-func deployComponents(ctx context.Context, components []graph.SortedComponent, clientset *client.ClientSet) error {
+func deployComponents(ctx context.Context, components []graph.SortedComponent, clientset []client.Resource) error {
 	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets in parallel...", len(components))
 	errCount := 0
 	errChan := make(chan error, len(components))
@@ -192,7 +183,7 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 	return nil
 }
 
-func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clientset *client.ClientSet) error {
+func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clientset []client.Resource) error {
 	g := simple.NewDirectedGraph()
 	gonum.Copy(g, configGraph)
 	resolvedEntities := entities.New()
@@ -233,7 +224,7 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 	return nil
 }
 
-func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clientset *client.ClientSet, resolvedEntities *entities.EntityMap) error {
+func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clientset []client.Resource, resolvedEntities *entities.EntityMap) error {
 	ctx = report.NewContextWithDetailer(ctx, report.NewDefaultDetailer())
 	resolvedEntity, err := deployConfig(ctx, n.Config, clientset, resolvedEntities)
 	details := report.GetDetailerFromContextOrDiscard(ctx).GetAll()
@@ -303,7 +294,7 @@ func (e ErrUnknownConfigType) Error() string {
 	return fmt.Sprintf("unknown config type (ID: %q)", e.configType)
 }
 
-func deployConfig(ctx context.Context, c *config.Config, clientset *client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
+func deployConfig(ctx context.Context, c *config.Config, clientset []client.Resource, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
 	if limiter := getDeploymentLimiterFromContext(ctx); limiter != nil {
 		limiter.Acquire()
 		defer limiter.Release()
@@ -332,47 +323,60 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 	log.WithCtxFields(ctx).WithFields(field.StatusDeploying()).Info("Deploying config")
 	var resolvedEntity entities.ResolvedEntity
 	var deployErr error
-	switch c.Type.(type) {
-	case config.SettingsType:
-		resolvedEntity, deployErr = setting.Deploy(ctx, clientset.SettingsClient, properties, renderedConfig, c)
-
-	case config.ClassicApiType:
-		resolvedEntity, deployErr = classic.Deploy(ctx, clientset.ConfigClient, api.NewAPIs(), properties, renderedConfig, c)
-
-	case config.AutomationType:
-		resolvedEntity, deployErr = automation.Deploy(ctx, clientset.AutClient, properties, renderedConfig, c)
-
-	case config.BucketType:
-		resolvedEntity, deployErr = bucket.Deploy(ctx, clientset.BucketClient, properties, renderedConfig, c)
-
-	case config.DocumentType:
-		resolvedEntity, deployErr = document.Deploy(ctx, clientset.DocumentClient, properties, renderedConfig, c)
-
-	case config.OpenPipelineType:
-		if !featureflags.OpenPipeline.Enabled() {
-			deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
+	clientFound := false
+	for _, cl := range clientset {
+		if cl.Is(c.Type) {
+			clientFound = true
+			resolvedEntity, deployErr = cl.Deploy(ctx, properties, renderedConfig, c)
 			break
 		}
+	}
 
-		resolvedEntity, deployErr = openpipeline.Deploy(ctx, clientset.OpenPipelineClient, properties, renderedConfig, c)
+	//switch c.Type.(type) {
+	//case config.SettingsType:
+	//	resolvedEntity, deployErr = setting.Deploy(ctx, clientset.SettingsClient, properties, renderedConfig, c)
+	//
+	//case config.ClassicApiType:
+	//	resolvedEntity, deployErr = classic.Deploy(ctx, clientset.ConfigClient, api.NewAPIs(), properties, renderedConfig, c)
+	//
+	//case config.AutomationType:
+	//	resolvedEntity, deployErr = automation.Deploy(ctx, clientset.AutClient, properties, renderedConfig, c)
+	//
+	//case config.BucketType:
+	//	resolvedEntity, deployErr = bucket.Deploy(ctx, clientset.BucketClient, properties, renderedConfig, c)
+	//
+	//case config.DocumentType:
+	//	resolvedEntity, deployErr = document.Deploy(ctx, clientset.DocumentClient, properties, renderedConfig, c)
+	//
+	//case config.OpenPipelineType:
+	//	if !featureflags.OpenPipeline.Enabled() {
+	//		deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
+	//		break
+	//	}
+	//
+	//	resolvedEntity, deployErr = openpipeline.Deploy(ctx, clientset.OpenPipelineClient, properties, renderedConfig, c)
+	//
+	//case config.Segment:
+	//	if !featureflags.Segments.Enabled() {
+	//		deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
+	//		break
+	//	}
+	//
+	//	resolvedEntity, deployErr = segment.Deploy(ctx, clientset.SegmentClient, properties, renderedConfig, c)
+	//
+	//case config.ServiceLevelObjective:
+	//	if !featureflags.ServiceLevelObjective.Enabled() {
+	//		deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
+	//		break
+	//	}
+	//
+	//	resolvedEntity, deployErr = slo.Deploy(ctx, clientset.ServiceLevelObjectiveClient, properties, renderedConfig, c)
+	//
+	//default:
+	//	deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
+	//}
 
-	case config.Segment:
-		if !featureflags.Segments.Enabled() {
-			deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
-			break
-		}
-
-		resolvedEntity, deployErr = segment.Deploy(ctx, clientset.SegmentClient, properties, renderedConfig, c)
-
-	case config.ServiceLevelObjective:
-		if !featureflags.ServiceLevelObjective.Enabled() {
-			deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
-			break
-		}
-
-		resolvedEntity, deployErr = slo.Deploy(ctx, clientset.ServiceLevelObjectiveClient, properties, renderedConfig, c)
-
-	default:
+	if !clientFound {
 		deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
 	}
 

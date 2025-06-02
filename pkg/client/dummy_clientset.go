@@ -27,19 +27,18 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 )
 
-var DummyClientSet = ClientSet{
-	ConfigClient:                &dtclient.DummyConfigClient{},
-	SettingsClient:              &dtclient.DummySettingsClient{},
-	AutClient:                   &DummyAutomationClient{},
-	BucketClient:                &DummyBucketClient{},
-	DocumentClient:              &DummyDocumentClient{},
-	OpenPipelineClient:          &DummyOpenPipelineClient{},
-	SegmentClient:               &DummySegmentClient{},
-	ServiceLevelObjectiveClient: &DummyServiceLevelObjectClient{},
-}
+//var DummyClientSet = ClientSet{
+//	ConfigClient:                &dtclient.DummyConfigClient{},
+//	SettingsClient:              &dtclient.DummySettingsClient{},
+//	AutClient:                   &DummyAutomationClient{},
+//	BucketClient:                &DummyBucketClient{},
+//	DocumentClient:              &DummyDocumentClient{},
+//	OpenPipelineClient:          &DummyOpenPipelineClient{},
+//	SegmentClient:               &DummySegmentClient{},
+//	ServiceLevelObjectiveClient: &DummyServiceLevelObjectClient{},
+//}
 
 var _ AutomationClient = (*DummyAutomationClient)(nil)
 

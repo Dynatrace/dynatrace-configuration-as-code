@@ -17,23 +17,18 @@
 package delete
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"maps"
+	"slices"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/bucket"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/classic"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/document"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/segment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/setting"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
@@ -42,19 +37,47 @@ type configurationType = string
 // DeleteEntries is a map of configuration type to slice of delete pointers
 type DeleteEntries = map[configurationType][]pointer.DeletePointer
 
-// Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
-func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete DeleteEntries) error {
-	remainingEntriesToDelete, errCount := deleteAutomationConfigs(ctx, clients.AutClient, entriesToDelete)
-
-	//  Dashboard share settings cannot be deleted
-	if _, ok := remainingEntriesToDelete[api.DashboardShareSettings]; ok {
-		log.Warn("Classic config of type %s cannot be deleted. Note, that they can be removed by deleting the associated dashboard.", api.DashboardShareSettings)
-		delete(remainingEntriesToDelete, api.DashboardShareSettings)
+func getSortedConfigTypesOfDeleteEntries(deleteEntries DeleteEntries, clients []client.Resource) []string {
+	configTypes := make([]string, 0, len(deleteEntries))
+	for t := range deleteEntries {
+		//  Dashboard share settings cannot be deleted
+		if t == api.DashboardShareSettings {
+			log.Warn("Classic config of type %s cannot be deleted. Note, that they can be removed by deleting the associated dashboard.", api.DashboardShareSettings)
+			continue
+		}
+		configTypes = append(configTypes, t)
 	}
+	slices.SortFunc(configTypes, func(e string, e2 string) int {
+		priority := cmp.Compare(getPriority(e, clients), getPriority(e2, clients))
+
+		// if they have the same priority, order by type
+		if priority == 0 {
+			return cmp.Compare(e, e2)
+		}
+		return priority
+	})
+	return configTypes
+}
+
+func getPriority(configType string, clients []client.Resource) int {
+	for _, c := range clients {
+		if c.IsDeletePointer(configType) {
+			return c.DeletePriority(configType)
+		}
+	}
+	return 0
+}
+
+// Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
+func Configs(ctx context.Context, clients []client.Resource, entriesToDelete DeleteEntries) error {
+	sortedConfigTypes := getSortedConfigTypesOfDeleteEntries(entriesToDelete, clients)
+
+	//remainingEntriesToDelete, errCount := deleteAutomationConfigs(ctx, clients.AutClient, entriesToDelete)
 
 	// Delete rest of config types
-	for t, entries := range remainingEntriesToDelete {
-		if err := deleteConfig(ctx, clients, t, entries); err != nil {
+	var errCount int
+	for _, configType := range sortedConfigTypes {
+		if err := deleteConfig(ctx, clients, configType, entriesToDelete[configType]); err != nil {
 			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
 			errCount += 1
 		}
@@ -90,41 +113,50 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 	return remainingDeleteEntries, errCount
 }
 
-func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entries []pointer.DeletePointer) error {
-	if _, ok := api.NewAPIs()[t]; ok {
-		if clients.ConfigClient != nil {
-			return classic.Delete(ctx, clients.ConfigClient, entries)
+func deleteConfig(ctx context.Context, clients []client.Resource, t string, entries []pointer.DeletePointer) error {
+	for _, c := range clients {
+		// settings client always true? Put at the end?
+		// probably not the right approach because if "token auth" is not set and an API is set, the settings client should not try to delete the config?
+		if c.IsDeletePointer(t) {
+			return c.Delete(ctx, entries)
 		}
-		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Classic configuration(s) as API client was unavailable.", len(entries))
-	} else if t == "bucket" {
-		if clients.BucketClient != nil {
-			return bucket.Delete(ctx, clients.BucketClient, entries)
-		}
-		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
-	} else if t == "document" {
-		if clients.DocumentClient != nil {
-			return document.Delete(ctx, clients.DocumentClient, entries)
-		}
-		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
-	} else if t == string(config.SegmentID) {
-		if featureflags.Segments.Enabled() {
-			if clients.SegmentClient != nil {
-				return segment.Delete(ctx, clients.SegmentClient, entries)
-			}
-			log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.SegmentID)
-		}
-	} else if t == string(config.ServiceLevelObjectiveID) {
-		if featureflags.ServiceLevelObjective.Enabled() {
-			if clients.ServiceLevelObjectiveClient != nil {
-				return slo.Delete(ctx, clients.ServiceLevelObjectiveClient, entries)
-			}
-			log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.ServiceLevelObjectiveID)
-		}
-	} else {
-		if clients.SettingsClient != nil {
-			return setting.Delete(ctx, clients.SettingsClient, entries)
-		}
-		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Settings configuration(s) as API client was unavailable.", len(entries))
 	}
+	// return new error: config not found? Will not be true for settings I guess
 	return nil
+	//if _, ok := api.NewAPIs()[t]; ok {
+	//	if clients.ConfigClient != nil {
+	//		return classic.Delete(ctx, clients.ConfigClient, entries)
+	//	}
+	//	log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Classic configuration(s) as API client was unavailable.", len(entries))
+	//} else if t == "bucket" {
+	//	if clients.BucketClient != nil {
+	//		return bucket.Delete(ctx, clients.BucketClient, entries)
+	//	}
+	//	log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
+	//} else if t == "document" {
+	//	if clients.DocumentClient != nil {
+	//		return document.Delete(ctx, clients.DocumentClient, entries)
+	//	}
+	//	log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
+	//} else if t == string(config.SegmentID) {
+	//	if featureflags.Segments.Enabled() {
+	//		if clients.SegmentClient != nil {
+	//			return segment.Delete(ctx, clients.SegmentClient, entries)
+	//		}
+	//		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.SegmentID)
+	//	}
+	//} else if t == string(config.ServiceLevelObjectiveID) {
+	//	if featureflags.ServiceLevelObjective.Enabled() {
+	//		if clients.ServiceLevelObjectiveClient != nil {
+	//			return slo.Delete(ctx, clients.ServiceLevelObjectiveClient, entries)
+	//		}
+	//		log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.ServiceLevelObjectiveID)
+	//	}
+	//} else {
+	//	if clients.SettingsClient != nil {
+	//		return setting.Delete(ctx, clients.SettingsClient, entries)
+	//	}
+	//	log.WithCtxFields(ctx).WithFields(field.Type(t)).Warn("Skipped deletion of %d Settings configuration(s) as API client was unavailable.", len(entries))
+	//}
+	//return nil
 }

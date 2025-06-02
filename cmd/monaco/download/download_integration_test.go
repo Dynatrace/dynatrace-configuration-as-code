@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/options"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -1358,7 +1359,7 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 			outputFolder: "out",
 			projectName:  projectName,
 		},
-		onlyOptions: OnlyOptions{
+		onlyOptions: options.OnlyOptions{
 			OnlyApisFlag: true,
 		},
 	}

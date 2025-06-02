@@ -30,37 +30,40 @@ import (
 )
 
 // preloadCaches fills the caches of the specified clients for the config types used in the given projects.
-func preloadCaches(ctx context.Context, projects []project.Project, clientSet *client.ClientSet, environment string) {
+func preloadCaches(ctx context.Context, projects []project.Project, clientSet []client.Resource, environment string) {
 	var wg sync.WaitGroup
 	for _, c := range gatherPreloadConfigTypeEntries(projects, environment) {
 		wg.Add(1)
 		go func(configType config.Type) {
 			defer wg.Done()
 
-			switch t := configType.(type) {
-			case config.SettingsType:
-				if clientSet.SettingsClient != nil {
-					preloadSettingsValuesForSchemaId(ctx, clientSet.SettingsClient, t.SchemaId)
-				}
-
-			case config.ClassicApiType:
-				if clientSet.ConfigClient != nil {
-					preloadValuesForApi(ctx, clientSet.ConfigClient, t.Api)
+			for _, cl := range clientSet {
+				if cl.Is(configType) {
+					cl.Preload(configType)
+					break
 				}
 			}
+
+			//switch t := configType.(type) {
+			//case config.SettingsType:
+			//	if clientSet.SettingsClient != nil {
+			//		preloadSettingsValuesForSchemaId(ctx, clientSet.SettingsClient, t.SchemaId)
+			//	}
+			//
+			//case config.ClassicApiType:
+			//	if clientSet.ConfigClient != nil {
+			//		preloadValuesForApi(ctx, clientSet.ConfigClient, t.Api)
+			//	}
+			//}
 
 		}(c)
 	}
 	wg.Wait()
 }
 
-func clearCaches(clientSet *client.ClientSet) {
-	if clientSet.SettingsClient != nil {
-		clientSet.SettingsClient.ClearCache()
-	}
-
-	if clientSet.ConfigClient != nil {
-		clientSet.ConfigClient.ClearCache()
+func clearCaches(clientSet []client.Resource) {
+	for _, cls := range clientSet {
+		cls.ClearCache()
 	}
 }
 

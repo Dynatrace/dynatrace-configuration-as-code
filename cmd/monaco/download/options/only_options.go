@@ -14,8 +14,20 @@
  * limitations under the License.
  */
 
-package download
+package options
 
+type OnlyFlag = string
+
+const (
+	OnlyApisFlag         OnlyFlag = "only-apis"
+	OnlySettingsFlag     OnlyFlag = "only-settings"
+	OnlyAutomationFlag   OnlyFlag = "only-automation"
+	OnlyDocumentsFlag    OnlyFlag = "only-documents"
+	OnlyBucketsFlag      OnlyFlag = "only-buckets"
+	OnlyOpenPipelineFlag OnlyFlag = "only-openpipeline"
+	OnlySloV2Flag        OnlyFlag = "only-slo-v2"
+	OnlySegmentsFlag     OnlyFlag = "only-segments"
+)
 type OnlyOptions map[OnlyFlag]bool
 
 // OnlyCount returns the amount of enabled "only" flags

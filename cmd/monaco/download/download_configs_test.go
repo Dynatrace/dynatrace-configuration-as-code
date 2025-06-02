@@ -32,6 +32,7 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/options"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -95,7 +96,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			givenOpts: downloadConfigsOptions{
 				specificAPIs:    nil,
 				specificSchemas: []string{"builtin:magic.secret"},
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySettingsFlag: true,
 				},
 				downloadOptionsShared: downloadOptions,
@@ -115,7 +116,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			givenOpts: downloadConfigsOptions{
 				specificAPIs:    []string{"alerting-profile"},
 				specificSchemas: nil,
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyApisFlag: true,
 				},
 				downloadOptionsShared: downloadOptions,
@@ -134,7 +135,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			givenOpts: downloadConfigsOptions{
 				specificAPIs:    []string{"alerting-profile"},
 				specificSchemas: []string{"builtin:magic.secret"},
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySettingsFlag: true,
 					OnlyApisFlag:     true,
 				},
@@ -155,7 +156,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			givenOpts: downloadConfigsOptions{
 				specificAPIs:    nil,
 				specificSchemas: nil,
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyApisFlag: true,
 				},
 				downloadOptionsShared: downloadOptions,
@@ -174,7 +175,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			givenOpts: downloadConfigsOptions{
 				specificAPIs:    nil,
 				specificSchemas: nil,
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySettingsFlag: true,
 				},
 				downloadOptionsShared: downloadOptions,
@@ -235,7 +236,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only settings requested",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySettingsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -247,7 +248,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "specific settings requested",
 			given: downloadConfigsOptions{
 				specificSchemas: []string{"some:schema"},
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySettingsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -258,7 +259,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only documents requested",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyDocumentsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -269,7 +270,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only buckets requested",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyBucketsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -280,7 +281,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only openpipeline requested",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyOpenPipelineFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -291,7 +292,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only segment requested with FF on",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySegmentsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -303,7 +304,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only segment requested with FF off",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySegmentsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -315,7 +316,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only slo-v2 requested with FF on",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySloV2Flag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -327,7 +328,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only slo-v2 requested with FF off",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySloV2Flag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -339,7 +340,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only apis requested",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyApisFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -350,7 +351,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "specific config apis requested",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyApisFlag: true,
 				},
 				specificAPIs: []string{"alerting-profile"},
@@ -362,7 +363,7 @@ func TestDownload_Options(t *testing.T) {
 		{
 			name: "only automations requested",
 			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyAutomationFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
@@ -376,7 +377,7 @@ func TestDownload_Options(t *testing.T) {
 			given: downloadConfigsOptions{
 				specificAPIs:    []string{"alerting-profile"},
 				specificSchemas: []string{"some:schema"},
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySettingsFlag: true,
 					OnlyApisFlag:     true,
 				},
@@ -463,7 +464,7 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          nil,
 				specificSchemas:       nil,
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySettingsFlag: true,
 				},
 			},
@@ -475,7 +476,7 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          nil,
 				specificSchemas:       []string{"some-schema", "other-schema"},
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlySettingsFlag: true,
 				},
 			},
@@ -487,7 +488,7 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          []string{"some-api", "other-api"},
 				specificSchemas:       nil,
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyApisFlag: true,
 				},
 			},
@@ -499,7 +500,7 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          []string{"some-api", "other-api"},
 				specificSchemas:       []string{"some-schema", "other-schema"},
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyApisFlag:     true,
 					OnlySettingsFlag: true,
 				},
@@ -512,7 +513,7 @@ func Test_shouldDownloadSettings(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{},
 				specificAPIs:          []string{"some-api", "other-api"},
 				specificSchemas:       nil,
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					OnlyApisFlag: true,
 				},
 			},
@@ -530,7 +531,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 
 	givenOpts := downloadConfigsOptions{
 		specificSchemas: []string{"UNKNOWN SCHEMA"},
-		onlyOptions: OnlyOptions{
+		onlyOptions: options.OnlyOptions{
 			OnlySettingsFlag: false,
 		},
 		downloadOptionsShared: downloadOptionsShared{
@@ -636,7 +637,7 @@ func TestDownloadConfigs_ErrorIfOAuthMissing(t *testing.T) {
 	for _, flag := range flags {
 		t.Run(fmt.Sprintf("Errors for %s", flag), func(t *testing.T) {
 			opts := downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
+				onlyOptions: options.OnlyOptions{
 					flag: true,
 				},
 				downloadOptionsShared: sharedOptionsWithToken,
@@ -663,7 +664,7 @@ func TestDownloadConfigs_ErrorIfTokenMissing(t *testing.T) {
 	}
 
 	opts := downloadConfigsOptions{
-		onlyOptions: OnlyOptions{
+		onlyOptions: options.OnlyOptions{
 			OnlyApisFlag: true,
 		},
 		downloadOptionsShared: sharedOptionsWithOAuth,
@@ -675,7 +676,7 @@ func TestDownloadConfigs_ErrorIfTokenMissing(t *testing.T) {
 
 func TestDownloadConfigs_OnlySettings(t *testing.T) {
 	opts := downloadConfigsOptions{
-		onlyOptions: OnlyOptions{
+		onlyOptions: options.OnlyOptions{
 			OnlySettingsFlag: true,
 		},
 		downloadOptionsShared: downloadOptionsShared{
@@ -806,7 +807,7 @@ func Test_copyConfigs(t *testing.T) {
 func Test_EscapingSkip_Buckets(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	opts := downloadConfigsOptions{
-		onlyOptions: OnlyOptions{
+		onlyOptions: options.OnlyOptions{
 			OnlyBucketsFlag: true,
 		},
 		downloadOptionsShared: downloadOptionsShared{

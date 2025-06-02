@@ -25,10 +25,12 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/options"
 )
 
 func TestGetDownloadCommand(t *testing.T) {
-	defaultOnlyOptions := OnlyOptions{
+	defaultOnlyOptions := options.OnlyOptions{
 		OnlySettingsFlag:     false,
 		OnlyApisFlag:         false,
 		OnlySegmentsFlag:     false,

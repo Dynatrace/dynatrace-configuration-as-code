@@ -75,14 +75,14 @@ func purgeConfigs(ctx context.Context, environments []manifest.EnvironmentDefini
 func purgeForEnvironment(ctx context.Context, env manifest.EnvironmentDefinition, apis api.APIs) error {
 	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
-	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth)
+	clients, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, nil, apis)
 	if err != nil {
 		return fmt.Errorf("failed to create a client for env `%s`: %w", env.Name, err)
 	}
 
 	log.WithCtxFields(ctx).Info("Deleting configs for environment `%s`", env.Name)
 
-	if err := delete.All(ctx, *clients, apis); err != nil {
+	if err := delete.All(ctx, clients); err != nil {
 		log.Error("Encountered errors while puring configurations from environment %s, further manual cleanup may be needed - check logs for details.", env.Name)
 	}
 	return nil

@@ -19,6 +19,7 @@ package download
 import (
 	"fmt"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/options"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -28,7 +29,7 @@ type downloadConfigsOptions struct {
 	downloadOptionsShared
 	specificAPIs    []string
 	specificSchemas []string
-	onlyOptions     OnlyOptions
+	onlyOptions     options.OnlyOptions
 }
 
 func (opts downloadConfigsOptions) valid() []error {
@@ -51,7 +52,7 @@ func prepareAPIs(apis api.APIs, opts downloadConfigsOptions) api.APIs {
 		return apis.Filter(api.RetainByName(opts.specificAPIs), removeSkipDownload, warnDeprecated())
 	}
 
-	if opts.onlyOptions.ShouldDownload(OnlyApisFlag) {
+	if opts.onlyOptions.ShouldDownload(options.OnlyApisFlag) {
 		// Remove deprecated and warn
 		return apis.Filter(removeSkipDownload, removeDeprecated(withWarn()))
 	}

@@ -173,7 +173,7 @@ type (
 		Group string
 	}
 	// EnvironmentClients is a collection of clients to use for specific environments
-	EnvironmentClients map[EnvironmentInfo]*client.ClientSet
+	EnvironmentClients map[EnvironmentInfo][]client.Resource
 )
 
 // Names gives back all environment Names for which the EnvironmentClients has a client sets
@@ -193,11 +193,11 @@ func CreateEnvironmentClients(ctx context.Context, environments manifest.Environ
 			clients[EnvironmentInfo{
 				Name:  env.Name,
 				Group: env.Group,
-			}] = &client.DummyClientSet
+			}] = make([]client.Resource, 0)
 			continue
 		}
 
-		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth)
+		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth, nil, nil)
 		if err != nil {
 			return EnvironmentClients{}, err
 		}

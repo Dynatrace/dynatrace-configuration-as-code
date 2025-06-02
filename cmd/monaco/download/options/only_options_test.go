@@ -14,47 +14,49 @@
  * limitations under the License.
  */
 
-package download
+package options
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download"
 )
 
 func TestOnlyOptions_IsSingleOption(t *testing.T) {
 	t.Run("Should return true if set and the only one", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettingsFlag: true}
+		onlyOption := OnlyOptions{download.OnlySettingsFlag: true}
 
-		got := onlyOption.IsSingleOption(OnlySettingsFlag)
+		got := onlyOption.IsSingleOption(download.OnlySettingsFlag)
 		assert.True(t, got)
 	})
 
 	t.Run("Should return false if set and not the only one", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettingsFlag: true, OnlyApisFlag: true}
+		onlyOption := OnlyOptions{download.OnlySettingsFlag: true, download.OnlyApisFlag: true}
 
-		got := onlyOption.IsSingleOption(OnlySettingsFlag)
+		got := onlyOption.IsSingleOption(download.OnlySettingsFlag)
 		assert.False(t, got)
 	})
 
 	t.Run("Should return false if not set", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlyApisFlag: true}
+		onlyOption := OnlyOptions{download.OnlyApisFlag: true}
 
-		got := onlyOption.IsSingleOption(OnlySettingsFlag)
+		got := onlyOption.IsSingleOption(download.OnlySettingsFlag)
 		assert.False(t, got)
 	})
 
 	t.Run("Should return false if set but false", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettingsFlag: false}
+		onlyOption := OnlyOptions{download.OnlySettingsFlag: false}
 
-		got := onlyOption.IsSingleOption(OnlySettingsFlag)
+		got := onlyOption.IsSingleOption(download.OnlySettingsFlag)
 		assert.False(t, got)
 	})
 }
 
 func TestOnlyOptions_OnlyCount(t *testing.T) {
 	t.Run("Should return the amount of enabled flags", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettingsFlag: false, OnlyApisFlag: true, OnlySegmentsFlag: true}
+		onlyOption := OnlyOptions{download.OnlySettingsFlag: false, download.OnlyApisFlag: true, download.OnlySegmentsFlag: true}
 
 		got := onlyOption.OnlyCount()
 		assert.Equal(t, got, 2)
@@ -65,28 +67,28 @@ func TestOnlyOptions_ShouldDownload(t *testing.T) {
 	t.Run("Should return true if no flags", func(t *testing.T) {
 		onlyOption := OnlyOptions{}
 
-		got := onlyOption.ShouldDownload(OnlySettingsFlag)
+		got := onlyOption.ShouldDownload(download.OnlySettingsFlag)
 		assert.True(t, got)
 	})
 
 	t.Run("Should return true if no true flags are set", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettingsFlag: false, OnlyApisFlag: false, OnlySegmentsFlag: false}
+		onlyOption := OnlyOptions{download.OnlySettingsFlag: false, download.OnlyApisFlag: false, download.OnlySegmentsFlag: false}
 
-		got := onlyOption.ShouldDownload(OnlySettingsFlag)
+		got := onlyOption.ShouldDownload(download.OnlySettingsFlag)
 		assert.True(t, got)
 	})
 
 	t.Run("Should return true if the only flag is set", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettingsFlag: true, OnlyApisFlag: false, OnlySegmentsFlag: true}
+		onlyOption := OnlyOptions{download.OnlySettingsFlag: true, download.OnlyApisFlag: false, download.OnlySegmentsFlag: true}
 
-		got := onlyOption.ShouldDownload(OnlySettingsFlag)
+		got := onlyOption.ShouldDownload(download.OnlySettingsFlag)
 		assert.True(t, got)
 	})
 
 	t.Run("Should return false", func(t *testing.T) {
-		onlyOption := OnlyOptions{OnlySettingsFlag: true, OnlyApisFlag: false, OnlySegmentsFlag: true}
+		onlyOption := OnlyOptions{download.OnlySettingsFlag: true, download.OnlyApisFlag: false, download.OnlySegmentsFlag: true}
 
-		got := onlyOption.ShouldDownload(OnlyApisFlag)
+		got := onlyOption.ShouldDownload(download.OnlyApisFlag)
 		assert.False(t, got)
 	})
 }
