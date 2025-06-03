@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package settings
 
 import (
 	"fmt"
@@ -26,18 +26,23 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2/clientcredentials"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
 
 func TestSettingsWithACL(t *testing.T) {
-	configFolder := "test-resources/settings-acl/"
+	configFolder := "testdata/settings-acl/"
 	defaultManifest := configFolder + "acl-empty/manifest.yaml"
 	environment := "platform_env"
 	project := "project"
@@ -72,13 +77,13 @@ func TestSettingsWithACL(t *testing.T) {
 			},
 		}
 
-		Run(t, configFolder,
-			Options{
-				WithManifestPath(defaultManifest),
-				WithSuffix("settings-ACL"),
-				WithEnvironment(environment),
+		v2.Run(t, configFolder,
+			v2.Options{
+				v2.WithManifestPath(defaultManifest),
+				v2.WithSuffix("settings-ACL"),
+				v2.WithEnvironment(environment),
 			},
-			func(fs afero.Fs, testContext TestContext) {
+			func(fs afero.Fs, testContext v2.TestContext) {
 				for _, update := range updates {
 					t.Logf("Update permission with '%s'", update.ManifestFolder)
 
@@ -114,4 +119,22 @@ func TestSettingsWithACL(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, logOutput.String(), "unknown settings configuration property 'permissions'")
 	})
+}
+
+func createSettingsClientPlatform(t *testing.T, env manifest.EnvironmentDefinition) client.SettingsClient {
+	clientFactory := clients.Factory().
+		WithOAuthCredentials(clientcredentials.Config{
+			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
+			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
+		}).
+		WithPlatformURL(env.URL.Value)
+
+	c, err := clientFactory.CreatePlatformClient(t.Context())
+	require.NoError(t, err)
+
+	dtClient, err := dtclient.NewPlatformSettingsClient(c)
+	require.NoError(t, err)
+
+	return dtClient
 }
