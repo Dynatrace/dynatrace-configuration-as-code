@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2024 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package documents
 
 import (
 	"fmt"
@@ -29,6 +29,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 )
 
@@ -40,17 +41,15 @@ import (
 // 4. check whether the document is private
 func TestDocuments(t *testing.T) {
 
-	configFolder := "test-resources/integration-documents/"
+	configFolder := "testdata/"
 	manifestPath := configFolder + "manifest.yaml"
 	environment := "platform_env"
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifestPath),
-			WithSuffix("Documents"),
-			WithEnvironment(environment),
+	v2.Run(t, configFolder,
+		v2.Options{
+			v2.WithEnvironment(environment),
 		},
-		func(fs afero.Fs, testContext TestContext) {
+		func(fs afero.Fs, testContext v2.TestContext) {
 			// deploy
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifestPath))
 			assert.NoError(t, err)
