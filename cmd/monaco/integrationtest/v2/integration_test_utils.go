@@ -188,7 +188,8 @@ func setTestEnvVar(t *testing.T, key, value, testSuffix string) {
 	t.Setenv(integrationtest.AddSuffix(key, testSuffix), value) // expose with suffix (env parameter "name" is subject to rewrite)
 }
 
-func isHardeningEnvironment() bool {
+// IsHardeningEnvironment returns true iff the environment variable "TEST_ENVIRONMENT" is "hardening"
+func IsHardeningEnvironment() bool {
 	env := os.Getenv("TEST_ENVIRONMENT")
 
 	return env == "hardening"

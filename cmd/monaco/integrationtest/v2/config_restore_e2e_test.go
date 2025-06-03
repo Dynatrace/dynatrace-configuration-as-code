@@ -75,7 +75,7 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile(t *testing.T) {
 // As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
 // Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
-	if isHardeningEnvironment() {
+	if IsHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
@@ -89,7 +89,7 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 }
 
 func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) {
-	if isHardeningEnvironment() {
+	if IsHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
@@ -118,7 +118,7 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withPlatformConfigs
 
 func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 
-	if isHardeningEnvironment() {
+	if IsHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
