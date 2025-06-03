@@ -55,7 +55,7 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 	if !dryRun && featureflags.VerifyEnvironmentType.Enabled() {
 		if err := dynatrace.VerifyEnvironmentsAuthentication(ctx, loadedManifest.Environments.SelectedEnvironments); err != nil {
 			report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, err, "", nil)
-			log.Error("%s", err)
+			log.Error("deployment aborted: %s", err)
 			return err
 		}
 	}
