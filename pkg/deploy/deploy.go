@@ -44,11 +44,11 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
@@ -365,12 +365,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		resolvedEntity, deployErr = segment.Deploy(ctx, clientset.SegmentClient, properties, renderedConfig, c)
 
 	case config.ServiceLevelObjective:
-		if !featureflags.ServiceLevelObjective.Enabled() {
-			deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
-			break
-		}
-
-		resolvedEntity, deployErr = slo.Deploy(ctx, clientset.ServiceLevelObjectiveClient, properties, renderedConfig, c)
+		resolvedEntity, deployErr = slo.NewDeployable(clientset.ServiceLevelObjectiveClient).Deploy(ctx, properties, renderedConfig, c)
 
 	default:
 		deployErr = ErrUnknownConfigType{configType: c.Type.ID()}

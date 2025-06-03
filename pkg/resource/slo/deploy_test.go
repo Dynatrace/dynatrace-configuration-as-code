@@ -32,7 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/slo"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
 type testClient struct {
@@ -205,8 +205,9 @@ func TestDeploySuccess(t *testing.T) {
 
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
+			deployable := slo.NewDeployable(&c)
 
-			resolvedEntity, err := slo.Deploy(t.Context(), &c, props, "{}", &tt.inputConfig)
+			resolvedEntity, err := deployable.Deploy(t.Context(), props, "{}", &tt.inputConfig)
 
 			assert.NoError(t, err)
 			assert.Equal(t, resolvedEntity, tt.expected)
@@ -436,7 +437,10 @@ func TestDeployErrors(t *testing.T) {
 
 			templateContent, contentErr := tt.inputConfig.Template.Content()
 			assert.NoError(t, contentErr)
-			_, err := slo.Deploy(t.Context(), &c, props, templateContent, &tt.inputConfig)
+
+			deployable := slo.NewDeployable(&c)
+
+			_, err := deployable.Deploy(t.Context(), props, templateContent, &tt.inputConfig)
 			assert.Error(t, err)
 		})
 	}

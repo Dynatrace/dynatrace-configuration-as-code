@@ -40,12 +40,20 @@ type deployServiceLevelObjectiveClient interface {
 	Create(ctx context.Context, data []byte) (api.Response, error)
 }
 
+type DeployAPI struct {
+	sloSource deployServiceLevelObjectiveClient
+}
+
+func NewDeployable(sloSource deployServiceLevelObjectiveClient) *DeployAPI {
+	return &DeployAPI{sloSource}
+}
+
 type sloResponse struct {
 	ID         string `json:"id"`
 	ExternalID string `json:"externalId"`
 }
 
-func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
+func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	ctx = logr.NewContextWithSlogLogger(ctx, log.WithCtxFields(ctx).SLogger())
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
@@ -58,7 +66,7 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 
 	//Strategy 1 when OriginObjectId is set we update the object
 	if c.OriginObjectId != "" {
-		_, err = client.Update(ctx, c.OriginObjectId, requestPayload)
+		_, err = d.sloSource.Update(ctx, c.OriginObjectId, requestPayload)
 		if err == nil {
 			return createResolveEntity(c.OriginObjectId, properties, c), nil
 		}
@@ -69,13 +77,13 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	}
 
 	//Strategy 2 is to try to find a match with external id and update it
-	matchID, match, err := findMatchOnRemote(ctx, client, externalID)
+	matchID, match, err := d.findMatchOnRemote(ctx, externalID)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("error finding slo with externalID: %s", externalID)).WithError(err)
 	}
 
 	if match {
-		_, err := client.Update(ctx, matchID, requestPayload)
+		_, err := d.sloSource.Update(ctx, matchID, requestPayload)
 		if err != nil {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update slo with externalID: %s", externalID)).WithError(err)
 		}
@@ -83,7 +91,7 @@ func Deploy(ctx context.Context, client deployServiceLevelObjectiveClient, prope
 	}
 
 	//Strategy 3 is to create a new slo
-	createResponse, err := client.Create(ctx, requestPayload)
+	createResponse, err := d.sloSource.Create(ctx, requestPayload)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to deploy slo with externalID: %s", externalID)).WithError(err)
 	}
@@ -127,8 +135,8 @@ func createResolveEntity(id string, properties parameter.Properties, c *config.C
 	}
 }
 
-func findMatchOnRemote(ctx context.Context, client deployServiceLevelObjectiveClient, externalId string) (id string, match bool, err error) {
-	apiResponse, err := client.List(ctx)
+func (d DeployAPI) findMatchOnRemote(ctx context.Context, externalId string) (id string, match bool, err error) {
+	apiResponse, err := d.sloSource.List(ctx)
 	if err != nil {
 		return "", false, err
 	}
