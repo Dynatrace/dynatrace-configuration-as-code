@@ -73,20 +73,41 @@ func Fatal(msg string, a ...interface{}) {
 	os.Exit(1)
 }
 
+func FatalContext(ctx context.Context, msg string, a ...interface{}) {
+	slog.ErrorContext(ctx, fmt.Sprintf(msg, a...))
+	os.Exit(1)
+}
+
 func Error(msg string, a ...interface{}) {
 	slog.Error(fmt.Sprintf(msg, a...))
+}
+
+func ErrorContext(ctx context.Context, msg string, a ...interface{}) {
+	slog.ErrorContext(ctx, fmt.Sprintf(msg, a...))
 }
 
 func Warn(msg string, a ...interface{}) {
 	slog.Warn(fmt.Sprintf(msg, a...))
 }
 
+func WarnContext(ctx context.Context, msg string, a ...interface{}) {
+	slog.WarnContext(ctx, fmt.Sprintf(msg, a...))
+}
+
 func Info(msg string, a ...interface{}) {
 	slog.Info(fmt.Sprintf(msg, a...))
 }
 
+func InfoContext(ctx context.Context, msg string, a ...interface{}) {
+	slog.InfoContext(ctx, fmt.Sprintf(msg, a...))
+}
+
 func Debug(msg string, a ...interface{}) {
 	slog.Debug(fmt.Sprintf(msg, a...))
+}
+
+func DebugContext(ctx context.Context, msg string, a ...interface{}) {
+	slog.DebugContext(ctx, fmt.Sprintf(msg, a...))
 }
 
 // PrepareLogging sets up the default slog.Logger using the specified options.
