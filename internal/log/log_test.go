@@ -224,9 +224,25 @@ func TestDefaultLoggerFunctions(t *testing.T) {
 		assert.Contains(t, strings.ToLower(builder.String()), "debug")
 	})
 
+	t.Run("debug with context", func(t *testing.T) {
+		builder.Reset()
+		log.DebugContext(t.Context(), "code %s reached", "here")
+
+		assert.Contains(t, builder.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(builder.String()), "debug")
+	})
+
 	t.Run("info", func(t *testing.T) {
 		builder.Reset()
 		log.Info("code %s reached", "here")
+
+		assert.Contains(t, builder.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(builder.String()), "info")
+	})
+
+	t.Run("info with context", func(t *testing.T) {
+		builder.Reset()
+		log.InfoContext(t.Context(), "code %s reached", "here")
 
 		assert.Contains(t, builder.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(builder.String()), "info")
@@ -240,9 +256,25 @@ func TestDefaultLoggerFunctions(t *testing.T) {
 		assert.Contains(t, strings.ToLower(builder.String()), "warn")
 	})
 
+	t.Run("warn with context", func(t *testing.T) {
+		builder.Reset()
+		log.WarnContext(t.Context(), "code %s reached", "here")
+
+		assert.Contains(t, builder.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(builder.String()), "warn")
+	})
+
 	t.Run("error", func(t *testing.T) {
 		builder.Reset()
 		log.Error("code %s reached", "here")
+
+		assert.Contains(t, builder.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(builder.String()), "error")
+	})
+
+	t.Run("error with context", func(t *testing.T) {
+		builder.Reset()
+		log.ErrorContext(t.Context(), "code %s reached", "here")
 
 		assert.Contains(t, builder.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(builder.String()), "error")

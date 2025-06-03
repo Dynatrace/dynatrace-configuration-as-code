@@ -48,11 +48,31 @@ func TestSlogger(t *testing.T) {
 		assert.Contains(t, strings.ToLower(handler.Output.String()), "debug")
 	})
 
+	t.Run("debug with context", func(t *testing.T) {
+		handler := NewTestHandler(&options)
+
+		logger := &log.Slogger{Logger: slog.New(handler)}
+		logger.DebugContext(t.Context(), "code %s reached", "here")
+
+		assert.Contains(t, handler.Output.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(handler.Output.String()), "debug")
+	})
+
 	t.Run("info", func(t *testing.T) {
 		handler := newTestHandler(&options)
 
 		logger := &log.Slogger{Logger: slog.New(handler)}
 		logger.Info("code %s reached", "here")
+
+		assert.Contains(t, handler.Output.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(handler.Output.String()), "info")
+	})
+
+	t.Run("info with context", func(t *testing.T) {
+		handler := NewTestHandler(&options)
+
+		logger := &log.Slogger{Logger: slog.New(handler)}
+		logger.InfoContext(t.Context(), "code %s reached", "here")
 
 		assert.Contains(t, handler.Output.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(handler.Output.String()), "info")
@@ -68,11 +88,31 @@ func TestSlogger(t *testing.T) {
 		assert.Contains(t, strings.ToLower(handler.Output.String()), "warn")
 	})
 
+	t.Run("warn with context", func(t *testing.T) {
+		handler := NewTestHandler(&options)
+
+		logger := &log.Slogger{Logger: slog.New(handler)}
+		logger.WarnContext(t.Context(), "code %s reached", "here")
+
+		assert.Contains(t, handler.Output.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(handler.Output.String()), "warn")
+	})
+
 	t.Run("error", func(t *testing.T) {
 		handler := newTestHandler(&options)
 
 		logger := &log.Slogger{Logger: slog.New(handler)}
 		logger.Error("code %s reached", "here")
+
+		assert.Contains(t, handler.Output.String(), "code here reached")
+		assert.Contains(t, strings.ToLower(handler.Output.String()), "error")
+	})
+
+	t.Run("error with context", func(t *testing.T) {
+		handler := NewTestHandler(&options)
+
+		logger := &log.Slogger{Logger: slog.New(handler)}
+		logger.ErrorContext(t.Context(), "code %s reached", "here")
 
 		assert.Contains(t, handler.Output.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(handler.Output.String()), "error")
