@@ -35,20 +35,41 @@ func (w *Slogger) Fatal(msg string, a ...any) {
 	os.Exit(1)
 }
 
+func (w *Slogger) FatalContext(ctx context.Context, msg string, a ...any) {
+	w.Logger.ErrorContext(ctx, fmt.Sprintf(msg, a...))
+	os.Exit(1)
+}
+
 func (w *Slogger) Error(msg string, a ...interface{}) {
 	w.Logger.Error(fmt.Sprintf(msg, a...))
+}
+
+func (w *Slogger) ErrorContext(ctx context.Context, msg string, a ...interface{}) {
+	w.Logger.ErrorContext(ctx, fmt.Sprintf(msg, a...))
 }
 
 func (w *Slogger) Warn(msg string, a ...interface{}) {
 	w.Logger.Warn(fmt.Sprintf(msg, a...))
 }
 
+func (w *Slogger) WarnContext(ctx context.Context, msg string, a ...interface{}) {
+	w.Logger.WarnContext(ctx, fmt.Sprintf(msg, a...))
+}
+
 func (w *Slogger) Info(msg string, a ...interface{}) {
 	w.Logger.Info(fmt.Sprintf(msg, a...))
 }
 
+func (w *Slogger) InfoContext(ctx context.Context, msg string, a ...interface{}) {
+	w.Logger.InfoContext(ctx, fmt.Sprintf(msg, a...))
+}
+
 func (w *Slogger) Debug(msg string, a ...interface{}) {
 	w.Logger.Debug(fmt.Sprintf(msg, a...))
+}
+
+func (w *Slogger) DebugContext(ctx context.Context, msg string, a ...interface{}) {
+	w.Logger.DebugContext(ctx, fmt.Sprintf(msg, a...))
 }
 
 func (w *Slogger) SLogger() *slog.Logger {
