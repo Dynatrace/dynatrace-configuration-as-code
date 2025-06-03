@@ -1,9 +1,0 @@
-{
-    "enabled": true,
-    "ignore": false,
-    "factor": "6",
-    "path": "{{ .name }}",
-    "pathComparisonType": "EQUALS",
-    "queryParameters": [],
-    "httpMethodAny": true
-}

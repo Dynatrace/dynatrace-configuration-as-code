@@ -94,13 +94,17 @@ func WithEnvironment(env string) Option {
 
 func WithEnvVars(env map[string]string) Option {
 	return func(options *testOptions) {
-		if options.envVars == nil {
-			options.envVars = map[string]string{}
-		}
-
 		for k, v := range env {
 			options.envVars[k] = v
 		}
+	}
+}
+
+// WithMeId sets the `MONACO_TARGET_ENTITY_SCOPE` environment variable to the defined entity.
+// The `MONACO_TARGET_ENTITY_SCOPE` should be used in tests that target a specific entity.
+func WithMeId(meId string) Option {
+	return func(options *testOptions) {
+		options.envVars["MONACO_TARGET_ENTITY_SCOPE"] = meId
 	}
 }
 
@@ -125,7 +129,7 @@ func Run(t *testing.T, workingDirectory string, opts Options, fn TestFunc) {
 		manifestPath:        path.Join(workingDirectory, "manifest.yaml"),
 		specificEnvironment: "",
 		suffix:              t.Name(),
-		envVars:             nil,
+		envVars:             map[string]string{},
 	}
 
 	for _, optFn := range opts {
@@ -141,6 +145,7 @@ func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
 
 	for k, v := range opts.envVars {
+		t.Log("Setting test environment variable " + k + ": " + v)
 		setTestEnvVar(t, k, v, suffix)
 	}
 

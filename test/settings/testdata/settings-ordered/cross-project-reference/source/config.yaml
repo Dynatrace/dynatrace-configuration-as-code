@@ -1,0 +1,16 @@
+configs:
+- id: source-id
+  type:
+    settings:
+      schema: builtin:url-based-sampling
+      scope:
+        type: environment
+        name: MONACO_TARGET_ENTITY_SCOPE
+      insertAfter:
+        configId: target-id
+        project: target
+        configType: builtin:url-based-sampling
+        property: id
+        type: reference
+  config:
+    template: url-sampling.json
