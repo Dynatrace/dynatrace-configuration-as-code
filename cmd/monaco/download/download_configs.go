@@ -92,7 +92,6 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 
 	if featureflags.VerifyEnvironmentType.Enabled() {
 		if err := dynatrace.VerifyEnvironmentAuthentication(ctx, env); err != nil {
-			log.Error("download aborted: %s", err)
 			return err
 		}
 	}
