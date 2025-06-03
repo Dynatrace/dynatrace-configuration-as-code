@@ -24,12 +24,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
 )
 
-const MinWaitDuration = 1 * time.Second
+const minWaitDuration = 1 * time.Second
+const maxWaitDuration = 1 * time.Minute
 
 // ThrottleCallAfterError sleeps a bit after an error message to avoid hitting rate limits and getting the IP banned
 func ThrottleCallAfterError(backoffMultiplier int, message string) {
 	sleepDuration, humanReadableTimestamp := generateSleepDuration(backoffMultiplier)
-	sleepDuration = applyMinMaxDefaults(sleepDuration)
+	sleepDuration = clampWaitDuration(sleepDuration)
 
 	log.Debug("simpleSleepRateLimitStrategy: %s, waiting %f seconds until %s to avoid 'Too Many Request' errors", message, sleepDuration.Seconds(), humanReadableTimestamp)
 	time.Sleep(sleepDuration)
@@ -45,30 +46,31 @@ func generateSleepDuration(backoffMultiplier int) (sleepDuration time.Duration, 
 		backoffMultiplier = 1
 	}
 
-	addedWaitMillis, err := rand.Int(MinWaitDuration.Nanoseconds())
+	addedWaitMillis, err := rand.Int(minWaitDuration.Nanoseconds())
 	if err != nil {
 		log.With(log.ErrorAttr(err)).Warn("Failed to generate random gitter. Falling back to use fixed value. Error: %s", err)
 		addedWaitMillis = 0
 	}
 
-	sleepDuration = MinWaitDuration + time.Duration(addedWaitMillis*int64(backoffMultiplier))
+	sleepDuration = minWaitDuration + time.Duration(addedWaitMillis*int64(backoffMultiplier))
 
 	humanReadableResetTimestamp = time.Now().UTC().Format(time.RFC3339)
 
 	return sleepDuration, humanReadableResetTimestamp
 }
 
-func applyMinMaxDefaults(sleepDuration time.Duration) time.Duration {
+// clampWaitDuration clamps the sleepDuration between the minWaitDuration and maxWaitDuration
+func clampWaitDuration(sleepDuration time.Duration) time.Duration {
 
-	maxWaitTimeInNanoseconds := 1 * time.Minute
-
-	if sleepDuration.Nanoseconds() < MinWaitDuration.Nanoseconds() {
-		sleepDuration = MinWaitDuration
+	if sleepDuration < minWaitDuration {
+		sleepDuration = minWaitDuration
 		log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
 	}
-	if sleepDuration.Nanoseconds() > maxWaitTimeInNanoseconds.Nanoseconds() {
-		sleepDuration = maxWaitTimeInNanoseconds
+
+	if sleepDuration > maxWaitDuration {
+		sleepDuration = maxWaitDuration
 		log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
 	}
+
 	return sleepDuration
 }

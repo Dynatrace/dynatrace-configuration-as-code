@@ -29,32 +29,32 @@ import (
 
 func TestDurationStaysTheSameIfInputIsWithinMinMaxLimits(t *testing.T) {
 
-	value := applyMinMaxDefaults(6 * time.Second)
+	value := clampWaitDuration(6 * time.Second)
 	require.Equal(t, 6, int(value.Seconds()))
-	value = applyMinMaxDefaults(59 * time.Second)
+	value = clampWaitDuration(59 * time.Second)
 	require.Equal(t, 59, int(value.Seconds()))
 }
 
 func TestDurationWillBeTheMinimumIfInputIsSmallerThanMinLimit(t *testing.T) {
 
-	value := applyMinMaxDefaults(500 * time.Millisecond)
+	value := clampWaitDuration(500 * time.Millisecond)
 	require.Equal(t, 1, int(value.Seconds()))
-	value = applyMinMaxDefaults(-19 * time.Second)
+	value = clampWaitDuration(-19 * time.Second)
 	require.Equal(t, 1, int(value.Seconds()))
 }
 
 func TestDurationWillBeTheMaximumIfInputIsLargerThanMaxLimit(t *testing.T) {
 
-	value := applyMinMaxDefaults(61 * time.Second)
+	value := clampWaitDuration(61 * time.Second)
 	require.Equal(t, 60, int(value.Seconds()))
-	value = applyMinMaxDefaults(3600 * time.Second)
+	value = clampWaitDuration(3600 * time.Second)
 	require.Equal(t, 60, int(value.Seconds()))
 }
 
 func TestGeneratedSleepDurationsAreWithinExpectedBoundsAndDistribution(t *testing.T) {
 
-	expectedMinSleepDuration := MinWaitDuration
-	expectedMaxSleepDuration := 2 * MinWaitDuration
+	expectedMinSleepDuration := minWaitDuration
+	expectedMaxSleepDuration := 2 * minWaitDuration
 
 	producedDurations := map[time.Duration]int{}
 	for i := 0; i < 100; i++ {
@@ -71,8 +71,8 @@ func TestGeneratedSleepDurationsAreWithinExpectedBoundsAndDistribution(t *testin
 }
 
 func TestGenerateSleepDurationSetsBackoffMultiplierOfAtLeastOne(t *testing.T) {
-	expectedMinSleepDuration := MinWaitDuration
-	expectedMaxSleepDuration := 2 * MinWaitDuration
+	expectedMinSleepDuration := minWaitDuration
+	expectedMaxSleepDuration := 2 * minWaitDuration
 
 	synctest.Run(func() {
 		gotSleepDuration, _ := generateSleepDuration(0)
@@ -93,8 +93,8 @@ func TestGenerateSleepDurationProducesHumanReadableTimestamp(t *testing.T) {
 }
 
 func TestThrottleCallAfterError(t *testing.T) {
-	expectedMinSleepDuration := MinWaitDuration
-	expectedMaxSleepDuration := 2 * MinWaitDuration
+	expectedMinSleepDuration := minWaitDuration
+	expectedMaxSleepDuration := 2 * minWaitDuration
 
 	synctest.Run(func() {
 		start := time.Now().UTC()
