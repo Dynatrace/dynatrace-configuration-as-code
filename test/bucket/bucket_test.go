@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package bucket
 
 import (
 	"fmt"
@@ -26,6 +26,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 
 	"github.com/spf13/afero"
 )
@@ -34,7 +35,7 @@ import (
 func TestIntegrationBucketValidation(t *testing.T) {
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
 
-	configFolder := "test-resources/integration-bucket/"
+	configFolder := "testdata/"
 
 	t.Run("project is valid", func(t *testing.T) {
 		manifest := configFolder + "manifest.yaml"
@@ -51,15 +52,12 @@ func TestIntegrationBucketValidation(t *testing.T) {
 
 func TestIntegrationBucket(t *testing.T) {
 
-	configFolder := "test-resources/integration-bucket/"
+	configFolder := "testdata/"
 	manifest := configFolder + "manifest.yaml"
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifest),
-			WithSuffix("Buckets"),
-		},
-		func(fs afero.Fs, _ TestContext) {
+	v2.Run(t, configFolder,
+		v2.Options{},
+		func(fs afero.Fs, _ v2.TestContext) {
 
 			// Create the buckets
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifest))
@@ -75,15 +73,12 @@ func TestIntegrationBucket(t *testing.T) {
 
 func TestIntegrationComplexBucket(t *testing.T) {
 
-	configFolder := "test-resources/integration-bucket/"
+	configFolder := "testdata/"
 	manifest := configFolder + "manifest.yaml"
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifest),
-			WithSuffix("ComplexBuckets"),
-		},
-		func(fs afero.Fs, _ TestContext) {
+	v2.Run(t, configFolder,
+		v2.Options{},
+		func(fs afero.Fs, _ v2.TestContext) {
 
 			// Create the buckets
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=complex-bucket --verbose", manifest))
