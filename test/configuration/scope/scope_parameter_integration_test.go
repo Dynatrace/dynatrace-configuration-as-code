@@ -25,8 +25,8 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestIntegrationScopeParameters(t *testing.T) {
@@ -37,13 +37,13 @@ func TestIntegrationScopeParameters(t *testing.T) {
 		"SCOPE_TEST_ENV_VAR": "environment",
 	}
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithManifestPath(manifest),
-			v2.WithSuffix("ScopeParameters"),
-			v2.WithEnvVars(envVars),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithManifestPath(manifest),
+			runner.WithSuffix("ScopeParameters"),
+			runner.WithEnvVars(envVars),
 		},
-		func(fs afero.Fs, _ v2.TestContext) {
+		func(fs afero.Fs, _ runner.TestContext) {
 			// This causes Creation of all Settings
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 			assert.NoError(t, err)

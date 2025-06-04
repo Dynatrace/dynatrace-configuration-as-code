@@ -25,21 +25,21 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	runner2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestDeprecatedSettingsSchemasProduceWarnings(t *testing.T) {
 	configFolder := "testdata/deprecated-settings-schemas/"
 	manifest := configFolder + "manifest.yaml"
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithManifestPath(manifest),
-			v2.WithSuffix("DeprecatedSchema"),
+	runner2.Run(t, configFolder,
+		runner2.Options{
+			runner2.WithManifestPath(manifest),
+			runner2.WithSuffix("DeprecatedSchema"),
 		},
-		func(fs afero.Fs, _ v2.TestContext) {
+		func(fs afero.Fs, _ runner2.TestContext) {
 
 			logOutput := strings.Builder{}
 			cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)

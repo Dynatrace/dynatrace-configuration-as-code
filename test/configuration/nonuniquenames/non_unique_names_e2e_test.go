@@ -33,19 +33,19 @@ import (
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	uuid2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 // TestNonUniqueNameUpserts asserts the logic of non-unique name configs being updated by name if only a single one is found.
 // As this behaviour can be unwanted if a project actually contains several configs of the same name (they'll all just update one object)
 // it can also be deactivated - which is tested by TestNonUniqueNameUpserts_InactiveUpdateByName.
 func TestNonUniqueNameUpserts(t *testing.T) {
-	testSuffix := integrationtest.GenerateTestSuffix(t, "NonUniqueName")
+	testSuffix := runner.GenerateTestSuffix(t, "NonUniqueName")
 
 	url := os.Getenv("URL_ENVIRONMENT_1")
 	token := os.Getenv("TOKEN_ENVIRONMENT_1")
@@ -122,7 +122,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 
 	t.Setenv(featureflags.UpdateNonUniqueByNameIfSingleOneExists.EnvName(), "false")
 
-	testSuffix := integrationtest.GenerateTestSuffix(t, "NonUniqueName")
+	testSuffix := runner.GenerateTestSuffix(t, "NonUniqueName")
 
 	url := os.Getenv("URL_ENVIRONMENT_1")
 	token := os.Getenv("TOKEN_ENVIRONMENT_1")

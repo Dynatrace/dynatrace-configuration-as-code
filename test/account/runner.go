@@ -29,10 +29,10 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 type options struct {
@@ -67,7 +67,7 @@ func createAccountClientsFromManifest(t *testing.T, fs afero.Fs, manifestFileNam
 // randomizeYAMLResources loops over each *.yaml file, replaces %RAND% with a random string and returns the random string
 // that was used
 func randomizeYAMLResources(t *testing.T, fs afero.Fs, name string) string {
-	randStr := integrationtest.GenerateTestSuffix(t, name)
+	randStr := runner.GenerateTestSuffix(t, name)
 	ff, err := files.FindYamlFiles(fs, ".")
 	require.NoError(t, err)
 	for _, file := range ff {

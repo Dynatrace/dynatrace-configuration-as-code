@@ -25,9 +25,9 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
+	assert2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 var multiProjectFolder = "testdata/integration-multi-project/"
@@ -37,18 +37,18 @@ var multiProjectSpecificEnvironment = ""
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
 
-	v2.Run(t, multiProjectFolder,
-		v2.Options{
-			v2.WithManifestPath(multiProjectManifest),
-			v2.WithSuffix("MultiProject"),
-			v2.WithEnvironment(multiProjectSpecificEnvironment),
+	runner.Run(t, multiProjectFolder,
+		runner.Options{
+			runner.WithManifestPath(multiProjectManifest),
+			runner.WithSuffix("MultiProject"),
+			runner.WithEnvironment(multiProjectSpecificEnvironment),
 		},
-		func(fs afero.Fs, _ v2.TestContext) {
+		func(fs afero.Fs, _ runner.TestContext) {
 			// This causes a POST for all configs:
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", multiProjectManifest))
 			assert.NoError(t, err)
 
-			integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
+			assert2.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
 		})
 }
 
@@ -61,21 +61,21 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
-	v2.Run(t, multiProjectFolder,
-		v2.Options{
-			v2.WithManifestPath(multiProjectManifest),
-			v2.WithSuffix("MultiProjectOnProject"),
-			v2.WithEnvironment(multiProjectSpecificEnvironment),
+	runner.Run(t, multiProjectFolder,
+		runner.Options{
+			runner.WithManifestPath(multiProjectManifest),
+			runner.WithSuffix("MultiProjectOnProject"),
+			runner.WithEnvironment(multiProjectSpecificEnvironment),
 		},
-		func(fs afero.Fs, _ v2.TestContext) {
+		func(fs afero.Fs, _ runner.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=star-trek --verbose", multiProjectManifest))
 			assert.NoError(t, err)
 
 			// Validate Star Trek sub-projects were deployed
-			integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"star-trek.star-wars", "star-trek.star-gate"}, multiProjectSpecificEnvironment, true)
+			assert2.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"star-trek.star-wars", "star-trek.star-gate"}, multiProjectSpecificEnvironment, true)
 
 			// Validate movies project was not deployed
-			integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"movies.science fiction.the-hitchhikers-guide-to-the-galaxy"}, multiProjectSpecificEnvironment, false)
+			assert2.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"movies.science fiction.the-hitchhikers-guide-to-the-galaxy"}, multiProjectSpecificEnvironment, false)
 		})
 }
 

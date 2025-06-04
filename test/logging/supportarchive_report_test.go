@@ -33,8 +33,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -44,6 +42,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
@@ -88,13 +88,13 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 			t.Setenv(environment.DeploymentReportFilename, tt.reportFilename)
 			t.Setenv(featureflags.LogMemStats.EnvName(), strconv.FormatBool(tt.enableMemstatlog))
 
-			v2.Run(t, configFolder,
-				v2.Options{
-					v2.WithManifestPath(manifest),
-					v2.WithSuffix("SupportArchive"),
-					v2.WithEnvironment("valid_env"),
+			runner.Run(t, configFolder,
+				runner.Options{
+					runner.WithManifestPath(manifest),
+					runner.WithSuffix("SupportArchive"),
+					runner.WithEnvironment("valid_env"),
 				},
-				func(fs afero.Fs, _ v2.TestContext) {
+				func(fs afero.Fs, _ runner.TestContext) {
 					err := cleanupLogsDir()
 					assert.NoError(t, err)
 
@@ -206,13 +206,13 @@ func TestDeployReport(t *testing.T) {
 
 		t.Setenv(environment.DeploymentReportFilename, reportFile)
 
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithManifestPath(manifest),
-				v2.WithSuffix(""),
-				v2.WithEnvironment("valid_env"),
+		runner.Run(t, configFolder,
+			runner.Options{
+				runner.WithManifestPath(manifest),
+				runner.WithSuffix(""),
+				runner.WithEnvironment("valid_env"),
 			},
-			func(fs afero.Fs, tc v2.TestContext) {
+			func(fs afero.Fs, tc runner.TestContext) {
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
 				require.NoError(t, err)
 
@@ -233,13 +233,13 @@ func TestDeployReport(t *testing.T) {
 			configFolder = "testdata/support-archive/"
 			manifest     = configFolder + "manifest.yaml"
 		)
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithManifestPath(manifest),
-				v2.WithSuffix(""),
-				v2.WithEnvironment("valid_env"),
+		runner.Run(t, configFolder,
+			runner.Options{
+				runner.WithManifestPath(manifest),
+				runner.WithSuffix(""),
+				runner.WithEnvironment("valid_env"),
 			},
-			func(fs afero.Fs, _ v2.TestContext) {
+			func(fs afero.Fs, _ runner.TestContext) {
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
 				require.NoError(t, err)
 			})

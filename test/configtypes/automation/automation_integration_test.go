@@ -26,9 +26,9 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
+	assert2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 // tests all configs for a single environment
@@ -38,15 +38,15 @@ func TestIntegrationAutomation(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 
 	envs := map[string]string{}
-	if v2.IsHardeningEnvironment() {
+	if runner.IsHardeningEnvironment() {
 		envs["WORKFLOW_ACTOR"] = os.Getenv("WORKFLOW_ACTOR")
 	}
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithEnvVars(envs),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithEnvVars(envs),
 		},
-		func(fs afero.Fs, _ v2.TestContext) {
+		func(fs afero.Fs, _ runner.TestContext) {
 			// This causes Creation of all automation objects
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 			assert.NoError(t, err)
@@ -55,6 +55,6 @@ func TestIntegrationAutomation(t *testing.T) {
 			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 			assert.NoError(t, err)
 
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
 		})
 }

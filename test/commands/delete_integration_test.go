@@ -28,14 +28,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	assert2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestDelete(t *testing.T) {
@@ -120,7 +121,7 @@ func TestDelete(t *testing.T) {
 			fs := testutils.CreateTestFileSystem()
 
 			// create config yaml
-			cfgId := fmt.Sprintf("deleteSample_%s", integrationtest.GenerateTestSuffix(t, tt.name))
+			cfgId := fmt.Sprintf("deleteSample_%s", runner.GenerateTestSuffix(t, tt.name))
 			configContent := fmt.Sprintf(tt.configTemplate, cfgId, cfgId)
 
 			configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
@@ -145,12 +146,12 @@ func TestDelete(t *testing.T) {
 			// DEPLOY Config
 			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", deployManifestPath))
 			assert.NoError(t1, err)
-			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", true)
+			assert2.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", true)
 
 			// DELETE Config
 			err = monaco.Run(t, fs, fmt.Sprintf("monaco delete %s --verbose", tt.cmdFlag))
 			assert.NoError(t1, err)
-			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", false)
+			assert2.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", false)
 
 		})
 	}
@@ -185,9 +186,9 @@ configs:
   config:
     name: %s
     template: auto-tag-setting.json`
-	workflowID := fmt.Sprintf("workflowSample_%s", integrationtest.GenerateTestSuffix(t, "skip_automations"))
-	bucketID := fmt.Sprintf("bucket_%s", integrationtest.GenerateTestSuffix(t, "")) // generate shorter name does not reach API limit
-	tagID := fmt.Sprintf("tagSample_%s", integrationtest.GenerateTestSuffix(t, "skip_automations"))
+	workflowID := fmt.Sprintf("workflowSample_%s", runner.GenerateTestSuffix(t, "skip_automations"))
+	bucketID := fmt.Sprintf("bucket_%s", runner.GenerateTestSuffix(t, "")) // generate shorter name does not reach API limit
+	tagID := fmt.Sprintf("tagSample_%s", runner.GenerateTestSuffix(t, "skip_automations"))
 	configContent := fmt.Sprintf(configTemplate, workflowID, workflowID, bucketID, tagID, tagID)
 
 	configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
@@ -235,7 +236,7 @@ environmentGroups:
 	// DEPLOY Config
 	err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", deployManifestPath))
 	assert.NoError(t, err)
-	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+	assert2.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 	// ensure test resources are removed after test is done
 	defer func() {
 		monaco.Run(t, fs, "monaco delete --manifest=testdata/delete-test-configs/deploy-manifest.yaml --verbose")
@@ -255,10 +256,10 @@ environmentGroups:
 
 	envName := "environment"
 	env := man.Environments.SelectedEnvironments[envName]
-	clientSet := integrationtest.CreateDynatraceClients(t, env)
+	clientSet := runner.CreateDynatraceClients(t, env)
 
 	// check the setting was deleted
-	integrationtest.AssertSetting(t, clientSet.SettingsClient, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
+	assert2.AssertSetting(t, clientSet.SettingsClient, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "builtin:tags.auto-tagging",
@@ -267,7 +268,7 @@ environmentGroups:
 	})
 
 	// check the workflow still exists after deletion was skipped without error
-	integrationtest.AssertAutomation(t, clientSet.AutClient, env, true, config.Workflow, config.Config{
+	assert2.AssertAutomation(t, clientSet.AutClient, env, true, config.Workflow, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "workflow",
@@ -276,7 +277,7 @@ environmentGroups:
 	})
 
 	// check the bucket still exists after deletion was skipped without error
-	integrationtest.AssertBucket(t, clientSet.BucketClient, env, true, config.Config{
+	assert2.AssertBucket(t, clientSet.BucketClient, env, true, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "bucket",
@@ -312,8 +313,8 @@ configs:
     name: %s
     template: key-user-action.json
 `
-	appName := fmt.Sprintf("app_%s", integrationtest.GenerateTestSuffix(t, "subpath_delete"))
-	actionName := fmt.Sprintf("key_ua_%s", integrationtest.GenerateTestSuffix(t, "subpath_delete"))
+	appName := fmt.Sprintf("app_%s", runner.GenerateTestSuffix(t, "subpath_delete"))
+	actionName := fmt.Sprintf("key_ua_%s", runner.GenerateTestSuffix(t, "subpath_delete"))
 
 	configContent := fmt.Sprintf(configTemplate, appName, actionName)
 
@@ -329,7 +330,7 @@ configs:
 	// Extra sleep to ensure that the application is available - this is added to prevent HTTP 500 errors occuring later in deletion.
 	time.Sleep(60 * time.Second)
 
-	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+	assert2.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
@@ -340,11 +341,11 @@ configs:
 
 	envName := "environment"
 	env := man.Environments.SelectedEnvironments[envName]
-	clientSet := integrationtest.CreateDynatraceClients(t, env)
+	clientSet := runner.CreateDynatraceClients(t, env)
 	apis := api.NewAPIs()
 
 	// ASSERT test configs exist
-	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+	assert2.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
 	// get application ID
 	v, err := clientSet.ConfigClient.List(t.Context(), apis["application-mobile"])
@@ -374,7 +375,7 @@ configs:
 	require.NoError(t, err)
 
 	// Assert key-user-action is deleted
-	integrationtest.AssertConfig(t, clientSet.ConfigClient, apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
+	assert2.AssertConfig(t, clientSet.ConfigClient, apis["key-user-actions-mobile"].ApplyParentObjectID(appID), env, false, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "key-user-actions-mobile",
@@ -399,7 +400,7 @@ configs:
 	require.NoError(t, err)
 
 	// Assert expected deletions
-	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", false)
+	assert2.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", false)
 }
 
 func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {

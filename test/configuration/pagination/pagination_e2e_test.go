@@ -27,10 +27,10 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	assert2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/assert"
+	runner2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestPaginationClassic(t *testing.T) {
@@ -64,14 +64,14 @@ func testPagination(t *testing.T, specificEnvironment string) {
 	err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
 	assert.NoError(t, err)
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithManifestPath(manifestPath),
-			v2.WithSuffix("Pagination"),
-			v2.WithEnvironment(specificEnvironment),
-			v2.WithFs(fs),
+	runner2.Run(t, configFolder,
+		runner2.Options{
+			runner2.WithManifestPath(manifestPath),
+			runner2.WithSuffix("Pagination"),
+			runner2.WithEnvironment(specificEnvironment),
+			runner2.WithFs(fs),
 		},
-		func(fs afero.Fs, _ v2.TestContext) {
+		func(fs afero.Fs, _ runner2.TestContext) {
 
 			// Create/POST all 550 Settings
 			logOutput := strings.Builder{}
@@ -81,7 +81,7 @@ func testPagination(t *testing.T, specificEnvironment string) {
 			assert.NoError(t, err)
 			assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
 
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
 
 			logOutput.Reset()
 
@@ -92,6 +92,6 @@ func testPagination(t *testing.T, specificEnvironment string) {
 			assert.NoError(t, err)
 			assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
 
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
 		})
 }

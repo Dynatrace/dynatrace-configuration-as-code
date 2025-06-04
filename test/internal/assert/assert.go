@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package integrationtest
+package assert
 
 import "C"
 import (
@@ -27,6 +27,7 @@ import (
 	"time"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 
 	"github.com/stretchr/testify/assert"
 
@@ -67,9 +68,9 @@ func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (entities.
 
 // AssertAllConfigsAvailability checks all configurations of a given project with given availability.
 func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool) {
-	loadedManifest := LoadManifest(t, fs, manifestPath, specificEnvironment)
+	loadedManifest := runner.LoadManifest(t, fs, manifestPath, specificEnvironment)
 
-	projects := LoadProjects(t, fs, manifestPath, loadedManifest)
+	projects := runner.LoadProjects(t, fs, manifestPath, loadedManifest)
 
 	envNames := make([]string, 0, len(loadedManifest.Environments.SelectedEnvironments))
 
@@ -102,7 +103,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 		env := loadedManifest.Environments.SelectedEnvironments[envName]
 
-		clients := CreateDynatraceClients(t, env)
+		clients := runner.CreateDynatraceClients(t, env)
 
 		lookup := entityLookup{}
 

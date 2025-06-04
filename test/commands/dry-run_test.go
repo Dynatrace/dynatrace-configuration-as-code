@@ -27,9 +27,9 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestDryRun(t *testing.T) {
@@ -43,14 +43,14 @@ func TestDryRun(t *testing.T) {
 		featureflags.AccessControlSettings.EnvName(): "true",
 	}
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithManifestPath(manifest),
-			v2.WithSuffix("AllConfigs"),
-			v2.WithEnvironment(specificEnvironment),
-			v2.WithEnvVars(envVars),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithManifestPath(manifest),
+			runner.WithSuffix("AllConfigs"),
+			runner.WithEnvironment(specificEnvironment),
+			runner.WithEnvVars(envVars),
 		},
-		func(fs afero.Fs, _ v2.TestContext) {
+		func(fs afero.Fs, _ runner.TestContext) {
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				t.Fatalf("unexpected HTTP request made during dry run: %s", req.RequestURI)
 			}))

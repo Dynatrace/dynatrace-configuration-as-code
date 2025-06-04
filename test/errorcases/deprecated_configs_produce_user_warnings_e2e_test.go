@@ -27,18 +27,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	runner2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestDeprecatedConfigsProduceWarnings(t *testing.T) {
 	configFolder := "testdata/deprecated-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	v2.Run(t, configFolder,
-		v2.Options{},
-		func(fs afero.Fs, _ v2.TestContext) {
+	runner2.Run(t, configFolder,
+		runner2.Options{},
+		func(fs afero.Fs, _ runner2.TestContext) {
 
 			logOutput := strings.Builder{}
 			cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)

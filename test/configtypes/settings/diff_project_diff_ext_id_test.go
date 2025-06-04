@@ -25,13 +25,12 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 var diffProjectDiffExtIDFolder = "testdata/integration-different-projects-different-extid/"
@@ -42,19 +41,19 @@ var diffProjectDiffExtIDFolderManifest = diffProjectDiffExtIDFolder + "manifest.
 // two different settings objects deployed on the environment
 func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 
-	v2.Run(t, diffProjectDiffExtIDFolder,
-		v2.Options{
-			v2.WithManifestPath(diffProjectDiffExtIDFolderManifest),
-			v2.WithSuffix("DifferentProjectsGetDifferentExternalID"),
+	runner.Run(t, diffProjectDiffExtIDFolder,
+		runner.Options{
+			runner.WithManifestPath(diffProjectDiffExtIDFolderManifest),
+			runner.WithSuffix("DifferentProjectsGetDifferentExternalID"),
 		},
-		func(fs afero.Fs, _ v2.TestContext) {
+		func(fs afero.Fs, _ runner.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", diffProjectDiffExtIDFolderManifest))
 			assert.NoError(t, err)
 
 			var manifestPath = diffProjectDiffExtIDFolderManifest
-			loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "")
+			loadedManifest := runner.LoadManifest(t, fs, manifestPath, "")
 			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
-			projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
+			projects := runner.LoadProjects(t, fs, manifestPath, loadedManifest)
 			sortedConfigs, _ := graph.SortProjects(projects, []string{"platform_env"})
 
 			extIDProject1, _ := idutils.GenerateExternalIDForSettingsObject(sortedConfigs["platform_env"][0].Coordinate)
