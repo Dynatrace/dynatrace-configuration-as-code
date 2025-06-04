@@ -88,13 +88,13 @@ test: mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=unit -v -race ./...
 
 integration-test: mocks install-gotestsum
-	@gotestsum ${testopts} --format testdox -- -tags=integration -timeout=30m -v -race ./cmd/monaco/integrationtest/v2
+	@gotestsum ${testopts} --format testdox -- -tags=integration -timeout=30m -v -race ./test/...
 
 download-restore-test: mocks install-gotestsum
-	@gotestsum ${testopts} --format testdox -- -tags=download_restore -timeout=30m -v -race ./...
+	@gotestsum ${testopts} --format testdox -- -tags=download_restore -timeout=30m -v -race ./test/...
 
 account-management-test: mocks install-gotestsum
-	@gotestsum ${testopts} --format testdox -- -tags=integration -timeout=30m -v -race ./cmd/monaco/integrationtest/account
+	@gotestsum ${testopts} --format testdox -- -tags=account_integration -timeout=30m -v -race ./test/...
 
 clean-environments:
 	@MONACO_ENABLE_DANGEROUS_COMMANDS=1 go run ./cmd/monaco purge cmd/monaco/integrationtest/v2/test-resources/test_environments_manifest.yaml
