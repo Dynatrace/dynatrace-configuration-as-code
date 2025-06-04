@@ -29,12 +29,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 type downloadFunction func(*testing.T, afero.Fs, string, string, string, string, bool) error
@@ -76,7 +75,7 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile(t *testing.T) {
 // As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
 // Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
-	if v2.IsHardeningEnvironment() {
+	if runner.IsHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
@@ -90,7 +89,7 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 }
 
 func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) {
-	if v2.IsHardeningEnvironment() {
+	if runner.IsHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
@@ -119,7 +118,7 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withPlatformConfigs
 
 func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 
-	if v2.IsHardeningEnvironment() {
+	if runner.IsHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
@@ -214,12 +213,12 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			v2.Run(t, configsFolder,
-				v2.Options{
-					v2.WithManifestPath(configsFolderManifest),
-					v2.WithSuffix(""),
+			runner.Run(t, configsFolder,
+				runner.Options{
+					runner.WithManifestPath(configsFolderManifest),
+					runner.WithSuffix(""),
 				},
-				func(fs afero.Fs, _ v2.TestContext) {
+				func(fs afero.Fs, _ runner.TestContext) {
 					err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s", configsFolderManifest))
 					require.NoError(t, err)
 
@@ -266,12 +265,12 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload, "", oauthEnabled)
 	assert.NoError(t, err, "Error during download execution stage")
 
-	integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix) // remove previously deployed configs
+	runner.CleanupIntegrationTest(t, fs, manifestFile, "", suffix) // remove previously deployed configs
 
 	downloadedManifestPath := filepath.Join(downloadFolder, "manifest.yaml")
 
 	defer func() { // cleanup uploaded configs after test run
-		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
+		runner.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
 	}()
 
 	validation_uploadDownloadedConfigs(t, fs, downloadFolder, downloadedManifestPath) // re-deploy from download
@@ -279,7 +278,7 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 
 func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, manifestFile string) (suffix string, err error) {
 	log.Info("BEGIN PREPARATION PROCESS")
-	suffix = v2.AppendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
+	suffix = runner.AppendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
 	// update all env values to include the _suffix suffix so that we can set env-values in configs
 	for _, e := range os.Environ() {
@@ -293,7 +292,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 	}
 
 	defer func() { // register extra cleanup in case test fails after deployment
-		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
+		runner.CleanupIntegrationTest(t, fs, manifestFile, "", suffix)
 	}()
 
 	err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifestFile))

@@ -1,9 +1,0 @@
-configs:
-- id: profile
-  config:
-    name: Test Profile
-    template: profile.json
-  type:
-    api: alerting-profile
-
-users: []

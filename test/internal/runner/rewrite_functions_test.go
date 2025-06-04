@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package integrationtest
+package runner
 
 import (
 	"bytes"
@@ -24,11 +24,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-
-	"github.com/spf13/afero"
 )
 
 var postfixFunc = func(s string) string {
@@ -138,12 +137,12 @@ func TestRewriteConfigNames(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var reader = testutils.CreateTestFileSystem()
-			err := RewriteConfigNames("rewrite-test-resources/given", reader, tt.givenTransformers)
+			err := RewriteConfigNames("testdata/rewrite-test-resources/given", reader, tt.givenTransformers)
 			assert.NoError(t, err)
 
-			got, err := afero.ReadFile(reader, "rewrite-test-resources/given/rewrite-test-config.yaml")
+			got, err := afero.ReadFile(reader, "testdata/rewrite-test-resources/given/rewrite-test-config.yaml")
 			assert.NoError(t, err)
-			want, err := afero.ReadFile(reader, "rewrite-test-resources/want/"+tt.expectedFile)
+			want, err := afero.ReadFile(reader, "testdata/rewrite-test-resources/want/"+tt.expectedFile)
 			assert.NoError(t, err)
 			want = bytes.ReplaceAll(want, []byte{'\r'}, []byte{})
 

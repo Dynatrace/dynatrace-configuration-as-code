@@ -28,14 +28,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	assert2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 // TestOrderedSettings tries to deploy two entity-scoped setting objects two times. The first time with "bbb" insert after "aaa", the second time with "aaa" insert after "bbb".
@@ -51,18 +51,18 @@ func TestOrderedSettings(t *testing.T) {
 	configFolder := "testdata/settings-ordered/order1"
 	manifestPath := configFolder + "/manifest.yaml"
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithoutCleanup(),
-			v2.WithMeId(host),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithoutCleanup(),
+			runner.WithMeId(host),
 		},
-		func(fs afero.Fs, tc v2.TestContext) {
+		func(fs afero.Fs, tc runner.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
 			require.NoError(t, err)
 
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
-			loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
+			loadedManifest := runner.LoadManifest(t, fs, manifestPath, "platform_env")
 			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
 			settingsClient := createSettingsClient(t, environment)
 
@@ -79,17 +79,17 @@ func TestOrderedSettings(t *testing.T) {
 	configFolder = "testdata/settings-ordered/order2"
 	manifestPath = configFolder + "/manifest.yaml"
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithMeId(host),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithMeId(host),
 		},
-		func(fs afero.Fs, tc v2.TestContext) {
+		func(fs afero.Fs, tc runner.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
 			require.NoError(t, err)
 
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project"}, "platform_env", true)
 
-			loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
+			loadedManifest := runner.LoadManifest(t, fs, manifestPath, "platform_env")
 			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
 			settingsClient := createSettingsClient(t, environment)
 
@@ -114,16 +114,16 @@ func TestOrderedSettingsCrossProjects(t *testing.T) {
 
 	pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithMeId(pgiMeId),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithMeId(pgiMeId),
 		},
-		func(fs afero.Fs, tc v2.TestContext) {
+		func(fs afero.Fs, tc runner.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=source", manifestPath))
 			require.NoError(t, err)
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"source"}, "platform_env", true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"source"}, "platform_env", true)
 
-			loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
+			loadedManifest := runner.LoadManifest(t, fs, manifestPath, "platform_env")
 			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
 			settingsClient := createSettingsClient(t, environment)
 			results, err := settingsClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
@@ -156,15 +156,15 @@ func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
 
 	pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithEnvironment(specificEnvironment),
-			v2.WithMeId(pgiMeId),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithEnvironment(specificEnvironment),
+			runner.WithMeId(pgiMeId),
 		},
-		func(fs afero.Fs, tc v2.TestContext) {
+		func(fs afero.Fs, tc runner.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
 			require.NoError(t, err)
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
@@ -193,15 +193,15 @@ func TestOrdered_InsertAtFrontWorks(t *testing.T) {
 
 	pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithEnvironment(specificEnvironment),
-			v2.WithMeId(pgiMeId),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithEnvironment(specificEnvironment),
+			runner.WithMeId(pgiMeId),
 		},
-		func(fs afero.Fs, tc v2.TestContext) {
+		func(fs afero.Fs, tc runner.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
 			require.NoError(t, err)
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
@@ -233,15 +233,15 @@ func TestOrdered_InsertAtBackWorks(t *testing.T) {
 
 	pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithEnvironment(specificEnvironment),
-			v2.WithMeId(pgiMeId),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithEnvironment(specificEnvironment),
+			runner.WithMeId(pgiMeId),
 		},
-		func(fs afero.Fs, tc v2.TestContext) {
+		func(fs afero.Fs, tc runner.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
 			require.NoError(t, err)
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
@@ -269,15 +269,15 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 
 	pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithEnvironment(specificEnvironment),
-			v2.WithMeId(pgiMeId),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithEnvironment(specificEnvironment),
+			runner.WithMeId(pgiMeId),
 		},
-		func(fs afero.Fs, tc v2.TestContext) {
+		func(fs afero.Fs, tc runner.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
 			require.NoError(t, err)
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
@@ -309,12 +309,12 @@ func TestOrdered_InsertAtFrontAndBackWorksDeployTwice(t *testing.T) {
 
 	pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithEnvironment(specificEnvironment),
-			v2.WithMeId(pgiMeId),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithEnvironment(specificEnvironment),
+			runner.WithMeId(pgiMeId),
 		},
-		func(fs afero.Fs, tc v2.TestContext) {
+		func(fs afero.Fs, tc runner.TestContext) {
 			// first
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
 			require.NoError(t, err)
@@ -322,7 +322,7 @@ func TestOrdered_InsertAtFrontAndBackWorksDeployTwice(t *testing.T) {
 			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
 			require.NoError(t, err)
 
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
@@ -362,7 +362,7 @@ func findPositionWithExternalId(t *testing.T, objects []dtclient.DownloadSetting
 	return -1
 }
 
-func settingsExternalIdForTest(t *testing.T, originalCoordinate coordinate.Coordinate, testContext v2.TestContext) string {
+func settingsExternalIdForTest(t *testing.T, originalCoordinate coordinate.Coordinate, testContext runner.TestContext) string {
 
 	originalCoordinate.ConfigId += "_" + testContext.Suffix
 
@@ -380,7 +380,7 @@ func createSettingsClientFromManifest(t *testing.T, fs afero.Fs, manifestPath st
 	})
 	assert.Empty(t, errs)
 
-	clientSet := integrationtest.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
+	clientSet := runner.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
 	return clientSet.SettingsClient
 }
 

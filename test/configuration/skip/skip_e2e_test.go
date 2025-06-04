@@ -26,13 +26,13 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	assert2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestSkip(t *testing.T) {
@@ -101,24 +101,24 @@ func TestSkip(t *testing.T) {
 		},
 	}
 
-	loadedManifest := integrationtest.LoadManifest(t, afero.OsFs{}, manifest, "")
+	loadedManifest := runner.LoadManifest(t, afero.OsFs{}, manifest, "")
 	clients := make(map[string]client.SettingsClient)
 
 	for name, def := range loadedManifest.Environments.SelectedEnvironments {
-		set := integrationtest.CreateDynatraceClients(t, def)
+		set := runner.CreateDynatraceClients(t, def)
 		clients[name] = set.SettingsClient
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			v2.Run(t, projectFolder,
-				v2.Options{
-					v2.WithManifestPath(manifest),
-					v2.WithSuffix("SkipTest"),
-					v2.WithEnvironment(tt.given.environment),
+			runner.Run(t, projectFolder,
+				runner.Options{
+					runner.WithManifestPath(manifest),
+					runner.WithSuffix("SkipTest"),
+					runner.WithEnvironment(tt.given.environment),
 				},
-				func(fs afero.Fs, tc v2.TestContext) {
+				func(fs afero.Fs, tc runner.TestContext) {
 
 					testCaseVar := "SKIPPED_VAR_" + tc.Suffix
 					t.Setenv(testCaseVar, strconv.FormatBool(tt.given.skipVarValue))
@@ -144,10 +144,10 @@ func TestSkip(t *testing.T) {
 	}
 }
 
-func assertTestConfig(t *testing.T, tc v2.TestContext, client client.SettingsClient, envName string, configID string, shouldExist bool) {
+func assertTestConfig(t *testing.T, tc runner.TestContext, client client.SettingsClient, envName string, configID string, shouldExist bool) {
 	configID = fmt.Sprintf("%s_%s", configID, tc.Suffix)
 
-	integrationtest.AssertSetting(t, client, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, shouldExist, config.Config{
+	assert2.AssertSetting(t, client, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, shouldExist, config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  "project",
 			Type:     "builtin:tags.auto-tagging",

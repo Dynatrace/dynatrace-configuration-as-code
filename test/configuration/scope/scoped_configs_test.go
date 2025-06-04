@@ -27,11 +27,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	assert2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestDeployScopedConfigurations(t *testing.T) {
@@ -41,24 +41,24 @@ func TestDeployScopedConfigurations(t *testing.T) {
 	environment := "classic_env"
 	manifestPath := configFolder + "manifest.yaml"
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithManifestPath(manifestPath),
-			v2.WithSuffix("ScopedConfigs"),
-			v2.WithEnvironment(environment),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithManifestPath(manifestPath),
+			runner.WithSuffix("ScopedConfigs"),
+			runner.WithEnvironment(environment),
 		},
-		func(fs afero.Fs, testContext v2.TestContext) {
+		func(fs afero.Fs, testContext runner.TestContext) {
 
 			// deploy with sharing turned off and assert state
-			v2.SetTestEnvVar(t, dashboardSharedEnvName, "false", testContext.Suffix)
+			runner.SetTestEnvVar(t, dashboardSharedEnvName, "false", testContext.Suffix)
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
 			require.NoError(t, err)
 
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, nil, environment, true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifestPath, nil, environment, true)
 			assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, false)
 
 			// deploy with sharing turned on and assert state
-			v2.SetTestEnvVar(t, dashboardSharedEnvName, "true", testContext.Suffix)
+			runner.SetTestEnvVar(t, dashboardSharedEnvName, "true", testContext.Suffix)
 			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
 			require.NoError(t, err)
 
@@ -66,7 +66,7 @@ func TestDeployScopedConfigurations(t *testing.T) {
 		})
 }
 
-func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext v2.TestContext, manifestPath string, environment string, expectShared bool) {
+func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext runner.TestContext, manifestPath string, environment string, expectShared bool) {
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: manifestPath,
@@ -75,11 +75,11 @@ func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext v2
 	assert.Empty(t, errs)
 
 	environmentDefinition := man.Environments.SelectedEnvironments[environment]
-	clientSet := integrationtest.CreateDynatraceClients(t, environmentDefinition)
+	clientSet := runner.CreateDynatraceClients(t, environmentDefinition)
 	apis := api.NewAPIs()
 
 	dashboardAPI := apis[api.Dashboard]
-	dashboardName := integrationtest.AddSuffix("Application monitoring", testContext.Suffix)
+	dashboardName := runner.AddSuffix("Application monitoring", testContext.Suffix)
 	exists, dashboardID, err := clientSet.ConfigClient.ExistsWithName(t.Context(), dashboardAPI, dashboardName)
 
 	require.NoError(t, err, "expect to be able to get dashboard by name")

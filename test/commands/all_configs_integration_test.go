@@ -25,9 +25,9 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 // tests all configs for a single environment
@@ -41,13 +41,13 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 	targetEnvironment := "classic_env"
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithManifestPath(manifest),
-			v2.WithSuffix("AllConfigs"),
-			v2.WithEnvironment(targetEnvironment),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithManifestPath(manifest),
+			runner.WithSuffix("AllConfigs"),
+			runner.WithEnvironment(targetEnvironment),
 		},
-		func(fs afero.Fs, _ v2.TestContext) {
+		func(fs afero.Fs, _ runner.TestContext) {
 			// This causes a POST for all configs:
 			runDeployCommand(t, fs, manifest, targetEnvironment)
 
@@ -66,13 +66,13 @@ func TestIntegrationAllConfigsPlatform(t *testing.T) {
 
 	targetEnvironment := "platform_env"
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithManifestPath(manifest),
-			v2.WithSuffix("AllConfigs"),
-			v2.WithEnvironment(targetEnvironment),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithManifestPath(manifest),
+			runner.WithSuffix("AllConfigs"),
+			runner.WithEnvironment(targetEnvironment),
 		},
-		func(fs afero.Fs, _ v2.TestContext) {
+		func(fs afero.Fs, _ runner.TestContext) {
 			// This causes a POST for all configs:
 			runDeployCommand(t, fs, manifest, targetEnvironment)
 

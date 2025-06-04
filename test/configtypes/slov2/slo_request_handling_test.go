@@ -25,10 +25,10 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	runner2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestIntegrationSloV1AndSloV2(t *testing.T) {
@@ -38,11 +38,11 @@ func TestIntegrationSloV1AndSloV2(t *testing.T) {
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
 	t.Run("slo-v1 to slo-v2", func(t *testing.T) {
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithSuffix("slo-v1-to-slo-v2"),
+		runner2.Run(t, configFolder,
+			runner2.Options{
+				runner2.WithSuffix("slo-v1-to-slo-v2"),
 			},
-			func(fs afero.Fs, _ v2.TestContext) {
+			func(fs afero.Fs, _ runner2.TestContext) {
 				logOutput := strings.Builder{}
 				cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 				cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--continue-on-error", "--project", "slo-v1-to-slo-v2"})
@@ -57,11 +57,11 @@ func TestIntegrationSloV1AndSloV2(t *testing.T) {
 	})
 
 	t.Run("slo-v2 to slo-v1", func(t *testing.T) {
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithSuffix("slo-v2-to-slo-v1"),
+		runner2.Run(t, configFolder,
+			runner2.Options{
+				runner2.WithSuffix("slo-v2-to-slo-v1"),
 			},
-			func(fs afero.Fs, _ v2.TestContext) {
+			func(fs afero.Fs, _ runner2.TestContext) {
 				logOutput := strings.Builder{}
 				cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 				cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--continue-on-error", "--project", "slo-v2-to-slo-v1"})

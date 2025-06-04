@@ -24,9 +24,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
+	assert2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 
 	"github.com/spf13/afero"
 )
@@ -55,9 +55,9 @@ func TestIntegrationBucket(t *testing.T) {
 	configFolder := "testdata/"
 	manifest := configFolder + "manifest.yaml"
 
-	v2.Run(t, configFolder,
-		v2.Options{},
-		func(fs afero.Fs, _ v2.TestContext) {
+	runner.Run(t, configFolder,
+		runner.Options{},
+		func(fs afero.Fs, _ runner.TestContext) {
 
 			// Create the buckets
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifest))
@@ -67,7 +67,7 @@ func TestIntegrationBucket(t *testing.T) {
 			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifest))
 			assert.NoError(t, err)
 
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"project"}, "", true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifest, []string{"project"}, "", true)
 		})
 }
 
@@ -76,9 +76,9 @@ func TestIntegrationComplexBucket(t *testing.T) {
 	configFolder := "testdata/"
 	manifest := configFolder + "manifest.yaml"
 
-	v2.Run(t, configFolder,
-		v2.Options{},
-		func(fs afero.Fs, _ v2.TestContext) {
+	runner.Run(t, configFolder,
+		runner.Options{},
+		func(fs afero.Fs, _ runner.TestContext) {
 
 			// Create the buckets
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=complex-bucket --verbose", manifest))
@@ -88,6 +88,6 @@ func TestIntegrationComplexBucket(t *testing.T) {
 			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=complex-bucket --verbose", manifest))
 			assert.NoError(t, err)
 
-			integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"complex-bucket"}, "", true)
+			assert2.AssertAllConfigsAvailability(t, fs, manifest, []string{"complex-bucket"}, "", true)
 		})
 }

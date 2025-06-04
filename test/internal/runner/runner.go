@@ -1,8 +1,8 @@
 //go:build integration || download_restore || nightly
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package runner
 
 import (
 	"os"
@@ -26,7 +26,6 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
@@ -152,7 +151,7 @@ func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 	if !opts.skipCleanup {
 		defer func() {
 			t.Log("Starting cleanup")
-			integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, opts.specificEnvironment, suffix)
+			CleanupIntegrationTest(t, opts.fs, opts.manifestPath, opts.specificEnvironment, suffix)
 		}()
 	}
 
@@ -164,17 +163,17 @@ func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 }
 
 func AppendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
-	suffix := integrationtest.GenerateTestSuffix(t, generalSuffix)
+	suffix := GenerateTestSuffix(t, generalSuffix)
 	transformers := []func(line string) string{
 		func(name string) string {
-			return integrationtest.ReplaceName(name, integrationtest.GetAddSuffixFunction(suffix))
+			return ReplaceName(name, GetAddSuffixFunction(suffix))
 		},
 		func(id string) string {
-			return integrationtest.ReplaceId(id, integrationtest.GetAddSuffixFunction(suffix))
+			return ReplaceId(id, GetAddSuffixFunction(suffix))
 		},
 	}
 
-	err := integrationtest.RewriteConfigNames(configFolder, fs, transformers)
+	err := RewriteConfigNames(configFolder, fs, transformers)
 	if err != nil {
 		t.Fatalf("Error rewriting configs names: %s", err)
 		return suffix
@@ -184,8 +183,8 @@ func AppendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 }
 
 func SetTestEnvVar(t *testing.T, key, value, testSuffix string) {
-	t.Setenv(key, value)                                        // expose directly
-	t.Setenv(integrationtest.AddSuffix(key, testSuffix), value) // expose with suffix (env parameter "name" is subject to rewrite)
+	t.Setenv(key, value)                        // expose directly
+	t.Setenv(AddSuffix(key, testSuffix), value) // expose with suffix (env parameter "name" is subject to rewrite)
 }
 
 // IsHardeningEnvironment returns true iff the environment variable "TEST_ENVIRONMENT" is "hardening"

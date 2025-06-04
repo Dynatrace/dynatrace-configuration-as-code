@@ -27,15 +27,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestSloV2(t *testing.T) {
@@ -48,12 +47,12 @@ func TestSloV2(t *testing.T) {
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
 	t.Run("When deploying two configs, two configs exist", func(t *testing.T) {
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithSuffix("SLO-V2"),
-				v2.WithEnvironment(environment),
+		runner.Run(t, configFolder,
+			runner.Options{
+				runner.WithSuffix("SLO-V2"),
+				runner.WithEnvironment(environment),
 			},
-			func(fs afero.Fs, testContext v2.TestContext) {
+			func(fs afero.Fs, testContext runner.TestContext) {
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
 				assert.NoError(t, err)
 
@@ -87,12 +86,12 @@ func TestSloV2(t *testing.T) {
 	t.Run("With a disabled FF the deploy should fail", func(t *testing.T) {
 		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "false")
 
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithEnvironment(environment),
-				v2.WithoutCleanup(),
+		runner.Run(t, configFolder,
+			runner.Options{
+				runner.WithEnvironment(environment),
+				runner.WithoutCleanup(),
 			},
-			func(fs afero.Fs, testContext v2.TestContext) {
+			func(fs afero.Fs, testContext runner.TestContext) {
 				// when deploying once
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
 				assert.Error(t, err)
@@ -130,7 +129,7 @@ func createSloV2Client(t *testing.T, fs afero.Fs, manifestPath string, environme
 	})
 	assert.Empty(t, errs)
 
-	clientSet := integrationtest.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
+	clientSet := runner.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
 	return clientSet.ServiceLevelObjectiveClient
 }
 

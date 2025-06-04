@@ -27,14 +27,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestSegments(t *testing.T) {
@@ -48,13 +47,13 @@ func TestSegments(t *testing.T) {
 
 	t.Run("Simple deployment creates the segment", func(t *testing.T) {
 
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithManifestPath(manifestPath),
-				v2.WithSuffix("Segments"),
-				v2.WithEnvironment(environment),
+		runner.Run(t, configFolder,
+			runner.Options{
+				runner.WithManifestPath(manifestPath),
+				runner.WithSuffix("Segments"),
+				runner.WithEnvironment(environment),
 			},
-			func(fs afero.Fs, testContext v2.TestContext) {
+			func(fs afero.Fs, testContext runner.TestContext) {
 				// when deploying once
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
 				assert.NoError(t, err)
@@ -73,13 +72,13 @@ func TestSegments(t *testing.T) {
 	})
 
 	t.Run("Deploying the config twice does not create a second segment", func(t *testing.T) {
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithManifestPath(manifestPath),
-				v2.WithSuffix("Segments"),
-				v2.WithEnvironment(environment),
+		runner.Run(t, configFolder,
+			runner.Options{
+				runner.WithManifestPath(manifestPath),
+				runner.WithSuffix("Segments"),
+				runner.WithEnvironment(environment),
 			},
-			func(fs afero.Fs, testContext v2.TestContext) {
+			func(fs afero.Fs, testContext runner.TestContext) {
 				// when deploying twice
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
 				assert.NoError(t, err)
@@ -101,13 +100,13 @@ func TestSegments(t *testing.T) {
 	})
 
 	t.Run("When deploying two configs, two configs exist", func(t *testing.T) {
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithManifestPath(manifestPath),
-				v2.WithSuffix("Segments"),
-				v2.WithEnvironment(environment),
+		runner.Run(t, configFolder,
+			runner.Options{
+				runner.WithManifestPath(manifestPath),
+				runner.WithSuffix("Segments"),
+				runner.WithEnvironment(environment),
 			},
-			func(fs afero.Fs, testContext v2.TestContext) {
+			func(fs afero.Fs, testContext runner.TestContext) {
 				// when deploying twice, just to make sure
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=two-segments --verbose", manifestPath))
 				assert.NoError(t, err)
@@ -138,14 +137,14 @@ func TestSegments(t *testing.T) {
 	t.Run("With a disabled FF the deploy should fail", func(t *testing.T) {
 		t.Setenv(featureflags.Segments.EnvName(), "false")
 
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithManifestPath(manifestPath),
-				v2.WithSuffix("Segments"),
-				v2.WithEnvironment(environment),
-				v2.WithoutCleanup(),
+		runner.Run(t, configFolder,
+			runner.Options{
+				runner.WithManifestPath(manifestPath),
+				runner.WithSuffix("Segments"),
+				runner.WithEnvironment(environment),
+				runner.WithoutCleanup(),
 			},
-			func(fs afero.Fs, testContext v2.TestContext) {
+			func(fs afero.Fs, testContext runner.TestContext) {
 				// when deploying once
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
 				assert.Error(t, err)
@@ -165,13 +164,13 @@ func TestSegments(t *testing.T) {
 
 	t.Run("Segments can be referenced from other configs", func(t *testing.T) {
 
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithManifestPath(manifestPath),
-				v2.WithSuffix("Segments"),
-				v2.WithEnvironment(environment),
+		runner.Run(t, configFolder,
+			runner.Options{
+				runner.WithManifestPath(manifestPath),
+				runner.WithSuffix("Segments"),
+				runner.WithEnvironment(environment),
 			},
-			func(fs afero.Fs, testContext v2.TestContext) {
+			func(fs afero.Fs, testContext runner.TestContext) {
 				// when deploying once
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=referenced-segment --verbose", manifestPath))
 				assert.NoError(t, err)
@@ -198,7 +197,7 @@ func createSegmentsClient(t *testing.T, fs afero.Fs, manifestPath string, enviro
 	})
 	assert.Empty(t, errs)
 
-	clientSet := integrationtest.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
+	clientSet := runner.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
 	return clientSet.SegmentClient
 }
 

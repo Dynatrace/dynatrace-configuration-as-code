@@ -29,9 +29,6 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -39,6 +36,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	assert2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	runner2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 func TestSettingsWithACL(t *testing.T) {
@@ -77,13 +77,13 @@ func TestSettingsWithACL(t *testing.T) {
 			},
 		}
 
-		v2.Run(t, configFolder,
-			v2.Options{
-				v2.WithManifestPath(defaultManifest),
-				v2.WithSuffix("settings-ACL"),
-				v2.WithEnvironment(environment),
+		runner2.Run(t, configFolder,
+			runner2.Options{
+				runner2.WithManifestPath(defaultManifest),
+				runner2.WithSuffix("settings-ACL"),
+				runner2.WithEnvironment(environment),
 			},
-			func(fs afero.Fs, testContext v2.TestContext) {
+			func(fs afero.Fs, testContext runner2.TestContext) {
 				for _, update := range updates {
 					t.Logf("Update permission with '%s'", update.ManifestFolder)
 
@@ -91,7 +91,7 @@ func TestSettingsWithACL(t *testing.T) {
 					err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
 					require.NoError(t, err)
 
-					loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, environment)
+					loadedManifest := runner2.LoadManifest(t, fs, manifestPath, environment)
 					environmentDefinition := loadedManifest.Environments.SelectedEnvironments[environment]
 					client := createSettingsClientPlatform(t, environmentDefinition)
 
@@ -100,10 +100,10 @@ func TestSettingsWithACL(t *testing.T) {
 						Type:     schemaId,
 						ConfigId: "config-acl_" + testContext.Suffix,
 					}
-					objectId := integrationtest.AssertSetting(t, client, settingsType, environment, true, config.Config{
+					objectId := assert2.AssertSetting(t, client, settingsType, environment, true, config.Config{
 						Coordinate: coord,
 					})
-					integrationtest.AssertPermission(t, client, objectId, update.WantPermission)
+					assert2.AssertPermission(t, client, objectId, update.WantPermission)
 				}
 			})
 	})

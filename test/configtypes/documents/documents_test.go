@@ -27,10 +27,9 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
 // TestDocuments verifies that the "private" field of a document config definition in the config.yaml file
@@ -45,11 +44,11 @@ func TestDocuments(t *testing.T) {
 	manifestPath := configFolder + "manifest.yaml"
 	environment := "platform_env"
 
-	v2.Run(t, configFolder,
-		v2.Options{
-			v2.WithEnvironment(environment),
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithEnvironment(environment),
 		},
-		func(fs afero.Fs, testContext v2.TestContext) {
+		func(fs afero.Fs, testContext runner.TestContext) {
 			// deploy
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=project --verbose", manifestPath))
 			assert.NoError(t, err)
@@ -62,7 +61,7 @@ func TestDocuments(t *testing.T) {
 			assert.Empty(t, errs)
 
 			// check isPrivate == false
-			clientSet := integrationtest.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
+			clientSet := runner.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
 			result, err := clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.Suffix))
 			assert.NoError(t, err)
 			assert.Len(t, result.Responses, 1)
