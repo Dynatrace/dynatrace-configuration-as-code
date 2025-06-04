@@ -59,7 +59,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
 		id = idutils.GenerateUUIDFromCoordinate(dp.AsCoordinate())
 	}
 
-	logger.Debug("Deleting %v with id %q.", dp.Type, id)
+	logger.DebugContext(ctx, "Deleting %v with id %q.", dp.Type, id)
 
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(config.AutomationResource(dp.Type))
 	if err != nil {
@@ -73,7 +73,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
 			return 1
 		}
 	}
-	logger.Debug("Automation object with id %q deleted", id)
+	logger.DebugContext(ctx, "Automation object with id %q deleted", id)
 	return 0
 }
 

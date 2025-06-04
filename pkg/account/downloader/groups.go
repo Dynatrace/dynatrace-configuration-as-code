@@ -49,26 +49,26 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 
 	var groups Groups
 	for i := range groupDTOs {
-		log.WithCtxFields(ctx).Debug("Downloading definition for group %q (uuid: %q)", groupDTOs[i].Name, *groupDTOs[i].Uuid)
+		log.WithCtxFields(ctx).DebugContext(ctx, "Downloading definition for group %q (uuid: %q)", groupDTOs[i].Name, *groupDTOs[i].Uuid)
 		g := group{
 			dto:      &groupDTOs[i],
 			bindings: make(map[levelID]*accountmanagement.LevelPolicyBindingDto, len(tenants)),
 		}
 
-		log.WithCtxFields(ctx).Debug("Downloading policies for group %q", groupDTOs[i].Name)
+		log.WithCtxFields(ctx).DebugContext(ctx, "Downloading policies for group %q", groupDTOs[i].Name)
 		binding, err := a.httpClient.GetPolicyGroupBindings(ctx, "account", a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, err
 		}
 		g.bindings["account"] = binding
 
-		log.WithCtxFields(ctx).Debug("Downloading permissions for group %q", groupDTOs[i].Name)
+		log.WithCtxFields(ctx).DebugContext(ctx, "Downloading permissions for group %q", groupDTOs[i].Name)
 		perDTO, err := a.httpClient.GetPermissionFor(ctx, a.accountInfo.AccountUUID, *groupDTOs[i].Uuid)
 		if err != nil {
 			return nil, err
 		}
 		g.permissionDTO = perDTO
-		log.WithCtxFields(ctx).Debug("Downloading definition for group %q", groupDTOs[i].Name)
+		log.WithCtxFields(ctx).DebugContext(ctx, "Downloading definition for group %q", groupDTOs[i].Name)
 		acc := account.Account{
 			Permissions: getPermissionFor("account", perDTO),
 			Policies:    policies.RefOn(getPoliciesFor(binding, *g.dto.Uuid)...),
@@ -77,7 +77,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		var envs []account.Environment
 		var mzs []account.ManagementZone
 		for _, t := range tenants {
-			log.WithCtxFields(ctx).Debug("Fetching bindings for environment %q", t.id)
+			log.WithCtxFields(ctx).DebugContext(ctx, "Fetching bindings for environment %q", t.id)
 			binding, err := a.httpClient.GetPolicyGroupBindings(ctx, "environment", t.id) // why do we fetch the bindings for each tenant in each group-iteration?
 			if err != nil {
 				return nil, err

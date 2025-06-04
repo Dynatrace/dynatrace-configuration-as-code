@@ -58,10 +58,10 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 
 		if len(settingsObjects) == 0 {
 			if e.OriginObjectId != "" {
-				logger.Debug("No settings object found to delete. Could not find object with matching object id.")
+				logger.DebugContext(ctx, "No settings object found to delete. Could not find object with matching object id.")
 				continue
 			}
-			logger.Debug("No settings object found to delete. Could not find object with matching external id.")
+			logger.DebugContext(ctx, "No settings object found to delete. Could not find object with matching external id.")
 			continue
 		}
 
@@ -71,7 +71,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 				continue
 			}
 
-			logger.Debug("Deleting settings object with objectId %q.", settingsObject.ObjectId)
+			logger.DebugContext(ctx, "Deleting settings object with objectId %q.", settingsObject.ObjectId)
 			err := c.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
 				logger.ErrorContext(ctx, "Failed to delete settings object with object ID %s: %v", settingsObject.ObjectId, err)
@@ -122,7 +122,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 	}
 
 	logger := log.WithCtxFields(ctx)
-	logger.Debug("Deleting settings of schemas %v...", schemaIds)
+	logger.DebugContext(ctx, "Deleting settings of schemas %v...", schemaIds)
 
 	for _, s := range schemaIds {
 		logger := logger.WithFields(field.Type(s))
@@ -141,7 +141,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 				continue
 			}
 
-			logger.WithFields(field.F("object", settingsObject)).Debug("Deleting settings object with object ID '%s'...", settingsObject.ObjectId)
+			logger.WithFields(field.F("object", settingsObject)).DebugContext(ctx, "Deleting settings object with object ID '%s'...", settingsObject.ObjectId)
 			err := c.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
 				logger.ErrorContext(ctx, "Failed to delete settings object with object ID '%s': %v", settingsObject.ObjectId, err)

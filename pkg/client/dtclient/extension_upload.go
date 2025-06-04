@@ -66,7 +66,7 @@ func (d *ConfigClient) uploadExtension(ctx context.Context, api api.API, extensi
 		return DynatraceEntity{}, fmt.Errorf("upload of %s failed: %w", extensionName, err)
 	}
 
-	log.WithCtxFields(ctx).Debug("Extension upload successful for %s", extensionName)
+	log.WithCtxFields(ctx).DebugContext(ctx, "Extension upload successful for %s", extensionName)
 
 	// As other configs depend on metrics created by extensions, and metric creation seems to happen with delay...
 	time.Sleep(1 * time.Second)
