@@ -64,13 +64,13 @@ func TestDocuments(t *testing.T) {
 
 			// check isPrivate == false
 			clientSet := integrationtest.CreateDynatraceClients(t, man.Environments.SelectedEnvironments[environment])
-			result, err := clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+			result, err := clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.Suffix))
 			assert.NoError(t, err)
 			assert.Len(t, result.Responses, 1)
 			assert.False(t, result.Responses[0].IsPrivate)
 
 			// check isPrivate == true
-			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.Suffix))
 			assert.NoError(t, err)
 			assert.Len(t, result.Responses, 1)
 			assert.True(t, result.Responses[0].IsPrivate)
@@ -102,19 +102,19 @@ func TestDocuments(t *testing.T) {
 			assert.NoError(t, err)
 
 			// check if isPrivate was changed to true
-			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.suffix))
+			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-notebook_%s'", testContext.Suffix))
 			assert.NoError(t, err)
 			assert.Len(t, result.Responses, 1)
 			assert.True(t, result.Responses[0].IsPrivate)
 
 			// check if isPrivate was changed to false
-			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.suffix))
+			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.Suffix))
 			assert.NoError(t, err)
 			assert.Len(t, result.Responses, 1)
 			assert.False(t, result.Responses[0].IsPrivate)
 
 			// check if both launchpads were created successfully
-			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("(name='my_empty_launchpad_%s' and type='launchpad') or (name='my_monaco_launchpad_%s' and type='launchpad')", testContext.suffix, testContext.suffix))
+			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("(name='my_empty_launchpad_%s' and type='launchpad') or (name='my_monaco_launchpad_%s' and type='launchpad')", testContext.Suffix, testContext.Suffix))
 			assert.NoError(t, err)
 			assert.Len(t, result.Responses, 2)
 		})

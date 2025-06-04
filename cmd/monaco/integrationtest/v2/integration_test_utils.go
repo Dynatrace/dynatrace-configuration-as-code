@@ -32,8 +32,8 @@ import (
 
 // TestContext contains all information necessary for the test-run
 type TestContext struct {
-	// suffix contains the suffix which is generated for the test-run.
-	suffix string
+	// Suffix contains the suffix which is generated for the test-run.
+	Suffix string
 }
 
 type testOptions struct {
@@ -154,7 +154,7 @@ func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)
 
 	testFunc(opts.fs, TestContext{
-		suffix: suffix,
+		Suffix: suffix,
 	})
 }
 

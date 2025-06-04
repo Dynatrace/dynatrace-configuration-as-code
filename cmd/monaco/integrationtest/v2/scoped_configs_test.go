@@ -49,7 +49,7 @@ func TestDeployScopedConfigurations(t *testing.T) {
 		func(fs afero.Fs, testContext TestContext) {
 
 			// deploy with sharing turned off and assert state
-			setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.suffix)
+			setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.Suffix)
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
 			require.NoError(t, err)
 
@@ -57,7 +57,7 @@ func TestDeployScopedConfigurations(t *testing.T) {
 			assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, false)
 
 			// deploy with sharing turned on and assert state
-			setTestEnvVar(t, dashboardSharedEnvName, "true", testContext.suffix)
+			setTestEnvVar(t, dashboardSharedEnvName, "true", testContext.Suffix)
 			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
 			require.NoError(t, err)
 
@@ -78,7 +78,7 @@ func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext Te
 	apis := api.NewAPIs()
 
 	dashboardAPI := apis[api.Dashboard]
-	dashboardName := integrationtest.AddSuffix("Application monitoring", testContext.suffix)
+	dashboardName := integrationtest.AddSuffix("Application monitoring", testContext.Suffix)
 	exists, dashboardID, err := clientSet.ConfigClient.ExistsWithName(t.Context(), dashboardAPI, dashboardName)
 
 	require.NoError(t, err, "expect to be able to get dashboard by name")
