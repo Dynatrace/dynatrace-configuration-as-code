@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package logging
 
 import (
 	"fmt"
@@ -74,7 +74,7 @@ func TestLoadingReport(t *testing.T) {
 		},
 		{
 			Name:     "valid and invalid configs",
-			Manifest: "test-resources/references/invalid-configs-manifest.yaml",
+			Manifest: "testdata/references/invalid-configs-manifest.yaml",
 			WantRecord: []report.Record{
 				{
 
@@ -99,7 +99,7 @@ func TestLoadingReport(t *testing.T) {
 		},
 		{
 			Name:     "duplicated keys error message is logged",
-			Manifest: "test-resources/configs-with-duplicate-ids/manifest.yaml",
+			Manifest: "testdata/configs-with-duplicate-ids/manifest.yaml",
 			WantRecord: []report.Record{
 				{
 					Type:   report.TypeLoad,
@@ -112,7 +112,7 @@ func TestLoadingReport(t *testing.T) {
 		},
 		{
 			Name:     "missing key-user-action scope is logged",
-			Manifest: "test-resources/key-user-action-without-scope/manifest.yaml",
+			Manifest: "testdata/key-user-action-without-scope/manifest.yaml",
 			WantRecord: []report.Record{
 				{
 					Type:   report.TypeLoad,
@@ -125,7 +125,7 @@ func TestLoadingReport(t *testing.T) {
 		},
 		{
 			Name:     "cyclic dependency error is logged",
-			Manifest: "test-resources/config-with-cycle/manifest.yaml",
+			Manifest: "testdata/config-with-cycle/manifest.yaml",
 			WantRecord: []report.Record{
 				{
 					Type:  report.TypeLoad,

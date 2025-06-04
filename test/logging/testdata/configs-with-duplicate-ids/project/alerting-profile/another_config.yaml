@@ -1,0 +1,8 @@
+configs:
+- id: profile
+  config:
+    name: Star Gate Service
+    template: profile.json
+    skip: false
+  type:
+    api: alerting-profile

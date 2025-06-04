@@ -1,0 +1,9 @@
+{
+  "type": "SLACK",
+  "name": "{{ .name }}",
+  "alertingProfile": "{{ .alertingProfileId }}",
+  "active": true,
+  "url": "https://hooks.slack.com/services/A/B/C",
+  "channel": "#team-bas-ops",
+  "title": "{{ .environment }} stage: {State} {ProblemID} \n{ProblemURL}\n{ProblemTitle}\n{ProblemImpact} {ProblemSeverity}\n----\n{ProblemDetailsText}\n"
+}
