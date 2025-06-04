@@ -119,7 +119,7 @@ func TestSkip(t *testing.T) {
 				},
 				func(fs afero.Fs, tc TestContext) {
 
-					testCaseVar := "SKIPPED_VAR_" + tc.suffix
+					testCaseVar := "SKIPPED_VAR_" + tc.Suffix
 					t.Setenv(testCaseVar, strconv.FormatBool(tt.given.skipVarValue))
 
 					err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
@@ -144,7 +144,7 @@ func TestSkip(t *testing.T) {
 }
 
 func assertTestConfig(t *testing.T, tc TestContext, client client.SettingsClient, envName string, configID string, shouldExist bool) {
-	configID = fmt.Sprintf("%s_%s", configID, tc.suffix)
+	configID = fmt.Sprintf("%s_%s", configID, tc.Suffix)
 
 	integrationtest.AssertSetting(t, client, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, shouldExist, config.Config{
 		Coordinate: coordinate.Coordinate{

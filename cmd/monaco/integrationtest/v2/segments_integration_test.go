@@ -65,7 +65,7 @@ func TestSegments(t *testing.T) {
 				coord := coordinate.Coordinate{
 					Project:  "standalone-segment",
 					Type:     "segment",
-					ConfigId: "my-segment_" + testContext.suffix,
+					ConfigId: "my-segment_" + testContext.Suffix,
 				}
 				assertSegmentIsInResponse(t, true, result, coord)
 			})
@@ -93,7 +93,7 @@ func TestSegments(t *testing.T) {
 				coord := coordinate.Coordinate{
 					Project:  "standalone-segment",
 					Type:     "segment",
-					ConfigId: "my-segment_" + testContext.suffix,
+					ConfigId: "my-segment_" + testContext.Suffix,
 				}
 				assertSegmentIsInResponse(t, true, result, coord)
 			})
@@ -121,14 +121,14 @@ func TestSegments(t *testing.T) {
 				coord := coordinate.Coordinate{
 					Project:  "two-segments",
 					Type:     "segment",
-					ConfigId: "my-segment_" + testContext.suffix,
+					ConfigId: "my-segment_" + testContext.Suffix,
 				}
 				assertSegmentIsInResponse(t, true, result, coord)
 
 				coord = coordinate.Coordinate{
 					Project:  "two-segments",
 					Type:     "segment",
-					ConfigId: "second-segment_" + testContext.suffix,
+					ConfigId: "second-segment_" + testContext.Suffix,
 				}
 				assertSegmentIsInResponse(t, true, result, coord)
 			})
@@ -156,7 +156,7 @@ func TestSegments(t *testing.T) {
 				coord := coordinate.Coordinate{
 					Project:  "standalone-segment",
 					Type:     "segment",
-					ConfigId: "my-segment_" + testContext.suffix,
+					ConfigId: "my-segment_" + testContext.Suffix,
 				}
 				assertSegmentIsInResponse(t, false, result, coord)
 			})
@@ -182,7 +182,7 @@ func TestSegments(t *testing.T) {
 				coord := coordinate.Coordinate{
 					Project:  "referenced-segment",
 					Type:     "segment",
-					ConfigId: "segment_" + testContext.suffix,
+					ConfigId: "segment_" + testContext.Suffix,
 				}
 				assertSegmentIsInResponse(t, true, result, coord)
 			})

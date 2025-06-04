@@ -117,7 +117,7 @@ func TestOnlyStringReferences(t *testing.T) {
 					// find dashboard
 					projectAndEnvName := "proj_" + env // for manifest downloads proj + env name
 					confsPerType := findConfigs(t, projects, projectAndEnvName)
-					dashboard := findConfig(t, confsPerType, "dashboard", "Dashboard 0_"+ctx.suffix)
+					dashboard := findConfig(t, confsPerType, "dashboard", "Dashboard 0_"+ctx.Suffix)
 
 					require.NotEmpty(t, dashboard.Coordinate.ConfigId)
 
@@ -140,9 +140,9 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 			project:      "classic-apis",
 			downloadOpts: "--api=alerting-profile,notification,management-zone",
 			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
-				managementZone := findConfig(t, confsPerType, "management-zone", "zone-ca_"+ctx.suffix)
-				profile := findConfig(t, confsPerType, "alerting-profile", "profile-ca_"+ctx.suffix)
-				notification := findConfig(t, confsPerType, "notification", "notification-ca_"+ctx.suffix)
+				managementZone := findConfig(t, confsPerType, "management-zone", "zone-ca_"+ctx.Suffix)
+				profile := findConfig(t, confsPerType, "alerting-profile", "profile-ca_"+ctx.Suffix)
+				notification := findConfig(t, confsPerType, "notification", "notification-ca_"+ctx.Suffix)
 
 				assertRefParamFromTo(t, profile, managementZone)
 				assertRefParamFromTo(t, notification, profile)
@@ -152,9 +152,9 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 			project:      "settings",
 			downloadOpts: "--settings-schema=builtin:problem.notifications,builtin:management-zones,builtin:alerting.profile",
 			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
-				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.suffix, "name")
-				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.suffix, "name")
-				notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.suffix, "displayName")
+				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.Suffix, "name")
+				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.Suffix, "name")
+				notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.Suffix, "displayName")
 
 				assertRefParamFromTo(t, profile, managementZone)
 				assertRefParamFromTo(t, notification, profile)
@@ -164,9 +164,9 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 			project:      "classic-with-settings-mngt-zone",
 			downloadOpts: "--api=notification,alerting-profile --settings-schema=builtin:management-zones",
 			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
-				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone-cws_"+ctx.suffix, "name")
-				profile := findConfig(t, confsPerType, "alerting-profile", "profile-cws_"+ctx.suffix)
-				notification := findConfig(t, confsPerType, "notification", "notification-cws_"+ctx.suffix)
+				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone-cws_"+ctx.Suffix, "name")
+				profile := findConfig(t, confsPerType, "alerting-profile", "profile-cws_"+ctx.Suffix)
+				notification := findConfig(t, confsPerType, "notification", "notification-cws_"+ctx.Suffix)
 
 				assertRefParamFromTo(t, profile, managementZone)
 				assertRefParamFromTo(t, notification, profile)

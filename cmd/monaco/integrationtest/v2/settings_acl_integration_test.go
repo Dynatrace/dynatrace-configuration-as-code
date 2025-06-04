@@ -93,7 +93,7 @@ func TestSettingsWithACL(t *testing.T) {
 					coord := coordinate.Coordinate{
 						Project:  project,
 						Type:     schemaId,
-						ConfigId: "config-acl_" + testContext.suffix,
+						ConfigId: "config-acl_" + testContext.Suffix,
 					}
 					objectId := integrationtest.AssertSetting(t, client, settingsType, environment, true, config.Config{
 						Coordinate: coord,

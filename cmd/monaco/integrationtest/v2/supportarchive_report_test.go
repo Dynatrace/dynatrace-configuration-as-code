@@ -219,7 +219,7 @@ func TestDeployReport(t *testing.T) {
 
 				// assert report contains a DEPLOY record for config that was skipped together with details of the reason
 				records := readReport(t, fs, reportFile)
-				record, exists := matcher.FindRecord(records, report.Record{Type: report.TypeDeploy, State: report.StateSkipped, Config: &coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "profile3_" + tc.suffix}})
+				record, exists := matcher.FindRecord(records, report.Record{Type: report.TypeDeploy, State: report.StateSkipped, Config: &coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "profile3_" + tc.Suffix}})
 				assert.True(t, exists)
 				require.Len(t, record.Details, 1)
 				assert.Equal(t, "WARN", record.Details[0].Type)

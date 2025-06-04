@@ -68,12 +68,12 @@ func TestSloV2(t *testing.T) {
 				cSliCoord := coordinate.Coordinate{
 					Project:  project,
 					Type:     string(config.ServiceLevelObjectiveID),
-					ConfigId: "custom-sli_" + testContext.suffix,
+					ConfigId: "custom-sli_" + testContext.Suffix,
 				}
 				sliRefCoord := coordinate.Coordinate{
 					Project:  project,
 					Type:     string(config.ServiceLevelObjectiveID),
-					ConfigId: "sli-reference_" + testContext.suffix,
+					ConfigId: "sli-reference_" + testContext.Suffix,
 				}
 
 				cSliExternalID := idutils.GenerateExternalID(cSliCoord)
@@ -107,7 +107,7 @@ func TestSloV2(t *testing.T) {
 				coord := coordinate.Coordinate{
 					Project:  project,
 					Type:     string(config.ServiceLevelObjectiveID),
-					ConfigId: "custom-sli_" + testContext.suffix,
+					ConfigId: "custom-sli_" + testContext.Suffix,
 				}
 				externalID := idutils.GenerateExternalID(coord)
 				assert.NotContains(t, externalIDs, externalID)

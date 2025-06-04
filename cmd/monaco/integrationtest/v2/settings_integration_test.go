@@ -222,7 +222,7 @@ func TestOrderedSettings(t *testing.T) {
 			WithoutCleanup(),
 		},
 		func(fs afero.Fs, tc TestContext) {
-			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.suffix)
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.Suffix)
 
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
 			require.NoError(t, err)
@@ -252,7 +252,7 @@ func TestOrderedSettings(t *testing.T) {
 			WithSuffix("SettingsOrdered"),
 		},
 		func(fs afero.Fs, tc TestContext) {
-			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.suffix)
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", host, tc.Suffix)
 
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=project", manifestPath))
 			require.NoError(t, err)
@@ -289,7 +289,7 @@ func TestOrderedSettingsCrossProjects(t *testing.T) {
 		},
 		func(fs afero.Fs, tc TestContext) {
 			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.Suffix)
 			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=platform_env --project=source", manifestPath))
@@ -335,7 +335,7 @@ func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
 		},
 		func(fs afero.Fs, tc TestContext) {
 			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.Suffix)
 			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
@@ -375,7 +375,7 @@ func TestOrdered_InsertAtFrontWorks(t *testing.T) {
 		},
 		func(fs afero.Fs, tc TestContext) {
 			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.Suffix)
 			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
@@ -418,7 +418,7 @@ func TestOrdered_InsertAtBackWorks(t *testing.T) {
 		},
 		func(fs afero.Fs, tc TestContext) {
 			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.Suffix)
 			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
@@ -457,7 +457,7 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 		},
 		func(fs afero.Fs, tc TestContext) {
 			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.Suffix)
 			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project %s --verbose", manifestFile, project))
@@ -500,7 +500,7 @@ func TestOrdered_InsertAtFrontAndBackWorksDeployTwice(t *testing.T) {
 		},
 		func(fs afero.Fs, tc TestContext) {
 			pgiMeId := randomMeID("PROCESS_GROUP_INSTANCE")
-			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.suffix)
+			setTestEnvVar(t, "MONACO_TARGET_ENTITY_SCOPE", pgiMeId, tc.Suffix)
 			t.Log("Monitored entity ID for testing ('MONACO_TARGET_ENTITY_SCOPE') =", pgiMeId)
 
 			// first
@@ -600,7 +600,7 @@ func findPositionWithExternalId(t *testing.T, objects []dtclient.DownloadSetting
 
 func settingsExternalIdForTest(t *testing.T, originalCoordinate coordinate.Coordinate, testContext TestContext) string {
 
-	originalCoordinate.ConfigId += "_" + testContext.suffix
+	originalCoordinate.ConfigId += "_" + testContext.Suffix
 
 	id, err := idutils.GenerateExternalIDForSettingsObject(originalCoordinate)
 	require.NoError(t, err)
