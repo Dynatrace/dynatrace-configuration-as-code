@@ -97,7 +97,7 @@ func deleteUsers(ctx context.Context, account Account, users []User) int {
 			continue
 		}
 
-		log.Error("Failed to delete user %q from account %s: %v", user.Email, account, err)
+		log.ErrorContext(ctx, "Failed to delete user %q from account %s: %v", user.Email, account, err)
 		errCount++
 	}
 	return errCount
@@ -118,7 +118,7 @@ func deleteServiceUsers(ctx context.Context, account Account, serviceUsers []Ser
 			continue
 		}
 
-		log.Error("Failed to delete service user %q from account %s: %v", user.Name, account, err)
+		log.ErrorContext(ctx, "Failed to delete service user %q from account %s: %v", user.Name, account, err)
 		errCount++
 	}
 	return errCount
@@ -139,7 +139,7 @@ func deleteGroups(ctx context.Context, account Account, groups []Group) int {
 			continue
 		}
 
-		log.Error("Failed to delete group %q from account %s: %v", group.Name, account, err)
+		log.ErrorContext(ctx, "Failed to delete group %q from account %s: %v", group.Name, account, err)
 		errCount++
 	}
 	return errCount
@@ -159,7 +159,7 @@ func deleteAccountPolicies(ctx context.Context, account Account, accountPolicies
 			log.Info("Policy %q does not exist for account %s", policy.Name, account)
 		}
 
-		log.Error("Failed to delete policy %q from account %s: %v", policy.Name, account, err)
+		log.ErrorContext(ctx, "Failed to delete policy %q from account %s: %v", policy.Name, account, err)
 		errCount++
 	}
 	return errCount
@@ -180,7 +180,7 @@ func deleteEnvironmentPolicies(ctx context.Context, account Account, environment
 			continue
 		}
 
-		log.Error("Failed to delete policy %q for environment %s: %v", policy.Name, policy.Environment, err)
+		log.ErrorContext(ctx, "Failed to delete policy %q for environment %s: %v", policy.Name, policy.Environment, err)
 		errCount++
 	}
 	return errCount

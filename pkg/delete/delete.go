@@ -55,7 +55,7 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 	// Delete rest of config types
 	for t, entries := range remainingEntriesToDelete {
 		if err := deleteConfig(ctx, clients, t, entries); err != nil {
-			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
+			log.WithFields(field.Error(err)).ErrorContext(ctx, "Error during deletion: %v", err)
 			errCount += 1
 		}
 	}
@@ -83,7 +83,7 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 		}
 		err := automation.Delete(ctx, autClient, key, entries)
 		if err != nil {
-			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
+			log.WithFields(field.Error(err)).ErrorContext(ctx, "Error during deletion: %v", err)
 			errCount += 1
 		}
 	}

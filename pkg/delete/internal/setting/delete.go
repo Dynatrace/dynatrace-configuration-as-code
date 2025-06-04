@@ -44,14 +44,14 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 
 		filterFunc, err := getFilter(e)
 		if err != nil {
-			logger.Error("Setting will not be deleted: %v", err)
+			logger.ErrorContext(ctx, "Setting will not be deleted: %v", err)
 			deleteErrs++
 			continue
 		}
 
 		settingsObjects, err := c.List(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
 		if err != nil {
-			logger.Error("Could not fetch settings object: %v", err)
+			logger.ErrorContext(ctx, "Could not fetch settings object: %v", err)
 			deleteErrs++
 			continue
 		}
@@ -74,7 +74,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 			logger.Debug("Deleting settings object with objectId %q.", settingsObject.ObjectId)
 			err := c.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
-				logger.Error("Failed to delete settings object with object ID %s: %v", settingsObject.ObjectId, err)
+				logger.ErrorContext(ctx, "Failed to delete settings object with object ID %s: %v", settingsObject.ObjectId, err)
 				deleteErrs++
 			}
 		}
@@ -130,7 +130,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 
 		settingsObjects, err := c.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
-			logger.WithFields(field.Error(err)).Error("Failed to collect object for schema %q: %v", s, err)
+			logger.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to collect object for schema %q: %v", s, err)
 			errCount++
 			continue
 		}
@@ -144,7 +144,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 			logger.WithFields(field.F("object", settingsObject)).Debug("Deleting settings object with object ID '%s'...", settingsObject.ObjectId)
 			err := c.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
-				logger.Error("Failed to delete settings object with object ID '%s': %v", settingsObject.ObjectId, err)
+				logger.ErrorContext(ctx, "Failed to delete settings object with object ID '%s': %v", settingsObject.ObjectId, err)
 				errCount++
 			}
 		}

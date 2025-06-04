@@ -40,7 +40,7 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 	for _, dp := range dps {
 		err := deleteSingle(ctx, c, dp)
 		if err != nil {
-			log.WithCtxFields(ctx).WithFields(field.Type(dp.Type), field.Coordinate(dp.AsCoordinate())).Error("Failed to delete entry: %v", err)
+			log.WithCtxFields(ctx).WithFields(field.Type(dp.Type), field.Coordinate(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
 			errCount++
 		}
 	}

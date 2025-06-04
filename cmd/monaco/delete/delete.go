@@ -51,7 +51,7 @@ func Delete(ctx context.Context, environments manifest.EnvironmentDefinitionsByN
 		log.WithCtxFields(ctx).Info("Deleting configs for environment %q...", env.Name)
 
 		if err := delete.Configs(ctx, *clientSet, entriesToDelete); err != nil {
-			log.Error("Failed to delete all configurations from environment %q - check log for details", env.Name)
+			log.ErrorContext(ctx, "Failed to delete all configurations from environment %q - check log for details", env.Name)
 			envsWithDeleteErrs = append(envsWithDeleteErrs, env.Name)
 		}
 	}

@@ -92,7 +92,7 @@ func downloadSpecific(ctx context.Context, settingsSource Source, projectName st
 
 	if ok, unknownSchemas := validateSpecificSchemas(schemas, schemaIDs); !ok {
 		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
-		log.WithFields(field.F("unknownSchemas", unknownSchemas), field.Error(err)).Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
+		log.WithFields(field.F("unknownSchemas", unknownSchemas), field.Error(err)).ErrorContext(ctx, "%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
 		return nil, err
 	}
 
@@ -159,7 +159,7 @@ func download(ctx context.Context, settingsSource Source, schemas []schema, proj
 			objects, err := settingsSource.List(ctx, s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				errMsg := extractApiErrorMessage(err)
-				lg.WithFields(field.Error(err)).Error("Failed to fetch all settings for schema '%s': %v", s.id, errMsg)
+				lg.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to fetch all settings for schema '%s': %v", s.id, errMsg)
 				return
 			}
 
@@ -169,7 +169,7 @@ func download(ctx context.Context, settingsSource Source, schemas []schema, proj
 				permissions, permErr = getObjectsPermission(ctx, settingsSource, objects)
 				if permErr != nil {
 					errMsg := extractApiErrorMessage(permErr)
-					lg.WithFields(field.Error(permErr)).Error("Failed to fetch settings permissions for schema '%s': %v", s.id, errMsg)
+					lg.WithFields(field.Error(permErr)).ErrorContext(ctx, "Failed to fetch settings permissions for schema '%s': %v", s.id, errMsg)
 					return
 				}
 			}
