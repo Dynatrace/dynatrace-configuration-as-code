@@ -449,7 +449,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 			props = append(props, fmt.Sprintf("(%v = %v)", k, v))
 		}
 
-		log.WithCtxFields(ctx).Debug("Updating existing object %q with matching unique properties: %v", matchingObject.object.ObjectId, strings.Join(props, ", "))
+		log.WithCtxFields(ctx).DebugContext(ctx, "Updating existing object %q with matching unique properties: %v", matchingObject.object.ObjectId, strings.Join(props, ", "))
 		remoteObjectId = matchingObject.object.ObjectId
 	}
 
@@ -559,7 +559,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 	if upsertOptions.InsertAfter != nil {
 		insertAfterForLogging = *upsertOptions.InsertAfter
 	}
-	log.WithCtxFields(ctx).Debug("Created/Updated object %s (schemaID: %s, Scope: %s, insertAfter: %s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, obj.Scope, insertAfterForLogging, externalID)
+	log.WithCtxFields(ctx).DebugContext(ctx, "Created/Updated object %s (schemaID: %s, Scope: %s, insertAfter: %s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, obj.Scope, insertAfterForLogging, externalID)
 	return entity, nil
 }
 
@@ -755,7 +755,7 @@ func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj Set
 	// compress json to require less space
 	dest := bytes.Buffer{}
 	if err := json.Compact(&dest, fullObj); err != nil {
-		log.WithCtxFields(ctx).WithFields(field.Error(err)).Debug("Failed to compact json: %s. Using uncompressed json.\n\tJson: %v", err, string(fullObj))
+		log.WithCtxFields(ctx).WithFields(field.Error(err)).DebugContext(ctx, "Failed to compact json: %s. Using uncompressed json.\n\tJson: %v", err, string(fullObj))
 		return fullObj, nil
 	}
 
@@ -813,11 +813,11 @@ func parsePostResponse(body []byte) (DynatraceEntity, error) {
 
 func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
 	if settings, cached := d.settingsCache.Get(schemaId); cached {
-		log.WithCtxFields(ctx).Debug("Using cached settings for schema %s", schemaId)
+		log.WithCtxFields(ctx).DebugContext(ctx, "Using cached settings for schema %s", schemaId)
 		return filter.FilterSlice(settings, opts.Filter), nil
 	}
 
-	log.WithCtxFields(ctx).Debug("Downloading all settings for schema %s", schemaId)
+	log.WithCtxFields(ctx).DebugContext(ctx, "Downloading all settings for schema %s", schemaId)
 
 	listSettingsFields := defaultListSettingsFields
 	if opts.DiscardValue {
@@ -871,7 +871,7 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		if coreapi.IsNotFoundError(err) {
-			log.Debug("No settings object with id '%s' found to delete (HTTP 404 response)", objectID)
+			log.DebugContext(ctx, "No settings object with id '%s' found to delete (HTTP 404 response)", objectID)
 			return nil
 		}
 		return err

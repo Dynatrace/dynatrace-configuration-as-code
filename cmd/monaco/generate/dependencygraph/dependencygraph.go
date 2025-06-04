@@ -92,7 +92,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 
 	var opts []graph.NodeOption
 	if writeJSONIDs {
-		log.Debug("Encoding DOT Node IDs as JSON")
+		log.DebugContext(ctx, "Encoding DOT Node IDs as JSON")
 		opts = append(opts, func(n *graph.ConfigNode) {
 			s, err := json.Marshal(n.Config.Coordinate)
 			if err == nil {
@@ -153,7 +153,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		if exists {
 			time := timeutils.TimeAnchor().Format("20060102-150405")
 			newFile := filepath.Join(folderPath, fmt.Sprintf("dependency_graph_%s_%s.dot", e, time))
-			log.WithFields(field.F("file", newFile), field.F("existingFile", file)).Debug("Output file %q already exists, creating %q instead", file, newFile)
+			log.WithFields(field.F("file", newFile), field.F("existingFile", file)).DebugContext(ctx, "Output file %q already exists, creating %q instead", file, newFile)
 			file = newFile
 		}
 

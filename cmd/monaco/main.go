@@ -57,13 +57,13 @@ func main() {
 func setVersionNotificationStr(ctx context.Context, msg *string) {
 	currentVersion, err := version.ParseVersion(monacoVersion.MonitoringAsCode)
 	if err != nil {
-		log.WithFields(field.Error(err)).Debug("Can't parse current monaco version: %s", err)
+		log.WithFields(field.Error(err)).DebugContext(ctx, "Can't parse current monaco version: %s", err)
 		return
 	}
 
 	latestVersion, err := version.GetLatestVersion(ctx, &http.Client{}, "https://api.github.com/repos/dynatrace/dynatrace-configuration-as-code/releases/latest")
 	if err != nil {
-		log.WithFields(field.Error(err)).Debug("Could not perform version check: %s", err)
+		log.WithFields(field.Error(err)).DebugContext(ctx, "Could not perform version check: %s", err)
 		return
 	}
 
