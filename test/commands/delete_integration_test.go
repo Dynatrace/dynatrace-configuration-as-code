@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package commands
 
 import (
 	"fmt"
@@ -114,7 +114,7 @@ func TestDelete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t1 *testing.T) {
-			configFolder := "test-resources/delete-test-configs/"
+			configFolder := "testdata/delete-test-configs/"
 			deployManifestPath := configFolder + "deploy-manifest.yaml"
 
 			fs := testutils.CreateTestFileSystem()
@@ -158,7 +158,7 @@ func TestDelete(t *testing.T) {
 
 func TestDeleteSkipsPlatformTypesWhenDeletingFromClassicEnv(t *testing.T) {
 
-	configFolder := "test-resources/delete-test-configs/"
+	configFolder := "testdata/delete-test-configs/"
 	deployManifestPath := configFolder + "deploy-manifest.yaml"
 
 	fs := testutils.CreateTestFileSystem()
@@ -238,7 +238,7 @@ environmentGroups:
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 	// ensure test resources are removed after test is done
 	defer func() {
-		monaco.Run(t, fs, "monaco delete --manifest=test-resources/delete-test-configs/deploy-manifest.yaml --verbose")
+		monaco.Run(t, fs, "monaco delete --manifest=testdata/delete-test-configs/deploy-manifest.yaml --verbose")
 	}()
 
 	// DELETE Configs - with API Token only Manifest
@@ -248,7 +248,7 @@ environmentGroups:
 	// Assert expected deletions
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
-		ManifestPath: "test-resources/delete-test-configs/deploy-manifest.yaml", // full manifest with oAuth
+		ManifestPath: "testdata/delete-test-configs/deploy-manifest.yaml", // full manifest with oAuth
 		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 	})
 	assert.Empty(t, errs)
@@ -286,7 +286,7 @@ environmentGroups:
 }
 
 func TestDeleteSubPathAPIConfigurations(t *testing.T) {
-	configFolder := "test-resources/delete-test-configs/"
+	configFolder := "testdata/delete-test-configs/"
 	deployManifestPath := configFolder + "deploy-manifest.yaml"
 
 	fs := testutils.CreateTestFileSystem()
@@ -403,7 +403,7 @@ configs:
 }
 
 func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
-	configFolder := "test-resources/delete-test-configs/"
+	configFolder := "testdata/delete-test-configs/"
 	fs := testutils.CreateTestFileSystem()
 
 	t.Run("OAuth only should not throw error but skip delete for Classic API", func(t *testing.T) {

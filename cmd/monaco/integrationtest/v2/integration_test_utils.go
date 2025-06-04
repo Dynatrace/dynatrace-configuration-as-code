@@ -142,7 +142,7 @@ func Run(t *testing.T, workingDirectory string, opts Options, fn TestFunc) {
 func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 	configFolder, _ := filepath.Abs(opts.configFolder)
 
-	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
+	suffix := AppendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
 
 	for k, v := range opts.envVars {
 		t.Log("Setting test environment variable " + k + ": " + v)
@@ -163,7 +163,7 @@ func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 	})
 }
 
-func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
+func AppendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
 	suffix := integrationtest.GenerateTestSuffix(t, generalSuffix)
 	transformers := []func(line string) string{
 		func(name string) string {

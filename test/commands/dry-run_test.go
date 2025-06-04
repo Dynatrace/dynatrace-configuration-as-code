@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2024 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package commands
 
 import (
 	"fmt"
@@ -28,12 +28,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 )
 
 func TestDryRun(t *testing.T) {
 	specificEnvironment := "platform_env"
-	configFolder := "test-resources/integration-all-configs/"
+	configFolder := "testdata/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
 	envVars := map[string]string{
@@ -42,14 +43,14 @@ func TestDryRun(t *testing.T) {
 		featureflags.AccessControlSettings.EnvName(): "true",
 	}
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifest),
-			WithSuffix("AllConfigs"),
-			WithEnvironment(specificEnvironment),
-			WithEnvVars(envVars),
+	v2.Run(t, configFolder,
+		v2.Options{
+			v2.WithManifestPath(manifest),
+			v2.WithSuffix("AllConfigs"),
+			v2.WithEnvironment(specificEnvironment),
+			v2.WithEnvVars(envVars),
 		},
-		func(fs afero.Fs, _ TestContext) {
+		func(fs afero.Fs, _ v2.TestContext) {
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				t.Fatalf("unexpected HTTP request made during dry run: %s", req.RequestURI)
 			}))

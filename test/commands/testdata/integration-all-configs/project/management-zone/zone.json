@@ -1,0 +1,232 @@
+{
+  "name": "{{ .name }}",
+  "rules": [
+    {
+      "type": "HOST",
+      "enabled": true,
+      "propagationTypes": [
+        "HOST_TO_PROCESS_GROUP_INSTANCE"
+      ],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "HOST_GROUP_ID"
+          },
+          "comparisonInfo": {
+            "type": "ENTITY_ID",
+            "operator": "EQUALS",
+            "value": "{{ .meId }}",
+            "negate": false
+          }
+        }
+      ]
+    },
+    {
+      "type": "KUBERNETES_CLUSTER",
+      "enabled": true,
+      "propagationTypes": [],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "KUBERNETES_CLUSTER_NAME"
+          },
+          "comparisonInfo": {
+            "type": "STRING",
+            "operator": "EQUALS",
+            "value": "Management Zone - {{ .environment }}",
+            "negate": false,
+            "caseSensitive": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "AWS_CLASSIC_LOAD_BALANCER",
+      "enabled": true,
+      "propagationTypes": [],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "AWS_CLASSIC_LOAD_BALANCER_TAGS"
+          },
+          "comparisonInfo": {
+            "type": "TAG",
+            "operator": "TAG_KEY_EQUALS",
+            "value": {
+              "context": "AWS",
+              "key": "kubernetes.io/cluster/{{ .name }}"
+            },
+            "negate": false
+          }
+        }
+      ]
+    },
+    {
+      "type": "AWS_AUTO_SCALING_GROUP",
+      "enabled": true,
+      "propagationTypes": [],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "AWS_AUTO_SCALING_GROUP_TAGS"
+          },
+          "comparisonInfo": {
+            "type": "TAG",
+            "operator": "EQUALS",
+            "value": {
+              "context": "AWS",
+              "key": "environment",
+              "value": "{{ .environment }}"
+            },
+            "negate": false
+          }
+        },
+        {
+          "key": {
+            "attribute": "AWS_AUTO_SCALING_GROUP_TAGS"
+          },
+          "comparisonInfo": {
+            "type": "TAG",
+            "operator": "EQUALS",
+            "value": {
+              "context": "AWS",
+              "key": "project",
+              "value": "expamle"
+            },
+            "negate": false
+          }
+        }
+      ]
+    },
+    {
+      "type": "SERVICE",
+      "enabled": true,
+      "propagationTypes": [
+        "SERVICE_TO_PROCESS_GROUP_LIKE",
+        "SERVICE_TO_HOST_LIKE"
+      ],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "HOST_GROUP_ID"
+          },
+          "comparisonInfo": {
+            "type": "ENTITY_ID",
+            "operator": "EQUALS",
+            "value": "{{ .meId }}",
+            "negate": false
+          }
+        }
+      ]
+    },
+    {
+      "type": "AWS_RELATIONAL_DATABASE_SERVICE",
+      "enabled": true,
+      "propagationTypes": [],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "AWS_RELATIONAL_DATABASE_SERVICE_TAGS"
+          },
+          "comparisonInfo": {
+            "type": "TAG",
+            "operator": "EQUALS",
+            "value": {
+              "context": "AWS",
+              "key": "project",
+              "value": "expamle"
+            },
+            "negate": false
+          }
+        }
+      ]
+    },
+    {
+      "type": "SERVICE",
+      "enabled": true,
+      "propagationTypes": [],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "SERVICE_TYPE"
+          },
+          "comparisonInfo": {
+            "type": "SERVICE_TYPE",
+            "operator": "EQUALS",
+            "value": "DATABASE_SERVICE",
+            "negate": false
+          }
+        },
+        {
+          "key": {
+            "attribute": "SERVICE_DATABASE_NAME"
+          },
+          "comparisonInfo": {
+            "type": "STRING",
+            "operator": "CONTAINS",
+            "value": "expamle",
+            "negate": false,
+            "caseSensitive": false
+          }
+        }
+      ]
+    },
+    {
+      "type": "HTTP_MONITOR",
+      "enabled": true,
+      "propagationTypes": [],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "HTTP_MONITOR_NAME"
+          },
+          "comparisonInfo": {
+            "type": "STRING",
+            "operator": "CONTAINS",
+            "value": "Management Zone",
+            "negate": false,
+            "caseSensitive": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "BROWSER_MONITOR",
+      "enabled": true,
+      "propagationTypes": [],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "BROWSER_MONITOR_NAME"
+          },
+          "comparisonInfo": {
+            "type": "STRING",
+            "operator": "CONTAINS",
+            "value": "Management Zone",
+            "negate": false,
+            "caseSensitive": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "CLOUD_APPLICATION",
+      "enabled": true,
+      "propagationTypes": [],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "KUBERNETES_CLUSTER_NAME"
+          },
+          "comparisonInfo": {
+            "type": "STRING",
+            "operator": "EQUALS",
+            "value": "Management Zone - {{ .environment }}",
+            "negate": false,
+            "caseSensitive": true
+          }
+        }
+      ]
+    }
+  ]
+}
