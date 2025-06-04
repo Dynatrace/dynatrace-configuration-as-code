@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2021 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package multiproject
 
 import (
 	"fmt"
@@ -27,22 +27,23 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 )
 
-var multiProjectFolder = "test-resources/integration-multi-project/"
+var multiProjectFolder = "testdata/integration-multi-project/"
 var multiProjectManifest = multiProjectFolder + "manifest.yaml"
 var multiProjectSpecificEnvironment = ""
 
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
 
-	Run(t, multiProjectFolder,
-		Options{
-			WithManifestPath(multiProjectManifest),
-			WithSuffix("MultiProject"),
-			WithEnvironment(multiProjectSpecificEnvironment),
+	v2.Run(t, multiProjectFolder,
+		v2.Options{
+			v2.WithManifestPath(multiProjectManifest),
+			v2.WithSuffix("MultiProject"),
+			v2.WithEnvironment(multiProjectSpecificEnvironment),
 		},
-		func(fs afero.Fs, _ TestContext) {
+		func(fs afero.Fs, _ v2.TestContext) {
 			// This causes a POST for all configs:
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", multiProjectManifest))
 			assert.NoError(t, err)
@@ -60,13 +61,13 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
-	Run(t, multiProjectFolder,
-		Options{
-			WithManifestPath(multiProjectManifest),
-			WithSuffix("MultiProjectOnProject"),
-			WithEnvironment(multiProjectSpecificEnvironment),
+	v2.Run(t, multiProjectFolder,
+		v2.Options{
+			v2.WithManifestPath(multiProjectManifest),
+			v2.WithSuffix("MultiProjectOnProject"),
+			v2.WithEnvironment(multiProjectSpecificEnvironment),
 		},
-		func(fs afero.Fs, _ TestContext) {
+		func(fs afero.Fs, _ v2.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=star-trek --verbose", multiProjectManifest))
 			assert.NoError(t, err)
 

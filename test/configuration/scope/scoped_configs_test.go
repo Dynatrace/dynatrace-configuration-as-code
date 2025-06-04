@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package scope
 
 import (
 	"encoding/json"
@@ -29,6 +29,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 )
@@ -36,20 +37,20 @@ import (
 func TestDeployScopedConfigurations(t *testing.T) {
 
 	dashboardSharedEnvName := "DASHBOARD_SHARED"
-	configFolder := "test-resources/scoped-configs/"
+	configFolder := "testdata/scoped-configs/"
 	environment := "classic_env"
 	manifestPath := configFolder + "manifest.yaml"
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifestPath),
-			WithSuffix("ScopedConfigs"),
-			WithEnvironment(environment),
+	v2.Run(t, configFolder,
+		v2.Options{
+			v2.WithManifestPath(manifestPath),
+			v2.WithSuffix("ScopedConfigs"),
+			v2.WithEnvironment(environment),
 		},
-		func(fs afero.Fs, testContext TestContext) {
+		func(fs afero.Fs, testContext v2.TestContext) {
 
 			// deploy with sharing turned off and assert state
-			setTestEnvVar(t, dashboardSharedEnvName, "false", testContext.Suffix)
+			v2.SetTestEnvVar(t, dashboardSharedEnvName, "false", testContext.Suffix)
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
 			require.NoError(t, err)
 
@@ -57,7 +58,7 @@ func TestDeployScopedConfigurations(t *testing.T) {
 			assertOverallDashboardSharedState(t, fs, testContext, manifestPath, environment, false)
 
 			// deploy with sharing turned on and assert state
-			setTestEnvVar(t, dashboardSharedEnvName, "true", testContext.Suffix)
+			v2.SetTestEnvVar(t, dashboardSharedEnvName, "true", testContext.Suffix)
 			err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy --verbose %s --environment %s", manifestPath, environment))
 			require.NoError(t, err)
 
@@ -65,7 +66,7 @@ func TestDeployScopedConfigurations(t *testing.T) {
 		})
 }
 
-func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext TestContext, manifestPath string, environment string, expectShared bool) {
+func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext v2.TestContext, manifestPath string, environment string, expectShared bool) {
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: manifestPath,

@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package escaping
 
 import (
 	"fmt"
@@ -28,19 +28,20 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 )
 
 func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
 
-	specialCharConfigFolder := "test-resources/special-character-in-config/"
+	specialCharConfigFolder := "testdata/special-character-in-config/"
 	specialCharManifest := filepath.Join(specialCharConfigFolder, "manifest.yaml")
 
-	Run(t, specialCharConfigFolder,
-		Options{
-			WithManifestPath(specialCharManifest),
-			WithSuffix("SpecialCharacterInConfig"),
+	v2.Run(t, specialCharConfigFolder,
+		v2.Options{
+			v2.WithManifestPath(specialCharManifest),
+			v2.WithSuffix("SpecialCharacterInConfig"),
 		},
-		func(fs afero.Fs, _ TestContext) {
+		func(fs afero.Fs, _ v2.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", specialCharManifest))
 			assert.NoError(t, err)
 

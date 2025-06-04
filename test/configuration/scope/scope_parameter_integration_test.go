@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package scope
 
 import (
 	"fmt"
@@ -26,23 +26,24 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 )
 
 func TestIntegrationScopeParameters(t *testing.T) {
-	configFolder := "test-resources/integration-scope-parameters/"
+	configFolder := "testdata/integration-scope-parameters/"
 	manifest := configFolder + "/manifest.yaml"
 
 	envVars := map[string]string{
 		"SCOPE_TEST_ENV_VAR": "environment",
 	}
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifest),
-			WithSuffix("ScopeParameters"),
-			WithEnvVars(envVars),
+	v2.Run(t, configFolder,
+		v2.Options{
+			v2.WithManifestPath(manifest),
+			v2.WithSuffix("ScopeParameters"),
+			v2.WithEnvVars(envVars),
 		},
-		func(fs afero.Fs, _ TestContext) {
+		func(fs afero.Fs, _ v2.TestContext) {
 			// This causes Creation of all Settings
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", manifest))
 			assert.NoError(t, err)
@@ -56,7 +57,7 @@ func TestIntegrationScopeParameters(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationScopeParameterValidation(t *testing.T) {
 
-	configFolder := "test-resources/integration-scope-parameters/"
+	configFolder := "testdata/integration-scope-parameters/"
 	manifest := configFolder + "manifest.yaml"
 
 	envVar := "SCOPE_TEST_ENV_VAR"

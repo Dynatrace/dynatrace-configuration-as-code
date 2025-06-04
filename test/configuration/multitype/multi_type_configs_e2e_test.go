@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package multitype
 
 import (
 	"fmt"
@@ -27,19 +27,20 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 )
 
-const multiTypeProjectFolder = "test-resources/integration-multi-type-configs/"
+const multiTypeProjectFolder = "testdata/integration-multi-type-configs/"
 const multiTypeManifest = multiTypeProjectFolder + "manifest.yaml"
 
 func TestMultiTypeConfigsDeployment(t *testing.T) {
 
-	Run(t, multiTypeProjectFolder,
-		Options{
-			WithManifestPath(multiTypeManifest),
-			WithSuffix("MultiType"),
+	v2.Run(t, multiTypeProjectFolder,
+		v2.Options{
+			v2.WithManifestPath(multiTypeManifest),
+			v2.WithSuffix("MultiType"),
 		},
-		func(fs afero.Fs, _ TestContext) {
+		func(fs afero.Fs, _ v2.TestContext) {
 			err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --verbose", multiTypeManifest))
 			assert.NoError(t, err)
 
