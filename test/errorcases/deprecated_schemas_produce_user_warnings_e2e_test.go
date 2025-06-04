@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package errorcases
 
 import (
 	"strings"
@@ -25,36 +25,31 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
-func TestAPIErrorsAreReported(t *testing.T) {
-	configFolder := "test-resources/configs-with-invalid-payload/"
+func TestDeprecatedSettingsSchemasProduceWarnings(t *testing.T) {
+	configFolder := "testdata/deprecated-settings-schemas/"
 	manifest := configFolder + "manifest.yaml"
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifest),
-			WithSuffix("InvalidJSON"),
+	v2.Run(t, configFolder,
+		v2.Options{
+			v2.WithManifestPath(manifest),
+			v2.WithSuffix("DeprecatedSchema"),
 		},
-		func(fs afero.Fs, _ TestContext) {
+		func(fs afero.Fs, _ v2.TestContext) {
 
 			logOutput := strings.Builder{}
 			cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
-			cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--continue-on-error"})
+			cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 			err := cmd.Execute()
 
-			assert.ErrorContains(t, err, "Deployment failed")
-			assert.ErrorContains(t, err, "2 environment(s)")
-			assert.ErrorContains(t, err, "classic_env")
-			assert.ErrorContains(t, err, "platform_env")
-			assert.ErrorContains(t, err, "2 deployment errors")
+			assert.NoError(t, err)
 
 			runLog := strings.ToLower(logOutput.String())
-			assert.Regexp(t, ".*?error.*?deployment failed - dynatrace api rejected http request.*?invalid-config-api-with-settings-payload.*?", runLog)
-			assert.Regexp(t, ".*?error.*?deployment failed - dynatrace api rejected http request.*?tags.auto-tagging:invalid-setting-with-config-api-payload.*?", runLog)
-			assert.Contains(t, runLog, "deployment failed for environment 'classic_env'")
-			assert.Contains(t, runLog, "deployment failed for environment 'platform_env'")
+			assert.Regexp(t, ".*?warn.*?schema 'builtin:span-attribute' is deprecated.*?project:builtin:span-attribute:span-attr.*", runLog)
+			assert.Regexp(t, ".*?warn.*?schema 'builtin:span-event-attribute' is deprecated.*?project:builtin:span-event-attribute:span-event.*", runLog)
 		})
 }

@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package errorcases
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ import (
 )
 
 func TestManifestErrorsAreWrittenToFile(t *testing.T) {
-	manifest := filepath.Join("test-resources/invalid-manifests/", "manifest_non_existent_project.yaml")
+	manifest := filepath.Join("testdata/invalid-manifests/", "manifest_non_existent_project.yaml")
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -55,7 +55,7 @@ func TestManifestErrorsAreWrittenToFile(t *testing.T) {
 
 func TestConfigErrorsAreWrittenToFile(t *testing.T) {
 
-	configFolder := "test-resources/configs-with-duplicate-ids/"
+	configFolder := "testdata/configs-with-duplicate-ids/"
 	manifest := filepath.Join(configFolder, "manifest.yaml")
 
 	fs := testutils.CreateTestFileSystem()
