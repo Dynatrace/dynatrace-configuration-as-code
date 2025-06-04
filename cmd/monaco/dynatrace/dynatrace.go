@@ -22,10 +22,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/apitoken"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
-
-	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
@@ -33,10 +29,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/apitoken"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/classicheartbeat"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -44,81 +40,67 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-// VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
-// using the configured credentials
-func VerifyEnvironmentGeneration(ctx context.Context, envs manifest.EnvironmentDefinitionsByName) bool {
-	if !featureflags.VerifyEnvironmentType.Enabled() {
-		return true
-	}
+var ErrorMissingAuth = errors.New("no authentication credentials provided")
+
+// VerifyEnvironmentsAuthentication verifies that all environments can be reached with the defined credentials.
+// It returns the first error encountered
+func VerifyEnvironmentsAuthentication(ctx context.Context, envs manifest.EnvironmentDefinitionsByName) error {
 	for _, env := range envs {
-		if !isValidEnvironment(ctx, env) {
-			return false
+		if err := VerifyEnvironmentAuthentication(ctx, env); err != nil {
+			return err
 		}
 	}
-	return true
+	return nil
 }
 
-func isValidEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) bool {
+// VerifyEnvironmentAuthentication checks if the provided token and OAuth credentials of the provided environment are valid.
+func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.EnvironmentDefinition) error {
 	if env.Auth.Token == nil && env.Auth.OAuth == nil {
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, errors.New("no token or oAuth credentials provided in the manifest"), "", nil)
-		log.Error("No token or oAuth credentials provided in the manifest")
-		return false
+		return ErrorMissingAuth
 	}
 
-	if env.Auth.OAuth == nil {
-		return canEstablishClassicConnection(ctx, env)
+	classicUrl := env.URL.Value
+
+	// check if the OAuth connection works and get the classicURL in order to check the token authentication next if given
+	if env.Auth.OAuth != nil {
+		oauthCreds := clientcredentials.Config{
+			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
+			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
+		}
+		var err error
+		if classicUrl, err = getDynatraceClassicURL(ctx, env.URL.Value, oauthCreds); err != nil {
+			return fmt.Errorf("could not authorize against environment '%s' (%s) using OAuth authorization: %w", env.Name, env.URL.Value, err)
+		}
 	}
 
-	return isPlatformEnvironment(ctx, env)
+	if env.Auth.Token != nil {
+		if err := checkClassicConnection(ctx, classicUrl, env.Auth.Token.Value.Value()); err != nil {
+			return fmt.Errorf("could not authorize against environment '%s' (%s) using token authorization: %w", env.Name, classicUrl, err)
+		}
+	}
+	return nil
 }
 
-// canEstablishClassicConnection checks if a classic connection (via token) can be established. Scopes are not validated.
-func canEstablishClassicConnection(ctx context.Context, env manifest.EnvironmentDefinition) bool {
-	token := env.Auth.Token.Value.Value()
-	client, err := clients.Factory().
-		WithClassicURL(env.URL.Value).
+// checkClassicConnection checks if a classic connection (via token) can be established. Scopes are not validated.
+func checkClassicConnection(ctx context.Context, classicURL string, token string) error {
+	factory := clients.Factory().
+		WithClassicURL(classicURL).
 		WithAccessToken(token).
 		WithRateLimiter(true).
-		WithRetryOptions(&client.DefaultRetryOptions).
-		CreateClassicClient()
+		WithRetryOptions(&client.DefaultRetryOptions)
+
+	if supportarchive.IsEnabled(ctx) {
+		factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
+	}
+
+	client, err := factory.CreateClassicClient()
 	if err != nil {
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, fmt.Errorf("could not create client %q (%s): %w", env.Name, env.URL.Value, err), "", nil)
-		log.Error("Could not create client %q (%s): %v", env.Name, env.URL.Value, err)
-		return false
+		return fmt.Errorf("could not create client: %w", err)
 	}
 
-	if _, err := apitoken.GetTokenMetadata(ctx, client, token); err != nil {
-		handleAuthError(ctx, env, err)
-		log.Error("Please verify that this environment is a Dynatrace Classic environment.")
-		return false
-	}
-	return true
-}
-
-func isPlatformEnvironment(ctx context.Context, env manifest.EnvironmentDefinition) bool {
-	oauthCreds := clientcredentials.Config{
-		ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
-		ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
-		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
-	}
-
-	if _, err := getDynatraceClassicURL(ctx, env.URL.Value, oauthCreds); err != nil {
-		handleAuthError(ctx, env, err)
-		log.Error("Please verify that this environment is a Dynatrace Platform environment.")
-		return false
-	}
-	return true
-}
-
-func handleAuthError(ctx context.Context, env manifest.EnvironmentDefinition, err error) {
-	var apiErr coreapi.APIError
-	if errors.As(err, &apiErr) {
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, fmt.Errorf("could not authorize against the environment with name %q (%s) using token authorization: %w", env.Name, env.URL.Value, err), "", nil)
-		log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using token authorization: %v", env.Name, env.URL.Value, err)
-	} else {
-		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateError, fmt.Errorf("could not connect to environment %q (%s): %w", env.Name, env.URL.Value, err), "", nil)
-		log.WithFields(field.Error(err)).Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
-	}
+	_, err = apitoken.GetTokenMetadata(ctx, client, token)
+	return err
 }
 
 // CreateAccountClients gives back clients to use for specific accounts
@@ -211,6 +193,7 @@ func CreateEnvironmentClients(ctx context.Context, environments manifest.Environ
 	return clients, nil
 }
 
+// getDynatraceClassicURL transforms the platformURL to a classic URL either via string replacing or API call, depending on if the BuildSimpleClassicURL FF is enabled (default) or not
 func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds clientcredentials.Config) (string, error) {
 	if featureflags.BuildSimpleClassicURL.Enabled() {
 		if classicURL, ok := findSimpleClassicURL(ctx, platformURL); ok {
@@ -218,9 +201,13 @@ func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds 
 		}
 	}
 
-	client, err := clients.Factory().WithPlatformURL(platformURL).WithOAuthCredentials(oauthCreds).CreatePlatformClient(ctx)
+	factory := clients.Factory().WithPlatformURL(platformURL).WithOAuthCredentials(oauthCreds)
+	if supportarchive.IsEnabled(ctx) {
+		factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
+	}
+	client, err := factory.CreatePlatformClient(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not create client: %w", err)
 	}
 	return metadata.GetDynatraceClassicURL(ctx, *client)
 }

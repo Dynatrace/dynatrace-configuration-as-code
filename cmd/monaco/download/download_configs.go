@@ -87,12 +87,13 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 
 	env, found := m.Environments.SelectedEnvironments[cmdOptions.specificEnvironmentName]
 	if !found {
-		return fmt.Errorf("environment %q was not available in manifest %q", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
+		return fmt.Errorf("environment '%s' is not defined in manifest '%s'", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
-	ok := dynatrace.VerifyEnvironmentGeneration(ctx, manifest.EnvironmentDefinitionsByName{env.Name: env})
-	if !ok {
-		return fmt.Errorf("unable to verify Dynatrace environment generation")
+	if featureflags.VerifyEnvironmentType.Enabled() {
+		if err := dynatrace.VerifyEnvironmentAuthentication(ctx, env); err != nil {
+			return err
+		}
 	}
 
 	if !cmdOptions.forceOverwrite {

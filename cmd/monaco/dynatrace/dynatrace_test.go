@@ -20,6 +20,7 @@ package dynatrace
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,31 +30,44 @@ import (
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
 
-var classicCheckPayload = []byte(`
-		{
-		  "id": "abc-xy",
-		  "name": "my-token",
-		  "enabled": true,
-		  "personalAccessToken": false,
-		  "owner": "my-owner-email",
-		  "creationDate": "2024-01-11T16:56:05.499Z",
-		  "scopes": [
-			"settings.read",
-			"settings.write"
-		  ]
-		}`)
+var apiTokenPayload = []byte(`
+{
+  "id": "abc-xy",
+  "name": "my-token",
+  "enabled": true,
+  "personalAccessToken": false,
+  "owner": "my-owner-email",
+  "creationDate": "2024-01-11T16:56:05.499Z",
+  "scopes": [
+	"settings.read",
+	"settings.write"
+  ]
+}`)
 
-func TestVerifyEnvironmentGeneration_TurnedOffByFF(t *testing.T) {
-	t.Setenv("MONACO_FEAT_VERIFY_ENV_TYPE", "0")
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.WriteHeader(404)
-	}))
+func getClassicEnvPayload(host string) []byte {
+	return []byte(fmt.Sprintf(`{"domain": "http://%s"}`, host))
+}
+
+func TestVerifyEnvironmentsAuthentication_OneOfManyFails(t *testing.T) {
+	envCount := 0
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v2/apiTokens/lookup", func(rw http.ResponseWriter, req *http.Request) {
+		envCount++
+		if envCount > 1 {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		rw.WriteHeader(http.StatusOK)
+		_, _ = rw.Write(apiTokenPayload)
+	})
+	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	ok := VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
+	err := VerifyEnvironmentsAuthentication(t.Context(), manifest.EnvironmentDefinitionsByName{
 		"env": manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
@@ -61,31 +75,8 @@ func TestVerifyEnvironmentGeneration_TurnedOffByFF(t *testing.T) {
 				Name:  "URL",
 				Value: server.URL,
 			},
-		},
-	})
-	assert.True(t, ok)
-}
-func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
-
-	envCount := 0
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if envCount > 0 {
-			rw.WriteHeader(404)
-			return
-		}
-		rw.WriteHeader(200)
-		_, _ = rw.Write(classicCheckPayload)
-		envCount++
-	}))
-	defer server.Close()
-
-	ok := VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
-		"env": manifest.EnvironmentDefinition{
-			Name: "env",
-			URL: manifest.URLDefinition{
-				Type:  manifest.ValueURLType,
-				Name:  "URL",
-				Value: server.URL,
+			Auth: manifest.Auth{
+				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 			},
 		},
 		"env2": manifest.EnvironmentDefinition{
@@ -95,13 +86,16 @@ func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
 				Name:  "URL",
 				Value: server.URL,
 			},
+			Auth: manifest.Auth{
+				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+			},
 		},
 	})
-	assert.False(t, ok)
-
+	assert.Error(t, err)
+	assert.Equal(t, 2, envCount)
 }
 
-func TestVerifyEnvironmentGen(t *testing.T) {
+func TestVerifyEnvironmentsAuth(t *testing.T) {
 	type args struct {
 		envs manifest.EnvironmentDefinitionsByName
 	}
@@ -129,8 +123,8 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if ok := VerifyEnvironmentGeneration(t.Context(), tt.args.envs); ok == tt.wantErr {
-				t.Errorf("VerifyEnvironmentGeneration() error = %v, wantErr %v", ok, tt.wantErr)
+			if err := VerifyEnvironmentsAuthentication(t.Context(), tt.args.envs); tt.wantErr && err == nil {
+				t.Errorf("VerifyEnvironmentsAuthentication() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -138,11 +132,11 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 	t.Run("Call classic endpoint - ok", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(200)
-			_, _ = rw.Write(classicCheckPayload)
+			_, _ = rw.Write(getClassicEnvPayload(req.Host))
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
+		err := VerifyEnvironmentsAuthentication(t.Context(), manifest.EnvironmentDefinitionsByName{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				URL: manifest.URLDefinition{
@@ -153,7 +147,7 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 				Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"}},
 			},
 		})
-		assert.True(t, ok)
+		assert.NoError(t, err)
 	})
 
 	t.Run("Call Platform endpoint - ok", func(t *testing.T) {
@@ -171,28 +165,26 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 			}
 
 			rw.WriteHeader(200)
-			_, _ = rw.Write(classicCheckPayload)
+			_, _ = rw.Write(getClassicEnvPayload(req.Host))
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
-			"env": manifest.EnvironmentDefinition{
-				Name: "env",
-				URL: manifest.URLDefinition{
-					Type:  manifest.ValueURLType,
-					Name:  "URL",
-					Value: server.URL,
-				},
-				Auth: manifest.Auth{
-					OAuth: &manifest.OAuth{
-						TokenEndpoint: &manifest.URLDefinition{
-							Value: server.URL + "/sso",
-						},
+		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL,
+			},
+			Auth: manifest.Auth{
+				OAuth: &manifest.OAuth{
+					TokenEndpoint: &manifest.URLDefinition{
+						Value: server.URL + "/sso",
 					},
 				},
 			},
 		})
-		assert.True(t, ok)
+		assert.NoError(t, err)
 	})
 
 	t.Run("classic endpoint not available ", func(t *testing.T) {
@@ -210,39 +202,219 @@ func TestVerifyEnvironmentGen(t *testing.T) {
 			}
 
 			rw.WriteHeader(404)
-			_, _ = rw.Write(classicCheckPayload)
+			_, _ = rw.Write(getClassicEnvPayload(req.Host))
 		}))
 		defer server.Close()
 
-		ok := VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
-			"env1": manifest.EnvironmentDefinition{
-				Name: "env1",
-				URL: manifest.URLDefinition{
-					Type:  manifest.ValueURLType,
-					Name:  "URL",
-					Value: server.URL + "/WRONG_URL",
-				},
+		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env1",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL + "/WRONG_URL",
 			},
 		})
-		assert.False(t, ok)
+		assert.Error(t, err)
 
-		ok = VerifyEnvironmentGeneration(t.Context(), manifest.EnvironmentDefinitionsByName{
-			"env2": manifest.EnvironmentDefinition{
-				Name: "env2",
-				URL: manifest.URLDefinition{
-					Type:  manifest.ValueURLType,
-					Name:  "URL",
-					Value: server.URL + "/WRONG_URL",
-				},
-				Auth: manifest.Auth{
-					OAuth: &manifest.OAuth{
-						TokenEndpoint: &manifest.URLDefinition{
-							Value: server.URL + "/sso",
-						},
+		err = VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env2",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL + "/WRONG_URL",
+			},
+			Auth: manifest.Auth{
+				OAuth: &manifest.OAuth{
+					TokenEndpoint: &manifest.URLDefinition{
+						Value: server.URL + "/sso",
 					},
 				},
 			},
 		})
-		assert.False(t, ok)
+		assert.Error(t, err)
+	})
+
+	t.Run("Fails if neither OAuth nor a token is provided", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			t.Fatal("Should not be called")
+		}))
+		defer server.Close()
+		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL,
+			},
+			Auth: manifest.Auth{},
+		})
+		assert.Error(t, err)
+	})
+
+	t.Run("Fails if token is invalid", func(t *testing.T) {
+		apiCalls := 0
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			apiCalls++
+			rw.WriteHeader(400)
+		}))
+		defer server.Close()
+		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL,
+			},
+			Auth: manifest.Auth{
+				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+			},
+		})
+		assert.Error(t, err)
+		assert.Equal(t, 1, apiCalls)
+	})
+
+	t.Run("Fails if classic client creation failed", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			t.Fatal("Should not be called")
+		}))
+		defer server.Close()
+		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: "",
+			},
+			Auth: manifest.Auth{
+				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+			},
+		})
+		assert.Error(t, err)
+	})
+
+	t.Run("Fails if platform client creation failed", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			t.Fatal("Should not be called")
+		}))
+		defer server.Close()
+		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: "",
+			},
+			Auth: manifest.Auth{
+				OAuth: &manifest.OAuth{
+					ClientID: manifest.AuthSecret{
+						Name:  "OAUTH_ID",
+						Value: "123",
+					},
+					ClientSecret: manifest.AuthSecret{
+						Name:  "OAUTH_SECRET",
+						Value: "xyz",
+					},
+					TokenEndpoint: &manifest.URLDefinition{
+						Value: server.URL + "/sso",
+					},
+				},
+			},
+		})
+		assert.Error(t, err)
+	})
+
+	t.Run("OAuth and token is validated", func(t *testing.T) {
+		classicCalls := 0
+		platformCalls := 0
+		mux := http.NewServeMux()
+		mux.HandleFunc("/sso", func(rw http.ResponseWriter, req *http.Request) {
+			token := &oauth2.Token{
+				AccessToken: "test-access-token",
+				TokenType:   "Bearer",
+				Expiry:      time.Now().Add(time.Hour),
+			}
+
+			rw.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(rw).Encode(token)
+		})
+		mux.HandleFunc(metadata.ClassicEnvironmentDomainPath, func(rw http.ResponseWriter, req *http.Request) {
+			platformCalls++
+			rw.WriteHeader(200)
+			_, _ = rw.Write(getClassicEnvPayload(req.Host))
+		})
+		mux.HandleFunc("/api/v2/apiTokens/lookup", func(rw http.ResponseWriter, req *http.Request) {
+			classicCalls++
+			rw.WriteHeader(200)
+			_, _ = rw.Write(apiTokenPayload)
+		})
+		server := httptest.NewServer(mux)
+		defer server.Close()
+
+		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL,
+			},
+			Auth: manifest.Auth{
+				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				OAuth: &manifest.OAuth{
+					ClientID: manifest.AuthSecret{
+						Name:  "OAUTH_ID",
+						Value: "123",
+					},
+					ClientSecret: manifest.AuthSecret{
+						Name:  "OAUTH_SECRET",
+						Value: "xyz",
+					},
+					TokenEndpoint: &manifest.URLDefinition{
+						Value: server.URL + "/sso",
+					},
+				},
+			},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 1, classicCalls)
+		assert.Equal(t, 1, platformCalls)
+	})
+
+	t.Run("OAuth is validated and errors even if access token is given and valid", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/sso", func(rw http.ResponseWriter, req *http.Request) {
+			rw.WriteHeader(400)
+		})
+		mux.HandleFunc("/api/v2/apiTokens/lookup", func(rw http.ResponseWriter, req *http.Request) {
+			rw.WriteHeader(200)
+			_, _ = rw.Write(apiTokenPayload)
+		})
+		server := httptest.NewServer(mux)
+		defer server.Close()
+
+		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL,
+			},
+			Auth: manifest.Auth{
+				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				OAuth: &manifest.OAuth{
+					ClientID: manifest.AuthSecret{
+						Name:  "OAUTH_ID",
+						Value: "123",
+					},
+					ClientSecret: manifest.AuthSecret{
+						Name:  "OAUTH_SECRET",
+						Value: "xyz",
+					},
+					TokenEndpoint: &manifest.URLDefinition{
+						Value: server.URL + "/sso",
+					},
+				},
+			},
+		})
+		assert.Error(t, err)
 	})
 }
