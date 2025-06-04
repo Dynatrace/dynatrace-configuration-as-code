@@ -1,8 +1,8 @@
 //go:build download_restore
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package commands
 
 import (
 	"fmt"
@@ -31,6 +31,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
@@ -46,13 +47,13 @@ type downloadFunction func(*testing.T, afero.Fs, string, string, string, string,
 // Validation: Uploads the downloaded configs and checks for status code 0 as result
 // Cleanup: Deletes the configurations that were uploaded during validation
 
-// TestRestoreConfigs_FromDownloadWithManifestFile deploys, download and re-deploys from download the download-configs test-resources
+// TestRestoreConfigs_FromDownloadWithManifestFile deploys, download and re-deploys from download the download-configs testdata
 // As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
 // Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigs_FromDownloadWithManifestFile(t *testing.T) {
-	initialConfigsFolder := "test-resources/integration-download-configs/"
+	initialConfigsFolder := "testdata/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
-	downloadFolder := "test-resources/download"
+	downloadFolder := "testdata/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_manifest"
 
@@ -62,26 +63,26 @@ func TestRestoreConfigs_FromDownloadWithManifestFile(t *testing.T) {
 // TestRestoreConfigs_FromDownloadWithPlatformManifestFile works like TestRestoreConfigs_FromDownloadWithManifestFile but
 // has a platform environment defined in the used manifest, rather than a Classic env.
 func TestRestoreConfigs_FromDownloadWithPlatformManifestFile(t *testing.T) {
-	initialConfigsFolder := "test-resources/integration-download-configs/"
+	initialConfigsFolder := "testdata/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
-	downloadFolder := "test-resources/download"
+	downloadFolder := "testdata/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_manifest"
 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }
 
-// TestRestoreConfigs_FromDownloadWithCLIParameters deploys, download and re-deploys from download the download-configs test-resources
+// TestRestoreConfigs_FromDownloadWithCLIParameters deploys, download and re-deploys from download the download-configs testdata
 // As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
 // Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
-	if IsHardeningEnvironment() {
+	if v2.IsHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
-	initialConfigsFolder := "test-resources/integration-download-configs/"
+	initialConfigsFolder := "testdata/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
-	downloadFolder := "test-resources/download"
+	downloadFolder := "testdata/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_cli-only"
 
@@ -89,13 +90,13 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 }
 
 func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) {
-	if IsHardeningEnvironment() {
+	if v2.IsHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
-	initialConfigsFolder := "test-resources/integration-download-configs/"
+	initialConfigsFolder := "testdata/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
-	downloadFolder := "test-resources/download"
+	downloadFolder := "testdata/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_cli-only"
 
@@ -103,9 +104,9 @@ func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) 
 }
 
 func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withPlatformConfigs(t *testing.T) {
-	initialConfigsFolder := "test-resources/integration-download-configs-platform/"
+	initialConfigsFolder := "testdata/integration-download-configs-platform/"
 	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
-	downloadFolder := "test-resources/download"
+	downloadFolder := "testdata/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_automations"
 
@@ -118,14 +119,14 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withPlatformConfigs
 
 func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 
-	if IsHardeningEnvironment() {
+	if v2.IsHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
-	configsFolder, _ := filepath.Abs("test-resources/download-with-flags")
+	configsFolder, _ := filepath.Abs("testdata/download-with-flags")
 	configsFolderManifest := filepath.Join(configsFolder, "manifest.yaml")
 
-	downloadFolder, _ := filepath.Abs("test-resources/download")
+	downloadFolder, _ := filepath.Abs("testdata/download")
 
 	tests := []struct {
 		name               string
@@ -213,12 +214,12 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			Run(t, configsFolder,
-				Options{
-					WithManifestPath(configsFolderManifest),
-					WithSuffix(""),
+			v2.Run(t, configsFolder,
+				v2.Options{
+					v2.WithManifestPath(configsFolderManifest),
+					v2.WithSuffix(""),
 				},
-				func(fs afero.Fs, _ TestContext) {
+				func(fs afero.Fs, _ v2.TestContext) {
 					err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s", configsFolderManifest))
 					require.NoError(t, err)
 
@@ -237,15 +238,15 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 }
 
 // TestRestoreConfigsFull is currently
-// TestRestoreConfigsFull deploys, download and re-deploys from download the all-configs test-resources
+// TestRestoreConfigsFull deploys, download and re-deploys from download the all-configs testdata
 // As this downloads all configs from all APIs other tests and their cleanup are likely to interfere
 // Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigsFull(t *testing.T) {
 	t.Skipf("Test skipped as not all configurations can currently successfully be re-uploaded automatically after download")
 
-	initialConfigsFolder := "test-resources/integration-all-configs/"
+	initialConfigsFolder := "testdata/integration-all-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
-	downloadFolder := "test-resources/download"
+	downloadFolder := "testdata/download"
 	subsetOfConfigsToDownload := "all" // value only for testing
 	suffixTest := "_download_all"
 
@@ -278,7 +279,7 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 
 func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, manifestFile string) (suffix string, err error) {
 	log.Info("BEGIN PREPARATION PROCESS")
-	suffix = appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
+	suffix = v2.AppendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
 	// update all env values to include the _suffix suffix so that we can set env-values in configs
 	for _, e := range os.Environ() {

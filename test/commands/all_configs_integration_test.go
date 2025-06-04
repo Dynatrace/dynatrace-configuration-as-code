@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,26 +16,23 @@
  * limitations under the License.
  */
 
-package v2
+package commands
 
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/logging"
 )
 
 // tests all configs for a single environment
 func TestIntegrationAllConfigsClassic(t *testing.T) {
-	configFolder := "test-resources/integration-all-configs/"
+	configFolder := "testdata/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
 	// flags are needed because the configs are still read and invalid types result in an error
@@ -44,13 +41,13 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 	targetEnvironment := "classic_env"
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifest),
-			WithSuffix("AllConfigs"),
-			WithEnvironment(targetEnvironment),
+	v2.Run(t, configFolder,
+		v2.Options{
+			v2.WithManifestPath(manifest),
+			v2.WithSuffix("AllConfigs"),
+			v2.WithEnvironment(targetEnvironment),
 		},
-		func(fs afero.Fs, _ TestContext) {
+		func(fs afero.Fs, _ v2.TestContext) {
 			// This causes a POST for all configs:
 			runDeployCommand(t, fs, manifest, targetEnvironment)
 
@@ -60,7 +57,7 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 }
 
 func TestIntegrationAllConfigsPlatform(t *testing.T) {
-	configFolder := "test-resources/integration-all-configs/"
+	configFolder := "testdata/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
 	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
@@ -69,13 +66,13 @@ func TestIntegrationAllConfigsPlatform(t *testing.T) {
 
 	targetEnvironment := "platform_env"
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifest),
-			WithSuffix("AllConfigs"),
-			WithEnvironment(targetEnvironment),
+	v2.Run(t, configFolder,
+		v2.Options{
+			v2.WithManifestPath(manifest),
+			v2.WithSuffix("AllConfigs"),
+			v2.WithEnvironment(targetEnvironment),
 		},
-		func(fs afero.Fs, _ TestContext) {
+		func(fs afero.Fs, _ v2.TestContext) {
 			// This causes a POST for all configs:
 			runDeployCommand(t, fs, manifest, targetEnvironment)
 
@@ -87,19 +84,9 @@ func TestIntegrationAllConfigsPlatform(t *testing.T) {
 func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment string) {
 	t.Helper()
 
-	reportFile := fmt.Sprintf("report%s.jsonl", time.Now().Format(trafficlogs.TrafficLogFilePrefixFormat))
-	fs.Remove(reportFile)
-	t.Setenv(environment.DeploymentReportFilename, reportFile)
-
 	// This causes a POST for all configs:
 	err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose", manifest, specificEnvironment))
 	assert.NoError(t, err)
-
-	if err == nil {
-		logging.assertReport(t, fs, reportFile, true)
-	} else {
-		logging.assertReport(t, fs, reportFile, false)
-	}
 }
 
 // Tests a dry run (validation)
@@ -111,16 +98,6 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 
 	fs := afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs())
 
-	reportFile := fmt.Sprintf("report%s.jsonl", time.Now().Format(trafficlogs.TrafficLogFilePrefixFormat))
-	fs.Remove(reportFile)
-	t.Setenv(environment.DeploymentReportFilename, reportFile)
-
-	err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", "test-resources/integration-all-configs/manifest.yaml"))
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", "testdata/integration-all-configs/manifest.yaml"))
 	assert.NoError(t, err)
-
-	if err == nil {
-		logging.assertReport(t, fs, reportFile, true)
-	} else {
-		logging.assertReport(t, fs, reportFile, false)
-	}
 }

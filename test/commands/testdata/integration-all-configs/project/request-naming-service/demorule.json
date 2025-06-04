@@ -1,0 +1,14 @@
+{
+  "enabled": {{ .enabled }},
+  "namingPattern": "{{ .name }}",
+  "conditions": [{
+      "attribute": "WEBREQUEST_URL_PATH",
+      "comparisonInfo": {
+        "type": "STRING",
+        "comparison": "BEGINS_WITH",
+        "value": "/monacotesturl",
+        "negate": false,
+        "caseSensitive": false
+      }
+    }]
+}

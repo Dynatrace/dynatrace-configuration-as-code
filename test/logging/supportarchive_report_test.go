@@ -290,18 +290,6 @@ func cleanupLogsDir() error {
 	return err
 }
 
-// readReport reads and returns all records in the specified report file and asserts that this succeeded.
-func readReport(t *testing.T, fs afero.Fs, path string) []report.Record {
-	t.Helper()
-
-	records, err := report.ReadReportFile(fs, path)
-	require.NoError(t, err, "file must exists and be readable")
-
-	require.NotEmpty(t, records)
-
-	return records
-}
-
 // assertReport reads a report and asserts that it either indicates a successful or failed deployment depending on the value of succeed.
 func assertReport(t *testing.T, fs afero.Fs, path string, succeed bool) {
 	t.Helper()
@@ -329,4 +317,16 @@ func assertReport(t *testing.T, fs afero.Fs, path string, succeed bool) {
 			assert.Fail(t, "there is no record with ERROR status")
 		}
 	}
+}
+
+// readReport reads and returns all records in the specified report file and asserts that this succeeded.
+func readReport(t *testing.T, fs afero.Fs, path string) []report.Record {
+	t.Helper()
+
+	records, err := report.ReadReportFile(fs, path)
+	require.NoError(t, err, "file must exists and be readable")
+
+	require.NotEmpty(t, records)
+
+	return records
 }
