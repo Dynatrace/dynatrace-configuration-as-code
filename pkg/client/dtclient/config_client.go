@@ -245,7 +245,7 @@ func (d *ConfigClient) UpsertByNonUniqueNameAndId(ctx context.Context, theApi ap
 	for _, e := range entitiesWithSameName {
 		msg.WriteString(fmt.Sprintf("\n\t- %s", e.Id))
 	}
-	log.WithCtxFields(ctx).WarnContext(ctx, msg.String(), len(entitiesWithSameName), theApi.ID, objectName, entityId, theApi.ID)
+	log.WarnContext(ctx, msg.String(), len(entitiesWithSameName), theApi.ID, objectName, entityId, theApi.ID)
 
 	return d.updateDynatraceObject(ctx, objectName, entityId, theApi, body)
 }
@@ -313,7 +313,7 @@ func unmarshalCreateResponse(ctx context.Context, resp coreapi.Response, configT
 			return DynatraceEntity{}, fmt.Errorf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", string(resp.Data))
 		}
 	}
-	log.WithCtxFields(ctx).DebugContext(ctx, "\tCreated new object for '%s' (%s)", dtEntity.Name, dtEntity.Id)
+	log.DebugContext(ctx, "\tCreated new object for '%s' (%s)", dtEntity.Name, dtEntity.Id)
 
 	return dtEntity, nil
 }
@@ -348,9 +348,9 @@ func (d *ConfigClient) updateDynatraceObject(ctx context.Context, objectName str
 	}
 
 	if theApi.NonUniqueName {
-		log.WithCtxFields(ctx).DebugContext(ctx, "Created/Updated object by ID for '%s'", getNameIDDescription(objectName, existingObjectId))
+		log.DebugContext(ctx, "Created/Updated object by ID for '%s'", getNameIDDescription(objectName, existingObjectId))
 	} else {
-		log.WithCtxFields(ctx).DebugContext(ctx, "Updated existing object for '%s'", getNameIDDescription(objectName, existingObjectId))
+		log.DebugContext(ctx, "Updated existing object for '%s'", getNameIDDescription(objectName, existingObjectId))
 	}
 
 	return DynatraceEntity{
@@ -604,7 +604,7 @@ func (d *ConfigClient) getExistingObjectId(ctx context.Context, objectName strin
 	}
 
 	if objID != "" {
-		log.WithCtxFields(ctx).DebugContext(ctx, "Found existing config of type %s with id %s", theApi.ID, objID)
+		log.DebugContext(ctx, "Found existing config of type %s with id %s", theApi.ID, objID)
 	}
 	return objID, nil
 }
@@ -677,7 +677,7 @@ func (d *ConfigClient) List(ctx context.Context, theApi api.API) ([]Value, error
 		if err != nil {
 			apiError := coreapi.APIError{}
 			if errors.As(err, &apiError) && apiError.StatusCode == http.StatusBadRequest {
-				log.WithCtxFields(ctx).WarnContext(ctx, "Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(apiError.Body))
+				log.WarnContext(ctx, "Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(apiError.Body))
 				break
 			}
 
@@ -702,7 +702,7 @@ func (d *ConfigClient) findUniqueByName(ctx context.Context, values []Value, obj
 	}
 
 	if matchingObjectsFound > 1 {
-		log.WithCtxFields(ctx).WarnContext(ctx, "Found %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound, objectName)
+		log.WarnContext(ctx, "Found %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound, objectName)
 	}
 	return objectId
 }
@@ -710,7 +710,7 @@ func (d *ConfigClient) findUniqueByName(ctx context.Context, values []Value, obj
 func escapeApiValueName(ctx context.Context, value Value) string {
 	valueName, err := template.EscapeSpecialCharactersInValue(value.Name, template.FullStringEscapeFunction)
 	if err != nil {
-		log.WithCtxFields(ctx).WarnContext(ctx, "failed to string escape API value '%s' while checking if object exists, check directly", value.Name)
+		log.WarnContext(ctx, "failed to string escape API value '%s' while checking if object exists, check directly", value.Name)
 		return value.Name
 	}
 	return valueName.(string)
@@ -737,7 +737,7 @@ func (d *ConfigClient) findUnique(ctx context.Context, values []Value, payload [
 	}
 
 	if matchingObjectsFound > 1 {
-		log.WithCtxFields(ctx).WarnContext(ctx, "Found %d configs with the same name. Please delete duplicates.", matchingObjectsFound)
+		log.WarnContext(ctx, "Found %d configs with the same name. Please delete duplicates.", matchingObjectsFound)
 	}
 
 	return objectId, nil
@@ -876,7 +876,7 @@ func translateGenericValues(ctx context.Context, inputValues []interface{}, conf
 		if input["name"] == nil {
 			jsonStr, err := json.Marshal(input)
 			if err != nil {
-				log.WithCtxFields(ctx).WarnContext(ctx, "Config of type %s was invalid. Ignoring it!", configType)
+				log.WarnContext(ctx, "Config of type %s was invalid. Ignoring it!", configType)
 				continue
 			}
 
@@ -887,12 +887,12 @@ func translateGenericValues(ctx context.Context, inputValues []interface{}, conf
 			if isReportsApi {
 				// Substitute name with dashboard id since it is unique identifier for entity
 				substitutedName = input["dashboardId"].(string)
-				log.WithCtxFields(ctx).DebugContext(ctx, "Rewriting response of config-type '%v', name missing. Using dashboardId as name. Invalid json: %v", configType, string(jsonStr))
+				log.DebugContext(ctx, "Rewriting response of config-type '%v', name missing. Using dashboardId as name. Invalid json: %v", configType, string(jsonStr))
 
 			} else {
 				// Substitute name with id since it is unique identifier for entity
 				substitutedName = input["id"].(string)
-				log.WithCtxFields(ctx).DebugContext(ctx, "Rewriting response of config-type '%v', name missing. Using id as name. Invalid json: %v", configType, string(jsonStr))
+				log.DebugContext(ctx, "Rewriting response of config-type '%v', name missing. Using id as name. Invalid json: %v", configType, string(jsonStr))
 			}
 
 			values = append(values, Value{

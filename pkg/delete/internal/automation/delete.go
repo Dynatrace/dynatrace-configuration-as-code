@@ -37,7 +37,7 @@ type client interface {
 }
 
 func Delete(ctx context.Context, c client, automationResource config.AutomationResource, entries []pointer.DeletePointer) error {
-	logger := log.WithCtxFields(ctx).WithFields(field.Type(string(automationResource)))
+	logger := log.WithFields(field.Type(string(automationResource)))
 	logger.InfoContext(ctx, "Deleting %d config(s) of type %q...", len(entries), automationResource)
 
 	deleteErrs := 0
@@ -52,7 +52,7 @@ func Delete(ctx context.Context, c client, automationResource config.AutomationR
 }
 
 func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
-	logger := log.WithCtxFields(ctx).WithFields(field.Type(dp.Type), field.Coordinate(dp.AsCoordinate()))
+	logger := log.WithFields(field.Type(dp.Type), field.Coordinate(dp.AsCoordinate()))
 
 	id := dp.OriginObjectId
 	if id == "" {
@@ -90,7 +90,7 @@ func DeleteAll(ctx context.Context, c client) error {
 
 	resources := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
 	for _, resource := range resources {
-		logger := log.WithCtxFields(ctx).WithFields(field.Type(string(resource)))
+		logger := log.WithFields(field.Type(string(resource)))
 
 		t, err := automationutils.ClientResourceTypeFromConfigType(resource)
 		if err != nil {

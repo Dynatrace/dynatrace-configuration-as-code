@@ -41,7 +41,7 @@ type (
 )
 
 func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Environments) (Groups, error) {
-	log.WithCtxFields(ctx).InfoContext(ctx, "Downloading groups")
+	log.InfoContext(ctx, "Downloading groups")
 	groupDTOs, err := a.httpClient.GetGroups(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a list of groups for account %q from DT: %w", a.accountInfo, err)
@@ -49,26 +49,26 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 
 	var groups Groups
 	for i := range groupDTOs {
-		log.WithCtxFields(ctx).DebugContext(ctx, "Downloading definition for group %q (uuid: %q)", groupDTOs[i].Name, *groupDTOs[i].Uuid)
+		log.DebugContext(ctx, "Downloading definition for group %q (uuid: %q)", groupDTOs[i].Name, *groupDTOs[i].Uuid)
 		g := group{
 			dto:      &groupDTOs[i],
 			bindings: make(map[levelID]*accountmanagement.LevelPolicyBindingDto, len(tenants)),
 		}
 
-		log.WithCtxFields(ctx).DebugContext(ctx, "Downloading policies for group %q", groupDTOs[i].Name)
+		log.DebugContext(ctx, "Downloading policies for group %q", groupDTOs[i].Name)
 		binding, err := a.httpClient.GetPolicyGroupBindings(ctx, "account", a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, err
 		}
 		g.bindings["account"] = binding
 
-		log.WithCtxFields(ctx).DebugContext(ctx, "Downloading permissions for group %q", groupDTOs[i].Name)
+		log.DebugContext(ctx, "Downloading permissions for group %q", groupDTOs[i].Name)
 		perDTO, err := a.httpClient.GetPermissionFor(ctx, a.accountInfo.AccountUUID, *groupDTOs[i].Uuid)
 		if err != nil {
 			return nil, err
 		}
 		g.permissionDTO = perDTO
-		log.WithCtxFields(ctx).DebugContext(ctx, "Downloading definition for group %q", groupDTOs[i].Name)
+		log.DebugContext(ctx, "Downloading definition for group %q", groupDTOs[i].Name)
 		acc := account.Account{
 			Permissions: getPermissionFor("account", perDTO),
 			Policies:    policies.RefOn(getPoliciesFor(binding, *g.dto.Uuid)...),
@@ -77,7 +77,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		var envs []account.Environment
 		var mzs []account.ManagementZone
 		for _, t := range tenants {
-			log.WithCtxFields(ctx).DebugContext(ctx, "Fetching bindings for environment %q", t.id)
+			log.DebugContext(ctx, "Fetching bindings for environment %q", t.id)
 			binding, err := a.httpClient.GetPolicyGroupBindings(ctx, "environment", t.id) // why do we fetch the bindings for each tenant in each group-iteration?
 			if err != nil {
 				return nil, err
@@ -114,7 +114,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		groups = append(groups, g)
 	}
 
-	log.WithCtxFields(ctx).InfoContext(ctx, "Downloaded %d groups", len(groups))
+	log.InfoContext(ctx, "Downloaded %d groups", len(groups))
 
 	return groups, nil
 }

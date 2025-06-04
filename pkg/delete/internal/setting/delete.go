@@ -35,7 +35,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 	}
 	schema := entries[0].Type
 
-	logger := log.WithCtxFields(ctx).WithFields(field.Type(schema))
+	logger := log.WithFields(field.Type(schema))
 	logger.InfoContext(ctx, "Deleting %d settings objects(s) of schema %q...", len(entries), schema)
 
 	deleteErrs := 0
@@ -121,11 +121,10 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 		schemaIds[i] = schemas[i].SchemaId
 	}
 
-	logger := log.WithCtxFields(ctx)
-	logger.DebugContext(ctx, "Deleting settings of schemas %v...", schemaIds)
+	log.DebugContext(ctx, "Deleting settings of schemas %v...", schemaIds)
 
 	for _, s := range schemaIds {
-		logger := logger.WithFields(field.Type(s))
+		logger := log.WithFields(field.Type(s))
 		logger.InfoContext(ctx, "Collecting objects of type %q...", s)
 
 		settingsObjects, err := c.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})

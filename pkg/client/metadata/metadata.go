@@ -21,13 +21,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/go-logr/logr"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
 
 const ClassicEnvironmentDomainPath = "/platform/metadata/v1/classic-environment-domain"
@@ -50,7 +50,7 @@ func (u classicEnvURL) GetURL() string {
 // GetDynatraceClassicURL tries to fetch the URL of the classic environment using the API of a platform enabled environment.
 // The call has a timeout of 15 seconds.
 func GetDynatraceClassicURL(ctx context.Context, platformClient corerest.Client) (string, error) {
-	ctx = logr.NewContextWithSlogLogger(ctx, log.WithCtxFields(ctx).SLogger())
+	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 

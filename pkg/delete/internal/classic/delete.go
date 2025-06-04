@@ -35,7 +35,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 	var err error
 
 	for _, dp := range dps {
-		log := log.WithCtxFields(ctx).WithFields(field.Coordinate(dp.AsCoordinate()))
+		log := log.WithFields(field.Coordinate(dp.AsCoordinate()))
 		theAPI := api.NewAPIs()[dp.Type]
 		var parentID string
 		var e error
@@ -140,7 +140,7 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 	errs := 0
 
 	for _, a := range apis {
-		logger := log.WithCtxFields(ctx).WithFields(field.Type(a.ID))
+		logger := log.WithFields(field.Type(a.ID))
 		if a.HasParent() {
 			logger.DebugContext(ctx, "Skipping %q, will be deleted by the parent api %q", a.ID, a.Parent)
 		}
