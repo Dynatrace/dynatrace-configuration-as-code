@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package references
 
 import (
 	"encoding/json"
@@ -30,6 +30,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
@@ -75,20 +76,20 @@ func TestOnlyStringReferences(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			configFolder := "test-resources/string-references/"
+			configFolder := "testdata/string-references/"
 			manifestFile := configFolder + "manifest.yaml"
 
 			proj := "string-references"
 			env := "classic_env"
 
-			Run(t, configFolder,
-				Options{
-					WithManifestPath(manifestFile),
-					WithSuffix("string_references"),
-					WithEnvironment(env),
-					WithEnvVars(tt.envVars),
+			v2.Run(t, configFolder,
+				v2.Options{
+					v2.WithManifestPath(manifestFile),
+					v2.WithSuffix("string_references"),
+					v2.WithEnvironment(env),
+					v2.WithEnvVars(tt.envVars),
 				},
-				func(fs afero.Fs, ctx TestContext) {
+				func(fs afero.Fs, ctx v2.TestContext) {
 
 					// upsert
 					err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj))
@@ -134,12 +135,12 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 	tests := []struct {
 		project      string
 		downloadOpts string
-		validate     func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType)
+		validate     func(t *testing.T, ctx v2.TestContext, confsPerType project.ConfigsPerType)
 	}{
 		{
 			project:      "classic-apis",
 			downloadOpts: "--api=alerting-profile,notification,management-zone",
-			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
+			validate: func(t *testing.T, ctx v2.TestContext, confsPerType project.ConfigsPerType) {
 				managementZone := findConfig(t, confsPerType, "management-zone", "zone-ca_"+ctx.Suffix)
 				profile := findConfig(t, confsPerType, "alerting-profile", "profile-ca_"+ctx.Suffix)
 				notification := findConfig(t, confsPerType, "notification", "notification-ca_"+ctx.Suffix)
@@ -151,7 +152,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 		{
 			project:      "settings",
 			downloadOpts: "--settings-schema=builtin:problem.notifications,builtin:management-zones,builtin:alerting.profile",
-			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
+			validate: func(t *testing.T, ctx v2.TestContext, confsPerType project.ConfigsPerType) {
 				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.Suffix, "name")
 				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.Suffix, "name")
 				notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.Suffix, "displayName")
@@ -163,7 +164,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 		{
 			project:      "classic-with-settings-mngt-zone",
 			downloadOpts: "--api=notification,alerting-profile --settings-schema=builtin:management-zones",
-			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
+			validate: func(t *testing.T, ctx v2.TestContext, confsPerType project.ConfigsPerType) {
 				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone-cws_"+ctx.Suffix, "name")
 				profile := findConfig(t, confsPerType, "alerting-profile", "profile-cws_"+ctx.Suffix)
 				notification := findConfig(t, confsPerType, "notification", "notification-cws_"+ctx.Suffix)
@@ -179,17 +180,17 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 			testName := env + "_" + tt.project
 
 			t.Run(testName, func(t *testing.T) {
-				configFolder := "test-resources/references/"
+				configFolder := "testdata/references/"
 				manifestFile := configFolder + "manifest.yaml"
 				proj := tt.project
 
-				Run(t, configFolder,
-					Options{
-						WithManifestPath(manifestFile),
-						WithSuffix(testName),
-						WithEnvironment(env),
+				v2.Run(t, configFolder,
+					v2.Options{
+						v2.WithManifestPath(manifestFile),
+						v2.WithSuffix(testName),
+						v2.WithEnvironment(env),
 					},
-					func(fs afero.Fs, ctx TestContext) {
+					func(fs afero.Fs, ctx v2.TestContext) {
 
 						// upsert
 						err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --project=%s --verbose", manifestFile, env, proj))
@@ -227,7 +228,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 }
 
 func TestReferencesAreValid(t *testing.T) {
-	configFolder := "test-resources/references/"
+	configFolder := "testdata/references/"
 	manifestFile := configFolder + "manifest.yaml"
 
 	err := monaco.Run(t, monaco.NewTestFs(), fmt.Sprintf("monaco deploy %s --environment=platform_env --dry-run --verbose", manifestFile))
@@ -235,7 +236,7 @@ func TestReferencesAreValid(t *testing.T) {
 }
 
 func TestReferencesFromClassicConfigsToSettingsResultInError(t *testing.T) {
-	configFolder := "test-resources/references/"
+	configFolder := "testdata/references/"
 	manifestFile := configFolder + "invalid-configs-manifest.yaml"
 
 	fs := testutils.CreateTestFileSystem()

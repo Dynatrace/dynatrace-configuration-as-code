@@ -146,7 +146,7 @@ func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 
 	for k, v := range opts.envVars {
 		t.Log("Setting test environment variable " + k + ": " + v)
-		setTestEnvVar(t, k, v, suffix)
+		SetTestEnvVar(t, k, v, suffix)
 	}
 
 	if !opts.skipCleanup {
@@ -156,7 +156,7 @@ func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
 		}()
 	}
 
-	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)
+	SetTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)
 
 	testFunc(opts.fs, TestContext{
 		Suffix: suffix,
@@ -183,7 +183,7 @@ func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 	return suffix
 }
 
-func setTestEnvVar(t *testing.T, key, value, testSuffix string) {
+func SetTestEnvVar(t *testing.T, key, value, testSuffix string) {
 	t.Setenv(key, value)                                        // expose directly
 	t.Setenv(integrationtest.AddSuffix(key, testSuffix), value) // expose with suffix (env parameter "name" is subject to rewrite)
 }

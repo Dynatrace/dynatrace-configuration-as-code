@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2021 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package skip
 
 import (
 	"fmt"
@@ -28,6 +28,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -36,7 +37,7 @@ import (
 
 func TestSkip(t *testing.T) {
 
-	projectFolder := "test-resources/skip-test/"
+	projectFolder := "testdata/skip-test/"
 	manifest := projectFolder + "manifest.yaml"
 
 	type given struct {
@@ -111,13 +112,13 @@ func TestSkip(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			Run(t, projectFolder,
-				Options{
-					WithManifestPath(manifest),
-					WithSuffix("SkipTest"),
-					WithEnvironment(tt.given.environment),
+			v2.Run(t, projectFolder,
+				v2.Options{
+					v2.WithManifestPath(manifest),
+					v2.WithSuffix("SkipTest"),
+					v2.WithEnvironment(tt.given.environment),
 				},
-				func(fs afero.Fs, tc TestContext) {
+				func(fs afero.Fs, tc v2.TestContext) {
 
 					testCaseVar := "SKIPPED_VAR_" + tc.Suffix
 					t.Setenv(testCaseVar, strconv.FormatBool(tt.given.skipVarValue))
@@ -143,7 +144,7 @@ func TestSkip(t *testing.T) {
 	}
 }
 
-func assertTestConfig(t *testing.T, tc TestContext, client client.SettingsClient, envName string, configID string, shouldExist bool) {
+func assertTestConfig(t *testing.T, tc v2.TestContext, client client.SettingsClient, envName string, configID string, shouldExist bool) {
 	configID = fmt.Sprintf("%s_%s", configID, tc.Suffix)
 
 	integrationtest.AssertSetting(t, client, config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, shouldExist, config.Config{

@@ -1,8 +1,8 @@
 //go:build nightly
 
-/**
+/*
  * @license
- * Copyright 2022 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package pagination
 
 import (
 	"fmt"
@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
@@ -42,7 +43,7 @@ func TestPaginationPlatform(t *testing.T) {
 
 func testPagination(t *testing.T, specificEnvironment string) {
 
-	configFolder := "test-resources/pagination-test-configs/"
+	configFolder := "testdata/pagination-test-configs/"
 	manifestPath := configFolder + "manifest.yaml"
 
 	fs := testutils.CreateTestFileSystem()
@@ -63,14 +64,14 @@ func testPagination(t *testing.T, specificEnvironment string) {
 	err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
 	assert.NoError(t, err)
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifestPath),
-			WithSuffix("Pagination"),
-			WithEnvironment(specificEnvironment),
-			WithFs(fs),
+	v2.Run(t, configFolder,
+		v2.Options{
+			v2.WithManifestPath(manifestPath),
+			v2.WithSuffix("Pagination"),
+			v2.WithEnvironment(specificEnvironment),
+			v2.WithFs(fs),
 		},
-		func(fs afero.Fs, _ TestContext) {
+		func(fs afero.Fs, _ v2.TestContext) {
 
 			// Create/POST all 550 Settings
 			logOutput := strings.Builder{}
