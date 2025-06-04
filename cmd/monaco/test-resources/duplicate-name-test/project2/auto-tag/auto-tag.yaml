@@ -1,5 +1,0 @@
-config:
-  - tag-a: "tag-a.json"
-
-tag-a:
-  - name: "metric"
