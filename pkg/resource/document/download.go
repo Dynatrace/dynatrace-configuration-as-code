@@ -76,7 +76,7 @@ func downloadDocumentsOfType(ctx context.Context, documentSource downloadSource,
 
 	listResponse, err := documentSource.List(ctx, fmt.Sprintf("type=='%s'", documentType))
 	if err != nil {
-		log.WithFields(field.Type("document"), field.Error(err)).Error("Failed to list all documents of type '%s': %v", documentType, err)
+		log.WithFields(field.Type("document"), field.Error(err)).ErrorContext(ctx, "Failed to list all documents of type '%s': %v", documentType, err)
 		return nil
 	}
 
@@ -90,7 +90,7 @@ func downloadDocumentsOfType(ctx context.Context, documentSource downloadSource,
 
 		cfg, err := convertDocumentResponse(ctx, documentSource, projectName, response)
 		if err != nil {
-			log.WithFields(field.Type("document"), field.Error(err)).Error("Failed to convert document '%s' of type '%s': %v", response.ID, documentType, err)
+			log.WithFields(field.Type("document"), field.Error(err)).ErrorContext(ctx, "Failed to convert document '%s' of type '%s': %v", response.ID, documentType, err)
 			continue
 		}
 		configs = append(configs, cfg)

@@ -63,13 +63,13 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
 
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(config.AutomationResource(dp.Type))
 	if err != nil {
-		logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID %q: %v", dp.Type, id, err)
+		logger.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to delete %v with ID %q: %v", dp.Type, id, err)
 		return 1
 	}
 	_, err = c.Delete(ctx, resourceType, id)
 	if err != nil {
 		if !api.IsNotFoundError(err) {
-			logger.WithFields(field.Error(err)).Error("Failed to delete %v with ID '%s': %v", dp.Type, id, err)
+			logger.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to delete %v with ID '%s': %v", dp.Type, id, err)
 			return 1
 		}
 	}
@@ -94,7 +94,7 @@ func DeleteAll(ctx context.Context, c client) error {
 
 		t, err := automationutils.ClientResourceTypeFromConfigType(resource)
 		if err != nil {
-			logger.Error("Failed to delete Automation objects of type '%s': %v", resource, err)
+			logger.ErrorContext(ctx, "Failed to delete Automation objects of type '%s': %v", resource, err)
 			errCount++
 			continue
 		}
@@ -102,14 +102,14 @@ func DeleteAll(ctx context.Context, c client) error {
 		logger.Info("Collecting Automation objects of type %q...", resource)
 		resp, err := c.List(ctx, t)
 		if err != nil {
-			logger.WithFields(field.Error(err)).Error("Failed to collect Automation objects of type '%s': %v", resource, err)
+			logger.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to collect Automation objects of type '%s': %v", resource, err)
 			errCount++
 			continue
 		}
 
 		objects, err := automationutils.DecodeListResponse(resp)
 		if err != nil {
-			logger.WithFields(field.Error(err)).Error("Failed to collect Automation objects of type '%s': %v", resource, err)
+			logger.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to collect Automation objects of type '%s': %v", resource, err)
 			errCount++
 			continue
 		}
