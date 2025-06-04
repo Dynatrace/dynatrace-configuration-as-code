@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	"fmt"
+
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
@@ -36,7 +37,7 @@ type (
 )
 
 func (a *Downloader) policies(ctx context.Context) (Policies, error) {
-	log.WithCtxFields(ctx).Info("Downloading policies")
+	log.WithCtxFields(ctx).InfoContext(ctx, "Downloading policies")
 	dtos, err := a.httpClient.GetPolicies(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a list of policies for account %q from DT: %w", a.accountInfo, err)
@@ -67,7 +68,7 @@ func (a *Downloader) policies(ctx context.Context) (Policies, error) {
 		})
 	}
 
-	log.WithCtxFields(ctx).Info("Downloaded %d policies", len(retVal.asAccountPolicies()))
+	log.WithCtxFields(ctx).InfoContext(ctx, "Downloaded %d policies", len(retVal.asAccountPolicies()))
 	return retVal, nil
 }
 

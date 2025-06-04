@@ -36,7 +36,7 @@ type (
 )
 
 func (a *Downloader) serviceUsers(ctx context.Context, groups Groups) (ServiceUsers, error) {
-	log.WithCtxFields(ctx).Info("Downloading service users")
+	log.WithCtxFields(ctx).InfoContext(ctx, "Downloading service users")
 	dtos, err := a.httpClient.GetServiceUsers(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a list of service users for account %q from DT: %w", a.accountInfo, err)
@@ -67,7 +67,7 @@ func (a *Downloader) serviceUsers(ctx context.Context, groups Groups) (ServiceUs
 		})
 	}
 
-	log.WithCtxFields(ctx).Info("Fetched %d service users", len(retVal))
+	log.WithCtxFields(ctx).InfoContext(ctx, "Fetched %d service users", len(retVal))
 	return retVal, nil
 }
 

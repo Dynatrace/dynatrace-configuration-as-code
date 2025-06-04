@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	"fmt"
+
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
@@ -58,7 +59,7 @@ func (e Environments) getMzoneName(originID string) string {
 }
 
 func (a *Downloader) environments(ctx context.Context) (Environments, error) {
-	log.WithCtxFields(ctx).Info("Fetching environments")
+	log.WithCtxFields(ctx).InfoContext(ctx, "Fetching environments")
 
 	envDTOs, mzoneDTOs, err := a.httpClient.GetEnvironmentsAndMZones(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
@@ -72,7 +73,7 @@ func (a *Downloader) environments(ctx context.Context) (Environments, error) {
 		retVal = append(retVal, e)
 	}
 
-	log.WithCtxFields(ctx).Info("Fetched environments: %q", retVal)
+	log.WithCtxFields(ctx).InfoContext(ctx, "Fetched environments: %q", retVal)
 	return retVal, nil
 }
 

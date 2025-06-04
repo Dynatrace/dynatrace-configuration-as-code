@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/go-logr/logr"
 
@@ -42,8 +43,8 @@ func New(accountInfo *account.AccountInfo, client *accounts.Client) *Downloader 
 }
 
 func (a *Downloader) DownloadResources(ctx context.Context) (*account.Resources, error) {
-	log.WithCtxFields(ctx).Info("Starting download")
-	ctx = logr.NewContextWithSlogLogger(ctx, log.WithCtxFields(ctx).SLogger())
+	log.WithCtxFields(ctx).InfoContext(ctx, "Starting download")
+	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
 	tenants, err := a.environments(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch environments: %w", err)

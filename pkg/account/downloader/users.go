@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	"fmt"
+
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
@@ -36,7 +37,7 @@ type (
 )
 
 func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
-	log.WithCtxFields(ctx).Info("Downloading users")
+	log.WithCtxFields(ctx).InfoContext(ctx, "Downloading users")
 	dtos, err := a.httpClient.GetUsers(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a list of users for account %q from DT: %w", a.accountInfo, err)
@@ -65,7 +66,7 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 		})
 	}
 
-	log.WithCtxFields(ctx).Info("Fetched %d users", len(retVal))
+	log.WithCtxFields(ctx).InfoContext(ctx, "Fetched %d users", len(retVal))
 	return retVal, nil
 }
 

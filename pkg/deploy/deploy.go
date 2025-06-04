@@ -82,7 +82,7 @@ func getDeploymentLimiterFromContext(ctx context.Context) *rest.ConcurrentReques
 func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
 	maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
 	if maxConcurrentDeployments > 0 {
-		log.Info("%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
+		log.InfoContext(ctx, "%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
 		limiter := rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
 		ctx = newContextWithDeploymentLimiter(ctx, limiter)
 	}
@@ -129,7 +129,7 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 				return deploymentErrs
 			}
 		} else {
-			log.WithFields(field.Environment(env.Name, env.Group)).Info("Deployment successful for environment '%s'", env.Name)
+			log.WithFields(field.Environment(env.Name, env.Group)).InfoContext(ctx, "Deployment successful for environment '%s'", env.Name)
 		}
 	}
 
@@ -143,7 +143,7 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 func Deploy(ctx context.Context, clientSet *client.ClientSet, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
 	preloadCaches(ctx, projects, clientSet, environment)
 	defer clearCaches(clientSet)
-	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", environment)
+	log.WithCtxFields(ctx).InfoContext(ctx, "Deploying configurations to environment %q...", environment)
 
 	return deployComponents(ctx, sortedConfigs, clientSet)
 }
@@ -162,7 +162,7 @@ func getSortedEnvConfigs(g graph.ConfigGraphPerEnvironment, envNames []string) (
 }
 
 func deployComponents(ctx context.Context, components []graph.SortedComponent, clientset *client.ClientSet) error {
-	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets in parallel...", len(components))
+	log.WithCtxFields(ctx).InfoContext(ctx, "Deploying %d independent configuration sets in parallel...", len(components))
 	errCount := 0
 	errChan := make(chan error, len(components))
 
@@ -255,7 +255,7 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 
 	resolvedEntities.Put(resolvedEntity)
 	report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateSuccess, details, nil)
-	log.WithCtxFields(ctx).WithFields(field.StatusDeployed()).Info("Deployment successful")
+	log.WithCtxFields(ctx).WithFields(field.StatusDeployed()).InfoContext(ctx, "Deployment successful")
 	return nil
 }
 
@@ -310,7 +310,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 	}
 
 	if c.Skip {
-		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
+		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).InfoContext(ctx, "Skipping deployment of config")
 		return entities.ResolvedEntity{}, errSkip // fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
 	}
 
@@ -329,7 +329,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		return entities.ResolvedEntity{}, err
 	}
 
-	log.WithCtxFields(ctx).WithFields(field.StatusDeploying()).Info("Deploying config")
+	log.WithCtxFields(ctx).WithFields(field.StatusDeploying()).InfoContext(ctx, "Deploying config")
 	var resolvedEntity entities.ResolvedEntity
 	var deployErr error
 	switch c.Type.(type) {

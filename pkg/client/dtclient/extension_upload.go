@@ -124,7 +124,7 @@ func (d *ConfigClient) validateIfExtensionShouldBeUploaded(ctx context.Context, 
 	}
 
 	if curVersion == newVersion {
-		log.WithCtxFields(ctx).Info("Extension (%s) already deployed in version (%s), skipping.", extensionName, newVersion)
+		log.WithCtxFields(ctx).InfoContext(ctx, "Extension (%s) already deployed in version (%s), skipping.", extensionName, newVersion)
 		return extensionUpToDate, nil
 	}
 

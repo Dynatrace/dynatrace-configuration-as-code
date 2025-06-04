@@ -19,12 +19,13 @@ package downloader
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"strings"
 )
 
 type (
@@ -40,7 +41,7 @@ type (
 )
 
 func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Environments) (Groups, error) {
-	log.WithCtxFields(ctx).Info("Downloading groups")
+	log.WithCtxFields(ctx).InfoContext(ctx, "Downloading groups")
 	groupDTOs, err := a.httpClient.GetGroups(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a list of groups for account %q from DT: %w", a.accountInfo, err)
@@ -113,7 +114,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		groups = append(groups, g)
 	}
 
-	log.WithCtxFields(ctx).Info("Downloaded %d groups", len(groups))
+	log.WithCtxFields(ctx).InfoContext(ctx, "Downloaded %d groups", len(groups))
 
 	return groups, nil
 }
