@@ -1,4 +1,4 @@
-//go:build integration
+//go:build account_integration
 
 /*
  * @license
