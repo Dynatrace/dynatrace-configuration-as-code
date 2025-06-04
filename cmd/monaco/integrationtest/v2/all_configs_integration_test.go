@@ -30,6 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/logging"
 )
 
 // tests all configs for a single environment
@@ -95,9 +96,9 @@ func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment s
 	assert.NoError(t, err)
 
 	if err == nil {
-		assertReport(t, fs, reportFile, true)
+		logging.assertReport(t, fs, reportFile, true)
 	} else {
-		assertReport(t, fs, reportFile, false)
+		logging.assertReport(t, fs, reportFile, false)
 	}
 }
 
@@ -118,8 +119,8 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 	assert.NoError(t, err)
 
 	if err == nil {
-		assertReport(t, fs, reportFile, true)
+		logging.assertReport(t, fs, reportFile, true)
 	} else {
-		assertReport(t, fs, reportFile, false)
+		logging.assertReport(t, fs, reportFile, false)
 	}
 }

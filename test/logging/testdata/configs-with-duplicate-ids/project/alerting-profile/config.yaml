@@ -1,0 +1,15 @@
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip: false
+  type:
+    api: alerting-profile
+- id: profile
+  config:
+    name: Star Wars Service
+    template: profile.json
+    skip: false
+  type:
+    api: alerting-profile

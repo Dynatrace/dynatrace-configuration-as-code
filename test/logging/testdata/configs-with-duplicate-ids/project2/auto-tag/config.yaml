@@ -1,0 +1,8 @@
+configs:
+- id: tag # this does not overlap with project/auto-tag/tag
+  config:
+    name: Resistance is futile!
+    template: application-tagging.json
+    skip: false
+  type:
+    api: auto-tag

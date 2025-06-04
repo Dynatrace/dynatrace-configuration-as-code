@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package v2
+package logging
 
 import (
 	"archive/zip"
@@ -34,6 +34,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/utils/monaco"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -47,7 +48,7 @@ import (
 
 func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 
-	configFolder := "test-resources/support-archive/"
+	configFolder := "testdata/support-archive/"
 	manifest := configFolder + "manifest.yaml"
 	fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
 	reportFilename := fmt.Sprintf("%s-report.jsonl", fixedTime)
@@ -87,13 +88,13 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 			t.Setenv(environment.DeploymentReportFilename, tt.reportFilename)
 			t.Setenv(featureflags.LogMemStats.EnvName(), strconv.FormatBool(tt.enableMemstatlog))
 
-			Run(t, configFolder,
-				Options{
-					WithManifestPath(manifest),
-					WithSuffix("SupportArchive"),
-					WithEnvironment("valid_env"),
+			v2.Run(t, configFolder,
+				v2.Options{
+					v2.WithManifestPath(manifest),
+					v2.WithSuffix("SupportArchive"),
+					v2.WithEnvironment("valid_env"),
 				},
-				func(fs afero.Fs, _ TestContext) {
+				func(fs afero.Fs, _ v2.TestContext) {
 					err := cleanupLogsDir()
 					assert.NoError(t, err)
 
@@ -134,7 +135,7 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 // on the Dynatrace environment and do not need cleanup - or work successfully with the normal test runner which expects
 // that it can load the manifest and connect to the environment
 func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
-	configFolder := "test-resources/support-archive/"
+	configFolder := "testdata/support-archive/"
 
 	tests := []struct {
 		name           string
@@ -198,20 +199,20 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 func TestDeployReport(t *testing.T) {
 	t.Run("report is generated", func(t *testing.T) {
 		const (
-			configFolder = "test-resources/support-archive/"
+			configFolder = "testdata/support-archive/"
 			manifest     = configFolder + "manifest.yaml"
 		)
 		reportFile := fmt.Sprintf("report%s.jsonl", time.Now().Format(trafficlogs.TrafficLogFilePrefixFormat))
 
 		t.Setenv(environment.DeploymentReportFilename, reportFile)
 
-		Run(t, configFolder,
-			Options{
-				WithManifestPath(manifest),
-				WithSuffix(""),
-				WithEnvironment("valid_env"),
+		v2.Run(t, configFolder,
+			v2.Options{
+				v2.WithManifestPath(manifest),
+				v2.WithSuffix(""),
+				v2.WithEnvironment("valid_env"),
 			},
-			func(fs afero.Fs, tc TestContext) {
+			func(fs afero.Fs, tc v2.TestContext) {
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
 				require.NoError(t, err)
 
@@ -229,16 +230,16 @@ func TestDeployReport(t *testing.T) {
 
 	t.Run("ensure that monaco runs without generating report", func(t *testing.T) {
 		const (
-			configFolder = "test-resources/support-archive/"
+			configFolder = "testdata/support-archive/"
 			manifest     = configFolder + "manifest.yaml"
 		)
-		Run(t, configFolder,
-			Options{
-				WithManifestPath(manifest),
-				WithSuffix(""),
-				WithEnvironment("valid_env"),
+		v2.Run(t, configFolder,
+			v2.Options{
+				v2.WithManifestPath(manifest),
+				v2.WithSuffix(""),
+				v2.WithEnvironment("valid_env"),
 			},
-			func(fs afero.Fs, _ TestContext) {
+			func(fs afero.Fs, _ v2.TestContext) {
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
 				require.NoError(t, err)
 			})

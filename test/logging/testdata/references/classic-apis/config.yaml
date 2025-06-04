@@ -1,0 +1,32 @@
+configs:
+  - id: profile
+    config:
+      name: profile-ca
+      template: profile.json
+      skip: false
+      parameters:
+        managementZoneId: [management-zone, zone, id]
+    type:
+      api: alerting-profile
+
+  - id: zone
+    type:
+      api: management-zone
+    config:
+      name: zone-ca
+      parameters:
+        environment: environment1
+        meId: HOST_GROUP-1234567890123456
+      template: zone.json
+      skip: false
+
+  - id: slack
+    type:
+      api: notification
+    config:
+      name: notification-ca
+      parameters:
+        alertingProfileId: [alerting-profile, profile, id]
+        environment: Env1
+      template: slack.json
+      skip: false

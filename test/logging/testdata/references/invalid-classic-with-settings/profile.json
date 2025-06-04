@@ -1,0 +1,46 @@
+{
+    "name": "{{.name}}",
+    "managementZone": "{{.managementZoneId}}",
+    "severityRules": [
+        {
+            "severityLevel": "PERFORMANCE",
+            "delayInMinutes": 30,
+            "tagFilterIncludeMode": "NONE"
+        },
+        {
+            "severityLevel": "AVAILABILITY",
+            "delayInMinutes": 0,
+            "tagFilterIncludeMode": "INCLUDE_ANY",
+            "tagFilter": [
+                "asdf\\:jkloe",
+                "/rest"
+            ]
+        },
+        {
+            "severityLevel": "RESOURCE_CONTENTION",
+            "delayInMinutes": 30,
+            "tagFilterIncludeMode": "NONE"
+        },
+        {
+            "severityLevel": "CUSTOM_ALERT",
+            "delayInMinutes": 0,
+            "tagFilterIncludeMode": "NONE"
+        },
+        {
+            "severityLevel": "ERRORS",
+            "delayInMinutes": 0,
+            "tagFilterIncludeMode": "NONE"
+        },
+        {
+            "severityLevel": "MONITORING_UNAVAILABLE",
+            "delayInMinutes": 0,
+            "tagFilterIncludeMode": "NONE"
+        },
+        {
+            "severityLevel": "AVAILABILITY",
+            "delayInMinutes": 0,
+            "tagFilterIncludeMode": "NONE"
+        }
+    ],
+    "eventFilters": []
+}
