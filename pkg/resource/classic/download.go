@@ -57,7 +57,7 @@ func NewDownloadAPI(configSource downloadSource, apisToDownload api.APIs, filter
 }
 
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading configuration objects")
+	log.InfoContext(ctx, "Downloading configuration objects")
 	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(a.apisToDownload), "\n - "))
 	results := make(project.ConfigsPerType, len(a.apisToDownload))
 	mutex := sync.Mutex{}

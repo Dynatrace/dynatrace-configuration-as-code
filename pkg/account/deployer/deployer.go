@@ -208,7 +208,7 @@ func (d *AccountDeployer) deployPolicies(ctx context.Context, policies map[strin
 		policy := policy
 		deployPolicyJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.Info("Deploying policy '%s'", policy.Name)
+			d.logger.InfoContext(ctx, "Deploying policy '%s'", policy.Name)
 			pUuid, err := d.upsertPolicy(d.logCtx(ctx), policy)
 			if err != nil {
 				errCh <- fmt.Errorf("unable to deploy policy '%s' for account %s: %w", policy.Name, d.accClient.getAccountInfo().AccountUUID, err)
@@ -224,7 +224,7 @@ func (d *AccountDeployer) deployGroups(ctx context.Context, groups map[string]ac
 		group := group
 		deployGroupJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.Info("Deploying group '%s'", group.Name)
+			d.logger.InfoContext(ctx, "Deploying group '%s'", group.Name)
 			gUuid, err := d.upsertGroup(d.logCtx(ctx), group)
 			if err != nil {
 				errCh <- fmt.Errorf("unable to deploy group '%s' for account %s: %w", group.Name, d.accClient.getAccountInfo().AccountUUID, err)
@@ -242,7 +242,7 @@ func (d *AccountDeployer) deployUsers(ctx context.Context, users map[string]acco
 		user := user
 		deployUserJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.Info("Deploying user '%s'", user.Email)
+			d.logger.InfoContext(ctx, "Deploying user '%s'", user.Email)
 			if _, err := d.upsertUser(d.logCtx(ctx), user); err != nil {
 				errCh <- fmt.Errorf("unable to deploy user '%s' for account %s: %w", user.Email, d.accClient.getAccountInfo().AccountUUID, err)
 			}
@@ -257,7 +257,7 @@ func (d *AccountDeployer) deployServiceUsers(ctx context.Context, serviceUsers [
 		serviceUser := serviceUser
 		deployServiceUserJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.Info("Deploying service user '%s'", serviceUser.Name)
+			d.logger.InfoContext(ctx, "Deploying service user '%s'", serviceUser.Name)
 			if _, err := d.upsertServiceUser(d.logCtx(ctx), serviceUser); err != nil {
 				errCh <- fmt.Errorf("unable to deploy service user '%s' for account %s: %w", serviceUser.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
@@ -270,7 +270,7 @@ func (d *AccountDeployer) deployServiceUsers(ctx context.Context, serviceUsers [
 func (d *AccountDeployer) deployGroupBindings(ctx context.Context, groups map[account.GroupId]account.Group, dispatcher *Dispatcher) {
 	for _, group := range groups {
 		group := group
-		d.logger.Info("Updating policy bindings and permissions for group '%s'", group.Name)
+		d.logger.InfoContext(ctx, "Updating policy bindings and permissions for group '%s'", group.Name)
 
 		updateBindingsJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
@@ -294,7 +294,7 @@ func (d *AccountDeployer) deployUserBindings(ctx context.Context, users map[acco
 		deployUserBindingsJob :=
 			func(wg *sync.WaitGroup, errCh chan error) {
 				defer wg.Done()
-				d.logger.Info("Updating group bindings for user '%s'", user.Email)
+				d.logger.InfoContext(ctx, "Updating group bindings for user '%s'", user.Email)
 				if err := d.updateUserGroupBindings(d.logCtx(ctx), user); err != nil {
 					errCh <- fmt.Errorf("unable to update bindings for user '%s' for account %s: %w", user.Email, d.accClient.getAccountInfo().AccountUUID, err)
 				}
@@ -311,7 +311,7 @@ func (d *AccountDeployer) deployServiceUserBindings(ctx context.Context, service
 		deployUserBindingsJob :=
 			func(wg *sync.WaitGroup, errCh chan error) {
 				defer wg.Done()
-				d.logger.Info("Updating group bindings for service user '%s'", serviceUser.Name)
+				d.logger.InfoContext(ctx, "Updating group bindings for service user '%s'", serviceUser.Name)
 				if err := d.updateServiceUserGroupBindings(d.logCtx(ctx), serviceUser); err != nil {
 					errCh <- fmt.Errorf("unable to update bindings for service user '%s' for account %s: %w", serviceUser.Name, d.accClient.getAccountInfo().AccountUUID, err)
 				}

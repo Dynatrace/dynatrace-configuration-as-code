@@ -38,7 +38,7 @@ type client interface {
 
 func Delete(ctx context.Context, c client, automationResource config.AutomationResource, entries []pointer.DeletePointer) error {
 	logger := log.WithCtxFields(ctx).WithFields(field.Type(string(automationResource)))
-	logger.Info("Deleting %d config(s) of type %q...", len(entries), automationResource)
+	logger.InfoContext(ctx, "Deleting %d config(s) of type %q...", len(entries), automationResource)
 
 	deleteErrs := 0
 	for _, e := range entries {
@@ -99,7 +99,7 @@ func DeleteAll(ctx context.Context, c client) error {
 			continue
 		}
 
-		logger.Info("Collecting Automation objects of type %q...", resource)
+		logger.InfoContext(ctx, "Collecting Automation objects of type %q...", resource)
 		resp, err := c.List(ctx, t)
 		if err != nil {
 			logger.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to collect Automation objects of type '%s': %v", resource, err)
@@ -114,7 +114,7 @@ func DeleteAll(ctx context.Context, c client) error {
 			continue
 		}
 
-		logger.Info("Deleting %d objects of type %q...", len(objects), resource)
+		logger.InfoContext(ctx, "Deleting %d objects of type %q...", len(objects), resource)
 		for _, o := range objects {
 			errCount += deleteSingle(ctx, c, pointer.DeletePointer{Type: automationTypesToResources[t], OriginObjectId: o.ID})
 		}

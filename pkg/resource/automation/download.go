@@ -60,7 +60,7 @@ func NewDownloadAPI(automationSource downloadSource) *DownloadAPI {
 
 // Download downloads all automation resources for a given project
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading automation resources")
+	log.InfoContext(ctx, "Downloading automation resources")
 	configsPerType := make(project.ConfigsPerType)
 	for _, at := range maps.Keys(automationTypesToResources) {
 		lg := log.WithFields(field.Type(at.Resource))
@@ -89,11 +89,11 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 		if len(objects) == 0 {
 			// Info on purpose. Most types have a lot of objects, so skipping printing 'not found' in the default case makes sense. Here it's kept on purpose, we have only 3 types.
-			lg.WithFields(field.F("configsDownloaded", len(objects))).Info("Did not find any %s to download", string(at.Resource))
+			lg.WithFields(field.F("configsDownloaded", len(objects))).InfoContext(ctx, "Did not find any %s to download", string(at.Resource))
 
 			continue
 		}
-		lg.WithFields(field.F("configsDownloaded", len(objects))).Info("Downloaded %d objects for %s", len(objects), string(at.Resource))
+		lg.WithFields(field.F("configsDownloaded", len(objects))).InfoContext(ctx, "Downloaded %d objects for %s", len(objects), string(at.Resource))
 
 		var configs []config.Config
 		for _, obj := range objects {

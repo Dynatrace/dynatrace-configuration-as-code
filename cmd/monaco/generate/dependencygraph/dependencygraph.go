@@ -167,7 +167,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 				Reason:       err,
 			}
 		}
-		log.WithFields(field.F("file", file)).Info("Dependency graph for environment %q written to %q", e, file)
+		log.WithFields(field.F("file", file)).InfoContext(ctx, "Dependency graph for environment %q written to %q", e, file)
 	}
 
 	return nil

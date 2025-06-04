@@ -37,7 +37,7 @@ type client interface {
 
 func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) error {
 	logger := log.WithCtxFields(ctx).WithFields(field.Type("bucket"))
-	logger.Info(`Deleting %d config(s) of type "bucket"...`, len(entries))
+	logger.InfoContext(ctx, `Deleting %d config(s) of type "bucket"...`, len(entries))
 
 	deleteErrs := 0
 	for _, e := range entries {
@@ -77,7 +77,7 @@ func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) erro
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
 func DeleteAll(ctx context.Context, c client) error {
 	logger := log.WithCtxFields(ctx).WithFields(field.Type("bucket"))
-	logger.Info("Collecting Grail Bucket configurations...")
+	logger.InfoContext(ctx, "Collecting Grail Bucket configurations...")
 
 	response, err := c.List(ctx)
 	if err != nil {
@@ -85,7 +85,7 @@ func DeleteAll(ctx context.Context, c client) error {
 		return err
 	}
 
-	logger.Info("Deleting %d objects of type %q...", len(response.All()), "bucket")
+	logger.InfoContext(ctx, "Deleting %d objects of type %q...", len(response.All()), "bucket")
 	errCount := 0
 	for _, obj := range response.All() {
 		var bucketName struct {

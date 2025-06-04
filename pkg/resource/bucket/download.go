@@ -56,7 +56,7 @@ func NewDownloadAPI(bucketSource downloadSource) *DownloadAPI {
 }
 
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading Grail buckets")
+	log.InfoContext(ctx, "Downloading Grail buckets")
 	result := make(project.ConfigsPerType)
 	response, err := a.bucketSource.List(ctx)
 	if err != nil {
