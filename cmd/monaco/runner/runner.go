@@ -42,8 +42,8 @@ import (
 func RunCmd(ctx context.Context, cmd *cobra.Command) error {
 	err := cmd.ExecuteContext(ctx)
 	if err != nil {
-		log.WithFields(field.Error(err)).Error("Error: %v", err)
-		log.WithFields(field.F("errorLogFilePath", log.ErrorFilePath())).Error("error logs written to %s", log.ErrorFilePath())
+		log.WithFields(field.Error(err)).ErrorContext(ctx, "Error: %v", err)
+		log.WithFields(field.F("errorLogFilePath", log.ErrorFilePath())).ErrorContext(ctx, "error logs written to %s", log.ErrorFilePath())
 	}
 	return err
 }

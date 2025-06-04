@@ -69,7 +69,7 @@ func downloadAll(ctx context.Context, fs afero.Fs, opts *downloadOpts) error {
 	for acc, accClient := range accountClients {
 		err := downloadAndPersist(ctx, fs, opts, acc, accClient)
 		if err != nil {
-			log.Error("Failed to download account resources for account %q: %s", acc, err)
+			log.ErrorContext(ctx, "Failed to download account resources for account %q: %s", acc, err)
 			failedDownloads = append(failedDownloads, acc)
 		}
 	}
@@ -80,7 +80,7 @@ func downloadAll(ctx context.Context, fs afero.Fs, opts *downloadOpts) error {
 	}
 
 	if err := writeManifest(fs, opts, accs); err != nil {
-		log.Error("failed to persist manifest: %v", err)
+		log.ErrorContext(ctx, "failed to persist manifest: %s", err)
 	}
 
 	if len(failedDownloads) > 0 {

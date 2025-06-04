@@ -77,13 +77,13 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 		}()
 
 		if err != nil {
-			lg.WithFields(field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
+			lg.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
 		objects, err := automationutils.DecodeListResponse(response)
 		if err != nil {
-			lg.WithFields(field.Error(err)).Error("Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
+			lg.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 

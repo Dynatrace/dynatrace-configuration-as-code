@@ -72,7 +72,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 			foundValues, err := findConfigsToDownload(ctx, a.configSource, currentApi, a.filters)
 			if err != nil {
-				log.WithFields(field.Error(err), field.Type(currentApi.ID)).Error("Failed to fetch configs of type '%s', skipping download of this type. Reason: %v", currentApi.ID, err)
+				log.WithFields(field.Error(err), field.Type(currentApi.ID)).ErrorContext(ctx, "Failed to fetch configs of type '%s', skipping download of this type. Reason: %v", currentApi.ID, err)
 				return
 			}
 

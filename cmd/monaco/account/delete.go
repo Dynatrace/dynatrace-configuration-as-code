@@ -136,12 +136,12 @@ func loadResourcesToDelete(fs afero.Fs, deleteFile string) (delete.Resources, er
 func deleteFromAccount(ctx context.Context, account manifest.Account, resourcesToDelete delete.Resources) error {
 	accountAccess, err := createAccountDeleteClient(ctx, account)
 	if err != nil {
-		log.Error("Failed to create API client for account %q: %v", account.Name, err)
+		log.ErrorContext(ctx, "Failed to create API client for account %q: %v", account.Name, err)
 		return err
 	}
 	err = delete.DeleteAccountResources(ctx, accountAccess, resourcesToDelete)
 	if err != nil {
-		log.Error("Failed to delete resources for account %q", account.Name)
+		log.ErrorContext(ctx, "Failed to delete resources for account %q", account.Name)
 		return err
 	}
 	return nil

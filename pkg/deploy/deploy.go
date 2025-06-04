@@ -122,7 +122,7 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 		ctx = newContextWithEnvironment(ctx, env)
 
 		if depErr := Deploy(ctx, clientSet, projects, sortedConfigs, env.Name); depErr != nil {
-			log.WithFields(field.Environment(env.Name, env.Group), field.Error(depErr)).Error("Deployment failed for environment '%s': %v", env.Name, depErr)
+			log.WithFields(field.Environment(env.Name, env.Group), field.Error(depErr)).ErrorContext(ctx, "Deployment failed for environment '%s': %v", env.Name, depErr)
 			deploymentErrs = deploymentErrs.Append(env.Name, depErr)
 
 			if !opts.ContinueOnErr && !opts.DryRun {
@@ -317,14 +317,14 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 	properties, errs := c.ResolveParameterValues(resolvedEntities)
 	if len(errs) > 0 {
 		err := multierror.New(errs...)
-		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to resolve parameter values: %v", err)
+		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).ErrorContext(ctx, "Invalid configuration - failed to resolve parameter values: %v", err)
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
-		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to render JSON template: %v", err)
+		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).ErrorContext(ctx, "Invalid configuration - failed to render JSON template: %v", err)
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
@@ -378,7 +378,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 			return entities.ResolvedEntity{}, responseErr
 		}
 
-		log.WithCtxFields(ctx).WithFields(field.Error(deployErr)).Error("Deployment failed - Monaco Error: %v", deployErr)
+		log.WithCtxFields(ctx).WithFields(field.Error(deployErr)).ErrorContext(ctx, "Deployment failed - Monaco Error: %v", deployErr)
 		return entities.ResolvedEntity{}, deployErr
 	}
 	return resolvedEntity, nil
@@ -387,17 +387,17 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 // logResponseError prints user-friendly messages based on the response errors status
 func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	if responseErr.StatusCode >= 400 && responseErr.StatusCode <= 499 {
-		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
+		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Dynatrace API rejected request: : %v", responseErr)})
 		return
 	}
 
 	if responseErr.StatusCode >= 500 && responseErr.StatusCode <= 599 {
-		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace Server Error: %v", responseErr)
+		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace Server Error: %v", responseErr)
 		return
 	}
 
-	log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
+	log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
 }
 
 func newContextWithEnvironment(ctx context.Context, env dynatrace.EnvironmentInfo) context.Context {
