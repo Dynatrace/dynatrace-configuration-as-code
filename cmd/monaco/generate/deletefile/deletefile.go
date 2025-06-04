@@ -166,7 +166,7 @@ func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Proj
 				}
 				entry, err := createDeleteEntry(c, apis, p)
 				if err != nil {
-					log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
+					log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for '%s': %s", c.Coordinate, err)
 					return
 				}
 				entries[toMapKey(entry)] = entry

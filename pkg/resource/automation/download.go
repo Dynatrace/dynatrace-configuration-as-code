@@ -67,7 +67,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 		resource, ok := automationTypesToResources[at]
 		if !ok {
-			lg.Warn("No resource mapping for automation type %s found", at.Resource)
+			lg.WarnContext(ctx, "No resource mapping for automation type %s found", at.Resource)
 			continue
 		}
 		response, err := func() (automation.ListResponse, error) {
@@ -101,7 +101,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 			configId := obj.ID
 
 			if escaped, err := escapeJinjaTemplates(obj.Data); err != nil {
-				lg.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), field.Error(err)).Warn("Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
+				lg.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), field.Error(err)).WarnContext(ctx, "Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
 			} else {
 				obj.Data = escaped
 			}
