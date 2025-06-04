@@ -143,7 +143,7 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 func Deploy(ctx context.Context, clientSet *client.ClientSet, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
 	preloadCaches(ctx, projects, clientSet, environment)
 	defer clearCaches(clientSet)
-	log.WithCtxFields(ctx).InfoContext(ctx, "Deploying configurations to environment %q...", environment)
+	log.InfoContext(ctx, "Deploying configurations to environment %q...", environment)
 
 	return deployComponents(ctx, sortedConfigs, clientSet)
 }
@@ -162,7 +162,7 @@ func getSortedEnvConfigs(g graph.ConfigGraphPerEnvironment, envNames []string) (
 }
 
 func deployComponents(ctx context.Context, components []graph.SortedComponent, clientset *client.ClientSet) error {
-	log.WithCtxFields(ctx).InfoContext(ctx, "Deploying %d independent configuration sets in parallel...", len(components))
+	log.InfoContext(ctx, "Deploying %d independent configuration sets in parallel...", len(components))
 	errCount := 0
 	errChan := make(chan error, len(components))
 
@@ -255,7 +255,7 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 
 	resolvedEntities.Put(resolvedEntity)
 	report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateSuccess, details, nil)
-	log.WithCtxFields(ctx).WithFields(field.StatusDeployed()).InfoContext(ctx, "Deployment successful")
+	log.WithFields(field.StatusDeployed()).InfoContext(ctx, "Deployment successful")
 	return nil
 }
 
@@ -271,7 +271,7 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 		}
 		childCfg := child.Config
 
-		l := log.WithCtxFields(ctx).WithFields(
+		l := log.WithFields(
 			field.F("parent", parent.Config.Coordinate),
 			field.F("deploymentFailed", failed),
 			field.F("child", childCfg.Coordinate),
@@ -310,26 +310,26 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 	}
 
 	if c.Skip {
-		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).InfoContext(ctx, "Skipping deployment of config")
+		log.WithFields(field.StatusDeploymentSkipped()).InfoContext(ctx, "Skipping deployment of config")
 		return entities.ResolvedEntity{}, errSkip // fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
 	}
 
 	properties, errs := c.ResolveParameterValues(resolvedEntities)
 	if len(errs) > 0 {
 		err := multierror.New(errs...)
-		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).ErrorContext(ctx, "Invalid configuration - failed to resolve parameter values: %v", err)
+		log.WithFields(field.Error(err), field.StatusDeploymentFailed()).ErrorContext(ctx, "Invalid configuration - failed to resolve parameter values: %v", err)
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
-		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).ErrorContext(ctx, "Invalid configuration - failed to render JSON template: %v", err)
+		log.WithFields(field.Error(err), field.StatusDeploymentFailed()).ErrorContext(ctx, "Invalid configuration - failed to render JSON template: %v", err)
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
-	log.WithCtxFields(ctx).WithFields(field.StatusDeploying()).InfoContext(ctx, "Deploying config")
+	log.WithFields(field.StatusDeploying()).InfoContext(ctx, "Deploying config")
 	var resolvedEntity entities.ResolvedEntity
 	var deployErr error
 	switch c.Type.(type) {
@@ -378,7 +378,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 			return entities.ResolvedEntity{}, responseErr
 		}
 
-		log.WithCtxFields(ctx).WithFields(field.Error(deployErr)).ErrorContext(ctx, "Deployment failed - Monaco Error: %v", deployErr)
+		log.WithFields(field.Error(deployErr)).ErrorContext(ctx, "Deployment failed - Monaco Error: %v", deployErr)
 		return entities.ResolvedEntity{}, deployErr
 	}
 	return resolvedEntity, nil
@@ -387,17 +387,17 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 // logResponseError prints user-friendly messages based on the response errors status
 func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	if responseErr.StatusCode >= 400 && responseErr.StatusCode <= 499 {
-		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
+		log.WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Dynatrace API rejected request: : %v", responseErr)})
 		return
 	}
 
 	if responseErr.StatusCode >= 500 && responseErr.StatusCode <= 599 {
-		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace Server Error: %v", responseErr)
+		log.WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace Server Error: %v", responseErr)
 		return
 	}
 
-	log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
+	log.WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
 }
 
 func newContextWithEnvironment(ctx context.Context, env dynatrace.EnvironmentInfo) context.Context {

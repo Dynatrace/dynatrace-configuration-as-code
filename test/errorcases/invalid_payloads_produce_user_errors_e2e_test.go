@@ -53,8 +53,8 @@ func TestAPIErrorsAreReported(t *testing.T) {
 			assert.ErrorContains(t, err, "2 deployment errors")
 
 			runLog := strings.ToLower(logOutput.String())
-			assert.Regexp(t, ".*?error.*?deployment failed - dynatrace api rejected http request.*?invalid-config-api-with-settings-payload.*?", runLog)
-			assert.Regexp(t, ".*?error.*?deployment failed - dynatrace api rejected http request.*?tags.auto-tagging:invalid-setting-with-config-api-payload.*?", runLog)
+			assert.Regexp(t, ".*?error.*?deployment failed - dynatrace api rejected http request.*?coordinate.configid=invalid-config-api-with-settings-payload.*?", runLog)
+			assert.Regexp(t, ".*?error.*?deployment failed - dynatrace api rejected http request.*?coordinate.configid=invalid-setting-with-config-api-payload.*?", runLog)
 			assert.Contains(t, runLog, "deployment failed for environment 'classic_env'")
 			assert.Contains(t, runLog, "deployment failed for environment 'platform_env'")
 		})

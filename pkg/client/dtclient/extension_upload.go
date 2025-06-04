@@ -66,7 +66,7 @@ func (d *ConfigClient) uploadExtension(ctx context.Context, api api.API, extensi
 		return DynatraceEntity{}, fmt.Errorf("upload of %s failed: %w", extensionName, err)
 	}
 
-	log.WithCtxFields(ctx).DebugContext(ctx, "Extension upload successful for %s", extensionName)
+	log.DebugContext(ctx, "Extension upload successful for %s", extensionName)
 
 	// As other configs depend on metrics created by extensions, and metric creation seems to happen with delay...
 	time.Sleep(1 * time.Second)
@@ -124,7 +124,7 @@ func (d *ConfigClient) validateIfExtensionShouldBeUploaded(ctx context.Context, 
 	}
 
 	if curVersion == newVersion {
-		log.WithCtxFields(ctx).InfoContext(ctx, "Extension (%s) already deployed in version (%s), skipping.", extensionName, newVersion)
+		log.InfoContext(ctx, "Extension (%s) already deployed in version (%s), skipping.", extensionName, newVersion)
 		return extensionUpToDate, nil
 	}
 

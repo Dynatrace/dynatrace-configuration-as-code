@@ -20,13 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -47,7 +47,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	}
 
 	// create new context to carry logger
-	ctx = logr.NewContextWithSlogLogger(ctx, log.WithCtxFields(ctx).SLogger())
+	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
 	_, err := client.Upsert(ctx, bucketName, []byte(renderedConfig))
 	if err != nil {
 		var apiErr api.APIError

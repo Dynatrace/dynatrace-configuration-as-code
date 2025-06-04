@@ -37,7 +37,7 @@ type (
 )
 
 func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
-	log.WithCtxFields(ctx).InfoContext(ctx, "Downloading users")
+	log.InfoContext(ctx, "Downloading users")
 	dtos, err := a.httpClient.GetUsers(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a list of users for account %q from DT: %w", a.accountInfo, err)
@@ -45,7 +45,7 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 
 	retVal := make(Users, 0, len(dtos))
 	for i := range dtos {
-		log.WithCtxFields(ctx).DebugContext(ctx, "Downloading details for user %q", secret.Email(dtos[i].Email))
+		log.DebugContext(ctx, "Downloading details for user %q", secret.Email(dtos[i].Email))
 		dtoGroups, err := a.httpClient.GetGroupsForUser(ctx, dtos[i].Email, a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get a list of bind groups for user %q: %w", secret.Email(dtos[i].Email), err)
@@ -66,7 +66,7 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 		})
 	}
 
-	log.WithCtxFields(ctx).InfoContext(ctx, "Fetched %d users", len(retVal))
+	log.InfoContext(ctx, "Fetched %d users", len(retVal))
 	return retVal, nil
 }
 

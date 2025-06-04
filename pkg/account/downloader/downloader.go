@@ -43,7 +43,7 @@ func New(accountInfo *account.AccountInfo, client *accounts.Client) *Downloader 
 }
 
 func (a *Downloader) DownloadResources(ctx context.Context) (*account.Resources, error) {
-	log.WithCtxFields(ctx).InfoContext(ctx, "Starting download")
+	log.InfoContext(ctx, "Starting download")
 	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
 	tenants, err := a.environments(ctx)
 	if err != nil {

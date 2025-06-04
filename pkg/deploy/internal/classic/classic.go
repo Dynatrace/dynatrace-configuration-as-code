@@ -19,12 +19,12 @@ package classic
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -37,7 +37,7 @@ import (
 
 func Deploy(ctx context.Context, configClient client.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (entities.ResolvedEntity, error) {
 	// create new context to carry logger
-	ctx = logr.NewContextWithSlogLogger(ctx, log.WithCtxFields(ctx).SLogger())
+	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
 
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
