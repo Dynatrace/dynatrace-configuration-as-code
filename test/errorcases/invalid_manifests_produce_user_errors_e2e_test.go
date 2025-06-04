@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-package v2
+package errorcases
 
 import (
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/stretchr/testify/assert"
 
 	"path/filepath"
 	"strings"
@@ -58,7 +59,7 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			manifest := filepath.Join("test-resources/invalid-manifests/", tt.manifestFileName)
+			manifest := filepath.Join("testdata/invalid-manifests/", tt.manifestFileName)
 
 			logOutput := strings.Builder{}
 			cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
@@ -75,7 +76,7 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 }
 
 func TestNonExistentProjectInManifestReturnsError(t *testing.T) {
-	manifest := filepath.Join("test-resources/invalid-manifests/", "manifest_non_existent_project.yaml")
+	manifest := "testdata/invalid-manifests/manifest_non_existent_project.yaml"
 
 	logOutput := strings.Builder{}
 	cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
@@ -87,5 +88,4 @@ func TestNonExistentProjectInManifestReturnsError(t *testing.T) {
 	runLog := strings.ToLower(logOutput.String())
 	expectedErrorLog := "filepath `this_does_not_exist` does not exist"
 	assert.True(t, strings.Contains(runLog, expectedErrorLog), "Expected command output to contain: %s", expectedErrorLog)
-
 }

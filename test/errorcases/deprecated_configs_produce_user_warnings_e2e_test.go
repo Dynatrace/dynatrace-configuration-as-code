@@ -1,8 +1,8 @@
 //go:build integration
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,39 +16,38 @@
  * limitations under the License.
  */
 
-package v2
+package errorcases
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 )
 
-func TestDeprecatedSettingsSchemasProduceWarnings(t *testing.T) {
-	configFolder := "test-resources/deprecated-settings-schemas/"
+func TestDeprecatedConfigsProduceWarnings(t *testing.T) {
+	configFolder := "testdata/deprecated-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	Run(t, configFolder,
-		Options{
-			WithManifestPath(manifest),
-			WithSuffix("DeprecatedSchema"),
-		},
-		func(fs afero.Fs, _ TestContext) {
+	v2.Run(t, configFolder,
+		v2.Options{},
+		func(fs afero.Fs, _ v2.TestContext) {
 
 			logOutput := strings.Builder{}
 			cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 			cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 			err := cmd.Execute()
+			require.NoError(t, err)
 
-			assert.NoError(t, err)
-
-			runLog := strings.ToLower(logOutput.String())
-			assert.Regexp(t, ".*?warn.*?schema 'builtin:span-attribute' is deprecated.*?project:builtin:span-attribute:span-attr.*", runLog)
-			assert.Regexp(t, ".*?warn.*?schema 'builtin:span-event-attribute' is deprecated.*?project:builtin:span-event-attribute:span-event.*", runLog)
+			expectedRegexp := regexp.MustCompile(`API 'auto-tag' is deprecated. Please migrate to 'builtin:tags.auto-tagging'.`)
+			found := expectedRegexp.FindAllString(logOutput.String(), -1)
+			assert.Len(t, found, 1)
 		})
 }
