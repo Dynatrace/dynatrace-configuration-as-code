@@ -68,7 +68,7 @@ func preloadSettingsValuesForSchemaId(ctx context.Context, client client.Setting
 	if err := client.Cache(ctx, schemaId); err != nil {
 		message := fmt.Sprintf("Could not cache settings values for schema %s: %s", schemaId, err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportCaching(report.StateWarn, message)
-		log.Warn("%s", message)
+		log.WarnContext(ctx, "%s", message)
 		return
 	}
 	message := fmt.Sprintf("Cached settings values for schema %s", schemaId)
@@ -88,7 +88,7 @@ func preloadValuesForApi(ctx context.Context, client client.ConfigClient, theApi
 	if err != nil {
 		message := fmt.Sprintf("Could not cache values for API %s: %s", theApi, err)
 		report.GetReporterFromContextOrDiscard(ctx).ReportCaching(report.StateWarn, message)
-		log.Warn("%s", message)
+		log.WarnContext(ctx, "%s", message)
 		return
 	}
 	message := fmt.Sprintf("Cached values for API %s", theApi)

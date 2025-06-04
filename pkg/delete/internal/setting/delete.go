@@ -67,7 +67,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 
 		for _, settingsObject := range settingsObjects {
 			if !settingsObject.IsDeletable() {
-				logger.WithFields(field.F("object", settingsObject)).Warn("Requested settings object with ID %s is not deletable.", settingsObject.ObjectId)
+				logger.WithFields(field.F("object", settingsObject)).WarnContext(ctx, "Requested settings object with ID %s is not deletable.", settingsObject.ObjectId)
 				continue
 			}
 
