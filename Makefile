@@ -97,7 +97,7 @@ account-management-test: mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=account_integration -timeout=30m -v -race ./test/...
 
 clean-environments:
-	@MONACO_ENABLE_DANGEROUS_COMMANDS=1 go run ./cmd/monaco purge cmd/monaco/integrationtest/v2/test-resources/test_environments_manifest.yaml
+	@MONACO_ENABLE_DANGEROUS_COMMANDS=1 go run ./cmd/monaco purge test/cleanup/test_environments_manifest.yaml
 
 nightly-test:mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=nightly -timeout=240m -v -race ./...
