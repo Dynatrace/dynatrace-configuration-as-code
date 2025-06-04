@@ -44,35 +44,35 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 	errCount := 0
 
 	if clients.ConfigClient == nil {
-		log.Warn("Skipped deletion of classic configurations as API client was unavailable.")
+		log.WarnContext(ctx, "Skipped deletion of classic configurations as API client was unavailable.")
 	} else if err := classic.DeleteAll(ctx, clients.ConfigClient, apis); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all classic API configurations: %v", err)
 		errCount++
 	}
 
 	if clients.SettingsClient == nil {
-		log.Warn("Skipped deletion of settings configurations as API client was unavailable.")
+		log.WarnContext(ctx, "Skipped deletion of settings configurations as API client was unavailable.")
 	} else if err := setting.DeleteAll(ctx, clients.SettingsClient); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all Settings 2.0 objects: %v", err)
 		errCount++
 	}
 
 	if clients.AutClient == nil {
-		log.Warn("Skipped deletion of Automation configurations as API client was unavailable.")
+		log.WarnContext(ctx, "Skipped deletion of Automation configurations as API client was unavailable.")
 	} else if err := automation.DeleteAll(ctx, clients.AutClient); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all Automation configurations: %v", err)
 		errCount++
 	}
 
 	if clients.BucketClient == nil {
-		log.Warn("Skipped deletion of Grail Bucket configurations as API client was unavailable.")
+		log.WarnContext(ctx, "Skipped deletion of Grail Bucket configurations as API client was unavailable.")
 	} else if err := bucket.DeleteAll(ctx, clients.BucketClient); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all Grail Bucket configurations: %v", err)
 		errCount++
 	}
 
 	if clients.DocumentClient == nil {
-		log.Warn("Skipped deletion of Documents configurations as appropriate client was unavailable.")
+		log.WarnContext(ctx, "Skipped deletion of Documents configurations as appropriate client was unavailable.")
 	} else if err := document.DeleteAll(ctx, clients.DocumentClient); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all Document configurations: %v", err)
 		errCount++
@@ -80,7 +80,7 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 
 	if featureflags.Segments.Enabled() {
 		if clients.SegmentClient == nil {
-			log.Warn("Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
+			log.WarnContext(ctx, "Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
 		} else if err := segment.DeleteAll(ctx, clients.SegmentClient); err != nil {
 			log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.SegmentID, err)
 			errCount++
@@ -89,7 +89,7 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 
 	if featureflags.ServiceLevelObjective.Enabled() {
 		if clients.ServiceLevelObjectiveClient == nil {
-			log.Warn("Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
+			log.WarnContext(ctx, "Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
 		} else if err := slo.DeleteAll(ctx, clients.ServiceLevelObjectiveClient); err != nil {
 			log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.ServiceLevelObjective{}, err)
 			errCount++

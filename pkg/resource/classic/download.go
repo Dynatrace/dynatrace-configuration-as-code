@@ -127,7 +127,7 @@ func downloadConfigs(ctx context.Context, configSource downloadSource, api api.A
 
 			dlConfigs, err := download(ctx, configSource, api, v)
 			if err != nil {
-				log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Warn("Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
+				log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).WarnContext(ctx, "Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
 				return
 			}
 
@@ -138,7 +138,7 @@ func downloadConfigs(ctx context.Context, configSource downloadSource, api api.A
 
 				c, err := createConfigObject(dlConfig, api, v, projectName)
 				if err != nil {
-					log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).Warn("Error creating config for '%s' in api '%s': %v", v.value.Id, api.ID, err)
+					log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).WarnContext(ctx, "Error creating config for '%s' in api '%s': %v", v.value.Id, api.ID, err)
 					return
 				}
 

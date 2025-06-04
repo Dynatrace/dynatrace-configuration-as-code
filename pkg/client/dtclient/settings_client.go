@@ -394,7 +394,7 @@ func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, e
 	}
 
 	if result.TotalCount != len(result.Items) {
-		log.Warn("Total count of settings 2.0 schemas (=%d) does not match with count of actually downloaded settings 2.0 schemas (=%d)", result.TotalCount, len(result.Items))
+		log.WarnContext(ctx, "Total count of settings 2.0 schemas (=%d) does not match with count of actually downloaded settings 2.0 schemas (=%d)", result.TotalCount, len(result.Items))
 	}
 
 	return result.Items, nil
@@ -502,7 +502,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 			ooIdSetting = settings[0].ObjectId
 		}
 
-		log.WithCtxFields(ctx).Warn("Found two configs, one with the defined originObjectId (%q), and one with the expected monaco externalId (%q). Updating the one with the expected externalId.", ooIdSetting, exIdSetting)
+		log.WithCtxFields(ctx).WarnContext(ctx, "Found two configs, one with the defined originObjectId (%q), and one with the expected monaco externalId (%q). Updating the one with the expected externalId.", ooIdSetting, exIdSetting)
 		remoteObjectId = ""
 	}
 

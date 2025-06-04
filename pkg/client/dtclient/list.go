@@ -56,7 +56,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 		if err != nil {
 			var apiErr coreapi.APIError
 			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusBadRequest {
-				log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", endpoint, string(body))
+				log.WarnContext(ctx, "Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", endpoint, string(body))
 				break
 			}
 			return err
@@ -76,7 +76,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 		totalReceivedCount += receivedCount
 		nextPageKey, _ = getPaginationValues(body)
 		if nextPageKey == "" && totalReceivedCount != expectedTotalCount {
-			log.Warn("Total count of items from api: %v for: %s does not match with count of actually downloaded items. Expected: %d Got: %d, last next page key received: %s", endpoint, logLabel, expectedTotalCount, totalReceivedCount, nextPageKey)
+			log.WarnContext(ctx, "Total count of items from api: %v for: %s does not match with count of actually downloaded items. Expected: %d Got: %d, last next page key received: %s", endpoint, logLabel, expectedTotalCount, totalReceivedCount, nextPageKey)
 		}
 	}
 

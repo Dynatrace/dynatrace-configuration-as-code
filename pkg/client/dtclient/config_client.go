@@ -245,7 +245,7 @@ func (d *ConfigClient) UpsertByNonUniqueNameAndId(ctx context.Context, theApi ap
 	for _, e := range entitiesWithSameName {
 		msg.WriteString(fmt.Sprintf("\n\t- %s", e.Id))
 	}
-	log.WithCtxFields(ctx).Warn(msg.String(), len(entitiesWithSameName), theApi.ID, objectName, entityId, theApi.ID)
+	log.WithCtxFields(ctx).WarnContext(ctx, msg.String(), len(entitiesWithSameName), theApi.ID, objectName, entityId, theApi.ID)
 
 	return d.updateDynatraceObject(ctx, objectName, entityId, theApi, body)
 }
@@ -677,7 +677,7 @@ func (d *ConfigClient) List(ctx context.Context, theApi api.API) ([]Value, error
 		if err != nil {
 			apiError := coreapi.APIError{}
 			if errors.As(err, &apiError) && apiError.StatusCode == http.StatusBadRequest {
-				log.WithCtxFields(ctx).Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(apiError.Body))
+				log.WithCtxFields(ctx).WarnContext(ctx, "Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(apiError.Body))
 				break
 			}
 
@@ -702,7 +702,7 @@ func (d *ConfigClient) findUniqueByName(ctx context.Context, values []Value, obj
 	}
 
 	if matchingObjectsFound > 1 {
-		log.WithCtxFields(ctx).Warn("Found %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound, objectName)
+		log.WithCtxFields(ctx).WarnContext(ctx, "Found %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound, objectName)
 	}
 	return objectId
 }
@@ -710,7 +710,7 @@ func (d *ConfigClient) findUniqueByName(ctx context.Context, values []Value, obj
 func escapeApiValueName(ctx context.Context, value Value) string {
 	valueName, err := template.EscapeSpecialCharactersInValue(value.Name, template.FullStringEscapeFunction)
 	if err != nil {
-		log.WithCtxFields(ctx).Warn("failed to string escape API value '%s' while checking if object exists, check directly", value.Name)
+		log.WithCtxFields(ctx).WarnContext(ctx, "failed to string escape API value '%s' while checking if object exists, check directly", value.Name)
 		return value.Name
 	}
 	return valueName.(string)
@@ -737,7 +737,7 @@ func (d *ConfigClient) findUnique(ctx context.Context, values []Value, payload [
 	}
 
 	if matchingObjectsFound > 1 {
-		log.WithCtxFields(ctx).Warn("Found %d configs with the same name. Please delete duplicates.", matchingObjectsFound)
+		log.WithCtxFields(ctx).WarnContext(ctx, "Found %d configs with the same name. Please delete duplicates.", matchingObjectsFound)
 	}
 
 	return objectId, nil
@@ -876,7 +876,7 @@ func translateGenericValues(ctx context.Context, inputValues []interface{}, conf
 		if input["name"] == nil {
 			jsonStr, err := json.Marshal(input)
 			if err != nil {
-				log.WithCtxFields(ctx).Warn("Config of type %s was invalid. Ignoring it!", configType)
+				log.WithCtxFields(ctx).WarnContext(ctx, "Config of type %s was invalid. Ignoring it!", configType)
 				continue
 			}
 

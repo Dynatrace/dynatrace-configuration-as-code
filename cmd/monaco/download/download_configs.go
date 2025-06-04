@@ -166,7 +166,7 @@ func doDownloadConfigs(ctx context.Context, fs afero.Fs, clientSet *client.Clien
 
 		err := escapeGoTemplating(&c)
 		if err != nil {
-			log.WithFields(field.Coordinate(c.Coordinate), field.Error(err)).Warn("Failed to escape Go templating expressions. Template needs manual adaptation: %s", err)
+			log.WithFields(field.Coordinate(c.Coordinate), field.Error(err)).WarnContext(ctx, "Failed to escape Go templating expressions. Template needs manual adaptation: %s", err)
 		}
 	}
 
