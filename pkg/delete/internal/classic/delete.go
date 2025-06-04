@@ -144,14 +144,14 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 		if a.HasParent() {
 			logger.Debug("Skipping %q, will be deleted by the parent api %q", a.ID, a.Parent)
 		}
-		logger.Info("Collecting configs of type %q...", a.ID)
+		logger.InfoContext(ctx, "Collecting configs of type %q...", a.ID)
 		values, err := client.List(ctx, a)
 		if err != nil {
 			errs++
 			continue
 		}
 
-		logger.Info("Deleting %d configs of type %q...", len(values), a.ID)
+		logger.InfoContext(ctx, "Deleting %d configs of type %q...", len(values), a.ID)
 
 		for _, v := range values {
 			logger := logger.WithFields(field.F("value", v))

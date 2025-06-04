@@ -48,7 +48,7 @@ func Delete(ctx context.Context, environments manifest.EnvironmentDefinitionsByN
 			return fmt.Errorf("failed to create API client for environment %q due to the following error: %w", env.Name, err)
 		}
 
-		log.WithCtxFields(ctx).Info("Deleting configs for environment %q...", env.Name)
+		log.WithCtxFields(ctx).InfoContext(ctx, "Deleting configs for environment %q...", env.Name)
 
 		if err := delete.Configs(ctx, *clientSet, entriesToDelete); err != nil {
 			log.ErrorContext(ctx, "Failed to delete all configurations from environment %q - check log for details", env.Name)

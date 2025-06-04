@@ -43,7 +43,7 @@ func NewDownloadAPI(source downloadSource) *DownloadAPI {
 }
 
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading openpipelines")
+	log.InfoContext(ctx, "Downloading openpipelines")
 	result := project.ConfigsPerType{string(config.OpenPipelineTypeID): nil}
 	all, err := a.openPipelineSource.GetAll(ctx)
 	if err != nil {

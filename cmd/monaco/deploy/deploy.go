@@ -90,7 +90,7 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 		return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
 	}
 
-	log.Info("%s finished without errors", logging.GetOperationNounForLogging(dryRun))
+	log.InfoContext(ctx, "%s finished without errors", logging.GetOperationNounForLogging(dryRun))
 	return nil
 }
 

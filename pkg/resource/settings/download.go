@@ -66,7 +66,7 @@ func NewDownloadAPI(settingsSource downloadSource, filters Filters, specificSche
 }
 
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading settings objects")
+	log.InfoContext(ctx, "Downloading settings objects")
 	if len(a.specificSchemas) == 0 {
 		return downloadAll(ctx, a.settingsSource, projectName, a.filters)
 	}
@@ -184,9 +184,9 @@ func download(ctx context.Context, settingsSource downloadSource, schemas []sche
 			case 0:
 				lg.Debug("Did not find any settings to download for schema '%s'", s.id)
 			case len(cfgs):
-				lg.Info("Downloaded %d settings for schema '%s'", len(cfgs), s.id)
+				lg.InfoContext(ctx, "Downloaded %d settings for schema '%s'", len(cfgs), s.id)
 			default:
-				lg.Info("Downloaded %d settings for schema '%s'. Skipped persisting %d unmodifiable setting(s)", len(cfgs), s.id, len(objects)-len(cfgs))
+				lg.InfoContext(ctx, "Downloaded %d settings for schema '%s'. Skipped persisting %d unmodifiable setting(s)", len(cfgs), s.id, len(objects)-len(cfgs))
 			}
 		}(sc)
 	}

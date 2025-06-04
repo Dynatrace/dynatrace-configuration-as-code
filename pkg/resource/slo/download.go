@@ -43,7 +43,7 @@ func NewDownloadAPI(sloSource downloadSource) *DownloadAPI {
 }
 
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading SLO-V2")
+	log.InfoContext(ctx, "Downloading SLO-V2")
 	result := project.ConfigsPerType{}
 	downloadedConfigs, err := a.sloSource.List(ctx)
 	if err != nil {

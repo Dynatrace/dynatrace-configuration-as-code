@@ -145,14 +145,14 @@ func doDownloadConfigs(ctx context.Context, fs afero.Fs, clientSet *client.Clien
 		return err
 	}
 
-	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentURL.Value, opts.projectName)
+	log.InfoContext(ctx, "Downloading from environment '%v' into project '%v'", opts.environmentURL.Value, opts.projectName)
 	downloadedConfigs, err := downloadConfigs(ctx, clientSet, apisToDownload, opts)
 	if err != nil {
 		return err
 	}
 
 	if len(downloadedConfigs) == 0 {
-		log.Info("No configurations downloaded. No project will be created.")
+		log.InfoContext(ctx, "No configurations downloaded. No project will be created.")
 		return nil
 	}
 
@@ -170,13 +170,13 @@ func doDownloadConfigs(ctx context.Context, fs afero.Fs, clientSet *client.Clien
 		}
 	}
 
-	log.Info("Resolving dependencies between configurations")
+	log.InfoContext(ctx, "Resolving dependencies between configurations")
 	downloadedConfigs, err = dependency_resolution.ResolveDependencies(downloadedConfigs)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Extracting additional identifiers into YAML parameters")
+	log.InfoContext(ctx, "Extracting additional identifiers into YAML parameters")
 	// must happen after dep-resolution, as it removes IDs from the JSONs in which the dep-resolution searches as well
 	downloadedConfigs, err = id_extraction.ExtractIDsIntoYAML(downloadedConfigs)
 	if err != nil {
