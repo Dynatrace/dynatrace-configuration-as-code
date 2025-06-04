@@ -22,7 +22,6 @@ import (
 	"os"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
 // Slogger is a simple logger that wraps an `slog.Logger`.
@@ -90,23 +89,4 @@ func (w *Slogger) WithFields(fields ...field.Field) *Slogger {
 // It accepts vararg fields and should not be called more than once per log call
 func WithFields(fields ...field.Field) *Slogger {
 	return (&Slogger{Logger: slog.Default()}).WithFields(fields...)
-}
-
-// WithCtxFields creates a logger instance with preset structured logging [field.Field] based on the Context
-// Coordinate (via [CtxKeyCoord]) and environment (via [CtxKeyEnv] [CtxValEnv]) information is added to logs from the Context
-func WithCtxFields(ctx context.Context) *Slogger {
-	f := make([]field.Field, 0, 2)
-	if c, ok := ctx.Value(CtxKeyCoord{}).(coordinate.Coordinate); ok {
-		f = append(f, field.Coordinate(c))
-	}
-	if e, ok := ctx.Value(CtxKeyEnv{}).(CtxValEnv); ok {
-		f = append(f, field.Environment(e.Name, e.Group))
-	}
-	if a, ok := ctx.Value(CtxKeyAccount{}).(string); ok {
-		f = append(f, field.F("account", a))
-	}
-	if c, ok := ctx.Value(CtxGraphComponentId{}).(CtxValGraphComponentId); ok {
-		f = append(f, field.F("gid", c))
-	}
-	return WithFields(f...)
 }

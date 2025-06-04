@@ -59,7 +59,7 @@ func (e Environments) getMzoneName(originID string) string {
 }
 
 func (a *Downloader) environments(ctx context.Context) (Environments, error) {
-	log.WithCtxFields(ctx).InfoContext(ctx, "Fetching environments")
+	log.InfoContext(ctx, "Fetching environments")
 
 	envDTOs, mzoneDTOs, err := a.httpClient.GetEnvironmentsAndMZones(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
@@ -73,7 +73,7 @@ func (a *Downloader) environments(ctx context.Context) (Environments, error) {
 		retVal = append(retVal, e)
 	}
 
-	log.WithCtxFields(ctx).InfoContext(ctx, "Fetched environments: %q", retVal)
+	log.InfoContext(ctx, "Fetched environments: %q", retVal)
 	return retVal, nil
 }
 
