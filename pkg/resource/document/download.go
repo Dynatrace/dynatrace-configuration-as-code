@@ -72,7 +72,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 }
 
 func downloadDocumentsOfType(ctx context.Context, documentSource downloadSource, projectName string, documentType string) []config.Config {
-	log.WithFields(field.Type("document")).Debug("Downloading documents of type '%s'", documentType)
+	log.WithFields(field.Type("document")).DebugContext(ctx, "Downloading documents of type '%s'", documentType)
 
 	listResponse, err := documentSource.List(ctx, fmt.Sprintf("type=='%s'", documentType))
 	if err != nil {
@@ -96,7 +96,7 @@ func downloadDocumentsOfType(ctx context.Context, documentSource downloadSource,
 		configs = append(configs, cfg)
 	}
 
-	log.WithFields(field.Type("document")).Debug("Downloaded %d documents of type '%s'", len(configs), documentType)
+	log.WithFields(field.Type("document")).DebugContext(ctx, "Downloaded %d documents of type '%s'", len(configs), documentType)
 
 	return configs
 }

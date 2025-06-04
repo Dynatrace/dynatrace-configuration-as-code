@@ -58,13 +58,13 @@ func NewDownloadAPI(configSource downloadSource, apisToDownload api.APIs, filter
 
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	log.InfoContext(ctx, "Downloading configuration objects")
-	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(a.apisToDownload), "\n - "))
+	log.DebugContext(ctx, "APIs to download: \n - %v", strings.Join(maps.Keys(a.apisToDownload), "\n - "))
 	results := make(project.ConfigsPerType, len(a.apisToDownload))
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	wg.Add(len(a.apisToDownload))
 
-	log.Debug("Fetching configs to download")
+	log.DebugContext(ctx, "Fetching configs to download")
 	startTime := time.Now()
 	for _, currentApi := range a.apisToDownload {
 		go func() {
@@ -80,11 +80,11 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 			foundValues = filterConfigsToSkip(currentApi, foundValues, a.filters)
 			if len(foundValues) == 0 {
-				log.WithFields(field.Type(currentApi.ID)).Debug("No configs of type '%s' to download", currentApi.ID)
+				log.WithFields(field.Type(currentApi.ID)).DebugContext(ctx, "No configs of type '%s' to download", currentApi.ID)
 				return
 			}
 
-			log.WithFields(field.Type(currentApi.ID)).Debug("Found %d configs of type '%s' to download", len(foundValues), currentApi.ID)
+			log.WithFields(field.Type(currentApi.ID)).DebugContext(ctx, "Found %d configs of type '%s' to download", len(foundValues), currentApi.ID)
 			if configs := downloadConfigs(ctx, a.configSource, currentApi, foundValues, projectName, a.filters); len(configs) > 0 {
 				mutex.Lock()
 				results[currentApi.ID] = configs
@@ -94,7 +94,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	}
 	wg.Wait()
 	duration := time.Since(startTime).Truncate(1 * time.Second)
-	log.Debug("Finished fetching all configs in %v", duration)
+	log.DebugContext(ctx, "Finished fetching all configs in %v", duration)
 
 	return results, nil
 }
@@ -148,7 +148,7 @@ func downloadConfigs(ctx context.Context, configSource downloadSource, api api.A
 				}
 
 				if !shouldPersist(api, content, filters) {
-					log.Debug("\tSkipping persisting config %v (%v) in API %v", v.value.Id, v.value.Name, api.ID)
+					log.DebugContext(ctx, "\tSkipping persisting config %v (%v) in API %v", v.value.Id, v.value.Name, api.ID)
 					continue
 				}
 
@@ -183,13 +183,13 @@ func (v value) id() string {
 // the given API
 func findConfigsToDownload(ctx context.Context, configSource downloadSource, apiToDownload api.API, filters ContentFilters) (values, error) {
 	if apiToDownload.SingleConfiguration && !apiToDownload.HasParent() {
-		log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching singleton-configuration '%v'", apiToDownload.ID)
+		log.WithFields(field.Type(apiToDownload.ID)).DebugContext(ctx, "\tFetching singleton-configuration '%v'", apiToDownload.ID)
 
 		// singleton-config. We use the api-id as mock-id
 		singletonConfigToDownload := dtclient.Value{Id: apiToDownload.ID, Name: apiToDownload.ID}
 		return values{{value: singletonConfigToDownload}}, nil
 	}
-	log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching all '%v' configs", apiToDownload.ID)
+	log.WithFields(field.Type(apiToDownload.ID)).DebugContext(ctx, "\tFetching all '%v' configs", apiToDownload.ID)
 
 	if apiToDownload.HasParent() {
 		var res values

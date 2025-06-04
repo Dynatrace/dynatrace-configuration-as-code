@@ -42,14 +42,14 @@ func (a *Downloader) policies(ctx context.Context) (Policies, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a list of policies for account %q from DT: %w", a.accountInfo, err)
 	}
-	log.WithCtxFields(ctx).Debug("Downloaded %d policies (global + custom)", len(dtos))
+	log.WithCtxFields(ctx).DebugContext(ctx, "Downloaded %d policies (global + custom)", len(dtos))
 
 	retVal := make(Policies, 0, len(dtos))
 	for i := range dtos {
 		var dtoDef *accountmanagement.LevelPolicyDto
 		var p *account.Policy
 		if isCustom(dtos[i]) {
-			log.WithCtxFields(ctx).Debug("Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid)
+			log.WithCtxFields(ctx).DebugContext(ctx, "Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid)
 			dtoDef, err = a.httpClient.GetPolicyDefinition(ctx, dtos[i])
 			if err != nil {
 				return nil, fmt.Errorf("failed to get the definition for the policy %q (uuid: %q) from DT: %w", dtos[i].Name, dtos[i].Uuid, err)

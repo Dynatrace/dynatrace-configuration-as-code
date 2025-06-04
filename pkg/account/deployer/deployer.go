@@ -168,7 +168,7 @@ func (d *AccountDeployer) updateBindings(ctx context.Context, res *account.Resou
 }
 
 func (d *AccountDeployer) fetchGlobalPolicies(ctx context.Context) error {
-	d.logger.Debug("Getting existing global policies")
+	d.logger.DebugContext(ctx, "Getting existing global policies")
 	deployedPolicies, err := d.accClient.getGlobalPolicies(d.logCtx(ctx))
 	if err != nil {
 		return err
@@ -178,7 +178,7 @@ func (d *AccountDeployer) fetchGlobalPolicies(ctx context.Context) error {
 }
 
 func (d *AccountDeployer) fetchManagementZones(ctx context.Context) error {
-	d.logger.Debug("Getting existing management zones")
+	d.logger.DebugContext(ctx, "Getting existing management zones")
 	deployedMgmtZones, err := d.accClient.getManagementZones(d.logCtx(ctx))
 	if err != nil {
 		return err
@@ -188,7 +188,7 @@ func (d *AccountDeployer) fetchManagementZones(ctx context.Context) error {
 }
 
 func (d *AccountDeployer) fetchGroups(ctx context.Context) error {
-	d.logger.Debug("Getting existing groups")
+	d.logger.DebugContext(ctx, "Getting existing groups")
 	deployedGroups, err := d.accClient.getAllGroups(d.logCtx(ctx))
 	if err != nil {
 		return err
@@ -374,7 +374,7 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 		return fmt.Errorf("failed to fetch policies for group %s: %w", group.Name, err)
 	}
 
-	d.logger.Debug("Updating account level policy bindings for group with ID %s --> %v", remoteGroupId, accPolicyUuids)
+	d.logger.DebugContext(ctx, "Updating account level policy bindings for group with ID %s --> %v", remoteGroupId, accPolicyUuids)
 	if err = d.accClient.updateAccountPolicyBindings(ctx, remoteGroupId, accPolicyUuids); err != nil {
 		return fmt.Errorf("failed to update group-account-policy bindings for group %s: %w", group.Name, err)
 	}
@@ -385,12 +385,12 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 	}
 
 	if len(envPolicyUuids) == 0 {
-		d.logger.Debug("Deleting all policy bindings of group with ID %s", remoteGroupId)
+		d.logger.DebugContext(ctx, "Deleting all policy bindings of group with ID %s", remoteGroupId)
 		return d.accClient.deleteAllEnvironmentPolicyBindings(ctx, remoteGroupId)
 	}
 
 	for env, uuids := range envPolicyUuids {
-		d.logger.WithFields().Debug("Updating environment level policy bindings for group with ID %s and environment with name %s --> %v", remoteGroupId, env, uuids)
+		d.logger.WithFields().DebugContext(ctx, "Updating environment level policy bindings for group with ID %s and environment with name %s --> %v", remoteGroupId, env, uuids)
 		if err = d.accClient.updateEnvironmentPolicyBindings(ctx, env, remoteGroupId, uuids); err != nil {
 			return fmt.Errorf("failed to update group-environment-policy bindings for group %s and environment %s: %w", group.Name, env, err)
 		}
@@ -460,7 +460,7 @@ func (d *AccountDeployer) updateGroupPermissions(ctx context.Context, group acco
 		return fmt.Errorf("no group UUID found to update group <--> permissions bindings %s", group.ID)
 	}
 
-	d.logger.Debug("Updating permissions for group with ID %s --> %v", remoteGroupId, allPermissions)
+	d.logger.DebugContext(ctx, "Updating permissions for group with ID %s --> %v", remoteGroupId, allPermissions)
 	if err := d.accClient.updatePermissions(ctx, remoteGroupId, allPermissions); err != nil {
 		return fmt.Errorf("unable to update group %s: %w", group.ID, err)
 	}

@@ -45,7 +45,7 @@ func (a *Downloader) users(ctx context.Context, groups Groups) (Users, error) {
 
 	retVal := make(Users, 0, len(dtos))
 	for i := range dtos {
-		log.WithCtxFields(ctx).Debug("Downloading details for user %q", secret.Email(dtos[i].Email))
+		log.WithCtxFields(ctx).DebugContext(ctx, "Downloading details for user %q", secret.Email(dtos[i].Email))
 		dtoGroups, err := a.httpClient.GetGroupsForUser(ctx, dtos[i].Email, a.accountInfo.AccountUUID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get a list of bind groups for user %q: %w", secret.Email(dtos[i].Email), err)

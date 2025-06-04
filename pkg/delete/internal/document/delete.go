@@ -66,7 +66,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 	}
 
 	if id == "" {
-		logger.Debug("no action needed")
+		logger.DebugContext(ctx, "no action needed")
 		return nil
 	}
 
@@ -75,7 +75,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
 
-	logger.Debug("Config with ID '%s' successfully deleted", id)
+	logger.DebugContext(ctx, "Config with ID '%s' successfully deleted", id)
 	return nil
 }
 

@@ -110,8 +110,8 @@ func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
 		projects[proj.Name] = proj
 	}
 
-	log.Debug("Deploying to accounts: %q", maps.Keys(accounts))
-	log.Debug("Deploying projects: %q", maps.Keys(projects))
+	log.DebugContext(ctx, "Deploying to accounts: %q", maps.Keys(accounts))
+	log.DebugContext(ctx, "Deploying projects: %q", maps.Keys(projects))
 
 	resources, err := loader.LoadResources(fs, opts.workingDir, projects)
 	if err != nil {

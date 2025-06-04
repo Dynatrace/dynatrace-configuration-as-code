@@ -85,7 +85,7 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 	if configName, err := extract.ConfigName(c, properties); err == nil {
 		name = configName
 	} else {
-		log.WithCtxFields(ctx).Debug("failed to extract name for Settings 2.0 object %q - ID will be used", dtEntity.Id)
+		log.WithCtxFields(ctx).DebugContext(ctx, "failed to extract name for Settings 2.0 object %q - ID will be used", dtEntity.Id)
 	}
 
 	properties[config.IdParameter], err = getEntityID(c, dtEntity)

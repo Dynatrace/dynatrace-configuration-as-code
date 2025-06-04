@@ -222,7 +222,7 @@ func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds 
 
 func findSimpleClassicURL(ctx context.Context, platformURL string) (classicUrl string, ok bool) {
 	if !strings.Contains(platformURL, ".apps.") {
-		log.Debug("Environment URL not matching expected Platform URL pattern, unable to build Classic environment URL directly.")
+		log.DebugContext(ctx, "Environment URL not matching expected Platform URL pattern, unable to build Classic environment URL directly.")
 		return "", false
 	}
 
@@ -235,7 +235,7 @@ func findSimpleClassicURL(ctx context.Context, platformURL string) (classicUrl s
 	}
 
 	if classicheartbeat.TestClassic(ctx, *client) {
-		log.Debug("Found classic environment URL based on Platform URL: %s", classicUrl)
+		log.DebugContext(ctx, "Found classic environment URL based on Platform URL: %s", classicUrl)
 		return classicUrl, true
 	}
 

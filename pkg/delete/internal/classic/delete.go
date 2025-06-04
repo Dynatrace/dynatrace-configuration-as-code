@@ -46,7 +46,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 				err = errors.Join(err, e)
 				continue
 			} else if parentID == "" {
-				log.Debug("parent doesn't exist - no need for action")
+				log.DebugContext(ctx, "parent doesn't exist - no need for action")
 				continue
 			}
 		}
@@ -60,7 +60,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 				err = errors.Join(err, e)
 				continue
 			} else if id == "" {
-				log.Debug("config doesn't exist - no need for action")
+				log.DebugContext(ctx, "config doesn't exist - no need for action")
 				continue
 			}
 		}
@@ -69,7 +69,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 			log.WithFields(field.Error(e)).ErrorContext(ctx, "failed to delete config: %v", e)
 			err = errors.Join(err, e)
 		}
-		log.Debug("successfully deleted")
+		log.DebugContext(ctx, "successfully deleted")
 	}
 	return err
 }
@@ -142,7 +142,7 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 	for _, a := range apis {
 		logger := log.WithCtxFields(ctx).WithFields(field.Type(a.ID))
 		if a.HasParent() {
-			logger.Debug("Skipping %q, will be deleted by the parent api %q", a.ID, a.Parent)
+			logger.DebugContext(ctx, "Skipping %q, will be deleted by the parent api %q", a.ID, a.Parent)
 		}
 		logger.InfoContext(ctx, "Collecting configs of type %q...", a.ID)
 		values, err := client.List(ctx, a)
@@ -155,7 +155,7 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 
 		for _, v := range values {
 			logger := logger.WithFields(field.F("value", v))
-			logger.Debug("Deleting config %s:%s...", a.ID, v.Id)
+			logger.DebugContext(ctx, "Deleting config %s:%s...", a.ID, v.Id)
 			err := client.Delete(ctx, a, v.Id)
 
 			if err != nil {

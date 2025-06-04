@@ -75,7 +75,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 }
 
 func downloadAll(ctx context.Context, settingsSource downloadSource, projectName string, filters Filters) (project.ConfigsPerType, error) {
-	log.Debug("Fetching all schemas to download")
+	log.DebugContext(ctx, "Fetching all schemas to download")
 	schemas, err := fetchAllSchemas(ctx, settingsSource)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func downloadSpecific(ctx context.Context, settingsSource downloadSource, projec
 		return nil, err
 	}
 
-	log.Debug("Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
+	log.DebugContext(ctx, "Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
 	result := download(ctx, settingsSource, schemas, projectName, filters)
 	return result, nil
 }
@@ -155,7 +155,7 @@ func download(ctx context.Context, settingsSource downloadSource, schemas []sche
 
 			lg := log.WithFields(field.Type(s.id))
 
-			lg.Debug("Downloading all settings for schema '%s'", s.id)
+			lg.DebugContext(ctx, "Downloading all settings for schema '%s'", s.id)
 			objects, err := settingsSource.List(ctx, s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				errMsg := extractApiErrorMessage(err)
@@ -182,7 +182,7 @@ func download(ctx context.Context, settingsSource downloadSource, schemas []sche
 			lg = lg.WithFields(field.F("configsDownloaded", len(cfgs)))
 			switch len(objects) {
 			case 0:
-				lg.Debug("Did not find any settings to download for schema '%s'", s.id)
+				lg.DebugContext(ctx, "Did not find any settings to download for schema '%s'", s.id)
 			case len(cfgs):
 				lg.InfoContext(ctx, "Downloaded %d settings for schema '%s'", len(cfgs), s.id)
 			default:

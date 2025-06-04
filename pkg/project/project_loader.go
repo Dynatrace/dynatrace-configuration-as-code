@@ -177,7 +177,7 @@ func loadProject(ctx context.Context, fs afero.Fs, loaderContext ProjectLoaderCo
 		return Project{}, []error{formattedErr}
 	}
 
-	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
+	log.DebugContext(ctx, "Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
 	configs, errs := loadConfigsOfProject(ctx, fs, loaderContext, projectDefinition, environments)
 	for _, err := range errs {
@@ -314,7 +314,7 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 	loaderContext := newLoaderContext(loadingContext, projectDefinition, environments)
 
 	for _, file := range configFiles {
-		log.WithFields(field.F("file", file)).Debug("Loading configuration file %s", file)
+		log.WithFields(field.F("file", file)).DebugContext(ctx, "Loading configuration file %s", file)
 		loadedConfigs, configErrs := loader.LoadConfigFile(ctx, fs, loaderContext, file)
 
 		errs = append(errs, configErrs...)
