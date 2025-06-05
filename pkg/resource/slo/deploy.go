@@ -119,14 +119,6 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	return createResolveEntity(response.ID, properties, c), nil
 }
 
-func (d DeployAPI) Cache(_ config.Type, _ string) {
-	// no-op
-}
-
-func (d DeployAPI) ClearCache() {
-	// no-op
-}
-
 func addExternalIdAndValidate(externalId string, renderedConfig string) ([]byte, error) {
 	var request map[string]any
 	err := json.Unmarshal([]byte(renderedConfig), &request)

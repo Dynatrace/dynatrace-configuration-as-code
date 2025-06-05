@@ -35,9 +35,11 @@ type Deployable interface {
 	VerifyConfigs(configs []config.Config) (bool, error)
 	// Deploy deploys a given resource and returns the resolved entity
 	Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error)
+}
 
-	// Cache caches any needed data for a given configType and identifier (schema, api)
-	Cache(c config.Type, identifier string)
+type Cachable interface {
+	// Cache caches any needed data for a given configType
+	Cache(c config.Type)
 	// ClearCache Clears the cache that is filled by Cache
 	ClearCache()
 }
