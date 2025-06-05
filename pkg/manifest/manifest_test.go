@@ -383,3 +383,33 @@ environmentGroups:
 		})
 	}
 }
+
+func TestAuth_CheckPlatformSet(t *testing.T) {
+	oAuth := manifest.Auth{
+		OAuth: &manifest.OAuth{
+			ClientID:     manifest.AuthSecret{},
+			ClientSecret: manifest.AuthSecret{},
+		},
+	}
+	tokenAuth := manifest.Auth{
+		Token: &manifest.AuthSecret{},
+	}
+	noAuth := manifest.Auth{}
+	multiAuth := manifest.Auth{
+		OAuth: &manifest.OAuth{
+			ClientID:     manifest.AuthSecret{},
+			ClientSecret: manifest.AuthSecret{},
+		},
+		Token: &manifest.AuthSecret{},
+	}
+
+	t.Run("returns an error if OAuth is not set", func(t *testing.T) {
+		assert.Error(t, tokenAuth.CheckPlatformSet())
+		assert.Error(t, noAuth.CheckPlatformSet())
+	})
+
+	t.Run("returns nil if OAuth is set", func(t *testing.T) {
+		assert.NoError(t, oAuth.CheckPlatformSet())
+		assert.NoError(t, multiAuth.CheckPlatformSet())
+	})
+}

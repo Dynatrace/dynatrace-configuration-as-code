@@ -151,3 +151,11 @@ type Manifest struct {
 	// Accounts holds all accounts defined in the manifest. Key is the user-defined account name.
 	Accounts map[string]Account
 }
+
+// CheckPlatformSet checks if some credentials for a Platform environment are set.
+func (a Auth) CheckPlatformSet() error {
+	if a.OAuth == nil {
+		return fmt.Errorf("no OAuth defined in manifest")
+	}
+	return nil
+}

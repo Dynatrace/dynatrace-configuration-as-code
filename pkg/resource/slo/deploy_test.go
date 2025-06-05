@@ -28,11 +28,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/slo"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
 type testClient struct {
@@ -205,8 +207,9 @@ func TestDeploySuccess(t *testing.T) {
 
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
+			deployable := slo.NewDeployable(&c)
 
-			resolvedEntity, err := slo.Deploy(t.Context(), &c, props, "{}", &tt.inputConfig)
+			resolvedEntity, err := deployable.Deploy(t.Context(), props, "{}", &tt.inputConfig)
 
 			assert.NoError(t, err)
 			assert.Equal(t, resolvedEntity, tt.expected)
@@ -436,8 +439,76 @@ func TestDeployErrors(t *testing.T) {
 
 			templateContent, contentErr := tt.inputConfig.Template.Content()
 			assert.NoError(t, contentErr)
-			_, err := slo.Deploy(t.Context(), &c, props, templateContent, &tt.inputConfig)
+
+			deployable := slo.NewDeployable(&c)
+
+			_, err := deployable.Deploy(t.Context(), props, templateContent, &tt.inputConfig)
 			assert.Error(t, err)
 		})
 	}
+}
+
+func TestVerify(t *testing.T) {
+	validEnv := manifest.EnvironmentDefinition{
+		Name: "env",
+		Auth: manifest.Auth{
+			OAuth: &manifest.OAuth{
+				ClientID:     manifest.AuthSecret{},
+				ClientSecret: manifest.AuthSecret{},
+			},
+		},
+	}
+	invalidEnv := manifest.EnvironmentDefinition{
+		Name: "env",
+		Auth: manifest.Auth{
+			Token: &manifest.AuthSecret{},
+		},
+	}
+	validConfigs := []config.Config{
+		{
+			Type: config.ServiceLevelObjective{},
+		},
+	}
+	invalidConfigs := []config.Config{
+		{
+			Type: config.Segment{},
+		},
+	}
+	deployable := slo.NewDeployable(nil)
+
+	t.Run("returns false if FF is not enabled", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "false")
+
+		assert.False(t, deployable.Enabled())
+	})
+	t.Run("returns true if FF is enabled", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
+
+		assert.True(t, deployable.Enabled())
+	})
+
+	t.Run("returns false if configs don't contain SLOs", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
+
+		hasConfigs, err := deployable.VerifyConfigs(invalidConfigs)
+
+		assert.NoError(t, err)
+		assert.False(t, hasConfigs)
+	})
+
+	t.Run("returns error if platform connection is not set", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
+
+		err := deployable.VerifyAuth(invalidEnv, validConfigs)
+
+		assert.Error(t, err)
+	})
+
+	t.Run("returns no error if platform connection is set", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
+
+		err := deployable.VerifyAuth(validEnv, validConfigs)
+
+		assert.NoError(t, err)
+	})
 }
