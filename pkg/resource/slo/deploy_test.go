@@ -478,24 +478,19 @@ func TestVerify(t *testing.T) {
 
 	t.Run("returns false if FF is not enabled", func(t *testing.T) {
 		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "false")
-		hasConfigs, err := deployable.Verify(validEnv, validConfigs)
 
-		assert.NoError(t, err)
-		assert.False(t, hasConfigs)
+		assert.False(t, deployable.Enabled())
 	})
 	t.Run("returns true if FF is enabled", func(t *testing.T) {
 		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
-		hasConfigs, err := deployable.Verify(validEnv, validConfigs)
-
-		assert.NoError(t, err)
-		assert.True(t, hasConfigs)
+		assert.True(t, deployable.Enabled())
 	})
 
 	t.Run("returns false if configs don't contain SLOs", func(t *testing.T) {
 		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
-		hasConfigs, err := deployable.Verify(validEnv, invalidConfigs)
+		hasConfigs, err := deployable.VerifyConfigs(invalidConfigs)
 
 		assert.NoError(t, err)
 		assert.False(t, hasConfigs)
@@ -504,10 +499,16 @@ func TestVerify(t *testing.T) {
 	t.Run("returns error if platform connection is not set", func(t *testing.T) {
 		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
-		hasConfigs, err := deployable.Verify(invalidEnv, validConfigs)
+		err := deployable.VerifyAuth(invalidEnv, validConfigs)
 
 		assert.Error(t, err)
-		assert.True(t, hasConfigs)
 	})
 
+	t.Run("returns no error if platform connection is set", func(t *testing.T) {
+		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
+
+		err := deployable.VerifyAuth(validEnv, validConfigs)
+
+		assert.NoError(t, err)
+	})
 }

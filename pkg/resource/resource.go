@@ -27,11 +27,12 @@ import (
 )
 
 type Deployable interface {
-	// Verify verifies given auth types and configs:
-	// 1. if the needed Auth is set (OAuth/token/platform)
-	// 2. if the needed Auth for a certain config is set (e.g., permissions in settings require a platform connection)
-	// 3. if the configs are valid (e.g., open pipeline: only one kind in one environment)
-	Verify(ev manifest.EnvironmentDefinition, cfg []config.Config) (bool, error)
+	// Enabled returns true if the Resource is enabled (FF is not false)
+	Enabled() bool
+	// VerifyAuth checks if the needed auth for the given configs is set (classic/platform)
+	VerifyAuth(auth manifest.EnvironmentDefinition, configs []config.Config) error
+	// VerifyConfigs checks if the given configs are valid for a resource (e.g., open pipeline: only one kind in one environment)
+	VerifyConfigs(configs []config.Config) (bool, error)
 	// Deploy deploys a given resource and returns the resolved entity
 	Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error)
 
@@ -58,17 +59,4 @@ func CheckPlatformSetInManifest(ev manifest.EnvironmentDefinition, c config.Type
 		return fmt.Errorf("API of type '%s' for environment '%s' requires platform authentication: %w", c, ev.Name, err)
 	}
 	return nil
-}
-
-// DefaultPlatformVerify returns if there are any configs to a given type and sets an error in case platform auth is not set
-// if there aren't any related configs, the auth is not validated
-func DefaultPlatformVerify(ev manifest.EnvironmentDefinition, configs []config.Config, cfg config.TypeID) (bool, error) {
-	hasConfigs := HasConfigType(configs, cfg)
-	if !hasConfigs {
-		return hasConfigs, nil
-	}
-	if err := CheckPlatformSetInManifest(ev, cfg); err != nil {
-		return hasConfigs, err
-	}
-	return hasConfigs, nil
 }

@@ -83,27 +83,3 @@ func TestHasConfigType(t *testing.T) {
 		assert.False(t, hasConfigs)
 	})
 }
-
-func TestDefaultPlatformVerify(t *testing.T) {
-	t.Run("returns false and no error if there aren't any related configs even if auth is invalid", func(t *testing.T) {
-		hasConfigs, err := resource.DefaultPlatformVerify(tokenEnv, sloConfigs, config.SegmentID)
-
-		assert.NoError(t, err)
-		assert.False(t, hasConfigs)
-		assert.Error(t, resource.CheckPlatformSetInManifest(tokenEnv, config.ServiceLevelObjectiveID))
-	})
-
-	t.Run("returns true and error if there are matching configs, but auth is invalid", func(t *testing.T) {
-		hasConfigs, err := resource.DefaultPlatformVerify(tokenEnv, sloConfigs, config.ServiceLevelObjectiveID)
-
-		assert.Error(t, err)
-		assert.True(t, hasConfigs)
-	})
-
-	t.Run("returns true and no error if auth is valid and there are matching configs", func(t *testing.T) {
-		hasConfigs, err := resource.DefaultPlatformVerify(oAuthEnv, sloConfigs, config.ServiceLevelObjectiveID)
-
-		assert.NoError(t, err)
-		assert.True(t, hasConfigs)
-	})
-}

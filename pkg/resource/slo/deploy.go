@@ -56,11 +56,16 @@ type sloResponse struct {
 	ExternalID string `json:"externalId"`
 }
 
-func (d DeployAPI) Verify(ev manifest.EnvironmentDefinition, configs []config.Config) (bool, error) {
-	if !featureflags.ServiceLevelObjective.Enabled() {
-		return false, nil
-	}
-	return resource.DefaultPlatformVerify(ev, configs, config.ServiceLevelObjectiveID)
+func (d DeployAPI) Enabled() bool {
+	return featureflags.ServiceLevelObjective.Enabled()
+}
+
+func (d DeployAPI) VerifyAuth(env manifest.EnvironmentDefinition, _ []config.Config) error {
+	return resource.CheckPlatformSetInManifest(env, config.ServiceLevelObjectiveID)
+}
+
+func (d DeployAPI) VerifyConfigs(configs []config.Config) (bool, error) {
+	return resource.HasConfigType(configs, config.ServiceLevelObjectiveID), nil
 }
 
 func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
