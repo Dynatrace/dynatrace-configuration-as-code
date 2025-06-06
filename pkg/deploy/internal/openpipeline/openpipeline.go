@@ -19,12 +19,12 @@ package openpipeline
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -39,7 +39,7 @@ type Client interface {
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	//create new context to carry logger
-	ctx = logr.NewContextWithSlogLogger(ctx, log.WithCtxFields(ctx).SLogger())
+	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 

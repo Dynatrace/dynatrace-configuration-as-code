@@ -52,7 +52,7 @@ func NewAPI(documentSource Source) *API {
 }
 
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading documents")
+	log.InfoContext(ctx, "Downloading documents")
 	// due to the current test setup, the types must be downloaded in order. This should be changed eventually
 	var typesToDownload = []documents.DocumentType{
 		documents.Dashboard,
@@ -72,11 +72,11 @@ func (a API) Download(ctx context.Context, projectName string) (project.ConfigsP
 }
 
 func downloadDocumentsOfType(ctx context.Context, documentSource Source, projectName string, documentType string) []config.Config {
-	log.WithFields(field.Type("document")).Debug("Downloading documents of type '%s'", documentType)
+	log.WithFields(field.Type("document")).DebugContext(ctx, "Downloading documents of type '%s'", documentType)
 
 	listResponse, err := documentSource.List(ctx, fmt.Sprintf("type=='%s'", documentType))
 	if err != nil {
-		log.WithFields(field.Type("document"), field.Error(err)).Error("Failed to list all documents of type '%s': %v", documentType, err)
+		log.WithFields(field.Type("document"), field.Error(err)).ErrorContext(ctx, "Failed to list all documents of type '%s': %v", documentType, err)
 		return nil
 	}
 
@@ -90,13 +90,13 @@ func downloadDocumentsOfType(ctx context.Context, documentSource Source, project
 
 		cfg, err := convertDocumentResponse(ctx, documentSource, projectName, response)
 		if err != nil {
-			log.WithFields(field.Type("document"), field.Error(err)).Error("Failed to convert document '%s' of type '%s': %v", response.ID, documentType, err)
+			log.WithFields(field.Type("document"), field.Error(err)).ErrorContext(ctx, "Failed to convert document '%s' of type '%s': %v", response.ID, documentType, err)
 			continue
 		}
 		configs = append(configs, cfg)
 	}
 
-	log.WithFields(field.Type("document")).Debug("Downloaded %d documents of type '%s'", len(configs), documentType)
+	log.WithFields(field.Type("document")).DebugContext(ctx, "Downloaded %d documents of type '%s'", len(configs), documentType)
 
 	return configs
 }

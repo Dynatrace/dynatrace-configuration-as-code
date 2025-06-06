@@ -14,7 +14,10 @@
 
 package coordinate
 
-import "fmt"
+import (
+	"fmt"
+	"log/slog"
+)
 
 // Coordinate struct used to specify the location of a certain configuration
 type Coordinate struct {
@@ -37,4 +40,13 @@ func (c Coordinate) Match(coordinate Coordinate) bool {
 	return c.Project == coordinate.Project &&
 		c.Type == coordinate.Type &&
 		c.ConfigId == coordinate.ConfigId
+}
+
+// LogValue implements slog.LogValuer.
+// It returns a group containing the fields of the coordinate so that they appear together in log output
+func (c Coordinate) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("project", c.Project),
+		slog.String("type", c.Type),
+		slog.String("configId", c.ConfigId))
 }

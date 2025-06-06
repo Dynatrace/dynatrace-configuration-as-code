@@ -87,17 +87,17 @@ func deleteUsers(ctx context.Context, account Account, users []User) int {
 	for _, user := range users {
 		err := account.APIClient.DeleteUser(ctx, user.Email.Value())
 		if err == nil {
-			log.Info("Deleted user %q from account %s", user.Email, account)
+			log.InfoContext(ctx, "Deleted user %q from account %s", user.Email, account)
 			continue
 		}
 
 		notFoundErr := ResourceNotFoundError{}
 		if errors.As(err, &notFoundErr) {
-			log.Info("User %q does not exist for account %s", user.Email, account)
+			log.InfoContext(ctx, "User %q does not exist for account %s", user.Email, account)
 			continue
 		}
 
-		log.Error("Failed to delete user %q from account %s: %v", user.Email, account, err)
+		log.ErrorContext(ctx, "Failed to delete user %q from account %s: %v", user.Email, account, err)
 		errCount++
 	}
 	return errCount
@@ -108,17 +108,17 @@ func deleteServiceUsers(ctx context.Context, account Account, serviceUsers []Ser
 	for _, user := range serviceUsers {
 		err := account.APIClient.DeleteServiceUser(ctx, user.Name)
 		if err == nil {
-			log.Info("Deleted service user %q from account %s", user.Name, account)
+			log.InfoContext(ctx, "Deleted service user %q from account %s", user.Name, account)
 			continue
 		}
 
 		notFoundErr := ResourceNotFoundError{}
 		if errors.As(err, &notFoundErr) {
-			log.Info("Service user %q does not exist for account %s", user.Name, account)
+			log.InfoContext(ctx, "Service user %q does not exist for account %s", user.Name, account)
 			continue
 		}
 
-		log.Error("Failed to delete service user %q from account %s: %v", user.Name, account, err)
+		log.ErrorContext(ctx, "Failed to delete service user %q from account %s: %v", user.Name, account, err)
 		errCount++
 	}
 	return errCount
@@ -129,17 +129,17 @@ func deleteGroups(ctx context.Context, account Account, groups []Group) int {
 	for _, group := range groups {
 		err := account.APIClient.DeleteGroup(ctx, group.Name)
 		if err == nil {
-			log.Info("Deleted group %q from account %s", group.Name, account)
+			log.InfoContext(ctx, "Deleted group %q from account %s", group.Name, account)
 			continue
 		}
 
 		notFoundErr := ResourceNotFoundError{}
 		if errors.As(err, &notFoundErr) {
-			log.Info("Group %q does not exist for account %s", group.Name, account)
+			log.InfoContext(ctx, "Group %q does not exist for account %s", group.Name, account)
 			continue
 		}
 
-		log.Error("Failed to delete group %q from account %s: %v", group.Name, account, err)
+		log.ErrorContext(ctx, "Failed to delete group %q from account %s: %v", group.Name, account, err)
 		errCount++
 	}
 	return errCount
@@ -150,16 +150,16 @@ func deleteAccountPolicies(ctx context.Context, account Account, accountPolicies
 	for _, policy := range accountPolicies {
 		err := account.APIClient.DeleteAccountPolicy(ctx, policy.Name)
 		if err == nil {
-			log.Info("Deleted policy %q from account %s", policy.Name, account)
+			log.InfoContext(ctx, "Deleted policy %q from account %s", policy.Name, account)
 			continue
 		}
 
 		notFoundErr := ResourceNotFoundError{}
 		if errors.As(err, &notFoundErr) {
-			log.Info("Policy %q does not exist for account %s", policy.Name, account)
+			log.InfoContext(ctx, "Policy %q does not exist for account %s", policy.Name, account)
 		}
 
-		log.Error("Failed to delete policy %q from account %s: %v", policy.Name, account, err)
+		log.ErrorContext(ctx, "Failed to delete policy %q from account %s: %v", policy.Name, account, err)
 		errCount++
 	}
 	return errCount
@@ -170,17 +170,17 @@ func deleteEnvironmentPolicies(ctx context.Context, account Account, environment
 	for _, policy := range environmentPolicies {
 		err := account.APIClient.DeleteEnvironmentPolicy(ctx, policy.Environment, policy.Name)
 		if err == nil {
-			log.Info("Deleted policy %q for environment %q", policy.Name, policy.Environment)
+			log.InfoContext(ctx, "Deleted policy %q for environment %q", policy.Name, policy.Environment)
 			continue
 		}
 
 		notFoundErr := ResourceNotFoundError{}
 		if errors.As(err, &notFoundErr) {
-			log.Info("Policy %q does not exist for environment %s", policy.Name, policy.Environment)
+			log.InfoContext(ctx, "Policy %q does not exist for environment %s", policy.Name, policy.Environment)
 			continue
 		}
 
-		log.Error("Failed to delete policy %q for environment %s: %v", policy.Name, policy.Environment, err)
+		log.ErrorContext(ctx, "Failed to delete policy %q for environment %s: %v", policy.Name, policy.Environment, err)
 		errCount++
 	}
 	return errCount

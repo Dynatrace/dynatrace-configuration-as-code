@@ -43,11 +43,11 @@ func NewAPI(source Source) *API {
 }
 
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading openpipelines")
+	log.InfoContext(ctx, "Downloading openpipelines")
 	result := project.ConfigsPerType{string(config.OpenPipelineTypeID): nil}
 	all, err := a.openPipelineSource.GetAll(ctx)
 	if err != nil {
-		log.WithFields(field.Type(config.OpenPipelineTypeID), field.Error(err)).Error("Failed to get all configs of type '%s': %v", config.OpenPipelineTypeID, err)
+		log.WithFields(field.Type(config.OpenPipelineTypeID), field.Error(err)).ErrorContext(ctx, "Failed to get all configs of type '%s': %v", config.OpenPipelineTypeID, err)
 		return result, nil
 	}
 
@@ -55,7 +55,7 @@ func (a API) Download(ctx context.Context, projectName string) (project.ConfigsP
 	for _, response := range all {
 		c, err := createConfig(projectName, response)
 		if err != nil {
-			log.WithFields(field.Type(config.OpenPipelineTypeID), field.Error(err)).Error("Failed to convert config of type '%s': %v", config.OpenPipelineTypeID, err)
+			log.WithFields(field.Type(config.OpenPipelineTypeID), field.Error(err)).ErrorContext(ctx, "Failed to convert config of type '%s': %v", config.OpenPipelineTypeID, err)
 			continue
 		}
 		configs = append(configs, c)

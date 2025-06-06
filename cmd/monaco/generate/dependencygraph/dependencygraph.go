@@ -92,13 +92,13 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 
 	var opts []graph.NodeOption
 	if writeJSONIDs {
-		log.Debug("Encoding DOT Node IDs as JSON")
+		log.DebugContext(ctx, "Encoding DOT Node IDs as JSON")
 		opts = append(opts, func(n *graph.ConfigNode) {
 			s, err := json.Marshal(n.Config.Coordinate)
 			if err == nil {
 				n.DOTEncoding = string(s)
 			} else {
-				log.WithFields(field.Coordinate(n.Config.Coordinate)).Error("Failed to encode Node ID as JSON: %v", err)
+				log.WithFields(field.Coordinate(n.Config.Coordinate)).ErrorContext(ctx, "Failed to encode Node ID as JSON: %v", err)
 				n.DOTEncoding = "{}"
 			}
 		})
@@ -153,7 +153,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		if exists {
 			time := timeutils.TimeAnchor().Format("20060102-150405")
 			newFile := filepath.Join(folderPath, fmt.Sprintf("dependency_graph_%s_%s.dot", e, time))
-			log.WithFields(field.F("file", newFile), field.F("existingFile", file)).Debug("Output file %q already exists, creating %q instead", file, newFile)
+			log.WithFields(field.F("file", newFile), field.F("existingFile", file)).DebugContext(ctx, "Output file %q already exists, creating %q instead", file, newFile)
 			file = newFile
 		}
 
@@ -167,7 +167,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 				Reason:       err,
 			}
 		}
-		log.WithFields(field.F("file", file)).Info("Dependency graph for environment %q written to %q", e, file)
+		log.WithFields(field.F("file", file)).InfoContext(ctx, "Dependency graph for environment %q written to %q", e, file)
 	}
 
 	return nil

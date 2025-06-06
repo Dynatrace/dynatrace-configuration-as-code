@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	"fmt"
+
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
@@ -36,19 +37,19 @@ type (
 )
 
 func (a *Downloader) policies(ctx context.Context) (Policies, error) {
-	log.WithCtxFields(ctx).Info("Downloading policies")
+	log.InfoContext(ctx, "Downloading policies")
 	dtos, err := a.httpClient.GetPolicies(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a list of policies for account %q from DT: %w", a.accountInfo, err)
 	}
-	log.WithCtxFields(ctx).Debug("Downloaded %d policies (global + custom)", len(dtos))
+	log.DebugContext(ctx, "Downloaded %d policies (global + custom)", len(dtos))
 
 	retVal := make(Policies, 0, len(dtos))
 	for i := range dtos {
 		var dtoDef *accountmanagement.LevelPolicyDto
 		var p *account.Policy
 		if isCustom(dtos[i]) {
-			log.WithCtxFields(ctx).Debug("Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid)
+			log.DebugContext(ctx, "Downloading definition for policy %q (uuid: %q)", dtos[i].Name, dtos[i].Uuid)
 			dtoDef, err = a.httpClient.GetPolicyDefinition(ctx, dtos[i])
 			if err != nil {
 				return nil, fmt.Errorf("failed to get the definition for the policy %q (uuid: %q) from DT: %w", dtos[i].Name, dtos[i].Uuid, err)
@@ -67,7 +68,7 @@ func (a *Downloader) policies(ctx context.Context) (Policies, error) {
 		})
 	}
 
-	log.WithCtxFields(ctx).Info("Downloaded %d policies", len(retVal.asAccountPolicies()))
+	log.InfoContext(ctx, "Downloaded %d policies", len(retVal.asAccountPolicies()))
 	return retVal, nil
 }
 

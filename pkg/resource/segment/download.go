@@ -43,12 +43,12 @@ func NewAPI(segmentSource Source) *API {
 }
 
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading segments")
+	log.InfoContext(ctx, "Downloading segments")
 	result := project.ConfigsPerType{}
 
 	downloadedConfigs, err := a.segmentSource.GetAll(ctx)
 	if err != nil {
-		log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to fetch the list of existing segments: %v", err)
+		log.WithFields(field.Type(config.SegmentID), field.Error(err)).ErrorContext(ctx, "Failed to fetch the list of existing segments: %v", err)
 		return nil, nil
 	}
 
@@ -56,7 +56,7 @@ func (a API) Download(ctx context.Context, projectName string) (project.ConfigsP
 	for _, downloadedConfig := range downloadedConfigs {
 		c, err := createConfig(projectName, downloadedConfig)
 		if err != nil {
-			log.WithFields(field.Type(config.SegmentID), field.Error(err)).Error("Failed to convert segment: %v", err)
+			log.WithFields(field.Type(config.SegmentID), field.Error(err)).ErrorContext(ctx, "Failed to convert segment: %v", err)
 			continue
 		}
 		configs = append(configs, c)

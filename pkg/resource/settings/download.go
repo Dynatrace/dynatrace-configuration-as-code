@@ -66,7 +66,7 @@ func NewAPI(settingsSource Source, filters Filters, specificSchemas []string) *A
 }
 
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading settings objects")
+	log.InfoContext(ctx, "Downloading settings objects")
 	if len(a.specificSchemas) == 0 {
 		return downloadAll(ctx, a.settingsSource, projectName, a.filters)
 	}
@@ -75,7 +75,7 @@ func (a API) Download(ctx context.Context, projectName string) (project.ConfigsP
 }
 
 func downloadAll(ctx context.Context, settingsSource Source, projectName string, filters Filters) (project.ConfigsPerType, error) {
-	log.Debug("Fetching all schemas to download")
+	log.DebugContext(ctx, "Fetching all schemas to download")
 	schemas, err := fetchAllSchemas(ctx, settingsSource)
 	if err != nil {
 		return nil, err
@@ -92,11 +92,11 @@ func downloadSpecific(ctx context.Context, settingsSource Source, projectName st
 
 	if ok, unknownSchemas := validateSpecificSchemas(schemas, schemaIDs); !ok {
 		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
-		log.WithFields(field.F("unknownSchemas", unknownSchemas), field.Error(err)).Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
+		log.WithFields(field.F("unknownSchemas", unknownSchemas), field.Error(err)).ErrorContext(ctx, "%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
 		return nil, err
 	}
 
-	log.Debug("Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
+	log.DebugContext(ctx, "Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
 	result := download(ctx, settingsSource, schemas, projectName, filters)
 	return result, nil
 }
@@ -155,11 +155,11 @@ func download(ctx context.Context, settingsSource Source, schemas []schema, proj
 
 			lg := log.WithFields(field.Type(s.id))
 
-			lg.Debug("Downloading all settings for schema '%s'", s.id)
+			lg.DebugContext(ctx, "Downloading all settings for schema '%s'", s.id)
 			objects, err := settingsSource.List(ctx, s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				errMsg := extractApiErrorMessage(err)
-				lg.WithFields(field.Error(err)).Error("Failed to fetch all settings for schema '%s': %v", s.id, errMsg)
+				lg.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to fetch all settings for schema '%s': %v", s.id, errMsg)
 				return
 			}
 
@@ -169,7 +169,7 @@ func download(ctx context.Context, settingsSource Source, schemas []schema, proj
 				permissions, permErr = getObjectsPermission(ctx, settingsSource, objects)
 				if permErr != nil {
 					errMsg := extractApiErrorMessage(permErr)
-					lg.WithFields(field.Error(permErr)).Error("Failed to fetch settings permissions for schema '%s': %v", s.id, errMsg)
+					lg.WithFields(field.Error(permErr)).ErrorContext(ctx, "Failed to fetch settings permissions for schema '%s': %v", s.id, errMsg)
 					return
 				}
 			}
@@ -182,11 +182,11 @@ func download(ctx context.Context, settingsSource Source, schemas []schema, proj
 			lg = lg.WithFields(field.F("configsDownloaded", len(cfgs)))
 			switch len(objects) {
 			case 0:
-				lg.Debug("Did not find any settings to download for schema '%s'", s.id)
+				lg.DebugContext(ctx, "Did not find any settings to download for schema '%s'", s.id)
 			case len(cfgs):
-				lg.Info("Downloaded %d settings for schema '%s'", len(cfgs), s.id)
+				lg.InfoContext(ctx, "Downloaded %d settings for schema '%s'", len(cfgs), s.id)
 			default:
-				lg.Info("Downloaded %d settings for schema '%s'. Skipped persisting %d unmodifiable setting(s)", len(cfgs), s.id, len(objects)-len(cfgs))
+				lg.InfoContext(ctx, "Downloaded %d settings for schema '%s'. Skipped persisting %d unmodifiable setting(s)", len(cfgs), s.id, len(objects)-len(cfgs))
 			}
 		}(sc)
 	}

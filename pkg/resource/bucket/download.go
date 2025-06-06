@@ -56,11 +56,11 @@ func NewAPI(bucketSource Source) *API {
 }
 
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading Grail buckets")
+	log.InfoContext(ctx, "Downloading Grail buckets")
 	result := make(project.ConfigsPerType)
 	response, err := a.bucketSource.List(ctx)
 	if err != nil {
-		log.WithFields(field.Type("bucket"), field.Error(err)).Error("Failed to fetch all bucket definitions: %v", err)
+		log.WithFields(field.Type("bucket"), field.Error(err)).ErrorContext(ctx, "Failed to fetch all bucket definitions: %v", err)
 		return nil, nil
 	}
 

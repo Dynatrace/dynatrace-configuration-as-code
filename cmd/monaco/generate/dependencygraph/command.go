@@ -18,13 +18,15 @@ package dependencygraph
 
 import (
 	"fmt"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 )
 
 const jsonEncoding = "json"

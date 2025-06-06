@@ -40,7 +40,7 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 	for _, dp := range dps {
 		err := deleteSingle(ctx, c, dp)
 		if err != nil {
-			log.WithCtxFields(ctx).WithFields(field.Type(dp.Type), field.Coordinate(dp.AsCoordinate())).Error("Failed to delete entry: %v", err)
+			log.WithFields(field.Type(dp.Type), field.Coordinate(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
 			errCount++
 		}
 	}
@@ -51,7 +51,7 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 }
 
 func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error {
-	logger := log.WithCtxFields(ctx).WithFields(field.Type(dp.Type), field.Coordinate(dp.AsCoordinate()))
+	logger := log.WithFields(field.Type(dp.Type), field.Coordinate(dp.AsCoordinate()))
 
 	id := dp.OriginObjectId
 	if id == "" {
@@ -63,7 +63,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 	}
 
 	if id == "" {
-		logger.Debug("no action needed")
+		logger.DebugContext(ctx, "no action needed")
 		return nil
 	}
 
@@ -72,7 +72,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
 
-	logger.Debug("Config with ID '%s' successfully deleted", id)
+	logger.DebugContext(ctx, "Config with ID '%s' successfully deleted", id)
 	return nil
 }
 

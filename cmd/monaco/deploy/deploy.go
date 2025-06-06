@@ -90,7 +90,7 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 		return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
 	}
 
-	log.Info("%s finished without errors", logging.GetOperationNounForLogging(dryRun))
+	log.InfoContext(ctx, "%s finished without errors", logging.GetOperationNounForLogging(dryRun))
 	return nil
 }
 
@@ -129,9 +129,9 @@ func loadProjects(ctx context.Context, fs afero.Fs, manifestPath string, man *ma
 	}, specificProjects)
 
 	if errs != nil {
-		log.Error("Failed to load projects - %d errors occurred:", len(errs))
+		log.ErrorContext(ctx, "Failed to load projects - %d errors occurred:", len(errs))
 		for _, err := range errs {
-			log.WithFields(field.Error(err)).Error("%s", err)
+			log.WithFields(field.Error(err)).ErrorContext(ctx, "%s", err)
 		}
 		return nil, fmt.Errorf("failed to load projects - %d errors occurred", len(errs))
 	}

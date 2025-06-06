@@ -60,14 +60,14 @@ func NewAPI(automationSource Source) *API {
 
 // Download downloads all automation resources for a given project
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading automation resources")
+	log.InfoContext(ctx, "Downloading automation resources")
 	configsPerType := make(project.ConfigsPerType)
 	for _, at := range maps.Keys(automationTypesToResources) {
 		lg := log.WithFields(field.Type(at.Resource))
 
 		resource, ok := automationTypesToResources[at]
 		if !ok {
-			lg.Warn("No resource mapping for automation type %s found", at.Resource)
+			lg.WarnContext(ctx, "No resource mapping for automation type %s found", at.Resource)
 			continue
 		}
 		response, err := func() (automation.ListResponse, error) {
@@ -77,23 +77,23 @@ func (a API) Download(ctx context.Context, projectName string) (project.ConfigsP
 		}()
 
 		if err != nil {
-			lg.WithFields(field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
+			lg.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
 		objects, err := automationutils.DecodeListResponse(response)
 		if err != nil {
-			lg.WithFields(field.Error(err)).Error("Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
+			lg.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
 		if len(objects) == 0 {
 			// Info on purpose. Most types have a lot of objects, so skipping printing 'not found' in the default case makes sense. Here it's kept on purpose, we have only 3 types.
-			lg.WithFields(field.F("configsDownloaded", len(objects))).Info("Did not find any %s to download", string(at.Resource))
+			lg.WithFields(field.F("configsDownloaded", len(objects))).InfoContext(ctx, "Did not find any %s to download", string(at.Resource))
 
 			continue
 		}
-		lg.WithFields(field.F("configsDownloaded", len(objects))).Info("Downloaded %d objects for %s", len(objects), string(at.Resource))
+		lg.WithFields(field.F("configsDownloaded", len(objects))).InfoContext(ctx, "Downloaded %d objects for %s", len(objects), string(at.Resource))
 
 		var configs []config.Config
 		for _, obj := range objects {
@@ -101,7 +101,7 @@ func (a API) Download(ctx context.Context, projectName string) (project.ConfigsP
 			configId := obj.ID
 
 			if escaped, err := escapeJinjaTemplates(obj.Data); err != nil {
-				lg.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), field.Error(err)).Warn("Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
+				lg.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), field.Error(err)).WarnContext(ctx, "Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
 			} else {
 				obj.Data = escaped
 			}

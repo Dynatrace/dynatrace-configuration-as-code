@@ -43,11 +43,11 @@ func NewAPI(sloSource Source) *API {
 }
 
 func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.Info("Downloading SLO-V2")
+	log.InfoContext(ctx, "Downloading SLO-V2")
 	result := project.ConfigsPerType{}
 	downloadedConfigs, err := a.sloSource.List(ctx)
 	if err != nil {
-		log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to fetch the list of existing %s configs: %v", config.ServiceLevelObjectiveID, err)
+		log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).ErrorContext(ctx, "Failed to fetch the list of existing %s configs: %v", config.ServiceLevelObjectiveID, err)
 		// error is ignored
 		return nil, nil
 	}
@@ -56,7 +56,7 @@ func (a API) Download(ctx context.Context, projectName string) (project.ConfigsP
 	for _, downloadedConfig := range downloadedConfigs.All() {
 		c, err := createConfig(projectName, downloadedConfig)
 		if err != nil {
-			log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).Error("Failed to convert %s: %v", config.ServiceLevelObjectiveID, err)
+			log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).ErrorContext(ctx, "Failed to convert %s: %v", config.ServiceLevelObjectiveID, err)
 			continue
 		}
 		configs = append(configs, c)

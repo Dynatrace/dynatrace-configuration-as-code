@@ -80,10 +80,10 @@ func purgeForEnvironment(ctx context.Context, env manifest.EnvironmentDefinition
 		return fmt.Errorf("failed to create a client for env `%s`: %w", env.Name, err)
 	}
 
-	log.WithCtxFields(ctx).Info("Deleting configs for environment `%s`", env.Name)
+	log.InfoContext(ctx, "Deleting configs for environment `%s`", env.Name)
 
 	if err := delete.All(ctx, *clients, apis); err != nil {
-		log.Error("Encountered errors while puring configurations from environment %s, further manual cleanup may be needed - check logs for details.", env.Name)
+		log.ErrorContext(ctx, "Encountered errors while puring configurations from environment %s, further manual cleanup may be needed - check logs for details.", env.Name)
 	}
 	return nil
 }
