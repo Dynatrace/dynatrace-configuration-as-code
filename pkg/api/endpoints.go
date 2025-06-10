@@ -50,6 +50,7 @@ const (
 	AzureCredentials                     = "azure-credentials"      // #nosec G101
 	RequestAttributes                    = "request-attributes"
 	CalculatedMetricsService             = "calculated-metrics-service"
+	CalculatedServiceMetricsOnGrail      = "calculated-service-metrics-on-grail"
 	CalculatedMetricsLog                 = "calculated-metrics-log"
 	CalculatedMetricsApplicationMobile   = "calculated-metrics-application-mobile"
 	CalculatedMetricsSynthetic           = "calculated-metrics-synthetic"
@@ -270,6 +271,12 @@ func NewAPIs() APIs {
 			{
 				ID:                           CalculatedMetricsService,
 				URLPath:                      "/api/config/v1/calculatedMetrics/service",
+				PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
+			},
+			{
+				ID:                           CalculatedServiceMetricsOnGrail,
+				URLPath:                      "/api/config/v1/calculatedMetrics/service/metricsOnGrail",
+				NonDeletable:                 true,
 				PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 			},
 			{

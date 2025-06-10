@@ -189,6 +189,10 @@ func (d *ConfigClient) upsertDynatraceObject(ctx context.Context, theApi api.API
 			existingObjectID = objectName
 		}
 
+		if theApi.ID == api.CalculatedServiceMetricsOnGrail && existingObjectID == "" {
+			return DynatraceEntity{}, fmt.Errorf("the Dynatrace environment has no config with the name '%s' for the config '%s'. Aborting request. Please verify that a config with that name exists", objectName, theApi.ID)
+		}
+
 		// Single configuration APIs don't have a POST, but a PUT endpoint
 		// and therefore always require an update
 		if existingObjectID != "" || theApi.SingleConfiguration {
