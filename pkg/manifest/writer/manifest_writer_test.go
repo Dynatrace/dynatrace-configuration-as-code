@@ -425,50 +425,17 @@ func Test_toWriteableUrl(t *testing.T) {
 }
 
 func Test_toWritableToken(t *testing.T) {
-	tests := []struct {
-		name  string
-		input manifest.EnvironmentDefinition
-		want  persistence.AuthSecret
-	}{
-		{
-			"correctly transforms env var token",
-			manifest.EnvironmentDefinition{
-				Name:  "NAME",
-				URL:   manifest.URLDefinition{},
-				Group: "GROUP",
-				Auth: manifest.Auth{
-					ApiToken: &manifest.AuthSecret{Name: "VARIABLE"},
-				},
-			},
-			persistence.AuthSecret{
-				Name: "VARIABLE",
-				Type: "environment",
-			},
-		},
-		{
-			"defaults to assumed token name if nothing is defined",
-			manifest.EnvironmentDefinition{
-				Name:  "NAME",
-				URL:   manifest.URLDefinition{},
-				Group: "GROUP",
+	want := &persistence.AuthSecret{
+		Name: "VARIABLE",
+		Type: "environment",
+	}
+	got := getAuthSecret(&manifest.AuthSecret{Name: "VARIABLE"})
+	assert.Equal(t, want, got)
+}
 
-				Auth: manifest.Auth{
-					ApiToken: &manifest.AuthSecret{},
-				},
-			},
-			persistence.AuthSecret{
-				Name: "NAME_TOKEN",
-				Type: "environment",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getTokenSecret(tt.input.Auth, tt.input.Name); !reflect.DeepEqual(got, &tt.want) {
-				t.Errorf("getTokenSecret() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func Test_toWritableNilToken(t *testing.T) {
+	got := getAuthSecret(nil)
+	assert.Nil(t, got)
 }
 
 func Test_toWriteableAccounts(t *testing.T) {

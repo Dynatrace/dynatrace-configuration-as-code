@@ -168,7 +168,7 @@ func toWriteableEnvironmentGroups(environments manifest.Environments) (result []
 
 func getAuth(env manifest.EnvironmentDefinition) persistence.Auth {
 	return persistence.Auth{
-		ApiToken: getTokenSecret(env.Auth, env.Name),
+		ApiToken: getAuthSecret(env.Auth.ApiToken),
 		OAuth:    getOAuthCredentials(env.Auth.OAuth),
 	}
 }
@@ -186,20 +186,14 @@ func toWriteableURL(url manifest.URLDefinition) persistence.TypedValue {
 	}
 }
 
-// getTokenSecret returns the tokenConfig with some legacy magic string append that still might be used (?)
-func getTokenSecret(a manifest.Auth, envName string) *persistence.AuthSecret {
-	if a.ApiToken == nil {
+func getAuthSecret(secret *manifest.AuthSecret) *persistence.AuthSecret {
+	if secret == nil {
 		return nil
-	}
-
-	envVarName := a.ApiToken.Name
-	if envVarName == "" {
-		envVarName = envName + "_TOKEN"
 	}
 
 	return &persistence.AuthSecret{
 		Type: persistence.TypeEnvironment,
-		Name: envVarName,
+		Name: secret.Name,
 	}
 }
 
