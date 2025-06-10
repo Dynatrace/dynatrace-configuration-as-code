@@ -20,28 +20,27 @@ import (
 	"net/http"
 )
 
-// TokenAuthTransport should be used to enable a client
-// to use dynatrace token authorization
-type TokenAuthTransport struct {
+// ApiTokenAuthTransport should be used to enable a client to use Dynatrace API token authorization
+type ApiTokenAuthTransport struct {
 	http.RoundTripper
 	header http.Header
 }
 
 // NewTokenAuthTransport creates a new http transport to be used for
 // token authorization
-func NewTokenAuthTransport(baseTransport http.RoundTripper, token string) *TokenAuthTransport {
+func NewTokenAuthTransport(baseTransport http.RoundTripper, apiToken string) *ApiTokenAuthTransport {
 	if baseTransport == nil {
 		baseTransport = http.DefaultTransport
 	}
-	t := &TokenAuthTransport{
+	t := &ApiTokenAuthTransport{
 		RoundTripper: baseTransport,
 		header:       http.Header{},
 	}
-	t.setHeader("Authorization", "Api-Token "+token)
+	t.setHeader("Authorization", "Api-Token "+apiToken)
 	return t
 }
 
-func (t *TokenAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *ApiTokenAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Add the custom headers to the request
 	for k, v := range t.header {
 		req.Header[k] = v
@@ -49,6 +48,6 @@ func (t *TokenAuthTransport) RoundTrip(req *http.Request) (*http.Response, error
 	return t.RoundTripper.RoundTrip(req)
 }
 
-func (t *TokenAuthTransport) setHeader(key, value string) {
+func (t *ApiTokenAuthTransport) setHeader(key, value string) {
 	t.header.Set(key, value)
 }

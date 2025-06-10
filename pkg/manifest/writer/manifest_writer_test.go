@@ -164,7 +164,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						Group: "group1",
 						Auth: manifest.Auth{
-							Token: &manifest.AuthSecret{
+							ApiToken: &manifest.AuthSecret{
 								Name: "TokenTest",
 							},
 						},
@@ -176,7 +176,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						Group: "group1",
 						Auth: manifest.Auth{
-							Token: &manifest.AuthSecret{},
+							ApiToken: &manifest.AuthSecret{},
 							OAuth: &manifest.OAuth{
 								ClientID: manifest.AuthSecret{
 									Name:  "client-id-key",
@@ -201,7 +201,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						Group: "group1",
 						Auth: manifest.Auth{
-							Token: &manifest.AuthSecret{},
+							ApiToken: &manifest.AuthSecret{},
 							OAuth: &manifest.OAuth{
 								ClientID: manifest.AuthSecret{
 									Name:  "client-id-key",
@@ -221,7 +221,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						Group: "group1",
 						Auth: manifest.Auth{
-							Token: &manifest.AuthSecret{},
+							ApiToken: &manifest.AuthSecret{},
 							OAuth: &manifest.OAuth{
 								ClientID: manifest.AuthSecret{
 									Name:  "client-id-key",
@@ -245,7 +245,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						Group: "group2",
 						Auth: manifest.Auth{
-							Token: &manifest.AuthSecret{},
+							ApiToken: &manifest.AuthSecret{},
 						},
 					},
 				},
@@ -258,7 +258,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env1",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								Token: &persistence.AuthSecret{
+								ApiToken: &persistence.AuthSecret{
 									Name: "TokenTest",
 									Type: "environment",
 								},
@@ -268,7 +268,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								Token: &persistence.AuthSecret{
+								ApiToken: &persistence.AuthSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
 								},
@@ -292,7 +292,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2a",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								Token: &persistence.AuthSecret{
+								ApiToken: &persistence.AuthSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
 								},
@@ -312,7 +312,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2b",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								Token: &persistence.AuthSecret{
+								ApiToken: &persistence.AuthSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
 								},
@@ -340,7 +340,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env3",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								Token: &persistence.AuthSecret{
+								ApiToken: &persistence.AuthSecret{
 									Name: "env3_TOKEN",
 									Type: "environment",
 								},
@@ -437,7 +437,7 @@ func Test_toWritableToken(t *testing.T) {
 				URL:   manifest.URLDefinition{},
 				Group: "GROUP",
 				Auth: manifest.Auth{
-					Token: &manifest.AuthSecret{Name: "VARIABLE"},
+					ApiToken: &manifest.AuthSecret{Name: "VARIABLE"},
 				},
 			},
 			persistence.AuthSecret{
@@ -453,7 +453,7 @@ func Test_toWritableToken(t *testing.T) {
 				Group: "GROUP",
 
 				Auth: manifest.Auth{
-					Token: &manifest.AuthSecret{},
+					ApiToken: &manifest.AuthSecret{},
 				},
 			},
 			persistence.AuthSecret{
@@ -601,7 +601,7 @@ func TestWrite(t *testing.T) {
 							},
 							Group: "group1",
 							Auth: manifest.Auth{
-								Token: &manifest.AuthSecret{
+								ApiToken: &manifest.AuthSecret{
 									Name: "TOKEN_VAR",
 								},
 							},
@@ -649,7 +649,7 @@ environmentGroups:
 							},
 							Group: "group1",
 							Auth: manifest.Auth{
-								Token: &manifest.AuthSecret{
+								ApiToken: &manifest.AuthSecret{
 									Name: "TOKEN_VAR",
 								},
 							},

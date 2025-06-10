@@ -227,23 +227,23 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 }
 
 const oAuthSkipMsg = "Skipped downloading %s due to missing OAuth credentials"
-const authSkipMsg = "Skipped downloading %s due to missing token"
+const authSkipMsg = "Skipped downloading %s due to missing API token"
 
 func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, clientSet *client.ClientSet) ([]Downloadable, error) {
 	downloadables := make([]Downloadable, 0)
 
 	if opts.onlyOptions.ShouldDownload(OnlyApisFlag) {
-		if opts.auth.Token != nil {
+		if opts.auth.ApiToken != nil {
 			downloadables = append(downloadables, classic.NewAPI(clientSet.ConfigClient, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters))
 		} else if opts.onlyOptions.IsSingleOption(OnlyApisFlag) {
-			return nil, errors.New("classic client config requires token")
+			return nil, errors.New("classic client config requires API token")
 		} else {
 			log.Warn(authSkipMsg, "configuration objects")
 		}
 	}
 
 	if opts.onlyOptions.ShouldDownload(OnlySettingsFlag) {
-		// auth is already validated during load that either token or OAuth is set
+		// auth is already validated during load that either an API token or OAuth is set
 		downloadables = append(downloadables, settings.NewAPI(clientSet.SettingsClient, settings.DefaultSettingsFilters, opts.specificSchemas))
 	}
 

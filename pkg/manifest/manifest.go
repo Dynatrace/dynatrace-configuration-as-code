@@ -55,8 +55,8 @@ func (o OAuth) GetTokenEndpointValue() string {
 }
 
 type Auth struct {
-	Token *AuthSecret
-	OAuth *OAuth
+	ApiToken *AuthSecret
+	OAuth    *OAuth
 }
 
 // EnvironmentDefinition holds all information about a Dynatrace environment
@@ -93,7 +93,7 @@ type URLDefinition struct {
 	Value string
 }
 
-// AuthSecret contains a resolved secret value. It is used for the API-Token, ClientID, and ClientSecret.
+// AuthSecret contains a resolved secret value. It is used for the API token, ClientID, and ClientSecret.
 type AuthSecret struct {
 	// Name is the name of the environment-variable of the token.
 	// It is used in download to store the name of the OAuth token in the new created manifest.

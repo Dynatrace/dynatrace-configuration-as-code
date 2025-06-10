@@ -211,16 +211,16 @@ func Load(context *Context) (manifest.Manifest, []error) {
 func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 	var mAuth manifest.Auth
 
-	if a.Token == nil && a.OAuth == nil {
+	if a.ApiToken == nil && a.OAuth == nil {
 		return manifest.Auth{}, errors.New("no token or OAuth credentials provided")
 	}
 
-	if a.Token != nil {
-		token, err := parseAuthSecret(context, a.Token)
+	if a.ApiToken != nil {
+		token, err := parseAuthSecret(context, a.ApiToken)
 		if err != nil {
 			return manifest.Auth{}, fmt.Errorf("failed to parse token: %w", err)
 		}
-		mAuth.Token = &token
+		mAuth.ApiToken = &token
 	}
 
 	if a.OAuth != nil {

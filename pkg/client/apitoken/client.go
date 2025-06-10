@@ -49,37 +49,37 @@ type source interface {
 	POST(ctx context.Context, endpoint string, body io.Reader, options corerest.RequestOptions) (*http.Response, error)
 }
 
-// GetTokenMetadata returns the metadata of a specified token
+// GetApiTokenMetadata returns the metadata of a specified API token
 //
-// Required scope: Any Api-Token scope
-func GetTokenMetadata(ctx context.Context, client source, token string) (Response, error) {
+// Required scope: Any API token scope
+func GetApiTokenMetadata(ctx context.Context, client source, apiToken string) (Response, error) {
 	type request struct {
-		Token string `json:"token"`
+		ApiToken string `json:"token"`
 	}
-	req := request{token}
+	req := request{apiToken}
 	body, err := json.Marshal(req)
 
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to marshal token request data: %w", err)
+		return Response{}, fmt.Errorf("unable to marshal API token request data: %w", err)
 	}
 
 	resp, err := client.POST(ctx, apiTokenPath+"/lookup", bytes.NewReader(body), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
 
 	if err != nil {
-		return Response{}, fmt.Errorf("failed to query token metadata: %w", err)
+		return Response{}, fmt.Errorf("failed to query API token metadata: %w", err)
 	}
 
 	response, err := coreapi.NewResponseFromHTTPResponse(resp)
 
 	if err != nil {
-		return Response{}, fmt.Errorf("failed to query token metadata: %w", err)
+		return Response{}, fmt.Errorf("failed to query API token metadata: %w", err)
 	}
 
 	data := Response{}
 	err = json.Unmarshal(response.Data, &data)
 
 	if err != nil {
-		return Response{}, fmt.Errorf("failed to unmarshal token metadata: %w", err)
+		return Response{}, fmt.Errorf("failed to unmarshal API token metadata: %w", err)
 	}
 
 	return data, nil
