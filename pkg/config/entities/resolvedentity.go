@@ -17,18 +17,14 @@
 package entities
 
 import (
+	str "strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	str "strings"
 )
 
 // ResolvedEntity represents the Dynatrace configuration entity of a config.Config
 type ResolvedEntity struct {
-	// EntityName is the name returned by the Dynatrace api. In theory should be the
-	// same as the `name` property defined in the configuration, but
-	// can differ.
-	EntityName string
-
 	// Coordinate of the config.Config this entity represents
 	Coordinate coordinate.Coordinate
 

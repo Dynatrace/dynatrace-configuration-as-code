@@ -188,7 +188,6 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 
 	lookup := entityLookup{
 		referenceCoordinate: {
-			EntityName: "zone1",
 			Coordinate: referenceCoordinate,
 			Properties: parameter.Properties{},
 			Skip:       true,
@@ -256,7 +255,6 @@ func TestValidateParameterReferences(t *testing.T) {
 
 	lookup := entityLookup{
 		referencedConfigCoordinates: {
-			EntityName: "zone1",
 			Coordinate: referencedConfigCoordinates,
 			Properties: parameter.Properties{
 				"name": "test",
@@ -319,7 +317,6 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSkippedConfig(t *te
 
 	lookup := entityLookup{
 		referencedConfigCoordinates: {
-			EntityName: "zone1",
 			Coordinate: referencedConfigCoordinates,
 			Properties: parameter.Properties{},
 			Skip:       true,

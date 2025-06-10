@@ -79,7 +79,6 @@ func TestDeploy(t *testing.T) {
 				}, nil
 			},
 			entities.ResolvedEntity{
-				EntityName: "proj_my-bucket",
 				Coordinate: testCoord,
 				Properties: parameter.Properties{
 					config.IdParameter: "proj_my-bucket",
@@ -105,7 +104,6 @@ func TestDeploy(t *testing.T) {
 				}, nil
 			},
 			entities.ResolvedEntity{
-				EntityName: "PreExistingBucket",
 				Coordinate: testCoord,
 				Properties: parameter.Properties{
 					config.IdParameter: "PreExistingBucket",

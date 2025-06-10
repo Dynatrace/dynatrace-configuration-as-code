@@ -61,7 +61,6 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	properties[config.IdParameter] = bucketName
 
 	return entities.ResolvedEntity{
-		EntityName: bucketName,
 		Coordinate: c.Coordinate,
 		Properties: properties,
 	}, nil

@@ -25,12 +25,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
 )
 
 //go:generate mockgen -source=automation.go -destination=automation_mock.go -package=automation automationClient
@@ -70,16 +68,8 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to decode automation object response of type %s with id %s", t.Resource, id)).WithError(err)
 	}
 
-	name := fmt.Sprintf("[UNKNOWN NAME]%s", obj.ID)
-	if configName, err := extract.ConfigName(c, properties); err == nil {
-		name = configName
-	} else {
-		log.WithCtxFields(ctx).Debug("failed to extract name for automation object %q - ID will be used", obj.ID)
-	}
-
 	properties[config.IdParameter] = obj.ID
 	resolved := entities.ResolvedEntity{
-		EntityName: name,
 		Coordinate: c.Coordinate,
 		Properties: properties,
 		Skip:       false,

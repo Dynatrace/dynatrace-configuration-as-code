@@ -71,7 +71,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 			if err != nil {
 				return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
 			}
-			return createResolvedEntity(documentName, md.ID, c.Coordinate, properties), nil
+			return createResolvedEntity(md.ID, c.Coordinate, properties), nil
 		}
 
 		if !api.IsNotFoundError(err) {
@@ -97,7 +97,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 		if err != nil {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
 		}
-		return createResolvedEntity(documentName, md.ID, c.Coordinate, properties), nil
+		return createResolvedEntity(md.ID, c.Coordinate, properties), nil
 	}
 
 	// strategy 3: try to create a new document
@@ -110,7 +110,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
 	}
 
-	return createResolvedEntity(documentName, md.ID, c.Coordinate, properties), nil
+	return createResolvedEntity(md.ID, c.Coordinate, properties), nil
 }
 
 func tryGetDocumentIDByExternalID(ctx context.Context, client Client, externalId string) (string, error) {
@@ -131,11 +131,10 @@ func tryGetDocumentIDByExternalID(ctx context.Context, client Client, externalId
 	return listResponse.Responses[0].ID, nil
 }
 
-func createResolvedEntity(documentName string, id string, coordinate coordinate.Coordinate, properties parameter.Properties) entities.ResolvedEntity {
+func createResolvedEntity(id string, coordinate coordinate.Coordinate, properties parameter.Properties) entities.ResolvedEntity {
 	properties[config.IdParameter] = id
 
 	return entities.ResolvedEntity{
-		EntityName: documentName,
 		Coordinate: coordinate,
 		Properties: properties,
 	}

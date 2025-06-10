@@ -60,7 +60,6 @@ func createResolvedEntity(id string, coordinate coordinate.Coordinate, propertie
 	properties[config.IdParameter] = id
 
 	return entities.ResolvedEntity{
-		EntityName: id,
 		Coordinate: coordinate,
 		Properties: properties,
 	}

@@ -19,9 +19,11 @@
 package entities
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
 func TestEntityMap_PutResolved(t *testing.T) {
@@ -34,7 +36,6 @@ func TestEntityMap_PutResolved(t *testing.T) {
 		}
 
 		r1 := ResolvedEntity{
-			EntityName: "entityName",
 			Coordinate: c1,
 		}
 
@@ -53,7 +54,6 @@ func TestEntityMap_PutResolved(t *testing.T) {
 		}
 
 		r1 := ResolvedEntity{
-			EntityName: "entityName",
 			Coordinate: c1,
 			Skip:       true,
 		}
