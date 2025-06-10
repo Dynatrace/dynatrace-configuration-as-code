@@ -53,15 +53,15 @@ func VerifyEnvironmentsAuthentication(ctx context.Context, envs manifest.Environ
 	return nil
 }
 
-// VerifyEnvironmentAuthentication checks if the provided token and OAuth credentials of the provided environment are valid.
+// VerifyEnvironmentAuthentication checks if the provided API token and OAuth credentials of the provided environment are valid.
 func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.EnvironmentDefinition) error {
-	if env.Auth.Token == nil && env.Auth.OAuth == nil {
+	if env.Auth.ApiToken == nil && env.Auth.OAuth == nil {
 		return ErrorMissingAuth
 	}
 
 	classicUrl := env.URL.Value
 
-	// check if the OAuth connection works and get the classicURL in order to check the token authentication next if given
+	// check if the OAuth connection works and get the classicURL in order to check the API token authentication next if given
 	if env.Auth.OAuth != nil {
 		oauthCreds := clientcredentials.Config{
 			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
@@ -74,20 +74,20 @@ func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.Environme
 		}
 	}
 
-	if env.Auth.Token != nil {
-		if err := checkClassicConnection(ctx, classicUrl, env.Auth.Token.Value.Value()); err != nil {
-			return fmt.Errorf("could not authorize against environment '%s' (%s) using token authorization: %w", env.Name, classicUrl, err)
+	if env.Auth.ApiToken != nil {
+		if err := checkClassicConnection(ctx, classicUrl, env.Auth.ApiToken.Value.Value()); err != nil {
+			return fmt.Errorf("could not authorize against environment '%s' (%s) using API token authorization: %w", env.Name, classicUrl, err)
 		}
 	}
 	return nil
 }
 
-// checkClassicConnection checks if a classic connection (via token) can be established. Scopes are not validated.
-func checkClassicConnection(ctx context.Context, classicURL string, token string) error {
+// checkClassicConnection checks if a classic connection (via API token) can be established. Scopes are not validated.
+func checkClassicConnection(ctx context.Context, classicURL string, apiToken string) error {
 	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	factory := clients.Factory().
 		WithClassicURL(classicURL).
-		WithAccessToken(token).
+		WithAccessToken(apiToken).
 		WithRateLimiter(true).
 		WithRetryOptions(&client.DefaultRetryOptions).
 		WithCustomHeaders(additionalHeaders)
@@ -101,7 +101,7 @@ func checkClassicConnection(ctx context.Context, classicURL string, token string
 		return fmt.Errorf("could not create client: %w", err)
 	}
 
-	_, err = apitoken.GetTokenMetadata(ctx, client, token)
+	_, err = apitoken.GetApiTokenMetadata(ctx, client, apiToken)
 	return err
 }
 

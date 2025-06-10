@@ -85,7 +85,7 @@ func TestGetDownloadCommand(t *testing.T) {
 
 		expected := downloadCmdOptions{
 			environmentURL: "http://some.url",
-			auth:           auth{token: "TOKEN"},
+			auth:           auth{apiToken: "TOKEN"},
 			projectName:    "project",
 			onlyOptions:    defaultOnlyOptions,
 		}
@@ -102,7 +102,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		expected := downloadCmdOptions{
 			environmentURL: "http://some.url",
 			auth: auth{
-				token:        "TOKEN",
+				apiToken:     "TOKEN",
 				clientID:     "CLIENT_ID",
 				clientSecret: "CLIENT_SECRET",
 			},
@@ -203,7 +203,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlyApisFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{token: "token"},
+			auth:           auth{apiToken: "token"},
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}
@@ -244,7 +244,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlySettingsFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{token: "token"},
+			auth:           auth{apiToken: "token"},
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}

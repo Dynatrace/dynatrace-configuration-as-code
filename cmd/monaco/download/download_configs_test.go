@@ -58,7 +58,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			Value: "testurl.com",
 		},
 		auth: manifest.Auth{
-			Token: &manifest.AuthSecret{
+			ApiToken: &manifest.AuthSecret{
 				Name:  "TEST_TOKEN_VAR",
 				Value: "test.token",
 			},
@@ -218,7 +218,7 @@ func TestDownload_Options(t *testing.T) {
 			name: "download all if options are not limiting",
 			given: downloadConfigsOptions{
 				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{Token: &manifest.AuthSecret{}, OAuth: &manifest.OAuth{}}, // OAuth and Token required to download whole config
+					auth: manifest.Auth{ApiToken: &manifest.AuthSecret{}, OAuth: &manifest.OAuth{}}, // OAuth and ApiToken required to download whole config
 				},
 			},
 			want: wantDownload{
@@ -239,7 +239,7 @@ func TestDownload_Options(t *testing.T) {
 					OnlySettingsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
+					auth: manifest.Auth{ApiToken: &manifest.AuthSecret{}},
 				}},
 			want: wantDownload{settings: true},
 		},
@@ -251,7 +251,7 @@ func TestDownload_Options(t *testing.T) {
 					OnlySettingsFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
+					auth: manifest.Auth{ApiToken: &manifest.AuthSecret{}},
 				}},
 			want: wantDownload{settings: true},
 		},
@@ -343,7 +343,7 @@ func TestDownload_Options(t *testing.T) {
 					OnlyApisFlag: true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
+					auth: manifest.Auth{ApiToken: &manifest.AuthSecret{}},
 				}},
 			want: wantDownload{config: true},
 		},
@@ -355,7 +355,7 @@ func TestDownload_Options(t *testing.T) {
 				},
 				specificAPIs: []string{"alerting-profile"},
 				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
+					auth: manifest.Auth{ApiToken: &manifest.AuthSecret{}},
 				}},
 			want: wantDownload{config: true},
 		},
@@ -381,7 +381,7 @@ func TestDownload_Options(t *testing.T) {
 					OnlyApisFlag:     true,
 				},
 				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{Token: &manifest.AuthSecret{}},
+					auth: manifest.Auth{ApiToken: &manifest.AuthSecret{}},
 				}},
 			want: wantDownload{config: true, settings: true},
 		},
@@ -539,7 +539,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 				Value: "testurl.com",
 			},
 			auth: manifest.Auth{
-				Token: &manifest.AuthSecret{
+				ApiToken: &manifest.AuthSecret{
 					Name:  "TEST_TOKEN_VAR",
 					Value: "test.token",
 				},
@@ -562,9 +562,9 @@ func TestMapToAuth(t *testing.T) {
 	t.Run("Best case scenario only with token", func(t *testing.T) {
 		t.Setenv("TOKEN", "token_value")
 
-		expected := &manifest.Auth{Token: &manifest.AuthSecret{Name: "TOKEN", Value: "token_value"}}
+		expected := &manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "TOKEN", Value: "token_value"}}
 
-		actual, errs := auth{token: "TOKEN"}.mapToAuth()
+		actual, errs := auth{apiToken: "TOKEN"}.mapToAuth()
 
 		assert.Empty(t, errs)
 		assert.Equal(t, expected, actual)
@@ -575,7 +575,7 @@ func TestMapToAuth(t *testing.T) {
 		t.Setenv("CLIENT_SECRET", "client_secret_value")
 
 		expected := &manifest.Auth{
-			Token: &manifest.AuthSecret{Name: "TOKEN", Value: "token_value"},
+			ApiToken: &manifest.AuthSecret{Name: "TOKEN", Value: "token_value"},
 			OAuth: &manifest.OAuth{
 				ClientID:      manifest.AuthSecret{Name: "CLIENT_ID", Value: "client_id_value"},
 				ClientSecret:  manifest.AuthSecret{Name: "CLIENT_SECRET", Value: "client_secret_value"},
@@ -584,7 +584,7 @@ func TestMapToAuth(t *testing.T) {
 		}
 
 		actual, errs := auth{
-			token:        "TOKEN",
+			apiToken:     "TOKEN",
 			clientID:     "CLIENT_ID",
 			clientSecret: "CLIENT_SECRET",
 		}.mapToAuth()
@@ -592,17 +592,17 @@ func TestMapToAuth(t *testing.T) {
 		assert.Empty(t, errs)
 		assert.Equal(t, expected, actual)
 	})
-	t.Run("Token is missing", func(t *testing.T) {
+	t.Run("ApiToken is missing", func(t *testing.T) {
 		_, errs := auth{
-			token: "TOKEN",
+			apiToken: "TOKEN",
 		}.mapToAuth()
 
 		assert.Len(t, errs, 1)
 		assert.Contains(t, errs, errors.New("the content of the environment variable \"TOKEN\" is not set"))
 	})
-	t.Run("Token is missing", func(t *testing.T) {
+	t.Run("ApiToken is missing", func(t *testing.T) {
 		_, errs := auth{
-			token:        "TOKEN",
+			apiToken:     "TOKEN",
 			clientID:     "CLIENT_ID",
 			clientSecret: "CLIENT_SECRET",
 		}.mapToAuth()
@@ -623,7 +623,7 @@ func TestDownloadConfigs_ErrorIfOAuthMissing(t *testing.T) {
 			Value: "testurl.com",
 		},
 		auth: manifest.Auth{
-			Token: &manifest.AuthSecret{
+			ApiToken: &manifest.AuthSecret{
 				Name:  "TEST_TOKEN_VAR",
 				Value: "test.token",
 			},
@@ -670,7 +670,7 @@ func TestDownloadConfigs_ErrorIfTokenMissing(t *testing.T) {
 	}
 
 	err := doDownloadConfigs(t.Context(), testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
-	assert.ErrorContains(t, err, "requires token")
+	assert.ErrorContains(t, err, "requires API token")
 }
 
 func TestDownloadConfigs_OnlySettings(t *testing.T) {

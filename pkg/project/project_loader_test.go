@@ -754,7 +754,7 @@ func getFullProjectLoaderContext(apis []string, projects []string, environments 
 		envDefinitions[e] = manifest.EnvironmentDefinition{
 			Name: e,
 			Auth: manifest.Auth{
-				Token: &manifest.AuthSecret{Name: fmt.Sprintf("%s_VAR", e)},
+				ApiToken: &manifest.AuthSecret{Name: fmt.Sprintf("%s_VAR", e)},
 			},
 		}
 		allEnvironmentNames[e] = struct{}{}
@@ -861,7 +861,7 @@ func TestLoadProjects_Simple(t *testing.T) {
 				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 					"default": {
 						Name: "default",
-						Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+						Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "ENV_VAR"}},
 					},
 				},
 				AllEnvironmentNames: map[string]struct{}{
@@ -968,7 +968,7 @@ func TestLoadProjects_Groups(t *testing.T) {
 				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 					"default": {
 						Name: "default",
-						Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+						Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "ENV_VAR"}},
 					},
 				},
 				AllEnvironmentNames: map[string]struct{}{
@@ -1093,11 +1093,11 @@ func TestLoadProjects_WithEnvironmentOverrides(t *testing.T) {
 				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 					"dev": {
 						Name: "dev",
-						Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+						Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "ENV_VAR"}},
 					},
 					"prod": {
 						Name: "prod",
-						Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+						Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "ENV_VAR"}},
 					},
 				},
 				AllEnvironmentNames: map[string]struct{}{
@@ -1217,7 +1217,7 @@ func TestLoadProjects_WithEnvironmentOverridesAndLimitedEnvironments(t *testing.
 				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 					"dev": {
 						Name: "dev",
-						Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+						Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "ENV_VAR"}},
 					},
 				},
 				AllEnvironmentNames: map[string]struct{}{
@@ -1286,7 +1286,7 @@ func TestLoadProjects_IgnoresIrrelevantProjectWithErrors(t *testing.T) {
 				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 					"dev": {
 						Name: "dev",
-						Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+						Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "ENV_VAR"}},
 					},
 				},
 				AllEnvironmentNames: map[string]struct{}{
@@ -1388,7 +1388,7 @@ func TestLoadProjects_DeepDependencies(t *testing.T) {
 				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 					"default": {
 						Name: "default",
-						Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+						Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "ENV_VAR"}},
 					},
 				},
 				AllEnvironmentNames: map[string]struct{}{
@@ -1471,7 +1471,7 @@ func TestLoadProjects_CircularDependencies(t *testing.T) {
 				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 					"default": {
 						Name: "default",
-						Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+						Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "ENV_VAR"}},
 					},
 				},
 				AllEnvironmentNames: map[string]struct{}{
@@ -1571,7 +1571,7 @@ func TestLoadProjects_EnvironmentOverrideWithUndefinedEnvironmentProducesWarning
 				SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 					"dev": {
 						Name: "dev",
-						Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+						Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "ENV_VAR"}},
 					},
 				},
 				AllEnvironmentNames: map[string]struct{}{
@@ -1630,7 +1630,7 @@ func TestLoadProjects_GroupOverrideWithUndefinedGroupProducesWarning(t *testing.
 					"dev": {
 						Name:  "dev",
 						Group: "dev",
-						Auth:  manifest.Auth{Token: &manifest.AuthSecret{Name: "ENV_VAR"}},
+						Auth:  manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "ENV_VAR"}},
 					},
 				},
 				AllEnvironmentNames: map[string]struct{}{

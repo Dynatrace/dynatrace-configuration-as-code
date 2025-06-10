@@ -32,7 +32,7 @@ import (
 )
 
 func TestDefaultTokenEndpoint(t *testing.T) {
-	t.Run("Token endpoint value is returned if set", func(t *testing.T) {
+	t.Run("ApiToken endpoint value is returned if set", func(t *testing.T) {
 		o := manifest.OAuth{
 			TokenEndpoint: &manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -115,7 +115,7 @@ func TestManifestLoading(t *testing.T) {
 						Value: "https://some.url",
 					},
 					Auth: manifest.Auth{
-						Token: &manifest.AuthSecret{
+						ApiToken: &manifest.AuthSecret{
 							Name:  "ENV_TOKEN",
 							Value: "dt01.token",
 						},
@@ -145,7 +145,7 @@ func TestManifestLoading(t *testing.T) {
 						Value: "https://ddd.bbb.cc",
 					},
 					Auth: manifest.Auth{
-						Token: &manifest.AuthSecret{
+						ApiToken: &manifest.AuthSecret{
 							Name:  "ENV_TOKEN",
 							Value: "dt01.token",
 						},
@@ -161,7 +161,7 @@ func TestManifestLoading(t *testing.T) {
 						Value: "https://some.url",
 					},
 					Auth: manifest.Auth{
-						Token: &manifest.AuthSecret{
+						ApiToken: &manifest.AuthSecret{
 							Name:  "ENV_TOKEN",
 							Value: "dt01.token",
 						},

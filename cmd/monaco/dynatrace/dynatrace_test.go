@@ -76,7 +76,7 @@ func TestVerifyEnvironmentsAuthentication_OneOfManyFails(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 			},
 		},
 		"env2": manifest.EnvironmentDefinition{
@@ -87,7 +87,7 @@ func TestVerifyEnvironmentsAuthentication_OneOfManyFails(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 			},
 		},
 	})
@@ -144,7 +144,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 					Name:  "URL",
 					Value: server.URL,
 				},
-				Auth: manifest.Auth{Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"}},
+				Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"}},
 			},
 		})
 		assert.NoError(t, err)
@@ -266,7 +266,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 			},
 		})
 		assert.Error(t, err)
@@ -286,7 +286,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 				Value: "",
 			},
 			Auth: manifest.Auth{
-				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 			},
 		})
 		assert.Error(t, err)
@@ -358,7 +358,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 				OAuth: &manifest.OAuth{
 					ClientID: manifest.AuthSecret{
 						Name:  "OAUTH_ID",
@@ -399,7 +399,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				Token: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 				OAuth: &manifest.OAuth{
 					ClientID: manifest.AuthSecret{
 						Name:  "OAUTH_ID",

@@ -33,7 +33,7 @@ const (
 	EnvironmentFlag               = "environment"
 	UrlFlag                       = "url"
 	ManifestFlag                  = "manifest"
-	TokenFlag                     = "token"
+	ApiTokenFlag                  = "token"
 	OAuthIdFlag                   = "oauth-client-id"
 	OAuthSecretFlag               = "oauth-client-secret"
 	ApiFlag                       = "api"
@@ -66,7 +66,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
   monaco download [--%s manifest.yaml] --%s MY_ENV ...
 
   # download without manifest
-  monaco download --%s url --%s DT_TOKEN [--%s CLIENT_ID --%s CLIENT_SECRET] ...`, ManifestFlag, EnvironmentFlag, UrlFlag, TokenFlag, OAuthIdFlag, OAuthSecretFlag),
+  monaco download --%s url --%s DT_TOKEN [--%s CLIENT_ID --%s CLIENT_SECRET] ...`, ManifestFlag, EnvironmentFlag, UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag),
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return preRunChecks(f)
@@ -98,10 +98,10 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&f.specificEnvironmentName, EnvironmentFlag, "e", "", "Specify an environment defined in the manifest to download the configurations.")
 	// download without manifest
 	cmd.Flags().StringVar(&f.environmentURL, UrlFlag, "", "URL to the Dynatrace environment from which to download the configuration. "+
-		fmt.Sprintf("To be able to connect to any Dynatrace environment, an API-Token needs to be provided using '--%s'. ", TokenFlag)+
+		fmt.Sprintf("To be able to connect to any Dynatrace environment, an API token needs to be provided using '--%s'. ", ApiTokenFlag)+
 		fmt.Sprintf("In case of connecting to a Dynatrace Platform, an OAuth Client ID, as well as an OAuth Client Secret, needs to be provided as well using the flags '--%s' and '--%s'. ", OAuthIdFlag, OAuthSecretFlag)+
 		fmt.Sprintf("This flag is not combinable with the flag '--%s.'", ManifestFlag))
-	cmd.Flags().StringVar(&f.token, TokenFlag, "", fmt.Sprintf("API-Token environment variable. Required when using the flag '--%s'", UrlFlag))
+	cmd.Flags().StringVar(&f.apiToken, ApiTokenFlag, "", fmt.Sprintf("API token environment variable. Required when using the flag '--%s'", UrlFlag))
 	cmd.Flags().StringVar(&f.clientID, OAuthIdFlag, "", fmt.Sprintf("OAuth client ID environment variable. Required when using the flag '--%s' and connecting to a Dynatrace Platform.", UrlFlag))
 	cmd.Flags().StringVar(&f.clientSecret, OAuthSecretFlag, "", fmt.Sprintf("OAuth client secret environment variable. Required when using the flag '--%s' and connecting to a Dynatrace Platform.", UrlFlag))
 
@@ -131,7 +131,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	}
 
 	err := errors.Join(
-		cmd.RegisterFlagCompletionFunc(TokenFlag, completion.EnvVarName),
+		cmd.RegisterFlagCompletionFunc(ApiTokenFlag, completion.EnvVarName),
 		cmd.RegisterFlagCompletionFunc(OAuthIdFlag, completion.EnvVarName),
 		cmd.RegisterFlagCompletionFunc(OAuthSecretFlag, completion.EnvVarName),
 
@@ -155,8 +155,8 @@ func preRunChecks(f downloadCmdOptions) error {
 		return fmt.Errorf("'%s' is specific to manifest-based download and incompatible with direct download from '%s'", EnvironmentFlag, UrlFlag)
 	case f.environmentURL != "":
 		switch {
-		case f.token == "":
-			return fmt.Errorf("if '%s' is set, '%s' also must be set", UrlFlag, TokenFlag)
+		case f.apiToken == "":
+			return fmt.Errorf("if '%s' is set, '%s' also must be set", UrlFlag, ApiTokenFlag)
 		case (f.clientID == "") != (f.clientSecret == ""):
 			return fmt.Errorf("'%s' and '%s' must always be set together", OAuthIdFlag, OAuthSecretFlag)
 		default:
@@ -164,8 +164,8 @@ func preRunChecks(f downloadCmdOptions) error {
 		}
 	case f.manifestFile != "":
 		switch {
-		case f.token != "" || f.clientID != "" || f.clientSecret != "":
-			return fmt.Errorf("'%s', '%s' and '%s' can only be used with '%s', while '%s' must NOT be set ", TokenFlag, OAuthIdFlag, OAuthSecretFlag, UrlFlag, ManifestFlag)
+		case f.apiToken != "" || f.clientID != "" || f.clientSecret != "":
+			return fmt.Errorf("'%s', '%s' and '%s' can only be used with '%s', while '%s' must NOT be set ", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, UrlFlag, ManifestFlag)
 		case f.specificEnvironmentName == "":
 			return fmt.Errorf("to download with manifest, '%s' needs to be specified", EnvironmentFlag)
 		}

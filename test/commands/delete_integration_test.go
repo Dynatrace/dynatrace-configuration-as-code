@@ -242,7 +242,7 @@ environmentGroups:
 		monaco.Run(t, fs, "monaco delete --manifest=testdata/delete-test-configs/deploy-manifest.yaml --verbose")
 	}()
 
-	// DELETE Configs - with API Token only Manifest
+	// DELETE Configs - with API token only Manifest
 	err = monaco.Run(t, fs, "monaco delete --verbose")
 	assert.NoError(t, err)
 
