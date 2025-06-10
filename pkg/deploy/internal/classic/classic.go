@@ -81,7 +81,6 @@ func Deploy(ctx context.Context, configClient client.ConfigClient, apis api.APIs
 	properties[config.NameParameter] = dtEntity.Name
 
 	return entities.ResolvedEntity{
-		EntityName: dtEntity.Name,
 		Coordinate: conf.Coordinate,
 		Properties: properties,
 		Skip:       false,

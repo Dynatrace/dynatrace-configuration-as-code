@@ -96,7 +96,6 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 	properties[config.NameParameter] = name
 
 	return entities.ResolvedEntity{
-		EntityName: name,
 		Coordinate: c.Coordinate,
 		Properties: properties,
 		Skip:       false,

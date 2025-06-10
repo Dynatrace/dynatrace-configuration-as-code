@@ -165,7 +165,6 @@ func TestDeployAutomation(t *testing.T) {
 	}
 	resolvedEntity, errors := Deploy(t.Context(), client, parameter.Properties{}, "{}", conf)
 	assert.NotNil(t, resolvedEntity)
-	assert.Equal(t, "[UNKNOWN NAME]config-id", resolvedEntity.EntityName)
 	assert.Equal(t, "config-id", resolvedEntity.Properties[config.IdParameter])
 	assert.False(t, resolvedEntity.Skip)
 	assert.Empty(t, errors)

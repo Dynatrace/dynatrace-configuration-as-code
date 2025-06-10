@@ -17,10 +17,12 @@
 package reference
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -227,7 +229,6 @@ func TestResolveComplexValueMap(t *testing.T) {
 
 	entityMap := entities.New()
 	entityMap.Put(entities.ResolvedEntity{
-		EntityName: config,
 		Coordinate: referenceCoordinate,
 		Properties: map[string]any{
 			"keys": map[any]any{"key": "value"},
@@ -282,7 +283,6 @@ func TestResolveComplexValueNestedMap(t *testing.T) {
 
 	entityMap := entities.New()
 	entityMap.Put(entities.ResolvedEntity{
-		EntityName: config,
 		Coordinate: referenceCoordinate,
 		Properties: map[string]any{
 			"keys": map[any]any{
