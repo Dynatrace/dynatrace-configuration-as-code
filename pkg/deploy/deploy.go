@@ -48,6 +48,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
@@ -352,12 +353,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		resolvedEntity, deployErr = openpipeline.NewDeployAPI(clientset.OpenPipelineClient).Deploy(ctx, properties, renderedConfig, c)
 
 	case config.Segment:
-		if !featureflags.Segments.Enabled() {
-			deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
-			break
-		}
-
-		resolvedEntity, deployErr = segment.Deploy(ctx, clientset.SegmentClient, properties, renderedConfig, c)
+		resolvedEntity, deployErr = segment.NewDeployAPI(clientset.SegmentClient).Deploy(ctx, properties, renderedConfig, c)
 
 	case config.ServiceLevelObjective:
 		resolvedEntity, deployErr = slo.NewDeployAPI(clientset.ServiceLevelObjectiveClient).Deploy(ctx, properties, renderedConfig, c)

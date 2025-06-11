@@ -32,7 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 )
 
 type testClient struct {
@@ -267,7 +267,7 @@ func TestDeploy(t *testing.T) {
 			renderedConfig, err := tt.inputConfig.Render(props)
 			assert.NoError(t, err)
 
-			resolvedEntity, err := segment.Deploy(t.Context(), &c, props, renderedConfig, &tt.inputConfig)
+			resolvedEntity, err := segment.NewDeployAPI(&c).Deploy(t.Context(), props, renderedConfig, &tt.inputConfig)
 			if tt.expectErr {
 				assert.Error(t, err)
 			}
