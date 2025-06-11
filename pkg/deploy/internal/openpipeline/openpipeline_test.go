@@ -27,10 +27,10 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 )
 
 var opConfigCoordinate = coordinate.Coordinate{

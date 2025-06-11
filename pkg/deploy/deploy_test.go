@@ -32,6 +32,7 @@ import (
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -43,7 +44,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
