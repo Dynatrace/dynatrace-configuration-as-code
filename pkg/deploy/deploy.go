@@ -40,7 +40,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/document"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
@@ -48,6 +47,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
@@ -349,12 +349,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		resolvedEntity, deployErr = document.Deploy(ctx, clientset.DocumentClient, properties, renderedConfig, c)
 
 	case config.OpenPipelineType:
-		if !featureflags.OpenPipeline.Enabled() {
-			deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
-			break
-		}
-
-		resolvedEntity, deployErr = openpipeline.Deploy(ctx, clientset.OpenPipelineClient, properties, renderedConfig, c)
+		resolvedEntity, deployErr = openpipeline.NewDeployAPI(clientset.OpenPipelineClient).Deploy(ctx, properties, renderedConfig, c)
 
 	case config.Segment:
 		if !featureflags.Segments.Enabled() {

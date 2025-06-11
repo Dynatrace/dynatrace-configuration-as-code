@@ -49,7 +49,7 @@ func TestDeployOpenPipelineConfig(t *testing.T) {
 	}
 
 	t.Run("Update succeeds", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq("logs"), gomock.Eq([]byte("{}"))).Times(1).Return(openpipeline.Response{}, nil)
 
 		result, err := runDeployTest(t, client, opConfig)
@@ -58,15 +58,15 @@ func TestDeployOpenPipelineConfig(t *testing.T) {
 	})
 
 	t.Run("Update fails", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq("logs"), gomock.Eq([]byte("{}"))).Times(1).Return(openpipeline.Response{}, errors.New("connection error"))
 		_, err := runDeployTest(t, client, opConfig)
 		assert.Error(t, err)
 	})
 }
 
-func runDeployTest(t *testing.T, client Client, c *config.Config) (entities.ResolvedEntity, error) {
+func runDeployTest(t *testing.T, client DeploySource, c *config.Config) (entities.ResolvedEntity, error) {
 	parameters, errs := c.ResolveParameterValues(entities.New())
 	require.Empty(t, errs)
-	return Deploy(t.Context(), client, parameters, "{}", c)
+	return NewDeployAPI(client).Deploy(t.Context(), parameters, "{}", c)
 }
