@@ -168,8 +168,9 @@ func toWriteableEnvironmentGroups(environments manifest.Environments) (result []
 
 func getAuth(env manifest.EnvironmentDefinition) persistence.Auth {
 	return persistence.Auth{
-		ApiToken: getAuthSecret(env.Auth.ApiToken),
-		OAuth:    getOAuthCredentials(env.Auth.OAuth),
+		ApiToken:      getAuthSecret(env.Auth.ApiToken),
+		OAuth:         getOAuthCredentials(env.Auth.OAuth),
+		PlatformToken: getAuthSecret(env.Auth.PlatformToken),
 	}
 }
 

@@ -177,6 +177,10 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						Group: "group1",
 						Auth: manifest.Auth{
 							ApiToken: &manifest.AuthSecret{},
+							PlatformToken: &manifest.AuthSecret{
+								Name:  "token",
+								Value: "value",
+							},
 							OAuth: &manifest.OAuth{
 								ClientID: manifest.AuthSecret{
 									Name:  "client-id-key",
@@ -269,8 +273,12 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
 								ApiToken: &persistence.AuthSecret{
-									Name: "env2_TOKEN",
+									Name: "",
 									Type: "environment",
+								},
+								PlatformToken: &persistence.AuthSecret{
+									Type: persistence.TypeEnvironment,
+									Name: "token",
 								},
 								OAuth: &persistence.OAuth{
 									ClientID: persistence.AuthSecret{
@@ -293,7 +301,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
 								ApiToken: &persistence.AuthSecret{
-									Name: "env2_TOKEN",
+									Name: "",
 									Type: "environment",
 								},
 								OAuth: &persistence.OAuth{
@@ -313,7 +321,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
 								ApiToken: &persistence.AuthSecret{
-									Name: "env2_TOKEN",
+									Name: "",
 									Type: "environment",
 								},
 								OAuth: &persistence.OAuth{
@@ -341,7 +349,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
 								ApiToken: &persistence.AuthSecret{
-									Name: "env3_TOKEN",
+									Name: "",
 									Type: "environment",
 								},
 							},

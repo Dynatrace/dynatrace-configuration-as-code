@@ -92,9 +92,11 @@ type OAuth struct {
 // Auth defines all required information for authenticated API calls
 type Auth struct {
 	// ApiToken defines an API access tokens used for Dynatrace Config API calls
-	ApiToken *AuthSecret `yaml:"token,omitempty" json:"token" jsonschema:"description=An API token used for Dynatrace Config API calls - for classic apis this is required"`
+	ApiToken *AuthSecret `yaml:"token,omitempty" json:"token" jsonschema:"description=An API token used for Dynatrace Config API calls - for classic APIs this is required."`
 	// OAuth defines client credentials used for Dynatrace Platform API calls
-	OAuth *OAuth `yaml:"oAuth,omitempty" json:"oAuth" jsonschema:"description=OAuth client credentials used for Dynatrace Platform API calls - for platform environments this is required."`
+	OAuth *OAuth `yaml:"oAuth,omitempty" json:"oAuth" jsonschema:"description=OAuth client credentials used for Dynatrace Platform API calls - for platform environments this or a platform token is required."`
+	// PlatformToken defines a platform token used for Dynatrace Platform API calls
+	PlatformToken *AuthSecret `yaml:"platformToken,omitempty" json:"platformToken" jsonschema:"description=A platform token used for Dynatrace Platform API calls - for platform environments this or OAuth is required."`
 }
 
 // Environment defines all required information for accessing a Dynatrace environment
