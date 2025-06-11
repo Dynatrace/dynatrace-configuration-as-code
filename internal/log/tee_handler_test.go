@@ -68,8 +68,8 @@ func TestTeeHandler_Enabled(t *testing.T) {
 	})
 }
 
-// TestHandler_Handle tests records are handled correctly.
-func TestHandler_Handle(t *testing.T) {
+// TestTeeHandler_Handle tests records are handled correctly.
+func TestTeeHandler_Handle(t *testing.T) {
 	t.Run("without attributes", func(t *testing.T) {
 		handler1 := NewTestHandler(&slog.HandlerOptions{})
 		handler2 := NewTestHandler(&slog.HandlerOptions{})
@@ -106,8 +106,8 @@ func TestHandler_Handle(t *testing.T) {
 
 }
 
-// TestHandler_WithAttrs tests that a TeeHandler is returned that applies the given attributes to each handled record.
-func TestHandler_WithAttrs(t *testing.T) {
+// TestTeeHandler_WithAttrs tests that a TeeHandler is returned that applies the given attributes to each handled record.
+func TestTeeHandler_WithAttrs(t *testing.T) {
 	handler1 := NewTestHandler(&slog.HandlerOptions{})
 	handler2 := NewTestHandler(&slog.HandlerOptions{})
 
@@ -123,8 +123,8 @@ func TestHandler_WithAttrs(t *testing.T) {
 	assert.Contains(t, handler2.Output.String(), "level=WARN msg=test key=value")
 }
 
-// TestHandler_WithGroup tests that a TeeHandler is returned which applies the given group to handled records.
-func TestHandler_WithGroup(t *testing.T) {
+// TestTeeHandler_WithGroup tests that a TeeHandler is returned which applies the given group to handled records.
+func TestTeeHandler_WithGroup(t *testing.T) {
 	handler1 := NewTestHandler(&slog.HandlerOptions{})
 	handler2 := NewTestHandler(&slog.HandlerOptions{})
 
