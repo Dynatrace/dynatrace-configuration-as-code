@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -81,6 +82,11 @@ type ManifestLoaderError struct {
 	// Reason describing what went wrong
 	Reason string `json:"reason"`
 }
+
+var (
+	ErrNoCredentials              = errors.New("no API token or platform credentials provided")
+	ErrPlatformCredentialConflict = errors.New("OAuth credentials and a platform token can't be used at the same time")
+)
 
 func (e ManifestLoaderError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Reason, e.ManifestPath)
@@ -211,8 +217,8 @@ func Load(context *Context) (manifest.Manifest, []error) {
 func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 	var mAuth manifest.Auth
 
-	if a.ApiToken == nil && a.OAuth == nil {
-		return manifest.Auth{}, errors.New("no token or OAuth credentials provided")
+	if err := validateAuthInput(a); err != nil {
+		return manifest.Auth{}, err
 	}
 
 	if a.ApiToken != nil {
@@ -231,7 +237,25 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 		mAuth.OAuth = oauth
 	}
 
+	if featureflags.PlatformToken.Enabled() && a.PlatformToken != nil {
+		platformToken, err := parseAuthSecret(context, a.PlatformToken)
+		if err != nil {
+			return manifest.Auth{}, fmt.Errorf("failed to parse platform token: %w", err)
+		}
+		mAuth.PlatformToken = &platformToken
+	}
+
 	return mAuth, nil
+}
+
+func validateAuthInput(a persistence.Auth) error {
+	if a.ApiToken == nil && a.OAuth == nil && (!featureflags.PlatformToken.Enabled() || a.PlatformToken == nil) {
+		return ErrNoCredentials
+	}
+	if featureflags.PlatformToken.Enabled() && a.OAuth != nil && a.PlatformToken != nil {
+		return ErrPlatformCredentialConflict
+	}
+	return nil
 }
 
 func parseAuthSecret(context *Context, s *persistence.AuthSecret) (manifest.AuthSecret, error) {

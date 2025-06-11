@@ -27,12 +27,94 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
+)
+
+const (
+	platformManifest = `
+manifestVersion: 1.0
+projects:
+  - name: a
+environmentGroups:
+  - name: b
+    environments:
+      - name: c
+        url:
+          value: d
+        auth:
+          platformToken:
+            name: e`
+	platformAndApiTokenManifest = `
+manifestVersion: "1.0"
+projects:
+  - name: a
+environmentGroups:
+  - name: b
+    environments:
+      - name: c
+        url:
+          value: d
+        auth:
+          platformToken:
+            name: e
+          token:
+            name: e`
+	// contains "type: value", which is not allowed
+	invalidPlatformManifest = `
+manifestVersion: 1.0
+projects:
+  - name: a
+environmentGroups:
+  - name: b
+    environments:
+      - name: c
+        url:
+          value: d
+        auth:
+          platformToken:
+            type: value
+            name: e`
+	platformAndOAuthManifest = `
+manifestVersion: 1.0
+projects:
+  - name: a
+environmentGroups:
+  - name: b
+    environments:
+      - name: c
+        url:
+          value: d
+        auth:
+          platformToken:
+            name: e
+          oAuth:
+            clientId:
+              name: client-id
+            clientSecret:
+              name: client-secret`
+	oAuthManifest = `
+manifestVersion: 1.0
+projects:
+  - name: a
+environmentGroups:
+  - name: b
+    environments:
+      - name: c
+        url:
+          value: d
+        auth:
+          oAuth:
+            clientId:
+              name: client-id
+            clientSecret:
+              name: client-secret`
 )
 
 func Test_extractUrlType(t *testing.T) {
@@ -1785,7 +1867,55 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}}]}]
 `,
-			errsContain: []string{"no token or OAuth credentials provided"},
+			errsContain: []string{ErrNoCredentials.Error()},
+		},
+		{
+			name:            "Only platform auth configured with disabled FF",
+			manifestContent: platformManifest,
+			errsContain:     []string{ErrNoCredentials.Error()},
+		},
+		{
+			name:            "platform and OAuth configured with disabled FF does not fail",
+			manifestContent: platformAndOAuthManifest,
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
+					"a": {
+						Name: "a",
+						Path: "a",
+					},
+				},
+				Environments: manifest.Environments{
+					SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
+						"c": {
+							Name: "c",
+							URL: manifest.URLDefinition{
+								Type:  manifest.ValueURLType,
+								Value: "d",
+							},
+							Group: "b",
+							Auth: manifest.Auth{
+								OAuth: &manifest.OAuth{
+									ClientID: manifest.AuthSecret{
+										Name:  "client-id",
+										Value: "resolved-client-id",
+									},
+									ClientSecret: manifest.AuthSecret{
+										Name:  "client-secret",
+										Value: "resolved-client-secret",
+									},
+								},
+							},
+						},
+					},
+					AllEnvironmentNames: map[string]struct{}{
+						"c": {},
+					},
+					AllGroupNames: map[string]struct{}{
+						"b": {},
+					},
+				},
+				Accounts: map[string]manifest.Account{},
+			},
 		},
 		{
 			name: "Unknown type",
@@ -1935,6 +2065,73 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			assert.Equal(t, test.expectedManifest, mani)
 		})
 	}
+}
+
+func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
+	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+	t.Setenv("e", "mock token")
+	t.Setenv("client-id", "resolved-client-id")
+	t.Setenv("client-secret", "resolved-client-secret")
+
+	t.Run("fails if OAuth and platform token are provided", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(platformAndOAuthManifest), 0400))
+		_, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+		})
+		// ErrorIs does not work, because the error is not wrapped and just the error message is attached
+		assert.ErrorContains(t, errs[0], ErrPlatformCredentialConflict.Error())
+	})
+
+	t.Run("does not fail if platform token is not provided", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(oAuthManifest), 0400))
+		_, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+		})
+		assert.Len(t, errs, 0)
+	})
+
+	t.Run("fails if platform token is invalid", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(invalidPlatformManifest), 0400))
+		_, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+		})
+		assert.Len(t, errs, 1)
+		assert.ErrorContains(t, errs[0], "failed to parse platform token")
+	})
+
+	t.Run("succeeds if only platform token is provided", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(platformManifest), 0400))
+		mf, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+		})
+		require.Len(t, errs, 0)
+		assert.Equal(t, &manifest.AuthSecret{
+			Name:  "e",
+			Value: "mock token",
+		}, mf.Environments.SelectedEnvironments["c"].Auth.PlatformToken)
+	})
+
+	t.Run("succeeds if platform token and API token are provided", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(platformAndApiTokenManifest), 0400))
+		mf, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+		})
+		require.Len(t, errs, 0)
+		assert.Equal(t, &manifest.AuthSecret{
+			Name:  "e",
+			Value: "mock token",
+		}, mf.Environments.SelectedEnvironments["c"].Auth.PlatformToken)
+	})
 }
 
 func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
