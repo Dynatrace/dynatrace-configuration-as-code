@@ -49,6 +49,8 @@ const (
 	// SanitizeBucketNames toggles whether bucket names created by Monaco are sanitized or not.
 	// Introduced: v2.23.0
 	SanitizeBucketNames FeatureFlag = "MONACO_SANITIZE_BUCKET_NAMES"
+	// PlatformToken toggles whether the use of platform tokens is enabled or not (deploy, download, read manifest, etc.)
+	PlatformToken FeatureFlag = "MONACO_FEAT_ENABLE_PLATFORM_TOKENS"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
@@ -65,4 +67,5 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	ServiceLevelObjective:              true,
 	AccessControlSettings:              true,
 	SanitizeBucketNames:                true,
+	PlatformToken:                      false,
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -211,8 +212,8 @@ func Load(context *Context) (manifest.Manifest, []error) {
 func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 	var mAuth manifest.Auth
 
-	if a.ApiToken == nil && a.OAuth == nil {
-		return manifest.Auth{}, errors.New("no token or OAuth credentials provided")
+	if err := validateAuthInput(a); err != nil {
+		return manifest.Auth{}, err
 	}
 
 	if a.ApiToken != nil {
@@ -231,7 +232,25 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 		mAuth.OAuth = oauth
 	}
 
+	if featureflags.PlatformToken.Enabled() && a.PlatformToken != nil {
+		platformToken, err := parseAuthSecret(context, a.PlatformToken)
+		if err != nil {
+			return manifest.Auth{}, fmt.Errorf("failed to parse platform token: %w", err)
+		}
+		mAuth.PlatformToken = &platformToken
+	}
+
 	return mAuth, nil
+}
+
+func validateAuthInput(a persistence.Auth) error {
+	if a.ApiToken == nil && a.OAuth == nil && (!featureflags.PlatformToken.Enabled() || a.PlatformToken == nil) {
+		return errors.New("no API token or platform credentials provided")
+	}
+	if featureflags.PlatformToken.Enabled() && a.OAuth != nil && a.PlatformToken != nil {
+		return errors.New("either OAuth credentials or a platform token can be used - not both")
+	}
+	return nil
 }
 
 func parseAuthSecret(context *Context, s *persistence.AuthSecret) (manifest.AuthSecret, error) {
