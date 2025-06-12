@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,12 +31,20 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 )
 
-//go:generate mockgen -source=automation.go -destination=automation_mock.go -package=automation automationClient
-type Client interface {
+//go:generate mockgen -source=deploy.go -destination=automation_mock.go -package=automation DeploySource
+type DeploySource interface {
 	Upsert(ctx context.Context, resourceType automationAPI.ResourceType, id string, data []byte) (result automation.Response, err error)
 }
 
-func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
+type DeployAPI struct {
+	source DeploySource
+}
+
+func NewDeployAPI(source DeploySource) *DeployAPI {
+	return &DeployAPI{source}
+}
+
+func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
@@ -58,7 +66,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
 	}
 
-	resp, err := client.Upsert(ctx, resourceType, id, []byte(renderedConfig))
+	resp, err := d.source.Upsert(ctx, resourceType, id, []byte(renderedConfig))
 	if err != nil {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
 	}
