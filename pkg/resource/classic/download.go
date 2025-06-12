@@ -41,18 +41,18 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-type Source interface {
+type downloadSource interface {
 	Get(context.Context, api.API, string) ([]byte, error)
 	List(context.Context, api.API) ([]dtclient.Value, error)
 }
 
 type DownloadAPI struct {
-	configSource   Source
+	configSource   downloadSource
 	apisToDownload api.APIs
 	filters        ContentFilters
 }
 
-func NewDownloadAPI(configSource Source, apisToDownload api.APIs, filters ContentFilters) *DownloadAPI {
+func NewDownloadAPI(configSource downloadSource, apisToDownload api.APIs, filters ContentFilters) *DownloadAPI {
 	return &DownloadAPI{configSource, apisToDownload, filters}
 }
 
@@ -115,7 +115,7 @@ func checkAndRemoveValuesWithDuplicateIDs(api api.API, originalValues values) va
 	return filteredValues
 }
 
-func downloadConfigs(ctx context.Context, configSource Source, api api.API, configsToDownload values, projectName string, filters ContentFilters) []config.Config {
+func downloadConfigs(ctx context.Context, configSource downloadSource, api api.API, configsToDownload values, projectName string, filters ContentFilters) []config.Config {
 	var results []config.Config
 
 	mutex := sync.Mutex{}
@@ -181,7 +181,7 @@ func (v value) id() string {
 
 // findConfigsToDownload tries to identify all values that should be downloaded from a Dynatrace environment for
 // the given API
-func findConfigsToDownload(ctx context.Context, configSource Source, apiToDownload api.API, filters ContentFilters) (values, error) {
+func findConfigsToDownload(ctx context.Context, configSource downloadSource, apiToDownload api.API, filters ContentFilters) (values, error) {
 	if apiToDownload.SingleConfiguration && !apiToDownload.HasParent() {
 		log.WithFields(field.Type(apiToDownload.ID)).Debug("\tFetching singleton-configuration '%v'", apiToDownload.ID)
 
@@ -270,7 +270,7 @@ func shouldFilter() bool {
 	return featureflags.DownloadFilter.Enabled() && featureflags.DownloadFilterClassicConfigs.Enabled()
 }
 
-func download(ctx context.Context, configSource Source, theApi api.API, value value) ([]map[string]any, error) {
+func download(ctx context.Context, configSource downloadSource, theApi api.API, value value) ([]map[string]any, error) {
 	id := value.value.Id
 
 	// check if we should skip the id to enforce to read/download "all" configs instead of a single one

@@ -30,15 +30,15 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-type Source interface {
+type downloadSource interface {
 	List(ctx context.Context) (api.PagedListResponse, error)
 }
 
 type DownloadAPI struct {
-	sloSource Source
+	sloSource downloadSource
 }
 
-func NewDownloadAPI(sloSource Source) *DownloadAPI {
+func NewDownloadAPI(sloSource downloadSource) *DownloadAPI {
 	return &DownloadAPI{sloSource}
 }
 
