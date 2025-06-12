@@ -30,15 +30,15 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-type downloadSource interface {
+type DownloadSource interface {
 	GetAll(context.Context) ([]openpipeline.Response, error)
 }
 
 type DownloadAPI struct {
-	openPipelineSource downloadSource
+	openPipelineSource DownloadSource
 }
 
-func NewDownloadAPI(source downloadSource) *DownloadAPI {
+func NewDownloadAPI(source DownloadSource) *DownloadAPI {
 	return &DownloadAPI{source}
 }
 

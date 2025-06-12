@@ -46,15 +46,15 @@ var automationTypesToResources = map[config.AutomationType]automationAPI.Resourc
 	config.AutomationType{Resource: config.SchedulingRule}:   automationAPI.SchedulingRules,
 }
 
-type downloadSource interface {
+type DownloadSource interface {
 	List(context.Context, automationAPI.ResourceType) (automation.ListResponse, error)
 }
 
 type DownloadAPI struct {
-	automationSource downloadSource
+	automationSource DownloadSource
 }
 
-func NewDownloadAPI(automationSource downloadSource) *DownloadAPI {
+func NewDownloadAPI(automationSource DownloadSource) *DownloadAPI {
 	return &DownloadAPI{automationSource}
 }
 
