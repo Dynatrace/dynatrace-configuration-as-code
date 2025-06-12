@@ -32,12 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-var documentMapping = map[string]config.DocumentKind{
-	documents.Dashboard: config.DashboardKind,
-	documents.Notebook:  config.NotebookKind,
-	documents.Launchpad: config.LaunchpadKind,
-}
-
 type DownloadSource interface {
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
 	Get(ctx context.Context, id string) (documents.Response, error)
@@ -156,6 +150,12 @@ func createTemplateFromResponse(response documents.Response) (template.Template,
 }
 
 func validateDocumentType(documentType string) (config.DocumentType, error) {
+	var documentMapping = map[string]config.DocumentKind{
+		documents.Dashboard: config.DashboardKind,
+		documents.Notebook:  config.NotebookKind,
+		documents.Launchpad: config.LaunchpadKind,
+	}
+
 	kind, f := documentMapping[documentType]
 	if !f {
 		return config.DocumentType{}, fmt.Errorf("unsupported document type: %s", documentType)
