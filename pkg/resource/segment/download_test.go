@@ -22,9 +22,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -55,7 +56,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		segmentApi := segment.NewAPI(c)
+		segmentApi := segment.NewDownloadAPI(c)
 		result, err := segmentApi.Download(t.Context(), "project")
 
 		assert.NoError(t, err)
@@ -92,7 +93,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		segmentApi := segment.NewAPI(c)
+		segmentApi := segment.NewDownloadAPI(c)
 		result, err := segmentApi.Download(t.Context(), "project")
 
 		assert.NoError(t, err)
@@ -110,7 +111,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		segmentApi := segment.NewAPI(c)
+		segmentApi := segment.NewDownloadAPI(c)
 		actual, err := segmentApi.Download(t.Context(), "project")
 
 		assert.NoError(t, err)
@@ -124,7 +125,7 @@ func TestDownloader_Download(t *testing.T) {
 			return []api.Response{}, errors.New("some unexpected error")
 		}}
 
-		segmentApi := segment.NewAPI(c)
+		segmentApi := segment.NewDownloadAPI(c)
 		result, err := segmentApi.Download(t.Context(), "project")
 		assert.NoError(t, err)
 		assert.Empty(t, result)
@@ -187,7 +188,7 @@ func TestDownloader_Download(t *testing.T) {
 			return []api.Response{{StatusCode: http.StatusOK, Data: []byte(given)}}, nil
 		}}
 
-		segmentApi := segment.NewAPI(c)
+		segmentApi := segment.NewDownloadAPI(c)
 		result, err := segmentApi.Download(t.Context(), "project")
 		assert.NoError(t, err)
 

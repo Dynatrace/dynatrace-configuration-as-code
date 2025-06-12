@@ -43,15 +43,15 @@ type Source interface {
 	Get(ctx context.Context, id string) (documents.Response, error)
 }
 
-type API struct {
+type DownloadAPI struct {
 	documentSource Source
 }
 
-func NewAPI(documentSource Source) *API {
-	return &API{documentSource}
+func NewDownloadAPI(documentSource Source) *DownloadAPI {
+	return &DownloadAPI{documentSource}
 }
 
-func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	log.Info("Downloading documents")
 	// due to the current test setup, the types must be downloaded in order. This should be changed eventually
 	var typesToDownload = []documents.DocumentType{

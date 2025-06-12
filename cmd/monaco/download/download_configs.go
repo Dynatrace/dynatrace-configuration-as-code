@@ -228,7 +228,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 
 	if opts.onlyOptions.ShouldDownload(OnlyApisFlag) {
 		if opts.auth.ApiToken != nil {
-			downloadables = append(downloadables, classic.NewAPI(clientSet.ConfigClient, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters))
+			downloadables = append(downloadables, classic.NewDownloadAPI(clientSet.ConfigClient, prepareAPIs(apisToDownload, opts), classic.ApiContentFilters))
 		} else if opts.onlyOptions.IsSingleOption(OnlyApisFlag) {
 			return nil, errors.New("classic client config requires API token")
 		} else {
@@ -238,12 +238,12 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 
 	if opts.onlyOptions.ShouldDownload(OnlySettingsFlag) {
 		// auth is already validated during load that either an API token or OAuth is set
-		downloadables = append(downloadables, settings.NewAPI(clientSet.SettingsClient, settings.DefaultSettingsFilters, opts.specificSchemas))
+		downloadables = append(downloadables, settings.NewDownloadAPI(clientSet.SettingsClient, settings.DefaultSettingsFilters, opts.specificSchemas))
 	}
 
 	if opts.onlyOptions.ShouldDownload(OnlyAutomationFlag) {
 		if opts.auth.OAuth != nil {
-			downloadables = append(downloadables, automation.NewAPI(clientSet.AutClient))
+			downloadables = append(downloadables, automation.NewDownloadAPI(clientSet.AutClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlyAutomationFlag) {
 			return nil, errors.New("can't download automation resources: no OAuth credentials configured")
 		} else {
@@ -253,7 +253,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 
 	if opts.onlyOptions.ShouldDownload(OnlyBucketsFlag) {
 		if opts.auth.OAuth != nil {
-			downloadables = append(downloadables, bucket.NewAPI(clientSet.BucketClient))
+			downloadables = append(downloadables, bucket.NewDownloadAPI(clientSet.BucketClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlyBucketsFlag) {
 			return nil, errors.New("can't download buckets: no OAuth credentials configured")
 		} else {
@@ -263,7 +263,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 
 	if opts.onlyOptions.ShouldDownload(OnlyDocumentsFlag) {
 		if opts.auth.OAuth != nil {
-			downloadables = append(downloadables, document.NewAPI(clientSet.DocumentClient))
+			downloadables = append(downloadables, document.NewDownloadAPI(clientSet.DocumentClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlyDocumentsFlag) {
 			return nil, errors.New("can't download documents: no OAuth credentials configured")
 		} else {
@@ -273,7 +273,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 
 	if featureflags.OpenPipeline.Enabled() && opts.onlyOptions.ShouldDownload(OnlyOpenPipelineFlag) {
 		if opts.auth.OAuth != nil {
-			downloadables = append(downloadables, openpipeline.NewAPI(clientSet.OpenPipelineClient))
+			downloadables = append(downloadables, openpipeline.NewDownloadAPI(clientSet.OpenPipelineClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlyOpenPipelineFlag) {
 			return nil, errors.New("can't download openpipeline resources: no OAuth credentials configured")
 		} else {
@@ -283,7 +283,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 
 	if featureflags.Segments.Enabled() && opts.onlyOptions.ShouldDownload(OnlySegmentsFlag) {
 		if opts.auth.OAuth != nil {
-			downloadables = append(downloadables, segment.NewAPI(clientSet.SegmentClient))
+			downloadables = append(downloadables, segment.NewDownloadAPI(clientSet.SegmentClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlySegmentsFlag) {
 			return nil, errors.New("can't download segment resources: no OAuth credentials configured")
 		} else {
@@ -293,7 +293,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 
 	if featureflags.ServiceLevelObjective.Enabled() && opts.onlyOptions.ShouldDownload(OnlySloV2Flag) {
 		if opts.auth.OAuth != nil {
-			downloadables = append(downloadables, slo.NewAPI(clientSet.ServiceLevelObjectiveClient))
+			downloadables = append(downloadables, slo.NewDownloadAPI(clientSet.ServiceLevelObjectiveClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlySloV2Flag) {
 			return nil, fmt.Errorf("can't download %s resources: no OAuth credentials configured", config.ServiceLevelObjectiveID)
 		} else {

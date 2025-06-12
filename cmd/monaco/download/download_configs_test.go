@@ -399,35 +399,35 @@ func TestDownload_Options(t *testing.T) {
 			assert.NoError(t, err)
 
 			classicDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
-				_, ok := downloadable.(*classic.API)
+				_, ok := downloadable.(*classic.DownloadAPI)
 				return ok
 			})
 			settingsDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
-				_, ok := downloadable.(*settings.API)
+				_, ok := downloadable.(*settings.DownloadAPI)
 				return ok
 			})
 			automationDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
-				_, ok := downloadable.(*automation.API)
+				_, ok := downloadable.(*automation.DownloadAPI)
 				return ok
 			})
 			bucketDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
-				_, ok := downloadable.(*bucket.API)
+				_, ok := downloadable.(*bucket.DownloadAPI)
 				return ok
 			})
 			documentDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
-				_, ok := downloadable.(*document.API)
+				_, ok := downloadable.(*document.DownloadAPI)
 				return ok
 			})
 			openpipelineDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
-				_, ok := downloadable.(*openpipeline.API)
+				_, ok := downloadable.(*openpipeline.DownloadAPI)
 				return ok
 			})
 			sloDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
-				_, ok := downloadable.(*slo.API)
+				_, ok := downloadable.(*slo.DownloadAPI)
 				return ok
 			})
 			segmentDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
-				_, ok := downloadable.(*segment.API)
+				_, ok := downloadable.(*segment.DownloadAPI)
 				return ok
 			})
 

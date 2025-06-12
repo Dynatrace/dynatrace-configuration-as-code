@@ -34,15 +34,15 @@ type Source interface {
 	List(ctx context.Context) (api.PagedListResponse, error)
 }
 
-type API struct {
+type DownloadAPI struct {
 	sloSource Source
 }
 
-func NewAPI(sloSource Source) *API {
-	return &API{sloSource}
+func NewDownloadAPI(sloSource Source) *DownloadAPI {
+	return &DownloadAPI{sloSource}
 }
 
-func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	log.Info("Downloading SLO-V2")
 	result := project.ConfigsPerType{}
 	downloadedConfigs, err := a.sloSource.List(ctx)

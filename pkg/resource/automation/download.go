@@ -50,16 +50,16 @@ type Source interface {
 	List(context.Context, automationAPI.ResourceType) (automation.ListResponse, error)
 }
 
-type API struct {
+type DownloadAPI struct {
 	automationSource Source
 }
 
-func NewAPI(automationSource Source) *API {
-	return &API{automationSource}
+func NewDownloadAPI(automationSource Source) *DownloadAPI {
+	return &DownloadAPI{automationSource}
 }
 
 // Download downloads all automation resources for a given project
-func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	log.Info("Downloading automation resources")
 	configsPerType := make(project.ConfigsPerType)
 	for _, at := range maps.Keys(automationTypesToResources) {

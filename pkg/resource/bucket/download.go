@@ -47,15 +47,15 @@ type Source interface {
 	List(ctx context.Context) (buckets.ListResponse, error)
 }
 
-type API struct {
+type DownloadAPI struct {
 	bucketSource Source
 }
 
-func NewAPI(bucketSource Source) *API {
-	return &API{bucketSource}
+func NewDownloadAPI(bucketSource Source) *DownloadAPI {
+	return &DownloadAPI{bucketSource}
 }
 
-func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	log.Info("Downloading Grail buckets")
 	result := make(project.ConfigsPerType)
 	response, err := a.bucketSource.List(ctx)
