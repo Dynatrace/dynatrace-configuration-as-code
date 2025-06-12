@@ -41,6 +41,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
@@ -397,35 +398,35 @@ func TestDownload_Options(t *testing.T) {
 			downloadables, err := prepareDownloadables(api.NewAPIs(), tt.given, &client.ClientSet{ConfigClient: c})
 			assert.NoError(t, err)
 
-			classicDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+			classicDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
 				_, ok := downloadable.(*classic.API)
 				return ok
 			})
-			settingsDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+			settingsDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
 				_, ok := downloadable.(*settings.API)
 				return ok
 			})
-			automationDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+			automationDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
 				_, ok := downloadable.(*automation.API)
 				return ok
 			})
-			bucketDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+			bucketDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
 				_, ok := downloadable.(*bucket.API)
 				return ok
 			})
-			documentDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+			documentDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
 				_, ok := downloadable.(*document.API)
 				return ok
 			})
-			openpipelineDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+			openpipelineDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
 				_, ok := downloadable.(*openpipeline.API)
 				return ok
 			})
-			sloDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+			sloDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
 				_, ok := downloadable.(*slo.API)
 				return ok
 			})
-			segmentDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable Downloadable) bool {
+			segmentDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
 				_, ok := downloadable.(*segment.API)
 				return ok
 			})
