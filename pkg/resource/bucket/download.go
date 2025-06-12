@@ -103,22 +103,21 @@ func convertAllObjects(projectName string, objects [][]byte) []config.Config {
 	return result
 }
 
-const (
-	bucketName  = "bucketName"
-	displayName = "displayName"
-	status      = "status"
-	version     = "version"
-	updatable   = "updatable"
-)
-
-// bucket holds all values we need to check before we persist the object
-type bucket struct {
-	Name      string `json:"bucketName"`
-	Updatable *bool  `json:"updatable,omitempty"`
-	Status    string `json:"status"`
-}
-
 func convertObject(o []byte, projectName string) (config.Config, error) {
+	// bucket holds all values we need to check before we persist the object
+	type bucket struct {
+		Name      string `json:"bucketName"`
+		Updatable *bool  `json:"updatable,omitempty"`
+		Status    string `json:"status"`
+	}
+	const (
+		bucketName  = "bucketName"
+		displayName = "displayName"
+		status      = "status"
+		version     = "version"
+		updatable   = "updatable"
+	)
+
 	// escape possible go templates before extracting parameters
 	escapedData := escTemplate.UseGoTemplatesForDoubleCurlyBraces(o)
 	var b bucket

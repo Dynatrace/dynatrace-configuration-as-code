@@ -114,6 +114,7 @@ func assertBucketConfig(t *testing.T, gotConfig config.Config, expectedBucketNam
 	assert.Equal(t, coordinate.Coordinate{Project: "projectName", Type: "bucket", ConfigId: expectedBucketName}, gotConfig.Coordinate)
 	assert.Equal(t, template.NewInMemoryTemplate(expectedBucketName, expectedTemplate), gotConfig.Template)
 	assert.Equal(t, expectedBucketName, gotConfig.OriginObjectId)
+	displayName := "displayName"
 
 	if expectedDisplayName != nil {
 		param, exists := gotConfig.Parameters[displayName]
