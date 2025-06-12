@@ -34,6 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
@@ -201,13 +202,6 @@ func escapeGoTemplating(c *config.Config) error {
 	return nil
 }
 
-type Downloadable interface {
-
-	// Download returns downloaded project.ConfigsPerType, and an error, if something went wrong during the download.
-	// The string projectName is used to set the Project attribute of each downloaded config.
-	Download(ctx context.Context, projectName string) (project.ConfigsPerType, error)
-}
-
 func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDownload api.APIs, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
 	downloadables, err := prepareDownloadables(apisToDownload, opts, clientSet)
 	if err != nil {
@@ -229,8 +223,8 @@ func downloadConfigs(ctx context.Context, clientSet *client.ClientSet, apisToDow
 const oAuthSkipMsg = "Skipped downloading %s due to missing OAuth credentials"
 const authSkipMsg = "Skipped downloading %s due to missing API token"
 
-func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, clientSet *client.ClientSet) ([]Downloadable, error) {
-	downloadables := make([]Downloadable, 0)
+func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, clientSet *client.ClientSet) ([]resource.Downloadable, error) {
+	downloadables := make([]resource.Downloadable, 0)
 
 	if opts.onlyOptions.ShouldDownload(OnlyApisFlag) {
 		if opts.auth.ApiToken != nil {
