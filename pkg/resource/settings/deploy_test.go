@@ -19,13 +19,16 @@
 package settings_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -236,4 +239,116 @@ func TestDeploy_InsertAfter_InvalidCases(t *testing.T) {
 			assert.ErrorContains(t, err, test.errorContains)
 		})
 	}
+}
+
+func TestDeploy_FailsWithInvalidConfigType(t *testing.T) {
+	c := client.NewMockSettingsClient(gomock.NewController(t))
+
+	conf := config.Config{
+		Type: config.ClassicApiType{},
+	}
+
+	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), nil, "{}", &conf)
+	assert.ErrorContains(t, err, "config was not of expected type")
+}
+
+func TestDeploy_FailsWithoutScope(t *testing.T) {
+	c := client.NewMockSettingsClient(gomock.NewController(t))
+
+	conf := config.Config{
+		Type: config.SettingsType{SchemaId: "builtin:monaco-test", SchemaVersion: "1.2.3"},
+	}
+
+	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), nil, "{}", &conf)
+	assert.ErrorContains(t, err, fmt.Sprintf("'%s' not found", config.ScopeParameter))
+}
+
+func TestDeploy_WithBucketRetrySetting(t *testing.T) {
+	c := client.NewMockSettingsClient(gomock.NewController(t))
+	c.EXPECT().
+		Upsert(t.Context(), gomock.Any(), gomock.Eq(dtclient.UpsertSettingsOptions{OverrideRetry: &dtclient.RetrySetting{WaitTime: 10 * time.Second, MaxRetries: 12}})).
+		Times(1).
+		Return(dtclient.DynatraceEntity{}, nil)
+
+	parameters := []parameter.NamedParameter{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				References: []parameter.ParameterReference{
+					{
+						Config: coordinate.Coordinate{
+							Type: string(config.BucketTypeID),
+						},
+						Property: "name",
+					},
+				},
+			},
+		},
+	}
+
+	conf := config.Config{
+		Type:       config.SettingsType{SchemaId: "builtin:monaco-test", SchemaVersion: "1.2.3"},
+		Parameters: testutils.ToParameterMap(parameters),
+	}
+	props := map[string]any{
+		"scope": "environment",
+	}
+
+	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
+	assert.NoError(t, err)
+}
+
+func TestDeploy_WithVeryLongRetrySetting(t *testing.T) {
+	c := client.NewMockSettingsClient(gomock.NewController(t))
+	c.EXPECT().
+		Upsert(t.Context(), gomock.Any(), gomock.Eq(dtclient.UpsertSettingsOptions{OverrideRetry: &dtclient.DefaultRetrySettings.VeryLong})).
+		Times(1).
+		Return(dtclient.DynatraceEntity{}, nil)
+
+	parameters := []parameter.NamedParameter{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				References: []parameter.ParameterReference{
+					{
+						Config: coordinate.Coordinate{
+							Type: api.ApplicationWeb,
+						},
+						Property: "name",
+					},
+				},
+			},
+		},
+	}
+
+	conf := config.Config{
+		Type:       config.SettingsType{SchemaId: "builtin:monaco-test", SchemaVersion: "1.2.3"},
+		Parameters: testutils.ToParameterMap(parameters),
+	}
+	props := map[string]any{
+		"scope": "environment",
+	}
+
+	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
+	assert.NoError(t, err)
+}
+
+func TestDeploy_WithFailedRequest(t *testing.T) {
+	c := client.NewMockSettingsClient(gomock.NewController(t))
+	wantErrMsg := "custom error"
+	customErr := errors.New(wantErrMsg)
+	c.EXPECT().
+		Upsert(t.Context(), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(dtclient.DynatraceEntity{}, customErr)
+
+	conf := config.Config{
+		Type: config.SettingsType{SchemaId: "builtin:monaco-test", SchemaVersion: "1.2.3"},
+	}
+	props := map[string]any{
+		"scope": "environment",
+	}
+
+	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
+	assert.ErrorContains(t, err, wantErrMsg)
 }
