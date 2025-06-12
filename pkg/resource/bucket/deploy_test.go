@@ -32,7 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 )
 
 type assertAndRespond func(t *testing.T, bucketName string, data []byte) (buckets.Response, error)
@@ -158,7 +158,7 @@ func TestDeploy(t *testing.T) {
 			templ, err := tt.givenConfig.Render(props)
 			assert.NoError(t, err)
 
-			got, err := bucket.Deploy(t.Context(), c, props, templ, &tt.givenConfig)
+			got, err := bucket.NewDeployAPI(c).Deploy(t.Context(), props, templ, &tt.givenConfig)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

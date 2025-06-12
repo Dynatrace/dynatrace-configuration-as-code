@@ -38,7 +38,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/openpipeline"
@@ -48,6 +47,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
@@ -343,7 +343,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		resolvedEntity, deployErr = automation.Deploy(ctx, clientset.AutClient, properties, renderedConfig, c)
 
 	case config.BucketType:
-		resolvedEntity, deployErr = bucket.Deploy(ctx, clientset.BucketClient, properties, renderedConfig, c)
+		resolvedEntity, deployErr = bucket.NewDeployAPI(clientset.BucketClient).Deploy(ctx, properties, renderedConfig, c)
 
 	case config.DocumentType:
 		resolvedEntity, deployErr = document.Deploy(ctx, clientset.DocumentClient, properties, renderedConfig, c)

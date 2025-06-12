@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,11 +33,19 @@ import (
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 )
 
-type Client interface {
+type DeploySource interface {
 	Upsert(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
 }
 
-func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
+type DeployAPI struct {
+	source DeploySource
+}
+
+func NewDeployAPI(source DeploySource) *DeployAPI {
+	return &DeployAPI{source}
+}
+
+func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	var bucketName string
 
 	if c.OriginObjectId != "" {
@@ -48,7 +56,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 
 	// create new context to carry logger
 	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
-	_, err := client.Upsert(ctx, bucketName, []byte(renderedConfig))
+	_, err := d.source.Upsert(ctx, bucketName, []byte(renderedConfig))
 	if err != nil {
 		var apiErr api.APIError
 		if errors.As(err, &apiErr) {
