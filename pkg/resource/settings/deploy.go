@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package setting
+package settings
 
 import (
 	"context"
@@ -26,7 +26,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -35,7 +34,19 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/extract"
 )
 
-func Deploy(ctx context.Context, settingsClient client.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
+type DeploySource interface {
+	Upsert(context.Context, dtclient.SettingsObject, dtclient.UpsertSettingsOptions) (dtclient.DynatraceEntity, error)
+}
+
+type DeployAPI struct {
+	source DeploySource
+}
+
+func NewDeployAPI(source DeploySource) *DeployAPI {
+	return &DeployAPI{source}
+}
+
+func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	t, ok := c.Type.(config.SettingsType)
 	if !ok {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeID, c.Type.ID()))
@@ -76,7 +87,7 @@ func Deploy(ctx context.Context, settingsClient client.SettingsClient, propertie
 		upsertOptions.OverrideRetry = &dtclient.DefaultRetrySettings.VeryLong
 	}
 
-	dtEntity, err := settingsClient.Upsert(ctx, settingsObj, upsertOptions)
+	dtEntity, err := d.source.Upsert(ctx, settingsObj, upsertOptions)
 	if err != nil {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
 	}
