@@ -205,7 +205,7 @@ func TestDeploySuccess(t *testing.T) {
 
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
-			deployable := slo.NewDeployable(&c)
+			deployable := slo.NewDeployAPI(&c)
 
 			resolvedEntity, err := deployable.Deploy(t.Context(), props, "{}", &tt.inputConfig)
 
@@ -438,7 +438,7 @@ func TestDeployErrors(t *testing.T) {
 			templateContent, contentErr := tt.inputConfig.Template.Content()
 			assert.NoError(t, contentErr)
 
-			deployable := slo.NewDeployable(&c)
+			deployable := slo.NewDeployAPI(&c)
 
 			_, err := deployable.Deploy(t.Context(), props, templateContent, &tt.inputConfig)
 			assert.Error(t, err)

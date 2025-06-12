@@ -44,7 +44,7 @@ type DeployAPI struct {
 	sloSource deploySource
 }
 
-func NewDeployable(sloSource deploySource) *DeployAPI {
+func NewDeployAPI(sloSource deploySource) *DeployAPI {
 	return &DeployAPI{sloSource}
 }
 
