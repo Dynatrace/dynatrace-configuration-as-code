@@ -43,15 +43,15 @@ func (s skipErr) Error() string {
 	return s.msg
 }
 
-type Source interface {
+type downloadSource interface {
 	List(ctx context.Context) (buckets.ListResponse, error)
 }
 
 type DownloadAPI struct {
-	bucketSource Source
+	bucketSource downloadSource
 }
 
-func NewDownloadAPI(bucketSource Source) *DownloadAPI {
+func NewDownloadAPI(bucketSource downloadSource) *DownloadAPI {
 	return &DownloadAPI{bucketSource}
 }
 

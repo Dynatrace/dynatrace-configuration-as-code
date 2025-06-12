@@ -34,17 +34,17 @@ import (
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 )
 
-type deployServiceLevelObjectiveClient interface {
+type deploySource interface {
 	List(ctx context.Context) (api.PagedListResponse, error)
 	Update(ctx context.Context, id string, data []byte) (api.Response, error)
 	Create(ctx context.Context, data []byte) (api.Response, error)
 }
 
 type DeployAPI struct {
-	sloSource deployServiceLevelObjectiveClient
+	sloSource deploySource
 }
 
-func NewDeployable(sloSource deployServiceLevelObjectiveClient) *DeployAPI {
+func NewDeployable(sloSource deploySource) *DeployAPI {
 	return &DeployAPI{sloSource}
 }
 
