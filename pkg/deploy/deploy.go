@@ -37,7 +37,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
@@ -47,6 +46,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
@@ -333,7 +333,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 	var deployErr error
 	switch c.Type.(type) {
 	case config.SettingsType:
-		resolvedEntity, deployErr = setting.Deploy(ctx, clientset.SettingsClient, properties, renderedConfig, c)
+		resolvedEntity, deployErr = settings.NewDeployAPI(clientset.SettingsClient).Deploy(ctx, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
 		resolvedEntity, deployErr = classic.Deploy(ctx, clientset.ConfigClient, api.NewAPIs(), properties, renderedConfig, c)
