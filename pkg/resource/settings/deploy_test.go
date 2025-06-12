@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package setting
+package settings_test
 
 import (
 	"fmt"
@@ -32,6 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
 )
 
 func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
@@ -49,7 +50,7 @@ func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 	props := map[string]interface{}{"scope": "environment"}
-	resolvedEntity, err := Deploy(t.Context(), c, props, "", conf)
+	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "", conf)
 	assert.Equal(t, entities.ResolvedEntity{
 		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:management-zones", ConfigId: "abcde"},
 		Properties: map[string]any{"scope": "environment", "id": "-4292415658385853785", "name": "[UNKNOWN NAME]vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ"},
@@ -73,7 +74,7 @@ func TestDeploySetting_ManagementZone_NameGetsExtracted_ifPresent(t *testing.T) 
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 	props := map[string]interface{}{"scope": "environment", "name": "the-name"}
-	resolvedEntity, err := Deploy(t.Context(), c, props, "", conf)
+	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "", conf)
 	assert.Equal(t, entities.ResolvedEntity{
 		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:some-setting", ConfigId: "abcde"},
 		Properties: map[string]any{"scope": "environment", "id": "abcdefghijk", "name": "the-name"},
@@ -97,7 +98,7 @@ func TestDeploySetting_ManagementZone_FailToDecodeMZoneID(t *testing.T) {
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 	props := map[string]interface{}{"scope": "environment"}
-	resolvedEntity, err := Deploy(t.Context(), c, props, "", conf)
+	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "", conf)
 	assert.Zero(t, resolvedEntity)
 	assert.Error(t, err)
 }
@@ -120,7 +121,7 @@ func TestDeploy_InsertAfter_NotDefined(t *testing.T) {
 		"scope": "environment",
 	}
 
-	_, err := Deploy(t.Context(), c, props, "{}", &conf)
+	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
 	assert.NoError(t, err)
 
 }
@@ -180,7 +181,7 @@ func TestDeploy_InsertAfter_ValidCases(t *testing.T) {
 				"insertAfter": test.insertAfterProperty,
 			}
 
-			_, err := Deploy(t.Context(), c, props, "{}", &conf)
+			_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
 			assert.NoError(t, err)
 		})
 	}
@@ -231,7 +232,7 @@ func TestDeploy_InsertAfter_InvalidCases(t *testing.T) {
 				"insertAfter": test.insertAfterProperty,
 			}
 
-			_, err := Deploy(t.Context(), c, props, "{}", &conf)
+			_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
 			assert.ErrorContains(t, err, test.errorContains)
 		})
 	}
