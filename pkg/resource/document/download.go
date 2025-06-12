@@ -38,16 +38,16 @@ var documentMapping = map[string]config.DocumentKind{
 	documents.Launchpad: config.LaunchpadKind,
 }
 
-type downloadSource interface {
+type DownloadSource interface {
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
 	Get(ctx context.Context, id string) (documents.Response, error)
 }
 
 type DownloadAPI struct {
-	documentSource downloadSource
+	documentSource DownloadSource
 }
 
-func NewDownloadAPI(documentSource downloadSource) *DownloadAPI {
+func NewDownloadAPI(documentSource DownloadSource) *DownloadAPI {
 	return &DownloadAPI{documentSource}
 }
 
@@ -71,7 +71,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	}, nil
 }
 
-func downloadDocumentsOfType(ctx context.Context, documentSource downloadSource, projectName string, documentType string) []config.Config {
+func downloadDocumentsOfType(ctx context.Context, documentSource DownloadSource, projectName string, documentType string) []config.Config {
 	log.WithFields(field.Type("document")).DebugContext(ctx, "Downloading documents of type '%s'", documentType)
 
 	listResponse, err := documentSource.List(ctx, fmt.Sprintf("type=='%s'", documentType))
@@ -105,7 +105,7 @@ func isReadyMadeByAnApp(metadata documents.Metadata) bool {
 	return (metadata.OriginAppID != nil) && (len(*metadata.OriginAppID) > 0)
 }
 
-func convertDocumentResponse(ctx context.Context, documentSource downloadSource, projectName string, response documents.Response) (config.Config, error) {
+func convertDocumentResponse(ctx context.Context, documentSource DownloadSource, projectName string, response documents.Response) (config.Config, error) {
 	documentType, err := validateDocumentType(response.Type)
 	if err != nil {
 		return config.Config{}, err

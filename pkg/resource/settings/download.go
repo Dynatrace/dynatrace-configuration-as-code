@@ -49,19 +49,19 @@ type schema struct {
 	ownerBasedAccessControl *bool
 }
 
-type downloadSource interface {
+type DownloadSource interface {
 	ListSchemas(context.Context) (dtclient.SchemaList, error)
 	List(context.Context, string, dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
 	GetPermission(context.Context, string) (dtclient.PermissionObject, error)
 }
 
 type DownloadAPI struct {
-	settingsSource  downloadSource
+	settingsSource  DownloadSource
 	filters         Filters
 	specificSchemas []string
 }
 
-func NewDownloadAPI(settingsSource downloadSource, filters Filters, specificSchemas []string) *DownloadAPI {
+func NewDownloadAPI(settingsSource DownloadSource, filters Filters, specificSchemas []string) *DownloadAPI {
 	return &DownloadAPI{settingsSource, filters, specificSchemas}
 }
 
@@ -74,7 +74,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	return downloadSpecific(ctx, a.settingsSource, projectName, a.specificSchemas, a.filters)
 }
 
-func downloadAll(ctx context.Context, settingsSource downloadSource, projectName string, filters Filters) (project.ConfigsPerType, error) {
+func downloadAll(ctx context.Context, settingsSource DownloadSource, projectName string, filters Filters) (project.ConfigsPerType, error) {
 	log.DebugContext(ctx, "Fetching all schemas to download")
 	schemas, err := fetchAllSchemas(ctx, settingsSource)
 	if err != nil {
@@ -84,7 +84,7 @@ func downloadAll(ctx context.Context, settingsSource downloadSource, projectName
 	return download(ctx, settingsSource, schemas, projectName, filters), nil
 }
 
-func downloadSpecific(ctx context.Context, settingsSource downloadSource, projectName string, schemaIDs []string, filters Filters) (project.ConfigsPerType, error) {
+func downloadSpecific(ctx context.Context, settingsSource DownloadSource, projectName string, schemaIDs []string, filters Filters) (project.ConfigsPerType, error) {
 	schemas, err := fetchSchemas(ctx, settingsSource, schemaIDs)
 	if err != nil {
 		return project.ConfigsPerType{}, err
@@ -101,7 +101,7 @@ func downloadSpecific(ctx context.Context, settingsSource downloadSource, projec
 	return result, nil
 }
 
-func fetchAllSchemas(ctx context.Context, cl downloadSource) ([]schema, error) {
+func fetchAllSchemas(ctx context.Context, cl DownloadSource) ([]schema, error) {
 	dlSchemas, err := cl.ListSchemas(ctx)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func fetchAllSchemas(ctx context.Context, cl downloadSource) ([]schema, error) {
 	return schemas, nil
 }
 
-func fetchSchemas(ctx context.Context, cl downloadSource, schemaIds []string) ([]schema, error) {
+func fetchSchemas(ctx context.Context, cl DownloadSource, schemaIds []string) ([]schema, error) {
 	dlSchemas, err := cl.ListSchemas(ctx)
 	if err != nil {
 		return nil, err
@@ -144,7 +144,7 @@ func fetchSchemas(ctx context.Context, cl downloadSource, schemaIds []string) ([
 	return schemas, nil
 }
 
-func download(ctx context.Context, settingsSource downloadSource, schemas []schema, projectName string, filters Filters) project.ConfigsPerType {
+func download(ctx context.Context, settingsSource DownloadSource, schemas []schema, projectName string, filters Filters) project.ConfigsPerType {
 	results := make(project.ConfigsPerType, len(schemas))
 	downloadMutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
@@ -203,7 +203,7 @@ func extractApiErrorMessage(err error) string {
 	return err.Error()
 }
 
-func getObjectsPermission(ctx context.Context, settingsSource downloadSource, objects []dtclient.DownloadSettingsObject) (map[string]dtclient.PermissionObject, error) {
+func getObjectsPermission(ctx context.Context, settingsSource DownloadSource, objects []dtclient.DownloadSettingsObject) (map[string]dtclient.PermissionObject, error) {
 	type result struct {
 		Permission dtclient.PermissionObject
 		ObjectId   string

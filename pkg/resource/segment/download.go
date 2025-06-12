@@ -30,15 +30,15 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-type downloadSource interface {
+type DownloadSource interface {
 	GetAll(ctx context.Context) ([]api.Response, error)
 }
 
 type DownloadAPI struct {
-	segmentSource downloadSource
+	segmentSource DownloadSource
 }
 
-func NewDownloadAPI(segmentSource downloadSource) *DownloadAPI {
+func NewDownloadAPI(segmentSource DownloadSource) *DownloadAPI {
 	return &DownloadAPI{segmentSource}
 }
 

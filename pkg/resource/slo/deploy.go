@@ -34,17 +34,17 @@ import (
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 )
 
-type deploySource interface {
+type DeploySource interface {
 	List(ctx context.Context) (api.PagedListResponse, error)
 	Update(ctx context.Context, id string, data []byte) (api.Response, error)
 	Create(ctx context.Context, data []byte) (api.Response, error)
 }
 
 type DeployAPI struct {
-	sloSource deploySource
+	sloSource DeploySource
 }
 
-func NewDeployAPI(sloSource deploySource) *DeployAPI {
+func NewDeployAPI(sloSource DeploySource) *DeployAPI {
 	return &DeployAPI{sloSource}
 }
 
