@@ -365,7 +365,7 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 		resolvedEntity, deployErr = segment.Deploy(ctx, clientset.SegmentClient, properties, renderedConfig, c)
 
 	case config.ServiceLevelObjective:
-		resolvedEntity, deployErr = slo.NewDeployable(clientset.ServiceLevelObjectiveClient).Deploy(ctx, properties, renderedConfig, c)
+		resolvedEntity, deployErr = slo.NewDeployAPI(clientset.ServiceLevelObjectiveClient).Deploy(ctx, properties, renderedConfig, c)
 
 	default:
 		deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
