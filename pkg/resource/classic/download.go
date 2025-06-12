@@ -46,17 +46,17 @@ type Source interface {
 	List(context.Context, api.API) ([]dtclient.Value, error)
 }
 
-type API struct {
+type DownloadAPI struct {
 	configSource   Source
 	apisToDownload api.APIs
 	filters        ContentFilters
 }
 
-func NewAPI(configSource Source, apisToDownload api.APIs, filters ContentFilters) *API {
-	return &API{configSource, apisToDownload, filters}
+func NewDownloadAPI(configSource Source, apisToDownload api.APIs, filters ContentFilters) *DownloadAPI {
+	return &DownloadAPI{configSource, apisToDownload, filters}
 }
 
-func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	log.Info("Downloading configuration objects")
 	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(a.apisToDownload), "\n - "))
 	results := make(project.ConfigsPerType, len(a.apisToDownload))

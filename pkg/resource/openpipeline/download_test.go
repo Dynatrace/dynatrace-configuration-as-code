@@ -117,7 +117,7 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		opClient := openpipelineClients.NewClient(rest.NewClient(server.URL(), server.Client()))
-		api := openpipeline.NewAPI(opClient)
+		api := openpipeline.NewDownloadAPI(opClient)
 		result, err := api.Download(t.Context(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
@@ -137,7 +137,7 @@ func TestDownloader_Download(t *testing.T) {
 		defer server.Close()
 
 		opClient := openpipelineClients.NewClient(rest.NewClient(server.URL(), server.FaultyClient()))
-		api := openpipeline.NewAPI(opClient)
+		api := openpipeline.NewDownloadAPI(opClient)
 		result, err := api.Download(t.Context(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)

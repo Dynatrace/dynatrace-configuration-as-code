@@ -55,17 +55,17 @@ type Source interface {
 	GetPermission(context.Context, string) (dtclient.PermissionObject, error)
 }
 
-type API struct {
+type DownloadAPI struct {
 	settingsSource  Source
 	filters         Filters
 	specificSchemas []string
 }
 
-func NewAPI(settingsSource Source, filters Filters, specificSchemas []string) *API {
-	return &API{settingsSource, filters, specificSchemas}
+func NewDownloadAPI(settingsSource Source, filters Filters, specificSchemas []string) *DownloadAPI {
+	return &DownloadAPI{settingsSource, filters, specificSchemas}
 }
 
-func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	log.Info("Downloading settings objects")
 	if len(a.specificSchemas) == 0 {
 		return downloadAll(ctx, a.settingsSource, projectName, a.filters)

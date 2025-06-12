@@ -34,15 +34,15 @@ type Source interface {
 	GetAll(context.Context) ([]openpipeline.Response, error)
 }
 
-type API struct {
+type DownloadAPI struct {
 	openPipelineSource Source
 }
 
-func NewAPI(source Source) *API {
-	return &API{source}
+func NewDownloadAPI(source Source) *DownloadAPI {
+	return &DownloadAPI{source}
 }
 
-func (a API) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
+func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	log.Info("Downloading openpipelines")
 	result := project.ConfigsPerType{string(config.OpenPipelineTypeID): nil}
 	all, err := a.openPipelineSource.GetAll(ctx)

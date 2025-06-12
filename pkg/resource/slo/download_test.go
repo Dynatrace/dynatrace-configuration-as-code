@@ -59,7 +59,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		sloApi := slo.NewAPI(c)
+		sloApi := slo.NewDownloadAPI(c)
 		result, err := sloApi.Download(t.Context(), "project")
 
 		assert.NoError(t, err)
@@ -98,7 +98,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		sloApi := slo.NewAPI(c)
+		sloApi := slo.NewDownloadAPI(c)
 		result, err := sloApi.Download(t.Context(), "project")
 
 		assert.NoError(t, err)
@@ -124,7 +124,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		sloApi := slo.NewAPI(c)
+		sloApi := slo.NewDownloadAPI(c)
 		actual, err := sloApi.Download(t.Context(), "project")
 
 		assert.NoError(t, err)
@@ -138,7 +138,7 @@ func TestDownloader_Download(t *testing.T) {
 			return api.PagedListResponse{}, errors.New("some unexpected error")
 		}}
 
-		sloApi := slo.NewAPI(c)
+		sloApi := slo.NewDownloadAPI(c)
 		result, err := sloApi.Download(t.Context(), "project")
 		assert.NoError(t, err)
 		assert.Empty(t, result)
@@ -194,7 +194,7 @@ func TestDownloader_Download(t *testing.T) {
 			}, nil
 		}}
 
-		sloApi := slo.NewAPI(c)
+		sloApi := slo.NewDownloadAPI(c)
 		result, err := sloApi.Download(t.Context(), "project")
 		assert.NoError(t, err)
 
