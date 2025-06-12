@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2024 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package document
+package document_test
 
 import (
 	"errors"
@@ -39,6 +39,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 )
 
 const documentName = "my dashboard"
@@ -59,8 +60,8 @@ func TestDeployDocumentWrongType(t *testing.T) {
 		Template: testutils.GenerateFaultyTemplate(t),
 	}
 
-	_, errors := Deploy(t.Context(), client, nil, "", conf)
-	assert.NotEmpty(t, errors)
+	_, errs := document.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
+	assert.NotEmpty(t, errs)
 }
 
 func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
@@ -84,7 +85,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 	expectedFilterString := fmt.Sprintf("externalId=='%s'", expectedExternalId)
 
 	t.Run("Update by originObjectId succeeds", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Eq(documentName), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, originObjectId))}, nil)
 
 		result, err := runDeployTest(t, client, documentConfig)
@@ -94,7 +95,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 	})
 
 	t.Run("Update by originObjectId fails", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Eq(documentName), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{}, errors.New("connection error"))
 
 		_, err := runDeployTest(t, client, documentConfig)
@@ -102,7 +103,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 	})
 
 	t.Run("Document with originObjectId doesnt exist, list and update by externalId succeeds", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().
 			Update(gomock.Any(), originObjectId, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 			Return(libAPI.Response{}, api.APIError{StatusCode: http.StatusNotFound})
@@ -119,7 +120,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 	})
 
 	t.Run("Document with originObjectId doesnt exist, list by externalId fails", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, errors.New("connection error"))
 		_, err := runDeployTest(t, client, documentConfig)
@@ -127,7 +128,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 	})
 
 	t.Run("Document with originObjectId doesnt exist, list by externalId succeeds, update fails", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: documentIdForExternalId}}}}, nil)
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentIdForExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{}, errors.New("connection error"))
@@ -136,7 +137,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 	})
 
 	t.Run("Document with originObjectId doesnt exist, document with externalId doesnt exist, create succeeds", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, nil)
 		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentIdForExternalId))}, nil)
@@ -147,7 +148,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 	})
 
 	t.Run("Document with originObjectId doesnt exist, document with externalId doesnt exist, create fails", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, nil)
 		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{}, errors.New("connection error"))
@@ -175,7 +176,7 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 	expectedFilterString := fmt.Sprintf("externalId=='%s'", expectedExternalId)
 
 	t.Run("Document list and update by externalId succeeds", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: documentIdForExternalId}}}}, nil)
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentIdForExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentIdForExternalId))}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
@@ -185,14 +186,14 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 	})
 
 	t.Run("Document list by externalId fails", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, errors.New("connection error"))
 		_, err := runDeployTest(t, client, documentConfig)
 		assert.Error(t, err)
 	})
 
 	t.Run("Document list by externalId succeeds, update fails", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: documentIdForExternalId}}}}, nil)
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentIdForExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{}, errors.New("connection error"))
 		_, err := runDeployTest(t, client, documentConfig)
@@ -200,7 +201,7 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 	})
 
 	t.Run("Document with externalId doesnt exist, create succeeds", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, nil)
 		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentIdForExternalId))}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
@@ -210,7 +211,7 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 	})
 
 	t.Run("Document with externalId doesnt exist, create fails", func(t *testing.T) {
-		client := NewMockClient(gomock.NewController(t))
+		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, nil)
 		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(libAPI.Response{}, errors.New("connection error"))
 		_, err := runDeployTest(t, client, documentConfig)
@@ -231,16 +232,16 @@ func TestDeploy_WithV1Payload_Fails(t *testing.T) {
 		}}),
 	}
 
-	cl := NewMockClient(gomock.NewController(t))
+	cl := document.NewMockDeploySource(gomock.NewController(t))
 	_, err := runDeployTest(t, cl, documentConfig)
-	assert.ErrorIs(t, err, errWrongPayloadType)
+	assert.ErrorIs(t, err, document.ErrWrongPayloadType)
 }
 
-func runDeployTest(t *testing.T, client Client, c *config.Config) (entities.ResolvedEntity, error) {
+func runDeployTest(t *testing.T, client *document.MockDeploySource, c *config.Config) (entities.ResolvedEntity, error) {
 	parameters, errs := c.ResolveParameterValues(entities.New())
 	require.Empty(t, errs)
 	content, err := c.Render(parameters)
 	require.NoError(t, err)
 
-	return Deploy(t.Context(), client, parameters, content, c)
+	return document.NewDeployAPI(client).Deploy(t.Context(), parameters, content, c)
 }
