@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	libAutomation "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -110,7 +109,7 @@ func (d *DummyBucketClient) Update(ctx context.Context, bucketName string, data 
 
 // Upsert implements BucketClient.
 func (d *DummyBucketClient) Upsert(ctx context.Context, bucketName string, data []byte) (api.Response, error) {
-	return buckets.Response{
+	return api.Response{
 		StatusCode: http.StatusOK,
 		Data:       data,
 	}, nil
