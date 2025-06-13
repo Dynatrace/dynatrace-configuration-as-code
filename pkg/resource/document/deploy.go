@@ -37,11 +37,17 @@ import (
 
 //go:generate mockgen -source=deploy.go -destination=document_mock.go -package=document DeploySource
 type DeploySource interface {
-	Get(ctx context.Context, id string) (documents.Response, error)
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
 	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (api.Response, error)
 	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (api.Response, error)
 }
+
+var (
+	ErrWrongPayloadType     = errors.New("can't deploy a Dynatrace classic dashboard using the 'documents' type. Either use 'api: dashboard' to deploy a Dynatrace classic dashboard or update your payload to a Dynatrace platform dashboard")
+	ErrMissingNameParameter = errors.New("missing name parameter")
+)
+
+const errReadDataMsg = "error reading received data"
 
 type DeployAPI struct {
 	source DeploySource
@@ -62,7 +68,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 
 	documentName, ok := properties[config.NameParameter].(string)
 	if !ok {
-		return entities.ResolvedEntity{}, errors.New("missing name parameter")
+		return entities.ResolvedEntity{}, ErrMissingNameParameter
 	}
 
 	if documentType == documents.Dashboard {
@@ -77,7 +83,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 		if err == nil {
 			md, err := documents.UnmarshallMetadata(updateResponse.Data)
 			if err != nil {
-				return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
+				return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
 			}
 			return createResolvedEntity(md.ID, c.Coordinate, properties), nil
 		}
@@ -103,7 +109,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 
 		md, err := documents.UnmarshallMetadata(updateResponse.Data)
 		if err != nil {
-			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
+			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
 		}
 		return createResolvedEntity(md.ID, c.Coordinate, properties), nil
 	}
@@ -115,7 +121,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	}
 	md, err := documents.UnmarshallMetadata(createResponse.Data)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
 	}
 
 	return createResolvedEntity(md.ID, c.Coordinate, properties), nil
@@ -167,8 +173,6 @@ func getDocumentAttributesFromConfigType(t config.Type) (doctype string, private
 
 	return kind, documentType.Private, nil
 }
-
-var ErrWrongPayloadType = errors.New("can't deploy a Dynatrace classic dashboard using the 'documents' type. Either use 'api: dashboard' to deploy a Dynatrace classic dashboard or update your payload to a Dynatrace platform dashboard")
 
 // validateDashboardPayload returns an error if the JSON data is 1) malformed or 2) if the payload is not a Dynatrace platform dashboard payload.
 func validateDashboardPayload(payload string) error {
