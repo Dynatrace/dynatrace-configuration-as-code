@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -33,7 +33,7 @@ import (
 
 //go:generate mockgen -source=automation.go -destination=automation_mock.go -package=automation automationClient
 type Client interface {
-	Upsert(ctx context.Context, resourceType automationAPI.ResourceType, id string, data []byte) (result automation.Response, err error)
+	Upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (result api.Response, err error)
 }
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {

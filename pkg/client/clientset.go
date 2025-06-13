@@ -26,7 +26,6 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	libAutomation "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
@@ -151,12 +150,12 @@ type AccessControl interface {
 }
 
 type AutomationClient interface {
-	Get(ctx context.Context, resourceType libAutomation.ResourceType, id string) (automation.Response, error)
-	Create(ctx context.Context, resourceType libAutomation.ResourceType, data []byte) (result automation.Response, err error)
-	Update(ctx context.Context, resourceType libAutomation.ResourceType, id string, data []byte) (automation.Response, error)
-	List(ctx context.Context, resourceType libAutomation.ResourceType) (automation.ListResponse, error)
-	Upsert(ctx context.Context, resourceType libAutomation.ResourceType, id string, data []byte) (result automation.Response, err error)
-	Delete(ctx context.Context, resourceType libAutomation.ResourceType, id string) (automation.Response, error)
+	Get(ctx context.Context, resourceType automation.ResourceType, id string) (libAPI.Response, error)
+	Create(ctx context.Context, resourceType automation.ResourceType, data []byte) (result libAPI.Response, err error)
+	Update(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (libAPI.Response, error)
+	List(ctx context.Context, resourceType automation.ResourceType) (libAPI.PagedListResponse, error)
+	Upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (result libAPI.Response, err error)
+	Delete(ctx context.Context, resourceType automation.ResourceType, id string) (libAPI.Response, error)
 }
 
 type BucketClient interface {

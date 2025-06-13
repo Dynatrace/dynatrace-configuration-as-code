@@ -19,8 +19,8 @@ package automationutils
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 )
 
 // Response is a "general" Response type holding the ID and the response payload
@@ -31,7 +31,7 @@ type Response struct {
 	Data []byte `json:"-"`
 }
 
-func DecodeResponse(r automation.Response) (Response, error) {
+func DecodeResponse(r api.Response) (Response, error) {
 	d, err := api.DecodeJSON[Response](r)
 	if err != nil {
 		return Response{}, err
@@ -44,7 +44,7 @@ func DecodeResponse(r automation.Response) (Response, error) {
 	return d, nil
 }
 
-func DecodeListResponse(r automation.ListResponse) ([]Response, error) {
+func DecodeListResponse(r api.PagedListResponse) ([]Response, error) {
 	rawResponses := r.All()
 	res := make([]Response, len(rawResponses))
 	for i, raw := range rawResponses {
