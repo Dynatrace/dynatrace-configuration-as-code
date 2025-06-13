@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2024 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,15 +35,29 @@ import (
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 )
 
-//go:generate mockgen -source=document.go -destination=document_mock.go -package=document documentClient
-type Client interface {
-	Get(ctx context.Context, id string) (documents.Response, error)
+//go:generate mockgen -source=deploy.go -destination=document_mock.go -package=document DeploySource
+type DeploySource interface {
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
 	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (api.Response, error)
 	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (api.Response, error)
 }
 
-func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
+var (
+	ErrWrongPayloadType     = errors.New("can't deploy a Dynatrace classic dashboard using the 'documents' type. Either use 'api: dashboard' to deploy a Dynatrace classic dashboard or update your payload to a Dynatrace platform dashboard")
+	ErrMissingNameParameter = errors.New("missing name parameter")
+)
+
+const errReadDataMsg = "error reading received data"
+
+type DeployAPI struct {
+	source DeploySource
+}
+
+func NewDeployAPI(source DeploySource) *DeployAPI {
+	return &DeployAPI{source}
+}
+
+func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	// create new context to carry logger
 	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
 
@@ -54,7 +68,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 
 	documentName, ok := properties[config.NameParameter].(string)
 	if !ok {
-		return entities.ResolvedEntity{}, errors.New("missing name parameter")
+		return entities.ResolvedEntity{}, ErrMissingNameParameter
 	}
 
 	if documentType == documents.Dashboard {
@@ -65,11 +79,11 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 
 	// strategy 1: if an origin id is available, try to update that document
 	if c.OriginObjectId != "" {
-		updateResponse, err := client.Update(ctx, c.OriginObjectId, documentName, isPrivate, []byte(renderedConfig), documentType)
+		updateResponse, err := d.source.Update(ctx, c.OriginObjectId, documentName, isPrivate, []byte(renderedConfig), documentType)
 		if err == nil {
 			md, err := documents.UnmarshallMetadata(updateResponse.Data)
 			if err != nil {
-				return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
+				return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
 			}
 			return createResolvedEntity(md.ID, c.Coordinate, properties), nil
 		}
@@ -82,39 +96,39 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	// strategy 2: find and update document via external id
 	externalId := idutils.GenerateExternalID(c.Coordinate)
 
-	id, err := tryGetDocumentIDByExternalID(ctx, client, externalId)
+	id, err := d.tryGetDocumentIDByExternalID(ctx, externalId)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("error finding document with externalId='%s'", externalId)).WithError(err)
 	}
 
 	if id != "" {
-		updateResponse, err := client.Update(ctx, id, documentName, isPrivate, []byte(renderedConfig), documentType)
+		updateResponse, err := d.source.Update(ctx, id, documentName, isPrivate, []byte(renderedConfig), documentType)
 		if err != nil {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", c.OriginObjectId)).WithError(err)
 		}
 
 		md, err := documents.UnmarshallMetadata(updateResponse.Data)
 		if err != nil {
-			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
+			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
 		}
 		return createResolvedEntity(md.ID, c.Coordinate, properties), nil
 	}
 
 	// strategy 3: try to create a new document
-	createResponse, err := client.Create(ctx, documentName, isPrivate, externalId, []byte(renderedConfig), documentType)
+	createResponse, err := d.source.Create(ctx, documentName, isPrivate, externalId, []byte(renderedConfig), documentType)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", documentName)).WithError(err)
 	}
 	md, err := documents.UnmarshallMetadata(createResponse.Data)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, "error reading received data").WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
 	}
 
 	return createResolvedEntity(md.ID, c.Coordinate, properties), nil
 }
 
-func tryGetDocumentIDByExternalID(ctx context.Context, client Client, externalId string) (string, error) {
-	listResponse, err := client.List(ctx, fmt.Sprintf("externalId=='%s'", externalId))
+func (d DeployAPI) tryGetDocumentIDByExternalID(ctx context.Context, externalId string) (string, error) {
+	listResponse, err := d.source.List(ctx, fmt.Sprintf("externalId=='%s'", externalId))
 	if err != nil {
 		return "", err
 	}
@@ -140,13 +154,13 @@ func createResolvedEntity(id string, coordinate coordinate.Coordinate, propertie
 	}
 }
 
-var documentMapping = map[config.DocumentKind]documents.DocumentType{
-	config.DashboardKind: documents.Dashboard,
-	config.NotebookKind:  documents.Notebook,
-	config.LaunchpadKind: documents.Launchpad,
-}
-
 func getDocumentAttributesFromConfigType(t config.Type) (doctype string, private bool, err error) {
+	documentMapping := map[config.DocumentKind]documents.DocumentType{
+		config.DashboardKind: documents.Dashboard,
+		config.NotebookKind:  documents.Notebook,
+		config.LaunchpadKind: documents.Launchpad,
+	}
+
 	documentType, ok := t.(config.DocumentType)
 	if !ok {
 		return "", false, fmt.Errorf("expected document config type but found %v", t)
@@ -159,8 +173,6 @@ func getDocumentAttributesFromConfigType(t config.Type) (doctype string, private
 
 	return kind, documentType.Private, nil
 }
-
-var errWrongPayloadType = errors.New("can't deploy a Dynatrace classic dashboard using the 'documents' type. Either use 'api: dashboard' to deploy a Dynatrace classic dashboard or update your payload to a Dynatrace platform dashboard")
 
 // validateDashboardPayload returns an error if the JSON data is 1) malformed or 2) if the payload is not a Dynatrace platform dashboard payload.
 func validateDashboardPayload(payload string) error {
@@ -177,7 +189,7 @@ func validateDashboardPayload(payload string) error {
 	// Tiles should only be an array if Dynatrace classic dashboards configs are defined.
 	// For Dynatrace platform dashboards, a map is used.
 	if _, isArray := parsedPayload.Tiles.([]any); isArray {
-		return errWrongPayloadType
+		return ErrWrongPayloadType
 	}
 
 	return nil
