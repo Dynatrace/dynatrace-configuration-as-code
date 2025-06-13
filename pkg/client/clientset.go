@@ -160,12 +160,12 @@ type AutomationClient interface {
 }
 
 type BucketClient interface {
-	Get(ctx context.Context, bucketName string) (buckets.Response, error)
+	Get(ctx context.Context, bucketName string) (libAPI.Response, error)
 	List(ctx context.Context) (buckets.ListResponse, error)
-	Create(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
-	Update(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
-	Upsert(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
-	Delete(ctx context.Context, bucketName string) (buckets.Response, error)
+	Create(ctx context.Context, bucketName string, data []byte) (libAPI.Response, error)
+	Update(ctx context.Context, bucketName string, data []byte) (libAPI.Response, error)
+	Upsert(ctx context.Context, bucketName string, data []byte) (libAPI.Response, error)
+	Delete(ctx context.Context, bucketName string) (libAPI.Response, error)
 }
 
 type DocumentClient interface {
