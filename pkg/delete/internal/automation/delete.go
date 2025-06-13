@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -32,8 +31,8 @@ import (
 )
 
 type client interface {
-	Delete(ctx context.Context, resourceType automationAPI.ResourceType, id string) (automation.Response, error)
-	List(ctx context.Context, resourceType automationAPI.ResourceType) (automation.ListResponse, error)
+	Delete(ctx context.Context, resourceType automation.ResourceType, id string) (api.Response, error)
+	List(ctx context.Context, resourceType automation.ResourceType) (api.PagedListResponse, error)
 }
 
 func Delete(ctx context.Context, c client, automationResource config.AutomationResource, entries []pointer.DeletePointer) error {
@@ -127,8 +126,8 @@ func DeleteAll(ctx context.Context, c client) error {
 	return nil
 }
 
-var automationTypesToResources = map[automationAPI.ResourceType]string{
-	automationAPI.Workflows:         "workflow",
-	automationAPI.BusinessCalendars: "business-calendar",
-	automationAPI.SchedulingRules:   "scheduling-rule",
+var automationTypesToResources = map[automation.ResourceType]string{
+	automation.Workflows:         "workflow",
+	automation.BusinessCalendars: "business-calendar",
+	automation.SchedulingRules:   "scheduling-rule",
 }
