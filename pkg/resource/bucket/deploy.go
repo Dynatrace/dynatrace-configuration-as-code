@@ -25,7 +25,6 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -34,7 +33,7 @@ import (
 )
 
 type DeploySource interface {
-	Upsert(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
+	Upsert(ctx context.Context, bucketName string, data []byte) (api.Response, error)
 }
 
 type DeployAPI struct {

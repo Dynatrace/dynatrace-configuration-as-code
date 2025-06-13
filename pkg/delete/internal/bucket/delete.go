@@ -31,7 +31,7 @@ import (
 )
 
 type client interface {
-	Delete(ctx context.Context, id string) (buckets.Response, error)
+	Delete(ctx context.Context, id string) (api.Response, error)
 	List(ctx context.Context) (buckets.ListResponse, error)
 }
 
