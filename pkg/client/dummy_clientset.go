@@ -22,7 +22,6 @@ import (
 	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	libAutomation "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
@@ -46,33 +45,33 @@ type DummyAutomationClient struct {
 }
 
 // Create implements AutomationClient.
-func (d *DummyAutomationClient) Create(ctx context.Context, resourceType libAutomation.ResourceType, data []byte) (result api.Response, err error) {
+func (d *DummyAutomationClient) Create(ctx context.Context, resourceType automation.ResourceType, data []byte) (result api.Response, err error) {
 	panic("unimplemented")
 }
 
 // Delete implements AutomationClient.
-func (d *DummyAutomationClient) Delete(ctx context.Context, resourceType libAutomation.ResourceType, id string) (api.Response, error) {
+func (d *DummyAutomationClient) Delete(ctx context.Context, resourceType automation.ResourceType, id string) (api.Response, error) {
 	panic("unimplemented")
 }
 
 // Get implements AutomationClient.
-func (d *DummyAutomationClient) Get(ctx context.Context, resourceType libAutomation.ResourceType, id string) (api.Response, error) {
+func (d *DummyAutomationClient) Get(ctx context.Context, resourceType automation.ResourceType, id string) (api.Response, error) {
 	panic("unimplemented")
 }
 
 // List implements AutomationClient.
-func (d *DummyAutomationClient) List(ctx context.Context, resourceType libAutomation.ResourceType) (api.PagedListResponse, error) {
+func (d *DummyAutomationClient) List(ctx context.Context, resourceType automation.ResourceType) (api.PagedListResponse, error) {
 	panic("unimplemented")
 }
 
 // Update implements AutomationClient.
-func (d *DummyAutomationClient) Update(ctx context.Context, resourceType libAutomation.ResourceType, id string, data []byte) (api.Response, error) {
+func (d *DummyAutomationClient) Update(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (api.Response, error) {
 	panic("unimplemented")
 }
 
 // Upsert implements AutomationClient.
-func (d *DummyAutomationClient) Upsert(ctx context.Context, resourceType libAutomation.ResourceType, id string, data []byte) (result api.Response, err error) {
-	return automation.Response{
+func (d *DummyAutomationClient) Upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (result api.Response, err error) {
+	return api.Response{
 		StatusCode: 200,
 		Data:       []byte(fmt.Sprintf(`{"id" : "%s"}`, id)),
 	}, nil
