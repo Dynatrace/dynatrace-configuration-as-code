@@ -26,11 +26,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
 
@@ -115,25 +112,4 @@ func TestCreateClientSet(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
-}
-
-func TestCreateClientSetWithAdditionalHeaders(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		require.Equal(t, "Some-Value", req.Header.Get("Some-Header"))
-		rw.WriteHeader(404)
-	}))
-	defer server.Close()
-
-	t.Setenv(environment.AdditionalHTTPHeaders, "Some-Header: Some-Value")
-	clientSet, _ := CreateClientSet(t.Context(), server.URL, manifest.Auth{
-		ApiToken: &manifest.AuthSecret{
-			Name:  "token-env-var",
-			Value: "mock token",
-		},
-	})
-
-	var apiErr api.APIError
-	_, err := clientSet.SettingsClient.Get(t.Context(), "")
-	require.ErrorAs(t, err, &apiErr)
-	require.Equal(t, 404, apiErr.StatusCode)
 }

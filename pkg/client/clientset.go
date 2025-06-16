@@ -269,13 +269,11 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	}
 
 	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
-	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	cFactory := clients.Factory().
 		WithConcurrentRequestLimit(concurrentReqLimit).
 		WithUserAgent(opts.getUserAgentString()).
 		WithRetryOptions(&DefaultRetryOptions).
-		WithRateLimiter(true).
-		WithCustomHeaders(additionalHeaders)
+		WithRateLimiter(true)
 
 	if supportarchive.IsEnabled(ctx) {
 		cFactory = cFactory.WithHTTPListener(&rest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})

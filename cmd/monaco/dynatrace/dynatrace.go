@@ -84,13 +84,11 @@ func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.Environme
 
 // checkClassicConnection checks if a classic connection (via API token) can be established. Scopes are not validated.
 func checkClassicConnection(ctx context.Context, classicURL string, apiToken string) error {
-	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	factory := clients.Factory().
 		WithClassicURL(classicURL).
 		WithAccessToken(apiToken).
 		WithRateLimiter(true).
-		WithRetryOptions(&client.DefaultRetryOptions).
-		WithCustomHeaders(additionalHeaders)
+		WithRetryOptions(&client.DefaultRetryOptions)
 
 	if supportarchive.IsEnabled(ctx) {
 		factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
@@ -108,7 +106,6 @@ func checkClassicConnection(ctx context.Context, classicURL string, apiToken str
 // CreateAccountClients gives back clients to use for specific accounts
 func CreateAccountClients(ctx context.Context, manifestAccounts map[string]manifest.Account) (map[account.AccountInfo]*accounts.Client, error) {
 	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
-	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	accClients := make(map[account.AccountInfo]*accounts.Client, len(manifestAccounts))
 	for _, acc := range manifestAccounts {
 		oauthCreds := clientcredentials.Config{
@@ -123,8 +120,7 @@ func CreateAccountClients(ctx context.Context, manifestAccounts map[string]manif
 			WithUserAgent(client.DefaultMonacoUserAgent).
 			WithRateLimiter(true).
 			WithRetryOptions(&client.DefaultRetryOptions).
-			WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl)).
-			WithCustomHeaders(additionalHeaders)
+			WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl))
 
 		if supportarchive.IsEnabled(ctx) {
 			factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
@@ -205,11 +201,9 @@ func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds 
 		}
 	}
 
-	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	factory := clients.Factory().
 		WithPlatformURL(platformURL).
-		WithOAuthCredentials(oauthCreds).
-		WithCustomHeaders(additionalHeaders)
+		WithOAuthCredentials(oauthCreds)
 	if supportarchive.IsEnabled(ctx) {
 		factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
@@ -226,10 +220,9 @@ func findSimpleClassicURL(ctx context.Context, platformURL string) (classicUrl s
 		return "", false
 	}
 
-	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	classicUrl = strings.Replace(platformURL, ".apps.", ".live.", 1)
 
-	client, err := clients.Factory().WithClassicURL(classicUrl).WithCustomHeaders(additionalHeaders).CreateClassicClient()
+	client, err := clients.Factory().WithClassicURL(classicUrl).CreateClassicClient()
 	if err != nil {
 		return "", false
 	}

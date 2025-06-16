@@ -27,7 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -161,12 +160,10 @@ func createAccountDeleteClient(ctx context.Context, a manifest.Account) (delete.
 		apiUrl = a.ApiUrl.Value
 	}
 
-	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	c, err := clients.Factory().
 		WithAccountURL(apiUrl).
 		WithOAuthCredentials(oauthCreds).
 		WithUserAgent(client.DefaultMonacoUserAgent).
-		WithCustomHeaders(additionalHeaders).
 		AccountClient(ctx)
 	if err != nil {
 		return delete.Account{}, err

@@ -21,7 +21,6 @@ package environment
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,26 +57,4 @@ func TestWithParallelRequestLimitFromEnvOption(t *testing.T) {
 	require.Equal(t, 11, GetEnvValueInt(testEnvVar))
 	require.Equal(t, 11, GetEnvValueIntLog(testEnvVar))
 	require.Equal(t, "Environment variable %s: %d", getLogMessage(testEnvVar, logStringInt))
-}
-
-func TestWithCustomHeadersSetReturnsExpectedMap(t *testing.T) {
-	t.Run("when env var is set, parsed map is as expected", func(t *testing.T) {
-		t.Setenv(AdditionalHTTPHeaders, "Header1: cookie1=val1;cookie2=val2\nHeader2: this:value:contains:colons\nHeaderWithoutValue\nHeaderWithoutValueButColon:\n  :\n")
-
-		parsedHeaders := GetAdditionalHTTPHeadersFromEnv()
-
-		expectedHeaders := map[string]string{
-			"Header1":                    "cookie1=val1;cookie2=val2",
-			"Header2":                    "this:value:contains:colons",
-			"HeaderWithoutValue":         "",
-			"HeaderWithoutValueButColon": "",
-		}
-
-		assert.Equal(t, expectedHeaders, parsedHeaders)
-	})
-	t.Run("when env var is not set, parsed map is as expected", func(t *testing.T) {
-		t.Setenv(AdditionalHTTPHeaders, "")
-		parsedHeaders := GetAdditionalHTTPHeadersFromEnv()
-		assert.Empty(t, parsedHeaders)
-	})
 }
