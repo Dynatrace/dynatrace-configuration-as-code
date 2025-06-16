@@ -108,7 +108,7 @@ func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
 }
 
 // HasAnyAccountKeyDefined checks whether the map has any AM key defined.
-// The current keys are `users`, `groups`, and `policies`.
+// The current keys are `users`, `serviceUsers`, `groups`, and `policies`.
 func HasAnyAccountKeyDefined(m map[string]any) bool {
 	if len(m) == 0 {
 		return false
