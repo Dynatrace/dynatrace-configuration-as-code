@@ -4,7 +4,7 @@ go 1.24.3
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250613075352-75e948aa5873
+	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250617114609-ebf11224f516
 	github.com/go-logr/logr v1.4.3
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
