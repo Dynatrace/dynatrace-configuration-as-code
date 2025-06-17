@@ -80,7 +80,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		assert.EqualError(t, err, "to download with manifest, 'environment' needs to be specified")
 	})
 
-	t.Run("Direct download - authorization via token", func(t *testing.T) {
+	t.Run("Direct download - just token", func(t *testing.T) {
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
@@ -96,7 +96,25 @@ func TestGetDownloadCommand(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("Direct download - authorization via OAuth", func(t *testing.T) {
+	t.Run("Direct download - just OAuth", func(t *testing.T) {
+		m := newMonaco(t)
+
+		expected := downloadCmdOptions{
+			environmentURL: "http://some.url",
+			auth: auth{
+				clientID:     "CLIENT_ID",
+				clientSecret: "CLIENT_SECRET",
+			},
+			projectName: "project",
+			onlyOptions: defaultOnlyOptions,
+		}
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
+
+		err := m.download("--url http://some.url --oauth-client-id CLIENT_ID --oauth-client-secret CLIENT_SECRET")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Direct download - token and OAuth", func(t *testing.T) {
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
@@ -115,18 +133,18 @@ func TestGetDownloadCommand(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("Direct download - token missing", func(t *testing.T) {
+	t.Run("Direct download - missing token or OAuth credentials", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url")
-		assert.EqualError(t, err, "if 'url' is set, 'token' also must be set")
+		assert.EqualError(t, err, "if 'url' is set, 'token' or 'oauth-client-id' and 'oauth-client-secret' must also be set")
 	})
 
 	t.Run("Direct download - client ID for OAuth authorization is missing", func(t *testing.T) {
-		err := newMonaco(t).download("--url http://some.url --token TOKEN --oauth-client-secret CLIENT_SECRET")
+		err := newMonaco(t).download("--url http://some.url --oauth-client-secret CLIENT_SECRET")
 		assert.EqualError(t, err, "'oauth-client-id' and 'oauth-client-secret' must always be set together")
 	})
 
 	t.Run("Direct download - client secret for OAuth authorization is missing", func(t *testing.T) {
-		err := newMonaco(t).download("--url http://some.url --token TOKEN --oauth-client-id CLIENT_ID")
+		err := newMonaco(t).download("--url http://some.url --oauth-client-id CLIENT_ID")
 		assert.EqualError(t, err, "'oauth-client-id' and 'oauth-client-secret' must always be set together")
 	})
 

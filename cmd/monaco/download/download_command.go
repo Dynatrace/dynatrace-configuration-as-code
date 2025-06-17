@@ -66,7 +66,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
   monaco download [--%s manifest.yaml] --%s MY_ENV ...
 
   # download without manifest
-  monaco download --%s url --%s DT_TOKEN [--%s CLIENT_ID --%s CLIENT_SECRET] ...`, ManifestFlag, EnvironmentFlag, UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag),
+  monaco download --%s url [--%s DT_TOKEN] [--%s CLIENT_ID --%s CLIENT_SECRET] ...`, ManifestFlag, EnvironmentFlag, UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag),
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if f.environmentURL != "" {
@@ -108,9 +108,9 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 		fmt.Sprintf("To be able to connect to any Dynatrace environment, an API token needs to be provided using '--%s'. ", ApiTokenFlag)+
 		fmt.Sprintf("In case of connecting to a Dynatrace Platform, an OAuth Client ID, as well as an OAuth Client Secret, needs to be provided as well using the flags '--%s' and '--%s'. ", OAuthIdFlag, OAuthSecretFlag)+
 		fmt.Sprintf("This flag is not combinable with the flag '--%s.'", ManifestFlag))
-	cmd.Flags().StringVar(&f.apiToken, ApiTokenFlag, "", fmt.Sprintf("API token environment variable. Required when using the flag '--%s'", UrlFlag))
-	cmd.Flags().StringVar(&f.clientID, OAuthIdFlag, "", fmt.Sprintf("OAuth client ID environment variable. Required when using the flag '--%s' and connecting to a Dynatrace Platform.", UrlFlag))
-	cmd.Flags().StringVar(&f.clientSecret, OAuthSecretFlag, "", fmt.Sprintf("OAuth client secret environment variable. Required when using the flag '--%s' and connecting to a Dynatrace Platform.", UrlFlag))
+	cmd.Flags().StringVar(&f.apiToken, ApiTokenFlag, "", fmt.Sprintf("API token environment variable. Required when using the flag '--%s' and downloading Dynatrace Classic configurations.", UrlFlag))
+	cmd.Flags().StringVar(&f.clientID, OAuthIdFlag, "", fmt.Sprintf("OAuth client ID environment variable. For use with '--%s' when using the flag '--%s' and to download Dynatrace Platform configurations.", OAuthSecretFlag, UrlFlag))
+	cmd.Flags().StringVar(&f.clientSecret, OAuthSecretFlag, "", fmt.Sprintf("OAuth client secret environment variable. For use with '--%s' when using the flag '--%s' and to download Dynatrace Platform configurations.", OAuthIdFlag, UrlFlag))
 
 	// download options
 	cmd.Flags().StringSliceVarP(&f.specificAPIs, ApiFlag, "a", nil, "Download one or more classic configuration APIs, including deprecated ones. (Repeat flag or use comma-separated values)")
@@ -160,8 +160,8 @@ func preRunChecksForDirectDownload(f downloadCmdOptions) error {
 		return fmt.Errorf("'%s' and '%s' are mutually exclusive", UrlFlag, ManifestFlag)
 	case f.specificEnvironmentName != "":
 		return fmt.Errorf("'%s' is specific to manifest-based download and incompatible with direct download from '%s'", EnvironmentFlag, UrlFlag)
-	case f.apiToken == "":
-		return fmt.Errorf("if '%s' is set, '%s' also must be set", UrlFlag, ApiTokenFlag)
+	case (f.apiToken == "") && (f.clientID == "") && (f.clientSecret == ""):
+		return fmt.Errorf("if '%s' is set, '%s' or '%s' and '%s' must also be set", UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag)
 	case (f.clientID == "") != (f.clientSecret == ""):
 		return fmt.Errorf("'%s' and '%s' must always be set together", OAuthIdFlag, OAuthSecretFlag)
 	default:
