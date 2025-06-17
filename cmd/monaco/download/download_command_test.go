@@ -38,11 +38,6 @@ func TestGetDownloadCommand(t *testing.T) {
 		OnlyBucketsFlag:      false,
 	}
 
-	t.Run("url and token are mutually exclusive", func(t *testing.T) {
-		err := newMonaco(t).download("--url http://some.url --manifest my-manifest.yaml")
-		assert.EqualError(t, err, "'url' and 'manifest' are mutually exclusive")
-	})
-
 	t.Run("url and manifest are mutually exclusive", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --manifest manifest.yaml")
 		assert.EqualError(t, err, "'url' and 'manifest' are mutually exclusive")
