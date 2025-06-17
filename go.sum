@@ -21,6 +21,8 @@ github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.2025061713185
 github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250617131858-3b6686278375/go.mod h1:XskCEkvBoQCq3TFYFrQ3KBwyKAyUQGTYUjGKtVaxISY=
 github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250617144604-fdb367d056c4 h1:Ew9wTU2w5XYXMbvHDdGBJD9/C3mYAerVjAxECYlFiFY=
 github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250617144604-fdb367d056c4/go.mod h1:XskCEkvBoQCq3TFYFrQ3KBwyKAyUQGTYUjGKtVaxISY=
+github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250617145416-ae30ed35b4c1 h1:bSQa5ep8BIWysVOdk9Wa0YZXMLgC2iBSzububYu+9hw=
+github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250617145416-ae30ed35b4c1/go.mod h1:XskCEkvBoQCq3TFYFrQ3KBwyKAyUQGTYUjGKtVaxISY=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
 github.com/go-logr/logr v1.4.3/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
