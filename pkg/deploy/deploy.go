@@ -40,6 +40,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
@@ -139,12 +140,26 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 	return nil
 }
 
+func createDeployables(clientSet *client.ClientSet) resource.Deployables {
+	return resource.Deployables{
+		config.ServiceLevelObjectiveID: slo.NewDeployAPI(clientSet.ServiceLevelObjectiveClient),
+		config.SegmentID:               segment.NewDeployAPI(clientSet.SegmentClient),
+		config.ClassicApiTypeID:        classic.NewDeployAPI(clientSet.ConfigClient, api.NewAPIs()),
+		config.SettingsTypeID:          settings.NewDeployAPI(clientSet.SettingsClient),
+		config.OpenPipelineTypeID:      openpipeline.NewDeployAPI(clientSet.OpenPipelineClient),
+		config.AutomationTypeID:        automation.NewDeployAPI(clientSet.AutClient),
+		config.DocumentTypeID:          document.NewDeployAPI(clientSet.DocumentClient),
+		config.BucketTypeID:            bucket.NewDeployAPI(clientSet.BucketClient),
+	}
+}
+
 func Deploy(ctx context.Context, clientSet *client.ClientSet, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
 	preloadCaches(ctx, projects, clientSet, environment)
 	defer clearCaches(clientSet)
+	deployables := createDeployables(clientSet)
 	log.InfoContext(ctx, "Deploying configurations to environment %q...", environment)
 
-	return deployComponents(ctx, sortedConfigs, clientSet)
+	return deployComponents(ctx, sortedConfigs, deployables)
 }
 
 // getSortedEnvConfigs sorts the config graphs and checks for certain errors like cyclic dependencies
@@ -160,7 +175,7 @@ func getSortedEnvConfigs(g graph.ConfigGraphPerEnvironment, envNames []string) (
 	return envConfigs, nil
 }
 
-func deployComponents(ctx context.Context, components []graph.SortedComponent, clientset *client.ClientSet) error {
+func deployComponents(ctx context.Context, components []graph.SortedComponent, deployables resource.Deployables) error {
 	log.InfoContext(ctx, "Deploying %d independent configuration sets in parallel...", len(components))
 	errCount := 0
 	errChan := make(chan error, len(components))
@@ -168,7 +183,7 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 	// Iterate over components and launch a goroutine for each component deployment.
 	for i := range components {
 		go func(ctx context.Context, component graph.SortedComponent) {
-			errChan <- deployGraph(ctx, component.Graph, clientset)
+			errChan <- deployGraph(ctx, component.Graph, deployables)
 		}(context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(i)), components[i])
 	}
 
@@ -191,7 +206,7 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 	return nil
 }
 
-func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clientset *client.ClientSet) error {
+func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, deployables resource.Deployables) error {
 	g := simple.NewDirectedGraph()
 	gonum.Copy(g, configGraph)
 	resolvedEntities := entities.New()
@@ -206,7 +221,7 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 			time.Sleep(api.NewAPIs()[node.Config.Coordinate.Type].DeployWaitDuration)
 
 			go func(ctx context.Context, node graph.ConfigNode) {
-				errChan <- deployNode(ctx, node, configGraph, clientset, resolvedEntities)
+				errChan <- deployNode(ctx, node, configGraph, deployables, resolvedEntities)
 			}(context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate), node)
 		}
 
@@ -232,9 +247,9 @@ func deployGraph(ctx context.Context, configGraph *simple.DirectedGraph, clients
 	return nil
 }
 
-func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, clientset *client.ClientSet, resolvedEntities *entities.EntityMap) error {
+func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.ConfigGraph, deployables resource.Deployables, resolvedEntities *entities.EntityMap) error {
 	ctx = report.NewContextWithDetailer(ctx, report.NewDefaultDetailer())
-	resolvedEntity, err := deployConfig(ctx, n.Config, clientset, resolvedEntities)
+	resolvedEntity, err := deployConfig(ctx, n.Config, deployables, resolvedEntities)
 	details := report.GetDetailerFromContextOrDiscard(ctx).GetAll()
 
 	if err != nil {
@@ -302,7 +317,7 @@ func (e ErrUnknownConfigType) Error() string {
 	return fmt.Sprintf("unknown config type (ID: %q)", e.configType)
 }
 
-func deployConfig(ctx context.Context, c *config.Config, clientset *client.ClientSet, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
+func deployConfig(ctx context.Context, c *config.Config, deployables resource.Deployables, resolvedEntities config.EntityLookup) (entities.ResolvedEntity, error) {
 	if limiter := getDeploymentLimiterFromContext(ctx); limiter != nil {
 		limiter.Acquire()
 		defer limiter.Release()
@@ -331,32 +346,9 @@ func deployConfig(ctx context.Context, c *config.Config, clientset *client.Clien
 	log.WithFields(field.StatusDeploying()).InfoContext(ctx, "Deploying config")
 	var resolvedEntity entities.ResolvedEntity
 	var deployErr error
-	switch c.Type.(type) {
-	case config.SettingsType:
-		resolvedEntity, deployErr = settings.NewDeployAPI(clientset.SettingsClient).Deploy(ctx, properties, renderedConfig, c)
-
-	case config.ClassicApiType:
-		resolvedEntity, deployErr = classic.NewDeployAPI(clientset.ConfigClient, api.NewAPIs()).Deploy(ctx, properties, renderedConfig, c)
-
-	case config.AutomationType:
-		resolvedEntity, deployErr = automation.NewDeployAPI(clientset.AutClient).Deploy(ctx, properties, renderedConfig, c)
-
-	case config.BucketType:
-		resolvedEntity, deployErr = bucket.NewDeployAPI(clientset.BucketClient).Deploy(ctx, properties, renderedConfig, c)
-
-	case config.DocumentType:
-		resolvedEntity, deployErr = document.NewDeployAPI(clientset.DocumentClient).Deploy(ctx, properties, renderedConfig, c)
-
-	case config.OpenPipelineType:
-		resolvedEntity, deployErr = openpipeline.NewDeployAPI(clientset.OpenPipelineClient).Deploy(ctx, properties, renderedConfig, c)
-
-	case config.Segment:
-		resolvedEntity, deployErr = segment.NewDeployAPI(clientset.SegmentClient).Deploy(ctx, properties, renderedConfig, c)
-
-	case config.ServiceLevelObjective:
-		resolvedEntity, deployErr = slo.NewDeployAPI(clientset.ServiceLevelObjectiveClient).Deploy(ctx, properties, renderedConfig, c)
-
-	default:
+	if deployable, ok := deployables[c.Type.ID()]; ok {
+		resolvedEntity, deployErr = deployable.Deploy(ctx, properties, renderedConfig, c)
+	} else {
 		deployErr = ErrUnknownConfigType{configType: c.Type.ID()}
 	}
 
