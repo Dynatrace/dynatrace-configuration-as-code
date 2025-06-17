@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 )
 
 func TestGetDownloadCommand(t *testing.T) {
@@ -80,6 +82,27 @@ func TestGetDownloadCommand(t *testing.T) {
 		assert.EqualError(t, err, "to download with manifest, 'environment' needs to be specified")
 	})
 
+	t.Run("Download using manifest - API token cannot be specified", func(t *testing.T) {
+		err := newMonaco(t).download("--token API_TOKEN")
+		assert.EqualError(t, err, "'token', 'oauth-client-id', and 'oauth-client-secret' can only be used with 'url', while 'manifest' must NOT be set ")
+	})
+
+	t.Run("Download using manifest - OAuth client ID cannot be specified", func(t *testing.T) {
+		err := newMonaco(t).download("--oauth-client-id CLIENT_ID")
+		assert.EqualError(t, err, "'token', 'oauth-client-id', and 'oauth-client-secret' can only be used with 'url', while 'manifest' must NOT be set ")
+	})
+
+	t.Run("Download using manifest - OAuth client secret cannot be specified", func(t *testing.T) {
+		err := newMonaco(t).download("--oauth-client-secret CLIENT_SECRET")
+		assert.EqualError(t, err, "'token', 'oauth-client-id', and 'oauth-client-secret' can only be used with 'url', while 'manifest' must NOT be set ")
+	})
+
+	t.Run("Download using manifest - platform token cannot be specified", func(t *testing.T) {
+		t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+		err := newMonaco(t).download("--platform-token PLATFORM_TOKEN")
+		assert.EqualError(t, err, "'token', 'oauth-client-id', 'oauth-client-secret', and 'platform-token' can only be used with 'url', while 'manifest' must NOT be set ")
+	})
+
 	t.Run("Direct download - just token", func(t *testing.T) {
 		m := newMonaco(t)
 
@@ -133,9 +156,52 @@ func TestGetDownloadCommand(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("Direct download - just platform token", func(t *testing.T) {
+		t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+		m := newMonaco(t)
+
+		expected := downloadCmdOptions{
+			environmentURL: "http://some.url",
+			auth: auth{
+				platformToken: "PLATFORM_TOKEN",
+			},
+			projectName: "project",
+			onlyOptions: defaultOnlyOptions,
+		}
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
+
+		err := m.download("--url http://some.url --platform-token PLATFORM_TOKEN")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Direct download - API token and platform token", func(t *testing.T) {
+		t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+		m := newMonaco(t)
+
+		expected := downloadCmdOptions{
+			environmentURL: "http://some.url",
+			auth: auth{
+				apiToken:      "API_TOKEN",
+				platformToken: "PLATFORM_TOKEN",
+			},
+			projectName: "project",
+			onlyOptions: defaultOnlyOptions,
+		}
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
+
+		err := m.download("--url http://some.url --token API_TOKEN --platform-token PLATFORM_TOKEN")
+		assert.NoError(t, err)
+	})
+
 	t.Run("Direct download - missing token or OAuth credentials", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url")
 		assert.EqualError(t, err, "if 'url' is set, 'token' or 'oauth-client-id' and 'oauth-client-secret' must also be set")
+	})
+
+	t.Run("Direct download - missing token, OAuth credentials or platform token", func(t *testing.T) {
+		t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+		err := newMonaco(t).download("--url http://some.url")
+		assert.EqualError(t, err, "if 'url' is set, 'token', 'oauth-client-id' and 'oauth-client-secret', or 'platform-token' must also be set")
 	})
 
 	t.Run("Direct download - client ID for OAuth authorization is missing", func(t *testing.T) {
@@ -146,6 +212,17 @@ func TestGetDownloadCommand(t *testing.T) {
 	t.Run("Direct download - client secret for OAuth authorization is missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --oauth-client-id CLIENT_ID")
 		assert.EqualError(t, err, "'oauth-client-id' and 'oauth-client-secret' must always be set together")
+	})
+
+	t.Run("Direct download - OAuth and platform token cant be used together", func(t *testing.T) {
+		t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+		err := newMonaco(t).download("--url http://some.url --oauth-client-id CLIENT_ID --oauth-client-secret CLIENT_SECRET --platform-token PLATFORM_TOKEN")
+		assert.EqualError(t, err, "OAuth credentials and a platform token can't be used together")
+	})
+
+	t.Run("Direct download - environment specified", func(t *testing.T) {
+		err := newMonaco(t).download("--url http://some.url --token API_TOKEN --environment environment")
+		assert.EqualError(t, err, "'environment' is specific to manifest-based download and incompatible with direct download from 'url'")
 	})
 
 	t.Run("All non-conflicting flags", func(t *testing.T) {
