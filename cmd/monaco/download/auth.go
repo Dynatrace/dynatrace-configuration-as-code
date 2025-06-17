@@ -25,7 +25,7 @@ import (
 )
 
 type auth struct {
-	apiToken, clientID, clientSecret string
+	apiToken, clientID, clientSecret, platformToken string
 }
 
 func (a auth) mapToAuth() (*manifest.Auth, []error) {
@@ -51,6 +51,14 @@ func (a auth) mapToAuth() (*manifest.Auth, []error) {
 			errs = append(errs, err)
 		} else {
 			mAuth.OAuth.ClientSecret = clientSecret
+		}
+	}
+
+	if a.platformToken != "" {
+		if platformToken, err := readAuthSecretFromEnvVariable(a.platformToken); err != nil {
+			errs = append(errs, err)
+		} else {
+			mAuth.PlatformToken = &platformToken
 		}
 	}
 	return &mAuth, errs
