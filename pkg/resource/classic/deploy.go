@@ -54,18 +54,18 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
-		return entities.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeID, conf.Type.ID())
+		return entities.ResolvedEntity{}, fmt.Errorf("config was not of expected type '%s', but '%s'", config.ClassicApiTypeID, conf.Type.ID())
 	}
 
 	apiToDeploy, found := d.apis[t.Api]
 	if !found {
-		return entities.ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
+		return entities.ResolvedEntity{}, fmt.Errorf("unknown API '%s'. this is most likely a bug", t.Api)
 	}
 
 	if apiToDeploy.HasParent() {
 		scope, err := extract.Scope(properties)
 		if err != nil {
-			return entities.ResolvedEntity{}, fmt.Errorf("failed to extract scope for config %q", conf.Type.ID())
+			return entities.ResolvedEntity{}, fmt.Errorf("failed to extract scope for config '%s': %w", conf.Type.ID(), err)
 		}
 		apiToDeploy = apiToDeploy.ApplyParentObjectID(scope)
 	}
@@ -101,43 +101,48 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 }
 
 func (d DeployAPI) upsertNonUniqueNameConfig(ctx context.Context, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (dtclient.DynatraceEntity, error) {
-	configID := conf.Coordinate.ConfigId
-	projectId := conf.Coordinate.Project
+	duplicate, err := checkIsDuplicate(conf.Parameters)
+	if err != nil {
+		return dtclient.DynatraceEntity{}, err
+	}
+	entityUUID := extractEntityUUID(conf.Coordinate.ConfigId, apiToDeploy.ID, conf.Coordinate.Project, conf.OriginObjectId)
+	return d.source.UpsertByNonUniqueNameAndId(ctx, apiToDeploy, entityUUID, configName, []byte(renderedConfig), duplicate)
+}
 
-	entityUuid := configID
+// checkIsDuplicate checks if we are dealing with a non-unique name configuration that appears multiple times
+// in a monaco project. if that's the case, we need to handle it differently, by setting the duplicate parameter accordingly
+func checkIsDuplicate(parameters config.Parameters) (bool, error) {
+	if val, exists := parameters[config.NonUniqueNameConfigDuplicationParameter]; exists {
+		resolvedVal, err := val.ResolveValue(parameter.ResolveContext{})
+		if err != nil {
+			return false, err
+		}
+		resolvedValBool, ok := resolvedVal.(bool)
+		if !ok {
+			return false, fmt.Errorf("invalid boolean value for '%s', got '%T'", config.NonUniqueNameConfigDuplicationParameter, resolvedVal)
+		}
+		return resolvedValBool, nil
+	}
+	return false, nil
+}
 
-	isUUIDOrMeID := idutils.IsUUID(entityUuid) || idutils.IsMeId(entityUuid)
+func extractEntityUUID(entityUUID string, apiID string, projectID string, objectID string) string {
+	isUUIDOrMeID := idutils.IsUUID(entityUUID) || idutils.IsMeId(entityUUID)
 	if !isUUIDOrMeID {
-		entityUuid = idutils.GenerateUUIDFromConfigId(projectId, configID)
+		entityUUID = idutils.GenerateUUIDFromConfigId(projectID, entityUUID)
 	}
 
 	// for now I only use the origin object id (if set) as entityUuid for "user-action-and-session-properties-mobile",
 	// as i am not sure what side effects it will have it is occasionally set for others as well.
-	if apiToDeploy.ID == api.UserActionAndSessionPropertiesMobile {
-		if conf.OriginObjectId != "" {
-			entityUuid = conf.OriginObjectId
+	if apiID == api.UserActionAndSessionPropertiesMobile {
+		if objectID != "" {
+			entityUUID = objectID
 		} else {
 			// if we didn't got an origin object id from a download, lets use the generated entity id,
 			// however "user-action-and-session-properties-mobile" ids (keys) don't allow "-" and must be lowercase
-			entityUuid = strings.ReplaceAll(entityUuid, "-", "")
-			entityUuid = strings.ToLower(entityUuid)
+			entityUUID = strings.ReplaceAll(entityUUID, "-", "")
+			entityUUID = strings.ToLower(entityUUID)
 		}
 	}
-
-	// check if we are dealing with a non-unique name configuration that appears multiple times
-	// in a monaco project. if that's the case, we need to handle it differently, by setting the
-	// duplicate parameter accordingly
-	var duplicate bool
-	if val, exists := conf.Parameters[config.NonUniqueNameConfigDuplicationParameter]; exists {
-		resolvedVal, err := val.ResolveValue(parameter.ResolveContext{})
-		if err != nil {
-			return dtclient.DynatraceEntity{}, err
-		}
-		resolvedValBool, ok := resolvedVal.(bool)
-		if !ok {
-			return dtclient.DynatraceEntity{}, err
-		}
-		duplicate = resolvedValBool
-	}
-	return d.source.UpsertByNonUniqueNameAndId(ctx, apiToDeploy, entityUuid, configName, []byte(renderedConfig), duplicate)
+	return entityUUID
 }
