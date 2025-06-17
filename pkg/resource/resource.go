@@ -25,6 +25,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
+type Deployables = map[config.TypeID]Deployable
+
 type Deployable interface {
 	// Deploy deploys a given resource and returns the resolved entity
 	Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error)
