@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -35,14 +34,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 )
 
-type assertAndRespond func(t *testing.T, bucketName string, data []byte) (buckets.Response, error)
+type assertAndRespond func(t *testing.T, bucketName string, data []byte) (api.Response, error)
 
 type testClient struct {
 	t                    *testing.T
 	assertAndRespondFunc assertAndRespond
 }
 
-func (c testClient) Upsert(_ context.Context, bucketName string, data []byte) (buckets.Response, error) {
+func (c testClient) Upsert(_ context.Context, bucketName string, data []byte) (api.Response, error) {
 	return c.assertAndRespondFunc(c.t, bucketName, data)
 }
 
@@ -70,10 +69,10 @@ func TestDeploy(t *testing.T) {
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
-			func(t *testing.T, bucketName string, data []byte) (buckets.Response, error) {
+			func(t *testing.T, bucketName string, data []byte) (api.Response, error) {
 				expectedName := "proj_my-bucket"
 				assert.Equal(t, expectedName, bucketName)
-				return buckets.Response{
+				return api.Response{
 					StatusCode: 200,
 					Data:       data,
 				}, nil
@@ -96,9 +95,9 @@ func TestDeploy(t *testing.T) {
 				OriginObjectId: "PreExistingBucket",
 				Skip:           false,
 			},
-			func(t *testing.T, bucketName string, data []byte) (buckets.Response, error) {
+			func(t *testing.T, bucketName string, data []byte) (api.Response, error) {
 				assert.Equal(t, "PreExistingBucket", bucketName)
-				return buckets.Response{
+				return api.Response{
 					StatusCode: 200,
 					Data:       data,
 				}, nil
@@ -120,8 +119,8 @@ func TestDeploy(t *testing.T) {
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
-			func(t *testing.T, bucketName string, data []byte) (buckets.Response, error) {
-				return buckets.Response{}, errors.New("fail")
+			func(t *testing.T, bucketName string, data []byte) (api.Response, error) {
+				return api.Response{}, errors.New("fail")
 			},
 			entities.ResolvedEntity{},
 			true,
@@ -135,8 +134,8 @@ func TestDeploy(t *testing.T) {
 				Parameters: config.Parameters{},
 				Skip:       false,
 			},
-			func(t *testing.T, bucketName string, data []byte) (buckets.Response, error) {
-				return buckets.Response{}, &api.APIError{
+			func(t *testing.T, bucketName string, data []byte) (api.Response, error) {
+				return api.Response{}, &api.APIError{
 					StatusCode: 400,
 					Body:       []byte("Your request is bad and you should feel bad"),
 				}

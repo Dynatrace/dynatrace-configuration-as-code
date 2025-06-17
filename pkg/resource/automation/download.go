@@ -25,7 +25,7 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
@@ -40,14 +40,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-var automationTypesToResources = map[config.AutomationType]automationAPI.ResourceType{
-	config.AutomationType{Resource: config.Workflow}:         automationAPI.Workflows,
-	config.AutomationType{Resource: config.BusinessCalendar}: automationAPI.BusinessCalendars,
-	config.AutomationType{Resource: config.SchedulingRule}:   automationAPI.SchedulingRules,
+var automationTypesToResources = map[config.AutomationType]automation.ResourceType{
+	config.AutomationType{Resource: config.Workflow}:         automation.Workflows,
+	config.AutomationType{Resource: config.BusinessCalendar}: automation.BusinessCalendars,
+	config.AutomationType{Resource: config.SchedulingRule}:   automation.SchedulingRules,
 }
 
 type DownloadSource interface {
-	List(context.Context, automationAPI.ResourceType) (automation.ListResponse, error)
+	List(context.Context, automation.ResourceType) (api.PagedListResponse, error)
 }
 
 type DownloadAPI struct {
@@ -70,7 +70,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 			lg.WarnContext(ctx, "No resource mapping for automation type %s found", at.Resource)
 			continue
 		}
-		response, err := func() (automation.ListResponse, error) {
+		response, err := func() (api.PagedListResponse, error) {
 			ctx, cancel := context.WithTimeout(ctx, time.Minute)
 			defer cancel()
 			return a.automationSource.List(ctx, resource)

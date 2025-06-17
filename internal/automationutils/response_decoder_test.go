@@ -19,23 +19,24 @@
 package automationutils_test
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 )
 
 func TestDecodeResponse(t *testing.T) {
 	tests := []struct {
 		name    string
-		given   automation.Response
+		given   api.Response
 		want    automationutils.Response
 		wantErr bool
 	}{
 		{
 			"decodes simple response",
-			automation.Response{
+			api.Response{
 				StatusCode: 200,
 				Data:       []byte(`{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 			},
@@ -47,7 +48,7 @@ func TestDecodeResponse(t *testing.T) {
 		},
 		{
 			"error if ID is missing",
-			automation.Response{
+			api.Response{
 				StatusCode: 200,
 				Data:       []byte(`{"workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 			},
@@ -56,7 +57,7 @@ func TestDecodeResponse(t *testing.T) {
 		},
 		{
 			"error if data empty",
-			automation.Response{
+			api.Response{
 				StatusCode: 200,
 				Data:       []byte{},
 			},
@@ -80,13 +81,13 @@ func TestDecodeResponse(t *testing.T) {
 func TestDecodeListResponse(t *testing.T) {
 	tests := []struct {
 		name    string
-		given   automation.ListResponse
+		given   api.PagedListResponse
 		want    []automationutils.Response
 		wantErr bool
 	}{
 		{
 			"decodes simple response",
-			automation.ListResponse{
+			api.PagedListResponse{
 				api.ListResponse{
 					Response: api.Response{
 						StatusCode: 200,
@@ -107,7 +108,7 @@ func TestDecodeListResponse(t *testing.T) {
 		},
 		{
 			"decodes response list",
-			automation.ListResponse{
+			api.PagedListResponse{
 				api.ListResponse{
 					Response: api.Response{
 						StatusCode: 200,
@@ -154,7 +155,7 @@ func TestDecodeListResponse(t *testing.T) {
 		},
 		{
 			"error of one element is missing ID",
-			automation.ListResponse{
+			api.PagedListResponse{
 				api.ListResponse{
 					Response: api.Response{
 						StatusCode: 200,
@@ -184,7 +185,7 @@ func TestDecodeListResponse(t *testing.T) {
 		},
 		{
 			"error of one response is empty",
-			automation.ListResponse{
+			api.PagedListResponse{
 				api.ListResponse{
 					Response: api.Response{
 						StatusCode: 200,
