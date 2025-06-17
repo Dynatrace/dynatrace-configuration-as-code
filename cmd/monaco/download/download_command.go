@@ -69,7 +69,11 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
   monaco download --%s url --%s DT_TOKEN [--%s CLIENT_ID --%s CLIENT_SECRET] ...`, ManifestFlag, EnvironmentFlag, UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag),
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return preRunChecks(f)
+			if f.environmentURL != "" {
+				return preRunChecksForDirectDownload(f)
+			}
+
+			return preRunChecksForManifestDownload(f)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
@@ -147,31 +151,30 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	return cmd
 }
 
-func preRunChecks(f downloadCmdOptions) error {
+func preRunChecksForDirectDownload(f downloadCmdOptions) error {
 	switch {
-	case f.environmentURL != "" && f.manifestFile != "manifest.yaml":
+	case f.manifestFile != "manifest.yaml":
 		return fmt.Errorf("'%s' and '%s' are mutually exclusive", UrlFlag, ManifestFlag)
-	case f.environmentURL != "" && f.specificEnvironmentName != "":
+	case f.specificEnvironmentName != "":
 		return fmt.Errorf("'%s' is specific to manifest-based download and incompatible with direct download from '%s'", EnvironmentFlag, UrlFlag)
-	case f.environmentURL != "":
-		switch {
-		case f.apiToken == "":
-			return fmt.Errorf("if '%s' is set, '%s' also must be set", UrlFlag, ApiTokenFlag)
-		case (f.clientID == "") != (f.clientSecret == ""):
-			return fmt.Errorf("'%s' and '%s' must always be set together", OAuthIdFlag, OAuthSecretFlag)
-		default:
-			return nil
-		}
-	case f.manifestFile != "":
-		switch {
-		case f.apiToken != "" || f.clientID != "" || f.clientSecret != "":
-			return fmt.Errorf("'%s', '%s' and '%s' can only be used with '%s', while '%s' must NOT be set ", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, UrlFlag, ManifestFlag)
-		case f.specificEnvironmentName == "":
-			return fmt.Errorf("to download with manifest, '%s' needs to be specified", EnvironmentFlag)
-		}
+	case f.apiToken == "":
+		return fmt.Errorf("if '%s' is set, '%s' also must be set", UrlFlag, ApiTokenFlag)
+	case (f.clientID == "") != (f.clientSecret == ""):
+		return fmt.Errorf("'%s' and '%s' must always be set together", OAuthIdFlag, OAuthSecretFlag)
+	default:
+		return nil
 	}
+}
 
-	return nil
+func preRunChecksForManifestDownload(f downloadCmdOptions) error {
+	switch {
+	case f.apiToken != "" || f.clientID != "" || f.clientSecret != "":
+		return fmt.Errorf("'%s', '%s' and '%s' can only be used with '%s', while '%s' must NOT be set ", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, UrlFlag, ManifestFlag)
+	case f.specificEnvironmentName == "":
+		return fmt.Errorf("to download with manifest, '%s' needs to be specified", EnvironmentFlag)
+	default:
+		return nil
+	}
 }
 
 func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool) {
