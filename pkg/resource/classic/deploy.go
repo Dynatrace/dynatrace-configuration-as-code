@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,7 +26,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -35,7 +34,21 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/extract"
 )
 
-func Deploy(ctx context.Context, configClient client.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (entities.ResolvedEntity, error) {
+type DeploySource interface {
+	UpsertByName(ctx context.Context, a api.API, name string, payload []byte) (dtclient.DynatraceEntity, error)
+	UpsertByNonUniqueNameAndId(ctx context.Context, a api.API, entityID string, name string, payload []byte, duplicate bool) (dtclient.DynatraceEntity, error)
+}
+
+type DeployAPI struct {
+	source DeploySource
+	apis   api.APIs
+}
+
+func NewDeployAPI(source DeploySource, apis api.APIs) *DeployAPI {
+	return &DeployAPI{source, apis}
+}
+
+func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, conf *config.Config) (entities.ResolvedEntity, error) {
 	// create new context to carry logger
 	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
 
@@ -44,7 +57,7 @@ func Deploy(ctx context.Context, configClient client.ConfigClient, apis api.APIs
 		return entities.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeID, conf.Type.ID())
 	}
 
-	apiToDeploy, found := apis[t.Api]
+	apiToDeploy, found := d.apis[t.Api]
 	if !found {
 		return entities.ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
 	}
@@ -68,9 +81,9 @@ func Deploy(ctx context.Context, configClient client.ConfigClient, apis api.APIs
 
 	var dtEntity dtclient.DynatraceEntity
 	if apiToDeploy.NonUniqueName {
-		dtEntity, err = upsertNonUniqueNameConfig(ctx, configClient, apiToDeploy, conf, configName, renderedConfig)
+		dtEntity, err = d.upsertNonUniqueNameConfig(ctx, apiToDeploy, conf, configName, renderedConfig)
 	} else {
-		dtEntity, err = configClient.UpsertByName(ctx, apiToDeploy, configName, []byte(renderedConfig))
+		dtEntity, err = d.source.UpsertByName(ctx, apiToDeploy, configName, []byte(renderedConfig))
 	}
 
 	if err != nil {
@@ -87,7 +100,7 @@ func Deploy(ctx context.Context, configClient client.ConfigClient, apis api.APIs
 	}, nil
 }
 
-func upsertNonUniqueNameConfig(ctx context.Context, client client.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (dtclient.DynatraceEntity, error) {
+func (d DeployAPI) upsertNonUniqueNameConfig(ctx context.Context, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (dtclient.DynatraceEntity, error) {
 	configID := conf.Coordinate.ConfigId
 	projectId := conf.Coordinate.Project
 
@@ -126,5 +139,5 @@ func upsertNonUniqueNameConfig(ctx context.Context, client client.ConfigClient, 
 		}
 		duplicate = resolvedValBool
 	}
-	return client.UpsertByNonUniqueNameAndId(ctx, apiToDeploy, entityUuid, configName, []byte(renderedConfig), duplicate)
+	return d.source.UpsertByNonUniqueNameAndId(ctx, apiToDeploy, entityUuid, configName, []byte(renderedConfig), duplicate)
 }
