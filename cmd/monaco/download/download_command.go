@@ -88,8 +88,11 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 			}
 
 			if f.environmentURL != "" {
-				f.manifestFile = ""
 				return command.DownloadConfigs(cmd.Context(), fs, f)
+			}
+
+			if f.manifestFile == "" {
+				f.manifestFile = "manifest.yaml"
 			}
 			return command.DownloadConfigsBasedOnManifest(cmd.Context(), fs, f)
 		},
@@ -98,7 +101,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	setupSharedFlags(cmd, &f.projectName, &f.outputFolder, &f.forceOverwrite)
 
 	// download via manifest
-	cmd.Flags().StringVarP(&f.manifestFile, ManifestFlag, "m", "manifest.yaml", "Name (and the path) to the manifest file. Defaults to 'manifest.yaml'.")
+	cmd.Flags().StringVarP(&f.manifestFile, ManifestFlag, "m", "", "Name (and the path) to the manifest file. If not specified, 'manifest.yaml' will be used.")
 	cmd.Flags().StringVarP(&f.specificEnvironmentName, EnvironmentFlag, "e", "", "Specify an environment defined in the manifest to download the configurations.")
 	// download without manifest
 	cmd.Flags().StringVar(&f.environmentURL, UrlFlag, "", "URL to the Dynatrace environment from which to download the configuration. "+
@@ -153,7 +156,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 
 func preRunChecksForDirectDownload(f downloadCmdOptions) error {
 	switch {
-	case f.manifestFile != "manifest.yaml":
+	case f.manifestFile != "":
 		return fmt.Errorf("'%s' and '%s' are mutually exclusive", UrlFlag, ManifestFlag)
 	case f.specificEnvironmentName != "":
 		return fmt.Errorf("'%s' is specific to manifest-based download and incompatible with direct download from '%s'", EnvironmentFlag, UrlFlag)
