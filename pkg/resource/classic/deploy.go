@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/go-logr/logr"
 
@@ -105,7 +104,14 @@ func (d DeployAPI) upsertNonUniqueNameConfig(ctx context.Context, apiToDeploy ap
 	if err != nil {
 		return dtclient.DynatraceEntity{}, err
 	}
-	entityUUID := extractEntityUUID(conf.Coordinate.ConfigId, apiToDeploy.ID, conf.Coordinate.Project, conf.OriginObjectId)
+
+	entityUUID := conf.Coordinate.ConfigId
+	isUUIDOrMeID := idutils.IsUUID(entityUUID) || idutils.IsMeId(entityUUID)
+
+	if !isUUIDOrMeID {
+		entityUUID = idutils.GenerateUUIDFromConfigId(conf.Coordinate.Project, entityUUID)
+	}
+
 	return d.source.UpsertByNonUniqueNameAndId(ctx, apiToDeploy, entityUUID, configName, []byte(renderedConfig), duplicate)
 }
 
@@ -124,25 +130,4 @@ func checkIsDuplicate(parameters config.Parameters) (bool, error) {
 		return resolvedValBool, nil
 	}
 	return false, nil
-}
-
-func extractEntityUUID(entityUUID string, apiID string, projectID string, objectID string) string {
-	isUUIDOrMeID := idutils.IsUUID(entityUUID) || idutils.IsMeId(entityUUID)
-	if !isUUIDOrMeID {
-		entityUUID = idutils.GenerateUUIDFromConfigId(projectID, entityUUID)
-	}
-
-	// for now I only use the origin object id (if set) as entityUuid for "user-action-and-session-properties-mobile",
-	// as i am not sure what side effects it will have it is occasionally set for others as well.
-	if apiID == api.UserActionAndSessionPropertiesMobile {
-		if objectID != "" {
-			entityUUID = objectID
-		} else {
-			// if we didn't got an origin object id from a download, lets use the generated entity id,
-			// however "user-action-and-session-properties-mobile" ids (keys) don't allow "-" and must be lowercase
-			entityUUID = strings.ReplaceAll(entityUUID, "-", "")
-			entityUUID = strings.ToLower(entityUUID)
-		}
-	}
-	return entityUUID
 }
