@@ -272,7 +272,6 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.DisableKeepAlives = true
 	newCtx := context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
-		Timeout:   60 * time.Second,
 		Transport: t},
 	)
 
