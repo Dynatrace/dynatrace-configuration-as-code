@@ -242,60 +242,60 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 	}
 
 	if opts.onlyOptions.ShouldDownload(OnlyAutomationFlag) {
-		if opts.auth.OAuth != nil {
+		if opts.auth.HasPlatformCredentials() {
 			downloadables = append(downloadables, automation.NewDownloadAPI(clientSet.AutClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlyAutomationFlag) {
-			return nil, errors.New("can't download automation resources: no OAuth credentials configured")
+			return nil, errors.New("can't download automation resources: no platform credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "automation resources")
 		}
 	}
 
 	if opts.onlyOptions.ShouldDownload(OnlyBucketsFlag) {
-		if opts.auth.OAuth != nil {
+		if opts.auth.HasPlatformCredentials() {
 			downloadables = append(downloadables, bucket.NewDownloadAPI(clientSet.BucketClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlyBucketsFlag) {
-			return nil, errors.New("can't download buckets: no OAuth credentials configured")
+			return nil, errors.New("can't download buckets: no platform credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "Grail buckets")
 		}
 	}
 
 	if opts.onlyOptions.ShouldDownload(OnlyDocumentsFlag) {
-		if opts.auth.OAuth != nil {
+		if opts.auth.HasPlatformCredentials() {
 			downloadables = append(downloadables, document.NewDownloadAPI(clientSet.DocumentClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlyDocumentsFlag) {
-			return nil, errors.New("can't download documents: no OAuth credentials configured")
+			return nil, errors.New("can't download documents: no platform credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "documents")
 		}
 	}
 
 	if opts.onlyOptions.ShouldDownload(OnlyOpenPipelineFlag) {
-		if opts.auth.OAuth != nil {
+		if opts.auth.HasPlatformCredentials() {
 			downloadables = append(downloadables, openpipeline.NewDownloadAPI(clientSet.OpenPipelineClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlyOpenPipelineFlag) {
-			return nil, errors.New("can't download openpipeline resources: no OAuth credentials configured")
+			return nil, errors.New("can't download openpipeline resources: no platform credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "openpipelines")
 		}
 	}
 
 	if featureflags.Segments.Enabled() && opts.onlyOptions.ShouldDownload(OnlySegmentsFlag) {
-		if opts.auth.OAuth != nil {
+		if opts.auth.HasPlatformCredentials() {
 			downloadables = append(downloadables, segment.NewDownloadAPI(clientSet.SegmentClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlySegmentsFlag) {
-			return nil, errors.New("can't download segment resources: no OAuth credentials configured")
+			return nil, errors.New("can't download segment resources: no platform credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "segments")
 		}
 	}
 
 	if featureflags.ServiceLevelObjective.Enabled() && opts.onlyOptions.ShouldDownload(OnlySloV2Flag) {
-		if opts.auth.OAuth != nil {
+		if opts.auth.HasPlatformCredentials() {
 			downloadables = append(downloadables, slo.NewDownloadAPI(clientSet.ServiceLevelObjectiveClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlySloV2Flag) {
-			return nil, fmt.Errorf("can't download %s resources: no OAuth credentials configured", config.ServiceLevelObjectiveID)
+			return nil, fmt.Errorf("can't download %s resources: no platform credentials configured", config.ServiceLevelObjectiveID)
 		} else {
 			log.Warn(oAuthSkipMsg, "SLO-V2")
 		}

@@ -644,7 +644,7 @@ func TestDownloadConfigs_ErrorIfOAuthMissing(t *testing.T) {
 			}
 
 			err := doDownloadConfigs(t.Context(), testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
-			assert.ErrorContains(t, err, "no OAuth credentials")
+			assert.ErrorContains(t, err, "no platform credentials")
 		})
 	}
 }

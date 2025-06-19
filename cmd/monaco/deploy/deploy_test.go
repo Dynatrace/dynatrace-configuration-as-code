@@ -474,7 +474,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 				}},
 			project.ConfigsPerType{
 				string(config.DocumentTypeID): []config.Config{documentConf}},
-			"requires OAuth for environment",
+			"requires platform credentials for environment",
 		},
 		{
 			"oAuth manifest with document and classic api expect validation error",
@@ -551,7 +551,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 			project.ConfigsPerType{
 				string(config.SettingsTypeID): []config.Config{settingsConfWithPermission},
 			},
-			"using permission property on settings API requires OAuth",
+			"using permission property on settings API requires platform credentials",
 		},
 	}
 

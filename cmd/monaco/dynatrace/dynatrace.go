@@ -55,14 +55,14 @@ func VerifyEnvironmentsAuthentication(ctx context.Context, envs manifest.Environ
 
 // VerifyEnvironmentAuthentication checks if the provided API token and platform credentials of the provided environment are valid.
 func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.EnvironmentDefinition) error {
-	if env.Auth.ApiToken == nil && env.Auth.OAuth == nil && env.Auth.PlatformToken == nil {
+	if env.Auth.ApiToken == nil && !env.HasPlatformCredentials() {
 		return ErrorMissingAuth
 	}
 
 	classicUrl := env.URL.Value
 
 	// check if the platform connection works and get the classicURL in order to check the API token authentication next if given
-	if env.Auth.OAuth != nil || env.Auth.PlatformToken != nil {
+	if env.HasPlatformCredentials() {
 		var err error
 		if classicUrl, err = getDynatraceClassicURL(ctx, env.URL.Value, env.Auth.OAuth, env.Auth.PlatformToken); err != nil {
 			return fmt.Errorf("could not authorize against environment '%s' (%s) using platform credentials: %w", env.Name, env.URL.Value, err)
