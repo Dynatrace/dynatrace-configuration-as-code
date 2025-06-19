@@ -33,6 +33,14 @@ environmentGroups:
     auth:
       token:
         name: ENV_TOKEN
+  - name: test-env-3
+    url:
+      value: https://ddd.eee.ff
+    auth:
+      token:
+        name: ENV_TOKEN
+      platformToken:
+        name: ENV_PLATFORM_TOKEN
 - name: prod
   environments:
   - name: prod-env-1
