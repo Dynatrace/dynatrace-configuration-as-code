@@ -71,6 +71,7 @@ func LoadConfigFile(ctx context.Context, fs afero.Fs, context *LoaderContext, fi
 		return nil, []error{newLoadError(filePath, err)}
 	}
 	if content["config"] != nil {
+
 		return nil, []error{
 			newLoadError(filePath, fmt.Errorf("config is not a valid v2 configuration - you may be loading v1 configs, please 'convert' to v2: %w", err)),
 		}
