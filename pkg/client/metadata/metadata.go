@@ -58,7 +58,7 @@ func GetDynatraceClassicURL(ctx context.Context, platformClient corerest.Client)
 	if err != nil {
 		apiErr := coreapi.APIError{}
 		if errors.As(err, &apiErr) && apiErr.StatusCode >= 401 && apiErr.StatusCode <= 403 {
-			return "", fmt.Errorf("missing permissions to query classic environment URL: oAuth client may be missing required scope 'app-engine:apps:run': %w", err)
+			return "", fmt.Errorf("missing permissions to query classic environment URL: oAuth client or platform token may be missing required scope 'app-engine:apps:run': %w", err)
 		}
 		return "", fmt.Errorf("failed to query classic environment URL: %w", err)
 	}
