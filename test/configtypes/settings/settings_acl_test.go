@@ -122,13 +122,18 @@ func TestSettingsWithACL(t *testing.T) {
 }
 
 func createSettingsClientPlatform(t *testing.T, env manifest.EnvironmentDefinition) client.SettingsClient {
-	clientFactory := clients.Factory().
-		WithOAuthCredentials(clientcredentials.Config{
+	clientFactory := clients.Factory().WithPlatformURL(env.URL.Value)
+
+	if env.Auth.OAuth != nil {
+		clientFactory = clientFactory.WithOAuthCredentials(clientcredentials.Config{
 			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
 			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
-		}).
-		WithPlatformURL(env.URL.Value)
+		})
+	}
+	if env.Auth.PlatformToken != nil {
+		clientFactory = clientFactory.WithPlatformToken(env.Auth.PlatformToken.Value.Value())
+	}
 
 	c, err := clientFactory.CreatePlatformClient(t.Context())
 	require.NoError(t, err)

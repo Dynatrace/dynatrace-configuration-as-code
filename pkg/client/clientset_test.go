@@ -59,7 +59,7 @@ func TestCreateClientSet(t *testing.T) {
 		url  string
 		auth manifest.Auth
 	}{
-		{"token client set",
+		{"API token client set",
 			server.URL,
 			manifest.Auth{
 				ApiToken: &manifest.AuthSecret{
@@ -86,7 +86,16 @@ func TestCreateClientSet(t *testing.T) {
 				},
 			},
 		},
-		{"oAuth and token client set",
+		{"Platform token client set",
+			server.URL,
+			manifest.Auth{
+				PlatformToken: &manifest.AuthSecret{
+					Name:  "platform-token-env-var",
+					Value: "platform mock token",
+				},
+			},
+		},
+		{"oAuth and API token client set",
 			server.URL,
 			manifest.Auth{
 				ApiToken: &manifest.AuthSecret{
@@ -108,11 +117,25 @@ func TestCreateClientSet(t *testing.T) {
 				},
 			},
 		},
+		{"Platform token and API token client set",
+			server.URL,
+			manifest.Auth{
+				ApiToken: &manifest.AuthSecret{
+					Name:  "token-env-var",
+					Value: "mock token",
+				},
+				PlatformToken: &manifest.AuthSecret{
+					Name:  "platform-token-env-var",
+					Value: "platform mock token",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := CreateClientSet(t.Context(), tt.url, tt.auth)
+			clientSet, err := CreateClientSet(t.Context(), tt.url, tt.auth)
 			assert.NoError(t, err)
+			assert.NotNil(t, clientSet)
 		})
 	}
 }
@@ -131,6 +154,84 @@ func TestCreateClientSetWithAdditionalHeaders(t *testing.T) {
 			Value: "mock token",
 		},
 	})
+	assert.NotNil(t, clientSet)
+
+	var apiErr api.APIError
+	_, err := clientSet.SettingsClient.Get(t.Context(), "")
+	require.ErrorAs(t, err, &apiErr)
+	require.Equal(t, 404, apiErr.StatusCode)
+}
+
+func TestCreateClientSetWithPlatformToken_ClientsUsePlatformToken(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if strings.HasSuffix(req.URL.Path, "sso") {
+			t.Fatal("Should not be called")
+		}
+
+		require.Equal(t, "Bearer my-platform-token", req.Header.Get("Authorization"))
+		if req.URL.Path == "/platform/classic/environment-api/v2/settings/objects/" {
+			rw.WriteHeader(404)
+			return
+		}
+
+		rw.WriteHeader(200)
+		output := fmt.Sprintf(`{"version" : "0.59.3.20231603", "domain": "http://%s/api/test", "endpoint": "http://%s/api/test"}`, req.Host, req.Host)
+		_, _ = rw.Write([]byte(output))
+	}))
+	defer server.Close()
+	clientSet, _ := CreateClientSet(t.Context(), server.URL, manifest.Auth{
+		PlatformToken: &manifest.AuthSecret{
+			Name:  "token-env-var",
+			Value: "my-platform-token",
+		},
+	})
+	assert.NotNil(t, clientSet)
+
+	var apiErr api.APIError
+	_, err := clientSet.SettingsClient.Get(t.Context(), "")
+	require.ErrorAs(t, err, &apiErr)
+	require.Equal(t, 404, apiErr.StatusCode)
+}
+
+func TestCreateClientSetWithPlatformTokenAndOAuth_ClientsUsePlatformToken(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if strings.HasSuffix(req.URL.Path, "sso") {
+			t.Fatal("Should not be called")
+		}
+
+		require.Equal(t, "Bearer my-platform-token", req.Header.Get("Authorization"))
+		if req.URL.Path == "/platform/classic/environment-api/v2/settings/objects/" {
+			rw.WriteHeader(404)
+			return
+		}
+
+		rw.WriteHeader(200)
+		output := fmt.Sprintf(`{"version" : "0.59.3.20231603", "domain": "http://%s/api/test", "endpoint": "http://%s/api/test"}`, req.Host, req.Host)
+		_, _ = rw.Write([]byte(output))
+
+	}))
+	defer server.Close()
+
+	clientSet, _ := CreateClientSet(t.Context(), server.URL, manifest.Auth{
+		PlatformToken: &manifest.AuthSecret{
+			Name:  "token-env-var",
+			Value: "my-platform-token",
+		},
+		OAuth: &manifest.OAuth{
+			ClientID: manifest.AuthSecret{
+				Name:  "client-id",
+				Value: "resolved-client-id",
+			},
+			ClientSecret: manifest.AuthSecret{
+				Name:  "client-secret",
+				Value: "resolved-client-secret",
+			},
+			TokenEndpoint: &manifest.URLDefinition{
+				Value: server.URL + "/sso",
+			},
+		},
+	})
+	assert.NotNil(t, clientSet)
 
 	var apiErr api.APIError
 	_, err := clientSet.SettingsClient.Get(t.Context(), "")
