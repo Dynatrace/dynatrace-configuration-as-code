@@ -59,6 +59,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 				log.WarnContext(ctx, "Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", endpoint, string(body))
 				break
 			}
+
 			return err
 		}
 
