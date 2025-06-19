@@ -248,7 +248,7 @@ func collectRequiresPlatformErrors(platformCoordinatesPerEnvironment Coordinates
 	errs := []error{}
 	for envName, coordinates := range platformCoordinatesPerEnvironment {
 		env, found := envs[envName]
-		if !found || platformEnvironment(env) {
+		if !found || env.HasPlatformCredentials() {
 			continue
 		}
 
@@ -258,10 +258,6 @@ func collectRequiresPlatformErrors(platformCoordinatesPerEnvironment Coordinates
 		}
 	}
 	return errs
-}
-
-func platformEnvironment(e manifest.EnvironmentDefinition) bool {
-	return e.Auth.OAuth != nil
 }
 
 // validateAuthenticationWithProjectConfigs validates each config entry against the manifest if required credentials are set
@@ -282,15 +278,15 @@ func validateAuthenticationWithProjectConfigs(projects []project.Project, enviro
 						}
 					case config.SettingsType:
 						t, ok := conf.Type.(config.SettingsType)
-						if ok && t.AllUserPermission != nil && environments[envName].Auth.OAuth == nil {
-							return fmt.Errorf("using permission property on settings API requires OAuth, schema '%s' enviroment '%s'", t.SchemaId, envName)
+						if ok && t.AllUserPermission != nil && !environments[envName].HasPlatformCredentials() {
+							return fmt.Errorf("using permission property on settings API requires platform credentials, schema '%s' enviroment '%s'", t.SchemaId, envName)
 						}
-						if environments[envName].Auth.ApiToken == nil && environments[envName].Auth.OAuth == nil {
-							return fmt.Errorf("API of type '%s' requires an API token or OAuth for environment '%s'", conf.Type, envName)
+						if environments[envName].Auth.ApiToken == nil && !environments[envName].HasPlatformCredentials() {
+							return fmt.Errorf("API of type '%s' requires an API token or platform credentials for environment '%s'", conf.Type, envName)
 						}
 					default:
-						if environments[envName].Auth.OAuth == nil {
-							return fmt.Errorf("API of type '%s' requires OAuth for environment '%s'", conf.Type, envName)
+						if !environments[envName].HasPlatformCredentials() {
+							return fmt.Errorf("API of type '%s' requires platform credentials for environment '%s'", conf.Type, envName)
 						}
 					}
 				}
