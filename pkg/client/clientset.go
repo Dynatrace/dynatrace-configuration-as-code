@@ -281,13 +281,23 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	}
 
 	classicURL := url
+	platformCredentialsGiven := false
 	if auth.OAuth != nil {
 		cFactory = cFactory.WithOAuthCredentials(
 			clientcredentials.Config{
 				ClientID:     auth.OAuth.ClientID.Value.Value(),
 				ClientSecret: auth.OAuth.ClientSecret.Value.Value(),
 				TokenURL:     auth.OAuth.GetTokenEndpointValue(),
-			}).WithPlatformURL(url)
+			})
+		platformCredentialsGiven = true
+	}
+	if auth.PlatformToken != nil {
+		cFactory = cFactory.WithPlatformToken(auth.PlatformToken.Value.Value())
+		platformCredentialsGiven = true
+	}
+
+	if platformCredentialsGiven {
+		cFactory = cFactory.WithPlatformURL(url)
 		client, err := cFactory.CreatePlatformClient(ctx)
 		if err != nil {
 			return nil, err
@@ -328,7 +338,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
-		classicURL, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
+		classicURL, err = metadata.GetDynatraceClassicURL(ctx, *client)
 		if err != nil {
 			return nil, err
 		}
@@ -365,13 +375,4 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		SegmentClient:               segmentClient,
 		ServiceLevelObjectiveClient: serviceLevelObjectiveClient,
 	}, nil
-}
-
-func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth, client *rest.Client) (string, error) {
-	classicUrl := url
-	if auth != nil && client != nil {
-		return metadata.GetDynatraceClassicURL(ctx, *client)
-	}
-
-	return classicUrl, nil
 }

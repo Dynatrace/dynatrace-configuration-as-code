@@ -131,6 +131,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 
 	t.Run("Call classic endpoint - ok", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "Api-Token some token", req.Header.Get("Authorization"))
 			rw.WriteHeader(200)
 			_, _ = rw.Write(getClassicEnvPayload(req.Host))
 		}))
@@ -150,7 +151,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("Call Platform endpoint - ok", func(t *testing.T) {
+	t.Run("Call Platform endpoint using OAuth - ok", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if strings.HasSuffix(req.URL.Path, "sso") {
 				token := &oauth2.Token{
@@ -183,6 +184,26 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 					},
 				},
 			},
+		})
+		assert.NoError(t, err)
+	})
+
+	t.Run("Call Platform endpoint using platform token - ok", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.WriteHeader(200)
+			assert.Equal(t, "Bearer some token", req.Header.Get("Authorization"))
+			_, _ = rw.Write(getClassicEnvPayload(req.Host))
+		}))
+		defer server.Close()
+
+		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL,
+			},
+			Auth: manifest.Auth{PlatformToken: &manifest.AuthSecret{Name: "PLATFORM_TOKEN", Value: "some token"}},
 		})
 		assert.NoError(t, err)
 	})
@@ -234,7 +255,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("Fails if neither OAuth nor a token is provided", func(t *testing.T) {
+	t.Run("Fails if neither OAuth, nor platform token, nor API token is provided", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			t.Fatal("Should not be called")
 		}))
@@ -339,11 +360,13 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		})
 		mux.HandleFunc(metadata.ClassicEnvironmentDomainPath, func(rw http.ResponseWriter, req *http.Request) {
 			platformCalls++
+			assert.Equal(t, "Bearer test-access-token", req.Header.Get("Authorization"))
 			rw.WriteHeader(200)
 			_, _ = rw.Write(getClassicEnvPayload(req.Host))
 		})
 		mux.HandleFunc("/api/v2/apiTokens/lookup", func(rw http.ResponseWriter, req *http.Request) {
 			classicCalls++
+			assert.Equal(t, "Api-Token some token", req.Header.Get("Authorization"))
 			rw.WriteHeader(200)
 			_, _ = rw.Write(apiTokenPayload)
 		})
@@ -372,6 +395,43 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 						Value: server.URL + "/sso",
 					},
 				},
+			},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 1, classicCalls)
+		assert.Equal(t, 1, platformCalls)
+	})
+
+	t.Run("Platform token and API token are validated", func(t *testing.T) {
+		classicCalls := 0
+		platformCalls := 0
+
+		mux := http.NewServeMux()
+		mux.HandleFunc(metadata.ClassicEnvironmentDomainPath, func(rw http.ResponseWriter, req *http.Request) {
+			platformCalls++
+			assert.Equal(t, "Bearer platform token", req.Header.Get("Authorization"))
+			rw.WriteHeader(200)
+			_, _ = rw.Write(getClassicEnvPayload(req.Host))
+		})
+		mux.HandleFunc("/api/v2/apiTokens/lookup", func(rw http.ResponseWriter, req *http.Request) {
+			classicCalls++
+			assert.Equal(t, "Api-Token api token", req.Header.Get("Authorization"))
+			rw.WriteHeader(200)
+			_, _ = rw.Write(apiTokenPayload)
+		})
+		server := httptest.NewServer(mux)
+		defer server.Close()
+
+		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL,
+			},
+			Auth: manifest.Auth{
+				ApiToken:      &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "api token"},
+				PlatformToken: &manifest.AuthSecret{Name: "DT_PLATFORM_TOKEN", Value: "platform token"},
 			},
 		})
 		assert.NoError(t, err)

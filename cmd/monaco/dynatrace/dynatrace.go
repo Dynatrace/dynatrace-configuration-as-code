@@ -53,24 +53,19 @@ func VerifyEnvironmentsAuthentication(ctx context.Context, envs manifest.Environ
 	return nil
 }
 
-// VerifyEnvironmentAuthentication checks if the provided API token and OAuth credentials of the provided environment are valid.
+// VerifyEnvironmentAuthentication checks if the provided API token and platform credentials of the provided environment are valid.
 func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.EnvironmentDefinition) error {
-	if env.Auth.ApiToken == nil && env.Auth.OAuth == nil {
+	if env.Auth.ApiToken == nil && env.Auth.OAuth == nil && env.Auth.PlatformToken == nil {
 		return ErrorMissingAuth
 	}
 
 	classicUrl := env.URL.Value
 
-	// check if the OAuth connection works and get the classicURL in order to check the API token authentication next if given
-	if env.Auth.OAuth != nil {
-		oauthCreds := clientcredentials.Config{
-			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
-			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
-			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
-		}
+	// check if the platform connection works and get the classicURL in order to check the API token authentication next if given
+	if env.Auth.OAuth != nil || env.Auth.PlatformToken != nil {
 		var err error
-		if classicUrl, err = getDynatraceClassicURL(ctx, env.URL.Value, oauthCreds); err != nil {
-			return fmt.Errorf("could not authorize against environment '%s' (%s) using OAuth authorization: %w", env.Name, env.URL.Value, err)
+		if classicUrl, err = getDynatraceClassicURL(ctx, env.URL.Value, env.Auth.OAuth, env.Auth.PlatformToken); err != nil {
+			return fmt.Errorf("could not authorize against environment '%s' (%s) using platform credentials: %w", env.Name, env.URL.Value, err)
 		}
 	}
 
@@ -198,7 +193,7 @@ func CreateEnvironmentClients(ctx context.Context, environments manifest.Environ
 }
 
 // getDynatraceClassicURL transforms the platformURL to a classic URL either via string replacing or API call, depending on if the BuildSimpleClassicURL FF is enabled (default) or not
-func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds clientcredentials.Config) (string, error) {
+func getDynatraceClassicURL(ctx context.Context, platformURL string, oauth *manifest.OAuth, platformToken *manifest.AuthSecret) (string, error) {
 	if featureflags.BuildSimpleClassicURL.Enabled() {
 		if classicURL, ok := findSimpleClassicURL(ctx, platformURL); ok {
 			return classicURL, nil
@@ -208,8 +203,17 @@ func getDynatraceClassicURL(ctx context.Context, platformURL string, oauthCreds 
 	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	factory := clients.Factory().
 		WithPlatformURL(platformURL).
-		WithOAuthCredentials(oauthCreds).
 		WithCustomHeaders(additionalHeaders)
+	if platformToken != nil {
+		factory = factory.WithPlatformToken(platformToken.Value.Value())
+	}
+	if oauth != nil {
+		factory = factory.WithOAuthCredentials(clientcredentials.Config{
+			ClientID:     oauth.ClientID.Value.Value(),
+			ClientSecret: oauth.ClientSecret.Value.Value(),
+			TokenURL:     oauth.GetTokenEndpointValue(),
+		})
+	}
 	if supportarchive.IsEnabled(ctx) {
 		factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
