@@ -43,7 +43,7 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("URL and manifest are mutually exclusive", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --manifest manifest.yaml")
-		assert.EqualError(t, err, "'url' and 'manifest' are mutually exclusive")
+		assert.EqualError(t, err, "'--url' and '--manifest' are mutually exclusive")
 	})
 
 	t.Run("Download using manifest - manifest file set explicitly", func(t *testing.T) {
@@ -80,28 +80,28 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Download using manifest - environment missing", func(t *testing.T) {
 		err := newMonaco(t).download("")
-		assert.EqualError(t, err, "to download with manifest, 'environment' needs to be specified")
+		assert.EqualError(t, err, "to download with manifest, '--environment' needs to be specified")
 	})
 
 	t.Run("Download using manifest - API token cannot be specified", func(t *testing.T) {
 		err := newMonaco(t).download("--token API_TOKEN")
-		assert.EqualError(t, err, "'token', 'oauth-client-id', and 'oauth-client-secret' can only be used with 'url', while 'manifest' must NOT be set ")
+		assert.EqualError(t, err, "'--token', '--oauth-client-id', and '--oauth-client-secret' can only be used with '--url', while '--manifest' must NOT be set")
 	})
 
 	t.Run("Download using manifest - OAuth client ID cannot be specified", func(t *testing.T) {
 		err := newMonaco(t).download("--oauth-client-id CLIENT_ID")
-		assert.EqualError(t, err, "'token', 'oauth-client-id', and 'oauth-client-secret' can only be used with 'url', while 'manifest' must NOT be set ")
+		assert.EqualError(t, err, "'--token', '--oauth-client-id', and '--oauth-client-secret' can only be used with '--url', while '--manifest' must NOT be set")
 	})
 
 	t.Run("Download using manifest - OAuth client secret cannot be specified", func(t *testing.T) {
 		err := newMonaco(t).download("--oauth-client-secret CLIENT_SECRET")
-		assert.EqualError(t, err, "'token', 'oauth-client-id', and 'oauth-client-secret' can only be used with 'url', while 'manifest' must NOT be set ")
+		assert.EqualError(t, err, "'--token', '--oauth-client-id', and '--oauth-client-secret' can only be used with '--url', while '--manifest' must NOT be set")
 	})
 
 	t.Run("Download using manifest - platform token cannot be specified", func(t *testing.T) {
 		t.Setenv(featureflags.PlatformToken.EnvName(), "true")
 		err := newMonaco(t).download("--platform-token PLATFORM_TOKEN")
-		assert.EqualError(t, err, "'token', 'oauth-client-id', 'oauth-client-secret', and 'platform-token' can only be used with 'url', while 'manifest' must NOT be set ")
+		assert.EqualError(t, err, "'--token', '--oauth-client-id', '--oauth-client-secret', and '--platform-token' can only be used with '--url', while '--manifest' must NOT be set")
 	})
 
 	t.Run("Direct download - just token", func(t *testing.T) {
@@ -196,23 +196,23 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Direct download - missing token or OAuth credentials", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url")
-		assert.EqualError(t, err, "if 'url' is set, 'token' or 'oauth-client-id' and 'oauth-client-secret' must also be set")
+		assert.EqualError(t, err, "if '--url' is set, '--token' or '--oauth-client-id' and '--oauth-client-secret' must also be set")
 	})
 
 	t.Run("Direct download - missing token, OAuth credentials or platform token", func(t *testing.T) {
 		t.Setenv(featureflags.PlatformToken.EnvName(), "true")
 		err := newMonaco(t).download("--url http://some.url")
-		assert.EqualError(t, err, "if 'url' is set, 'token', 'oauth-client-id' and 'oauth-client-secret', or 'platform-token' must also be set")
+		assert.EqualError(t, err, "if '--url' is set, '--token', or '--oauth-client-id' and '--oauth-client-secret', or '--platform-token' must also be set")
 	})
 
 	t.Run("Direct download - client ID for OAuth authorization is missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --oauth-client-secret CLIENT_SECRET")
-		assert.EqualError(t, err, "'oauth-client-id' and 'oauth-client-secret' must always be set together")
+		assert.EqualError(t, err, "'--oauth-client-id' and '--oauth-client-secret' must always be set together")
 	})
 
 	t.Run("Direct download - client secret for OAuth authorization is missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --oauth-client-id CLIENT_ID")
-		assert.EqualError(t, err, "'oauth-client-id' and 'oauth-client-secret' must always be set together")
+		assert.EqualError(t, err, "'--oauth-client-id' and '--oauth-client-secret' must always be set together")
 	})
 
 	t.Run("Direct download - OAuth and platform token cant be used together", func(t *testing.T) {
@@ -223,7 +223,7 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Direct download - environment specified", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --token API_TOKEN --environment environment")
-		assert.EqualError(t, err, "'environment' is specific to manifest-based download and incompatible with direct download from 'url'")
+		assert.EqualError(t, err, "'--environment' is specific to manifest-based download and incompatible with direct download with '--url'")
 	})
 
 	t.Run("All non-conflicting flags", func(t *testing.T) {
