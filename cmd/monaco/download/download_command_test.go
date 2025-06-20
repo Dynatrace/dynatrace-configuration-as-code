@@ -38,6 +38,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		OnlyOpenPipelineFlag: false,
 		OnlyDocumentsFlag:    false,
 		OnlyBucketsFlag:      false,
+		OnlyAutomationFlag:   false,
 	}
 
 	t.Run("URL and manifest are mutually exclusive", func(t *testing.T) {
@@ -356,6 +357,132 @@ func TestGetDownloadCommand(t *testing.T) {
 
 		err := m.download("--environment myEnvironment --settings-schema schema:1,schema:2 --only-settings")
 		assert.Error(t, err)
+	})
+
+	t.Run("Only automation applied", func(t *testing.T) {
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlyAutomationFlag] = true
+		expected := downloadCmdOptions{
+			environmentURL: "test.url",
+			auth:           auth{clientID: "id", clientSecret: "secret"},
+			projectName:    "project",
+			onlyOptions:    onlyOptions,
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), gomock.Eq(expected)).Return(nil)
+
+		err := m.download("--url test.url --oauth-client-id id --oauth-client-secret secret --only-automation")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Only documents applied", func(t *testing.T) {
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlyDocumentsFlag] = true
+		expected := downloadCmdOptions{
+			environmentURL: "test.url",
+			auth:           auth{clientID: "id", clientSecret: "secret"},
+			projectName:    "project",
+			onlyOptions:    onlyOptions,
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), gomock.Eq(expected)).Return(nil)
+
+		err := m.download("--url test.url --oauth-client-id id --oauth-client-secret secret --only-documents")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Only buckets applied", func(t *testing.T) {
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlyBucketsFlag] = true
+		expected := downloadCmdOptions{
+			environmentURL: "test.url",
+			auth:           auth{clientID: "id", clientSecret: "secret"},
+			projectName:    "project",
+			onlyOptions:    onlyOptions,
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), gomock.Eq(expected)).Return(nil)
+
+		err := m.download("--url test.url --oauth-client-id id --oauth-client-secret secret --only-buckets")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Only openpipeline applied", func(t *testing.T) {
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlyOpenPipelineFlag] = true
+		expected := downloadCmdOptions{
+			environmentURL: "test.url",
+			auth:           auth{clientID: "id", clientSecret: "secret"},
+			projectName:    "project",
+			onlyOptions:    onlyOptions,
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), gomock.Eq(expected)).Return(nil)
+
+		err := m.download("--url test.url --oauth-client-id id --oauth-client-secret secret --only-openpipeline")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Only segments applied", func(t *testing.T) {
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlySegmentsFlag] = true
+		expected := downloadCmdOptions{
+			environmentURL: "test.url",
+			auth:           auth{clientID: "id", clientSecret: "secret"},
+			projectName:    "project",
+			onlyOptions:    onlyOptions,
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), gomock.Eq(expected)).Return(nil)
+
+		err := m.download("--url test.url --oauth-client-id id --oauth-client-secret secret --only-segments")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Only slo-v2 applied", func(t *testing.T) {
+		onlyOptions := maps.Clone(defaultOnlyOptions)
+		onlyOptions[OnlySloV2Flag] = true
+		expected := downloadCmdOptions{
+			environmentURL: "test.url",
+			auth:           auth{clientID: "id", clientSecret: "secret"},
+			projectName:    "project",
+			onlyOptions:    onlyOptions,
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), gomock.Eq(expected)).Return(nil)
+
+		err := m.download("--url test.url --oauth-client-id id --oauth-client-secret secret --only-slo-v2")
+		assert.NoError(t, err)
+	})
+
+	t.Run("All only flags applied", func(t *testing.T) {
+		expected := downloadCmdOptions{
+			environmentURL: "test.url",
+			auth:           auth{clientID: "id", clientSecret: "secret"},
+			projectName:    "project",
+			onlyOptions: OnlyOptions{
+				OnlySettingsFlag:     true,
+				OnlyApisFlag:         true,
+				OnlySegmentsFlag:     true,
+				OnlySloV2Flag:        true,
+				OnlyOpenPipelineFlag: true,
+				OnlyDocumentsFlag:    true,
+				OnlyBucketsFlag:      true,
+				OnlyAutomationFlag:   true,
+			},
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), gomock.Eq(expected)).Return(nil)
+
+		err := m.download("--url test.url --oauth-client-id id --oauth-client-secret secret --only-apis --only-settings --only-automation --only-documents --only-buckets --only-openpipeline --only-segments --only-slo-v2")
+		assert.NoError(t, err)
 	})
 }
 
