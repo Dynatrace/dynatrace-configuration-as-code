@@ -26,7 +26,6 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	libAutomation "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
@@ -151,21 +150,21 @@ type AccessControl interface {
 }
 
 type AutomationClient interface {
-	Get(ctx context.Context, resourceType libAutomation.ResourceType, id string) (automation.Response, error)
-	Create(ctx context.Context, resourceType libAutomation.ResourceType, data []byte) (result automation.Response, err error)
-	Update(ctx context.Context, resourceType libAutomation.ResourceType, id string, data []byte) (automation.Response, error)
-	List(ctx context.Context, resourceType libAutomation.ResourceType) (automation.ListResponse, error)
-	Upsert(ctx context.Context, resourceType libAutomation.ResourceType, id string, data []byte) (result automation.Response, err error)
-	Delete(ctx context.Context, resourceType libAutomation.ResourceType, id string) (automation.Response, error)
+	Get(ctx context.Context, resourceType automation.ResourceType, id string) (libAPI.Response, error)
+	Create(ctx context.Context, resourceType automation.ResourceType, data []byte) (result libAPI.Response, err error)
+	Update(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (libAPI.Response, error)
+	List(ctx context.Context, resourceType automation.ResourceType) (libAPI.PagedListResponse, error)
+	Upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (result libAPI.Response, err error)
+	Delete(ctx context.Context, resourceType automation.ResourceType, id string) (libAPI.Response, error)
 }
 
 type BucketClient interface {
-	Get(ctx context.Context, bucketName string) (buckets.Response, error)
+	Get(ctx context.Context, bucketName string) (libAPI.Response, error)
 	List(ctx context.Context) (buckets.ListResponse, error)
-	Create(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
-	Update(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
-	Upsert(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
-	Delete(ctx context.Context, bucketName string) (buckets.Response, error)
+	Create(ctx context.Context, bucketName string, data []byte) (libAPI.Response, error)
+	Update(ctx context.Context, bucketName string, data []byte) (libAPI.Response, error)
+	Upsert(ctx context.Context, bucketName string, data []byte) (libAPI.Response, error)
+	Delete(ctx context.Context, bucketName string) (libAPI.Response, error)
 }
 
 type DocumentClient interface {
@@ -282,13 +281,23 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	}
 
 	classicURL := url
+	platformCredentialsGiven := false
 	if auth.OAuth != nil {
 		cFactory = cFactory.WithOAuthCredentials(
 			clientcredentials.Config{
 				ClientID:     auth.OAuth.ClientID.Value.Value(),
 				ClientSecret: auth.OAuth.ClientSecret.Value.Value(),
 				TokenURL:     auth.OAuth.GetTokenEndpointValue(),
-			}).WithPlatformURL(url)
+			})
+		platformCredentialsGiven = true
+	}
+	if auth.PlatformToken != nil {
+		cFactory = cFactory.WithPlatformToken(auth.PlatformToken.Value.Value())
+		platformCredentialsGiven = true
+	}
+
+	if platformCredentialsGiven {
+		cFactory = cFactory.WithPlatformURL(url)
 		client, err := cFactory.CreatePlatformClient(ctx)
 		if err != nil {
 			return nil, err
@@ -329,7 +338,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
-		classicURL, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
+		classicURL, err = metadata.GetDynatraceClassicURL(ctx, *client)
 		if err != nil {
 			return nil, err
 		}
@@ -366,13 +375,4 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		SegmentClient:               segmentClient,
 		ServiceLevelObjectiveClient: serviceLevelObjectiveClient,
 	}, nil
-}
-
-func transformPlatformUrlToClassic(ctx context.Context, url string, auth *manifest.OAuth, client *rest.Client) (string, error) {
-	classicUrl := url
-	if auth != nil && client != nil {
-		return metadata.GetDynatraceClassicURL(ctx, *client)
-	}
-
-	return classicUrl, nil
 }

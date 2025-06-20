@@ -60,12 +60,20 @@ type Auth struct {
 	PlatformToken *AuthSecret
 }
 
+func (a Auth) IsPlatformAuth() bool {
+	return a.PlatformToken != nil || a.OAuth != nil
+}
+
 // EnvironmentDefinition holds all information about a Dynatrace environment
 type EnvironmentDefinition struct {
 	Name  string
 	Group string
 	URL   URLDefinition
 	Auth  Auth
+}
+
+func (e EnvironmentDefinition) HasPlatformAuth() bool {
+	return e.Auth.IsPlatformAuth()
 }
 
 // URLType describes from where the url is loaded.

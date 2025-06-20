@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 )
@@ -69,6 +70,9 @@ func TestManifestLoading(t *testing.T) {
 	t.Setenv("ENV_TOKEN_URL", "https://another-token.url")
 	t.Setenv("ENV_API_URL", "https://api.url")
 	t.Setenv("ENV_UUID", "8f9935ee-2068-455d-85ce-47447f19d5d5")
+	t.Setenv("ENV_PLATFORM_TOKEN", "dt0s16.platformtoken")
+
+	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
 
 	mani, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
@@ -152,6 +156,26 @@ func TestManifestLoading(t *testing.T) {
 						OAuth: nil,
 					},
 				},
+				"test-env-3": manifest.EnvironmentDefinition{
+					Name:  "test-env-3",
+					Group: "dev",
+					URL: manifest.URLDefinition{
+						Type:  manifest.ValueURLType,
+						Name:  "",
+						Value: "https://ddd.eee.ff",
+					},
+					Auth: manifest.Auth{
+						ApiToken: &manifest.AuthSecret{
+							Name:  "ENV_TOKEN",
+							Value: "dt01.token",
+						},
+						PlatformToken: &manifest.AuthSecret{
+							Name:  "ENV_PLATFORM_TOKEN",
+							Value: "dt0s16.platformtoken",
+						},
+						OAuth: nil,
+					},
+				},
 				"prod-env-1": manifest.EnvironmentDefinition{
 					Name:  "prod-env-1",
 					Group: "prod",
@@ -172,6 +196,7 @@ func TestManifestLoading(t *testing.T) {
 			AllEnvironmentNames: map[string]struct{}{
 				"test-env-1": {},
 				"test-env-2": {},
+				"test-env-3": {},
 				"prod-env-1": {},
 			},
 			AllGroupNames: map[string]struct{}{
