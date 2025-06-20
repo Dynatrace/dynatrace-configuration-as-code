@@ -25,17 +25,19 @@ import (
 )
 
 type auth struct {
-	apiToken, clientID, clientSecret string
+	apiToken, clientID, clientSecret, platformToken string
 }
 
 func (a auth) mapToAuth() (*manifest.Auth, []error) {
 	errs := make([]error, 0)
 	mAuth := manifest.Auth{}
 
-	if token, err := readAuthSecretFromEnvVariable(a.apiToken); err != nil {
-		errs = append(errs, err)
-	} else {
-		mAuth.ApiToken = &token
+	if a.apiToken != "" {
+		if token, err := readAuthSecretFromEnvVariable(a.apiToken); err != nil {
+			errs = append(errs, err)
+		} else {
+			mAuth.ApiToken = &token
+		}
 	}
 
 	if a.clientID != "" && a.clientSecret != "" {
@@ -49,6 +51,14 @@ func (a auth) mapToAuth() (*manifest.Auth, []error) {
 			errs = append(errs, err)
 		} else {
 			mAuth.OAuth.ClientSecret = clientSecret
+		}
+	}
+
+	if a.platformToken != "" {
+		if platformToken, err := readAuthSecretFromEnvVariable(a.platformToken); err != nil {
+			errs = append(errs, err)
+		} else {
+			mAuth.PlatformToken = &platformToken
 		}
 	}
 	return &mAuth, errs

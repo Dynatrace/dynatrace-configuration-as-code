@@ -34,6 +34,7 @@ const (
 	UrlFlag                       = "url"
 	ManifestFlag                  = "manifest"
 	ApiTokenFlag                  = "token"
+	PlatformTokenFlag             = "platform-token"
 	OAuthIdFlag                   = "oauth-client-id"
 	OAuthSecretFlag               = "oauth-client-secret"
 	ApiFlag                       = "api"
@@ -55,6 +56,11 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	var f downloadCmdOptions
 	var onlySettings, onlyApis, onlyOpenPipeline, onlySegments, onlySloV2, onlyDocuments, onlyBuckets, onlyAutomation bool
 
+	platformTokenAddendum := ""
+	if featureflags.PlatformToken.Enabled() {
+		platformTokenAddendum = fmt.Sprintf(" [--%s PLATFORM_TOKEN]", PlatformTokenFlag)
+	}
+
 	cmd = &cobra.Command{
 		Short: "Download configuration from Dynatrace",
 		Long: `Download configuration from Dynatrace
@@ -66,10 +72,14 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
   monaco download [--%s manifest.yaml] --%s MY_ENV ...
 
   # download without manifest
-  monaco download --%s url --%s DT_TOKEN [--%s CLIENT_ID --%s CLIENT_SECRET] ...`, ManifestFlag, EnvironmentFlag, UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag),
+  monaco download --%s url [--%s DT_TOKEN] [--%s CLIENT_ID --%s CLIENT_SECRET]%s ...`, ManifestFlag, EnvironmentFlag, UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, platformTokenAddendum),
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return preRunChecks(f)
+			if f.environmentURL != "" {
+				return preRunChecksForDirectDownload(f)
+			}
+
+			return preRunChecksForManifestDownload(f)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
@@ -81,11 +91,15 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 				OnlyOpenPipelineFlag: onlyOpenPipeline,
 				OnlyDocumentsFlag:    onlyDocuments,
 				OnlyBucketsFlag:      onlyBuckets,
+				OnlyAutomationFlag:   onlyAutomation,
 			}
 
 			if f.environmentURL != "" {
-				f.manifestFile = ""
 				return command.DownloadConfigs(cmd.Context(), fs, f)
+			}
+
+			if f.manifestFile == "" {
+				f.manifestFile = "manifest.yaml"
 			}
 			return command.DownloadConfigsBasedOnManifest(cmd.Context(), fs, f)
 		},
@@ -94,40 +108,43 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	setupSharedFlags(cmd, &f.projectName, &f.outputFolder, &f.forceOverwrite)
 
 	// download via manifest
-	cmd.Flags().StringVarP(&f.manifestFile, ManifestFlag, "m", "manifest.yaml", "Name (and the path) to the manifest file. Defaults to 'manifest.yaml'.")
+	cmd.Flags().StringVarP(&f.manifestFile, ManifestFlag, "m", "", "Name (and the path) to the manifest file. If not specified, 'manifest.yaml' will be used.")
 	cmd.Flags().StringVarP(&f.specificEnvironmentName, EnvironmentFlag, "e", "", "Specify an environment defined in the manifest to download the configurations.")
 	// download without manifest
 	cmd.Flags().StringVar(&f.environmentURL, UrlFlag, "", "URL to the Dynatrace environment from which to download the configuration. "+
 		fmt.Sprintf("To be able to connect to any Dynatrace environment, an API token needs to be provided using '--%s'. ", ApiTokenFlag)+
 		fmt.Sprintf("In case of connecting to a Dynatrace Platform, an OAuth Client ID, as well as an OAuth Client Secret, needs to be provided as well using the flags '--%s' and '--%s'. ", OAuthIdFlag, OAuthSecretFlag)+
 		fmt.Sprintf("This flag is not combinable with the flag '--%s.'", ManifestFlag))
-	cmd.Flags().StringVar(&f.apiToken, ApiTokenFlag, "", fmt.Sprintf("API token environment variable. Required when using the flag '--%s'", UrlFlag))
-	cmd.Flags().StringVar(&f.clientID, OAuthIdFlag, "", fmt.Sprintf("OAuth client ID environment variable. Required when using the flag '--%s' and connecting to a Dynatrace Platform.", UrlFlag))
-	cmd.Flags().StringVar(&f.clientSecret, OAuthSecretFlag, "", fmt.Sprintf("OAuth client secret environment variable. Required when using the flag '--%s' and connecting to a Dynatrace Platform.", UrlFlag))
+	cmd.Flags().StringVar(&f.apiToken, ApiTokenFlag, "", fmt.Sprintf("API token environment variable. Required when using the flag '--%s' and downloading Dynatrace Classic configurations.", UrlFlag))
+	cmd.Flags().StringVar(&f.clientID, OAuthIdFlag, "", fmt.Sprintf("OAuth client ID environment variable. For use with '--%s' when using the flag '--%s' and to download Dynatrace Platform configurations.", OAuthSecretFlag, UrlFlag))
+	cmd.Flags().StringVar(&f.clientSecret, OAuthSecretFlag, "", fmt.Sprintf("OAuth client secret environment variable. For use with '--%s' when using the flag '--%s' and to download Dynatrace Platform configurations.", OAuthIdFlag, UrlFlag))
+	if featureflags.PlatformToken.Enabled() {
+		cmd.Flags().StringVar(&f.platformToken, PlatformTokenFlag, "", fmt.Sprintf("Platform token environment variable. For use when using the flag '--%s' and to download Dynatrace Platform configurations.", UrlFlag))
+	}
 
 	// download options
 	cmd.Flags().StringSliceVarP(&f.specificAPIs, ApiFlag, "a", nil, "Download one or more classic configuration APIs, including deprecated ones. (Repeat flag or use comma-separated values)")
 	cmd.Flags().StringSliceVarP(&f.specificSchemas, SettingsSchemaFlag, "s", nil, "Download settings 2.0 objects of one or more settings 2.0 schemas. (Repeat flag or use comma-separated values)")
 	cmd.Flags().BoolVar(&onlyApis, OnlyApisFlag, false, "Download only classic configuration APIs. Deprecated configuration APIs will not be included.")
 	cmd.Flags().BoolVar(&onlySettings, OnlySettingsFlag, false, "Download only settings 2.0 objects")
-	cmd.Flags().BoolVar(&onlyAutomation, OnlyAutomationFlag, false, "Only download automation objects, skip all other configuration types")
-	cmd.Flags().BoolVar(&onlyDocuments, OnlyDocumentsFlag, false, "Only download documents, skip all other configuration types")
-	cmd.Flags().BoolVar(&onlyBuckets, OnlyBucketsFlag, false, "Only download buckets, skip all other configuration types")
+	cmd.Flags().BoolVar(&onlyAutomation, OnlyAutomationFlag, false, "Only download automation objects")
+	cmd.Flags().BoolVar(&onlyDocuments, OnlyDocumentsFlag, false, "Only download documents")
+	cmd.Flags().BoolVar(&onlyBuckets, OnlyBucketsFlag, false, "Only download buckets")
 
 	// combinations
 	cmd.MarkFlagsMutuallyExclusive(SettingsSchemaFlag, OnlySettingsFlag)
 	cmd.MarkFlagsMutuallyExclusive(ApiFlag, OnlyApisFlag)
 
 	if featureflags.OpenPipeline.Enabled() {
-		cmd.Flags().BoolVar(&onlyOpenPipeline, OnlyOpenPipelineFlag, false, "Only download openpipeline configurations, skip all other configuration types")
+		cmd.Flags().BoolVar(&onlyOpenPipeline, OnlyOpenPipelineFlag, false, "Only download openpipeline configurations")
 	}
 
 	if featureflags.Segments.Enabled() {
-		cmd.Flags().BoolVar(&onlySegments, OnlySegmentsFlag, false, "Only download segment configurations, skip all other configuration types")
+		cmd.Flags().BoolVar(&onlySegments, OnlySegmentsFlag, false, "Only download segment configurations")
 	}
 
 	if featureflags.ServiceLevelObjective.Enabled() {
-		cmd.Flags().BoolVar(&onlySloV2, OnlySloV2Flag, false, fmt.Sprintf("Only download %s, skip all other configuration types", config.ServiceLevelObjectiveID))
+		cmd.Flags().BoolVar(&onlySloV2, OnlySloV2Flag, false, fmt.Sprintf("Only download %s configurations", config.ServiceLevelObjectiveID))
 	}
 
 	err := errors.Join(
@@ -147,28 +164,43 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	return cmd
 }
 
-func preRunChecks(f downloadCmdOptions) error {
-	switch {
-	case f.environmentURL != "" && f.manifestFile != "manifest.yaml":
-		return fmt.Errorf("'%s' and '%s' are mutually exclusive", UrlFlag, ManifestFlag)
-	case f.environmentURL != "" && f.specificEnvironmentName != "":
-		return fmt.Errorf("'%s' is specific to manifest-based download and incompatible with direct download from '%s'", EnvironmentFlag, UrlFlag)
-	case f.environmentURL != "":
-		switch {
-		case f.apiToken == "":
-			return fmt.Errorf("if '%s' is set, '%s' also must be set", UrlFlag, ApiTokenFlag)
-		case (f.clientID == "") != (f.clientSecret == ""):
-			return fmt.Errorf("'%s' and '%s' must always be set together", OAuthIdFlag, OAuthSecretFlag)
-		default:
-			return nil
+func preRunChecksForDirectDownload(f downloadCmdOptions) error {
+	if f.manifestFile != "" {
+		return fmt.Errorf("'--%s' and '--%s' are mutually exclusive", UrlFlag, ManifestFlag)
+	}
+
+	if f.specificEnvironmentName != "" {
+		return fmt.Errorf("'--%s' is specific to manifest-based download and incompatible with direct download with '--%s'", EnvironmentFlag, UrlFlag)
+	}
+
+	if (f.apiToken == "") && (f.clientID == "") && (f.clientSecret == "") && (f.platformToken == "") {
+		if featureflags.PlatformToken.Enabled() {
+			return fmt.Errorf("if '--%s' is set, '--%s', or '--%s' and '--%s', or '--%s' must also be set", UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, PlatformTokenFlag)
 		}
-	case f.manifestFile != "":
-		switch {
-		case f.apiToken != "" || f.clientID != "" || f.clientSecret != "":
-			return fmt.Errorf("'%s', '%s' and '%s' can only be used with '%s', while '%s' must NOT be set ", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, UrlFlag, ManifestFlag)
-		case f.specificEnvironmentName == "":
-			return fmt.Errorf("to download with manifest, '%s' needs to be specified", EnvironmentFlag)
+		return fmt.Errorf("if '--%s' is set, '--%s' or '--%s' and '--%s' must also be set", UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag)
+	}
+
+	if (f.clientID == "") != (f.clientSecret == "") {
+		return fmt.Errorf("'--%s' and '--%s' must always be set together", OAuthIdFlag, OAuthSecretFlag)
+	}
+
+	if (f.clientID != "") && (f.clientSecret != "") && (f.platformToken != "") {
+		return fmt.Errorf("OAuth credentials and a platform token can't be used together")
+	}
+
+	return nil
+}
+
+func preRunChecksForManifestDownload(f downloadCmdOptions) error {
+	if f.apiToken != "" || f.clientID != "" || f.clientSecret != "" || f.platformToken != "" {
+		if featureflags.PlatformToken.Enabled() {
+			return fmt.Errorf("'--%s', '--%s', '--%s', and '--%s' can only be used with '--%s', while '--%s' must NOT be set", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, PlatformTokenFlag, UrlFlag, ManifestFlag)
 		}
+		return fmt.Errorf("'--%s', '--%s', and '--%s' can only be used with '--%s', while '--%s' must NOT be set", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, UrlFlag, ManifestFlag)
+	}
+
+	if f.specificEnvironmentName == "" {
+		return fmt.Errorf("to download with manifest, '--%s' needs to be specified", EnvironmentFlag)
 	}
 
 	return nil
