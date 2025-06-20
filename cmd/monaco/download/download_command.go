@@ -166,22 +166,22 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 
 func preRunChecksForDirectDownload(f downloadCmdOptions) error {
 	if f.manifestFile != "" {
-		return fmt.Errorf("'%s' and '%s' are mutually exclusive", UrlFlag, ManifestFlag)
+		return fmt.Errorf("'--%s' and '--%s' are mutually exclusive", UrlFlag, ManifestFlag)
 	}
 
 	if f.specificEnvironmentName != "" {
-		return fmt.Errorf("'%s' is specific to manifest-based download and incompatible with direct download from '%s'", EnvironmentFlag, UrlFlag)
+		return fmt.Errorf("'--%s' is specific to manifest-based download and incompatible with direct download with '--%s'", EnvironmentFlag, UrlFlag)
 	}
 
 	if (f.apiToken == "") && (f.clientID == "") && (f.clientSecret == "") && (f.platformToken == "") {
 		if featureflags.PlatformToken.Enabled() {
-			return fmt.Errorf("if '%s' is set, '%s', or '%s' and '%s', or '%s' must also be set", UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, PlatformTokenFlag)
+			return fmt.Errorf("if '--%s' is set, '--%s', or '--%s' and '--%s', or '--%s' must also be set", UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, PlatformTokenFlag)
 		}
-		return fmt.Errorf("if '%s' is set, '%s' or '%s' and '%s' must also be set", UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag)
+		return fmt.Errorf("if '--%s' is set, '--%s' or '--%s' and '--%s' must also be set", UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag)
 	}
 
 	if (f.clientID == "") != (f.clientSecret == "") {
-		return fmt.Errorf("'%s' and '%s' must always be set together", OAuthIdFlag, OAuthSecretFlag)
+		return fmt.Errorf("'--%s' and '--%s' must always be set together", OAuthIdFlag, OAuthSecretFlag)
 	}
 
 	if (f.clientID != "") && (f.clientSecret != "") && (f.platformToken != "") {
@@ -194,13 +194,13 @@ func preRunChecksForDirectDownload(f downloadCmdOptions) error {
 func preRunChecksForManifestDownload(f downloadCmdOptions) error {
 	if f.apiToken != "" || f.clientID != "" || f.clientSecret != "" || f.platformToken != "" {
 		if featureflags.PlatformToken.Enabled() {
-			return fmt.Errorf("'%s', '%s', '%s', and '%s' can only be used with '%s', while '%s' must NOT be set", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, PlatformTokenFlag, UrlFlag, ManifestFlag)
+			return fmt.Errorf("'--%s', '--%s', '--%s', and '--%s' can only be used with '--%s', while '--%s' must NOT be set", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, PlatformTokenFlag, UrlFlag, ManifestFlag)
 		}
-		return fmt.Errorf("'%s', '%s', and '%s' can only be used with '%s', while '%s' must NOT be set", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, UrlFlag, ManifestFlag)
+		return fmt.Errorf("'--%s', '--%s', and '--%s' can only be used with '--%s', while '--%s' must NOT be set", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, UrlFlag, ManifestFlag)
 	}
 
 	if f.specificEnvironmentName == "" {
-		return fmt.Errorf("to download with manifest, '%s' needs to be specified", EnvironmentFlag)
+		return fmt.Errorf("to download with manifest, '--%s' needs to be specified", EnvironmentFlag)
 	}
 
 	return nil
