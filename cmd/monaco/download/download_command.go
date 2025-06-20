@@ -165,38 +165,45 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 }
 
 func preRunChecksForDirectDownload(f downloadCmdOptions) error {
-	switch {
-	case f.manifestFile != "":
+	if f.manifestFile != "" {
 		return fmt.Errorf("'%s' and '%s' are mutually exclusive", UrlFlag, ManifestFlag)
-	case f.specificEnvironmentName != "":
+	}
+
+	if f.specificEnvironmentName != "" {
 		return fmt.Errorf("'%s' is specific to manifest-based download and incompatible with direct download from '%s'", EnvironmentFlag, UrlFlag)
-	case (f.apiToken == "") && (f.clientID == "") && (f.clientSecret == "") && (f.platformToken == ""):
+	}
+
+	if (f.apiToken == "") && (f.clientID == "") && (f.clientSecret == "") && (f.platformToken == "") {
 		if featureflags.PlatformToken.Enabled() {
 			return fmt.Errorf("if '%s' is set, '%s', or '%s' and '%s', or '%s' must also be set", UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, PlatformTokenFlag)
 		}
 		return fmt.Errorf("if '%s' is set, '%s' or '%s' and '%s' must also be set", UrlFlag, ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag)
-
-	case (f.clientID == "") != (f.clientSecret == ""):
-		return fmt.Errorf("'%s' and '%s' must always be set together", OAuthIdFlag, OAuthSecretFlag)
-	case (f.clientID != "") && (f.clientSecret != "") && (f.platformToken != ""):
-		return fmt.Errorf("OAuth credentials and a platform token can't be used together")
-	default:
-		return nil
 	}
+
+	if (f.clientID == "") != (f.clientSecret == "") {
+		return fmt.Errorf("'%s' and '%s' must always be set together", OAuthIdFlag, OAuthSecretFlag)
+	}
+
+	if (f.clientID != "") && (f.clientSecret != "") && (f.platformToken != "") {
+		return fmt.Errorf("OAuth credentials and a platform token can't be used together")
+	}
+
+	return nil
 }
 
 func preRunChecksForManifestDownload(f downloadCmdOptions) error {
-	switch {
-	case f.apiToken != "" || f.clientID != "" || f.clientSecret != "" || f.platformToken != "":
+	if f.apiToken != "" || f.clientID != "" || f.clientSecret != "" || f.platformToken != "" {
 		if featureflags.PlatformToken.Enabled() {
 			return fmt.Errorf("'%s', '%s', '%s', and '%s' can only be used with '%s', while '%s' must NOT be set", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, PlatformTokenFlag, UrlFlag, ManifestFlag)
 		}
 		return fmt.Errorf("'%s', '%s', and '%s' can only be used with '%s', while '%s' must NOT be set", ApiTokenFlag, OAuthIdFlag, OAuthSecretFlag, UrlFlag, ManifestFlag)
-	case f.specificEnvironmentName == "":
-		return fmt.Errorf("to download with manifest, '%s' needs to be specified", EnvironmentFlag)
-	default:
-		return nil
 	}
+
+	if f.specificEnvironmentName == "" {
+		return fmt.Errorf("to download with manifest, '%s' needs to be specified", EnvironmentFlag)
+	}
+
+	return nil
 }
 
 func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool) {
