@@ -24,13 +24,11 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
 )
 
 func TestWriteAccountResources(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 	type want struct {
 		groups       string
 		users        string
@@ -800,119 +798,6 @@ func TestWriteAccountResources(t *testing.T) {
 
 		})
 	}
-}
-
-func TestServiceUsersNotPersistedIfFeatureFlagDisabled(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "false")
-	resources :=
-		account.Resources{
-			Users: map[account.UserId]account.User{
-				"monaco@dynatrace.com": account.User{
-					Email: "monaco@dynatrace.com",
-					Groups: []account.Ref{
-						account.Reference{Id: "my-group"},
-						account.StrReference("Log viewer"),
-					},
-				},
-			},
-			Groups: map[account.GroupId]account.Group{
-				"my-group": {
-					ID:          "my-group",
-					Name:        "My Group",
-					Description: "This is my group",
-					Account: &account.Account{
-						Permissions: []string{"View my Group Stuff"},
-						Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
-					},
-					Environment: []account.Environment{
-						{
-							Name:        "myenv123",
-							Permissions: []string{"View environment"},
-							Policies: []account.Ref{
-								account.StrReference("View environment"),
-								account.Reference{Id: "my-policy"},
-							},
-						},
-					},
-					ManagementZone: []account.ManagementZone{
-						{
-							Environment:    "myenv123",
-							ManagementZone: "My MZone",
-							Permissions:    []string{"Do Stuff"},
-						},
-					},
-				},
-			},
-			Policies: map[account.PolicyId]account.Policy{
-				"my-policy": {
-					ID:          "my-policy",
-					Name:        "My Policy",
-					Level:       account.PolicyLevelAccount{Type: "account"},
-					Description: "This is my policy. There's many like it, but this one is mine.",
-					Policy:      "ALLOW a:b:c;",
-				},
-			},
-			ServiceUsers: []account.ServiceUser{
-				{
-					Name:        "Service User 1",
-					Description: "Description of service user",
-					Groups: []account.Ref{
-						account.Reference{Id: "my-group"},
-						account.StrReference("Log viewer"),
-					},
-				},
-			},
-		}
-	expectedUsers := `users:
-- email: monaco@dynatrace.com
-  groups:
-  - Log viewer
-  - type: reference
-    id: my-group
-`
-	expectedGroups := `groups:
-- id: my-group
-  name: My Group
-  description: This is my group
-  account:
-    permissions:
-    - View my Group Stuff
-    policies:
-    - Request my Group Stuff
-  environments:
-  - environment: myenv123
-    permissions:
-    - View environment
-    policies:
-    - type: reference
-      id: my-policy
-    - View environment
-  managementZones:
-  - environment: myenv123
-    managementZone: My MZone
-    permissions:
-    - Do Stuff
-`
-	expectedPolicies := `policies:
-- id: my-policy
-  name: My Policy
-  level:
-    type: account
-  description: This is my policy. There's many like it, but this one is mine.
-  policy: ALLOW a:b:c;
-`
-
-	c := writer.Context{
-		Fs:            afero.NewMemMapFs(),
-		OutputFolder:  "test",
-		ProjectFolder: "project",
-	}
-	err := writer.Write(c, resources)
-	assert.NoError(t, err)
-	assertFile(t, c.Fs, filepath.Join(c.OutputFolder, c.ProjectFolder, "users.yaml"), expectedUsers)
-	assertFile(t, c.Fs, filepath.Join(c.OutputFolder, c.ProjectFolder, "groups.yaml"), expectedGroups)
-	assertFile(t, c.Fs, filepath.Join(c.OutputFolder, c.ProjectFolder, "policies.yaml"), expectedPolicies)
-	assertNoFile(t, c.Fs, filepath.Join(c.OutputFolder, c.ProjectFolder, "service-users.yaml"))
 }
 
 func assertFile(t *testing.T, fs afero.Fs, expectedPath, expectedContent string) {

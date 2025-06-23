@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
@@ -137,7 +136,6 @@ func TestLoad(t *testing.T) {
 	}
 
 	t.Run("Load single file", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
 		assert.NoError(t, err)
 
@@ -154,24 +152,6 @@ func TestLoad(t *testing.T) {
 
 		require.Len(t, loaded.ServiceUsers, 1)
 		assert.Equal(t, "Service User 1", loaded.ServiceUsers[0].Name, "expected service user to exist: Service User 1")
-	})
-
-	t.Run("Load single file - service user feature flag disabled", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceUsers.EnvName(), "false")
-		loaded, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
-		assert.NoError(t, err)
-
-		assert.Len(t, loaded.Users, 1)
-		assert.Contains(t, loaded.Users, "monaco@dynatrace.com", "expected user to exist: monaco@dynatrace.com")
-
-		assert.Len(t, loaded.Groups, 1)
-		g, exists := loaded.Groups["my-group"]
-		assert.True(t, exists, "expected group to exist: my-group")
-		assertGroupLoadedValidFunc(t, g)
-
-		assert.Len(t, loaded.Policies, 1)
-		assert.Contains(t, loaded.Policies, "my-policy", "expected policy to exist: my-policy")
-		assert.Len(t, loaded.ServiceUsers, 0)
 	})
 
 	t.Run("Load single file - with refs", func(t *testing.T) {
@@ -192,7 +172,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Load multiple files", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/multi")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
@@ -202,7 +181,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Loads origin objectIDs", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid-origin-object-id.yaml")
 		assert.NoError(t, err)
 		assert.Contains(t, loaded.Users, "monaco@dynatrace.com", "expected user to exist: monaco@dynatrace.com")
@@ -244,7 +222,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Load service users with same name but different originObjectIds", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/service-users-with-same-name-and-different-origin-object-ids.yaml")
 		require.NoError(t, err)
 		assert.Empty(t, loaded.Users)
@@ -269,25 +246,21 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Service users with the same name and no origin object IDs produce error", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		_, err := Load(afero.NewOsFs(), "testdata/service-users-with-same-name-and-no-origin-object-ids.yaml")
 		assert.Error(t, err)
 	})
 
 	t.Run("Service users with the same name and same origin object IDs produce error", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		_, err := Load(afero.NewOsFs(), "testdata/service-users-with-same-name-and-same-origin-object-ids.yaml")
 		assert.Error(t, err)
 	})
 
 	t.Run("Service users with the same name and one missing origin object ID produce error", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		_, err := Load(afero.NewOsFs(), "testdata/service-users-with-same-name-and-missing-origin-object-id.yaml")
 		assert.Error(t, err)
 	})
 
 	t.Run("Service users with the different name and same origin object IDs produce error", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		_, err := Load(afero.NewOsFs(), "testdata/service-users-with-different-name-and-same-origin-object-ids.yaml")
 		assert.Error(t, err)
 	})
@@ -319,7 +292,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Partial service user definition produces error", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 		_, err := Load(afero.NewOsFs(), "testdata/partial-service-user.yaml")
 		assert.Error(t, err)
 	})

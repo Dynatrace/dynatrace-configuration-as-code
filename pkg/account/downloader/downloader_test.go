@@ -25,7 +25,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader"
@@ -52,10 +51,7 @@ func TestDownloader_EmptyAccount(t *testing.T) {
 	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{}, nil)
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, remove the following:
-	if featureflags.ServiceUsers.Enabled() {
-		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
-	}
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -90,10 +86,7 @@ func TestDownloader_AccountPolicy(t *testing.T) {
 
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, remove the following:
-	if featureflags.ServiceUsers.Enabled() {
-		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
-	}
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -141,10 +134,7 @@ func TestDownloader_EnvironmentPolicy(t *testing.T) {
 
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, remove the following:
-	if featureflags.ServiceUsers.Enabled() {
-		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
-	}
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -188,10 +178,7 @@ func TestDownloader_GlobalPolicy(t *testing.T) {
 
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, remove the following:
-	if featureflags.ServiceUsers.Enabled() {
-		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
-	}
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -241,10 +228,7 @@ func TestDownloader_OnlyUser(t *testing.T) {
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{{Email: "usert@some.org"}}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "usert@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "usert@some.org"}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, remove the following:
-	if featureflags.ServiceUsers.Enabled() {
-		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
-	}
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -281,10 +265,7 @@ func TestDownloader_UserWithOneGroup(t *testing.T) {
 		Email:  "usert@some.org",
 		Groups: []accountmanagement.AccountGroupDto{{Uuid: groupUUID1}},
 	}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, remove the following:
-	if featureflags.ServiceUsers.Enabled() {
-		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
-	}
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -344,10 +325,7 @@ func TestDownloader_EmptyGroup(t *testing.T) {
 	client.EXPECT().GetPermissionFor(gomock.Any(), accountUUID, gomock.Any()).Return(&accountmanagement.PermissionsGroupDto{}, nil)
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, remove the following:
-	if featureflags.ServiceUsers.Enabled() {
-		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
-	}
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -385,10 +363,7 @@ func TestDownloader_GroupWithFederatedAttributeValues(t *testing.T) {
 	client.EXPECT().GetPermissionFor(gomock.Any(), accountUUID, gomock.Any()).Return(&accountmanagement.PermissionsGroupDto{}, nil)
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, remove the following:
-	if featureflags.ServiceUsers.Enabled() {
-		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
-	}
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -475,10 +450,7 @@ func TestDownloader_GroupsWithPolicies(t *testing.T) {
 	}, nil)
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, remove the following:
-	if featureflags.ServiceUsers.Enabled() {
-		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
-	}
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -628,10 +600,7 @@ func TestDownloader_GroupsWithPermissions(t *testing.T) {
 	client.EXPECT().GetPolicyGroupBindings(gomock.Any(), "environment", "abc12345").Return(&accountmanagement.LevelPolicyBindingDto{}, nil)
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	// Once temporary featureflags.ServiceUsers is removed, remove the following:
-	if featureflags.ServiceUsers.Enabled() {
-		client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
-	}
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 
 	result, err := downloader.DownloadResources(t.Context())
 	assert.NoError(t, err)
@@ -673,8 +642,6 @@ func TestDownloader_GroupsWithPermissions(t *testing.T) {
 
 // TestDownloader_OnlyServiceUser tests that downloading an account with a single service user succeeds.
 func TestDownloader_OnlyServiceUser(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
-
 	client := http.NewMockhttpClient(gomock.NewController(t))
 	downloader := downloader.New4Test(&account.AccountInfo{
 		Name:        "test",
@@ -702,8 +669,6 @@ func TestDownloader_OnlyServiceUser(t *testing.T) {
 
 // TestDownloader_TwoServiceUsersWithSameName tests that downloading an account with two service users with the same name succeeds.
 func TestDownloader_TwoServiceUsersWithSameName(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
-
 	client := http.NewMockhttpClient(gomock.NewController(t))
 	downloader := downloader.New4Test(&account.AccountInfo{
 		Name:        "test",
@@ -736,8 +701,6 @@ func TestDownloader_TwoServiceUsersWithSameName(t *testing.T) {
 
 // TestDownloader_ServiceUserWithOneGroup tests that downloading a service user belonging to one group succeeds.
 func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
-
 	client := http.NewMockhttpClient(gomock.NewController(t))
 	downloader := downloader.New4Test(&account.AccountInfo{
 		Name:        "test",
@@ -784,8 +747,6 @@ func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
 
 // TestDownloader_NoRequestedServiceUserDetails tests that downloading a service user without details fails as expected.
 func TestDownloader_NoRequestedServiceUserDetails(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
-
 	client := http.NewMockhttpClient(gomock.NewController(t))
 	downloader := downloader.New4Test(&account.AccountInfo{
 		Name:        "test",
@@ -899,8 +860,6 @@ func TestDownloader_GetGroupsForUserErrors(t *testing.T) {
 
 // TestDownloader_GetServiceUsersErrors tests that downloading fails if GetServiceUsers errors.
 func TestDownloader_GetServiceUsersErrors(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
-
 	client := http.NewMockhttpClient(gomock.NewController(t))
 	downloader := downloader.New4Test(&account.AccountInfo{
 		Name:        "test",

@@ -25,7 +25,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
 
@@ -61,8 +60,6 @@ func (c *testClient) DeleteEnvironmentPolicy(ctx context.Context, environmentID,
 }
 
 func TestDeletesResources(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
-
 	userDeleteCalled := 0
 	serviceUserDeleteCalled := 0
 	groupDeleteCalled := 0
@@ -139,8 +136,6 @@ func TestDeletesResources(t *testing.T) {
 }
 
 func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
-
 	userDeleteCalled := 0
 	serviceUserCalled := 0
 	accountPolicyDeleteCalled := 0
@@ -211,8 +206,6 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 }
 
 func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
-
 	userDeleteCalled := 0
 	serviceUserDeleteCalled := 0
 	groupDeleteCalled := 0

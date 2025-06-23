@@ -25,12 +25,10 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
 
 func TestLoader_BasicAllTypesSucceeds(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
   - type: user
     email: test.account.1@user.com
@@ -79,27 +77,6 @@ func TestLoader_BasicAllTypesSucceeds(t *testing.T) {
 		},
 	}
 	assert.Equal(t, expectedResources, resources)
-}
-
-func TestLoader_ServiceUserProducesErrorWithoutFeatureFlag(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "false")
-
-	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
-  - type: serviceUser
-    name: my-service-user`)
-
-	_, err := delete.LoadResourcesToDelete(fs, deleteFilename)
-	assert.Error(t, err)
-}
-
-func TestLoader_ServiceUserProducesNoErrorWithFeatureFlag(t *testing.T) {
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
-	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
-  - type: serviceUser
-    name: my-service-user`)
-
-	_, err := delete.LoadResourcesToDelete(fs, deleteFilename)
-	assert.NoError(t, err)
 }
 
 func TestLoader_NoEntriesSucceeds(t *testing.T) {

@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
@@ -137,11 +136,9 @@ func validateFile(file types.File) error {
 		}
 	}
 
-	if featureflags.ServiceUsers.Enabled() {
-		for _, su := range file.ServiceUsers {
-			if err := validateServiceUser(su); err != nil {
-				return err
-			}
+	for _, su := range file.ServiceUsers {
+		if err := validateServiceUser(su); err != nil {
+			return err
 		}
 	}
 
