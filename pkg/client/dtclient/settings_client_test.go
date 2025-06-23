@@ -2027,6 +2027,43 @@ func TestListKnownSettings(t *testing.T) {
 			wantError:            false,
 		},
 		{
+			name:          "retry on empty response",
+			givenSchemaID: "builtin:something",
+			givenServerResponses: []testServerResponse{
+				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42", "totalCount": 2 }`},
+				{200, `{ "items": [  ], "nextPageKey": "page43", "totalCount": 2 }`},
+				{200, `{ "items": [ {"objectId": "b1d4c623-25e0-4b54-9eb5-6734f1a72041", "externalId": "VGhlIE1hc3Rlcgo="} ], "totalCount": 2 }`},
+			},
+			want: []DownloadSettingsObject{
+				{
+					ExternalId: "RG9jdG9yIFdobwo=",
+					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
+				},
+				{
+					ExternalId: "VGhlIE1hc3Rlcgo=",
+					ObjectId:   "b1d4c623-25e0-4b54-9eb5-6734f1a72041",
+				},
+			},
+			wantQueryParamsPerAPICall: [][]testQueryParams{
+				{
+					{"schemaIds", "builtin:something"},
+					{"pageSize", "500"},
+					{"fields", defaultListSettingsFields},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+			},
+			wantNumberOfAPICalls: 3,
+			wantError:            false,
+		},
+		{
 			name:          "Returns error if HTTP error is encountered getting further paginated responses",
 			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
