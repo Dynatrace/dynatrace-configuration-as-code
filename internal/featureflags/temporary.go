@@ -27,9 +27,6 @@ const (
 	// Segments toggles whether segment configurations are downloaded and / or deployed.
 	// Introduced: v2.18.0
 	Segments FeatureFlag = "MONACO_FEAT_SEGMENTS"
-	// ServiceUsers toggles whether account service users configurations are downloaded and / or deployed.
-	// Introduced: v2.18.0
-	ServiceUsers FeatureFlag = "MONACO_FEAT_SERVICE_USERS"
 	// OnlyCreateReferencesInStringValues toggles whether references are created arbitarily in JSON templates
 	// or when enabled only in string values within the JSON.
 	// Introduced: v2.19.0
@@ -54,7 +51,6 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	SkipReadOnlyAccountGroupUpdates:    false,
 	IgnoreSkippedConfigs:               false,
 	Segments:                           true,
-	ServiceUsers:                       true,
 	OnlyCreateReferencesInStringValues: false,
 	ServiceLevelObjective:              true,
 	AccessControlSettings:              true,

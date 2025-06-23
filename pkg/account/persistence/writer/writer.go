@@ -25,7 +25,6 @@ import (
 	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
@@ -84,7 +83,7 @@ func Write(writerContext Context, resources account.Resources) error {
 		}
 	}
 
-	if featureflags.ServiceUsers.Enabled() && len(resources.ServiceUsers) > 0 {
+	if len(resources.ServiceUsers) > 0 {
 		serviceUsers := toPersistenceServiceUsers(resources.ServiceUsers)
 		if err := persistToFile(persistence.File{ServiceUsers: serviceUsers}, writerContext.Fs, filepath.Join(projectFolder, "service-users.yaml")); err != nil {
 			errOccurred = true

@@ -24,7 +24,6 @@ import (
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -75,15 +74,13 @@ func addProjectResources(targetResources *account.Resources, sourceResources *ac
 		targetResources.Users[us.Email.Value()] = us
 	}
 
-	if featureflags.ServiceUsers.Enabled() {
-		for _, su := range sourceResources.ServiceUsers {
-			for _, existingServiceUser := range targetResources.ServiceUsers {
-				if err := verifyServiceUsersAreNotAmbiguous(su, existingServiceUser); err != nil {
-					return err
-				}
+	for _, su := range sourceResources.ServiceUsers {
+		for _, existingServiceUser := range targetResources.ServiceUsers {
+			if err := verifyServiceUsersAreNotAmbiguous(su, existingServiceUser); err != nil {
+				return err
 			}
-			targetResources.ServiceUsers = append(targetResources.ServiceUsers, su)
 		}
+		targetResources.ServiceUsers = append(targetResources.ServiceUsers, su)
 	}
 	return nil
 }
@@ -211,16 +208,14 @@ func addResourcesFromFile(res *account.Resources, file persistence.File) error {
 		res.Users[u.Email.Value()] = transformUser(u)
 	}
 
-	if featureflags.ServiceUsers.Enabled() {
-		for _, su := range file.ServiceUsers {
-			serviceUser := transformServiceUser(su)
-			for _, existingServiceUser := range res.ServiceUsers {
-				if err := verifyServiceUsersAreNotAmbiguous(existingServiceUser, serviceUser); err != nil {
-					return err
-				}
+	for _, su := range file.ServiceUsers {
+		serviceUser := transformServiceUser(su)
+		for _, existingServiceUser := range res.ServiceUsers {
+			if err := verifyServiceUsersAreNotAmbiguous(existingServiceUser, serviceUser); err != nil {
+				return err
 			}
-			res.ServiceUsers = append(res.ServiceUsers, serviceUser)
 		}
+		res.ServiceUsers = append(res.ServiceUsers, serviceUser)
 	}
 
 	return nil

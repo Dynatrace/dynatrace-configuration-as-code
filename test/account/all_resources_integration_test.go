@@ -30,7 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
@@ -38,7 +37,6 @@ import (
 
 func TestDeployAndDelete_AllResources(t *testing.T) {
 	createMZone(t)
-	t.Setenv(featureflags.ServiceUsers.EnvName(), "true")
 
 	RunAccountTestCase(t, "resources/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[account.AccountInfo]*accounts.Client, o options) {
 
