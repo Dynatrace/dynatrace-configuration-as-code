@@ -26,7 +26,6 @@ import (
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/throttle"
 )
 
 const emptyResponseRetryMax = 10
@@ -68,7 +67,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 			}
 
 			emptyResponseRetryCount++
-			throttle.ThrottleCallAfterError(emptyResponseRetryCount, "Received empty array response, retrying with same nextPageKey")
+			throttleCallAfterError(emptyResponseRetryCount, "Received empty array response, retrying with same nextPageKey")
 			continue
 		}
 

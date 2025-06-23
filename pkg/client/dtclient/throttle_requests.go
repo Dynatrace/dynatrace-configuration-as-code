@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package throttle
+package dtclient
 
 import (
 	"time"
@@ -27,8 +27,8 @@ import (
 const minWaitDuration = 1 * time.Second
 const maxWaitDuration = 1 * time.Minute
 
-// ThrottleCallAfterError sleeps a bit after an error message to avoid hitting rate limits and getting the IP banned
-func ThrottleCallAfterError(backoffMultiplier int, message string) {
+// throttleCallAfterError sleeps a bit after an error message to avoid hitting rate limits and getting the IP banned
+func throttleCallAfterError(backoffMultiplier int, message string) {
 	sleepDuration, humanReadableTimestamp := generateSleepDuration(backoffMultiplier)
 	sleepDuration = clampWaitDuration(sleepDuration)
 
