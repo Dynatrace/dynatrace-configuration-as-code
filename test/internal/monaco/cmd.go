@@ -1,4 +1,4 @@
-//go:build unit || integration || download_restore || cleanup || nightly
+//go:build unit || integration || download_restore || cleanup || nightly || account_integration
 
 /*
  * @license
