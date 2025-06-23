@@ -57,7 +57,7 @@ func TestDangerousCommands(t *testing.T) {
 
 func TestFeatureFlagID_Enabled(t *testing.T) {
 	t.Run("works for temporary environment variables", func(t *testing.T) {
-		ff := featureflags.Segments // any FF from the temporaryDefaultValues
+		ff := featureflags.IgnoreSkippedConfigs // any FF from the temporaryDefaultValues
 
 		assert.NotPanics(t, func() {
 			ff.Enabled()
@@ -86,7 +86,7 @@ func TestFeatureFlagID_Enabled(t *testing.T) {
 
 	t.Run("string is not FeatureFlag", func(t *testing.T) {
 		assert.Panics(t, func() {
-			ff := featureflags.Segments
+			ff := featureflags.IgnoreSkippedConfigs
 			ff = "THIS_IS_UNTYPED_CONST"
 			ff.Enabled()
 		})

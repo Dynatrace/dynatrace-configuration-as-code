@@ -1071,8 +1071,7 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
-			name:    "Segment",
-			envVars: map[string]string{featureflags.Segments.EnvName(): "true"},
+			name: "Segment",
 			configs: []config.Config{
 				{
 					Template: template.NewInMemoryTemplateWithPath("project/segment/template.json", "{}"),
@@ -1110,26 +1109,6 @@ func TestWriteConfigs(t *testing.T) {
 			expectedTemplatePaths: []string{
 				"project/segment/template.json",
 			},
-		},
-		{
-			name:    "Segment should fail if FF MONACO_FEAT_SEGMENTS is not set",
-			envVars: map[string]string{featureflags.Segments.EnvName(): "false"},
-			configs: []config.Config{
-				{
-					Template: template.NewInMemoryTemplateWithPath("project/segment/template.json", "{}"),
-					Coordinate: coordinate.Coordinate{
-						Project:  "project",
-						Type:     "segment",
-						ConfigId: "configId1",
-					},
-					Type: config.Segment{},
-					Parameters: map[string]parameter.Parameter{
-						"some param": &value.ValueParameter{Value: "some value"},
-					},
-					Skip: false,
-				},
-			},
-			expectedErrs: []string{"config.Segment"},
 		},
 		{
 			name:    "SLO resource",

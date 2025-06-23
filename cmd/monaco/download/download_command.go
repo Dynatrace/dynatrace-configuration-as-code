@@ -130,15 +130,12 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&onlyAutomation, OnlyAutomationFlag, false, "Only download automation objects")
 	cmd.Flags().BoolVar(&onlyDocuments, OnlyDocumentsFlag, false, "Only download documents")
 	cmd.Flags().BoolVar(&onlyBuckets, OnlyBucketsFlag, false, "Only download buckets")
+	cmd.Flags().BoolVar(&onlySegments, OnlySegmentsFlag, false, "Only download segment configurations")
 	cmd.Flags().BoolVar(&onlyOpenPipeline, OnlyOpenPipelineFlag, false, "Only download openpipeline configurations")
 
 	// combinations
 	cmd.MarkFlagsMutuallyExclusive(SettingsSchemaFlag, OnlySettingsFlag)
 	cmd.MarkFlagsMutuallyExclusive(ApiFlag, OnlyApisFlag)
-
-	if featureflags.Segments.Enabled() {
-		cmd.Flags().BoolVar(&onlySegments, OnlySegmentsFlag, false, "Only download segment configurations")
-	}
 
 	if featureflags.ServiceLevelObjective.Enabled() {
 		cmd.Flags().BoolVar(&onlySloV2, OnlySloV2Flag, false, fmt.Sprintf("Only download %s configurations", config.ServiceLevelObjectiveID))

@@ -280,7 +280,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 		}
 	}
 
-	if featureflags.Segments.Enabled() && opts.onlyOptions.ShouldDownload(OnlySegmentsFlag) {
+	if opts.onlyOptions.ShouldDownload(OnlySegmentsFlag) {
 		if opts.auth.HasPlatformCredentials() {
 			downloadables = append(downloadables, segment.NewDownloadAPI(clientSet.SegmentClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlySegmentsFlag) {

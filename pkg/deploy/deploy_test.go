@@ -1311,7 +1311,6 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 func TestDeployConfigFF(t *testing.T) {
 	// Clients here will return an error if reached
 	dummyClientSet := client.ClientSet{
-		SegmentClient:               client.TestSegmentsClient{},
 		ServiceLevelObjectiveClient: client.TestServiceLevelObjectiveClient{},
 	}
 	c := dynatrace.EnvironmentClients{
@@ -1324,30 +1323,6 @@ func TestDeployConfigFF(t *testing.T) {
 		configType        config.TypeID
 		expectedErrString string
 	}{
-		{
-			name: "segments FF test",
-			projects: []project.Project{
-				{
-					Configs: project.ConfigsPerTypePerEnvironments{
-						"env": project.ConfigsPerType{
-							"p1": {
-								config.Config{
-									Type:        config.Segment{},
-									Environment: "env",
-									Coordinate: coordinate.Coordinate{
-										Project:  "p1",
-										Type:     "type",
-										ConfigId: "config1",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			featureFlag: featureflags.Segments.EnvName(),
-			configType:  config.SegmentID,
-		},
 		{
 			name: "SLO FF test",
 			projects: []project.Project{
@@ -1572,7 +1547,6 @@ func TestDeployDryRun(t *testing.T) {
 			},
 		},
 	}
-	t.Setenv(featureflags.Segments.EnvName(), "true")
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 	t.Run("dry-run", func(t *testing.T) {
 		err := deploy.DeployForAllEnvironments(t.Context(), projects, c, deploy.DeployConfigsOptions{DryRun: true})

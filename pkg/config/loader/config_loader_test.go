@@ -1412,8 +1412,7 @@ configs:
 			wantErrorsContain: []string{"unknown API: bucket"},
 		},
 		{
-			name:             "segment config with FF on",
-			envVars:          map[string]string{featureflags.Segments.EnvName(): "true"},
+			name:             "segment config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1438,20 +1437,6 @@ configs:
 					Group:       "default",
 				},
 			},
-		},
-		{
-			name:             "segment config with FF off",
-			envVars:          map[string]string{featureflags.Segments.EnvName(): "false"},
-			filePathArgument: "test-file.yaml",
-			filePathOnDisk:   "test-file.yaml",
-			fileContentOnDisk: `
-configs:
-- id: profile-id
-  config:
-    template: 'profile.json'
-  type: segment
-`,
-			wantErrorsContain: []string{"unknown config-type \"segment\""},
 		},
 		{
 			name:             "segment written as api config",

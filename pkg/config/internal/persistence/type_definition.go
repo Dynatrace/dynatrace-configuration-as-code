@@ -84,9 +84,6 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		case BucketType:
 			c.Type = config.BucketType{}
 		case SegmentType:
-			if !featureflags.Segments.Enabled() {
-				return fmt.Errorf("unknown config-type %q", str)
-			}
 			c.Type = config.Segment{}
 		case ServiceLevelObjectiveType:
 			if !featureflags.ServiceLevelObjective.Enabled() {
@@ -348,9 +345,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}, nil
 
 	case config.Segment:
-		if featureflags.Segments.Enabled() {
-			return SegmentType, nil
-		}
+		return SegmentType, nil
 
 	case config.ServiceLevelObjective:
 		if featureflags.ServiceLevelObjective.Enabled() {
