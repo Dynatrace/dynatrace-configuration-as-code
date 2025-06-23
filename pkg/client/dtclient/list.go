@@ -20,12 +20,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"time"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
 )
 
 const emptyResponseRetryMax = 10
@@ -48,7 +51,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 	}
 
 	nextPageKey, expectedTotalCount := getPaginationValues(body)
-	emptyResponseRetryCount := 0
+	retryCount := uint(0)
 	for nextPageKey != "" {
 
 		body, receivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(endpoint, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
@@ -62,16 +65,20 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 		}
 
 		if receivedCount == 0 {
-			if emptyResponseRetryCount >= emptyResponseRetryMax {
-				return fmt.Errorf("received too many empty responses (=%d)", emptyResponseRetryCount)
+			if retryCount >= emptyResponseRetryMax {
+				return fmt.Errorf("received too many empty responses (=%d)", retryCount)
 			}
 
-			emptyResponseRetryCount++
-			throttleCallAfterError(emptyResponseRetryCount, "Received empty array response, retrying with same nextPageKey")
+			retryCount++
+
+			sleepDuration := generateSleepDuration(retryCount)
+			slog.DebugContext(ctx, "Received empty array response, retrying with same 'nextPageKey'. Waiting to avoid overloading the server.", "waitDuration", sleepDuration)
+			time.Sleep(sleepDuration)
+
 			continue
 		}
 
-		emptyResponseRetryCount = 0
+		retryCount = 0
 		totalReceivedCount += receivedCount
 		nextPageKey, _ = getPaginationValues(body)
 		if nextPageKey == "" && totalReceivedCount != expectedTotalCount {
@@ -98,4 +105,22 @@ func runAndProcessResponse(ctx context.Context, client *corerest.Client, endpoin
 	}
 
 	return resp.Data, receivedCount, nil
+}
+
+// generateSleepDuration will generate a random duration time between
+//
+//	1s and 1s + ([0, 1s] * backoffMultiplier)
+//
+// to be used between API calls.
+func generateSleepDuration(backoffMultiplier uint) time.Duration {
+	const backoffTime = 1 * time.Second
+
+	waitNanos, err := rand.Int(backoffTime.Nanoseconds())
+	if err != nil {
+		// Since we are not reliant to cryptographically secure numbers, we can just ignore the error and assign some number.
+		// It's sound enough to just wait the backoff time by default
+		waitNanos = backoffTime.Nanoseconds()
+	}
+
+	return backoffTime + time.Duration(waitNanos*int64(backoffMultiplier))
 }
