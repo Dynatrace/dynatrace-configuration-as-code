@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package throttle
+package dtclient
 
 import (
 	"testing"
@@ -99,7 +99,7 @@ func TestThrottleCallAfterError(t *testing.T) {
 	synctest.Run(func() {
 		start := time.Now().UTC()
 
-		ThrottleCallAfterError(1, "test")
+		throttleCallAfterError(1, "test")
 
 		after := time.Now().UTC()
 
