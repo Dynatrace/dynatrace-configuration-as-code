@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -41,9 +40,6 @@ func TestSegments(t *testing.T) {
 	configFolder := "testdata/"
 	manifestPath := configFolder + "manifest.yaml"
 	environment := "platform_env"
-
-	// enable FF
-	t.Setenv(featureflags.Segments.EnvName(), "true")
 
 	t.Run("Simple deployment creates the segment", func(t *testing.T) {
 
@@ -131,34 +127,6 @@ func TestSegments(t *testing.T) {
 					ConfigId: "second-segment_" + testContext.Suffix,
 				}
 				assertSegmentIsInResponse(t, true, result, coord)
-			})
-	})
-
-	t.Run("With a disabled FF the deploy should fail", func(t *testing.T) {
-		t.Setenv(featureflags.Segments.EnvName(), "false")
-
-		runner.Run(t, configFolder,
-			runner.Options{
-				runner.WithManifestPath(manifestPath),
-				runner.WithSuffix("Segments"),
-				runner.WithEnvironment(environment),
-				runner.WithoutCleanup(),
-			},
-			func(fs afero.Fs, testContext runner.TestContext) {
-				// when deploying once
-				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=standalone-segment --verbose", manifestPath))
-				assert.Error(t, err)
-
-				segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-				result, err := segmentsClient.GetAll(t.Context())
-				assert.NoError(t, err)
-
-				coord := coordinate.Coordinate{
-					Project:  "standalone-segment",
-					Type:     "segment",
-					ConfigId: "my-segment_" + testContext.Suffix,
-				}
-				assertSegmentIsInResponse(t, false, result, coord)
 			})
 	})
 

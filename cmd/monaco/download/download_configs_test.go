@@ -290,7 +290,7 @@ func TestDownload_Options(t *testing.T) {
 			want: wantDownload{openpipeline: true},
 		},
 		{
-			name: "only segment requested with FF on",
+			name: "only segment requested",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
 					OnlySegmentsFlag: true,
@@ -298,20 +298,7 @@ func TestDownload_Options(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
-			featureFlags: map[featureflags.FeatureFlag]bool{featureflags.Segments: true},
-			want:         wantDownload{segment: true},
-		},
-		{
-			name: "only segment requested with FF off",
-			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
-					OnlySegmentsFlag: true,
-				},
-				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
-				}},
-			featureFlags: map[featureflags.FeatureFlag]bool{featureflags.Segments: false},
-			want:         wantDownload{},
+			want: wantDownload{segment: true},
 		},
 		{
 			name: "only slo-v2 requested with FF on",

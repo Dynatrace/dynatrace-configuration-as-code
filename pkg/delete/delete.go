@@ -106,12 +106,10 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 		}
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
 	} else if t == string(config.SegmentID) {
-		if featureflags.Segments.Enabled() {
-			if clients.SegmentClient != nil {
-				return segment.Delete(ctx, clients.SegmentClient, entries)
-			}
-			log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.SegmentID)
+		if clients.SegmentClient != nil {
+			return segment.Delete(ctx, clients.SegmentClient, entries)
 		}
+		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.SegmentID)
 	} else if t == string(config.ServiceLevelObjectiveID) {
 		if featureflags.ServiceLevelObjective.Enabled() {
 			if clients.ServiceLevelObjectiveClient != nil {

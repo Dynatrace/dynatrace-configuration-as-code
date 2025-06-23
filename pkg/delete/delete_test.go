@@ -1159,20 +1159,9 @@ func TestDelete_Segments(t *testing.T) {
 		},
 	}
 
-	t.Run("With Enabled Segment FF", func(t *testing.T) {
-		t.Setenv(featureflags.Segments.EnvName(), "true")
-
-		err := delete.Configs(t.Context(), client.ClientSet{SegmentClient: &c}, given)
-		// DummyClient returns unimplemented error on every execution of any method
-		assert.Error(t, err, "unimplemented")
-	})
-
-	t.Run("With Disabled Segment FF", func(t *testing.T) {
-		t.Setenv(featureflags.Segments.EnvName(), "false")
-
-		err := delete.Configs(t.Context(), client.ClientSet{SegmentClient: &c}, given)
-		assert.NoError(t, err)
-	})
+	err := delete.Configs(t.Context(), client.ClientSet{SegmentClient: &c}, given)
+	// DummyClient returns unimplemented error on every execution of any method
+	assert.Error(t, err, "unimplemented")
 }
 
 func TestDelete_SLOv2(t *testing.T) {

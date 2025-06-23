@@ -32,19 +32,8 @@ import (
 func TestDeleteAll_Segments(t *testing.T) {
 	c := client.TestSegmentsClient{}
 
-	t.Run("With Enabled Segment FF", func(t *testing.T) {
-		t.Setenv(featureflags.Segments.EnvName(), "true")
-
-		err := delete.All(t.Context(), client.ClientSet{SegmentClient: &c}, api.APIs{})
-		assert.Error(t, err, "unimplemented")
-	})
-
-	t.Run("With Disabled Segment FF", func(t *testing.T) {
-		t.Setenv(featureflags.Segments.EnvName(), "false")
-
-		err := delete.All(t.Context(), client.ClientSet{SegmentClient: &c}, api.APIs{})
-		assert.NoError(t, err)
-	})
+	err := delete.All(t.Context(), client.ClientSet{SegmentClient: &c}, api.APIs{})
+	assert.Error(t, err, "unimplemented")
 }
 
 func TestDeleteAll_SLOv2(t *testing.T) {

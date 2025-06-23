@@ -24,9 +24,6 @@ const (
 	// from the dependency graph created by Monaco. These configs are not only skipped during deployment but also
 	// not validated prior to deployment. Further, other configs cannot reference properties of this config anymore.
 	IgnoreSkippedConfigs FeatureFlag = "MONACO_FEAT_IGNORE_SKIPPED_CONFIGS"
-	// Segments toggles whether segment configurations are downloaded and / or deployed.
-	// Introduced: v2.18.0
-	Segments FeatureFlag = "MONACO_FEAT_SEGMENTS"
 	// OnlyCreateReferencesInStringValues toggles whether references are created arbitarily in JSON templates
 	// or when enabled only in string values within the JSON.
 	// Introduced: v2.19.0
@@ -47,7 +44,6 @@ const (
 var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	SkipReadOnlyAccountGroupUpdates:    false,
 	IgnoreSkippedConfigs:               false,
-	Segments:                           true,
 	OnlyCreateReferencesInStringValues: false,
 	ServiceLevelObjective:              true,
 	SanitizeBucketNames:                true,
