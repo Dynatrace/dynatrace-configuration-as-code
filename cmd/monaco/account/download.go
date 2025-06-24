@@ -178,10 +178,7 @@ func readAuthSecretFromEnv(envVar string) (manifest.AuthSecret, error) {
 }
 
 func writeManifest(fs afero.Fs, opts *downloadOpts, accs map[string]manifest.Account) error {
-	ctx := &manifestwriter.Context{
-		Fs:           fs,
-		ManifestPath: filepath.Join(opts.outputFolder, "manifest.yaml"),
-	}
+	manifestPath := filepath.Join(opts.outputFolder, "manifest.yaml")
 	man := manifest.Manifest{
 		Projects: manifest.ProjectDefinitionByProjectID{
 			opts.projectName: manifest.ProjectDefinition{Name: opts.projectName},
@@ -189,5 +186,5 @@ func writeManifest(fs afero.Fs, opts *downloadOpts, accs map[string]manifest.Acc
 		Accounts: accs,
 	}
 
-	return manifestwriter.Write(ctx, man)
+	return manifestwriter.Write(fs, manifestPath, man)
 }

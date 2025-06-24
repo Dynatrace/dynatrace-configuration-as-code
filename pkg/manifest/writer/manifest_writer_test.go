@@ -684,18 +684,15 @@ accounts:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			c := Context{
-				Fs:           afero.NewMemMapFs(),
-				ManifestPath: "manifest.yaml",
-			}
-			err := Write(&c, tt.givenManifest)
+			manifestPath := "manifest.yaml"
+			fs := afero.NewMemMapFs()
+			err := Write(fs, manifestPath, tt.givenManifest)
 			assert.NoError(t, err)
 
-			exists, err := afero.Exists(c.Fs, c.ManifestPath)
+			exists, err := afero.Exists(fs, manifestPath)
 			assert.True(t, exists)
 			assert.NoError(t, err)
-			got, err := afero.ReadFile(c.Fs, c.ManifestPath)
+			got, err := afero.ReadFile(fs, manifestPath)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantJSON, string(got))
 		})

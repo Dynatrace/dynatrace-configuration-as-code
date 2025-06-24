@@ -29,15 +29,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Context holds all information for [Write]
-type Context struct {
-	// Fs holds the abstraction of the file system.
-	Fs afero.Fs
-
-	// ManifestPath holds the path from where the manifest should be written to.
-	ManifestPath string
-}
-
 type ManifestWriterError struct {
 	ManifestPath string `json:"manifestPath"`
 	Err          error  `json:"error"`
@@ -59,15 +50,15 @@ func newManifestWriterError(path string, err error) ManifestWriterError {
 }
 
 // Write writes the manifest to the given path
-func Write(context *Context, manifestToWrite manifest.Manifest) error {
-	sanitizedPath := filepath.Clean(context.ManifestPath)
+func Write(fs afero.Fs, manifestPath string, manifestToWrite manifest.Manifest) error {
+	sanitizedPath := filepath.Clean(manifestPath)
 	folder := filepath.Dir(sanitizedPath)
 
 	if folder != "." {
-		err := context.Fs.MkdirAll(folder, 0777)
+		err := fs.MkdirAll(folder, 0777)
 
 		if err != nil {
-			return newManifestWriterError(context.ManifestPath, err)
+			return newManifestWriterError(manifestPath, err)
 		}
 	}
 
@@ -83,19 +74,19 @@ func Write(context *Context, manifestToWrite manifest.Manifest) error {
 
 	m.Accounts = toWriteableAccounts(manifestToWrite.Accounts)
 
-	return persistManifestToDisk(context, m)
+	return persistManifestToDisk(fs, manifestPath, m)
 }
 
-func persistManifestToDisk(context *Context, m persistence.Manifest) error {
+func persistManifestToDisk(fs afero.Fs, manifestPath string, m persistence.Manifest) error {
 	manifestAsYaml, err := yaml.Marshal(m)
 
 	if err != nil {
-		return newManifestWriterError(context.ManifestPath, err)
+		return newManifestWriterError(manifestPath, err)
 	}
 
-	err = afero.WriteFile(context.Fs, filepath.Clean(context.ManifestPath), manifestAsYaml, 0664)
+	err = afero.WriteFile(fs, filepath.Clean(manifestPath), manifestAsYaml, 0664)
 	if err != nil {
-		return newManifestWriterError(context.ManifestPath, err)
+		return newManifestWriterError(manifestPath, err)
 	}
 	return nil
 }
