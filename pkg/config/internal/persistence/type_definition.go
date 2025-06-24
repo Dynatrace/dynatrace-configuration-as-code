@@ -119,14 +119,11 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	// Now we know the one type and can call the unmarshalers.
 	// The unmarshalers write to the type directly to update it, which is a design choice, not a requirement.
 	unmarshalers := map[string]func(data any) error{
-		"api":        c.parseApiType,
-		"settings":   c.parseSettingsType,
-		"automation": c.parseAutomation,
-		"document":   c.parseDocumentType,
-	}
-
-	if featureflags.OpenPipeline.Enabled() {
-		unmarshalers["openpipeline"] = c.parseOpenPipelineType
+		"api":          c.parseApiType,
+		"settings":     c.parseSettingsType,
+		"automation":   c.parseAutomation,
+		"document":     c.parseDocumentType,
+		"openpipeline": c.parseOpenPipelineType,
 	}
 
 	if unm, f := unmarshalers[ttype]; !f {
@@ -358,13 +355,11 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}, nil
 
 	case config.OpenPipelineType:
-		if featureflags.OpenPipeline.Enabled() {
-			return map[string]any{
-				"openpipeline": OpenPipelineDefinition{
-					Kind: t.Kind,
-				},
-			}, nil
-		}
+		return map[string]any{
+			"openpipeline": OpenPipelineDefinition{
+				Kind: t.Kind,
+			},
+		}, nil
 
 	case config.Segment:
 		if featureflags.Segments.Enabled() {

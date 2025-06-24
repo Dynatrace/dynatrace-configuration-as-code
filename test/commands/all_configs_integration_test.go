@@ -36,7 +36,6 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 
 	// flags are needed because the configs are still read and invalid types result in an error
-	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 	targetEnvironment := "classic_env"
@@ -60,7 +59,6 @@ func TestIntegrationAllConfigsPlatform(t *testing.T) {
 	configFolder := "testdata/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 
@@ -92,7 +90,6 @@ func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment s
 // Tests a dry run (validation)
 func TestIntegrationValidationAllConfigs(t *testing.T) {
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
-	t.Setenv(featureflags.OpenPipeline.EnvName(), "true")
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 

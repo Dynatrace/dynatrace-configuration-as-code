@@ -38,7 +38,6 @@ func TestDryRun(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 
 	envVars := map[string]string{
-		featureflags.OpenPipeline.EnvName():          "true",
 		featureflags.ServiceLevelObjective.EnvName(): "true",
 		featureflags.AccessControlSettings.EnvName(): "true",
 	}

@@ -1892,30 +1892,7 @@ configs:
 			},
 		},
 		{
-			name: "OpenPipeline config with FF off",
-			envVars: map[string]string{
-				featureflags.OpenPipeline.EnvName(): "false",
-			},
-			filePathArgument: "test-file.yaml",
-			filePathOnDisk:   "test-file.yaml",
-			fileContentOnDisk: `
-configs:
-- id: openpipeline-id
-  config:
-    name: Test Pipeline
-    template: 'profile.json'
-  type:
-    openpipeline:
-      kind: bizevents`,
-			wantErrorsContain: []string{
-				"unknown config-type \"openpipeline\"",
-			},
-		},
-		{
-			name: "OpenPipeline config with FF on",
-			envVars: map[string]string{
-				featureflags.OpenPipeline.EnvName(): "true",
-			},
+			name:             "OpenPipeline config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1946,10 +1923,7 @@ configs:
 			},
 		},
 		{
-			name: "OpenPipeline config with FF on and missing kind",
-			envVars: map[string]string{
-				featureflags.OpenPipeline.EnvName(): "true",
-			},
+			name:             "OpenPipeline config with missing kind",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `

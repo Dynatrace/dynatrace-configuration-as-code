@@ -1313,7 +1313,6 @@ func TestDeployConfigFF(t *testing.T) {
 	dummyClientSet := client.ClientSet{
 		SegmentClient:               client.TestSegmentsClient{},
 		ServiceLevelObjectiveClient: client.TestServiceLevelObjectiveClient{},
-		OpenPipelineClient:          client.TestOpenPipelineClient{},
 	}
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
@@ -1372,30 +1371,6 @@ func TestDeployConfigFF(t *testing.T) {
 			},
 			featureFlag: featureflags.ServiceLevelObjective.EnvName(),
 			configType:  config.ServiceLevelObjectiveID,
-		},
-		{
-			name: "OpenPipeline FF test",
-			projects: []project.Project{
-				{
-					Configs: project.ConfigsPerTypePerEnvironments{
-						"env": project.ConfigsPerType{
-							"p1": {
-								config.Config{
-									Type:        config.OpenPipelineType{},
-									Environment: "env",
-									Coordinate: coordinate.Coordinate{
-										Project:  "p1",
-										Type:     "type",
-										ConfigId: "config1",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			featureFlag: featureflags.OpenPipeline.EnvName(),
-			configType:  config.OpenPipelineTypeID,
 		},
 	}
 
