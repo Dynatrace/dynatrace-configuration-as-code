@@ -39,7 +39,6 @@ func TestDryRun(t *testing.T) {
 
 	envVars := map[string]string{
 		featureflags.ServiceLevelObjective.EnvName(): "true",
-		featureflags.AccessControlSettings.EnvName(): "true",
 	}
 
 	runner.Run(t, configFolder,

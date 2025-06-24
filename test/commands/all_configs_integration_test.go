@@ -37,7 +37,6 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 
 	// flags are needed because the configs are still read and invalid types result in an error
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
-	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 	targetEnvironment := "classic_env"
 
 	runner.Run(t, configFolder,
@@ -60,7 +59,6 @@ func TestIntegrationAllConfigsPlatform(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
-	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 
 	targetEnvironment := "platform_env"
 
@@ -91,7 +89,6 @@ func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment s
 func TestIntegrationValidationAllConfigs(t *testing.T) {
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
-	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 
 	fs := afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs())
 

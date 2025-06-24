@@ -871,8 +871,7 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
-			name:    "Simple settings 2.0 write with all-user permissions FF on",
-			envVars: map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
+			name: "Simple settings 2.0 write with all-user permissions",
 			configs: []config.Config{
 				{
 					Template: template.NewInMemoryTemplateWithPath("project/schemaid/a.json", ""),
@@ -909,55 +908,6 @@ func TestWriteConfigs(t *testing.T) {
 									SchemaId:          "schemaid",
 									SchemaVersion:     "1.2.3",
 									AllUserPermission: pointer.Pointer(config.ReadPermission),
-								},
-								Scope: "scope",
-							},
-						},
-					},
-				},
-			},
-			expectedTemplatePaths: []string{
-				"project/schemaid/a.json",
-			},
-		},
-		{
-			name: "Simple settings 2.0 write with all-user permissions with FF off",
-			configs: []config.Config{
-				{
-					Template: template.NewInMemoryTemplateWithPath("project/schemaid/a.json", ""),
-					Coordinate: coordinate.Coordinate{
-						Project:  "project",
-						Type:     "schemaid",
-						ConfigId: "configId",
-					},
-					Type: config.SettingsType{
-						SchemaId:          "schemaid",
-						SchemaVersion:     "1.2.3",
-						AllUserPermission: pointer.Pointer(config.ReadPermission),
-					},
-					Parameters: map[string]parameter.Parameter{
-						config.ScopeParameter: &value.ValueParameter{Value: "scope"},
-						config.NameParameter:  &value.ValueParameter{Value: "name"},
-					},
-					Skip: true,
-				},
-			},
-			envVars: map[string]string{featureflags.AccessControlSettings.EnvName(): "false"},
-			expectedConfigs: map[string]persistence.TopLevelDefinition{
-				"schemaid": {
-					Configs: []persistence.TopLevelConfigDefinition{
-						{
-							Id: "configId",
-							Config: persistence.ConfigDefinition{
-								Name:       "name",
-								Parameters: nil,
-								Template:   "a.json",
-								Skip:       true,
-							},
-							Type: persistence.TypeDefinition{
-								Type: config.SettingsType{
-									SchemaId:      "schemaid",
-									SchemaVersion: "1.2.3",
 								},
 								Scope: "scope",
 							},

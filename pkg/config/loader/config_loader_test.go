@@ -729,8 +729,7 @@ configs:
 			},
 		},
 		{
-			name:             "loads settings 2.0 config with all properties and allUsers permission with FF on",
-			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
+			name:             "loads settings 2.0 config with all properties and allUsers permission",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -772,8 +771,7 @@ configs:
 			},
 		},
 		{
-			name:             "loads settings 2.0 config allUsers permission with invalid value with FF on",
-			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
+			name:             "loads settings 2.0 config allUsers permission with invalid value",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -793,29 +791,7 @@ configs:
 			wantErrorsContain: []string{"cannot parse definition in `test-file.yaml`: unknown allUsers value: 'wrong-value', allowed: [read write none]"},
 		},
 		{
-			name:             "loads settings 2.0 config with all properties and allUsers permission with FF off",
-			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "false"},
-			filePathArgument: "test-file.yaml",
-			filePathOnDisk:   "test-file.yaml",
-			fileContentOnDisk: `
-configs:
-- id: profile-id
-  config:
-    name: 'Star Trek > Star Wars'
-    template: 'profile.json'
-    originObjectId: origin-object-id
-  type:
-    settings:
-      schema: 'builtin:profile.test'
-      schemaVersion: '1.0'
-      scope: 'tenant'
-      permissions:
-        allUsers: 'read'`,
-			wantErrorsContain: []string{"unknown settings configuration property 'permissions'"},
-		},
-		{
 			name:             "loads settings 2.0 config with nil allUsers permissions if permissions are set but do not contain anything",
-			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -858,7 +834,6 @@ configs:
 		},
 		{
 			name:             "loads settings 2.0 config with 'none' allUsers permissions if permissions are set but allUsers is missing",
-			envVars:          map[string]string{featureflags.AccessControlSettings.EnvName(): "true"},
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1774,7 +1749,7 @@ configs:
 			wantErrorsContain: []string{"missing property"},
 		},
 		{
-			name:             "Document dashboard config with FF on",
+			name:             "Document dashboard config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1807,7 +1782,7 @@ configs:
 			},
 		},
 		{
-			name:             "Document private dashboard config with FF on",
+			name:             "Document private dashboard config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1841,7 +1816,7 @@ configs:
 			},
 		},
 		{
-			name:             "Document notebook config with FF on",
+			name:             "Document notebook config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1874,7 +1849,7 @@ configs:
 			},
 		},
 		{
-			name:             "Document config with invalid type with FF on",
+			name:             "Document config with invalid type",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
