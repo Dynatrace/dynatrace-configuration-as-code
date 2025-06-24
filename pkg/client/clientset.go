@@ -344,8 +344,8 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		}
 	}
 
-	if auth.ApiToken != nil {
-		cFactory = cFactory.WithAccessToken(auth.ApiToken.Value.Value()).
+	if auth.AccessToken != nil {
+		cFactory = cFactory.WithAccessToken(auth.AccessToken.Value.Value()).
 			WithClassicURL(classicURL)
 		client, err := cFactory.CreateClassicClient()
 		if err != nil {

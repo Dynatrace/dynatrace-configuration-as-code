@@ -164,7 +164,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						Group: "group1",
 						Auth: manifest.Auth{
-							ApiToken: &manifest.AuthSecret{
+							AccessToken: &manifest.AuthSecret{
 								Name: "TokenTest",
 							},
 						},
@@ -176,7 +176,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						Group: "group1",
 						Auth: manifest.Auth{
-							ApiToken: &manifest.AuthSecret{},
+							AccessToken: &manifest.AuthSecret{},
 							PlatformToken: &manifest.AuthSecret{
 								Name:  "token",
 								Value: "value",
@@ -205,7 +205,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						Group: "group1",
 						Auth: manifest.Auth{
-							ApiToken: &manifest.AuthSecret{},
+							AccessToken: &manifest.AuthSecret{},
 							OAuth: &manifest.OAuth{
 								ClientID: manifest.AuthSecret{
 									Name:  "client-id-key",
@@ -225,7 +225,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						Group: "group1",
 						Auth: manifest.Auth{
-							ApiToken: &manifest.AuthSecret{},
+							AccessToken: &manifest.AuthSecret{},
 							OAuth: &manifest.OAuth{
 								ClientID: manifest.AuthSecret{
 									Name:  "client-id-key",
@@ -249,7 +249,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						Group: "group2",
 						Auth: manifest.Auth{
-							ApiToken: &manifest.AuthSecret{},
+							AccessToken: &manifest.AuthSecret{},
 						},
 					},
 				},
@@ -262,7 +262,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env1",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								ApiToken: &persistence.AuthSecret{
+								AccessToken: &persistence.AuthSecret{
 									Name: "TokenTest",
 									Type: "environment",
 								},
@@ -272,7 +272,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								ApiToken: &persistence.AuthSecret{
+								AccessToken: &persistence.AuthSecret{
 									Name: "",
 									Type: "environment",
 								},
@@ -300,7 +300,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2a",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								ApiToken: &persistence.AuthSecret{
+								AccessToken: &persistence.AuthSecret{
 									Name: "",
 									Type: "environment",
 								},
@@ -320,7 +320,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2b",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								ApiToken: &persistence.AuthSecret{
+								AccessToken: &persistence.AuthSecret{
 									Name: "",
 									Type: "environment",
 								},
@@ -348,7 +348,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env3",
 							URL:  persistence.TypedValue{Value: "www.an.Url"},
 							Auth: persistence.Auth{
-								ApiToken: &persistence.AuthSecret{
+								AccessToken: &persistence.AuthSecret{
 									Name: "",
 									Type: "environment",
 								},
@@ -576,7 +576,7 @@ func TestWrite(t *testing.T) {
 							},
 							Group: "group1",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name: "TOKEN_VAR",
 								},
 							},
@@ -624,7 +624,7 @@ environmentGroups:
 							},
 							Group: "group1",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name: "TOKEN_VAR",
 								},
 							},

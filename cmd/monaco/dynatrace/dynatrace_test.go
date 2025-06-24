@@ -34,7 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
 
-var apiTokenPayload = []byte(`
+var accessTokenPayload = []byte(`
 {
   "id": "abc-xy",
   "name": "my-token",
@@ -62,7 +62,7 @@ func TestVerifyEnvironmentsAuthentication_OneOfManyFails(t *testing.T) {
 			return
 		}
 		rw.WriteHeader(http.StatusOK)
-		_, _ = rw.Write(apiTokenPayload)
+		_, _ = rw.Write(accessTokenPayload)
 	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -76,7 +76,7 @@ func TestVerifyEnvironmentsAuthentication_OneOfManyFails(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				AccessToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 			},
 		},
 		"env2": manifest.EnvironmentDefinition{
@@ -87,7 +87,7 @@ func TestVerifyEnvironmentsAuthentication_OneOfManyFails(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				AccessToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 			},
 		},
 	})
@@ -145,7 +145,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 					Name:  "URL",
 					Value: server.URL,
 				},
-				Auth: manifest.Auth{ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"}},
+				Auth: manifest.Auth{AccessToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"}},
 			},
 		})
 		assert.NoError(t, err)
@@ -255,7 +255,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("Fails if neither OAuth, nor platform token, nor API token is provided", func(t *testing.T) {
+	t.Run("Fails if neither OAuth, nor platform token, nor access token is provided", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			t.Fatal("Should not be called")
 		}))
@@ -287,7 +287,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				AccessToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 			},
 		})
 		assert.Error(t, err)
@@ -307,7 +307,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 				Value: "",
 			},
 			Auth: manifest.Auth{
-				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				AccessToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 			},
 		})
 		assert.Error(t, err)
@@ -368,7 +368,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 			classicCalls++
 			assert.Equal(t, "Api-Token some token", req.Header.Get("Authorization"))
 			rw.WriteHeader(200)
-			_, _ = rw.Write(apiTokenPayload)
+			_, _ = rw.Write(accessTokenPayload)
 		})
 		server := httptest.NewServer(mux)
 		defer server.Close()
@@ -381,7 +381,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				AccessToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 				OAuth: &manifest.OAuth{
 					ClientID: manifest.AuthSecret{
 						Name:  "OAUTH_ID",
@@ -402,7 +402,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		assert.Equal(t, 1, platformCalls)
 	})
 
-	t.Run("Platform token and API token are validated", func(t *testing.T) {
+	t.Run("Platform token and access token are validated", func(t *testing.T) {
 		classicCalls := 0
 		platformCalls := 0
 
@@ -417,7 +417,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 			classicCalls++
 			assert.Equal(t, "Api-Token api token", req.Header.Get("Authorization"))
 			rw.WriteHeader(200)
-			_, _ = rw.Write(apiTokenPayload)
+			_, _ = rw.Write(accessTokenPayload)
 		})
 		server := httptest.NewServer(mux)
 		defer server.Close()
@@ -430,7 +430,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				ApiToken:      &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "api token"},
+				AccessToken:   &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "api token"},
 				PlatformToken: &manifest.AuthSecret{Name: "DT_PLATFORM_TOKEN", Value: "platform token"},
 			},
 		})
@@ -446,7 +446,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		})
 		mux.HandleFunc("/api/v2/apiTokens/lookup", func(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(200)
-			_, _ = rw.Write(apiTokenPayload)
+			_, _ = rw.Write(accessTokenPayload)
 		})
 		server := httptest.NewServer(mux)
 		defer server.Close()
@@ -459,7 +459,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 				Value: server.URL,
 			},
 			Auth: manifest.Auth{
-				ApiToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
+				AccessToken: &manifest.AuthSecret{Name: "DT_API_TOKEN", Value: "some token"},
 				OAuth: &manifest.OAuth{
 					ClientID: manifest.AuthSecret{
 						Name:  "OAUTH_ID",

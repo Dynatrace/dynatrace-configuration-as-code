@@ -443,7 +443,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
-					Auth: manifest.Auth{ApiToken: &token},
+					Auth: manifest.Auth{AccessToken: &token},
 				}},
 			project.ConfigsPerType{
 				string(config.ClassicApiTypeID): []config.Config{classicConf}},
@@ -455,8 +455,8 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
 					Auth: manifest.Auth{
-						ApiToken: &token,
-						OAuth:    &oAuth,
+						AccessToken: &token,
+						OAuth:       &oAuth,
 					},
 				}},
 			project.ConfigsPerType{
@@ -470,7 +470,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
-					Auth: manifest.Auth{ApiToken: &token},
+					Auth: manifest.Auth{AccessToken: &token},
 				}},
 			project.ConfigsPerType{
 				string(config.DocumentTypeID): []config.Config{documentConf}},
@@ -488,7 +488,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 				string(config.DocumentTypeID):   []config.Config{documentConf},
 				string(config.ClassicApiTypeID): []config.Config{classicConf},
 			},
-			"requires an API token for environment",
+			"requires an access token for environment",
 		},
 		{
 			"oAuth manifest with document and classic api classic api with skip true, expect no error",
@@ -507,7 +507,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
-					Auth: manifest.Auth{ApiToken: &token},
+					Auth: manifest.Auth{AccessToken: &token},
 				}},
 			project.ConfigsPerType{
 				string(config.DocumentTypeID):   []config.Config{documentConfSkip},
@@ -546,7 +546,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 			manifest.EnvironmentDefinitionsByName{
 				envId: manifest.EnvironmentDefinition{
 					Name: envId,
-					Auth: manifest.Auth{ApiToken: &token},
+					Auth: manifest.Auth{AccessToken: &token},
 				}},
 			project.ConfigsPerType{
 				string(config.SettingsTypeID): []config.Config{settingsConfWithPermission},

@@ -58,7 +58,7 @@ func Test_parseConfigs(t *testing.T) {
 					URL:   manifest.URLDefinition{Type: manifest.ValueURLType, Value: "env url"},
 					Group: "default",
 					Auth: manifest.Auth{
-						ApiToken: &manifest.AuthSecret{Name: "token var"},
+						AccessToken: &manifest.AuthSecret{Name: "token var"},
 					},
 				},
 			},

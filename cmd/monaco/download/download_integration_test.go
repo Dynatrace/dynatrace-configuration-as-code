@@ -1350,7 +1350,7 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 				Value: server.URL,
 			},
 			auth: manifest.Auth{
-				ApiToken: &manifest.AuthSecret{
+				AccessToken: &manifest.AuthSecret{
 					Name:  "TOKEN_ENV_VAR",
 					Value: "token",
 				},

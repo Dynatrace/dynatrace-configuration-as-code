@@ -147,7 +147,7 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 		{
 			"Full archive in case of HTTP auth errors",
 			"manifest.yaml",
-			"unauthorized_env", // has wrong Config API token
+			"unauthorized_env", // has wrong Config access token
 			true,
 			true,
 		},

@@ -209,7 +209,7 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 	classicURL, err := metadata.GetDynatraceClassicURL(t.Context(), *client)
 	require.NoError(t, err)
 
-	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(env.Auth.ApiToken.Value.Value())
+	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(env.Auth.AccessToken.Value.Value())
 
 	classicClient, err := clientFactory.CreateClassicClient()
 	require.NoError(t, err)

@@ -84,7 +84,7 @@ type ManifestLoaderError struct {
 }
 
 var (
-	ErrNoCredentials              = errors.New("no API token or platform credentials provided")
+	ErrNoCredentials              = errors.New("no access token or platform credentials provided")
 	ErrPlatformCredentialConflict = errors.New("OAuth credentials and a platform token can't be used at the same time")
 )
 
@@ -221,12 +221,12 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 		return manifest.Auth{}, err
 	}
 
-	if a.ApiToken != nil {
-		token, err := parseAuthSecret(context, a.ApiToken)
+	if a.AccessToken != nil {
+		token, err := parseAuthSecret(context, a.AccessToken)
 		if err != nil {
 			return manifest.Auth{}, fmt.Errorf("failed to parse token: %w", err)
 		}
-		mAuth.ApiToken = &token
+		mAuth.AccessToken = &token
 	}
 
 	if a.OAuth != nil {
@@ -249,7 +249,7 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 }
 
 func validateAuthInput(a persistence.Auth) error {
-	if a.ApiToken == nil && a.OAuth == nil && (!featureflags.PlatformToken.Enabled() || a.PlatformToken == nil) {
+	if a.AccessToken == nil && a.OAuth == nil && (!featureflags.PlatformToken.Enabled() || a.PlatformToken == nil) {
 		return ErrNoCredentials
 	}
 	if featureflags.PlatformToken.Enabled() && a.OAuth != nil && a.PlatformToken != nil {

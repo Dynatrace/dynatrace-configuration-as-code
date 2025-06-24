@@ -51,7 +51,7 @@ environmentGroups:
         auth:
           platformToken:
             name: e`
-	platformAndApiTokenManifest = `
+	platformAndAccessTokenManifest = `
 manifestVersion: "1.0"
 projects:
   - name: a
@@ -131,7 +131,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "TEST URL", Type: persistence.TypeValue},
-				Auth: persistence.Auth{ApiToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -144,7 +144,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "TEST URL", Type: ""},
-				Auth: persistence.Auth{ApiToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -157,7 +157,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "https://www.test.url/", Type: persistence.TypeValue},
-				Auth: persistence.Auth{ApiToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -170,7 +170,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
-				Auth: persistence.Auth{ApiToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			givenEnvVarValue: "resolved url value",
 			want: manifest.URLDefinition{
@@ -185,7 +185,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
-				Auth: persistence.Auth{ApiToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			givenEnvVarValue: "https://www.test.url/",
 			want: manifest.URLDefinition{
@@ -200,7 +200,7 @@ func Test_extractUrlType(t *testing.T) {
 			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
 				URL:  persistence.TypedValue{Value: "TEST URL", Type: "this-is-not-a-type"},
-				Auth: persistence.Auth{ApiToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want:    manifest.URLDefinition{},
 			wantErr: true,
@@ -627,7 +627,7 @@ environmentGroups:
 										Value: "ENV_URL",
 									},
 									Auth: persistence.Auth{
-										ApiToken: &persistence.AuthSecret{
+										AccessToken: &persistence.AuthSecret{
 											Name: "ENV_TOKEN",
 										},
 									},
@@ -672,7 +672,7 @@ environmentGroups:
 										Value: "https://www.dynatrace.com",
 									},
 									Auth: persistence.Auth{
-										ApiToken: &persistence.AuthSecret{
+										AccessToken: &persistence.AuthSecret{
 											Name: "ENV_TOKEN",
 										},
 									},
@@ -845,7 +845,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 							},
 							Group: "b",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "e",
 									Value: "mock token",
 								},
@@ -888,7 +888,7 @@ environmentGroups:
 							},
 							Group: "groupA",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -902,7 +902,7 @@ environmentGroups:
 							},
 							Group: "groupB",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -949,7 +949,7 @@ environmentGroups:
 							},
 							Group: "groupA",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -963,7 +963,7 @@ environmentGroups:
 							},
 							Group: "groupA",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1008,7 +1008,7 @@ environmentGroups:
 							},
 							Group: "groupA",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1054,7 +1054,7 @@ environmentGroups:
 							},
 							Group: "groupA",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1102,7 +1102,7 @@ environmentGroups:
 							},
 							Group: "groupA",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1116,7 +1116,7 @@ environmentGroups:
 							},
 							Group: "groupB",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1165,7 +1165,7 @@ environmentGroups:
 							},
 							Group: "groupA",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1179,7 +1179,7 @@ environmentGroups:
 							},
 							Group: "groupB",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1228,7 +1228,7 @@ environmentGroups:
 							},
 							Group: "groupA",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1242,7 +1242,7 @@ environmentGroups:
 							},
 							Group: "groupB",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1292,7 +1292,7 @@ environmentGroups:
 							},
 							Group: "groupA",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1306,7 +1306,7 @@ environmentGroups:
 							},
 							Group: "groupB",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "token-env-var",
 									Value: "mock token",
 								},
@@ -1408,7 +1408,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 							},
 							Group: "b",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "e",
 									Value: "mock token",
 								},
@@ -1461,7 +1461,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 							},
 							Group: "b",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "e",
 									Value: "mock token",
 								},
@@ -1597,7 +1597,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 							},
 							Group: "b",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "e",
 									Value: "mock token",
 								},
@@ -1639,7 +1639,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 							},
 							Group: "b",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "e",
 									Value: "mock token",
 								},
@@ -1692,7 +1692,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 							},
 							Group: "b",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "e",
 									Value: "mock token",
 								},
@@ -1748,7 +1748,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 							},
 							Group: "b",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "e",
 									Value: "mock token",
 								},
@@ -1951,7 +1951,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {type: environment, 
 							},
 							Group: "b",
 							Auth: manifest.Auth{
-								ApiToken: &manifest.AuthSecret{
+								AccessToken: &manifest.AuthSecret{
 									Name:  "e",
 									Value: "mock token",
 								},
@@ -2119,9 +2119,9 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 		}, mf.Environments.SelectedEnvironments["c"].Auth.PlatformToken)
 	})
 
-	t.Run("succeeds if platform token and API token are provided", func(t *testing.T) {
+	t.Run("succeeds if platform token and access token are provided", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
-		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(platformAndApiTokenManifest), 0400))
+		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(platformAndAccessTokenManifest), 0400))
 		mf, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
@@ -2139,7 +2139,7 @@ func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
 		Name: "TEST ENV",
 		URL:  persistence.TypedValue{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
 		Auth: persistence.Auth{
-			ApiToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"},
+			AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"},
 			OAuth: &persistence.OAuth{
 				ClientID:     persistence.AuthSecret{Type: "environment", Name: "VAR_1"},
 				ClientSecret: persistence.AuthSecret{Type: "environment", Name: "VAR_2"},

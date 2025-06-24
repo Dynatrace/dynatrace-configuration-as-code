@@ -32,7 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/apitoken"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/accesstoken"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/classicheartbeat"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -53,15 +53,15 @@ func VerifyEnvironmentsAuthentication(ctx context.Context, envs manifest.Environ
 	return nil
 }
 
-// VerifyEnvironmentAuthentication checks if the provided API token and platform credentials of the provided environment are valid.
+// VerifyEnvironmentAuthentication checks if the provided access token and platform credentials of the provided environment are valid.
 func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.EnvironmentDefinition) error {
-	if env.Auth.ApiToken == nil && !env.HasPlatformCredentials() {
+	if env.Auth.AccessToken == nil && !env.HasPlatformCredentials() {
 		return ErrorMissingAuth
 	}
 
 	classicUrl := env.URL.Value
 
-	// check if the platform connection works and get the classicURL in order to check the API token authentication next if given
+	// check if the platform connection works and get the classicURL in order to check the access token authentication next if given
 	if env.HasPlatformCredentials() {
 		var err error
 		if classicUrl, err = getDynatraceClassicURL(ctx, env.URL.Value, env.Auth.OAuth, env.Auth.PlatformToken); err != nil {
@@ -69,20 +69,20 @@ func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.Environme
 		}
 	}
 
-	if env.Auth.ApiToken != nil {
-		if err := checkClassicConnection(ctx, classicUrl, env.Auth.ApiToken.Value.Value()); err != nil {
-			return fmt.Errorf("could not authorize against environment '%s' (%s) using API token authorization: %w", env.Name, classicUrl, err)
+	if env.Auth.AccessToken != nil {
+		if err := checkClassicConnection(ctx, classicUrl, env.Auth.AccessToken.Value.Value()); err != nil {
+			return fmt.Errorf("could not authorize against environment '%s' (%s) using access token authorization: %w", env.Name, classicUrl, err)
 		}
 	}
 	return nil
 }
 
-// checkClassicConnection checks if a classic connection (via API token) can be established. Scopes are not validated.
-func checkClassicConnection(ctx context.Context, classicURL string, apiToken string) error {
+// checkClassicConnection checks if a classic connection (via access token) can be established. Scopes are not validated.
+func checkClassicConnection(ctx context.Context, classicURL string, accessToken string) error {
 	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	factory := clients.Factory().
 		WithClassicURL(classicURL).
-		WithAccessToken(apiToken).
+		WithAccessToken(accessToken).
 		WithRateLimiter(true).
 		WithRetryOptions(&client.DefaultRetryOptions).
 		WithCustomHeaders(additionalHeaders)
@@ -96,7 +96,7 @@ func checkClassicConnection(ctx context.Context, classicURL string, apiToken str
 		return fmt.Errorf("could not create client: %w", err)
 	}
 
-	_, err = apitoken.GetApiTokenMetadata(ctx, client, apiToken)
+	_, err = accesstoken.GetAccessTokenMetadata(ctx, client, accessToken)
 	return err
 }
 
