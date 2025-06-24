@@ -20,17 +20,13 @@ package settings
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2/clientcredentials"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -50,7 +46,6 @@ func TestSettingsWithACL(t *testing.T) {
 	settingsType := config.SettingsType{SchemaId: schemaId}
 
 	t.Run("Updates correctly", func(t *testing.T) {
-		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 		updates := []struct {
 			ManifestFolder string
 			WantPermission []dtclient.TypePermissions
@@ -106,18 +101,6 @@ func TestSettingsWithACL(t *testing.T) {
 					assert2.AssertPermission(t, client, objectId, update.WantPermission)
 				}
 			})
-	})
-
-	t.Run("With a disabled FF the deploy should fail", func(t *testing.T) {
-		t.Setenv(featureflags.AccessControlSettings.EnvName(), "false")
-		manifestPath := configFolder + "acl-write/manifest.yaml"
-
-		logOutput := strings.Builder{}
-		cmd := runner.BuildCmdWithLogSpy(monaco.NewTestFs(), &logOutput)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", environment})
-		err := cmd.Execute()
-		assert.Error(t, err)
-		assert.Contains(t, logOutput.String(), "unknown settings configuration property 'permissions'")
 	})
 }
 

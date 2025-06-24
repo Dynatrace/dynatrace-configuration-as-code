@@ -34,7 +34,6 @@ import (
 
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -846,62 +845,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 	}
 	objResp := []postResponse{{ObjectId: "ooid"}}
 
-	t.Run("Permissions are not modified if feature flag is disabled", func(t *testing.T) {
-		t.Setenv(featureflags.AccessControlSettings.EnvName(), "false")
-
-		mux := http.NewServeMux()
-
-		mux.HandleFunc("GET /api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
-			payload, err := json.Marshal(schemaACL)
-			require.NoError(t, err)
-
-			_, err = w.Write(payload)
-			require.NoError(t, err)
-		})
-
-		mux.HandleFunc("GET /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
-			_, err := w.Write([]byte("{}"))
-			require.NoError(t, err)
-		})
-
-		mux.HandleFunc("POST /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
-			payload, err := json.Marshal(objResp)
-			require.NoError(t, err)
-
-			_, err = w.Write(payload)
-			require.NoError(t, err)
-		})
-
-		mux.HandleFunc("/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions", func(w http.ResponseWriter, r *http.Request) {
-			t.Errorf("Called '%s' but it should not be called", r.Pattern)
-		})
-
-		mux.HandleFunc("/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users", func(w http.ResponseWriter, r *http.Request) {
-			t.Errorf("Called '%s' but it should not be called", r.Pattern)
-		})
-
-		server := httptest.NewTLSServer(mux)
-		defer server.Close()
-
-		serverURL, err := url.Parse(server.URL)
-		require.NoError(t, err)
-
-		restClient := corerest.NewClient(serverURL, server.Client())
-
-		c, err := NewClassicSettingsClient(restClient)
-		require.NoError(t, err)
-
-		// setup cache
-		_, err = c.GetSchema(t.Context(), testSchema)
-		require.NoError(t, err)
-
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
-		assert.NoError(t, err)
-	})
-
 	t.Run("Does not call delete permissions if permissions are not set", func(t *testing.T) {
-		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
-
 		mux := http.NewServeMux()
 
 		mux.HandleFunc("GET /api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
@@ -953,7 +897,6 @@ func TestUpsertSettings_ACL(t *testing.T) {
 	})
 
 	t.Run("Deletes a permission", func(t *testing.T) {
-		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 		deleteCalled := false
 
 		mux := http.NewServeMux()
@@ -1006,7 +949,6 @@ func TestUpsertSettings_ACL(t *testing.T) {
 	})
 
 	t.Run("Creates a permission", func(t *testing.T) {
-		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 		postPermissionCalled := false
 
 		mux := http.NewServeMux()
@@ -1065,7 +1007,6 @@ func TestUpsertSettings_ACL(t *testing.T) {
 	})
 
 	t.Run("Updates a permission", func(t *testing.T) {
-		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 		putPermissionCalled := false
 
 		mux := http.NewServeMux()
@@ -1123,8 +1064,6 @@ func TestUpsertSettings_ACL(t *testing.T) {
 	})
 
 	t.Run("Does not deploy the setting if permissions are set but the schema knows nothing about ACL", func(t *testing.T) {
-		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
-
 		schemaNoACL := schemaDetailsResponse{
 			SchemaId: testSchema,
 		}
@@ -1168,8 +1107,6 @@ func TestUpsertSettings_ACL(t *testing.T) {
 	})
 
 	t.Run("Does not deploy the setting if permissions are set but the schema has ACL disabled", func(t *testing.T) {
-		t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
-
 		schemaACLFalse := schemaDetailsResponse{
 			SchemaId:                testSchema,
 			OwnerBasedAccessControl: pointer.Pointer(false),
@@ -2811,7 +2748,6 @@ func TestSettingsClient_DeletePermission(t *testing.T) {
 }
 
 func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
-	t.Setenv(featureflags.AccessControlSettings.EnvName(), "true")
 	testSchema1 := "schema1"
 	testSchema2 := "schema2"
 	schemas := SchemaListResponse{
@@ -2866,7 +2802,6 @@ func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
 
 func TestSettingsClient_ListSchemas_WithoutAcl(t *testing.T) {
 	testSchema1 := "schema1"
-	t.Setenv(featureflags.AccessControlSettings.EnvName(), "false")
 	schemas := SchemaListResponse{
 		Items: SchemaList{
 			{
@@ -2914,7 +2849,6 @@ func TestSettingsClient_ListSchemas_WithoutAcl(t *testing.T) {
 
 func TestSettingsClient_ClearCache_OnSchemaCache(t *testing.T) {
 	testSchema := "schema1"
-	t.Setenv(featureflags.AccessControlSettings.EnvName(), "false")
 	schema := schemaDetailsResponse{
 		SchemaId:                testSchema,
 		Ordered:                 false,

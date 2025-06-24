@@ -33,7 +33,6 @@ import (
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	coresettings "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/settings/permissions"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -509,7 +508,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		if upsertOptions.InsertAfter != nil && !schema.Ordered {
 			return DynatraceEntity{}, fmt.Errorf("'%s' is not an ordered setting, hence 'insertAfter' is not supported for this type of setting object", obj.SchemaId)
 		}
-		if featureflags.AccessControlSettings.Enabled() && upsertOptions.AllUserPermission != nil && (schema.OwnerBasedAccessControl == nil || !*schema.OwnerBasedAccessControl) {
+		if upsertOptions.AllUserPermission != nil && (schema.OwnerBasedAccessControl == nil || !*schema.OwnerBasedAccessControl) {
 			return DynatraceEntity{}, fmt.Errorf("schema '%s' does not have owner-based access control enabled, hence 'permissions' is not supported for this type of setting object'", obj.SchemaId)
 		}
 	}
@@ -546,7 +545,7 @@ func (d *SettingsClient) Upsert(ctx context.Context, obj SettingsObject, upsertO
 		return DynatraceEntity{}, err
 	}
 
-	if featureflags.AccessControlSettings.Enabled() && upsertOptions.AllUserPermission != nil {
+	if upsertOptions.AllUserPermission != nil {
 		permErr := d.modifyPermission(ctx, entity.Id, *upsertOptions.AllUserPermission)
 
 		if permErr != nil {

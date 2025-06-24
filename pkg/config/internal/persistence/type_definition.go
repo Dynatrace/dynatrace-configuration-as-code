@@ -159,10 +159,6 @@ func (c *TypeDefinition) parseSettingsType(a any) error {
 		return fmt.Errorf("failed to unmarshal settings-type: %w", err)
 	}
 
-	if !featureflags.AccessControlSettings.Enabled() && r.Permissions != nil {
-		return fmt.Errorf("unknown settings configuration property 'permissions'")
-	}
-
 	allUserPermission := getAllUserPermission(r.Permissions)
 
 	c.Type = config.SettingsType{
@@ -233,10 +229,8 @@ func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 			return errors.New("missing settings scope")
 		}
 
-		if featureflags.AccessControlSettings.Enabled() {
-			if t.AllUserPermission != nil && !slices.Contains(config.KnownAllUserPermissionKind, *t.AllUserPermission) {
-				return fmt.Errorf("unknown allUsers value: '%s', allowed: %v", *t.AllUserPermission, config.KnownAllUserPermissionKind)
-			}
+		if t.AllUserPermission != nil && !slices.Contains(config.KnownAllUserPermissionKind, *t.AllUserPermission) {
+			return fmt.Errorf("unknown allUsers value: '%s', allowed: %v", *t.AllUserPermission, config.KnownAllUserPermissionKind)
 		}
 
 	case config.AutomationType:
@@ -320,12 +314,9 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 			Scope:         c.Scope,
 			InsertAfter:   c.InsertAfter,
 		}
-
-		if featureflags.AccessControlSettings.Enabled() {
-			if t.AllUserPermission != nil {
-				setDefinition.Permissions = &PermissionDefinition{
-					AllUsers: t.AllUserPermission,
-				}
+		if t.AllUserPermission != nil {
+			setDefinition.Permissions = &PermissionDefinition{
+				AllUsers: t.AllUserPermission,
 			}
 		}
 

@@ -34,9 +34,6 @@ const (
 	// ServiceLevelObjective toggles whether slo configurations are downloaded and / or deployed.
 	// Introduced: v2.19.0
 	ServiceLevelObjective FeatureFlag = "MONACO_FEAT_SLO_V2"
-	// AccessControlSettings toggles whether settings enable the access control
-	// Introduced: v2.21.0
-	AccessControlSettings FeatureFlag = "MONACO_FEAT_ACCESS_CONTROL_SETTINGS"
 	// SanitizeBucketNames toggles whether bucket names created by Monaco are sanitized or not.
 	// Introduced: v2.23.0
 	SanitizeBucketNames FeatureFlag = "MONACO_SANITIZE_BUCKET_NAMES"
@@ -53,7 +50,6 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	Segments:                           true,
 	OnlyCreateReferencesInStringValues: false,
 	ServiceLevelObjective:              true,
-	AccessControlSettings:              true,
 	SanitizeBucketNames:                true,
 	PlatformToken:                      false,
 }

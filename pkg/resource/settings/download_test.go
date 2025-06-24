@@ -766,9 +766,6 @@ func TestDownloadAll(t *testing.T) {
 		},
 		{
 			name: "Downloading settings with ACL",
-			envVars: map[string]string{
-				featureflags.AccessControlSettings.EnvName(): "true",
-			},
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{
@@ -824,63 +821,7 @@ func TestDownloadAll(t *testing.T) {
 			}},
 		},
 		{
-			name: "Downloading settings without ACL if FF is not enabled",
-			mockValues: mockValues{
-				Schemas: func() (dtclient.SchemaList, error) {
-					return dtclient.SchemaList{
-						{
-							SchemaId:                "app:my-app:schema",
-							Ordered:                 false,
-							OwnerBasedAccessControl: pointer.Pointer(true),
-						},
-					}, nil
-				},
-				ListSchemasCalls: 1,
-				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
-					return []dtclient.DownloadSettingsObject{{
-						ExternalId:    "ex1",
-						SchemaVersion: "1.2.3",
-						SchemaId:      "app:my-app:schema",
-						ObjectId:      "oid1",
-						Scope:         "environment",
-						Value:         json.RawMessage(`{}`),
-					}}, nil
-				},
-				ListSettingsCalls: 1,
-				Permissions: func() (dtclient.PermissionObject, error) {
-					return dtclient.PermissionObject{}, nil
-				},
-				GetPermissionCalls: 0,
-			},
-			envVars: map[string]string{
-				featureflags.AccessControlSettings.EnvName(): "false",
-			},
-			schemas: []string{"app:my-app:schema"},
-			want: project.ConfigsPerType{"app:my-app:schema": {
-				{
-					Template: template.NewInMemoryTemplate(uuid1, "{}"),
-					Coordinate: coordinate.Coordinate{
-						Project:  "projectName",
-						Type:     "app:my-app:schema",
-						ConfigId: uuid1,
-					},
-					Type: config.SettingsType{
-						SchemaId:      "app:my-app:schema",
-						SchemaVersion: "1.2.3",
-					},
-					Parameters: map[string]parameter.Parameter{
-						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
-					},
-					Skip:           false,
-					OriginObjectId: "oid1",
-				},
-			}},
-		},
-		{
 			name: "Downloading settings with ACL fails on permission fetch",
-			envVars: map[string]string{
-				featureflags.AccessControlSettings.EnvName(): "true",
-			},
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{

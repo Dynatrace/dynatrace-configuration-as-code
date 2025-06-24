@@ -164,7 +164,7 @@ func download(ctx context.Context, settingsSource DownloadSource, schemas []sche
 			}
 
 			permissions := make(map[string]dtclient.PermissionObject)
-			if s.ownerBasedAccessControl != nil && *s.ownerBasedAccessControl && featureflags.AccessControlSettings.Enabled() {
+			if s.ownerBasedAccessControl != nil && *s.ownerBasedAccessControl {
 				var permErr error
 				permissions, permErr = getObjectsPermission(ctx, settingsSource, objects)
 				if permErr != nil {
