@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -1453,8 +1452,7 @@ configs:
 			wantErrorsContain: []string{"unknown API: segment"},
 		},
 		{
-			name:             "SLO config with FF on",
-			envVars:          map[string]string{featureflags.ServiceLevelObjective.EnvName(): "true"},
+			name:             "SLO config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -1479,20 +1477,6 @@ configs:
 					Group:       "default",
 				},
 			},
-		},
-		{
-			name:             "SLO config with FF off",
-			envVars:          map[string]string{featureflags.ServiceLevelObjective.EnvName(): "false"},
-			filePathArgument: "test-file.yaml",
-			filePathOnDisk:   "test-file.yaml",
-			fileContentOnDisk: `
-configs:
-- id: slo-config-id
-  config:
-    template: 'profile.json'
-  type: slo-v2
-`,
-			wantErrorsContain: []string{"unknown config-type \"slo-v2\""},
 		},
 		{
 			name:             "SLO written as api config",

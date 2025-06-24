@@ -41,9 +41,6 @@ func TestDryRunWithOAuth(t *testing.T) {
 			runner.WithManifestPath(manifest),
 			runner.WithSuffix("AllConfigs"),
 			runner.WithEnvironment("platform_oauth_env"),
-			runner.WithEnvVars(map[string]string{
-				featureflags.ServiceLevelObjective.EnvName(): "true",
-			}),
 		},
 		func(fs afero.Fs, _ runner.TestContext) {
 			dryRun(t, fs, manifest, "platform_oauth_env")
@@ -60,8 +57,7 @@ func TestDryRunWithPlatformToken(t *testing.T) {
 			runner.WithSuffix("AllConfigs"),
 			runner.WithEnvironment("platform_token_env"),
 			runner.WithEnvVars(map[string]string{
-				featureflags.ServiceLevelObjective.EnvName(): "true",
-				featureflags.PlatformToken.EnvName():         "true",
+				featureflags.PlatformToken.EnvName(): "true",
 			}),
 		},
 		func(fs afero.Fs, _ runner.TestContext) {

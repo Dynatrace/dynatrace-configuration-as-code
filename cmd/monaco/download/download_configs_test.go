@@ -301,7 +301,7 @@ func TestDownload_Options(t *testing.T) {
 			want: wantDownload{segment: true},
 		},
 		{
-			name: "only slo-v2 requested with FF on",
+			name: "only slo-v2 requested",
 			given: downloadConfigsOptions{
 				onlyOptions: OnlyOptions{
 					OnlySloV2Flag: true,
@@ -309,20 +309,7 @@ func TestDownload_Options(t *testing.T) {
 				downloadOptionsShared: downloadOptionsShared{
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
-			featureFlags: map[featureflags.FeatureFlag]bool{featureflags.ServiceLevelObjective: true},
-			want:         wantDownload{slo: true},
-		},
-		{
-			name: "only slo-v2 requested with FF off",
-			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
-					OnlySloV2Flag: true,
-				},
-				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
-				}},
-			featureFlags: map[featureflags.FeatureFlag]bool{featureflags.ServiceLevelObjective: false},
-			want:         wantDownload{},
+			want: wantDownload{slo: true},
 		},
 		{
 			name: "only apis requested",

@@ -290,7 +290,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 		}
 	}
 
-	if featureflags.ServiceLevelObjective.Enabled() && opts.onlyOptions.ShouldDownload(OnlySloV2Flag) {
+	if opts.onlyOptions.ShouldDownload(OnlySloV2Flag) {
 		if opts.auth.HasPlatformCredentials() {
 			downloadables = append(downloadables, slo.NewDownloadAPI(clientSet.ServiceLevelObjectiveClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlySloV2Flag) {

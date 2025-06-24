@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -85,13 +84,11 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 		errCount++
 	}
 
-	if featureflags.ServiceLevelObjective.Enabled() {
-		if clients.ServiceLevelObjectiveClient == nil {
-			log.WarnContext(ctx, "Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
-		} else if err := slo.DeleteAll(ctx, clients.ServiceLevelObjectiveClient); err != nil {
-			log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.ServiceLevelObjective{}, err)
-			errCount++
-		}
+	if clients.ServiceLevelObjectiveClient == nil {
+		log.WarnContext(ctx, "Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
+	} else if err := slo.DeleteAll(ctx, clients.ServiceLevelObjectiveClient); err != nil {
+		log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.ServiceLevelObjective{}, err)
+		errCount++
 	}
 
 	if errCount > 0 {

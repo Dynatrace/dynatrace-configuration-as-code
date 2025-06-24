@@ -23,7 +23,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
@@ -39,17 +38,6 @@ func TestDeleteAll_Segments(t *testing.T) {
 func TestDeleteAll_SLOv2(t *testing.T) {
 	c := client.TestServiceLevelObjectiveClient{}
 
-	t.Run("With Enabled SLOv2 FF", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
-
-		err := delete.All(t.Context(), client.ClientSet{ServiceLevelObjectiveClient: &c}, api.APIs{})
-		assert.Error(t, err, "unimplemented")
-	})
-
-	t.Run("With Disabled SLOv2 FF", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "false")
-
-		err := delete.All(t.Context(), client.ClientSet{ServiceLevelObjectiveClient: &c}, api.APIs{})
-		assert.NoError(t, err)
-	})
+	err := delete.All(t.Context(), client.ClientSet{ServiceLevelObjectiveClient: &c}, api.APIs{})
+	assert.Error(t, err, "unimplemented")
 }

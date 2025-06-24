@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -1310,9 +1309,7 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 // Test if the FF gets Disabled/Enabled that the correct error is returned
 func TestDeployConfigFF(t *testing.T) {
 	// Clients here will return an error if reached
-	dummyClientSet := client.ClientSet{
-		ServiceLevelObjectiveClient: client.TestServiceLevelObjectiveClient{},
-	}
+	dummyClientSet := client.ClientSet{}
 	c := dynatrace.EnvironmentClients{
 		dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
 	}
@@ -1322,32 +1319,7 @@ func TestDeployConfigFF(t *testing.T) {
 		featureFlag       string
 		configType        config.TypeID
 		expectedErrString string
-	}{
-		{
-			name: "SLO FF test",
-			projects: []project.Project{
-				{
-					Configs: project.ConfigsPerTypePerEnvironments{
-						"env": project.ConfigsPerType{
-							"p1": {
-								config.Config{
-									Type:        config.ServiceLevelObjective{},
-									Environment: "env",
-									Coordinate: coordinate.Coordinate{
-										Project:  "p1",
-										Type:     "type",
-										ConfigId: "config1",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			featureFlag: featureflags.ServiceLevelObjective.EnvName(),
-			configType:  config.ServiceLevelObjectiveID,
-		},
-	}
+	}{}
 
 	for _, tt := range tests {
 		t.Run(tt.name+" | FF Enabled", func(t *testing.T) {
@@ -1547,7 +1519,7 @@ func TestDeployDryRun(t *testing.T) {
 			},
 		},
 	}
-	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
+
 	t.Run("dry-run", func(t *testing.T) {
 		err := deploy.DeployForAllEnvironments(t.Context(), projects, c, deploy.DeployConfigsOptions{DryRun: true})
 		assert.Empty(t, err)
