@@ -26,7 +26,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/multierror"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -98,7 +98,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 			if err == nil {
 				n.DOTEncoding = string(s)
 			} else {
-				log.WithFields(field.Coordinate(n.Config.Coordinate)).ErrorContext(ctx, "Failed to encode Node ID as JSON: %v", err)
+				log.With(attribute.Coordinate(n.Config.Coordinate)).ErrorContext(ctx, "Failed to encode Node ID as JSON: %v", err)
 				n.DOTEncoding = "{}"
 			}
 		})
@@ -153,7 +153,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		if exists {
 			time := timeutils.TimeAnchor().Format("20060102-150405")
 			newFile := filepath.Join(folderPath, fmt.Sprintf("dependency_graph_%s_%s.dot", e, time))
-			log.WithFields(field.F("file", newFile), field.F("existingFile", file)).DebugContext(ctx, "Output file %q already exists, creating %q instead", file, newFile)
+			log.With(attribute.Any("file", newFile), attribute.Any("existingFile", file)).DebugContext(ctx, "Output file %q already exists, creating %q instead", file, newFile)
 			file = newFile
 		}
 
@@ -167,7 +167,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 				Reason:       err,
 			}
 		}
-		log.WithFields(field.F("file", file)).InfoContext(ctx, "Dependency graph for environment %q written to %q", e, file)
+		log.With(attribute.Any("file", file)).InfoContext(ctx, "Dependency graph for environment %q written to %q", e, file)
 	}
 
 	return nil

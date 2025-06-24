@@ -24,7 +24,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -103,7 +103,7 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 		return fmt.Errorf("failed to persist downloaded configurations")
 	}
 
-	log.WithFields(field.F("outputFolder", outputFolder)).Info("Downloaded configurations written to '%s'", outputFolder)
+	log.With(attribute.Any("outputFolder", outputFolder)).Info("Downloaded configurations written to '%s'", outputFolder)
 	return nil
 }
 
@@ -116,12 +116,12 @@ func getManifestFileName(fs afero.Fs, writerContext WriterContext) string {
 	}
 
 	if writerContext.ForceOverwrite {
-		log.WithFields(field.F("outputFolder", outputFolder), field.F("manifestFile", "manifest.yaml")).Info("Overwriting existing manifest.yaml in download target folder.")
+		log.With(attribute.Any("outputFolder", outputFolder), attribute.Any("manifestFile", "manifest.yaml")).Info("Overwriting existing manifest.yaml in download target folder.")
 		return manifestFileName
 	}
 
 	manifestFileName = fmt.Sprintf("manifest_%s.yaml", writerContext.timestampString)
-	log.WithFields(field.F("outputFolder", outputFolder), field.F("manifestFile", manifestFileName)).Warn("A manifest.yaml file already exists in %q, creating %q instead.", outputFolder, manifestFileName)
+	log.With(attribute.Any("outputFolder", outputFolder), attribute.Any("manifestFile", manifestFileName)).Warn("A manifest.yaml file already exists in %q, creating %q instead.", outputFolder, manifestFileName)
 	return manifestFileName
 }
 
@@ -134,11 +134,11 @@ func getProjectFolderName(fs afero.Fs, writerContext WriterContext) string {
 	}
 
 	if writerContext.ForceOverwrite {
-		log.WithFields(field.F("outputFolder", outputFolder), field.F("projectFolder", projectFolderName)).Info("Overwriting existing project folder named %q in %q.", projectFolderName, outputFolder)
+		log.With(attribute.Any("outputFolder", outputFolder), attribute.Any("projectFolder", projectFolderName)).Info("Overwriting existing project folder named %q in %q.", projectFolderName, outputFolder)
 		return projectFolderName
 	}
 
 	projectFolderName = fmt.Sprintf("%s_%s", writerContext.ProjectToWrite.Id, writerContext.timestampString)
-	log.WithFields(field.F("outputFolder", outputFolder), field.F("projectFolder", projectFolderName)).Warn("A project folder named %q already exists in %q, creating %q instead.", writerContext.ProjectToWrite.Id, outputFolder, projectFolderName)
+	log.With(attribute.Any("outputFolder", outputFolder), attribute.Any("projectFolder", projectFolderName)).Warn("A project folder named %q already exists in %q, creating %q instead.", writerContext.ProjectToWrite.Id, outputFolder, projectFolderName)
 	return projectFolderName
 }

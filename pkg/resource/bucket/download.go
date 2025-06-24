@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	escTemplate "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/templatetools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -60,7 +60,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	result := make(project.ConfigsPerType)
 	response, err := a.bucketSource.List(ctx)
 	if err != nil {
-		log.WithFields(field.Type("bucket"), field.Error(err)).ErrorContext(ctx, "Failed to fetch all bucket definitions: %v", err)
+		log.With(attribute.Type("bucket"), attribute.Error(err)).ErrorContext(ctx, "Failed to fetch all bucket definitions: %v", err)
 		return nil, nil
 	}
 
@@ -72,7 +72,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 func convertAllObjects(projectName string, objects [][]byte) []config.Config {
 	result := make([]config.Config, 0, len(objects))
 
-	lg := log.WithFields(field.Type("bucket"))
+	lg := log.With(attribute.Type("bucket"))
 
 	for _, o := range objects {
 
@@ -81,7 +81,7 @@ func convertAllObjects(projectName string, objects [][]byte) []config.Config {
 			if errors.As(err, &skipErr{}) {
 				lg.Debug("Skipping bucket: %s", err)
 			} else {
-				lg.WithFields(field.Error(err)).Error("Failed to decode API response objects for bucket resource: %v", err)
+				lg.With(attribute.Error(err)).Error("Failed to decode API response objects for bucket resource: %v", err)
 			}
 
 			continue
@@ -89,7 +89,7 @@ func convertAllObjects(projectName string, objects [][]byte) []config.Config {
 		result = append(result, c)
 	}
 
-	lg = lg.WithFields(field.F("configsDownloaded", len(result)))
+	lg = lg.With(attribute.Any("configsDownloaded", len(result)))
 	switch len(objects) {
 	case 0:
 		// Info on purpose. Most types have a lot of objects, so skipping printing 'not found' in the default case makes sense. Here it's kept on purpose as bucket is only one type.

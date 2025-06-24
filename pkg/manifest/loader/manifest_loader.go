@@ -30,7 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -142,7 +142,7 @@ func (e ProjectLoaderError) Error() string {
 }
 
 func Load(context *Context) (manifest.Manifest, []error) {
-	log.WithFields(field.F("manifestPath", context.ManifestPath)).Info("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
+	log.With(attribute.Any("manifestPath", context.ManifestPath)).Info("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
 
 	manifestYAML, err := readManifestYAML(context)
 	if err != nil {
@@ -403,7 +403,7 @@ func parseEnvironments(context *Context, groups []persistence.Group) (manifest.E
 
 			// skip loading if environments is not empty, the environments does not contain the env name, or the group should not be included
 			if shouldSkipEnv(context, group, env) {
-				log.WithFields(field.F("manifestPath", context.ManifestPath)).Debug("skipping loading of environment %q", env.Name)
+				log.With(attribute.Any("manifestPath", context.ManifestPath)).Debug("skipping loading of environment %q", env.Name)
 				continue
 			}
 

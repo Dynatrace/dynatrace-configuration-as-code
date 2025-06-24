@@ -10,7 +10,7 @@ import (
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
@@ -90,7 +90,7 @@ func NewAccountDeployer(client client, opts ...func(*AccountDeployer)) *AccountD
 	ac := &AccountDeployer{
 		accClient: client,
 		idMap:     newIdMap(),
-		logger:    log.WithFields(field.F("account", client.getAccountInfo().Name)),
+		logger:    log.With(attribute.Any("account", client.getAccountInfo().Name)),
 	}
 	for _, o := range opts {
 		o(ac)
@@ -390,7 +390,7 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 	}
 
 	for env, uuids := range envPolicyUuids {
-		d.logger.WithFields().DebugContext(ctx, "Updating environment level policy bindings for group with ID %s and environment with name %s --> %v", remoteGroupId, env, uuids)
+		d.logger.With().DebugContext(ctx, "Updating environment level policy bindings for group with ID %s and environment with name %s --> %v", remoteGroupId, env, uuids)
 		if err = d.accClient.updateEnvironmentPolicyBindings(ctx, env, remoteGroupId, uuids); err != nil {
 			return fmt.Errorf("failed to update group-environment-policy bindings for group %s and environment %s: %w", group.Name, env, err)
 		}

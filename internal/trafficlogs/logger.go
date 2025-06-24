@@ -32,7 +32,7 @@ import (
 
 	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 )
@@ -256,5 +256,5 @@ func (l *trafficLogger) logError(requestId, logType string, err error) {
 		logMessage += fmt.Sprintf(" for id `%s`", requestId)
 	}
 
-	log.WithFields(field.Error(err)).Warn(logMessage+": %v", err)
+	log.With(attribute.Error(err)).Warn(logMessage+": %v", err)
 }

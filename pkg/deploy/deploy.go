@@ -29,7 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/multierror"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -122,14 +122,14 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 		ctx = newContextWithEnvironment(ctx, env)
 
 		if depErr := Deploy(ctx, clientSet, projects, sortedConfigs, env.Name); depErr != nil {
-			log.WithFields(field.Environment(env.Name, env.Group), field.Error(depErr)).ErrorContext(ctx, "Deployment failed for environment '%s': %v", env.Name, depErr)
+			log.With(attribute.Environment(env.Name, env.Group), attribute.Error(depErr)).ErrorContext(ctx, "Deployment failed for environment '%s': %v", env.Name, depErr)
 			deploymentErrs = deploymentErrs.Append(env.Name, depErr)
 
 			if !opts.ContinueOnErr && !opts.DryRun {
 				return deploymentErrs
 			}
 		} else {
-			log.WithFields(field.Environment(env.Name, env.Group)).InfoContext(ctx, "Deployment successful for environment '%s'", env.Name)
+			log.With(attribute.Environment(env.Name, env.Group)).InfoContext(ctx, "Deployment successful for environment '%s'", env.Name)
 		}
 	}
 
@@ -269,7 +269,7 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 
 	resolvedEntities.Put(resolvedEntity)
 	report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateSuccess, details, nil)
-	log.WithFields(field.StatusDeployed()).InfoContext(ctx, "Deployment successful")
+	log.With(attribute.StatusDeployed()).InfoContext(ctx, "Deployment successful")
 	return nil
 }
 
@@ -285,16 +285,16 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 		}
 		childCfg := child.Config
 
-		l := log.WithFields(
-			field.F("parent", parent.Config.Coordinate),
-			field.F("deploymentFailed", failed),
-			field.F("child", childCfg.Coordinate),
-			field.StatusDeploymentSkipped())
+		l := log.With(
+			attribute.Any("parent", parent.Config.Coordinate),
+			attribute.Any("deploymentFailed", failed),
+			attribute.Any("child", childCfg.Coordinate),
+			attribute.StatusDeploymentSkipped())
 
 		// after the first iteration
 		var skipDeploymentWarning string
 		if parent != root {
-			l = l.WithFields(field.F("root", root.Config.Coordinate))
+			l = l.With(attribute.Any("root", root.Config.Coordinate))
 			skipDeploymentWarning = fmt.Sprintf("Skipping deployment of %v, as it depends on %v which was not deployed after root dependency configuration %v %s", childCfg.Coordinate, parent.Config.Coordinate, root.Config.Coordinate, reason)
 		} else {
 			skipDeploymentWarning = fmt.Sprintf("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
@@ -324,26 +324,26 @@ func deployConfig(ctx context.Context, c *config.Config, deployables resource.De
 	}
 
 	if c.Skip {
-		log.WithFields(field.StatusDeploymentSkipped()).InfoContext(ctx, "Skipping deployment of config")
+		log.With(attribute.StatusDeploymentSkipped()).InfoContext(ctx, "Skipping deployment of config")
 		return entities.ResolvedEntity{}, errSkip // fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
 	}
 
 	properties, errs := c.ResolveParameterValues(resolvedEntities)
 	if len(errs) > 0 {
 		err := multierror.New(errs...)
-		log.WithFields(field.Error(err), field.StatusDeploymentFailed()).ErrorContext(ctx, "Invalid configuration - failed to resolve parameter values: %v", err)
+		log.With(attribute.Error(err), attribute.StatusDeploymentFailed()).ErrorContext(ctx, "Invalid configuration - failed to resolve parameter values: %v", err)
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
-		log.WithFields(field.Error(err), field.StatusDeploymentFailed()).ErrorContext(ctx, "Invalid configuration - failed to render JSON template: %v", err)
+		log.With(attribute.Error(err), attribute.StatusDeploymentFailed()).ErrorContext(ctx, "Invalid configuration - failed to render JSON template: %v", err)
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
-	log.WithFields(field.StatusDeploying()).InfoContext(ctx, "Deploying config")
+	log.With(attribute.StatusDeploying()).InfoContext(ctx, "Deploying config")
 	var resolvedEntity entities.ResolvedEntity
 	var deployErr error
 	if deployable, ok := deployables[c.Type.ID()]; ok {
@@ -359,7 +359,7 @@ func deployConfig(ctx context.Context, c *config.Config, deployables resource.De
 			return entities.ResolvedEntity{}, responseErr
 		}
 
-		log.WithFields(field.Error(deployErr)).ErrorContext(ctx, "Deployment failed - Monaco Error: %v", deployErr)
+		log.With(attribute.Error(deployErr)).ErrorContext(ctx, "Deployment failed - Monaco Error: %v", deployErr)
 		return entities.ResolvedEntity{}, deployErr
 	}
 	return resolvedEntity, nil
@@ -368,17 +368,17 @@ func deployConfig(ctx context.Context, c *config.Config, deployables resource.De
 // logResponseError prints user-friendly messages based on the response errors status
 func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	if responseErr.StatusCode >= 400 && responseErr.StatusCode <= 499 {
-		log.WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
+		log.With(attribute.Error(responseErr), attribute.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Dynatrace API rejected request: : %v", responseErr)})
 		return
 	}
 
 	if responseErr.StatusCode >= 500 && responseErr.StatusCode <= 599 {
-		log.WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace Server Error: %v", responseErr)
+		log.With(attribute.Error(responseErr), attribute.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace Server Error: %v", responseErr)
 		return
 	}
 
-	log.WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
+	log.With(attribute.Error(responseErr), attribute.StatusDeploymentFailed()).ErrorContext(ctx, "Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
 }
 
 func newContextWithEnvironment(ctx context.Context, env dynatrace.EnvironmentInfo) context.Context {

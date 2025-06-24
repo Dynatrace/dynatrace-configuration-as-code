@@ -21,7 +21,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 )
 
 // Slogger is a simple logger that wraps an `slog.Logger`.
@@ -75,18 +75,18 @@ func (w *Slogger) SLogger() *slog.Logger {
 	return w.Logger
 }
 
-// WithFields adds additional [field.Field] for structured logs
-// It accepts vararg fields and should not be called more than once per log call
-func (w *Slogger) WithFields(fields ...field.Field) *Slogger {
+// With adds additional [attribute.Attr] for structured logs
+// It accepts vararg attributes and should not be called more than once per log call
+func (w *Slogger) With(attributes ...attribute.Attr) *Slogger {
 	logger := w.Logger
-	for _, f := range fields {
+	for _, f := range attributes {
 		logger = logger.With(f.Key, f.Value)
 	}
 	return &Slogger{Logger: logger}
 }
 
-// WithFields adds additional [field.Field] for structured logs
-// It accepts vararg fields and should not be called more than once per log call
-func WithFields(fields ...field.Field) *Slogger {
-	return (&Slogger{Logger: slog.Default()}).WithFields(fields...)
+// With adds additional [attribute.Attr] for structured logs
+// It accepts vararg attributes and should not be called more than once per log call
+func With(attributes ...attribute.Attr) *Slogger {
+	return (&Slogger{Logger: slog.Default()}).With(attributes...)
 }

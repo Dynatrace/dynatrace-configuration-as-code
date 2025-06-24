@@ -22,7 +22,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/templatetools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -47,7 +47,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	result := project.ConfigsPerType{}
 	downloadedConfigs, err := a.sloSource.List(ctx)
 	if err != nil {
-		log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).ErrorContext(ctx, "Failed to fetch the list of existing %s configs: %v", config.ServiceLevelObjectiveID, err)
+		log.With(attribute.Type(config.ServiceLevelObjectiveID), attribute.Error(err)).ErrorContext(ctx, "Failed to fetch the list of existing %s configs: %v", config.ServiceLevelObjectiveID, err)
 		// error is ignored
 		return nil, nil
 	}
@@ -56,7 +56,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	for _, downloadedConfig := range downloadedConfigs.All() {
 		c, err := createConfig(projectName, downloadedConfig)
 		if err != nil {
-			log.WithFields(field.Type(config.ServiceLevelObjectiveID), field.Error(err)).ErrorContext(ctx, "Failed to convert %s: %v", config.ServiceLevelObjectiveID, err)
+			log.With(attribute.Type(config.ServiceLevelObjectiveID), attribute.Error(err)).ErrorContext(ctx, "Failed to convert %s: %v", config.ServiceLevelObjectiveID, err)
 			continue
 		}
 		configs = append(configs, c)

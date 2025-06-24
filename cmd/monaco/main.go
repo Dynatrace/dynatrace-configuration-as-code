@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
@@ -57,13 +57,13 @@ func main() {
 func setVersionNotificationStr(ctx context.Context, msg *string) {
 	currentVersion, err := version.ParseVersion(monacoVersion.MonitoringAsCode)
 	if err != nil {
-		log.WithFields(field.Error(err)).DebugContext(ctx, "Can't parse current monaco version: %s", err)
+		log.With(attribute.Error(err)).DebugContext(ctx, "Can't parse current monaco version: %s", err)
 		return
 	}
 
 	latestVersion, err := version.GetLatestVersion(ctx, &http.Client{}, "https://api.github.com/repos/dynatrace/dynatrace-configuration-as-code/releases/latest")
 	if err != nil {
-		log.WithFields(field.Error(err)).DebugContext(ctx, "Could not perform version check: %s", err)
+		log.With(attribute.Error(err)).DebugContext(ctx, "Could not perform version check: %s", err)
 		return
 	}
 

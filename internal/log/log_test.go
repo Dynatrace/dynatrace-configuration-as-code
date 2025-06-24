@@ -105,7 +105,7 @@ func TestPrepareLogging_SupportsUTC(t *testing.T) {
 	err := json.Unmarshal([]byte(builder.String()), &o)
 	require.NoError(t, err)
 
-	// assert that the entry has a time field that ends with Z, an indication of UTC
+	// assert that the entry has a time attribute that ends with Z, an indication of UTC
 	entrytime, containsTime := o["time"].(string)
 	assert.True(t, containsTime)
 	assert.True(t, strings.HasSuffix(entrytime, "Z"))

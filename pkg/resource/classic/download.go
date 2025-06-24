@@ -29,7 +29,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -72,7 +72,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 			foundValues, err := findConfigsToDownload(ctx, a.configSource, currentApi, a.filters)
 			if err != nil {
-				log.WithFields(field.Error(err), field.Type(currentApi.ID)).ErrorContext(ctx, "Failed to fetch configs of type '%s', skipping download of this type. Reason: %v", currentApi.ID, err)
+				log.With(attribute.Error(err), attribute.Type(currentApi.ID)).ErrorContext(ctx, "Failed to fetch configs of type '%s', skipping download of this type. Reason: %v", currentApi.ID, err)
 				return
 			}
 
@@ -80,11 +80,11 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 			foundValues = filterConfigsToSkip(currentApi, foundValues, a.filters)
 			if len(foundValues) == 0 {
-				log.WithFields(field.Type(currentApi.ID)).DebugContext(ctx, "No configs of type '%s' to download", currentApi.ID)
+				log.With(attribute.Type(currentApi.ID)).DebugContext(ctx, "No configs of type '%s' to download", currentApi.ID)
 				return
 			}
 
-			log.WithFields(field.Type(currentApi.ID)).DebugContext(ctx, "Found %d configs of type '%s' to download", len(foundValues), currentApi.ID)
+			log.With(attribute.Type(currentApi.ID)).DebugContext(ctx, "Found %d configs of type '%s' to download", len(foundValues), currentApi.ID)
 			if configs := downloadConfigs(ctx, a.configSource, currentApi, foundValues, projectName, a.filters); len(configs) > 0 {
 				mutex.Lock()
 				results[currentApi.ID] = configs
@@ -127,7 +127,7 @@ func downloadConfigs(ctx context.Context, configSource downloadSource, api api.A
 
 			dlConfigs, err := download(ctx, configSource, api, v)
 			if err != nil {
-				log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).WarnContext(ctx, "Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
+				log.With(attribute.Type(api.ID), attribute.Any("value", v), attribute.Error(err)).WarnContext(ctx, "Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
 				return
 			}
 
@@ -138,7 +138,7 @@ func downloadConfigs(ctx context.Context, configSource downloadSource, api api.A
 
 				c, err := createConfigObject(dlConfig, api, v, projectName)
 				if err != nil {
-					log.WithFields(field.Type(api.ID), field.F("value", v), field.Error(err)).WarnContext(ctx, "Error creating config for '%s' in api '%s': %v", v.value.Id, api.ID, err)
+					log.With(attribute.Type(api.ID), attribute.Any("value", v), attribute.Error(err)).WarnContext(ctx, "Error creating config for '%s' in api '%s': %v", v.value.Id, api.ID, err)
 					return
 				}
 
@@ -183,13 +183,13 @@ func (v value) id() string {
 // the given API
 func findConfigsToDownload(ctx context.Context, configSource downloadSource, apiToDownload api.API, filters ContentFilters) (values, error) {
 	if apiToDownload.SingleConfiguration && !apiToDownload.HasParent() {
-		log.WithFields(field.Type(apiToDownload.ID)).DebugContext(ctx, "\tFetching singleton-configuration '%v'", apiToDownload.ID)
+		log.With(attribute.Type(apiToDownload.ID)).DebugContext(ctx, "\tFetching singleton-configuration '%v'", apiToDownload.ID)
 
 		// singleton-config. We use the api-id as mock-id
 		singletonConfigToDownload := dtclient.Value{Id: apiToDownload.ID, Name: apiToDownload.ID}
 		return values{{value: singletonConfigToDownload}}, nil
 	}
-	log.WithFields(field.Type(apiToDownload.ID)).DebugContext(ctx, "\tFetching all '%v' configs", apiToDownload.ID)
+	log.With(attribute.Type(apiToDownload.ID)).DebugContext(ctx, "\tFetching all '%v' configs", apiToDownload.ID)
 
 	if apiToDownload.HasParent() {
 		var res values
@@ -239,7 +239,7 @@ func filterConfigsToSkip(a api.API, vals values, filters ContentFilters) values 
 		if !skipDownload(a, v.value, filters) {
 			valuesToDownload = append(valuesToDownload, v)
 		} else {
-			log.WithFields(field.Type(a.ID), field.F("value", v)).Debug("Skipping download of config  '%v' of API '%v'", v.value.Id, a.ID)
+			log.With(attribute.Type(a.ID), attribute.Any("value", v)).Debug("Skipping download of config  '%v' of API '%v'", v.value.Id, a.ID)
 		}
 	}
 

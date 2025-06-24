@@ -20,7 +20,7 @@ import (
 	"errors"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 )
 
 type PrettyPrintableError interface {
@@ -46,9 +46,9 @@ func PrintError(err error) {
 	var prettyPrintError PrettyPrintableError
 
 	if errors.As(err, &prettyPrintError) {
-		log.WithFields(field.Error(err)).Error("%s", prettyPrintError.PrettyError())
+		log.With(attribute.Error(err)).Error("%s", prettyPrintError.PrettyError())
 	} else if err != nil {
-		log.WithFields(field.Error(err)).Error("%s", err)
+		log.With(attribute.Error(err)).Error("%s", err)
 	}
 }
 
@@ -60,7 +60,7 @@ func PrintErrors(errors []error) {
 
 func CheckError(err error, msg string) bool {
 	if err != nil {
-		log.WithFields(field.Error(err)).Error("%s: %s", msg, err)
+		log.With(attribute.Error(err)).Error("%s: %s", msg, err)
 		return true
 	}
 	return false
@@ -72,9 +72,9 @@ func PrintWarning(err error) {
 	var prettyPrintError PrettyPrintableError
 
 	if errors.As(err, &prettyPrintError) {
-		log.WithFields(field.Error(err)).Warn("%s", prettyPrintError.PrettyError())
+		log.With(attribute.Error(err)).Warn("%s", prettyPrintError.PrettyError())
 	} else if err != nil {
-		log.WithFields(field.Error(err)).Warn("%s", err)
+		log.With(attribute.Error(err)).Warn("%s", err)
 	}
 }
 
