@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 	"sync"
@@ -92,7 +93,7 @@ func downloadSpecific(ctx context.Context, settingsSource DownloadSource, projec
 
 	if ok, unknownSchemas := validateSpecificSchemas(schemas, schemaIDs); !ok {
 		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
-		log.With(attribute.Any("unknownSchemas", unknownSchemas), attribute.Error(err)).ErrorContext(ctx, "%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
+		log.With(slog.Any("unknownSchemas", unknownSchemas), attribute.Error(err)).ErrorContext(ctx, "%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
 		return nil, err
 	}
 
@@ -179,7 +180,7 @@ func download(ctx context.Context, settingsSource DownloadSource, schemas []sche
 			results[s.id] = cfgs
 			downloadMutex.Unlock()
 
-			lg = lg.With(attribute.Any("configsDownloaded", len(cfgs)))
+			lg = lg.With(slog.Any("configsDownloaded", len(cfgs)))
 			switch len(objects) {
 			case 0:
 				lg.DebugContext(ctx, "Did not find any settings to download for schema '%s'", s.id)
@@ -254,19 +255,19 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permis
 
 	for _, settingsObject := range settingsObjects {
 		if shouldFilterUnmodifiableSettings() && !settingsObject.IsModifiable() && len(settingsObject.GetModifiablePaths()) == 0 {
-			log.With(attribute.Type(settingsObject.SchemaId), attribute.Any("object", settingsObject)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", settingsObject.ObjectId, settingsObject.SchemaId)
+			log.With(attribute.Type(settingsObject.SchemaId), slog.Any("object", settingsObject)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", settingsObject.ObjectId, settingsObject.SchemaId)
 			continue
 		}
 
 		// try to unmarshall settings value
 		var contentUnmarshalled map[string]interface{}
 		if err := json.Unmarshal(settingsObject.Value, &contentUnmarshalled); err != nil {
-			log.With(attribute.Type(settingsObject.SchemaId), attribute.Any("object", settingsObject)).Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
+			log.With(attribute.Type(settingsObject.SchemaId), slog.Any("object", settingsObject)).Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
 			return result
 		}
 		// skip discarded settings settingsObjects
 		if shouldDiscard, reason := filters.Get(settingsObject.SchemaId).ShouldDiscard(contentUnmarshalled); shouldFilterSettings() && shouldDiscard {
-			log.With(attribute.Type(settingsObject.SchemaId), attribute.Any("object", settingsObject)).Debug("Discarded setting object %q (%s). Reason: %s", settingsObject.ObjectId, settingsObject.SchemaId, reason)
+			log.With(attribute.Type(settingsObject.SchemaId), slog.Any("object", settingsObject)).Debug("Discarded setting object %q (%s). Reason: %s", settingsObject.ObjectId, settingsObject.SchemaId, reason)
 			continue
 		}
 

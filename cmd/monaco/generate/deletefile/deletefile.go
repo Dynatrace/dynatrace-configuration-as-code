@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -87,7 +88,7 @@ func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, op
 		}
 
 		newFile := filepath.Join(folderPath, newFileName)
-		log.With(attribute.Any("file", newFile), attribute.Any("existingFile", options.fileName)).Debug("Output file %q already exists, creating %q instead", options.fileName, newFile)
+		log.With(slog.Any("file", newFile), slog.Any("existingFile", options.fileName)).Debug("Output file %q already exists, creating %q instead", options.fileName, newFile)
 		file = newFile
 	}
 
@@ -95,7 +96,7 @@ func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, op
 	if err != nil {
 		return fmt.Errorf("failed to create delete file %q: %w", file, err)
 	}
-	log.With(attribute.Any("file", file)).Info("Delete file written to %q", file)
+	log.With(slog.Any("file", file)).Info("Delete file written to %q", file)
 
 	return nil
 }

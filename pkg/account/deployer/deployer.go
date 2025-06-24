@@ -3,6 +3,7 @@ package deployer
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 
@@ -10,7 +11,6 @@ import (
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
@@ -90,7 +90,7 @@ func NewAccountDeployer(client client, opts ...func(*AccountDeployer)) *AccountD
 	ac := &AccountDeployer{
 		accClient: client,
 		idMap:     newIdMap(),
-		logger:    log.With(attribute.Any("account", client.getAccountInfo().Name)),
+		logger:    log.With(slog.Any("account", client.getAccountInfo().Name)),
 	}
 	for _, o := range opts {
 		o(ac)

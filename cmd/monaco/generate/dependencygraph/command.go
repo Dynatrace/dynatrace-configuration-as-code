@@ -18,6 +18,7 @@ package dependencygraph
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -57,7 +58,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 			err := writeGraphFiles(cmd.Context(), fs, manifestName, environments, groups, outputFolder, writeJSONIDs)
 			if err != nil {
-				log.With(attribute.Error(err), attribute.Any("manifestFile", manifestName), attribute.Any("outputFolder", outputFolder)).Error("Failed to create dependency graph files: %v", err)
+				log.With(attribute.Error(err), slog.Any("manifestFile", manifestName), slog.Any("outputFolder", outputFolder)).Error("Failed to create dependency graph files: %v", err)
 			}
 			return err
 		},

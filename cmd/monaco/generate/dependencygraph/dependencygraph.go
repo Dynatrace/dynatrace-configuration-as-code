@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 
 	"github.com/spf13/afero"
@@ -153,7 +154,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		if exists {
 			time := timeutils.TimeAnchor().Format("20060102-150405")
 			newFile := filepath.Join(folderPath, fmt.Sprintf("dependency_graph_%s_%s.dot", e, time))
-			log.With(attribute.Any("file", newFile), attribute.Any("existingFile", file)).DebugContext(ctx, "Output file %q already exists, creating %q instead", file, newFile)
+			log.With(slog.Any("file", newFile), slog.Any("existingFile", file)).DebugContext(ctx, "Output file %q already exists, creating %q instead", file, newFile)
 			file = newFile
 		}
 
@@ -167,7 +168,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 				Reason:       err,
 			}
 		}
-		log.With(attribute.Any("file", file)).InfoContext(ctx, "Dependency graph for environment %q written to %q", e, file)
+		log.With(slog.Any("file", file)).InfoContext(ctx, "Dependency graph for environment %q written to %q", e, file)
 	}
 
 	return nil

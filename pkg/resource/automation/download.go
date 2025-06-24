@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"golang.org/x/exp/maps"
@@ -89,11 +90,11 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 		if len(objects) == 0 {
 			// Info on purpose. Most types have a lot of objects, so skipping printing 'not found' in the default case makes sense. Here it's kept on purpose, we have only 3 types.
-			lg.With(attribute.Any("configsDownloaded", len(objects))).InfoContext(ctx, "Did not find any %s to download", string(at.Resource))
+			lg.With(slog.Any("configsDownloaded", len(objects))).InfoContext(ctx, "Did not find any %s to download", string(at.Resource))
 
 			continue
 		}
-		lg.With(attribute.Any("configsDownloaded", len(objects))).InfoContext(ctx, "Downloaded %d objects for %s", len(objects), string(at.Resource))
+		lg.With(slog.Any("configsDownloaded", len(objects))).InfoContext(ctx, "Downloaded %d objects for %s", len(objects), string(at.Resource))
 
 		var configs []config.Config
 		for _, obj := range objects {

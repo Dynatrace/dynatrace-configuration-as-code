@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -154,7 +155,7 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 		logger.InfoContext(ctx, "Deleting %d configs of type %q...", len(values), a.ID)
 
 		for _, v := range values {
-			logger := logger.With(attribute.Any("value", v))
+			logger := logger.With(slog.Any("value", v))
 			logger.DebugContext(ctx, "Deleting config %s:%s...", a.ID, v.Id)
 			err := client.Delete(ctx, a, v.Id)
 

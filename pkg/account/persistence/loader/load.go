@@ -19,6 +19,7 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"path"
 
 	"github.com/spf13/afero"
@@ -26,7 +27,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -147,7 +147,7 @@ func findAndLoadResources(fs afero.Fs, rootPath string) (*account.Resources, err
 }
 
 func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
-	log.With(attribute.Any("file", yamlFilePath)).Debug("Loading file %q", yamlFilePath)
+	log.With(slog.Any("file", yamlFilePath)).Debug("Loading file %q", yamlFilePath)
 
 	bytes, err := afero.ReadFile(fs, yamlFilePath)
 	if err != nil {
@@ -164,7 +164,7 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 			return nil, ErrMixingConfigs
 		}
 
-		log.With(attribute.Any("file", yamlFilePath)).Warn("File %q appears to be an config file, skipping loading", yamlFilePath)
+		log.With(slog.Any("file", yamlFilePath)).Warn("File %q appears to be an config file, skipping loading", yamlFilePath)
 		return &persistence.File{}, nil
 	}
 
@@ -173,7 +173,7 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 			return nil, ErrMixingDelete
 		}
 
-		log.With(attribute.Any("file", yamlFilePath)).Debug("File %q appears to be an delete file, skipping loading", yamlFilePath)
+		log.With(slog.Any("file", yamlFilePath)).Debug("File %q appears to be an delete file, skipping loading", yamlFilePath)
 		return &persistence.File{}, nil
 	}
 

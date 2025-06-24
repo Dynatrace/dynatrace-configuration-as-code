@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -286,15 +287,15 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 		childCfg := child.Config
 
 		l := log.With(
-			attribute.Any("parent", parent.Config.Coordinate),
-			attribute.Any("deploymentFailed", failed),
-			attribute.Any("child", childCfg.Coordinate),
+			slog.Any("parent", parent.Config.Coordinate),
+			slog.Any("deploymentFailed", failed),
+			slog.Any("child", childCfg.Coordinate),
 			attribute.StatusDeploymentSkipped())
 
 		// after the first iteration
 		var skipDeploymentWarning string
 		if parent != root {
-			l = l.With(attribute.Any("root", root.Config.Coordinate))
+			l = l.With(slog.Any("root", root.Config.Coordinate))
 			skipDeploymentWarning = fmt.Sprintf("Skipping deployment of %v, as it depends on %v which was not deployed after root dependency configuration %v %s", childCfg.Coordinate, parent.Config.Coordinate, root.Config.Coordinate, reason)
 		} else {
 			skipDeploymentWarning = fmt.Sprintf("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)

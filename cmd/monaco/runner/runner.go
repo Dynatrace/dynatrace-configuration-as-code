@@ -17,6 +17,7 @@ package runner
 import (
 	"context"
 	"io"
+	"log/slog"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -43,7 +44,7 @@ func RunCmd(ctx context.Context, cmd *cobra.Command) error {
 	err := cmd.ExecuteContext(ctx)
 	if err != nil {
 		log.With(attribute.Error(err)).ErrorContext(ctx, "Error: %v", err)
-		log.With(attribute.Any("errorLogFilePath", log.ErrorFilePath())).ErrorContext(ctx, "error logs written to %s", log.ErrorFilePath())
+		log.With(slog.Any("errorLogFilePath", log.ErrorFilePath())).ErrorContext(ctx, "error logs written to %s", log.ErrorFilePath())
 	}
 	return err
 }

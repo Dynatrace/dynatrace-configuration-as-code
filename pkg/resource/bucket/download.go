@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
@@ -89,7 +90,7 @@ func convertAllObjects(projectName string, objects [][]byte) []config.Config {
 		result = append(result, c)
 	}
 
-	lg = lg.With(attribute.Any("configsDownloaded", len(result)))
+	lg = lg.With(slog.Any("configsDownloaded", len(result)))
 	switch len(objects) {
 	case 0:
 		// Info on purpose. Most types have a lot of objects, so skipping printing 'not found' in the default case makes sense. Here it's kept on purpose as bucket is only one type.

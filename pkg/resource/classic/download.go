@@ -19,6 +19,7 @@ package classic
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"slices"
 	"strings"
 	"sync"
@@ -127,7 +128,7 @@ func downloadConfigs(ctx context.Context, configSource downloadSource, api api.A
 
 			dlConfigs, err := download(ctx, configSource, api, v)
 			if err != nil {
-				log.With(attribute.Type(api.ID), attribute.Any("value", v), attribute.Error(err)).WarnContext(ctx, "Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
+				log.With(attribute.Type(api.ID), slog.Any("value", v), attribute.Error(err)).WarnContext(ctx, "Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
 				return
 			}
 
@@ -138,7 +139,7 @@ func downloadConfigs(ctx context.Context, configSource downloadSource, api api.A
 
 				c, err := createConfigObject(dlConfig, api, v, projectName)
 				if err != nil {
-					log.With(attribute.Type(api.ID), attribute.Any("value", v), attribute.Error(err)).WarnContext(ctx, "Error creating config for '%s' in api '%s': %v", v.value.Id, api.ID, err)
+					log.With(attribute.Type(api.ID), slog.Any("value", v), attribute.Error(err)).WarnContext(ctx, "Error creating config for '%s' in api '%s': %v", v.value.Id, api.ID, err)
 					return
 				}
 
@@ -239,7 +240,7 @@ func filterConfigsToSkip(a api.API, vals values, filters ContentFilters) values 
 		if !skipDownload(a, v.value, filters) {
 			valuesToDownload = append(valuesToDownload, v)
 		} else {
-			log.With(attribute.Type(a.ID), attribute.Any("value", v)).Debug("Skipping download of config  '%v' of API '%v'", v.value.Id, a.ID)
+			log.With(attribute.Type(a.ID), slog.Any("value", v)).Debug("Skipping download of config  '%v' of API '%v'", v.value.Id, a.ID)
 		}
 	}
 

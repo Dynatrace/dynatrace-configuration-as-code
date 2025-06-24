@@ -19,6 +19,7 @@ package loader
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
@@ -27,7 +28,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/internal/persistence"
@@ -83,7 +83,7 @@ func LoadConfigFile(ctx context.Context, fs afero.Fs, context *LoaderContext, fi
 		}
 
 		report.GetReporterFromContextOrDiscard(ctx).ReportLoading(report.StateWarn, nil, fmt.Sprintf("File %q appears to be an account resource file, skipping loading", filePath), nil)
-		log.With(attribute.Any("file", filePath)).WarnContext(ctx, "File %q appears to be an account resource file, skipping loading", filePath)
+		log.With(slog.Any("file", filePath)).WarnContext(ctx, "File %q appears to be an account resource file, skipping loading", filePath)
 		return []config.Config{}, nil
 	}
 

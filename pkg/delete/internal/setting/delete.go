@@ -19,6 +19,7 @@ package setting
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -67,7 +68,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 
 		for _, settingsObject := range settingsObjects {
 			if !settingsObject.IsDeletable() {
-				logger.With(attribute.Any("object", settingsObject)).WarnContext(ctx, "Requested settings object with ID %s is not deletable.", settingsObject.ObjectId)
+				logger.With(slog.Any("object", settingsObject)).WarnContext(ctx, "Requested settings object with ID %s is not deletable.", settingsObject.ObjectId)
 				continue
 			}
 
@@ -140,7 +141,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 				continue
 			}
 
-			logger.With(attribute.Any("object", settingsObject)).DebugContext(ctx, "Deleting settings object with object ID '%s'...", settingsObject.ObjectId)
+			logger.With(slog.Any("object", settingsObject)).DebugContext(ctx, "Deleting settings object with object ID '%s'...", settingsObject.ObjectId)
 			err := c.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
 				logger.ErrorContext(ctx, "Failed to delete settings object with object ID '%s': %v", settingsObject.ObjectId, err)
