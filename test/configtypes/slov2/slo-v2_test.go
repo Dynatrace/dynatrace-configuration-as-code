@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -42,9 +41,6 @@ func TestSloV2(t *testing.T) {
 	manifestPath := configFolder + "manifest.yaml"
 	environment := "platform_env"
 	project := "project"
-
-	// enable FF
-	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
 	t.Run("When deploying two configs, two configs exist", func(t *testing.T) {
 		runner.Run(t, configFolder,
@@ -80,34 +76,6 @@ func TestSloV2(t *testing.T) {
 
 				assert.Contains(t, externalIDs, cSliExternalID)
 				assert.Contains(t, externalIDs, sliRefExternalID)
-			})
-	})
-
-	t.Run("With a disabled FF the deploy should fail", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "false")
-
-		runner.Run(t, configFolder,
-			runner.Options{
-				runner.WithEnvironment(environment),
-				runner.WithoutCleanup(),
-			},
-			func(fs afero.Fs, testContext runner.TestContext) {
-				// when deploying once
-				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --project=%s --verbose", manifestPath, project))
-				assert.Error(t, err)
-
-				sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
-				result, err := sloV2Client.List(t.Context())
-				assert.NoError(t, err)
-				externalIDs := extractExternalIDs(t, result)
-
-				coord := coordinate.Coordinate{
-					Project:  project,
-					Type:     string(config.ServiceLevelObjectiveID),
-					ConfigId: "custom-sli_" + testContext.Suffix,
-				}
-				externalID := idutils.GenerateExternalID(coord)
-				assert.NotContains(t, externalIDs, externalID)
 			})
 	})
 }

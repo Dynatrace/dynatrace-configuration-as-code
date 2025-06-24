@@ -37,7 +37,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -1175,18 +1174,7 @@ func TestDelete_SLOv2(t *testing.T) {
 		},
 	}
 
-	t.Run("With Enabled Segment FF", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
-
-		err := delete.Configs(t.Context(), client.ClientSet{ServiceLevelObjectiveClient: &c}, given)
-		// DummyClient returns unimplemented error on every execution of any method
-		assert.Error(t, err, "unimplemented")
-	})
-
-	t.Run("With Disabled Segment FF", func(t *testing.T) {
-		t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "false")
-
-		err := delete.Configs(t.Context(), client.ClientSet{ServiceLevelObjectiveClient: &c}, given)
-		assert.NoError(t, err)
-	})
+	err := delete.Configs(t.Context(), client.ClientSet{ServiceLevelObjectiveClient: &c}, given)
+	// DummyClient returns unimplemented error on every execution of any method
+	assert.Error(t, err, "unimplemented")
 }

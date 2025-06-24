@@ -24,7 +24,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/exp/maps"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 )
@@ -86,9 +85,6 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		case SegmentType:
 			c.Type = config.Segment{}
 		case ServiceLevelObjectiveType:
-			if !featureflags.ServiceLevelObjective.Enabled() {
-				return fmt.Errorf("unknown config-type %q", str)
-			}
 			c.Type = config.ServiceLevelObjective{}
 		default:
 			c.Type = config.ClassicApiType{Api: str}
@@ -348,9 +344,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		return SegmentType, nil
 
 	case config.ServiceLevelObjective:
-		if featureflags.ServiceLevelObjective.Enabled() {
-			return ServiceLevelObjectiveType, nil
-		}
+		return ServiceLevelObjectiveType, nil
 	}
 	return nil, fmt.Errorf("unknown type: %T", c.Type)
 }

@@ -148,8 +148,6 @@ func TestRestoreConfigs_FromDownloadWithPlatformOAuthManifestFile_withPlatformCo
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_automations"
 
-	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
-
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthOAuth, execution_downloadConfigs)
 }
 
@@ -160,7 +158,6 @@ func TestRestoreConfigs_FromDownloadWithPlatformTokenManifestFile_withPlatformCo
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_automations"
 
-	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthPlatformToken, execution_downloadConfigs)

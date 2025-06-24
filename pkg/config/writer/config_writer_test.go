@@ -30,7 +30,6 @@ import (
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -1111,8 +1110,7 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
-			name:    "SLO resource",
-			envVars: map[string]string{featureflags.ServiceLevelObjective.EnvName(): "true"},
+			name: "SLO resource",
 			configs: []config.Config{
 				{
 					Template: template.NewInMemoryTemplateWithPath("project/slo_v2/template.json", "{}"),
@@ -1151,27 +1149,6 @@ func TestWriteConfigs(t *testing.T) {
 				"project/slo_v2/template.json",
 			},
 		},
-		{
-			name:    "SLO with FF off, should return error",
-			envVars: map[string]string{featureflags.ServiceLevelObjective.EnvName(): "false"},
-			configs: []config.Config{
-				{
-					Template: template.NewInMemoryTemplateWithPath("project/slo_v2/template.json", "{}"),
-					Coordinate: coordinate.Coordinate{
-						Project:  "project",
-						Type:     "slo-v2",
-						ConfigId: "configId1",
-					},
-					Type: config.ServiceLevelObjective{},
-					Parameters: map[string]parameter.Parameter{
-						"some param": &value.ValueParameter{Value: "some value"},
-					},
-					Skip: false,
-				},
-			},
-			expectedErrs: []string{"config.ServiceLevelObjective"},
-		},
-
 		{
 			name: "Reference scope",
 			configs: []config.Config{

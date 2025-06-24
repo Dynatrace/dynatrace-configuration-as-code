@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"maps"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -111,12 +110,10 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 		}
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.SegmentID)
 	} else if t == string(config.ServiceLevelObjectiveID) {
-		if featureflags.ServiceLevelObjective.Enabled() {
-			if clients.ServiceLevelObjectiveClient != nil {
-				return slo.Delete(ctx, clients.ServiceLevelObjectiveClient, entries)
-			}
-			log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.ServiceLevelObjectiveID)
+		if clients.ServiceLevelObjectiveClient != nil {
+			return slo.Delete(ctx, clients.ServiceLevelObjectiveClient, entries)
 		}
+		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.ServiceLevelObjectiveID)
 	} else {
 		if clients.SettingsClient != nil {
 			return setting.Delete(ctx, clients.SettingsClient, entries)

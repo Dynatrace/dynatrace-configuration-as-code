@@ -28,9 +28,6 @@ const (
 	// or when enabled only in string values within the JSON.
 	// Introduced: v2.19.0
 	OnlyCreateReferencesInStringValues FeatureFlag = "MONACO_FEAT_ONLY_CREATE_REFERENCES_IN_STRINGS"
-	// ServiceLevelObjective toggles whether slo configurations are downloaded and / or deployed.
-	// Introduced: v2.19.0
-	ServiceLevelObjective FeatureFlag = "MONACO_FEAT_SLO_V2"
 	// SanitizeBucketNames toggles whether bucket names created by Monaco are sanitized or not.
 	// Introduced: v2.23.0
 	SanitizeBucketNames FeatureFlag = "MONACO_SANITIZE_BUCKET_NAMES"
@@ -45,7 +42,6 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	SkipReadOnlyAccountGroupUpdates:    false,
 	IgnoreSkippedConfigs:               false,
 	OnlyCreateReferencesInStringValues: false,
-	ServiceLevelObjective:              true,
 	SanitizeBucketNames:                true,
 	PlatformToken:                      false,
 }

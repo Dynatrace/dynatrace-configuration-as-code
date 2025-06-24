@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	runner2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
@@ -34,8 +33,6 @@ import (
 func TestIntegrationSloV1AndSloV2(t *testing.T) {
 	configFolder := "testdata/slo-v1-and-slo-v2/"
 	manifest := configFolder + "manifest.yaml"
-
-	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
 	t.Run("slo-v1 to slo-v2", func(t *testing.T) {
 		runner2.Run(t, configFolder,
