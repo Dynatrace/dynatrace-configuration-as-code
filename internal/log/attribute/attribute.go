@@ -23,23 +23,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
-// LogCoordinate is the type to be used to log coordinates as context attributes
-type LogCoordinate struct {
-	Reference string `json:"reference"`
-	Project   string `json:"project"`
-	Type      string `json:"type"`
-	ConfigID  string `json:"configID"`
-}
-
 // Coordinate builds an attribute containing information taken from the provided coordinate
 func Coordinate(coordinate coordinate.Coordinate) slog.Attr {
-	return slog.Any("coordinate",
-		LogCoordinate{
-			coordinate.String(),
-			coordinate.Project,
-			coordinate.Type,
-			coordinate.ConfigId,
-		})
+	return slog.Any("coordinate", coordinate)
 }
 
 // Type builds an attribute containing information about a config type. This is used in cases where no full coordinate exists,
@@ -51,26 +37,18 @@ func Type[X ~string](t X) slog.Attr {
 // Environment builds an attribute containing environment information for structured logging
 func Environment(environment, group string) slog.Attr {
 	return slog.Any("environment",
-		struct {
-			Group string `json:"group"`
-			Name  string `json:"name"`
-		}{
-			group,
-			environment,
-		})
+		slog.GroupValue(
+			slog.String("group", group),
+			slog.String("name", environment)))
 }
 
 // Error builds an attribute containing error information for structured logging
 func Error(err error) slog.Attr {
 	return slog.Any(
 		"error",
-		struct {
-			Type    string `json:"type"`
-			Details string `json:"details"`
-		}{
-			Type:    fmt.Sprintf("%T", err),
-			Details: err.Error(),
-		})
+		slog.GroupValue(
+			slog.String("type", fmt.Sprintf("%T", err)),
+			slog.String("details", err.Error())))
 }
 
 const deploymentStatus = "deploymentStatus"

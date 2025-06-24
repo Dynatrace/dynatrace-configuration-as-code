@@ -46,6 +46,7 @@ func (c Coordinate) Match(coordinate Coordinate) bool {
 // It returns a group containing the fields of the coordinate so that they appear together in log output
 func (c Coordinate) LogValue() slog.Value {
 	return slog.GroupValue(
+		slog.String("reference", c.String()),
 		slog.String("project", c.Project),
 		slog.String("type", c.Type),
 		slog.String("configId", c.ConfigId))

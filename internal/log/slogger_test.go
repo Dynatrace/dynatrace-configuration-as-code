@@ -138,7 +138,7 @@ func TestWith(t *testing.T) {
 	assert.Equal(t, "Iglo", data["Name"])
 	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["project"])
 	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["type"])
-	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["configID"])
+	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["configId"])
 	assert.Equal(t, "p1:t1:c1", data["coordinate"].(map[string]interface{})["reference"])
 	assert.Equal(t, "env1", data["environment"].(map[string]interface{})["name"])
 	assert.Equal(t, "group", data["environment"].(map[string]interface{})["group"])
