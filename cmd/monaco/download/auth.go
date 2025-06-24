@@ -25,18 +25,18 @@ import (
 )
 
 type auth struct {
-	apiToken, clientID, clientSecret, platformToken string
+	accessToken, clientID, clientSecret, platformToken string
 }
 
 func (a auth) mapToAuth() (*manifest.Auth, []error) {
 	errs := make([]error, 0)
 	mAuth := manifest.Auth{}
 
-	if a.apiToken != "" {
-		if token, err := readAuthSecretFromEnvVariable(a.apiToken); err != nil {
+	if a.accessToken != "" {
+		if token, err := readAuthSecretFromEnvVariable(a.accessToken); err != nil {
 			errs = append(errs, err)
 		} else {
-			mAuth.ApiToken = &token
+			mAuth.AccessToken = &token
 		}
 	}
 

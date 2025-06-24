@@ -55,7 +55,7 @@ func (o OAuth) GetTokenEndpointValue() string {
 }
 
 type Auth struct {
-	ApiToken      *AuthSecret
+	AccessToken   *AuthSecret
 	OAuth         *OAuth
 	PlatformToken *AuthSecret
 }
@@ -102,7 +102,7 @@ type URLDefinition struct {
 	Value string
 }
 
-// AuthSecret contains a resolved secret value. It is used for the API token, ClientID, and ClientSecret.
+// AuthSecret contains a resolved secret value. It is used for the access token, ClientID, and ClientSecret.
 type AuthSecret struct {
 	// Name is the name of the environment-variable of the token.
 	// It is used in download to store the name of the OAuth token in the new created manifest.

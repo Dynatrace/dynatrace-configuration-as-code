@@ -83,7 +83,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		assert.EqualError(t, err, "to download with manifest, '--environment' needs to be specified")
 	})
 
-	t.Run("Download using manifest - API token cannot be specified", func(t *testing.T) {
+	t.Run("Download using manifest - access token cannot be specified", func(t *testing.T) {
 		err := newMonaco(t).download("--token API_TOKEN")
 		assert.EqualError(t, err, "'--token', '--oauth-client-id', and '--oauth-client-secret' can only be used with '--url', while '--manifest' must NOT be set")
 	})
@@ -109,7 +109,7 @@ func TestGetDownloadCommand(t *testing.T) {
 
 		expected := downloadCmdOptions{
 			environmentURL: "http://some.url",
-			auth:           auth{apiToken: "TOKEN"},
+			auth:           auth{accessToken: "TOKEN"},
 			projectName:    "project",
 			onlyOptions:    defaultOnlyOptions,
 		}
@@ -144,7 +144,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		expected := downloadCmdOptions{
 			environmentURL: "http://some.url",
 			auth: auth{
-				apiToken:     "TOKEN",
+				accessToken:  "TOKEN",
 				clientID:     "CLIENT_ID",
 				clientSecret: "CLIENT_SECRET",
 			},
@@ -175,14 +175,14 @@ func TestGetDownloadCommand(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("Direct download - API token and platform token", func(t *testing.T) {
+	t.Run("Direct download - access token and platform token", func(t *testing.T) {
 		t.Setenv(featureflags.PlatformToken.EnvName(), "true")
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{
 			environmentURL: "http://some.url",
 			auth: auth{
-				apiToken:      "API_TOKEN",
+				accessToken:   "API_TOKEN",
 				platformToken: "PLATFORM_TOKEN",
 			},
 			projectName: "project",
@@ -299,7 +299,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlyApisFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{apiToken: "token"},
+			auth:           auth{accessToken: "token"},
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}
@@ -340,7 +340,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlySettingsFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{apiToken: "token"},
+			auth:           auth{accessToken: "token"},
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}

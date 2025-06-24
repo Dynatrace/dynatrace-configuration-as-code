@@ -138,9 +138,9 @@ To run the integration tests, you'll need at least one Dynatrace environment - t
 
 Define the following environment variables to test for these environments:
 * `URL_ENVIRONMENT_1` ... URL of the first test environment
-* `TOKEN_ENVIRONMENT_1` ... API token for the first test environment
+* `TOKEN_ENVIRONMENT_1` ... Access token for the first test environment
 * `URL_ENVIRONMENT_2` ... URL of the second test environment
-* `TOKEN_ENVIRONMENT_2` ... API token for the second test environment
+* `TOKEN_ENVIRONMENT_2` ... Access token for the second test environment
 
 Run the integration tests using `make integration-test`.
 

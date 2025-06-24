@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package apitoken_test
+package accesstoken_test
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/apitoken"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/accesstoken"
 )
 
 type Stub struct {
@@ -59,9 +59,9 @@ func TestGetTokenMetadata(t *testing.T) {
 			}, nil
 		},
 		}
-		resp, err := apitoken.GetApiTokenMetadata(t.Context(), stub, "my-token")
+		resp, err := accesstoken.GetAccessTokenMetadata(t.Context(), stub, "my-token")
 		assert.NoError(t, err)
-		assert.Equal(t, apitoken.Response{
+		assert.Equal(t, accesstoken.Response{
 			ID:                  "abc-xy",
 			Name:                "my-token",
 			Enabled:             true,
@@ -76,9 +76,9 @@ func TestGetTokenMetadata(t *testing.T) {
 		stub := Stub{func() (*http.Response, error) {
 			return &http.Response{}, errors.New("client error")
 		}}
-		resp, err := apitoken.GetApiTokenMetadata(t.Context(), stub, "my-token")
+		resp, err := accesstoken.GetAccessTokenMetadata(t.Context(), stub, "my-token")
 
-		assert.Equal(t, apitoken.Response{}, resp)
+		assert.Equal(t, accesstoken.Response{}, resp)
 		assert.ErrorContains(t, err, "client error")
 	})
 
@@ -86,9 +86,9 @@ func TestGetTokenMetadata(t *testing.T) {
 		stub := Stub{func() (*http.Response, error) {
 			return &http.Response{StatusCode: 400, Body: io.NopCloser(strings.NewReader("api error"))}, nil
 		}}
-		resp, err := apitoken.GetApiTokenMetadata(t.Context(), stub, "my-token")
+		resp, err := accesstoken.GetAccessTokenMetadata(t.Context(), stub, "my-token")
 
-		assert.Equal(t, apitoken.Response{}, resp)
+		assert.Equal(t, accesstoken.Response{}, resp)
 		assert.ErrorContains(t, err, "api error")
 	})
 
@@ -96,9 +96,9 @@ func TestGetTokenMetadata(t *testing.T) {
 		stub := Stub{func() (*http.Response, error) {
 			return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader("{"))}, nil
 		}}
-		resp, err := apitoken.GetApiTokenMetadata(t.Context(), stub, "my-token")
+		resp, err := accesstoken.GetAccessTokenMetadata(t.Context(), stub, "my-token")
 
-		assert.Equal(t, apitoken.Response{}, resp)
+		assert.Equal(t, accesstoken.Response{}, resp)
 		assert.ErrorContains(t, err, "unmarshal")
 	})
 }

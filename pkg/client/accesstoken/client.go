@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package apitoken
+package accesstoken
 
 import (
 	"bytes"
@@ -28,7 +28,7 @@ import (
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 )
 
-const apiTokenPath = "/api/v2/apiTokens"
+const accessTokenPath = "/api/v2/apiTokens"
 
 type Response struct {
 	ID                  string            `json:"id"`
@@ -49,37 +49,37 @@ type source interface {
 	POST(ctx context.Context, endpoint string, body io.Reader, options corerest.RequestOptions) (*http.Response, error)
 }
 
-// GetApiTokenMetadata returns the metadata of a specified API token
+// GetAccessTokenMetadata returns the metadata of a specified access token
 //
-// Required scope: Any API token scope
-func GetApiTokenMetadata(ctx context.Context, client source, apiToken string) (Response, error) {
+// Required scope: Any access token scope
+func GetAccessTokenMetadata(ctx context.Context, client source, accessToken string) (Response, error) {
 	type request struct {
-		ApiToken string `json:"token"`
+		AccessToken string `json:"token"`
 	}
-	req := request{apiToken}
+	req := request{accessToken}
 	body, err := json.Marshal(req)
 
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to marshal API token request data: %w", err)
+		return Response{}, fmt.Errorf("unable to marshal access token request data: %w", err)
 	}
 
-	resp, err := client.POST(ctx, apiTokenPath+"/lookup", bytes.NewReader(body), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
+	resp, err := client.POST(ctx, accessTokenPath+"/lookup", bytes.NewReader(body), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
 
 	if err != nil {
-		return Response{}, fmt.Errorf("failed to query API token metadata: %w", err)
+		return Response{}, fmt.Errorf("failed to query access token metadata: %w", err)
 	}
 
 	response, err := coreapi.NewResponseFromHTTPResponse(resp)
 
 	if err != nil {
-		return Response{}, fmt.Errorf("failed to query API token metadata: %w", err)
+		return Response{}, fmt.Errorf("failed to query access token metadata: %w", err)
 	}
 
 	data := Response{}
 	err = json.Unmarshal(response.Data, &data)
 
 	if err != nil {
-		return Response{}, fmt.Errorf("failed to unmarshal API token metadata: %w", err)
+		return Response{}, fmt.Errorf("failed to unmarshal access token metadata: %w", err)
 	}
 
 	return data, nil

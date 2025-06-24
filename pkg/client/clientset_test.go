@@ -59,10 +59,10 @@ func TestCreateClientSet(t *testing.T) {
 		url  string
 		auth manifest.Auth
 	}{
-		{"API token client set",
+		{"Access token client set",
 			server.URL,
 			manifest.Auth{
-				ApiToken: &manifest.AuthSecret{
+				AccessToken: &manifest.AuthSecret{
 					Name:  "token-env-var",
 					Value: "mock token",
 				},
@@ -95,10 +95,10 @@ func TestCreateClientSet(t *testing.T) {
 				},
 			},
 		},
-		{"oAuth and API token client set",
+		{"oAuth and access token client set",
 			server.URL,
 			manifest.Auth{
-				ApiToken: &manifest.AuthSecret{
+				AccessToken: &manifest.AuthSecret{
 					Name:  "token-env-var",
 					Value: "mock token",
 				},
@@ -117,10 +117,10 @@ func TestCreateClientSet(t *testing.T) {
 				},
 			},
 		},
-		{"Platform token and API token client set",
+		{"Platform token and access token client set",
 			server.URL,
 			manifest.Auth{
-				ApiToken: &manifest.AuthSecret{
+				AccessToken: &manifest.AuthSecret{
 					Name:  "token-env-var",
 					Value: "mock token",
 				},
@@ -149,7 +149,7 @@ func TestCreateClientSetWithAdditionalHeaders(t *testing.T) {
 
 	t.Setenv(environment.AdditionalHTTPHeaders, "Some-Header: Some-Value")
 	clientSet, _ := CreateClientSet(t.Context(), server.URL, manifest.Auth{
-		ApiToken: &manifest.AuthSecret{
+		AccessToken: &manifest.AuthSecret{
 			Name:  "token-env-var",
 			Value: "mock token",
 		},
