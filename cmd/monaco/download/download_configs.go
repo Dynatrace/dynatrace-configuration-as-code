@@ -271,7 +271,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 		}
 	}
 
-	if featureflags.OpenPipeline.Enabled() && opts.onlyOptions.ShouldDownload(OnlyOpenPipelineFlag) {
+	if opts.onlyOptions.ShouldDownload(OnlyOpenPipelineFlag) {
 		if opts.auth.OAuth != nil {
 			downloadables = append(downloadables, openpipeline.NewDownloadAPI(clientSet.OpenPipelineClient))
 		} else if opts.onlyOptions.IsSingleOption(OnlyOpenPipelineFlag) {

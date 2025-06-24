@@ -1529,9 +1529,6 @@ func TestWriteConfigs(t *testing.T) {
 			expectedTemplatePaths: []string{
 				"project/openpipeline/a.json",
 			},
-			envVars: map[string]string{
-				featureflags.OpenPipeline.EnvName(): "true",
-			},
 		},
 	}
 

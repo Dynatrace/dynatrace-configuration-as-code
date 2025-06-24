@@ -76,7 +76,6 @@ func TestInvalidCommandUsage(t *testing.T) {
 func TestGeneratesValidDeleteFile(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.OpenPipeline.EnvName(), "1")
 	t.Setenv(featureflags.Segments.EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
@@ -113,7 +112,6 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 
 func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.OpenPipeline.EnvName(), "1")
 	t.Setenv(featureflags.Segments.EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
@@ -142,7 +140,6 @@ func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
 func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.OpenPipeline.EnvName(), "1")
 	t.Setenv(featureflags.Segments.EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
@@ -164,7 +161,6 @@ func TestGeneratesValidDeleteFileWithFilter(t *testing.T) {
 func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.OpenPipeline.EnvName(), "1")
 	t.Setenv(featureflags.Segments.EnvName(), "1")
 
 	outputFolder := "output-folder"
@@ -234,7 +230,6 @@ func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
 func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.OpenPipeline.EnvName(), "1")
 	t.Setenv(featureflags.Segments.EnvName(), "1")
 
 	fs := testutils.CreateTestFileSystem()
@@ -275,7 +270,6 @@ func assertDeleteEntries(t *testing.T, entries map[string][]pointer.DeletePointe
 func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
-	t.Setenv(featureflags.OpenPipeline.EnvName(), "1")
 	t.Setenv(featureflags.Segments.EnvName(), "1")
 
 	t.Run("default filename", func(t *testing.T) {
