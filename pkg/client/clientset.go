@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -269,8 +270,18 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		return nil, err
 	}
 
-	t := http.DefaultTransport.(*http.Transport).Clone()
-	t.DisableKeepAlives = true
+	t := &http.Transport{
+		TLSHandshakeTimeout: 5 * time.Minute,
+		DialContext: (&net.Dialer{
+			Timeout:   10 * time.Minute, // Timeout for establishing TCP connection
+			KeepAlive: 10 * time.Minute, // Keep-alive period for TCP connection
+		}).DialContext,
+		IdleConnTimeout:       10 * time.Minute, // How long idle connections stay in the pool
+		ExpectContinueTimeout: 10 * time.Minute, // Wait time for 100-continue response
+		MaxIdleConns:          100,              // Max idle connections across all hosts
+		MaxIdleConnsPerHost:   10,               // Max idle connections per host
+		DisableKeepAlives:     true,
+	}
 	newCtx := context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
 		Transport: t},
 	)
