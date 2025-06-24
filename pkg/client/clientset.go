@@ -19,13 +19,10 @@ package client
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/http"
 	"net/url"
 	"runtime"
 	"time"
 
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -270,22 +267,6 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		return nil, err
 	}
 
-	t := &http.Transport{
-		TLSHandshakeTimeout: 5 * time.Minute,
-		DialContext: (&net.Dialer{
-			Timeout:   10 * time.Minute, // Timeout for establishing TCP connection
-			KeepAlive: 10 * time.Minute, // Keep-alive period for TCP connection
-		}).DialContext,
-		IdleConnTimeout:       10 * time.Minute, // How long idle connections stay in the pool
-		ExpectContinueTimeout: 10 * time.Minute, // Wait time for 100-continue response
-		MaxIdleConns:          100,              // Max idle connections across all hosts
-		MaxIdleConnsPerHost:   10,               // Max idle connections per host
-		DisableKeepAlives:     true,
-	}
-	newCtx := context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
-		Transport: t},
-	)
-
 	concurrentReqLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	cFactory := clients.Factory().
@@ -295,7 +276,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		WithRateLimiter(true).
 		WithCustomHeaders(additionalHeaders)
 
-	if supportarchive.IsEnabled(newCtx) {
+	if supportarchive.IsEnabled(ctx) {
 		cFactory = cFactory.WithHTTPListener(&rest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
 
@@ -307,37 +288,37 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 				ClientSecret: auth.OAuth.ClientSecret.Value.Value(),
 				TokenURL:     auth.OAuth.GetTokenEndpointValue(),
 			}).WithPlatformURL(url)
-		client, err := cFactory.CreatePlatformClient(newCtx)
+		client, err := cFactory.CreatePlatformClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		bucketClient, err = cFactory.BucketClientWithRetrySettings(newCtx, time.Second, 5*time.Minute)
+		bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, time.Second, 5*time.Minute)
 		if err != nil {
 			return nil, err
 		}
 
-		autClient, err = cFactory.AutomationClient(newCtx)
+		autClient, err = cFactory.AutomationClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		documentClient, err = cFactory.DocumentClient(newCtx)
+		documentClient, err = cFactory.DocumentClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		openPipelineClient, err = cFactory.OpenPipelineClient(newCtx)
+		openPipelineClient, err = cFactory.OpenPipelineClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		segmentClient, err = cFactory.SegmentsClient(newCtx)
+		segmentClient, err = cFactory.SegmentsClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		serviceLevelObjectiveClient, err = cFactory.SLOClient(newCtx)
+		serviceLevelObjectiveClient, err = cFactory.SLOClient(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -347,7 +328,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
-		classicURL, err = transformPlatformUrlToClassic(newCtx, url, auth.OAuth, client)
+		classicURL, err = transformPlatformUrlToClassic(ctx, url, auth.OAuth, client)
 		if err != nil {
 			return nil, err
 		}

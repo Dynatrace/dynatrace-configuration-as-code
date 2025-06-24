@@ -17,10 +17,14 @@ package runner
 import (
 	"context"
 	"io"
+	"net"
+	"net/http"
+	"time"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
+	"golang.org/x/oauth2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/delete"
@@ -40,6 +44,21 @@ import (
 )
 
 func RunCmd(ctx context.Context, cmd *cobra.Command) error {
+	t := &http.Transport{
+		TLSHandshakeTimeout: 5 * time.Minute,
+		DialContext: (&net.Dialer{
+			Timeout:   10 * time.Minute, // Timeout for establishing TCP connection
+			KeepAlive: 10 * time.Minute, // Keep-alive period for TCP connection
+		}).DialContext,
+		IdleConnTimeout:       10 * time.Minute, // How long idle connections stay in the pool
+		ExpectContinueTimeout: 10 * time.Minute, // Wait time for 100-continue response
+		MaxIdleConns:          100,              // Max idle connections across all hosts
+		MaxIdleConnsPerHost:   10,               // Max idle connections per host
+		DisableKeepAlives:     true,
+	}
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
+		Transport: t},
+	)
 	err := cmd.ExecuteContext(ctx)
 	if err != nil {
 		log.WithFields(field.Error(err)).ErrorContext(ctx, "Error: %v", err)
