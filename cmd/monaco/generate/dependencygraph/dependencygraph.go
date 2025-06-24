@@ -61,8 +61,9 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		Environments: environmentNames,
 		Groups:       environmentGroups,
 		Opts: manifestloader.Options{
-			DoNotResolveEnvVars:      true,
-			RequireEnvironmentGroups: true,
+			DoNotResolveEnvironmentGroupEnvVars: true,
+			DoNotResolveAccountEnvVars:          true,
+			RequireEnvironmentGroups:            true,
 		},
 	})
 	if len(errs) > 0 {

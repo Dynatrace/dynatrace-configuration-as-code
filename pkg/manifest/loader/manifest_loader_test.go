@@ -2231,3 +2231,127 @@ projects: [{name: a, path: p}]
 		})
 	}
 }
+
+func TestManifestLoaderOnlyResolvesWhatIsRequired(t *testing.T) {
+	manifest := `manifestVersion: 1.0
+projects:
+- name: project
+
+environmentGroups:
+- name: group
+  environments:
+  - name: environment
+    url:
+      type: environment
+      value: ENVIRONMENT_ENV_VAR
+    auth:
+      token:
+        name: ENVIRONMENT_ENV_VAR
+      oAuth:
+        clientId:
+          name: ENVIRONMENT_ENV_VAR
+        clientSecret:
+          name: ENVIRONMENT_ENV_VAR
+        tokenEndpoint:
+          value: ENVIRONMENT_ENV_VAR
+          type: environment
+
+accounts:
+- name: account
+  apiUrl:
+    type: environment
+    value: ACCOUNT_ENV_VAR
+  accountUUID:
+    type: environment
+    value: ACCOUNT_ENV_VAR
+  oAuth:
+    clientId:
+      name: ACCOUNT_ENV_VAR
+    clientSecret:
+      name: ACCOUNT_ENV_VAR
+    tokenEndpoint:
+      type: environment
+      value: ACCOUNT_ENV_VAR
+`
+
+	tests := []struct {
+		name       string
+		options    Options
+		setEnvVars []string
+		wantError  bool
+	}{
+
+		// Success cases
+		{
+			name:       "env variables in environment groups and accounts required and set",
+			options:    Options{},
+			setEnvVars: []string{"ENVIRONMENT_ENV_VAR", "ACCOUNT_ENV_VAR"},
+		},
+		{
+			name:       "env variables in environment groups not required and not set, in accounts required and set",
+			options:    Options{DoNotResolveEnvironmentGroupEnvVars: true},
+			setEnvVars: []string{"ACCOUNT_ENV_VAR"},
+		},
+		{
+			name:       "env variables in environment groups required and set, in accounts not required and set",
+			options:    Options{DoNotResolveAccountEnvVars: true},
+			setEnvVars: []string{"ENVIRONMENT_ENV_VAR"},
+		},
+		{
+			name:       "env variables in environment groups and accounts required and set",
+			options:    Options{DoNotResolveEnvironmentGroupEnvVars: true, DoNotResolveAccountEnvVars: true},
+			setEnvVars: []string{},
+		},
+
+		// Error cases
+		{
+			name:       "env variables in environment group required and not set, in accounts required and set",
+			options:    Options{},
+			setEnvVars: []string{"ACCOUNT_ENV_VAR"},
+			wantError:  true,
+		},
+		{
+			name:       "env variables in environment groups required and not set, in accounts not required and set",
+			options:    Options{},
+			setEnvVars: []string{"ENVIRONMENT_ENV_VAR"},
+			wantError:  true,
+		},
+		{
+			name:       "env variables in environment groups and accounts required and not set",
+			options:    Options{DoNotResolveAccountEnvVars: true},
+			setEnvVars: []string{"ACCOUNT_ENV_VAR"},
+			wantError:  true,
+		},
+		{
+			name:       "env variables in environment groups and accounts required and not set",
+			options:    Options{DoNotResolveEnvironmentGroupEnvVars: true},
+			setEnvVars: []string{"ENVIRONMENT_ENV_VAR"},
+			wantError:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			for _, e := range tt.setEnvVars {
+				t.Setenv(e, "a81bc81b-dead-4e5d-abff-90865d1e13b1")
+			}
+
+			fs := afero.NewMemMapFs()
+			assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(manifest), 0400))
+
+			_, errs := Load(&Context{
+				Fs:           fs,
+				ManifestPath: "manifest.yaml",
+				Opts:         tt.options,
+			})
+
+			if tt.wantError {
+				assert.NotEmpty(t, errs, "expected Load(...) to return errors")
+			} else {
+				assert.Empty(t, errs, "expected Load(...) to not return errors")
+			}
+		})
+	}
+
+}

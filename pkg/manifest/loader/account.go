@@ -48,19 +48,19 @@ func (e invalidUUIDError) Unwrap() error {
 
 func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, error) {
 
-	accountUUID, err := parseAccountUUID(a.AccountUUID, c.Opts.DoNotResolveEnvVars)
+	accountUUID, err := parseAccountUUID(a.AccountUUID, c.Opts.DoNotResolveAccountEnvVars)
 	if err != nil {
 		return manifest.Account{}, err
 	}
 
-	oAuthDef, err := parseOAuth(&a.OAuth, c.Opts.DoNotResolveEnvVars)
+	oAuthDef, err := parseOAuth(&a.OAuth, c.Opts.DoNotResolveAccountEnvVars)
 	if err != nil {
 		return manifest.Account{}, fmt.Errorf("oAuth is invalid: %w", err)
 	}
 
 	var urlDef *manifest.URLDefinition
 	if a.ApiUrl != nil {
-		if u, err := parseURLDefinition(*a.ApiUrl, c.Opts.DoNotResolveEnvVars); err != nil {
+		if u, err := parseURLDefinition(*a.ApiUrl, c.Opts.DoNotResolveAccountEnvVars); err != nil {
 			return manifest.Account{}, fmt.Errorf("apiUrl: %w", err)
 		} else {
 			urlDef = &u

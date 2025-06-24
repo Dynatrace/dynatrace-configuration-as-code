@@ -60,8 +60,9 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 				Fs:           fs,
 				ManifestPath: manifestName,
 				Opts: manifestloader.Options{
-					DoNotResolveEnvVars:      true,
-					RequireEnvironmentGroups: true,
+					DoNotResolveEnvironmentGroupEnvVars: true,
+					DoNotResolveAccountEnvVars:          true,
+					RequireEnvironmentGroups:            true,
 				},
 			})
 			if len(errs) > 0 {

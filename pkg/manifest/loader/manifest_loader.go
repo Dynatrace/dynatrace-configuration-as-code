@@ -71,9 +71,10 @@ type projectLoaderContext struct {
 
 // Options are optional configuration for Load
 type Options struct {
-	DoNotResolveEnvVars      bool
-	RequireEnvironmentGroups bool
-	RequireAccounts          bool
+	DoNotResolveEnvironmentGroupEnvVars bool
+	DoNotResolveAccountEnvVars          bool
+	RequireEnvironmentGroups            bool
+	RequireAccounts                     bool
 }
 
 type ManifestLoaderError struct {
@@ -462,12 +463,12 @@ func shouldSkipEnv(context *Context, group persistence.Group, env persistence.En
 func parseSingleEnvironment(context *Context, config persistence.Environment, group string) (manifest.EnvironmentDefinition, []error) {
 	var errs []error
 
-	a, err := parseAuth(config.Auth, context.Opts.DoNotResolveEnvVars)
+	a, err := parseAuth(config.Auth, context.Opts.DoNotResolveEnvironmentGroupEnvVars)
 	if err != nil {
 		errs = append(errs, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("failed to parse auth section: %s", err)))
 	}
 
-	urlDef, err := parseURLDefinition(config.URL, context.Opts.DoNotResolveEnvVars)
+	urlDef, err := parseURLDefinition(config.URL, context.Opts.DoNotResolveEnvironmentGroupEnvVars)
 	if err != nil {
 		errs = append(errs, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}

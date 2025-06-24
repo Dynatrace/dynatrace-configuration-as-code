@@ -78,7 +78,6 @@ func TestManifestLoading(t *testing.T) {
 		Fs:           fs,
 		ManifestPath: "./testdata/manifest_full.yaml",
 		Opts: manifestloader.Options{
-			DoNotResolveEnvVars:      false,
 			RequireEnvironmentGroups: true,
 		},
 	})
