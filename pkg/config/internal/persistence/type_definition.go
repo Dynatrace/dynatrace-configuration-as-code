@@ -314,16 +314,11 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 		}, nil
 
 	case config.SettingsType:
-		var insertAfterValue ConfigParameter
-		if featureflags.PersistSettingsOrder.Enabled() {
-			insertAfterValue = c.InsertAfter
-		}
-
 		setDefinition := SettingsDefinition{
 			Schema:        t.SchemaId,
 			SchemaVersion: t.SchemaVersion,
 			Scope:         c.Scope,
-			InsertAfter:   insertAfterValue,
+			InsertAfter:   c.InsertAfter,
 		}
 
 		if featureflags.AccessControlSettings.Enabled() {
