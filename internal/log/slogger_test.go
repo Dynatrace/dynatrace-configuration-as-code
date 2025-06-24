@@ -125,8 +125,8 @@ func TestWith(t *testing.T) {
 	log.PrepareLogging(t.Context(), afero.NewOsFs(), false, &logSpy, false, false)
 
 	log.With(
-		attribute.Attr{Key: "Title", Value: "Captain"},
-		attribute.Attr{Key: "Name", Value: "Iglo"},
+		slog.Any("Title", "Captain"),
+		slog.Any("Name", "Iglo"),
 		attribute.Coordinate(coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}),
 		attribute.Environment("env1", "group")).Info("Logging with %s", "attributes")
 

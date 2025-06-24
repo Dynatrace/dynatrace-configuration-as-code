@@ -17,6 +17,7 @@ package project
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"github.com/spf13/afero"
@@ -314,7 +315,7 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 	loaderContext := newLoaderContext(loadingContext, projectDefinition, environments)
 
 	for _, file := range configFiles {
-		log.With(attribute.Any("file", file)).DebugContext(ctx, "Loading configuration file %s", file)
+		log.With(slog.Any("file", file)).DebugContext(ctx, "Loading configuration file %s", file)
 		loadedConfigs, configErrs := loader.LoadConfigFile(ctx, fs, loaderContext, file)
 
 		errs = append(errs, configErrs...)

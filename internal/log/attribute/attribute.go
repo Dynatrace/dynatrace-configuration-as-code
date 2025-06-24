@@ -18,22 +18,10 @@ package attribute
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
-
-// Attr is an additional custom attribute that can be used for structural logging output
-type Attr struct {
-	// Key is the key used for the attribute
-	Key string
-	// Value is the value used for the attribute and can be anything
-	Value any
-}
-
-// Any creates a new custom attribute for the logger
-func Any(key string, value any) Attr {
-	return Attr{Key: key, Value: value}
-}
 
 // LogCoordinate is the type to be used to log coordinates as context attributes
 type LogCoordinate struct {
@@ -44,62 +32,61 @@ type LogCoordinate struct {
 }
 
 // Coordinate builds an attribute containing information taken from the provided coordinate
-func Coordinate(coordinate coordinate.Coordinate) Attr {
-	return Attr{"coordinate",
+func Coordinate(coordinate coordinate.Coordinate) slog.Attr {
+	return slog.Any("coordinate",
 		LogCoordinate{
 			coordinate.String(),
 			coordinate.Project,
 			coordinate.Type,
 			coordinate.ConfigId,
-		}}
+		})
 }
 
 // Type builds an attribute containing information about a config type. This is used in cases where no full coordinate exists,
 // but only a config type is known - for example in download or deletion
-func Type[X ~string](t X) Attr {
-	return Attr{"type", t}
+func Type[X ~string](t X) slog.Attr {
+	return slog.Any("type", t)
 }
 
 // Environment builds an attribute containing environment information for structured logging
-func Environment(environment, group string) Attr {
-	return Attr{"environment",
+func Environment(environment, group string) slog.Attr {
+	return slog.Any("environment",
 		struct {
 			Group string `json:"group"`
 			Name  string `json:"name"`
 		}{
 			group,
 			environment,
-		}}
+		})
 }
 
 // Error builds an attribute containing error information for structured logging
-func Error(err error) Attr {
-	return Attr{
-		Key: "error",
-		Value: struct {
+func Error(err error) slog.Attr {
+	return slog.Any(
+		"error",
+		struct {
 			Type    string `json:"type"`
 			Details string `json:"details"`
 		}{
 			Type:    fmt.Sprintf("%T", err),
 			Details: err.Error(),
-		}}
-}
-func StatusDeploying() Attr {
-	return statusAttr("deploying")
+		})
 }
 
-func StatusDeployed() Attr {
-	return statusAttr("deployed")
+const deploymentStatus = "deploymentStatus"
+
+func StatusDeploying() slog.Attr {
+	return slog.Any(deploymentStatus, "deploying")
 }
 
-func StatusDeploymentFailed() Attr {
-	return statusAttr("failed")
+func StatusDeployed() slog.Attr {
+	return slog.Any(deploymentStatus, "deployed")
 }
 
-func StatusDeploymentSkipped() Attr {
-	return statusAttr("skipped")
+func StatusDeploymentFailed() slog.Attr {
+	return slog.Any(deploymentStatus, "failed")
 }
 
-func statusAttr(statusValue string) Attr {
-	return Attr{"deploymentStatus", statusValue}
+func StatusDeploymentSkipped() slog.Attr {
+	return slog.Any(deploymentStatus, "skipped")
 }
