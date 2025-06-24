@@ -28,7 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -131,7 +131,7 @@ func loadProjects(ctx context.Context, fs afero.Fs, manifestPath string, man *ma
 	if errs != nil {
 		log.ErrorContext(ctx, "Failed to load projects - %d errors occurred:", len(errs))
 		for _, err := range errs {
-			log.WithFields(field.Error(err)).ErrorContext(ctx, "%s", err)
+			log.With(attribute.Error(err)).ErrorContext(ctx, "%s", err)
 		}
 		return nil, fmt.Errorf("failed to load projects - %d errors occurred", len(errs))
 	}

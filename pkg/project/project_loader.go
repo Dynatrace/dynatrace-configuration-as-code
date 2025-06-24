@@ -23,7 +23,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -266,7 +266,7 @@ func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 		if c.Type.ID() == config.ClassicApiTypeID && apis[c.Coordinate.Type].NonUniqueName {
 			name, err := config.GetNameForConfig(c)
 			if err != nil {
-				log.WithFields(field.Error(err), field.Coordinate(c.Coordinate)).Error("Unable to resolve name of configuration")
+				log.With(attribute.Error(err), attribute.Coordinate(c.Coordinate)).Error("Unable to resolve name of configuration")
 			}
 
 			if _, f := nonUniqueNameConfigCount[c.Environment]; !f {
@@ -314,7 +314,7 @@ func loadConfigsOfProject(ctx context.Context, fs afero.Fs, loadingContext Proje
 	loaderContext := newLoaderContext(loadingContext, projectDefinition, environments)
 
 	for _, file := range configFiles {
-		log.WithFields(field.F("file", file)).DebugContext(ctx, "Loading configuration file %s", file)
+		log.With(attribute.Any("file", file)).DebugContext(ctx, "Loading configuration file %s", file)
 		loadedConfigs, configErrs := loader.LoadConfigFile(ctx, fs, loaderContext, file)
 
 		errs = append(errs, configErrs...)

@@ -22,7 +22,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
@@ -35,12 +35,12 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 	}
 	schema := entries[0].Type
 
-	logger := log.WithFields(field.Type(schema))
+	logger := log.With(attribute.Type(schema))
 	logger.InfoContext(ctx, "Deleting %d settings objects(s) of schema %q...", len(entries), schema)
 
 	deleteErrs := 0
 	for _, e := range entries {
-		logger := logger.WithFields(field.Coordinate(e.AsCoordinate()))
+		logger := logger.With(attribute.Coordinate(e.AsCoordinate()))
 
 		filterFunc, err := getFilter(e)
 		if err != nil {
@@ -67,7 +67,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 
 		for _, settingsObject := range settingsObjects {
 			if !settingsObject.IsDeletable() {
-				logger.WithFields(field.F("object", settingsObject)).WarnContext(ctx, "Requested settings object with ID %s is not deletable.", settingsObject.ObjectId)
+				logger.With(attribute.Any("object", settingsObject)).WarnContext(ctx, "Requested settings object with ID %s is not deletable.", settingsObject.ObjectId)
 				continue
 			}
 
@@ -124,12 +124,12 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 	log.DebugContext(ctx, "Deleting settings of schemas %v...", schemaIds)
 
 	for _, s := range schemaIds {
-		logger := log.WithFields(field.Type(s))
+		logger := log.With(attribute.Type(s))
 		logger.InfoContext(ctx, "Collecting objects of type %q...", s)
 
 		settingsObjects, err := c.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
-			logger.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to collect object for schema %q: %v", s, err)
+			logger.With(attribute.Error(err)).ErrorContext(ctx, "Failed to collect object for schema %q: %v", s, err)
 			errCount++
 			continue
 		}
@@ -140,7 +140,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 				continue
 			}
 
-			logger.WithFields(field.F("object", settingsObject)).DebugContext(ctx, "Deleting settings object with object ID '%s'...", settingsObject.ObjectId)
+			logger.With(attribute.Any("object", settingsObject)).DebugContext(ctx, "Deleting settings object with object ID '%s'...", settingsObject.ObjectId)
 			err := c.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
 				logger.ErrorContext(ctx, "Failed to delete settings object with object ID '%s': %v", settingsObject.ObjectId, err)

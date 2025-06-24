@@ -29,7 +29,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -52,7 +52,7 @@ type createDeleteFileOptions struct {
 func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, options createDeleteFileOptions) error {
 	content, err := generateDeleteFileContent(apis, projects, options)
 	if err != nil {
-		log.WithFields(field.Error(err)).Error("Failed to generate delete file content: %v", err)
+		log.With(attribute.Error(err)).Error("Failed to generate delete file content: %v", err)
 		return err
 	}
 
@@ -87,7 +87,7 @@ func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, op
 		}
 
 		newFile := filepath.Join(folderPath, newFileName)
-		log.WithFields(field.F("file", newFile), field.F("existingFile", options.fileName)).Debug("Output file %q already exists, creating %q instead", options.fileName, newFile)
+		log.With(attribute.Any("file", newFile), attribute.Any("existingFile", options.fileName)).Debug("Output file %q already exists, creating %q instead", options.fileName, newFile)
 		file = newFile
 	}
 
@@ -95,7 +95,7 @@ func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, op
 	if err != nil {
 		return fmt.Errorf("failed to create delete file %q: %w", file, err)
 	}
-	log.WithFields(field.F("file", file)).Info("Delete file written to %q", file)
+	log.With(attribute.Any("file", file)).Info("Delete file written to %q", file)
 
 	return nil
 }
@@ -138,7 +138,7 @@ func generateDeleteEntries(apis api.APIs, projects []project.Project, options cr
 
 			entry, err := createDeleteEntry(c, apis, p)
 			if err != nil {
-				log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
+				log.With(attribute.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
 				return
 			}
 			entries[toMapKey(entry)] = entry
@@ -166,7 +166,7 @@ func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Proj
 				}
 				entry, err := createDeleteEntry(c, apis, p)
 				if err != nil {
-					log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for '%s': %s", c.Coordinate, err)
+					log.With(attribute.Error(err)).Warn("Failed to automatically create delete entry for '%s': %s", c.Coordinate, err)
 					return
 				}
 				entries[toMapKey(entry)] = entry

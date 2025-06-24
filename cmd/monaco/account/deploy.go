@@ -33,7 +33,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
@@ -130,7 +130,7 @@ func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
 	maxConcurrentDeploys := environment.GetEnvValueInt(environment.ConcurrentRequestsEnvKey)
 
 	for accInfo, accClient := range accountClients {
-		logger := log.WithFields(field.F("account", accInfo.Name))
+		logger := log.With(attribute.Any("account", accInfo.Name))
 		accountDeployer := deployer.NewAccountDeployer(deployer.NewClient(accInfo, accClient), deployer.WithMaxConcurrentDeploys(maxConcurrentDeploys))
 		logger.InfoContext(ctx, "Deploying configuration for account '%s' (%s)", accInfo.Name, accInfo.AccountUUID)
 		logger.InfoContext(ctx, "Number of users to deploy: %d", len(resources.Users))

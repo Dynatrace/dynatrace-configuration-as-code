@@ -23,7 +23,7 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -35,14 +35,14 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 	var err error
 
 	for _, dp := range dps {
-		log := log.WithFields(field.Coordinate(dp.AsCoordinate()))
+		log := log.With(attribute.Coordinate(dp.AsCoordinate()))
 		theAPI := api.NewAPIs()[dp.Type]
 		var parentID string
 		var e error
 		if theAPI.HasParent() {
 			parentID, e = resolveIdentifier(ctx, client, theAPI.Parent, toIdentifier(dp.Scope, "", ""))
 			if e != nil && !coreapi.IsNotFoundError(e) {
-				log.WithFields(field.Error(e)).ErrorContext(ctx, "unable to resolve config ID: %v", e)
+				log.With(attribute.Error(e)).ErrorContext(ctx, "unable to resolve config ID: %v", e)
 				err = errors.Join(err, e)
 				continue
 			} else if parentID == "" {
@@ -56,7 +56,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 		if id == "" {
 			id, e = resolveIdentifier(ctx, client, &a, toIdentifier(dp.Identifier, dp.ActionType, dp.Domain))
 			if e != nil && !coreapi.IsNotFoundError(e) {
-				log.WithFields(field.Error(e)).ErrorContext(ctx, "unable to resolve config ID: %v", e)
+				log.With(attribute.Error(e)).ErrorContext(ctx, "unable to resolve config ID: %v", e)
 				err = errors.Join(err, e)
 				continue
 			} else if id == "" {
@@ -66,7 +66,7 @@ func Delete(ctx context.Context, client client.ConfigClient, dps []pointer.Delet
 		}
 
 		if e := client.Delete(ctx, a, id); e != nil && !coreapi.IsNotFoundError(e) {
-			log.WithFields(field.Error(e)).ErrorContext(ctx, "failed to delete config: %v", e)
+			log.With(attribute.Error(e)).ErrorContext(ctx, "failed to delete config: %v", e)
 			err = errors.Join(err, e)
 		}
 		log.DebugContext(ctx, "successfully deleted")
@@ -140,7 +140,7 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 	errs := 0
 
 	for _, a := range apis {
-		logger := log.WithFields(field.Type(a.ID))
+		logger := log.With(attribute.Type(a.ID))
 		if a.HasParent() {
 			logger.DebugContext(ctx, "Skipping %q, will be deleted by the parent api %q", a.ID, a.Parent)
 		}
@@ -154,12 +154,12 @@ func DeleteAll(ctx context.Context, client client.ConfigClient, apis api.APIs) e
 		logger.InfoContext(ctx, "Deleting %d configs of type %q...", len(values), a.ID)
 
 		for _, v := range values {
-			logger := logger.WithFields(field.F("value", v))
+			logger := logger.With(attribute.Any("value", v))
 			logger.DebugContext(ctx, "Deleting config %s:%s...", a.ID, v.Id)
 			err := client.Delete(ctx, a, v.Id)
 
 			if err != nil {
-				logger.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to delete %s with ID %s: %v", a.ID, v.Id, err)
+				logger.With(attribute.Error(err)).ErrorContext(ctx, "Failed to delete %s with ID %s: %v", a.ID, v.Id, err)
 				errs++
 			}
 		}

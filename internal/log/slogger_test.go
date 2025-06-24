@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -118,22 +118,22 @@ func TestSlogger(t *testing.T) {
 	})
 }
 
-// TestWithFields tests the creation of an Slogger with fields that includes them in each log message.
-func TestWithFields(t *testing.T) {
+// TestWith tests the creation of an Slogger with attributes that includes them in each log message.
+func TestWith(t *testing.T) {
 	logSpy := bytes.Buffer{}
 	t.Setenv("MONACO_LOG_FORMAT", "json")
 	log.PrepareLogging(t.Context(), afero.NewOsFs(), false, &logSpy, false, false)
 
-	log.WithFields(
-		field.Field{Key: "Title", Value: "Captain"},
-		field.Field{Key: "Name", Value: "Iglo"},
-		field.Coordinate(coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}),
-		field.Environment("env1", "group")).Info("Logging with %s", "fields")
+	log.With(
+		attribute.Attr{Key: "Title", Value: "Captain"},
+		attribute.Attr{Key: "Name", Value: "Iglo"},
+		attribute.Coordinate(coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}),
+		attribute.Environment("env1", "group")).Info("Logging with %s", "attributes")
 
 	var data map[string]interface{}
 	err := json.Unmarshal(logSpy.Bytes(), &data)
 	require.NoError(t, err)
-	assert.Equal(t, "Logging with fields", data["msg"])
+	assert.Equal(t, "Logging with attributes", data["msg"])
 	assert.Equal(t, "Captain", data["Title"])
 	assert.Equal(t, "Iglo", data["Name"])
 	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["project"])

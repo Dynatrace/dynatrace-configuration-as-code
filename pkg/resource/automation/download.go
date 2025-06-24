@@ -30,7 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	templateEscaper "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -63,7 +63,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	log.InfoContext(ctx, "Downloading automation resources")
 	configsPerType := make(project.ConfigsPerType)
 	for _, at := range maps.Keys(automationTypesToResources) {
-		lg := log.WithFields(field.Type(at.Resource))
+		lg := log.With(attribute.Type(at.Resource))
 
 		resource, ok := automationTypesToResources[at]
 		if !ok {
@@ -77,23 +77,23 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 		}()
 
 		if err != nil {
-			lg.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
+			lg.With(attribute.Error(err)).ErrorContext(ctx, "Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
 		objects, err := automationutils.DecodeListResponse(response)
 		if err != nil {
-			lg.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
+			lg.With(attribute.Error(err)).ErrorContext(ctx, "Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
 		if len(objects) == 0 {
 			// Info on purpose. Most types have a lot of objects, so skipping printing 'not found' in the default case makes sense. Here it's kept on purpose, we have only 3 types.
-			lg.WithFields(field.F("configsDownloaded", len(objects))).InfoContext(ctx, "Did not find any %s to download", string(at.Resource))
+			lg.With(attribute.Any("configsDownloaded", len(objects))).InfoContext(ctx, "Did not find any %s to download", string(at.Resource))
 
 			continue
 		}
-		lg.WithFields(field.F("configsDownloaded", len(objects))).InfoContext(ctx, "Downloaded %d objects for %s", len(objects), string(at.Resource))
+		lg.With(attribute.Any("configsDownloaded", len(objects))).InfoContext(ctx, "Downloaded %d objects for %s", len(objects), string(at.Resource))
 
 		var configs []config.Config
 		for _, obj := range objects {
@@ -101,7 +101,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 			configId := obj.ID
 
 			if escaped, err := escapeJinjaTemplates(obj.Data); err != nil {
-				lg.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), field.Error(err)).WarnContext(ctx, "Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
+				lg.With(attribute.Coordinate(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), attribute.Error(err)).WarnContext(ctx, "Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
 			} else {
 				obj.Data = escaped
 			}
@@ -145,7 +145,7 @@ func createTemplateFromRawJSON(obj automationutils.Response, configType, project
 	var data map[string]interface{}
 	err := json.Unmarshal(obj.Data, &data)
 	if err != nil {
-		log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), field.Error(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
+		log.With(attribute.Coordinate(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), attribute.Error(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
 		return template.NewInMemoryTemplate(configId, string(obj.Data)), nil
 	}
 
@@ -167,7 +167,7 @@ func createTemplateFromRawJSON(obj automationutils.Response, configType, project
 	if modifiedJson, err := json.Marshal(data); err == nil {
 		content = modifiedJson
 	} else {
-		log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), field.Error(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
+		log.With(attribute.Coordinate(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), attribute.Error(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
 		content = obj.Data
 	}
 	content = jsonutils.MarshalIndent(content)

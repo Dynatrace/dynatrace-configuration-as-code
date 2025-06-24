@@ -26,7 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
@@ -36,13 +36,13 @@ type client interface {
 }
 
 func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) error {
-	logger := log.WithFields(field.Type("bucket"))
+	logger := log.With(attribute.Type("bucket"))
 	logger.InfoContext(ctx, `Deleting %d config(s) of type "bucket"...`, len(entries))
 
 	deleteErrs := 0
 	for _, e := range entries {
 
-		logger := logger.WithFields(field.Coordinate(e.AsCoordinate()))
+		logger := logger.With(attribute.Coordinate(e.AsCoordinate()))
 
 		bucketName := e.OriginObjectId
 		if e.OriginObjectId == "" {
@@ -53,7 +53,7 @@ func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) erro
 		_, err := c.Delete(ctx, bucketName)
 		if err != nil {
 			if !api.IsNotFoundError(err) {
-				logger.WithFields(field.Error(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
+				logger.With(attribute.Error(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
 				deleteErrs++
 			}
 
@@ -76,7 +76,7 @@ func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) erro
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
 func DeleteAll(ctx context.Context, c client) error {
-	logger := log.WithFields(field.Type("bucket"))
+	logger := log.With(attribute.Type("bucket"))
 	logger.InfoContext(ctx, "Collecting Grail Bucket configurations...")
 
 	response, err := c.List(ctx)

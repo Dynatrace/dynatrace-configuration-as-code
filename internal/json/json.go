@@ -24,7 +24,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
@@ -176,7 +176,7 @@ func newEmptyErr(location Location, err error) error {
 func MarshalIndent(jsonContent []byte) []byte {
 	indentedData, err := json.MarshalIndent(json.RawMessage(jsonContent), "", "  ")
 	if err != nil {
-		log.WithFields(field.Error(err)).Warn("Failed to indent json content. Reason: %s", err)
+		log.With(attribute.Error(err)).Warn("Failed to indent json content. Reason: %s", err)
 		return jsonContent
 	}
 	return indentedData
