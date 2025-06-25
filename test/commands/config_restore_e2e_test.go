@@ -36,9 +36,17 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
-type downloadFunction func(*testing.T, afero.Fs, string, string, string, string, bool) error
+type AuthType int
 
-// TestRestoreConfigs validates if the configurations can be restore from the downloaded version after being deleted
+const (
+	AuthClassicToken AuthType = iota
+	AuthOAuth
+	AuthPlatformToken
+)
+
+type downloadFunction func(*testing.T, afero.Fs, string, string, string, string, AuthType) error
+
+// TestRestoreConfigs validates if the configurations can be restored from the downloaded version after being deleted
 // It has 5 stages:
 // Preparation: Uploads a set of configurations and return the virtual filesystem
 // Execution: Download the configurations to the virtual filesystem
@@ -56,19 +64,34 @@ func TestRestoreConfigs_FromDownloadWithManifestFile(t *testing.T) {
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_manifest"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthClassicToken, execution_downloadConfigs)
 }
 
-// TestRestoreConfigs_FromDownloadWithPlatformManifestFile works like TestRestoreConfigs_FromDownloadWithManifestFile but
-// has a platform environment defined in the used manifest, rather than a Classic env.
-func TestRestoreConfigs_FromDownloadWithPlatformManifestFile(t *testing.T) {
+// TestRestoreConfigs_FromDownloadWithPlatformOAuthManifestFile works like TestRestoreConfigs_FromDownloadWithManifestFile but
+// has a platform environment with OAuth credentials defined in the used manifest, rather than a Classic env.
+func TestRestoreConfigs_FromDownloadWithPlatformOAuthManifestFile(t *testing.T) {
 	initialConfigsFolder := "testdata/integration-download-configs/"
-	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
+	manifestFile := initialConfigsFolder + "platform_oauth_manifest.yaml"
 	downloadFolder := "testdata/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_manifest"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthOAuth, execution_downloadConfigs)
+}
+
+// TestRestoreConfigs_FromDownloadWithPlatformTokenManifestFile works like
+// TestRestoreConfigs_FromDownloadWithPlatformOAuthManifestFile but has a platform token defined in the used manifest,
+// rather than OAuth credentials.
+func TestRestoreConfigs_FromDownloadWithPlatformTokenManifestFile(t *testing.T) {
+	initialConfigsFolder := "testdata/integration-download-configs/"
+	manifestFile := initialConfigsFolder + "platform_token_manifest.yaml"
+	downloadFolder := "testdata/download"
+	subsetOfConfigsToDownload := "alerting-profile,management-zone"
+	suffixTest := "_download_manifest"
+
+	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthPlatformToken, execution_downloadConfigs)
 }
 
 // TestRestoreConfigs_FromDownloadWithCLIParameters deploys, download and re-deploys from download the download-configs testdata
@@ -85,26 +108,42 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_cli-only"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigsWithCLIParameters)
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthClassicToken, execution_downloadConfigsWithCLIParameters)
 }
 
-func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) {
+func TestRestoreConfigs_FromDownloadWithPlatformOAuthWithCLIParameters(t *testing.T) {
 	if runner.IsHardeningEnvironment() {
 		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
 	}
 
 	initialConfigsFolder := "testdata/integration-download-configs/"
-	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
+	manifestFile := initialConfigsFolder + "platform_oauth_manifest.yaml"
 	downloadFolder := "testdata/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_cli-only"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, true, execution_downloadConfigsWithCLIParameters)
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthOAuth, execution_downloadConfigsWithCLIParameters)
 }
 
-func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withPlatformConfigs(t *testing.T) {
+func TestRestoreConfigs_FromDownloadWithPlatformTokenWithCLIParameters(t *testing.T) {
+	if runner.IsHardeningEnvironment() {
+		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
+	}
+
+	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+
+	initialConfigsFolder := "testdata/integration-download-configs/"
+	manifestFile := initialConfigsFolder + "platform_token_manifest.yaml"
+	downloadFolder := "testdata/download"
+	subsetOfConfigsToDownload := "alerting-profile,management-zone"
+	suffixTest := "_download_cli-only"
+
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthPlatformToken, execution_downloadConfigsWithCLIParameters)
+}
+
+func TestRestoreConfigs_FromDownloadWithPlatformOAuthManifestFile_withPlatformConfigs(t *testing.T) {
 	initialConfigsFolder := "testdata/integration-download-configs-platform/"
-	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
+	manifestFile := initialConfigsFolder + "platform_oauth_manifest.yaml"
 	downloadFolder := "testdata/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_automations"
@@ -112,7 +151,21 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withPlatformConfigs
 	t.Setenv(featureflags.Segments.EnvName(), "true")
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthOAuth, execution_downloadConfigs)
+}
+
+func TestRestoreConfigs_FromDownloadWithPlatformTokenManifestFile_withPlatformConfigs(t *testing.T) {
+	initialConfigsFolder := "testdata/integration-download-configs-platform/"
+	manifestFile := initialConfigsFolder + "platform_token_manifest.yaml"
+	downloadFolder := "testdata/download"
+	subsetOfConfigsToDownload := "alerting-profile,management-zone"
+	suffixTest := "_download_automations"
+
+	t.Setenv(featureflags.Segments.EnvName(), "true")
+	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
+	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthPlatformToken, execution_downloadConfigs)
 }
 
 func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
@@ -222,7 +275,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 					require.NoError(t, err)
 
 					t.Log("Downloading configs")
-					err = tc.downloadFunc(t, tc.fs, downloadFolder, tc.manifest, tc.apisToDownload, tc.settingsToDownload, false)
+					err = tc.downloadFunc(t, tc.fs, downloadFolder, tc.manifest, tc.apisToDownload, tc.settingsToDownload, AuthClassicToken)
 					assert.Equal(t, tc.wantErr, err != nil)
 					for _, f := range tc.expectedFolders {
 						folderExists, _ := afero.DirExists(tc.fs, f)
@@ -248,10 +301,10 @@ func TestRestoreConfigsFull(t *testing.T) {
 	subsetOfConfigsToDownload := "all" // value only for testing
 	suffixTest := "_download_all"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthClassicToken, execution_downloadConfigs)
 }
 
-func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, manifestFile string, apisToDownload string, oauthEnabled bool, downloadFunc downloadFunction) {
+func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, manifestFile string, apisToDownload string, authType AuthType, downloadFunc downloadFunction) {
 	initialConfigsFolder, _ = filepath.Abs(initialConfigsFolder)
 	downloadFolder, _ = filepath.Abs(downloadFolder)
 	manifestFile, _ = filepath.Abs(manifestFile)
@@ -261,7 +314,7 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 
 	assert.NoError(t, err, "Error during download preparation stage")
 
-	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload, "", oauthEnabled)
+	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload, "", authType)
 	assert.NoError(t, err, "Error during download execution stage")
 
 	runner.CleanupIntegrationTest(t, fs, manifestFile, "", suffix) // remove previously deployed configs
@@ -307,7 +360,7 @@ func execution_downloadConfigsWithCLIParameters(
 	_ string,
 	apiToDownload string,
 	settingToDownload string,
-	oauth bool,
+	authType AuthType,
 ) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
 
@@ -315,24 +368,21 @@ func execution_downloadConfigsWithCLIParameters(
 	if err != nil {
 		return err
 	}
-	parameters := []string{"download", "--verbose", "--output-folder", downloadFolder}
 	command := fmt.Sprintf("monaco download --verbose --output-folder=%s", downloadFolder)
 	if apiToDownload != "all" {
 		if apiToDownload != "" {
-			parameters = append(parameters, "--api", apiToDownload)
 			command += " --api=" + apiToDownload
 		}
 		if settingToDownload != "" {
-			parameters = append(parameters, "--settings-schema", settingToDownload)
 			command += " --settings-schema=" + settingToDownload
 		}
 	}
 
-	if oauth {
-		parameters = append(parameters, "--url", os.Getenv("PLATFORM_URL_ENVIRONMENT_1"), "--token", "TOKEN_ENVIRONMENT_1", "--oauth-client-id", "OAUTH_CLIENT_ID", "--oauth-client-secret", "OAUTH_CLIENT_SECRET")
+	if authType == AuthOAuth {
 		command += fmt.Sprintf(" --url=%s --token=%s --oauth-client-id=%s --oauth-client-secret=%s", os.Getenv("PLATFORM_URL_ENVIRONMENT_1"), "TOKEN_ENVIRONMENT_1", "OAUTH_CLIENT_ID", "OAUTH_CLIENT_SECRET")
-	} else {
-		parameters = append(parameters, "--url", os.Getenv("URL_ENVIRONMENT_1"), "--token", "TOKEN_ENVIRONMENT_1")
+	} else if authType == AuthPlatformToken {
+		command += fmt.Sprintf(" --url=%s --token=%s --platform-token=%s", os.Getenv("PLATFORM_URL_ENVIRONMENT_1"), "TOKEN_ENVIRONMENT_1", "PLATFORM_TOKEN")
+	} else if authType == AuthClassicToken {
 		command += fmt.Sprintf(" --url=%s --token=%s", os.Getenv("URL_ENVIRONMENT_1"), "TOKEN_ENVIRONMENT_1")
 	}
 
@@ -348,7 +398,7 @@ func execution_downloadConfigs(
 	manifestFile string,
 	apisToDownload string,
 	settingsToDownload string,
-	_ bool,
+	_ AuthType,
 ) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
 
