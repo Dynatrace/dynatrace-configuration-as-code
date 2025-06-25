@@ -27,7 +27,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/multierror"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -99,7 +98,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 			if err == nil {
 				n.DOTEncoding = string(s)
 			} else {
-				log.With(attribute.CoordinateAttr(n.Config.Coordinate)).ErrorContext(ctx, "Failed to encode Node ID as JSON: %v", err)
+				log.With(log.CoordinateAttr(n.Config.Coordinate)).ErrorContext(ctx, "Failed to encode Node ID as JSON: %v", err)
 				n.DOTEncoding = "{}"
 			}
 		})

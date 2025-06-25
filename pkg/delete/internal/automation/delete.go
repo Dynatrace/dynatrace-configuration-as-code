@@ -25,7 +25,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
@@ -36,7 +35,7 @@ type client interface {
 }
 
 func Delete(ctx context.Context, c client, automationResource config.AutomationResource, entries []pointer.DeletePointer) error {
-	logger := log.With(attribute.TypeAttr(string(automationResource)))
+	logger := log.With(log.TypeAttr(string(automationResource)))
 	logger.InfoContext(ctx, "Deleting %d config(s) of type %q...", len(entries), automationResource)
 
 	deleteErrs := 0
@@ -51,7 +50,7 @@ func Delete(ctx context.Context, c client, automationResource config.AutomationR
 }
 
 func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
-	logger := log.With(attribute.TypeAttr(dp.Type), attribute.CoordinateAttr(dp.AsCoordinate()))
+	logger := log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate()))
 
 	id := dp.OriginObjectId
 	if id == "" {
@@ -62,13 +61,13 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
 
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(config.AutomationResource(dp.Type))
 	if err != nil {
-		logger.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete %v with ID %q: %v", dp.Type, id, err)
+		logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete %v with ID %q: %v", dp.Type, id, err)
 		return 1
 	}
 	_, err = c.Delete(ctx, resourceType, id)
 	if err != nil {
 		if !api.IsNotFoundError(err) {
-			logger.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete %v with ID '%s': %v", dp.Type, id, err)
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete %v with ID '%s': %v", dp.Type, id, err)
 			return 1
 		}
 	}
@@ -89,7 +88,7 @@ func DeleteAll(ctx context.Context, c client) error {
 
 	resources := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
 	for _, resource := range resources {
-		logger := log.With(attribute.TypeAttr(string(resource)))
+		logger := log.With(log.TypeAttr(string(resource)))
 
 		t, err := automationutils.ClientResourceTypeFromConfigType(resource)
 		if err != nil {
@@ -101,14 +100,14 @@ func DeleteAll(ctx context.Context, c client) error {
 		logger.InfoContext(ctx, "Collecting Automation objects of type %q...", resource)
 		resp, err := c.List(ctx, t)
 		if err != nil {
-			logger.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect Automation objects of type '%s': %v", resource, err)
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect Automation objects of type '%s': %v", resource, err)
 			errCount++
 			continue
 		}
 
 		objects, err := automationutils.DecodeListResponse(resp)
 		if err != nil {
-			logger.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect Automation objects of type '%s': %v", resource, err)
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect Automation objects of type '%s': %v", resource, err)
 			errCount++
 			continue
 		}

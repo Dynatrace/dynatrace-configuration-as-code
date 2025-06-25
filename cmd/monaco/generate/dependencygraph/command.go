@@ -27,7 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 )
 
 const jsonEncoding = "json"
@@ -58,7 +57,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 			err := writeGraphFiles(cmd.Context(), fs, manifestName, environments, groups, outputFolder, writeJSONIDs)
 			if err != nil {
-				log.With(attribute.ErrorAttr(err), slog.Any("manifestFile", manifestName), slog.Any("outputFolder", outputFolder)).Error("Failed to create dependency graph files: %v", err)
+				log.With(log.ErrorAttr(err), slog.Any("manifestFile", manifestName), slog.Any("outputFolder", outputFolder)).Error("Failed to create dependency graph files: %v", err)
 			}
 			return err
 		},

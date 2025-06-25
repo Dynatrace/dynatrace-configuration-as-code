@@ -30,7 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -127,8 +126,8 @@ func TestWith(t *testing.T) {
 	log.With(
 		slog.Any("Title", "Captain"),
 		slog.Any("Name", "Iglo"),
-		attribute.CoordinateAttr(coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}),
-		attribute.EnvironmentAttr("env1", "group")).Info("Logging with %s", "attributes")
+		log.CoordinateAttr(coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}),
+		log.EnvironmentAttr("env1", "group")).Info("Logging with %s", "attributes")
 
 	var data map[string]interface{}
 	err := json.Unmarshal(logSpy.Bytes(), &data)

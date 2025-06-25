@@ -30,7 +30,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -53,7 +52,7 @@ type createDeleteFileOptions struct {
 func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, options createDeleteFileOptions) error {
 	content, err := generateDeleteFileContent(apis, projects, options)
 	if err != nil {
-		log.With(attribute.ErrorAttr(err)).Error("Failed to generate delete file content: %v", err)
+		log.With(log.ErrorAttr(err)).Error("Failed to generate delete file content: %v", err)
 		return err
 	}
 
@@ -139,7 +138,7 @@ func generateDeleteEntries(apis api.APIs, projects []project.Project, options cr
 
 			entry, err := createDeleteEntry(c, apis, p)
 			if err != nil {
-				log.With(attribute.ErrorAttr(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
+				log.With(log.ErrorAttr(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
 				return
 			}
 			entries[toMapKey(entry)] = entry
@@ -167,7 +166,7 @@ func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Proj
 				}
 				entry, err := createDeleteEntry(c, apis, p)
 				if err != nil {
-					log.With(attribute.ErrorAttr(err)).Warn("Failed to automatically create delete entry for '%s': %s", c.Coordinate, err)
+					log.With(log.ErrorAttr(err)).Warn("Failed to automatically create delete entry for '%s': %s", c.Coordinate, err)
 					return
 				}
 				entries[toMapKey(entry)] = entry

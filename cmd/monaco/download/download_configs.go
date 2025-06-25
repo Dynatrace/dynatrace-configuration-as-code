@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -166,7 +165,7 @@ func doDownloadConfigs(ctx context.Context, fs afero.Fs, clientSet *client.Clien
 
 		err := escapeGoTemplating(&c)
 		if err != nil {
-			log.With(attribute.CoordinateAttr(c.Coordinate), attribute.ErrorAttr(err)).WarnContext(ctx, "Failed to escape Go templating expressions. Template needs manual adaptation: %s", err)
+			log.With(log.CoordinateAttr(c.Coordinate), log.ErrorAttr(err)).WarnContext(ctx, "Failed to escape Go templating expressions. Template needs manual adaptation: %s", err)
 		}
 	}
 

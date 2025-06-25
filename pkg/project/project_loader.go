@@ -24,7 +24,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -267,7 +266,7 @@ func toConfigMap(configs []config.Config) ConfigsPerTypePerEnvironments {
 		if c.Type.ID() == config.ClassicApiTypeID && apis[c.Coordinate.Type].NonUniqueName {
 			name, err := config.GetNameForConfig(c)
 			if err != nil {
-				log.With(attribute.ErrorAttr(err), attribute.CoordinateAttr(c.Coordinate)).Error("Unable to resolve name of configuration")
+				log.With(log.ErrorAttr(err), log.CoordinateAttr(c.Coordinate)).Error("Unable to resolve name of configuration")
 			}
 
 			if _, f := nonUniqueNameConfigCount[c.Environment]; !f {

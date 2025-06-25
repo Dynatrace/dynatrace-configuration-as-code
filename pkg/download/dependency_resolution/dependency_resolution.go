@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution/resolver"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
@@ -61,7 +60,7 @@ func resolve(configs project.ConfigsPerType) error {
 			go func() {
 				err := r.ResolveDependencyReferences(configToBeUpdated)
 				if err != nil {
-					log.With(attribute.CoordinateAttr(configToBeUpdated.Coordinate), attribute.ErrorAttr(err)).Error("Failed to resolve dependencies: %v", err)
+					log.With(log.CoordinateAttr(configToBeUpdated.Coordinate), log.ErrorAttr(err)).Error("Failed to resolve dependencies: %v", err)
 					errOccurred.Store(true)
 				}
 
@@ -85,7 +84,7 @@ func getResolver(configs project.ConfigsPerType) dependencyResolver {
 		log.Debug("Using fast but memory intensive dependency resolution. Can be deactivated by setting the environment variable '%s' to 'false'.", featureflags.FastDependencyResolver)
 		r, err := resolver.AhoCorasickResolver(configsById)
 		if err != nil {
-			log.With(attribute.ErrorAttr(err)).Error("Failed to initialize fast dependency resolution, falling back to slow resolution: %v", err)
+			log.With(log.ErrorAttr(err)).Error("Failed to initialize fast dependency resolution, falling back to slow resolution: %v", err)
 			return resolver.BasicResolver(configsById)
 		}
 		return r
@@ -115,7 +114,7 @@ func collectConfigsById(configs project.ConfigsPerType) map[string]config.Config
 				// resolve Management Zone Settings by Numeric ID as well
 				numID, err := idutils.GetNumericIDForObjectID(conf.OriginObjectId)
 				if err != nil {
-					log.With(attribute.ErrorAttr(err)).Warn("Failed to decode numeric ID of config %q, auto-resolved references may be incomplete: %v", conf.Coordinate, err)
+					log.With(log.ErrorAttr(err)).Warn("Failed to decode numeric ID of config %q, auto-resolved references may be incomplete: %v", conf.Coordinate, err)
 				} else {
 					strId := fmt.Sprintf("%d", numID)
 					configsById[strId] = conf
