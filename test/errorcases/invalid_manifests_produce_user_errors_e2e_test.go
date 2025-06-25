@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 
 	"path/filepath"
@@ -55,8 +56,14 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 			"manifest_missing_envs.yaml",
 			"'environmentGroups' are required, but not defined",
 		},
+		{
+			"Both OAuth and platform token defined",
+			"manifest_oauth_and_platform_token.yaml",
+			"OAuth credentials and a platform token can't be used at the same time",
+		},
 	}
 
+	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			manifest := filepath.Join("testdata/invalid-manifests/", tt.manifestFileName)
