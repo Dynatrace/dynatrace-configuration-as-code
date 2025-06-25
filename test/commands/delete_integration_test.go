@@ -55,6 +55,7 @@ func TestDelete(t *testing.T) {
 		deleteFile            string
 		deleteContentTemplate string
 		cmdFlag               string
+		deployManifest        string
 	}{
 		{
 			name:                  "Default values",
@@ -62,6 +63,7 @@ func TestDelete(t *testing.T) {
 			configTemplate:        configTemplate,
 			deleteFile:            "delete.yaml",
 			deleteContentTemplate: deleteContentTemplate,
+			deployManifest:        "deploy-manifest-with-oauth.yaml",
 		},
 		{
 			name:                  "Default values - legacy delete",
@@ -69,6 +71,7 @@ func TestDelete(t *testing.T) {
 			configTemplate:        "configs:\n- id: %s\n  type:\n    api: auto-tag\n  config:\n    name: %s\n    template: auto-tag.json\n",
 			deleteFile:            "delete.yaml",
 			deleteContentTemplate: "delete:\n  - \"auto-tag/%s\"",
+			deployManifest:        "deploy-manifest-with-oauth.yaml",
 		},
 		{
 			name:           "Default values - Automation",
@@ -79,6 +82,18 @@ func TestDelete(t *testing.T) {
 - project: "project"
   type: "workflow"
   id: "%s"`,
+			deployManifest: "deploy-manifest-with-oauth.yaml",
+		},
+		{
+			name:           "Default values - Automation w Platform token",
+			manifest:       "manifest.yaml",
+			configTemplate: "configs:\n- id: %s\n  type:\n    automation:\n      resource: workflow\n  config:\n    name: %s\n    template: workflow.json\n",
+			deleteFile:     "delete.yaml",
+			deleteContentTemplate: `delete:
+- project: "project"
+  type: "workflow"
+  id: "%s"`,
+			deployManifest: "deploy-manifest-with-platform-token.yaml",
 		},
 		{
 			name:                  "Specific manifest",
@@ -87,6 +102,7 @@ func TestDelete(t *testing.T) {
 			deleteFile:            "delete.yaml",
 			deleteContentTemplate: deleteContentTemplate,
 			cmdFlag:               "--manifest=my_special_manifest.yaml",
+			deployManifest:        "deploy-manifest-with-oauth.yaml",
 		},
 		{
 			name:                  "Specific manifest (shorthand)",
@@ -95,6 +111,7 @@ func TestDelete(t *testing.T) {
 			deleteFile:            "delete.yaml",
 			deleteContentTemplate: deleteContentTemplate,
 			cmdFlag:               "--manifest=my_special_manifest.yaml",
+			deployManifest:        "deploy-manifest-with-oauth.yaml",
 		},
 		{
 			name:                  "Specific delete file",
@@ -103,6 +120,7 @@ func TestDelete(t *testing.T) {
 			deleteFile:            "super-special-removal-file.yaml",
 			deleteContentTemplate: deleteContentTemplate,
 			cmdFlag:               "--file=super-special-removal-file.yaml",
+			deployManifest:        "deploy-manifest-with-oauth.yaml",
 		},
 		{
 			name:                  "Specific manifest and delete file",
@@ -111,13 +129,15 @@ func TestDelete(t *testing.T) {
 			deleteFile:            "super-special-removal-file.yaml",
 			deleteContentTemplate: deleteContentTemplate,
 			cmdFlag:               "--manifest=my_special_manifest.yaml --file=super-special-removal-file.yaml",
+			deployManifest:        "deploy-manifest-with-oauth.yaml",
 		},
 	}
 
+	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t1 *testing.T) {
 			configFolder := "testdata/delete-test-configs/"
-			deployManifestPath := configFolder + "deploy-manifest.yaml"
+			deployManifestPath := configFolder + tt.deployManifest
 
 			fs := testutils.CreateTestFileSystem()
 
@@ -161,7 +181,7 @@ func TestDelete(t *testing.T) {
 func TestDeleteSkipsPlatformTypesWhenDeletingFromClassicEnv(t *testing.T) {
 
 	configFolder := "testdata/delete-test-configs/"
-	deployManifestPath := configFolder + "deploy-manifest.yaml"
+	deployManifestPath := configFolder + "deploy-manifest-with-oauth.yaml"
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -240,7 +260,7 @@ environmentGroups:
 	assert2.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 	// ensure test resources are removed after test is done
 	defer func() {
-		monaco.Run(t, fs, "monaco delete --manifest=testdata/delete-test-configs/deploy-manifest.yaml --verbose")
+		monaco.Run(t, fs, "monaco delete --manifest=testdata/delete-test-configs/deploy-manifest-with-oauth.yaml --verbose")
 	}()
 
 	// DELETE Configs - with access token only Manifest
@@ -250,7 +270,7 @@ environmentGroups:
 	// Assert expected deletions
 	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
-		ManifestPath: "testdata/delete-test-configs/deploy-manifest.yaml", // full manifest with oAuth
+		ManifestPath: "testdata/delete-test-configs/deploy-manifest-with-oauth.yaml", // full manifest with oAuth
 		Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
 	})
 	assert.Empty(t, errs)
@@ -289,7 +309,7 @@ environmentGroups:
 
 func TestDeleteSubPathAPIConfigurations(t *testing.T) {
 	configFolder := "testdata/delete-test-configs/"
-	deployManifestPath := configFolder + "deploy-manifest.yaml"
+	deployManifestPath := configFolder + "deploy-manifest-with-oauth.yaml"
 
 	fs := testutils.CreateTestFileSystem()
 
