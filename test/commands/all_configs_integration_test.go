@@ -54,13 +54,37 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 		})
 }
 
-func TestIntegrationAllConfigsPlatform(t *testing.T) {
+func TestIntegrationAllConfigsPlatformWithOAuth(t *testing.T) {
 	configFolder := "testdata/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
 	targetEnvironment := "platform_env"
+
+	runner.Run(t, configFolder,
+		runner.Options{
+			runner.WithManifestPath(manifest),
+			runner.WithSuffix("AllConfigs"),
+			runner.WithEnvironment(targetEnvironment),
+		},
+		func(fs afero.Fs, _ runner.TestContext) {
+			// This causes a POST for all configs:
+			runDeployCommand(t, fs, manifest, targetEnvironment)
+
+			// This causes a PUT for all configs:
+			runDeployCommand(t, fs, manifest, targetEnvironment)
+		})
+}
+
+func TestIntegrationAllConfigsPlatformWithToken(t *testing.T) {
+	configFolder := "testdata/integration-all-configs/"
+	manifest := configFolder + "manifest.yaml"
+
+	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
+	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+
+	targetEnvironment := "platform_token_env"
 
 	runner.Run(t, configFolder,
 		runner.Options{
@@ -89,7 +113,7 @@ func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment s
 func TestIntegrationValidationAllConfigs(t *testing.T) {
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
-
+	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
 	fs := afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs())
 
 	err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --dry-run --verbose", "testdata/integration-all-configs/manifest.yaml"))
