@@ -107,7 +107,7 @@ func TestReporter_CorrectSummaryIfNoReportsMade(t *testing.T) {
 	assert.Contains(t, summary, "Deployments errored: 0\n")
 	assert.Contains(t, summary, "Deployments excluded: 0\n")
 	assert.Contains(t, summary, "Deployments skipped: 0\n")
-	assert.Contains(t, summary, fmt.Sprintf("Deploy Start Time: %s\n", testTime.Format("20060102-150405")))
-	assert.Contains(t, summary, fmt.Sprintf("Deploy End Time: %s\n", testTime.Format("20060102-150405")))
-	assert.Contains(t, summary, "Deploy Duration: 0s\n")
+	assert.Contains(t, summary, fmt.Sprintf("Deploy start time: %s\n", testTime.Format("20060102-150405")))
+	assert.Contains(t, summary, fmt.Sprintf("Deploy end time: %s\n", testTime.Format("20060102-150405")))
+	assert.Contains(t, summary, "Deploy duration: 0s\n")
 }
