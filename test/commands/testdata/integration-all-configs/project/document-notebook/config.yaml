@@ -11,4 +11,4 @@ configs:
   environmentOverrides:
     - environment: classic_env
       override:
-        skip: true
+        skip: true # platform only config

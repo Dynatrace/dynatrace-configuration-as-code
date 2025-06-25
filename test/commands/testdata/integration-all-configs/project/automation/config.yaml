@@ -27,11 +27,11 @@ configs:
         configType: scheduling-rule
         property: id
         type: reference
-    skip: true # platform only config
+    skip: false
   environmentOverrides:
-    - environment: platform_env
+    - environment: classic_env
       override:
-        skip: false
+        skip: true # platform only config
 
 - id: ca-scheduling-rule
   type:
@@ -46,11 +46,11 @@ configs:
         property: id
         type: reference
     template: scheduling-rule.json
-    skip: true # platform only config
+    skip: false
   environmentOverrides:
-    - environment: platform_env
+    - environment: classic_env
       override:
-        skip: false
+        skip: true # platform only config
 
 - id: ca-business-calendar
   type:
@@ -59,9 +59,9 @@ configs:
   config:
     name: Some [CA] business calendar
     template: business-calendar.json
-    skip: true # platform only config
+    skip: false
   environmentOverrides:
-    - environment: platform_env
+    - environment: classic_env
       override:
-        skip: false
+        skip: true # platform only config
 
