@@ -20,6 +20,7 @@ package report_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -87,4 +88,26 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, State: "ERROR", Details: []report.Detail{{Type: report.DetailTypeError, Message: "error"}}, Error: anError}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, State: "SKIPPED", Details: []report.Detail{{Type: report.DetailTypeInfo, Message: "skipped"}}, Error: ""}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, State: "EXCLUDED", Details: nil, Error: ""}, true)
+}
+
+// TestReporter_CorrectSummaryIfNoReportsMade tests that the summary is correct even if no reports are made.
+// It also tests the basic structure of the summary itself.
+func TestReporter_CorrectSummaryIfNoReportsMade(t *testing.T) {
+	reportFilename := "test_report.jsonl"
+	fs := testutils.TempFs(t)
+
+	testTime := time.Unix(time.Now().Unix(), 0).UTC()
+
+	r := report.NewDefaultReporterWithClockFunc(fs, reportFilename, func() time.Time { return testTime })
+	r.Stop()
+
+	summary := r.GetSummary()
+
+	assert.Contains(t, summary, "Deployments success: 0\n")
+	assert.Contains(t, summary, "Deployments errored: 0\n")
+	assert.Contains(t, summary, "Deployments excluded: 0\n")
+	assert.Contains(t, summary, "Deployments skipped: 0\n")
+	assert.Contains(t, summary, fmt.Sprintf("Deploy Start Time: %s\n", testTime.Format("20060102-150405")))
+	assert.Contains(t, summary, fmt.Sprintf("Deploy End Time: %s\n", testTime.Format("20060102-150405")))
+	assert.Contains(t, summary, "Deploy Duration: 0s\n")
 }
