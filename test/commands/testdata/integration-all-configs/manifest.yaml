@@ -26,3 +26,12 @@ environmentGroups:
         tokenEndpoint:
           type: environment
           value: OAUTH_TOKEN_ENDPOINT
+  - name: platform_token_env
+    url:
+      type: environment
+      value: PLATFORM_URL_ENVIRONMENT_2
+    auth:
+      token:
+        name: TOKEN_ENVIRONMENT_2
+      platformToken:
+        name: PLATFORM_TOKEN
