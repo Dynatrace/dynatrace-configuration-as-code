@@ -242,9 +242,9 @@ func (d *defaultReporter) GetSummary() string {
 	sb.WriteString(fmt.Sprintf("Deployments errored: %d\n", d.deploymentsErrorCount))
 	sb.WriteString(fmt.Sprintf("Deployments excluded: %d\n", d.deploymentsExcludedCount))
 	sb.WriteString(fmt.Sprintf("Deployments skipped: %d\n", d.deploymentsSkippedCount))
-	sb.WriteString(fmt.Sprintf("Deploy Start Time: %v\n", d.started.Format("20060102-150405")))
-	sb.WriteString(fmt.Sprintf("Deploy End Time: %v\n", d.ended.Format("20060102-150405")))
-	sb.WriteString(fmt.Sprintf("Deploy Duration: %v\n", d.ended.Sub(d.started)))
+	sb.WriteString(fmt.Sprintf("Deploy start time: %v\n", d.started.Format("20060102-150405")))
+	sb.WriteString(fmt.Sprintf("Deploy end time: %v\n", d.ended.Format("20060102-150405")))
+	sb.WriteString(fmt.Sprintf("Deploy duration: %v\n", d.ended.Sub(d.started)))
 	return sb.String()
 }
 
