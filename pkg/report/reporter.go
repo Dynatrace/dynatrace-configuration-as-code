@@ -95,6 +95,7 @@ func newDefaultReporterWithClockFunc(fs afero.Fs, reportFilePath string, c func(
 	r := &defaultReporter{
 		clockFunc: c,
 		started:   c(),
+		ended:     c(),
 		queue:     make(chan Record, 32),
 	}
 	r.wg.Add(1)
