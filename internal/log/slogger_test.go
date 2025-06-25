@@ -127,8 +127,8 @@ func TestWith(t *testing.T) {
 	log.With(
 		slog.Any("Title", "Captain"),
 		slog.Any("Name", "Iglo"),
-		attribute.Coordinate(coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}),
-		attribute.Environment("env1", "group")).Info("Logging with %s", "attributes")
+		attribute.CoordinateAttr(coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}),
+		attribute.EnvironmentAttr("env1", "group")).Info("Logging with %s", "attributes")
 
 	var data map[string]interface{}
 	err := json.Unmarshal(logSpy.Bytes(), &data)

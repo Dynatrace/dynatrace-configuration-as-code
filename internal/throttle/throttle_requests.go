@@ -51,7 +51,7 @@ func GenerateSleepDuration(backoffMultiplier int, timelineProvider timeutils.Tim
 
 	addedWaitMillis, err := rand.Int(MinWaitDuration.Nanoseconds())
 	if err != nil {
-		log.With(attribute.Error(err)).Warn("Failed to generate random gitter. Falling back to use fixed value. Error: %s", err)
+		log.With(attribute.ErrorAttr(err)).Warn("Failed to generate random gitter. Falling back to use fixed value. Error: %s", err)
 		addedWaitMillis = 0
 	}
 

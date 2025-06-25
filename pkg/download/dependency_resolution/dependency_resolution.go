@@ -61,7 +61,7 @@ func resolve(configs project.ConfigsPerType) error {
 			go func() {
 				err := r.ResolveDependencyReferences(configToBeUpdated)
 				if err != nil {
-					log.With(attribute.Coordinate(configToBeUpdated.Coordinate), attribute.Error(err)).Error("Failed to resolve dependencies: %v", err)
+					log.With(attribute.CoordinateAttr(configToBeUpdated.Coordinate), attribute.ErrorAttr(err)).Error("Failed to resolve dependencies: %v", err)
 					errOccurred.Store(true)
 				}
 
@@ -85,7 +85,7 @@ func getResolver(configs project.ConfigsPerType) dependencyResolver {
 		log.Debug("Using fast but memory intensive dependency resolution. Can be deactivated by setting the environment variable '%s' to 'false'.", featureflags.FastDependencyResolver)
 		r, err := resolver.AhoCorasickResolver(configsById)
 		if err != nil {
-			log.With(attribute.Error(err)).Error("Failed to initialize fast dependency resolution, falling back to slow resolution: %v", err)
+			log.With(attribute.ErrorAttr(err)).Error("Failed to initialize fast dependency resolution, falling back to slow resolution: %v", err)
 			return resolver.BasicResolver(configsById)
 		}
 		return r
@@ -115,7 +115,7 @@ func collectConfigsById(configs project.ConfigsPerType) map[string]config.Config
 				// resolve Management Zone Settings by Numeric ID as well
 				numID, err := idutils.GetNumericIDForObjectID(conf.OriginObjectId)
 				if err != nil {
-					log.With(attribute.Error(err)).Warn("Failed to decode numeric ID of config %q, auto-resolved references may be incomplete: %v", conf.Coordinate, err)
+					log.With(attribute.ErrorAttr(err)).Warn("Failed to decode numeric ID of config %q, auto-resolved references may be incomplete: %v", conf.Coordinate, err)
 				} else {
 					strId := fmt.Sprintf("%d", numID)
 					configsById[strId] = conf

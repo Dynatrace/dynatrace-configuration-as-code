@@ -53,7 +53,7 @@ type createDeleteFileOptions struct {
 func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, options createDeleteFileOptions) error {
 	content, err := generateDeleteFileContent(apis, projects, options)
 	if err != nil {
-		log.With(attribute.Error(err)).Error("Failed to generate delete file content: %v", err)
+		log.With(attribute.ErrorAttr(err)).Error("Failed to generate delete file content: %v", err)
 		return err
 	}
 
@@ -139,7 +139,7 @@ func generateDeleteEntries(apis api.APIs, projects []project.Project, options cr
 
 			entry, err := createDeleteEntry(c, apis, p)
 			if err != nil {
-				log.With(attribute.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
+				log.With(attribute.ErrorAttr(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
 				return
 			}
 			entries[toMapKey(entry)] = entry
@@ -167,7 +167,7 @@ func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Proj
 				}
 				entry, err := createDeleteEntry(c, apis, p)
 				if err != nil {
-					log.With(attribute.Error(err)).Warn("Failed to automatically create delete entry for '%s': %s", c.Coordinate, err)
+					log.With(attribute.ErrorAttr(err)).Warn("Failed to automatically create delete entry for '%s': %s", c.Coordinate, err)
 					return
 				}
 				entries[toMapKey(entry)] = entry

@@ -64,7 +64,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	log.InfoContext(ctx, "Downloading automation resources")
 	configsPerType := make(project.ConfigsPerType)
 	for _, at := range maps.Keys(automationTypesToResources) {
-		lg := log.With(attribute.Type(at.Resource))
+		lg := log.With(attribute.TypeAttr(at.Resource))
 
 		resource, ok := automationTypesToResources[at]
 		if !ok {
@@ -78,13 +78,13 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 		}()
 
 		if err != nil {
-			lg.With(attribute.Error(err)).ErrorContext(ctx, "Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
+			lg.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
 		objects, err := automationutils.DecodeListResponse(response)
 		if err != nil {
-			lg.With(attribute.Error(err)).ErrorContext(ctx, "Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
+			lg.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
@@ -102,7 +102,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 			configId := obj.ID
 
 			if escaped, err := escapeJinjaTemplates(obj.Data); err != nil {
-				lg.With(attribute.Coordinate(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), attribute.Error(err)).WarnContext(ctx, "Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
+				lg.With(attribute.CoordinateAttr(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), attribute.ErrorAttr(err)).WarnContext(ctx, "Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
 			} else {
 				obj.Data = escaped
 			}
@@ -146,7 +146,7 @@ func createTemplateFromRawJSON(obj automationutils.Response, configType, project
 	var data map[string]interface{}
 	err := json.Unmarshal(obj.Data, &data)
 	if err != nil {
-		log.With(attribute.Coordinate(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), attribute.Error(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
+		log.With(attribute.CoordinateAttr(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), attribute.ErrorAttr(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
 		return template.NewInMemoryTemplate(configId, string(obj.Data)), nil
 	}
 
@@ -168,7 +168,7 @@ func createTemplateFromRawJSON(obj automationutils.Response, configType, project
 	if modifiedJson, err := json.Marshal(data); err == nil {
 		content = modifiedJson
 	} else {
-		log.With(attribute.Coordinate(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), attribute.Error(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
+		log.With(attribute.CoordinateAttr(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), attribute.ErrorAttr(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
 		content = obj.Data
 	}
 	content = jsonutils.MarshalIndent(content)

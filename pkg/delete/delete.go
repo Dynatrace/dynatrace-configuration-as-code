@@ -55,7 +55,7 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 	// Delete rest of config types
 	for t, entries := range remainingEntriesToDelete {
 		if err := deleteConfig(ctx, clients, t, entries); err != nil {
-			log.With(attribute.Error(err)).ErrorContext(ctx, "Error during deletion: %v", err)
+			log.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Error during deletion: %v", err)
 			errCount += 1
 		}
 	}
@@ -78,12 +78,12 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 		}
 
 		if autClient == nil {
-			log.With(attribute.Type(key)).WarnContext(ctx, "Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
+			log.With(attribute.TypeAttr(key)).WarnContext(ctx, "Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
 			continue
 		}
 		err := automation.Delete(ctx, autClient, key, entries)
 		if err != nil {
-			log.With(attribute.Error(err)).ErrorContext(ctx, "Error during deletion: %v", err)
+			log.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Error during deletion: %v", err)
 			errCount += 1
 		}
 	}
@@ -95,36 +95,36 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 		if clients.ConfigClient != nil {
 			return classic.Delete(ctx, clients.ConfigClient, entries)
 		}
-		log.With(attribute.Type(t)).WarnContext(ctx, "Skipped deletion of %d Classic configuration(s) as API client was unavailable.", len(entries))
+		log.With(attribute.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Classic configuration(s) as API client was unavailable.", len(entries))
 	} else if t == "bucket" {
 		if clients.BucketClient != nil {
 			return bucket.Delete(ctx, clients.BucketClient, entries)
 		}
-		log.With(attribute.Type(t)).WarnContext(ctx, "Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
+		log.With(attribute.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
 	} else if t == "document" {
 		if clients.DocumentClient != nil {
 			return document.Delete(ctx, clients.DocumentClient, entries)
 		}
-		log.With(attribute.Type(t)).WarnContext(ctx, "Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
+		log.With(attribute.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
 	} else if t == string(config.SegmentID) {
 		if featureflags.Segments.Enabled() {
 			if clients.SegmentClient != nil {
 				return segment.Delete(ctx, clients.SegmentClient, entries)
 			}
-			log.With(attribute.Type(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.SegmentID)
+			log.With(attribute.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.SegmentID)
 		}
 	} else if t == string(config.ServiceLevelObjectiveID) {
 		if featureflags.ServiceLevelObjective.Enabled() {
 			if clients.ServiceLevelObjectiveClient != nil {
 				return slo.Delete(ctx, clients.ServiceLevelObjectiveClient, entries)
 			}
-			log.With(attribute.Type(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.ServiceLevelObjectiveID)
+			log.With(attribute.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.ServiceLevelObjectiveID)
 		}
 	} else {
 		if clients.SettingsClient != nil {
 			return setting.Delete(ctx, clients.SettingsClient, entries)
 		}
-		log.With(attribute.Type(t)).WarnContext(ctx, "Skipped deletion of %d Settings configuration(s) as API client was unavailable.", len(entries))
+		log.With(attribute.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Settings configuration(s) as API client was unavailable.", len(entries))
 	}
 	return nil
 }

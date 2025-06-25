@@ -61,7 +61,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	result := make(project.ConfigsPerType)
 	response, err := a.bucketSource.List(ctx)
 	if err != nil {
-		log.With(attribute.Type("bucket"), attribute.Error(err)).ErrorContext(ctx, "Failed to fetch all bucket definitions: %v", err)
+		log.With(attribute.TypeAttr("bucket"), attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to fetch all bucket definitions: %v", err)
 		return nil, nil
 	}
 
@@ -73,7 +73,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 func convertAllObjects(projectName string, objects [][]byte) []config.Config {
 	result := make([]config.Config, 0, len(objects))
 
-	lg := log.With(attribute.Type("bucket"))
+	lg := log.With(attribute.TypeAttr("bucket"))
 
 	for _, o := range objects {
 
@@ -82,7 +82,7 @@ func convertAllObjects(projectName string, objects [][]byte) []config.Config {
 			if errors.As(err, &skipErr{}) {
 				lg.Debug("Skipping bucket: %s", err)
 			} else {
-				lg.With(attribute.Error(err)).Error("Failed to decode API response objects for bucket resource: %v", err)
+				lg.With(attribute.ErrorAttr(err)).Error("Failed to decode API response objects for bucket resource: %v", err)
 			}
 
 			continue

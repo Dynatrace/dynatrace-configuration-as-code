@@ -43,7 +43,7 @@ import (
 func RunCmd(ctx context.Context, cmd *cobra.Command) error {
 	err := cmd.ExecuteContext(ctx)
 	if err != nil {
-		log.With(attribute.Error(err)).ErrorContext(ctx, "Error: %v", err)
+		log.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Error: %v", err)
 		log.With(slog.Any("errorLogFilePath", log.ErrorFilePath())).ErrorContext(ctx, "error logs written to %s", log.ErrorFilePath())
 	}
 	return err
@@ -56,10 +56,10 @@ func BuildCmd(fs afero.Fs) *cobra.Command {
 func writeSupportArchive(fs afero.Fs) func() {
 	return func() {
 		if err := trafficlogs.GetInstance().Sync(); err != nil {
-			log.With(attribute.Error(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
+			log.With(attribute.ErrorAttr(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
 		}
 		if err := supportarchive.Write(fs); err != nil {
-			log.With(attribute.Error(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
+			log.With(attribute.ErrorAttr(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
 		}
 	}
 }

@@ -99,7 +99,7 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 			if err == nil {
 				n.DOTEncoding = string(s)
 			} else {
-				log.With(attribute.Coordinate(n.Config.Coordinate)).ErrorContext(ctx, "Failed to encode Node ID as JSON: %v", err)
+				log.With(attribute.CoordinateAttr(n.Config.Coordinate)).ErrorContext(ctx, "Failed to encode Node ID as JSON: %v", err)
 				n.DOTEncoding = "{}"
 			}
 		})

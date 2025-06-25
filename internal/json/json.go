@@ -176,7 +176,7 @@ func newEmptyErr(location Location, err error) error {
 func MarshalIndent(jsonContent []byte) []byte {
 	indentedData, err := json.MarshalIndent(json.RawMessage(jsonContent), "", "  ")
 	if err != nil {
-		log.With(attribute.Error(err)).Warn("Failed to indent json content. Reason: %s", err)
+		log.With(attribute.ErrorAttr(err)).Warn("Failed to indent json content. Reason: %s", err)
 		return jsonContent
 	}
 	return indentedData

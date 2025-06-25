@@ -755,7 +755,7 @@ func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj Set
 	// compress json to require less space
 	dest := bytes.Buffer{}
 	if err := json.Compact(&dest, fullObj); err != nil {
-		log.With(attribute.Error(err)).DebugContext(ctx, "Failed to compact json: %s. Using uncompressed json.\n\tJson: %v", err, string(fullObj))
+		log.With(attribute.ErrorAttr(err)).DebugContext(ctx, "Failed to compact json: %s. Using uncompressed json.\n\tJson: %v", err, string(fullObj))
 		return fullObj, nil
 	}
 

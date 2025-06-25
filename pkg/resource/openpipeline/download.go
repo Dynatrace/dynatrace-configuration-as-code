@@ -47,7 +47,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	result := project.ConfigsPerType{string(config.OpenPipelineTypeID): nil}
 	all, err := a.openPipelineSource.GetAll(ctx)
 	if err != nil {
-		log.With(attribute.Type(config.OpenPipelineTypeID), attribute.Error(err)).ErrorContext(ctx, "Failed to get all configs of type '%s': %v", config.OpenPipelineTypeID, err)
+		log.With(attribute.TypeAttr(config.OpenPipelineTypeID), attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to get all configs of type '%s': %v", config.OpenPipelineTypeID, err)
 		return result, nil
 	}
 
@@ -55,7 +55,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	for _, response := range all {
 		c, err := createConfig(projectName, response)
 		if err != nil {
-			log.With(attribute.Type(config.OpenPipelineTypeID), attribute.Error(err)).ErrorContext(ctx, "Failed to convert config of type '%s': %v", config.OpenPipelineTypeID, err)
+			log.With(attribute.TypeAttr(config.OpenPipelineTypeID), attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to convert config of type '%s': %v", config.OpenPipelineTypeID, err)
 			continue
 		}
 		configs = append(configs, c)
