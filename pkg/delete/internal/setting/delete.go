@@ -36,12 +36,12 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 	}
 	schema := entries[0].Type
 
-	logger := log.With(attribute.Type(schema))
+	logger := log.With(attribute.TypeAttr(schema))
 	logger.InfoContext(ctx, "Deleting %d settings objects(s) of schema %q...", len(entries), schema)
 
 	deleteErrs := 0
 	for _, e := range entries {
-		logger := logger.With(attribute.Coordinate(e.AsCoordinate()))
+		logger := logger.With(attribute.CoordinateAttr(e.AsCoordinate()))
 
 		filterFunc, err := getFilter(e)
 		if err != nil {
@@ -125,12 +125,12 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 	log.DebugContext(ctx, "Deleting settings of schemas %v...", schemaIds)
 
 	for _, s := range schemaIds {
-		logger := log.With(attribute.Type(s))
+		logger := log.With(attribute.TypeAttr(s))
 		logger.InfoContext(ctx, "Collecting objects of type %q...", s)
 
 		settingsObjects, err := c.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
-			logger.With(attribute.Error(err)).ErrorContext(ctx, "Failed to collect object for schema %q: %v", s, err)
+			logger.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect object for schema %q: %v", s, err)
 			errCount++
 			continue
 		}

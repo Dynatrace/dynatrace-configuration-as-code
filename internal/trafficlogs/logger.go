@@ -256,5 +256,5 @@ func (l *trafficLogger) logError(requestId, logType string, err error) {
 		logMessage += fmt.Sprintf(" for id `%s`", requestId)
 	}
 
-	log.With(attribute.Error(err)).Warn(logMessage+": %v", err)
+	log.With(attribute.ErrorAttr(err)).Warn(logMessage+": %v", err)
 }

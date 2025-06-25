@@ -39,7 +39,7 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 	for _, dp := range dps {
 		err := deleteSingle(ctx, c, dp)
 		if err != nil {
-			log.With(attribute.Type(dp.Type), attribute.Coordinate(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
+			log.With(attribute.TypeAttr(dp.Type), attribute.CoordinateAttr(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
 			errCount++
 		}
 	}
@@ -50,7 +50,7 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 }
 
 func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error {
-	logger := log.With(attribute.Type(dp.Type), attribute.Coordinate(dp.AsCoordinate()))
+	logger := log.With(attribute.TypeAttr(dp.Type), attribute.CoordinateAttr(dp.AsCoordinate()))
 	var id string
 	if dp.OriginObjectId != "" {
 		id = dp.OriginObjectId

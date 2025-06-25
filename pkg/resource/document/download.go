@@ -66,11 +66,11 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 }
 
 func downloadDocumentsOfType(ctx context.Context, documentSource DownloadSource, projectName string, documentType string) []config.Config {
-	log.With(attribute.Type("document")).DebugContext(ctx, "Downloading documents of type '%s'", documentType)
+	log.With(attribute.TypeAttr("document")).DebugContext(ctx, "Downloading documents of type '%s'", documentType)
 
 	listResponse, err := documentSource.List(ctx, fmt.Sprintf("type=='%s'", documentType))
 	if err != nil {
-		log.With(attribute.Type("document"), attribute.Error(err)).ErrorContext(ctx, "Failed to list all documents of type '%s': %v", documentType, err)
+		log.With(attribute.TypeAttr("document"), attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to list all documents of type '%s': %v", documentType, err)
 		return nil
 	}
 
@@ -84,13 +84,13 @@ func downloadDocumentsOfType(ctx context.Context, documentSource DownloadSource,
 
 		cfg, err := convertDocumentResponse(ctx, documentSource, projectName, response)
 		if err != nil {
-			log.With(attribute.Type("document"), attribute.Error(err)).ErrorContext(ctx, "Failed to convert document '%s' of type '%s': %v", response.ID, documentType, err)
+			log.With(attribute.TypeAttr("document"), attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to convert document '%s' of type '%s': %v", response.ID, documentType, err)
 			continue
 		}
 		configs = append(configs, cfg)
 	}
 
-	log.With(attribute.Type("document")).DebugContext(ctx, "Downloaded %d documents of type '%s'", len(configs), documentType)
+	log.With(attribute.TypeAttr("document")).DebugContext(ctx, "Downloaded %d documents of type '%s'", len(configs), documentType)
 
 	return configs
 }

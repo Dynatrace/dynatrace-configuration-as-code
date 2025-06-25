@@ -93,7 +93,7 @@ func downloadSpecific(ctx context.Context, settingsSource DownloadSource, projec
 
 	if ok, unknownSchemas := validateSpecificSchemas(schemas, schemaIDs); !ok {
 		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
-		log.With(slog.Any("unknownSchemas", unknownSchemas), attribute.Error(err)).ErrorContext(ctx, "%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
+		log.With(slog.Any("unknownSchemas", unknownSchemas), attribute.ErrorAttr(err)).ErrorContext(ctx, "%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
 		return nil, err
 	}
 
@@ -154,13 +154,13 @@ func download(ctx context.Context, settingsSource DownloadSource, schemas []sche
 		go func(s schema) {
 			defer wg.Done()
 
-			lg := log.With(attribute.Type(s.id))
+			lg := log.With(attribute.TypeAttr(s.id))
 
 			lg.DebugContext(ctx, "Downloading all settings for schema '%s'", s.id)
 			objects, err := settingsSource.List(ctx, s.id, dtclient.ListSettingsOptions{})
 			if err != nil {
 				errMsg := extractApiErrorMessage(err)
-				lg.With(attribute.Error(err)).ErrorContext(ctx, "Failed to fetch all settings for schema '%s': %v", s.id, errMsg)
+				lg.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to fetch all settings for schema '%s': %v", s.id, errMsg)
 				return
 			}
 
@@ -170,7 +170,7 @@ func download(ctx context.Context, settingsSource DownloadSource, schemas []sche
 				permissions, permErr = getObjectsPermission(ctx, settingsSource, objects)
 				if permErr != nil {
 					errMsg := extractApiErrorMessage(permErr)
-					lg.With(attribute.Error(permErr)).ErrorContext(ctx, "Failed to fetch settings permissions for schema '%s': %v", s.id, errMsg)
+					lg.With(attribute.ErrorAttr(permErr)).ErrorContext(ctx, "Failed to fetch settings permissions for schema '%s': %v", s.id, errMsg)
 					return
 				}
 			}
@@ -255,19 +255,19 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permis
 
 	for _, settingsObject := range settingsObjects {
 		if shouldFilterUnmodifiableSettings() && !settingsObject.IsModifiable() && len(settingsObject.GetModifiablePaths()) == 0 {
-			log.With(attribute.Type(settingsObject.SchemaId), slog.Any("object", settingsObject)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", settingsObject.ObjectId, settingsObject.SchemaId)
+			log.With(attribute.TypeAttr(settingsObject.SchemaId), slog.Any("object", settingsObject)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", settingsObject.ObjectId, settingsObject.SchemaId)
 			continue
 		}
 
 		// try to unmarshall settings value
 		var contentUnmarshalled map[string]interface{}
 		if err := json.Unmarshal(settingsObject.Value, &contentUnmarshalled); err != nil {
-			log.With(attribute.Type(settingsObject.SchemaId), slog.Any("object", settingsObject)).Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
+			log.With(attribute.TypeAttr(settingsObject.SchemaId), slog.Any("object", settingsObject)).Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
 			return result
 		}
 		// skip discarded settings settingsObjects
 		if shouldDiscard, reason := filters.Get(settingsObject.SchemaId).ShouldDiscard(contentUnmarshalled); shouldFilterSettings() && shouldDiscard {
-			log.With(attribute.Type(settingsObject.SchemaId), slog.Any("object", settingsObject)).Debug("Discarded setting object %q (%s). Reason: %s", settingsObject.ObjectId, settingsObject.SchemaId, reason)
+			log.With(attribute.TypeAttr(settingsObject.SchemaId), slog.Any("object", settingsObject)).Debug("Discarded setting object %q (%s). Reason: %s", settingsObject.ObjectId, settingsObject.SchemaId, reason)
 			continue
 		}
 

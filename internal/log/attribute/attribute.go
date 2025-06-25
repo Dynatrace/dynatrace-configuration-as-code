@@ -23,27 +23,27 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
-// Coordinate builds an attribute containing information taken from the provided coordinate
-func Coordinate(coordinate coordinate.Coordinate) slog.Attr {
+// CoordinateAttr returns an attribute containing information taken from the provided coordinate.
+func CoordinateAttr(coordinate coordinate.Coordinate) slog.Attr {
 	return slog.Any("coordinate", coordinate)
 }
 
-// Type builds an attribute containing information about a config type. This is used in cases where no full coordinate exists,
-// but only a config type is known - for example in download or deletion
-func Type[X ~string](t X) slog.Attr {
+// TypeAttr returns an attribute containing information about a config type. This is used in cases where no full coordinate exists,
+// but only a config type is known - for example in download or deletion.
+func TypeAttr[X ~string](t X) slog.Attr {
 	return slog.Any("type", t)
 }
 
-// Environment builds an attribute containing environment information for structured logging
-func Environment(environment, group string) slog.Attr {
+// EnvironmentAttr returns an attribute containing environment information for structured logging.
+func EnvironmentAttr(environment, group string) slog.Attr {
 	return slog.Any("environment",
 		slog.GroupValue(
 			slog.String("group", group),
 			slog.String("name", environment)))
 }
 
-// Error builds an attribute containing error information for structured logging
-func Error(err error) slog.Attr {
+// ErrorAttr returns an attribute containing error information for structured logging.
+func ErrorAttr(err error) slog.Attr {
 	return slog.Any(
 		"error",
 		slog.GroupValue(
@@ -53,18 +53,22 @@ func Error(err error) slog.Attr {
 
 const deploymentStatus = "deploymentStatus"
 
-func StatusDeploying() slog.Attr {
+// StatusDeployingAttr returns an attribute with deploymentStatus set to deploying.
+func StatusDeployingAttr() slog.Attr {
 	return slog.Any(deploymentStatus, "deploying")
 }
 
-func StatusDeployed() slog.Attr {
+// StatusDeployedAttr returns an attribute with deploymentStatus set to deployed.
+func StatusDeployedAttr() slog.Attr {
 	return slog.Any(deploymentStatus, "deployed")
 }
 
-func StatusDeploymentFailed() slog.Attr {
+// StatusDeploymentFailedAttr returns an attribute with deploymentStatus set to failed.
+func StatusDeploymentFailedAttr() slog.Attr {
 	return slog.Any(deploymentStatus, "failed")
 }
 
-func StatusDeploymentSkipped() slog.Attr {
+// StatusDeploymentSkippedAttr returns an attribute with deploymentStatus set to skipped.
+func StatusDeploymentSkippedAttr() slog.Attr {
 	return slog.Any(deploymentStatus, "skipped")
 }

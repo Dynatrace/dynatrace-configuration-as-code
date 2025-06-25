@@ -75,7 +75,7 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 
 	log.Info("Searching for circular dependencies")
 	if depErr := reportForCircularDependencies(proj); depErr != nil {
-		log.With(attribute.Error(depErr)).Warn("Download finished with problems: %s", depErr)
+		log.With(attribute.ErrorAttr(depErr)).Warn("Download finished with problems: %s", depErr)
 	} else {
 		log.Info("No circular dependencies found")
 	}

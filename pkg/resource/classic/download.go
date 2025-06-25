@@ -73,7 +73,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 			foundValues, err := findConfigsToDownload(ctx, a.configSource, currentApi, a.filters)
 			if err != nil {
-				log.With(attribute.Error(err), attribute.Type(currentApi.ID)).ErrorContext(ctx, "Failed to fetch configs of type '%s', skipping download of this type. Reason: %v", currentApi.ID, err)
+				log.With(attribute.ErrorAttr(err), attribute.TypeAttr(currentApi.ID)).ErrorContext(ctx, "Failed to fetch configs of type '%s', skipping download of this type. Reason: %v", currentApi.ID, err)
 				return
 			}
 
@@ -81,11 +81,11 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 			foundValues = filterConfigsToSkip(currentApi, foundValues, a.filters)
 			if len(foundValues) == 0 {
-				log.With(attribute.Type(currentApi.ID)).DebugContext(ctx, "No configs of type '%s' to download", currentApi.ID)
+				log.With(attribute.TypeAttr(currentApi.ID)).DebugContext(ctx, "No configs of type '%s' to download", currentApi.ID)
 				return
 			}
 
-			log.With(attribute.Type(currentApi.ID)).DebugContext(ctx, "Found %d configs of type '%s' to download", len(foundValues), currentApi.ID)
+			log.With(attribute.TypeAttr(currentApi.ID)).DebugContext(ctx, "Found %d configs of type '%s' to download", len(foundValues), currentApi.ID)
 			if configs := downloadConfigs(ctx, a.configSource, currentApi, foundValues, projectName, a.filters); len(configs) > 0 {
 				mutex.Lock()
 				results[currentApi.ID] = configs
@@ -128,7 +128,7 @@ func downloadConfigs(ctx context.Context, configSource downloadSource, api api.A
 
 			dlConfigs, err := download(ctx, configSource, api, v)
 			if err != nil {
-				log.With(attribute.Type(api.ID), slog.Any("value", v), attribute.Error(err)).WarnContext(ctx, "Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
+				log.With(attribute.TypeAttr(api.ID), slog.Any("value", v), attribute.ErrorAttr(err)).WarnContext(ctx, "Error fetching config '%s' in api '%s': %v", v.value.Id, api.ID, err)
 				return
 			}
 
@@ -139,7 +139,7 @@ func downloadConfigs(ctx context.Context, configSource downloadSource, api api.A
 
 				c, err := createConfigObject(dlConfig, api, v, projectName)
 				if err != nil {
-					log.With(attribute.Type(api.ID), slog.Any("value", v), attribute.Error(err)).WarnContext(ctx, "Error creating config for '%s' in api '%s': %v", v.value.Id, api.ID, err)
+					log.With(attribute.TypeAttr(api.ID), slog.Any("value", v), attribute.ErrorAttr(err)).WarnContext(ctx, "Error creating config for '%s' in api '%s': %v", v.value.Id, api.ID, err)
 					return
 				}
 
@@ -184,13 +184,13 @@ func (v value) id() string {
 // the given API
 func findConfigsToDownload(ctx context.Context, configSource downloadSource, apiToDownload api.API, filters ContentFilters) (values, error) {
 	if apiToDownload.SingleConfiguration && !apiToDownload.HasParent() {
-		log.With(attribute.Type(apiToDownload.ID)).DebugContext(ctx, "\tFetching singleton-configuration '%v'", apiToDownload.ID)
+		log.With(attribute.TypeAttr(apiToDownload.ID)).DebugContext(ctx, "\tFetching singleton-configuration '%v'", apiToDownload.ID)
 
 		// singleton-config. We use the api-id as mock-id
 		singletonConfigToDownload := dtclient.Value{Id: apiToDownload.ID, Name: apiToDownload.ID}
 		return values{{value: singletonConfigToDownload}}, nil
 	}
-	log.With(attribute.Type(apiToDownload.ID)).DebugContext(ctx, "\tFetching all '%v' configs", apiToDownload.ID)
+	log.With(attribute.TypeAttr(apiToDownload.ID)).DebugContext(ctx, "\tFetching all '%v' configs", apiToDownload.ID)
 
 	if apiToDownload.HasParent() {
 		var res values
@@ -240,7 +240,7 @@ func filterConfigsToSkip(a api.API, vals values, filters ContentFilters) values 
 		if !skipDownload(a, v.value, filters) {
 			valuesToDownload = append(valuesToDownload, v)
 		} else {
-			log.With(attribute.Type(a.ID), slog.Any("value", v)).Debug("Skipping download of config  '%v' of API '%v'", v.value.Id, a.ID)
+			log.With(attribute.TypeAttr(a.ID), slog.Any("value", v)).Debug("Skipping download of config  '%v' of API '%v'", v.value.Id, a.ID)
 		}
 	}
 

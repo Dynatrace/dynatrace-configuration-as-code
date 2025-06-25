@@ -46,7 +46,7 @@ func (v *DeprecatedSchemaValidator) Validate(_ []project.Project, c config.Confi
 	}
 
 	if msg, deprecated := deprecatedSchemas[s.SchemaId]; deprecated {
-		log.With(attribute.Coordinate(c.Coordinate), attribute.Environment(c.Environment, c.Group)).Warn("Schema '%s' is deprecated - please update your configurations: %s", s.SchemaId, msg)
+		log.With(attribute.CoordinateAttr(c.Coordinate), attribute.EnvironmentAttr(c.Environment, c.Group)).Warn("Schema '%s' is deprecated - please update your configurations: %s", s.SchemaId, msg)
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func extractInsertAfterReference(c config.Config) coordinate.Coordinate {
 	refParameter, ok := param.(*refParam.ReferenceParameter)
 	if !ok {
 		log.
-			With(attribute.Coordinate(c.Coordinate), attribute.Environment(c.Environment, c.Group)).
+			With(attribute.CoordinateAttr(c.Coordinate), attribute.EnvironmentAttr(c.Environment, c.Group)).
 			Debug("Can't perform InsertAfterSameScopeValidator check: InsertAfter is not a reference but '%s'", param.GetType())
 
 		return coordinate.Coordinate{}
@@ -168,7 +168,7 @@ func extractScope(c config.Config) string {
 	valueParameter, ok := param.(*valueParam.ValueParameter)
 	if !ok {
 		log.
-			With(attribute.Coordinate(c.Coordinate), attribute.Environment(c.Environment, c.Group)).
+			With(attribute.CoordinateAttr(c.Coordinate), attribute.EnvironmentAttr(c.Environment, c.Group)).
 			Debug("Can't perform InsertAfterSameScopeValidator check: Scope is not a plain value but '%s'", param.GetType())
 
 		return ""
@@ -177,7 +177,7 @@ func extractScope(c config.Config) string {
 	value, ok := valueParameter.Value.(string)
 	if !ok {
 		log.
-			With(attribute.Coordinate(c.Coordinate), attribute.Environment(c.Environment, c.Group)).
+			With(attribute.CoordinateAttr(c.Coordinate), attribute.EnvironmentAttr(c.Environment, c.Group)).
 			Debug("Can't perform InsertAfterSameScopeValidator check: Scope is not a simple value: '%v'", valueParameter.Value)
 
 		return ""

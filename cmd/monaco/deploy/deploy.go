@@ -131,7 +131,7 @@ func loadProjects(ctx context.Context, fs afero.Fs, manifestPath string, man *ma
 	if errs != nil {
 		log.ErrorContext(ctx, "Failed to load projects - %d errors occurred:", len(errs))
 		for _, err := range errs {
-			log.With(attribute.Error(err)).ErrorContext(ctx, "%s", err)
+			log.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "%s", err)
 		}
 		return nil, fmt.Errorf("failed to load projects - %d errors occurred", len(errs))
 	}

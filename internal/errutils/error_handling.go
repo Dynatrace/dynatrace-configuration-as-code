@@ -46,9 +46,9 @@ func PrintError(err error) {
 	var prettyPrintError PrettyPrintableError
 
 	if errors.As(err, &prettyPrintError) {
-		log.With(attribute.Error(err)).Error("%s", prettyPrintError.PrettyError())
+		log.With(attribute.ErrorAttr(err)).Error("%s", prettyPrintError.PrettyError())
 	} else if err != nil {
-		log.With(attribute.Error(err)).Error("%s", err)
+		log.With(attribute.ErrorAttr(err)).Error("%s", err)
 	}
 }
 
@@ -60,7 +60,7 @@ func PrintErrors(errors []error) {
 
 func CheckError(err error, msg string) bool {
 	if err != nil {
-		log.With(attribute.Error(err)).Error("%s: %s", msg, err)
+		log.With(attribute.ErrorAttr(err)).Error("%s: %s", msg, err)
 		return true
 	}
 	return false
@@ -72,9 +72,9 @@ func PrintWarning(err error) {
 	var prettyPrintError PrettyPrintableError
 
 	if errors.As(err, &prettyPrintError) {
-		log.With(attribute.Error(err)).Warn("%s", prettyPrintError.PrettyError())
+		log.With(attribute.ErrorAttr(err)).Warn("%s", prettyPrintError.PrettyError())
 	} else if err != nil {
-		log.With(attribute.Error(err)).Warn("%s", err)
+		log.With(attribute.ErrorAttr(err)).Warn("%s", err)
 	}
 }
 
