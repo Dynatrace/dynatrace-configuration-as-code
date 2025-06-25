@@ -1,0 +1,10 @@
+configs:
+  - id: my-segment
+    type: segment
+    config:
+      template: segment.json
+      skip: false
+    environmentOverrides:
+      - environment: classic_env
+        override:
+          skip: true # platform only config
