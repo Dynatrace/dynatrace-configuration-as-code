@@ -25,7 +25,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
@@ -40,7 +39,7 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 	for _, dp := range dps {
 		err := deleteSingle(ctx, c, dp)
 		if err != nil {
-			log.With(attribute.TypeAttr(dp.Type), attribute.CoordinateAttr(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
+			log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
 			errCount++
 		}
 	}
@@ -51,7 +50,7 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 }
 
 func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error {
-	logger := log.With(attribute.TypeAttr(dp.Type), attribute.CoordinateAttr(dp.AsCoordinate()))
+	logger := log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate()))
 
 	id := dp.OriginObjectId
 	if id == "" {

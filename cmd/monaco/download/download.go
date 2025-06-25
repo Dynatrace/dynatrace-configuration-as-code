@@ -20,7 +20,6 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 
@@ -75,7 +74,7 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 
 	log.Info("Searching for circular dependencies")
 	if depErr := reportForCircularDependencies(proj); depErr != nil {
-		log.With(attribute.ErrorAttr(depErr)).Warn("Download finished with problems: %s", depErr)
+		log.With(log.ErrorAttr(depErr)).Warn("Download finished with problems: %s", depErr)
 	} else {
 		log.Info("No circular dependencies found")
 	}

@@ -37,7 +37,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -755,7 +754,7 @@ func buildPostRequestPayload(ctx context.Context, remoteObjectId string, obj Set
 	// compress json to require less space
 	dest := bytes.Buffer{}
 	if err := json.Compact(&dest, fullObj); err != nil {
-		log.With(attribute.ErrorAttr(err)).DebugContext(ctx, "Failed to compact json: %s. Using uncompressed json.\n\tJson: %v", err, string(fullObj))
+		log.With(log.ErrorAttr(err)).DebugContext(ctx, "Failed to compact json: %s. Using uncompressed json.\n\tJson: %v", err, string(fullObj))
 		return fullObj, nil
 	}
 

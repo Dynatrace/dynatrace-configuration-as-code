@@ -22,7 +22,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/templatetools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -47,7 +46,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	result := project.ConfigsPerType{string(config.OpenPipelineTypeID): nil}
 	all, err := a.openPipelineSource.GetAll(ctx)
 	if err != nil {
-		log.With(attribute.TypeAttr(config.OpenPipelineTypeID), attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to get all configs of type '%s': %v", config.OpenPipelineTypeID, err)
+		log.With(log.TypeAttr(config.OpenPipelineTypeID), log.ErrorAttr(err)).ErrorContext(ctx, "Failed to get all configs of type '%s': %v", config.OpenPipelineTypeID, err)
 		return result, nil
 	}
 
@@ -55,7 +54,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	for _, response := range all {
 		c, err := createConfig(projectName, response)
 		if err != nil {
-			log.With(attribute.TypeAttr(config.OpenPipelineTypeID), attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to convert config of type '%s': %v", config.OpenPipelineTypeID, err)
+			log.With(log.TypeAttr(config.OpenPipelineTypeID), log.ErrorAttr(err)).ErrorContext(ctx, "Failed to convert config of type '%s': %v", config.OpenPipelineTypeID, err)
 			continue
 		}
 		configs = append(configs, c)

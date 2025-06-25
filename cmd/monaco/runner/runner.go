@@ -34,7 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/memory"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
@@ -43,7 +42,7 @@ import (
 func RunCmd(ctx context.Context, cmd *cobra.Command) error {
 	err := cmd.ExecuteContext(ctx)
 	if err != nil {
-		log.With(attribute.ErrorAttr(err)).ErrorContext(ctx, "Error: %v", err)
+		log.With(log.ErrorAttr(err)).ErrorContext(ctx, "Error: %v", err)
 		log.With(slog.Any("errorLogFilePath", log.ErrorFilePath())).ErrorContext(ctx, "error logs written to %s", log.ErrorFilePath())
 	}
 	return err
@@ -56,10 +55,10 @@ func BuildCmd(fs afero.Fs) *cobra.Command {
 func writeSupportArchive(fs afero.Fs) func() {
 	return func() {
 		if err := trafficlogs.GetInstance().Sync(); err != nil {
-			log.With(attribute.ErrorAttr(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
+			log.With(log.ErrorAttr(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
 		}
 		if err := supportarchive.Write(fs); err != nil {
-			log.With(attribute.ErrorAttr(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
+			log.With(log.ErrorAttr(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
 		}
 	}
 }

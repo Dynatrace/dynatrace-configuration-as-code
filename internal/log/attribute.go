@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package attribute
+package log
 
 import (
 	"fmt"

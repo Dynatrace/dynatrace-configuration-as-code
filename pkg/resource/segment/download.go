@@ -22,7 +22,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/templatetools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -48,7 +47,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 	downloadedConfigs, err := a.segmentSource.GetAll(ctx)
 	if err != nil {
-		log.With(attribute.TypeAttr(config.SegmentID), attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to fetch the list of existing segments: %v", err)
+		log.With(log.TypeAttr(config.SegmentID), log.ErrorAttr(err)).ErrorContext(ctx, "Failed to fetch the list of existing segments: %v", err)
 		return nil, nil
 	}
 
@@ -56,7 +55,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	for _, downloadedConfig := range downloadedConfigs {
 		c, err := createConfig(projectName, downloadedConfig)
 		if err != nil {
-			log.With(attribute.TypeAttr(config.SegmentID), attribute.ErrorAttr(err)).ErrorContext(ctx, "Failed to convert segment: %v", err)
+			log.With(log.TypeAttr(config.SegmentID), log.ErrorAttr(err)).ErrorContext(ctx, "Failed to convert segment: %v", err)
 			continue
 		}
 		configs = append(configs, c)

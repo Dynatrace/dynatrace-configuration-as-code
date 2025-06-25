@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/attribute"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
@@ -51,7 +49,7 @@ func GenerateSleepDuration(backoffMultiplier int, timelineProvider timeutils.Tim
 
 	addedWaitMillis, err := rand.Int(MinWaitDuration.Nanoseconds())
 	if err != nil {
-		log.With(attribute.ErrorAttr(err)).Warn("Failed to generate random gitter. Falling back to use fixed value. Error: %s", err)
+		log.With(log.ErrorAttr(err)).Warn("Failed to generate random gitter. Falling back to use fixed value. Error: %s", err)
 		addedWaitMillis = 0
 	}
 
