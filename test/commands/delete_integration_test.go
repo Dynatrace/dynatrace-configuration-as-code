@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -411,6 +412,25 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 		// DELETE Config
 		deleteFileName := configFolder + "oauth-delete.yaml"
 		cmdFlag := "--manifest=" + configFolder + "oauth-only-manifest.yaml --file=" + deleteFileName
+		err := monaco.Run(t, fs, fmt.Sprintf("monaco delete %s --verbose", cmdFlag))
+		assert.NoError(t, err)
+
+		logFile := log.LogFilePath()
+		_, err = afero.Exists(fs, logFile)
+		assert.NoError(t, err)
+
+		// assert log for skipped deletion
+		log, err := afero.ReadFile(fs, logFile)
+		assert.NoError(t, err)
+		assert.Contains(t, string(log), "Skipped deletion of 1 Classic configuration(s) as API client was unavailable")
+	})
+
+	t.Run("Platform token only should not throw error but skip delete for Classic API", func(t *testing.T) {
+		t.Setenv(featureflags.PlatformToken.EnvName(), "true")
+
+		// DELETE Config
+		deleteFileName := configFolder + "platform-token-delete.yaml"
+		cmdFlag := "--manifest=" + configFolder + "platform-token-only-manifest.yaml --file=" + deleteFileName
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco delete %s --verbose", cmdFlag))
 		assert.NoError(t, err)
 

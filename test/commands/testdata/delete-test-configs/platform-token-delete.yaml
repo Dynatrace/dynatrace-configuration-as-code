@@ -1,0 +1,3 @@
+delete:
+  - type: aws-credentials
+    name: sample-aws-id
