@@ -27,7 +27,6 @@ import (
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
 )
 
@@ -42,8 +41,8 @@ const emptyResponseRetryMax = 10
 // as filtering might exclude some entries that where received from the API.
 type AddEntriesToResult func(body []byte) (receivedEntries int, err error)
 
-func listPaginated(ctx context.Context, client *corerest.Client, endpoint string, queryParams url.Values, logLabel string,
-	addToResult AddEntriesToResult) error {
+func listPaginated(ctx context.Context, client *corerest.Client, endpoint string, queryParams url.Values, schemaId string, addToResult AddEntriesToResult) error {
+	logger := slog.With("endpoint", endpoint, "schemaId", schemaId)
 
 	body, totalReceivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
 	if err != nil {
@@ -58,7 +57,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 		if err != nil {
 			var apiErr coreapi.APIError
 			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusBadRequest {
-				log.WarnContext(ctx, "Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", endpoint, string(body))
+				logger.WarnContext(ctx, "Failed to get additional data from paginated API. Pages may have been removed during request.", "response", string(body))
 				break
 			}
 			return err
@@ -72,7 +71,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 			retryCount++
 
 			sleepDuration := generateSleepDuration(retryCount)
-			slog.DebugContext(ctx, "Received empty array response, retrying with same 'nextPageKey'. Waiting to avoid overloading the server.", "waitDuration", sleepDuration)
+			logger.DebugContext(ctx, "Received empty array response, retrying with same 'nextPageKey'. Waiting to avoid overloading the server.", "waitDuration", sleepDuration)
 			time.Sleep(sleepDuration)
 
 			continue
@@ -82,7 +81,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 		totalReceivedCount += receivedCount
 		nextPageKey, _ = getPaginationValues(body)
 		if nextPageKey == "" && totalReceivedCount != expectedTotalCount {
-			log.WarnContext(ctx, "Total count of items from api: %v for: %s does not match with count of actually downloaded items. Expected: %d Got: %d, last next page key received: %s", endpoint, logLabel, expectedTotalCount, totalReceivedCount, nextPageKey)
+			logger.WarnContext(ctx, "Total amount of items from the API does not match with the amount of actually downloaded items.", "expectedAmount", expectedTotalCount, "receivedAmount", receivedCount, "nextPageKey", nextPageKey)
 		}
 	}
 
