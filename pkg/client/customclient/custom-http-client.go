@@ -18,15 +18,28 @@ package customclient
 
 import (
 	"context"
+	"net"
 	"net/http"
+	"time"
 
 	"golang.org/x/oauth2"
 )
 
 func ContextWithCustomClient(ctx context.Context) context.Context {
+	t := &http.Transport{
+		TLSHandshakeTimeout: 20 * time.Minute,
+		DialContext: (&net.Dialer{
+			Timeout:   20 * time.Minute, // Timeout for establishing TCP connection
+			KeepAlive: 20 * time.Minute, // Keep-alive period for TCP connection
+		}).DialContext,
+		IdleConnTimeout:       20 * time.Minute, // How long idle connections stay in the pool
+		ExpectContinueTimeout: 20 * time.Minute, // Wait time for 100-continue response
+		MaxIdleConns:          100,              // Max idle connections across all hosts
+		MaxIdleConnsPerHost:   100,               // Max idle connections per host
+		DisableKeepAlives:     true,
+	}
 	return context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
-		Transport: &http.Transport{
-			DisableKeepAlives: true,
-		},
+		Transport: t,
+		Timeout:   20 * time.Minute,
 	})
 }
