@@ -19,10 +19,12 @@ package client
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"runtime"
 	"time"
 
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -298,36 +300,43 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 
 	if platformCredentialsGiven {
 		cFactory = cFactory.WithPlatformURL(url)
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, http.Client{})
 		client, err := cFactory.CreatePlatformClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, http.Client{})
 		bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, time.Second, 5*time.Minute)
 		if err != nil {
 			return nil, err
 		}
 
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, http.Client{})
 		autClient, err = cFactory.AutomationClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, http.Client{})
 		documentClient, err = cFactory.DocumentClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, http.Client{})
 		openPipelineClient, err = cFactory.OpenPipelineClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, http.Client{})
 		segmentClient, err = cFactory.SegmentsClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, http.Client{})
 		serviceLevelObjectiveClient, err = cFactory.SLOClient(ctx)
 		if err != nil {
 			return nil, err
@@ -347,6 +356,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	if auth.AccessToken != nil {
 		cFactory = cFactory.WithAccessToken(auth.AccessToken.Value.Value()).
 			WithClassicURL(classicURL)
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, http.Client{})
 		client, err := cFactory.CreateClassicClient()
 		if err != nil {
 			return nil, err
