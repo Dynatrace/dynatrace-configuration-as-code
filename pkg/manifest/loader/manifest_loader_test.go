@@ -117,48 +117,18 @@ environmentGroups:
               name: client-secret`
 )
 
-func Test_extractUrlType(t *testing.T) {
+func Test_parseURLDefinition(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		inputConfig      persistence.Environment
+		inputURL         persistence.TypedValue
 		givenEnvVarValue string
 		want             manifest.URLDefinition
 		wantErr          bool
 	}{
 		{
-			name: "extracts_value_url",
-			inputConfig: persistence.Environment{
-				Name: "TEST ENV",
-				URL:  persistence.TypedValue{Value: "TEST URL", Type: persistence.TypeValue},
-				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
-			},
-			want: manifest.URLDefinition{
-				Type:  manifest.ValueURLType,
-				Value: "TEST URL",
-			},
-			wantErr: false,
-		},
-		{
-			name: "extracts_value_if_type_empty",
-			inputConfig: persistence.Environment{
-				Name: "TEST ENV",
-				URL:  persistence.TypedValue{Value: "TEST URL", Type: ""},
-				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
-			},
-			want: manifest.URLDefinition{
-				Type:  manifest.ValueURLType,
-				Value: "TEST URL",
-			},
-			wantErr: false,
-		},
-		{
-			name: "trims trailing slash from value url",
-			inputConfig: persistence.Environment{
-				Name: "TEST ENV",
-				URL:  persistence.TypedValue{Value: "https://www.test.url/", Type: persistence.TypeValue},
-				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
-			},
+			name:     "parses value URL",
+			inputURL: persistence.TypedValue{Value: "https://www.test.url", Type: persistence.TypeValue},
 			want: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
 				Value: "https://www.test.url",
@@ -166,51 +136,57 @@ func Test_extractUrlType(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "extracts_environment_url",
-			inputConfig: persistence.Environment{
-				Name: "TEST ENV",
-				URL:  persistence.TypedValue{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
-				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
-			},
-			givenEnvVarValue: "resolved url value",
+			name:     "parses value URL if type empty",
+			inputURL: persistence.TypedValue{Value: "https://www.test.url", Type: ""},
 			want: manifest.URLDefinition{
-				Type:  manifest.EnvironmentURLType,
-				Name:  "TEST_TOKEN",
-				Value: "resolved url value",
+				Type:  manifest.ValueURLType,
+				Value: "https://www.test.url",
 			},
 			wantErr: false,
 		},
 		{
-			name: "trims trailing slash from environment url",
-			inputConfig: persistence.Environment{
-				Name: "TEST ENV",
-				URL:  persistence.TypedValue{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
-				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
+			name:     "trims trailing slash from value URL",
+			inputURL: persistence.TypedValue{Value: "https://www.test.url/", Type: persistence.TypeValue},
+			want: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Value: "https://www.test.url",
 			},
+			wantErr: false,
+		},
+		{
+			name:             "resolves and parses environment variable",
+			inputURL:         persistence.TypedValue{Value: "TEST_URL", Type: persistence.TypeEnvironment},
+			givenEnvVarValue: "https://www.test.url",
+			want: manifest.URLDefinition{
+				Type:  manifest.EnvironmentURLType,
+				Name:  "TEST_URL",
+				Value: "https://www.test.url",
+			},
+			wantErr: false,
+		},
+		{
+			name:             "trims trailing slash from environment url",
+			inputURL:         persistence.TypedValue{Value: "TEST_URL", Type: persistence.TypeEnvironment},
 			givenEnvVarValue: "https://www.test.url/",
 			want: manifest.URLDefinition{
 				Type:  manifest.EnvironmentURLType,
-				Name:  "TEST_TOKEN",
+				Name:  "TEST_URL",
 				Value: "https://www.test.url",
 			},
 			wantErr: false,
 		},
 		{
-			name: "fails_on_unknown_type",
-			inputConfig: persistence.Environment{
-				Name: "TEST ENV",
-				URL:  persistence.TypedValue{Value: "TEST URL", Type: "this-is-not-a-type"},
-				Auth: persistence.Auth{AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"}},
-			},
-			want:    manifest.URLDefinition{},
-			wantErr: true,
+			name:     "fails on unknown type",
+			inputURL: persistence.TypedValue{Value: "https://www.test.url", Type: "this-is-not-a-type"},
+			want:     manifest.URLDefinition{},
+			wantErr:  true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("TEST_TOKEN", tt.givenEnvVarValue)
-			if got, gotErr := parseURLDefinition(&Context{}, tt.inputConfig.URL); got != tt.want || (!tt.wantErr && gotErr != nil) {
-				t.Errorf("extractUrlType() = %v, %v, want %v, %v", got, gotErr, tt.want, tt.wantErr)
+			t.Setenv("TEST_URL", tt.givenEnvVarValue)
+			if got, gotErr := parseURLDefinition(&Context{}, tt.inputURL); got != tt.want || (!tt.wantErr && gotErr != nil) {
+				t.Errorf("parseURLDefinition() = %v, %v, want %v, %v", got, gotErr, tt.want, tt.wantErr)
 			}
 		})
 	}
