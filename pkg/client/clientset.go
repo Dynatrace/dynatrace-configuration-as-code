@@ -19,12 +19,10 @@ package client
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"net/url"
 	"runtime"
 	"time"
 
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -39,6 +37,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/customclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -301,44 +300,37 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	if platformCredentialsGiven {
 		cFactory = cFactory.WithPlatformURL(url)
 
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
-		bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, time.Second, 5*time.Minute)
+		bucketClient, err = cFactory.BucketClientWithRetrySettings(customclient.ContextWithCustomClient(ctx), time.Second, 5*time.Minute)
 		if err != nil {
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
-		autClient, err = cFactory.AutomationClient(ctx)
+		autClient, err = cFactory.AutomationClient(customclient.ContextWithCustomClient(ctx))
 		if err != nil {
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
-		documentClient, err = cFactory.DocumentClient(ctx)
+		documentClient, err = cFactory.DocumentClient(customclient.ContextWithCustomClient(ctx))
 		if err != nil {
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
-		openPipelineClient, err = cFactory.OpenPipelineClient(ctx)
+		openPipelineClient, err = cFactory.OpenPipelineClient(customclient.ContextWithCustomClient(ctx))
 		if err != nil {
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
-		segmentClient, err = cFactory.SegmentsClient(ctx)
+		segmentClient, err = cFactory.SegmentsClient(customclient.ContextWithCustomClient(ctx))
 		if err != nil {
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
-		serviceLevelObjectiveClient, err = cFactory.SLOClient(ctx)
+		serviceLevelObjectiveClient, err = cFactory.SLOClient(customclient.ContextWithCustomClient(ctx))
 		if err != nil {
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
-		client, err := cFactory.CreatePlatformClient(ctx)
+		client, err := cFactory.CreatePlatformClient(customclient.ContextWithCustomClient(ctx))
 		if err != nil {
 			return nil, err
 		}
@@ -347,12 +339,11 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
-		client, err = cFactory.CreatePlatformClient(ctx)
+		client, err = cFactory.CreatePlatformClient(customclient.ContextWithCustomClient(ctx))
 		if err != nil {
 			return nil, err
 		}
-		classicURL, err = metadata.GetDynatraceClassicURL(ctx, *client)
+		classicURL, err = metadata.GetDynatraceClassicURL(customclient.ContextWithCustomClient(ctx), *client)
 		if err != nil {
 			return nil, err
 		}
@@ -362,7 +353,6 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		cFactory = cFactory.WithAccessToken(auth.AccessToken.Value.Value()).
 			WithClassicURL(classicURL)
 
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
 		client, err := cFactory.CreateClassicClient()
 		if err != nil {
 			return nil, err
@@ -373,7 +363,6 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		}
 
 		if settingsClient == nil {
-			ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
 			client, err := cFactory.CreateClassicClient()
 			if err != nil {
 				return nil, err

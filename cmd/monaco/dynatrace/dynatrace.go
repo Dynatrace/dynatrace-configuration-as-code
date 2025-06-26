@@ -20,10 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
-
-	"golang.org/x/oauth2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
@@ -37,6 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/accesstoken"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/classicheartbeat"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/customclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 
@@ -83,7 +81,6 @@ func VerifyEnvironmentAuthentication(ctx context.Context, env manifest.Environme
 // checkClassicConnection checks if a classic connection (via access token) can be established. Scopes are not validated.
 func checkClassicConnection(ctx context.Context, classicURL string, accessToken string) error {
 	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
-	ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
 	factory := clients.Factory().
 		WithClassicURL(classicURL).
 		WithAccessToken(accessToken).
@@ -204,7 +201,6 @@ func getDynatraceClassicURL(ctx context.Context, platformURL string, oauth *mani
 		}
 	}
 
-	ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
 	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	factory := clients.Factory().
 		WithPlatformURL(platformURL).
@@ -222,7 +218,7 @@ func getDynatraceClassicURL(ctx context.Context, platformURL string, oauth *mani
 	if supportarchive.IsEnabled(ctx) {
 		factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
-	client, err := factory.CreatePlatformClient(ctx)
+	client, err := factory.CreatePlatformClient(customclient.ContextWithCustomClient(ctx))
 	if err != nil {
 		return "", fmt.Errorf("could not create client: %w", err)
 	}
@@ -238,7 +234,6 @@ func findSimpleClassicURL(ctx context.Context, platformURL string) (classicUrl s
 	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	classicUrl = strings.Replace(platformURL, ".apps.", ".live.", 1)
 
-	ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{})
 	client, err := clients.Factory().WithClassicURL(classicUrl).WithCustomHeaders(additionalHeaders).CreateClassicClient()
 	if err != nil {
 		return "", false
