@@ -19,6 +19,7 @@
 package report_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,7 @@ import (
 
 // TestDetailer_ContextWithNoDetailerDiscardsDetails tests that the Detailer obtained from an context without the default one discards details.
 func TestDetailer_ContextWithNoDetailerDiscardsDetails(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.TODO()
 	detailer := report.GetDetailerFromContextOrDiscard(ctx)
 	require.NotNil(t, detailer)
 
@@ -43,7 +44,7 @@ func TestDetailer_ContextWithDefaultDetailerCollectsDetails(t *testing.T) {
 	detail2 := report.Detail{Type: report.DetailTypeWarn, Message: "Message2"}
 	detail3 := report.Detail{Type: report.DetailTypeError, Message: "Message3"}
 
-	ctx := report.NewContextWithDetailer(t.Context(), report.NewDefaultDetailer())
+	ctx := report.NewContextWithDetailer(context.TODO(), report.NewDefaultDetailer())
 	detailer := report.GetDetailerFromContextOrDiscard(ctx)
 	require.NotNil(t, detailer)
 

@@ -19,6 +19,7 @@
 package settings
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -877,7 +878,7 @@ func TestDownloadAll(t *testing.T) {
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
 			settingsAPI := NewDownloadAPI(c, tt.filters, tt.schemas)
-			res, err := settingsAPI.Download(t.Context(), "projectName")
+			res, err := settingsAPI.Download(context.TODO(), "projectName")
 
 			assert.Equal(t, tt.want, res)
 		})

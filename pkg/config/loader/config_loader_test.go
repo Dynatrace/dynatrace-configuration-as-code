@@ -19,6 +19,7 @@
 package loader
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -1925,7 +1926,7 @@ configs:
 			_ = afero.WriteFile(testFs, tt.filePathOnDisk, []byte(tt.fileContentOnDisk), 0644)
 			_ = afero.WriteFile(testFs, "profile.json", []byte("{}"), 0644)
 
-			gotConfigs, gotErrs := LoadConfigFile(t.Context(), testFs, testLoaderContext, tt.filePathArgument)
+			gotConfigs, gotErrs := LoadConfigFile(context.TODO(), testFs, testLoaderContext, tt.filePathArgument)
 			if len(tt.wantErrorsContain) != 0 {
 				assert.Equal(t, len(tt.wantErrorsContain), len(gotErrs), "expected %v errors but got %v", len(tt.wantErrorsContain), len(gotErrs))
 

@@ -19,6 +19,7 @@
 package metadata
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -34,7 +35,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{})
 		defer server.Close()
 
-		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.FaultyClient()))
+		classicURL, err := GetDynatraceClassicURL(context.TODO(), *corerest.NewClient(server.URL(), server.FaultyClient()))
 		assert.Empty(t, classicURL)
 		assert.Error(t, err)
 	})
@@ -52,7 +53,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		})
 		defer server.Close()
 
-		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.Client()))
+		classicURL, err := GetDynatraceClassicURL(context.TODO(), *corerest.NewClient(server.URL(), server.Client()))
 		assert.Empty(t, classicURL)
 		assert.Error(t, err)
 	})
@@ -70,7 +71,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		})
 		defer server.Close()
 
-		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.Client()))
+		classicURL, err := GetDynatraceClassicURL(context.TODO(), *corerest.NewClient(server.URL(), server.Client()))
 		assert.Empty(t, classicURL)
 		assert.Error(t, err)
 	})
@@ -88,7 +89,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		})
 		defer server.Close()
 
-		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.Client()))
+		classicURL, err := GetDynatraceClassicURL(context.TODO(), *corerest.NewClient(server.URL(), server.Client()))
 		assert.Empty(t, classicURL)
 		assert.Error(t, err)
 	})
@@ -106,7 +107,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		})
 		defer server.Close()
 
-		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.Client()))
+		classicURL, err := GetDynatraceClassicURL(context.TODO(), *corerest.NewClient(server.URL(), server.Client()))
 		assert.EqualValues(t, "https://classic.env.com", classicURL)
 		assert.NoError(t, err)
 	})

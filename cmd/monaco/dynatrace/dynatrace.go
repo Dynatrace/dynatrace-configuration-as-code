@@ -34,7 +34,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/accesstoken"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/classicheartbeat"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/customclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 
@@ -218,7 +217,7 @@ func getDynatraceClassicURL(ctx context.Context, platformURL string, oauth *mani
 	if supportarchive.IsEnabled(ctx) {
 		factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
-	client, err := factory.CreatePlatformClient(customclient.ContextWithCustomClient(ctx))
+	client, err := factory.CreatePlatformClient(ctx)
 	if err != nil {
 		return "", fmt.Errorf("could not create client: %w", err)
 	}

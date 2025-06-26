@@ -17,6 +17,7 @@
 package supportarchive_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,12 +27,12 @@ import (
 
 func TestIsEnabled(t *testing.T) {
 	t.Run("If support archive is set, it's enabled", func(t *testing.T) {
-		ctx := supportarchive.ContextWithSupportArchive(t.Context())
+		ctx := supportarchive.ContextWithSupportArchive(context.TODO())
 
 		assert.True(t, supportarchive.IsEnabled(ctx))
 	})
 
 	t.Run("If support archive isn't set, it's disabled", func(t *testing.T) {
-		assert.False(t, supportarchive.IsEnabled(t.Context()))
+		assert.False(t, supportarchive.IsEnabled(context.TODO()))
 	})
 }

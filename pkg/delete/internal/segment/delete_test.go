@@ -67,7 +67,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 		assert.True(t, c.called, "delete command wasn't invoked")
 	})
@@ -85,7 +85,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 	})
 
@@ -103,7 +103,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.Error(t, err)
 		assert.False(t, c.called, "it's not known what needs to be deleted")
 	})
@@ -121,7 +121,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
 }
@@ -140,7 +140,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 		assert.True(t, c.called)
 	})
@@ -158,7 +158,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 	})
 
@@ -175,7 +175,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
 
@@ -192,7 +192,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
 
@@ -212,7 +212,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given, {OriginObjectId: "bla"}, given}) // the pointer in the middle is to cause error behavior
+		err := segment.Delete(context.TODO(), &c, []pointer.DeletePointer{given, {OriginObjectId: "bla"}, given}) // the pointer in the middle is to cause error behavior
 		assert.ErrorContains(t, err, "failed to delete 1 segment objects(s)")
 	})
 }
@@ -229,7 +229,7 @@ func TestDeleteAll(t *testing.T) {
 			},
 		}
 
-		err := segment.DeleteAll(t.Context(), &c)
+		err := segment.DeleteAll(context.TODO(), &c)
 		assert.NoError(t, err)
 	})
 
@@ -247,7 +247,7 @@ func TestDeleteAll(t *testing.T) {
 			},
 		}
 
-		err := segment.DeleteAll(t.Context(), &c)
+		err := segment.DeleteAll(context.TODO(), &c)
 		assert.Error(t, err)
 	})
 }

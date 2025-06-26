@@ -157,7 +157,7 @@ func TestDeploy(t *testing.T) {
 			templ, err := tt.givenConfig.Render(props)
 			assert.NoError(t, err)
 
-			got, err := bucket.NewDeployAPI(c).Deploy(t.Context(), props, templ, &tt.givenConfig)
+			got, err := bucket.NewDeployAPI(c).Deploy(context.TODO(), props, templ, &tt.givenConfig)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

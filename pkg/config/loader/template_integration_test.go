@@ -19,6 +19,7 @@
 package loader
 
 import (
+	"context"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -50,7 +51,7 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 		ParametersSerDe: config.DefaultParameterParsers,
 	}
 
-	cfgs, errs := LoadConfigFile(t.Context(), fs, &loaderContext, test_yaml)
+	cfgs, errs := LoadConfigFile(context.TODO(), fs, &loaderContext, test_yaml)
 	require.Empty(t, errs, "Expected test config to load without error")
 	require.Len(t, cfgs, 1, "Expected test config to contain a single definition")
 

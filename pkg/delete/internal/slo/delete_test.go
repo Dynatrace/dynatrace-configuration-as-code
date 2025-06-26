@@ -59,7 +59,7 @@ func TestDeleteWithCoordinate(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 
 		assert.NoError(t, err)
 		assert.True(t, c.called, "delete command wasn't invoked")
@@ -80,7 +80,7 @@ func TestDeleteWithCoordinate(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 	})
 
@@ -103,7 +103,7 @@ func TestDeleteWithCoordinate(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.Error(t, err)
 		assert.False(t, c.called, "it's not known what needs to be deleted")
 	})
@@ -123,7 +123,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 		assert.True(t, c.called)
 	})
@@ -141,7 +141,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 	})
 
@@ -158,7 +158,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
 
@@ -175,7 +175,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.Delete(context.TODO(), &c, []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
 
@@ -195,7 +195,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given, {OriginObjectId: "bla"}, given}) // the pointer in the middle is to cause error behavior
+		err := slo.Delete(context.TODO(), &c, []pointer.DeletePointer{given, {OriginObjectId: "bla"}, given}) // the pointer in the middle is to cause error behavior
 		assert.ErrorContains(t, err, "failed to delete 1 slo-v2 objects(s)")
 	})
 }
@@ -234,7 +234,7 @@ func TestDeleteAll(t *testing.T) {
 			},
 		}
 
-		err := slo.DeleteAll(t.Context(), &c)
+		err := slo.DeleteAll(context.TODO(), &c)
 		assert.NoError(t, err)
 	})
 
@@ -259,7 +259,7 @@ func TestDeleteAll(t *testing.T) {
 			},
 		}
 
-		err := slo.DeleteAll(t.Context(), &c)
+		err := slo.DeleteAll(context.TODO(), &c)
 		assert.Error(t, err)
 	})
 }

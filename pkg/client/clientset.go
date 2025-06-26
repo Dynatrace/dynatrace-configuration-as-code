@@ -37,7 +37,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/customclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -300,37 +299,37 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	if platformCredentialsGiven {
 		cFactory = cFactory.WithPlatformURL(url)
 
-		bucketClient, err = cFactory.BucketClientWithRetrySettings(customclient.ContextWithCustomClient(ctx), time.Second, 5*time.Minute)
+		bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, time.Second, 5*time.Minute)
 		if err != nil {
 			return nil, err
 		}
 
-		autClient, err = cFactory.AutomationClient(customclient.ContextWithCustomClient(ctx))
+		autClient, err = cFactory.AutomationClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		documentClient, err = cFactory.DocumentClient(customclient.ContextWithCustomClient(ctx))
+		documentClient, err = cFactory.DocumentClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		openPipelineClient, err = cFactory.OpenPipelineClient(customclient.ContextWithCustomClient(ctx))
+		openPipelineClient, err = cFactory.OpenPipelineClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		segmentClient, err = cFactory.SegmentsClient(customclient.ContextWithCustomClient(ctx))
+		segmentClient, err = cFactory.SegmentsClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		serviceLevelObjectiveClient, err = cFactory.SLOClient(customclient.ContextWithCustomClient(ctx))
+		serviceLevelObjectiveClient, err = cFactory.SLOClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		client, err := cFactory.CreatePlatformClient(customclient.ContextWithCustomClient(ctx))
+		client, err := cFactory.CreatePlatformClient(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -339,11 +338,11 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
-		client, err = cFactory.CreatePlatformClient(customclient.ContextWithCustomClient(ctx))
+		client, err = cFactory.CreatePlatformClient(ctx)
 		if err != nil {
 			return nil, err
 		}
-		classicURL, err = metadata.GetDynatraceClassicURL(customclient.ContextWithCustomClient(ctx), *client)
+		classicURL, err = metadata.GetDynatraceClassicURL(ctx, *client)
 		if err != nil {
 			return nil, err
 		}

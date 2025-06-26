@@ -126,7 +126,7 @@ func TestDeletesResources(t *testing.T) {
 		UUID:      "1234",
 		APIClient: &c,
 	}
-	err := delete.DeleteAccountResources(t.Context(), acc, entriesToDelete)
+	err := delete.DeleteAccountResources(context.TODO(), acc, entriesToDelete)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 2, serviceUserDeleteCalled)
@@ -197,7 +197,7 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 		UUID:      "1234",
 		APIClient: &c,
 	}
-	err := delete.DeleteAccountResources(t.Context(), acc, entriesToDelete)
+	err := delete.DeleteAccountResources(context.TODO(), acc, entriesToDelete)
 	assert.Error(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 1, serviceUserCalled)
@@ -297,7 +297,7 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 		UUID:      "1234",
 		APIClient: &c,
 	}
-	err := delete.DeleteAccountResources(t.Context(), acc, entriesToDelete)
+	err := delete.DeleteAccountResources(context.TODO(), acc, entriesToDelete)
 	assert.Error(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 2, serviceUserDeleteCalled)

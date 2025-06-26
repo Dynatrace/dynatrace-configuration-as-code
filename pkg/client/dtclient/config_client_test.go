@@ -64,7 +64,7 @@ func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	values, err := translateGenericValues(t.Context(), response, "extensions")
+	values, err := translateGenericValues(context.TODO(), response, "extensions")
 
 	assert.NoError(t, err)
 	assert.Len(t, values, 1)
@@ -81,7 +81,7 @@ func TestTranslateGenericValuesOnIdMissing(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	_, err := translateGenericValues(t.Context(), response, "extensions")
+	_, err := translateGenericValues(context.TODO(), response, "extensions")
 
 	assert.ErrorContains(t, err, "config of type extensions was invalid: No id")
 }
@@ -94,7 +94,7 @@ func TestTranslateGenericValuesOnNameMissing(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	values, err := translateGenericValues(t.Context(), response, "extensions")
+	values, err := translateGenericValues(context.TODO(), response, "extensions")
 
 	assert.NoError(t, err)
 	assert.Len(t, values, 1)
@@ -112,7 +112,7 @@ func TestTranslateGenericValuesForReportsEndpoint(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	values, err := translateGenericValues(t.Context(), response, "reports")
+	values, err := translateGenericValues(context.TODO(), response, "reports")
 
 	assert.NoError(t, err)
 	assert.Len(t, values, 1)
@@ -361,7 +361,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			defer server.Close()
 
 			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(retrySettings))
-			_, got, err := dtclient.ExistsWithName(t.Context(), testApi, tt.givenObjectName)
+			_, got, err := dtclient.ExistsWithName(context.TODO(), testApi, tt.givenObjectName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -405,8 +405,8 @@ func TestUpsertByName(t *testing.T) {
 			defer server.Close()
 
 			dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-			dtClient.UpsertByName(t.Context(), tt.testApi, "MY CONFIG", nil)
-			dtClient.UpsertByName(t.Context(), tt.testApi, "MY CONFIG 2", nil)
+			dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG", nil)
+			dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG 2", nil)
 			assert.Equal(t, apiHits, tt.expectedAPIHits)
 		})
 	}
@@ -461,7 +461,7 @@ func TestUpsertConfig_CheckEqualityFunctionIsUsed(t *testing.T) {
 			defer server.Close()
 
 			dtClient, _ := NewClassicConfigClientForTesting(server.URL, server.Client())
-			dtObj, err := dtClient.UpsertByName(t.Context(), tt.testApi, "MY CONFIG", []byte(`{}`))
+			dtObj, err := dtClient.UpsertByName(context.TODO(), tt.testApi, "MY CONFIG", []byte(`{}`))
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedAPIHits, 2)
 			assert.Equal(t, tt.expectedDynatraceObject, dtObj)
@@ -647,7 +647,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 			testApi := api.API{ID: tt.apiKey}
 			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(retrySettings))
 
-			_, _, err := dtclient.ExistsWithName(t.Context(), testApi, "")
+			_, _, err := dtclient.ExistsWithName(context.TODO(), testApi, "")
 			if tt.expectError {
 				assert.NotNil(t, err)
 			} else {
@@ -753,7 +753,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			testApi := api.API{ID: tt.apiKey}
 
 			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(testRetrySettings))
-			got, err := dtclient.createDynatraceObject(t.Context(), tt.objectName, testApi, tt.payload)
+			got, err := dtclient.createDynatraceObject(context.TODO(), tt.objectName, testApi, tt.payload)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -807,7 +807,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 			testApi := api.API{ID: "some-api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
 			dtclient, _ := NewClassicConfigClientForTesting(server.URL, server.Client(), WithRetrySettingsForClassic(testRetrySettings))
-			got, err := dtclient.UpsertByNonUniqueNameAndId(t.Context(), testApi, generatedUuid, theConfigName, []byte("{}"), false)
+			got, err := dtclient.UpsertByNonUniqueNameAndId(context.TODO(), testApi, generatedUuid, theConfigName, []byte("{}"), false)
 			assert.NoError(t, err)
 			assert.Equal(t, got.Id, tt.expectedIdToBeUpserted)
 		})
@@ -823,7 +823,7 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	_, err = client.Get(t.Context(), mockAPI, "test")
+	_, err = client.Get(context.TODO(), mockAPI, "test")
 	assert.ErrorContains(t, err, "failed with status code")
 }
 
@@ -836,7 +836,7 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	_, err = client.Get(t.Context(), mockAPINotSingle, unescapedID)
+	_, err = client.Get(context.TODO(), mockAPINotSingle, unescapedID)
 	assert.NoError(t, err)
 }
 
@@ -851,7 +851,7 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	resp, err := client.Get(t.Context(), mockAPI, "test")
+	resp, err := client.Get(context.TODO(), mockAPI, "test")
 	assert.NoError(t, err, "there should not be an error")
 	assert.Equal(t, body, resp)
 }
@@ -865,7 +865,7 @@ func TestSloV2ToSloV1(t *testing.T) {
 	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	_, err = client.UpsertByName(t.Context(), mockAPISlo, "test", []byte("{}"))
+	_, err = client.UpsertByName(context.TODO(), mockAPISlo, "test", []byte("{}"))
 	assert.ErrorContains(t, err, "tried to deploy an slo-v2 configuration to slo-v1")
 }
 
@@ -878,7 +878,7 @@ func TestDocumentV2ToDocumentV1_Fails(t *testing.T) {
 	client, err := NewClassicConfigClientForTesting(testServer.URL, testServer.Client())
 	require.NoError(t, err)
 
-	_, err = client.UpsertByName(t.Context(), testDashboardApi, "test", []byte(`{
+	_, err = client.UpsertByName(context.TODO(), testDashboardApi, "test", []byte(`{
 		"tiles": {
 			"1": {
 			  "content": "my content",
@@ -902,7 +902,7 @@ func TestCallWithRetryOnKnowTimingIssue_IgnoreRetryOn(t *testing.T) {
 		i++
 		return nil, coreapi.APIError{StatusCode: http.StatusForbidden, Body: []byte("Metric selector invalid")}
 	})
-	_, err = client.callWithRetryOnKnowTimingIssue(t.Context(), mockCall, "some/path", []byte("{}"), api.API{}, corerest.RequestOptions{})
+	_, err = client.callWithRetryOnKnowTimingIssue(context.TODO(), mockCall, "some/path", []byte("{}"), api.API{}, corerest.RequestOptions{})
 	assert.Error(t, err)
 	assert.Equal(t, 1, i)
 }
@@ -926,7 +926,7 @@ func TestCallWithRetryOnKnowTimingIssue(t *testing.T) {
 		},
 	))
 	require.NoError(t, err)
-	_, err = client.callWithRetryOnKnowTimingIssue(t.Context(), client.client.POST, "some/path", []byte("{}"), api.API{}, corerest.RequestOptions{})
+	_, err = client.callWithRetryOnKnowTimingIssue(context.TODO(), client.client.POST, "some/path", []byte("{}"), api.API{}, corerest.RequestOptions{})
 	assert.Error(t, err)
 	assert.Equal(t, 3, i)
 }
@@ -954,18 +954,18 @@ func TestConfigClient_ClearCache(t *testing.T) {
 	require.NoError(t, err)
 
 	// trigger an API call and save to cache
-	_, err = client.List(t.Context(), mockAPISlo)
+	_, err = client.List(context.TODO(), mockAPISlo)
 	require.NoError(t, err)
 	require.Equal(t, listCalledCount, 1)
 
 	// check if cache was used and no API call was triggered
-	_, err = client.List(t.Context(), mockAPISlo)
+	_, err = client.List(context.TODO(), mockAPISlo)
 	require.NoError(t, err)
 	require.Equal(t, listCalledCount, 1)
 
 	// clear cache and check if API call is triggered
 	client.ClearCache()
-	_, err = client.List(t.Context(), mockAPISlo)
+	_, err = client.List(context.TODO(), mockAPISlo)
 	require.NoError(t, err)
 	require.Equal(t, listCalledCount, 2)
 }

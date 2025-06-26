@@ -19,6 +19,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -348,7 +349,7 @@ configs:
 	assert2.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
 
 	// get application ID
-	v, err := clientSet.ConfigClient.List(t.Context(), apis["application-mobile"])
+	v, err := clientSet.ConfigClient.List(context.TODO(), apis["application-mobile"])
 	assert.NoError(t, err)
 
 	var appID string

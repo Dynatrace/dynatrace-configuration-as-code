@@ -17,6 +17,7 @@
 package version
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -71,7 +72,7 @@ func TestGetLatestVersion(t *testing.T) {
 			defer server.Close()
 
 			client := &http.Client{}
-			result, err := GetLatestVersion(t.Context(), client, server.URL)
+			result, err := GetLatestVersion(context.TODO(), client, server.URL)
 
 			if err != nil {
 				if tc.expectedError == nil || err.Error() != tc.expectedError.Error() {

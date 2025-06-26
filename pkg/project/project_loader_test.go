@@ -18,6 +18,7 @@ package project
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/fs"
 	"reflect"
@@ -116,7 +117,7 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			errorMap := make(map[coordinate.Coordinate]struct{})
-			got := findDuplicatedConfigIdentifiers(t.Context(), tt.input, errorMap)
+			got := findDuplicatedConfigIdentifiers(context.TODO(), tt.input, errorMap)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("findDuplicatedConfigIdentifiers() got = %v, want %v", got, tt.want)
 			}
@@ -178,7 +179,7 @@ func Test_checkKeyUserActionScope(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			errorMap := make(map[coordinate.Coordinate]struct{})
-			got := checkKeyUserActionScope(t.Context(), tt.input, errorMap)
+			got := checkKeyUserActionScope(context.TODO(), tt.input, errorMap)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("checkKeyUserActionScope() got = %v, want %v", got, tt.want)
 			}
@@ -191,7 +192,7 @@ func TestLoadProjects_RejectsManifestsWithNoProjects(t *testing.T) {
 	testFs := testutils.TempFs(t)
 	loaderContext := getSimpleProjectLoaderContext([]string{})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, got, 0, "Expected no project loaded")
 	assert.Len(t, gotErrs, 1, "Expected to fail with no projects")
@@ -209,7 +210,7 @@ func TestLoadProjects_LoadsSimpleProject(t *testing.T) {
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
 
@@ -231,7 +232,7 @@ func TestLoadProjects_LoadsSimpleProjectInFoldersNotMatchingApiName(t *testing.T
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
 
@@ -252,7 +253,7 @@ func TestLoadProjects_LoadsProjectInRootDir(t *testing.T) {
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
@@ -276,7 +277,7 @@ func TestLoadProjects_LoadsProjectInManyDirs(t *testing.T) {
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	errutils.PrintErrors(gotErrs)
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
@@ -303,7 +304,7 @@ func TestLoadProjects_LoadsProjectInHiddenDirDoesNotLoad(t *testing.T) {
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	errutils.PrintErrors(gotErrs)
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
@@ -327,7 +328,7 @@ func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForOneEnvironmen
 		[]string{"project"},
 		[]string{"env"})
 
-	projects, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	projects, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 	assert.Empty(t, gotErrs)
 	assert.Len(t, projects, 1, "expected one project")
 
@@ -349,7 +350,7 @@ func TestLoadProjects_NameDuplicationParameterShouldNotBePresentForTwoEnvironmen
 		[]string{"project"},
 		[]string{"env", "env2"})
 
-	projects, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	projects, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 	assert.Empty(t, gotErrs)
 	assert.Len(t, projects, 1, "expected one project")
 
@@ -372,7 +373,7 @@ func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedT
 		[]string{"project"},
 		[]string{"env", "env2"})
 
-	projects, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	projects, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 	assert.Empty(t, gotErrs)
 	assert.Len(t, projects, 1, "expected one project")
 
@@ -395,7 +396,7 @@ func TestLoadProjects_NameDuplicationParameterShouldBePresentIfNameIsDuplicatedO
 		[]string{"project"},
 		[]string{"env"})
 
-	projects, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	projects, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 	assert.Empty(t, gotErrs)
 	assert.Len(t, projects, 1, "expected one project")
 
@@ -431,7 +432,7 @@ func TestLoadProjects_LoadsKnownAndUnknownApiNames(t *testing.T) {
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, gotErrs, 1, "Expected to load project with an error")
 	assert.ErrorContains(t, gotErrs[0], "unknown API: unknown-api")
@@ -472,7 +473,7 @@ configs:
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
@@ -525,7 +526,7 @@ configs:
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
@@ -566,7 +567,7 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentApis(t *testing.T) {
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
@@ -583,7 +584,7 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentProjects(t *testing.T) {
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project", "project2"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 2, "Expected two loaded project")
@@ -611,7 +612,7 @@ configs:
 
 	loaderContext := getFullProjectLoaderContext([]string{"alerting-profile"}, []string{"project"}, []string{"env1", "env2"})
 
-	got, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	got, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, gotErrs, 0, "Expected to load project without error")
 	assert.Len(t, got, 1, "Expected a single loaded project")
@@ -635,7 +636,7 @@ func TestLoadProjects_ContainsCoordinateWhenReturningErrorForDuplicates(t *testi
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	_, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	_, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, gotErrs, 2, "Expected to fail on overlapping coordinates")
 	assert.ErrorContains(t, gotErrs[0], "project:alerting-profile:OVERLAP")
@@ -651,7 +652,7 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InDifferentFiles(t *test
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	_, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	_, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, gotErrs, 1, "Expected to fail on overlapping coordinates")
 }
@@ -677,7 +678,7 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InSameFile(t *testing.T)
 
 	loaderContext := getSimpleProjectLoaderContext([]string{"project"})
 
-	_, gotErrs := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	_, gotErrs := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 
 	assert.Len(t, gotErrs, 1, "Expected to fail on overlapping coordinates")
 }
@@ -690,7 +691,7 @@ func Test_loadProject_returnsErrorIfProjectPathDoesNotExist(t *testing.T) {
 		Path: "this/does/not/exist",
 	}
 
-	_, gotErrs := loadProject(t.Context(), fs, loaderContext, definition, manifest.Environments{})
+	_, gotErrs := loadProject(context.TODO(), fs, loaderContext, definition, manifest.Environments{})
 	assert.Len(t, gotErrs, 1)
 	assert.ErrorContains(t, gotErrs[0], "filepath `this/does/not/exist` does not exist")
 }
@@ -718,7 +719,7 @@ func Test_loadProject_returnsErrorIfScopeForWebKUAhasWrongTypeOfParameter(t *tes
       name: key-user-actions-web
       scope: APPLICATION-3F2C9E73509D15B6`), 0644))
 	require.NoError(t, afero.WriteFile(testFs, "project/kua-web/kua-web.json", []byte("{}"), 0644))
-	_, gotErrs := loadProject(t.Context(), testFs, loaderContext, definition, manifest.Environments{
+	_, gotErrs := loadProject(context.TODO(), testFs, loaderContext, definition, manifest.Environments{
 		SelectedEnvironments: manifest.EnvironmentDefinitionsByName{
 			"testEnv": {Name: "testEnv"},
 		},
@@ -873,26 +874,26 @@ func TestLoadProjects_Simple(t *testing.T) {
 	}
 
 	t.Run("loads all projects in manifest if none are specified", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, nil)
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, nil)
 		require.Len(t, gotErrs, 0, "Expected no errors loading all projects")
 		require.Len(t, gotProjects, 3, "Expected to load 3 projects")
 	})
 
 	t.Run("loads specified projects", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"a", "c"})
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"a", "c"})
 		require.Len(t, gotErrs, 0, "Expected no errors loading specified projects")
 		requireProjectsWithNames(t, gotProjects, "a", "c")
 	})
 
 	t.Run("returns error if specified project is not found", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"a", "d"})
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"a", "d"})
 		require.Len(t, gotErrs, 1, "Expected error if project is not found")
 		require.Len(t, gotProjects, 0, "Expected to load no projects")
 		require.Contains(t, gotErrs[0].Error(), "no project named", "Unexpected error message")
 	})
 
 	t.Run("also loads dependent projects", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"b"})
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"b"})
 		require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects")
 		requireProjectsWithNames(t, gotProjects, "b", "a")
 	})
@@ -980,31 +981,31 @@ func TestLoadProjects_Groups(t *testing.T) {
 	}
 
 	t.Run("loads all projects in manifest if none are specified", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, nil)
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, nil)
 		require.Len(t, gotErrs, 0, "Expected no errors loading all projects")
 		require.Len(t, gotProjects, 5, "Expected to load 5 projects")
 	})
 
 	t.Run("loads specified projects", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"g1.a", "c"})
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"g1.a", "c"})
 		require.Len(t, gotErrs, 0, "Expected no errors loading specified projects")
 		requireProjectsWithNames(t, gotProjects, "g1.a", "c")
 	})
 
 	t.Run("loads specified groups", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"g1"})
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"g1"})
 		require.Len(t, gotErrs, 0, "Expected no errors loading specified groups")
 		requireProjectsWithNames(t, gotProjects, "g1.a", "g1.b")
 	})
 
 	t.Run("loads specified groups and projects", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"g1", "c"})
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"g1", "c"})
 		require.Len(t, gotErrs, 0, "Expected no errors loading specified groups and projects")
 		requireProjectsWithNames(t, gotProjects, "g1.a", "g1.b", "c")
 	})
 
 	t.Run("returns error if specified group is not found", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"g3", "c"})
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"g3", "c"})
 		require.Len(t, gotErrs, 1, "Expected an error if specified group is not found")
 		require.Len(t, gotProjects, 0, "Expected to load no projects")
 		require.Contains(t, gotErrs[0].Error(), "no project named", "Unexpected error message")
@@ -1110,26 +1111,26 @@ func TestLoadProjects_WithEnvironmentOverrides(t *testing.T) {
 	}
 
 	t.Run("loads all projects in manifest if none are specified", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, nil)
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, nil)
 		require.Len(t, gotErrs, 0, "Expected no errors loading all projects")
 		require.Len(t, gotProjects, 3, "Expected to load 3 projects")
 	})
 
 	t.Run("loads specified projects", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"a"})
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"a"})
 		require.Len(t, gotErrs, 0, "Expected no errors loading specified projects")
 		requireProjectsWithNames(t, gotProjects, "a")
 	})
 
 	t.Run("returns error if specified project is not found", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"d"})
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"d"})
 		require.Len(t, gotErrs, 1, "Expected errors if specified project is not found")
 		require.Len(t, gotProjects, 0, "Expected to load no projects")
 		require.Contains(t, gotErrs[0].Error(), "no project named", "Unexpected error message")
 	})
 
 	t.Run("also loads dependent projects", func(t *testing.T) {
-		gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"b"})
+		gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"b"})
 		require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects")
 		requireProjectsWithNames(t, gotProjects, "b", "a", "c")
 	})
@@ -1228,7 +1229,7 @@ func TestLoadProjects_WithEnvironmentOverridesAndLimitedEnvironments(t *testing.
 		ParametersSerde: config.DefaultParameterParsers,
 	}
 
-	gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"b"})
+	gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"b"})
 	require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects ")
 	requireProjectsWithNames(t, gotProjects, "b", "a")
 }
@@ -1297,7 +1298,7 @@ func TestLoadProjects_IgnoresIrrelevantProjectWithErrors(t *testing.T) {
 		ParametersSerde: config.DefaultParameterParsers,
 	}
 
-	gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"a"})
+	gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"a"})
 	require.Len(t, gotErrs, 0, "Expected no errors loading specified projects")
 	requireProjectsWithNames(t, gotProjects, "a")
 }
@@ -1399,7 +1400,7 @@ func TestLoadProjects_DeepDependencies(t *testing.T) {
 		ParametersSerde: config.DefaultParameterParsers,
 	}
 
-	gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"c"})
+	gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"c"})
 	require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects")
 	requireProjectsWithNames(t, gotProjects, "c", "b", "a")
 }
@@ -1482,7 +1483,7 @@ func TestLoadProjects_CircularDependencies(t *testing.T) {
 		ParametersSerde: config.DefaultParameterParsers,
 	}
 
-	gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, []string{"b", "a"})
+	gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, []string{"b", "a"})
 	require.Len(t, gotErrs, 0, "Expected no errors loading dependent projects")
 	requireProjectsWithNames(t, gotProjects, "b", "a")
 }
@@ -1523,7 +1524,7 @@ func TestLoadProjects_NetworkZonesContainsParameterToSetting(t *testing.T) {
 		[]string{"project"},
 		[]string{"env"})
 
-	projects, _ := LoadProjects(t.Context(), testFs, loaderContext, nil)
+	projects, _ := LoadProjects(context.TODO(), testFs, loaderContext, nil)
 	networkZone1 := findConfig(t, projects[0], "env", "network-zone", 0)
 	assert.Contains(t, networkZone1.Parameters, "__MONACO_NZONE_ENABLED__")
 
@@ -1551,7 +1552,7 @@ func TestLoadProjects_EnvironmentOverrideWithUndefinedEnvironmentProducesWarning
 
 	testFs := testutils.TempFs(t)
 	logSpy := bytes.Buffer{}
-	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), false, &logSpy, false, false)
+	log.PrepareLogging(context.TODO(), afero.NewMemMapFs(), false, &logSpy, false, false)
 
 	require.NoError(t, testFs.MkdirAll("a/builtinmanagement-zones", testDirectoryFileMode))
 	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
@@ -1582,7 +1583,7 @@ func TestLoadProjects_EnvironmentOverrideWithUndefinedEnvironmentProducesWarning
 		ParametersSerde: config.DefaultParameterParsers,
 	}
 
-	gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, nil)
+	gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, nil)
 	assert.Len(t, gotErrs, 0, "Expected no errors loading dependent projects ")
 	assert.Len(t, gotProjects, 1)
 
@@ -1610,7 +1611,7 @@ func TestLoadProjects_GroupOverrideWithUndefinedGroupProducesWarning(t *testing.
 	testFs := testutils.TempFs(t)
 
 	logSpy := bytes.Buffer{}
-	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), false, &logSpy, false, false)
+	log.PrepareLogging(context.TODO(), afero.NewMemMapFs(), false, &logSpy, false, false)
 
 	require.NoError(t, testFs.MkdirAll("a/builtinmanagement-zones", testDirectoryFileMode))
 	require.NoError(t, afero.WriteFile(testFs, "a/builtinmanagement-zones/config.yaml", managementZoneConfig, testFileFileMode))
@@ -1644,7 +1645,7 @@ func TestLoadProjects_GroupOverrideWithUndefinedGroupProducesWarning(t *testing.
 		ParametersSerde: config.DefaultParameterParsers,
 	}
 
-	gotProjects, gotErrs := LoadProjects(t.Context(), testFs, testContext, nil)
+	gotProjects, gotErrs := LoadProjects(context.TODO(), testFs, testContext, nil)
 	assert.Len(t, gotErrs, 0, "Expected no errors loading dependent projects ")
 	assert.Len(t, gotProjects, 1)
 
