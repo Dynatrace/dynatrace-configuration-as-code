@@ -185,7 +185,7 @@ func Test_parseURLDefinition(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("TEST_URL", tt.givenEnvVarValue)
-			if got, gotErr := parseURLDefinition(&Context{}, tt.inputURL); got != tt.want || (!tt.wantErr && gotErr != nil) {
+			if got, gotErr := parseURLDefinition(tt.inputURL, false); got != tt.want || (!tt.wantErr && gotErr != nil) {
 				t.Errorf("parseURLDefinition() = %v, %v, want %v, %v", got, gotErr, tt.want, tt.wantErr)
 			}
 		})
@@ -2155,23 +2155,23 @@ func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
 		},
 	}
 
-	t.Run("URLs resolution produces error", func(t *testing.T) {
-		_, gotErr := parseURLDefinition(&Context{}, e.URL)
+	t.Run("URLs resolution produces error if resolution is not skipped", func(t *testing.T) {
+		_, gotErr := parseURLDefinition(e.URL, false)
 		assert.Error(t, gotErr)
 	})
 
-	t.Run("URLs are not resolved if 'DoNotResolveEnvVars' option is set", func(t *testing.T) {
-		_, gotErr := parseURLDefinition(&Context{Opts: Options{DoNotResolveEnvVars: true}}, e.URL)
+	t.Run("URLs are not resolved if skipped", func(t *testing.T) {
+		_, gotErr := parseURLDefinition(e.URL, true)
 		assert.NoError(t, gotErr)
 	})
 
-	t.Run("Auth token resolution produces error", func(t *testing.T) {
-		_, gotErr := parseAuth(&Context{}, e.Auth)
+	t.Run("Auth token resolution produces error if resolution is not skipped", func(t *testing.T) {
+		_, gotErr := parseAuth(e.Auth, false)
 		assert.Error(t, gotErr)
 	})
 
-	t.Run("Auth tokens are not resolved if 'DoNotResolveEnvVars' option is set", func(t *testing.T) {
-		_, gotErr := parseAuth(&Context{Opts: Options{DoNotResolveEnvVars: true}}, e.Auth)
+	t.Run("Auth tokens are not resolved if skipped", func(t *testing.T) {
+		_, gotErr := parseAuth(e.Auth, true)
 		assert.NoError(t, gotErr)
 	})
 }

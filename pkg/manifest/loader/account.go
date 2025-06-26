@@ -19,10 +19,12 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"os"
+
+	"github.com/google/uuid"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
-	"github.com/google/uuid"
-	"os"
 )
 
 var (
@@ -50,14 +52,14 @@ func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, er
 		return manifest.Account{}, err
 	}
 
-	oAuthDef, err := parseOAuth(c, &a.OAuth)
+	oAuthDef, err := parseOAuth(&a.OAuth, c.Opts.DoNotResolveEnvVars)
 	if err != nil {
 		return manifest.Account{}, fmt.Errorf("oAuth is invalid: %w", err)
 	}
 
 	var urlDef *manifest.URLDefinition
 	if a.ApiUrl != nil {
-		if u, err := parseURLDefinition(c, *a.ApiUrl); err != nil {
+		if u, err := parseURLDefinition(*a.ApiUrl, c.Opts.DoNotResolveEnvVars); err != nil {
 			return manifest.Account{}, fmt.Errorf("apiUrl: %w", err)
 		} else {
 			urlDef = &u

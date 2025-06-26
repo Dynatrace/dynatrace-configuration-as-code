@@ -214,7 +214,7 @@ func Load(context *Context) (manifest.Manifest, []error) {
 	}, nil
 }
 
-func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
+func parseAuth(a persistence.Auth, skipResolveEnvironmentVariables bool) (manifest.Auth, error) {
 	var mAuth manifest.Auth
 
 	if err := validateAuthInput(a); err != nil {
@@ -222,7 +222,7 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 	}
 
 	if a.AccessToken != nil {
-		token, err := parseAuthSecret(context, a.AccessToken)
+		token, err := parseAuthSecret(a.AccessToken, skipResolveEnvironmentVariables)
 		if err != nil {
 			return manifest.Auth{}, fmt.Errorf("failed to parse token: %w", err)
 		}
@@ -230,7 +230,7 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 	}
 
 	if a.OAuth != nil {
-		oauth, err := parseOAuth(context, a.OAuth)
+		oauth, err := parseOAuth(a.OAuth, skipResolveEnvironmentVariables)
 		if err != nil {
 			return manifest.Auth{}, fmt.Errorf("failed to parse OAuth credentials: %w", err)
 		}
@@ -238,7 +238,7 @@ func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 	}
 
 	if featureflags.PlatformToken.Enabled() && a.PlatformToken != nil {
-		platformToken, err := parseAuthSecret(context, a.PlatformToken)
+		platformToken, err := parseAuthSecret(a.PlatformToken, skipResolveEnvironmentVariables)
 		if err != nil {
 			return manifest.Auth{}, fmt.Errorf("failed to parse platform token: %w", err)
 		}
@@ -258,7 +258,7 @@ func validateAuthInput(a persistence.Auth) error {
 	return nil
 }
 
-func parseAuthSecret(context *Context, s *persistence.AuthSecret) (manifest.AuthSecret, error) {
+func parseAuthSecret(s *persistence.AuthSecret, skipResolveEnvironmentVariables bool) (manifest.AuthSecret, error) {
 	if s.Type != persistence.TypeEnvironment && s.Type != "" {
 		return manifest.AuthSecret{}, errors.New("type must be 'environment'")
 	}
@@ -267,7 +267,7 @@ func parseAuthSecret(context *Context, s *persistence.AuthSecret) (manifest.Auth
 		return manifest.AuthSecret{}, errors.New("no name given or empty")
 	}
 
-	if context.Opts.DoNotResolveEnvVars {
+	if skipResolveEnvironmentVariables {
 		log.Debug("Skipped resolving environment variable %s based on loader options", s.Name)
 		return manifest.AuthSecret{
 			Name:  s.Name,
@@ -287,19 +287,19 @@ func parseAuthSecret(context *Context, s *persistence.AuthSecret) (manifest.Auth
 	return manifest.AuthSecret{Name: s.Name, Value: secret.MaskedString(v)}, nil
 }
 
-func parseOAuth(context *Context, a *persistence.OAuth) (*manifest.OAuth, error) {
-	clientID, err := parseAuthSecret(context, &a.ClientID)
+func parseOAuth(a *persistence.OAuth, skipResolveEnvironmentVariables bool) (*manifest.OAuth, error) {
+	clientID, err := parseAuthSecret(&a.ClientID, skipResolveEnvironmentVariables)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse ClientID: %w", err)
 	}
 
-	clientSecret, err := parseAuthSecret(context, &a.ClientSecret)
+	clientSecret, err := parseAuthSecret(&a.ClientSecret, skipResolveEnvironmentVariables)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse ClientSecret: %w", err)
 	}
 
 	if a.TokenEndpoint != nil {
-		urlDef, err := parseURLDefinition(context, *a.TokenEndpoint)
+		urlDef, err := parseURLDefinition(*a.TokenEndpoint, skipResolveEnvironmentVariables)
 		if err != nil {
 			return nil, fmt.Errorf(`failed to parse "tokenEndpoint": %w`, err)
 		}
@@ -462,12 +462,12 @@ func shouldSkipEnv(context *Context, group persistence.Group, env persistence.En
 func parseSingleEnvironment(context *Context, config persistence.Environment, group string) (manifest.EnvironmentDefinition, []error) {
 	var errs []error
 
-	a, err := parseAuth(context, config.Auth)
+	a, err := parseAuth(config.Auth, context.Opts.DoNotResolveEnvVars)
 	if err != nil {
 		errs = append(errs, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("failed to parse auth section: %s", err)))
 	}
 
-	urlDef, err := parseURLDefinition(context, config.URL)
+	urlDef, err := parseURLDefinition(config.URL, context.Opts.DoNotResolveEnvVars)
 	if err != nil {
 		errs = append(errs, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}
@@ -484,7 +484,7 @@ func parseSingleEnvironment(context *Context, config persistence.Environment, gr
 	}, nil
 }
 
-func parseURLDefinition(context *Context, u persistence.TypedValue) (manifest.URLDefinition, error) {
+func parseURLDefinition(u persistence.TypedValue, skipResolveEnvironmentVariables bool) (manifest.URLDefinition, error) {
 
 	// Depending on the type, the url.value either contains the env var name or the direct value of the url
 	if u.Value == "" {
@@ -502,7 +502,7 @@ func parseURLDefinition(context *Context, u persistence.TypedValue) (manifest.UR
 
 	if u.Type == persistence.TypeEnvironment {
 
-		if context.Opts.DoNotResolveEnvVars {
+		if skipResolveEnvironmentVariables {
 			log.Debug("Skipped resolving environment variable %s based on loader options", u.Value)
 			return manifest.URLDefinition{
 				Type:  manifest.EnvironmentURLType,
