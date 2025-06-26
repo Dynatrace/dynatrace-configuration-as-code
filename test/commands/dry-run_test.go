@@ -40,13 +40,13 @@ func TestDryRunWithOAuth(t *testing.T) {
 		runner.Options{
 			runner.WithManifestPath(manifest),
 			runner.WithSuffix("AllConfigs"),
-			runner.WithEnvironment("platform_env"),
+			runner.WithEnvironment("platform_oauth_env"),
 			runner.WithEnvVars(map[string]string{
 				featureflags.ServiceLevelObjective.EnvName(): "true",
 			}),
 		},
 		func(fs afero.Fs, _ runner.TestContext) {
-			dryRun(t, fs, manifest, "platform_env")
+			dryRun(t, fs, manifest, "platform_oauth_env")
 		})
 }
 

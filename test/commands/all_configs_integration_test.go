@@ -60,7 +60,7 @@ func TestIntegrationAllConfigsPlatformWithOAuth(t *testing.T) {
 
 	t.Setenv(featureflags.ServiceLevelObjective.EnvName(), "true")
 
-	targetEnvironment := "platform_env"
+	targetEnvironment := "platform_oauth_env"
 
 	runner.Run(t, configFolder,
 		runner.Options{

@@ -4,7 +4,7 @@ configs:
     template: events.json
     skip: true # platform (with OAuth) only config
   environmentOverrides:
-    - environment: platform_env
+    - environment: platform_oauth_env
       override:
         skip: false
   type:

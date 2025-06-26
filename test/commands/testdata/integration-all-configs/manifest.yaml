@@ -11,7 +11,7 @@ environmentGroups:
     auth:
       token:
         name: TOKEN_ENVIRONMENT_1
-  - name: platform_env
+  - name: platform_oauth_env
     url:
       type: environment
       value: PLATFORM_URL_ENVIRONMENT_2
