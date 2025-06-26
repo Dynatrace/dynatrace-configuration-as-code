@@ -35,8 +35,8 @@ func ContextWithCustomClient(ctx context.Context) context.Context {
 		IdleConnTimeout:       20 * time.Minute, // How long idle connections stay in the pool
 		ExpectContinueTimeout: 20 * time.Minute, // Wait time for 100-continue response
 		MaxIdleConns:          100,              // Max idle connections across all hosts
-		MaxIdleConnsPerHost:   100,               // Max idle connections per host
-		DisableKeepAlives:     true,
+		MaxIdleConnsPerHost:   100,              // Max idle connections per host
+		//DisableKeepAlives:     true,
 	}
 	return context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
 		Transport: t,
