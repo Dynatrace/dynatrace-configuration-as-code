@@ -1,10 +1,12 @@
 module github.com/dynatrace/dynatrace-configuration-as-code/v2
 
-go 1.23.10
+go 1.23.0
+
+toolchain go1.23.2
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250626145724-eadaebc030f6
+	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250627093459-a8e504c27bce
 	github.com/go-logr/logr v1.4.3
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
