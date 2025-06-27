@@ -20,13 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"time"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/throttle"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
 )
 
 const emptyResponseRetryMax = 10
@@ -40,8 +41,8 @@ const emptyResponseRetryMax = 10
 // as filtering might exclude some entries that where received from the API.
 type AddEntriesToResult func(body []byte) (receivedEntries int, err error)
 
-func listPaginated(ctx context.Context, client *corerest.Client, endpoint string, queryParams url.Values, logLabel string,
-	addToResult AddEntriesToResult) error {
+func listPaginated(ctx context.Context, client *corerest.Client, endpoint string, queryParams url.Values, schemaId string, addToResult AddEntriesToResult) error {
+	logger := slog.With("endpoint", endpoint, "schemaId", schemaId)
 
 	body, totalReceivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
 	if err != nil {
@@ -49,34 +50,38 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 	}
 
 	nextPageKey, expectedTotalCount := getPaginationValues(body)
-	emptyResponseRetryCount := 0
+	retryCount := uint(0)
 	for nextPageKey != "" {
 
 		body, receivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(endpoint, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
 		if err != nil {
 			var apiErr coreapi.APIError
 			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusBadRequest {
-				log.WarnContext(ctx, "Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", endpoint, string(body))
+				logger.WarnContext(ctx, "Failed to get additional data from paginated API. Pages may have been removed during request.", "response", string(body))
 				break
 			}
 			return err
 		}
 
 		if receivedCount == 0 {
-			if emptyResponseRetryCount >= emptyResponseRetryMax {
-				return fmt.Errorf("received too many empty responses (=%d)", emptyResponseRetryCount)
+			if retryCount >= emptyResponseRetryMax {
+				return fmt.Errorf("received too many empty responses (=%d)", retryCount)
 			}
 
-			emptyResponseRetryCount++
-			throttle.ThrottleCallAfterError(emptyResponseRetryCount, "Received empty array response, retrying with same nextPageKey")
+			retryCount++
+
+			sleepDuration := generateSleepDuration(retryCount)
+			logger.DebugContext(ctx, "Received empty array response, retrying with same 'nextPageKey'. Waiting to avoid overloading the server.", "waitDuration", sleepDuration)
+			time.Sleep(sleepDuration)
+
 			continue
 		}
 
-		emptyResponseRetryCount = 0
+		retryCount = 0
 		totalReceivedCount += receivedCount
 		nextPageKey, _ = getPaginationValues(body)
 		if nextPageKey == "" && totalReceivedCount != expectedTotalCount {
-			log.WarnContext(ctx, "Total count of items from api: %v for: %s does not match with count of actually downloaded items. Expected: %d Got: %d, last next page key received: %s", endpoint, logLabel, expectedTotalCount, totalReceivedCount, nextPageKey)
+			logger.WarnContext(ctx, "Total amount of items from the API does not match with the amount of actually downloaded items.", "expectedAmount", expectedTotalCount, "receivedAmount", receivedCount, "nextPageKey", nextPageKey)
 		}
 	}
 
@@ -99,4 +104,22 @@ func runAndProcessResponse(ctx context.Context, client *corerest.Client, endpoin
 	}
 
 	return resp.Data, receivedCount, nil
+}
+
+// generateSleepDuration will generate a random duration time between
+//
+//	1s and 1s + ([0, 1s] * backoffMultiplier)
+//
+// to be used between API calls.
+func generateSleepDuration(backoffMultiplier uint) time.Duration {
+	const backoffTime = 1 * time.Second
+
+	waitNanos, err := rand.Int(backoffTime.Nanoseconds())
+	if err != nil {
+		// Since we are not reliant to cryptographically secure numbers, we can just ignore the error and assign some number.
+		// It's sound enough to just wait the backoff time by default
+		waitNanos = backoffTime.Nanoseconds()
+	}
+
+	return backoffTime + time.Duration(waitNanos*int64(backoffMultiplier))
 }
