@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/spf13/afero"
 
@@ -139,6 +140,7 @@ func Run(t *testing.T, workingDirectory string, opts Options, fn TestFunc) {
 }
 
 func runIntegration(t *testing.T, opts testOptions, testFunc TestFunc) {
+	time.Sleep(1 * time.Second)
 	configFolder, _ := filepath.Abs(opts.configFolder)
 
 	suffix := AppendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
