@@ -62,6 +62,7 @@ def executeWithSecrets(Map args = [cmd: null]) {
                      [envVar: 'OAUTH_CLIENT_ID', vaultKey: 'OAUTH_CLIENT_ID', isRequired: true],
                      [envVar: 'OAUTH_CLIENT_SECRET', vaultKey: 'OAUTH_CLIENT_SECRET', isRequired: true],
                      [envVar: 'OAUTH_TOKEN_ENDPOINT', vaultKey: 'OAUTH_TOKEN_ENDPOINT', isRequired: true],
+                     [envVar: 'PLATFORM_TOKEN', vaultKey: 'PLATFORM_TOKEN', isRequired: true],
 
                      [envVar: 'URL_ENVIRONMENT_1', vaultKey: 'URL_ENVIRONMENT_1', isRequired: true],
                      [envVar: 'TOKEN_ENVIRONMENT_1', vaultKey: 'TOKEN_ENVIRONMENT_1', isRequired: true],
