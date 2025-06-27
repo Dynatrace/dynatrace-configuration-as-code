@@ -96,9 +96,9 @@ func runDeployCommand(t *testing.T, fs afero.Fs, manifest, specificEnvironment s
 	assert.NoError(t, err)
 
 	if err == nil {
-		logging.assertReport(t, fs, reportFile, true)
+		logging.AssertReport(t, fs, reportFile, true)
 	} else {
-		logging.assertReport(t, fs, reportFile, false)
+		logging.AssertReport(t, fs, reportFile, false)
 	}
 }
 
@@ -119,8 +119,8 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 	assert.NoError(t, err)
 
 	if err == nil {
-		logging.assertReport(t, fs, reportFile, true)
+		logging.AssertReport(t, fs, reportFile, true)
 	} else {
-		logging.assertReport(t, fs, reportFile, false)
+		logging.AssertReport(t, fs, reportFile, false)
 	}
 }

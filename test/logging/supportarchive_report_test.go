@@ -216,7 +216,7 @@ func TestDeployReport(t *testing.T) {
 				err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=valid_env --verbose", manifest))
 				require.NoError(t, err)
 
-				assertReport(t, fs, reportFile, true)
+				AssertReport(t, fs, reportFile, true)
 
 				// assert report contains a DEPLOY record for config that was skipped together with details of the reason
 				records := readReport(t, fs, reportFile)
@@ -288,45 +288,4 @@ func cleanupLogsDir() error {
 	}
 	err = afero.NewOsFs().RemoveAll(logPath)
 	return err
-}
-
-// readReport reads and returns all records in the specified report file and asserts that this succeeded.
-func readReport(t *testing.T, fs afero.Fs, path string) []report.Record {
-	t.Helper()
-
-	records, err := report.ReadReportFile(fs, path)
-	require.NoError(t, err, "file must exists and be readable")
-
-	require.NotEmpty(t, records)
-
-	return records
-}
-
-// assertReport reads a report and asserts that it either indicates a successful or failed deployment depending on the value of succeed.
-func assertReport(t *testing.T, fs afero.Fs, path string, succeed bool) {
-	t.Helper()
-
-	records := readReport(t, fs, path)
-	matcher.ContainsInfoRecord(t, records, "Monaco version")
-	matcher.ContainsInfoRecord(t, records, "Deployment finished")
-	matcher.ContainsInfoRecord(t, records, "Report finished")
-
-	if succeed {
-		for index, r := range records {
-			assert.Containsf(t, []report.RecordState{report.StateSuccess, report.StateExcluded, report.StateSkipped, report.StateInfo}, r.State, "config at %d is with status %s", index, r.State)
-		}
-	}
-
-	if !succeed {
-		haveErrorRecord := false
-		for _, r := range records {
-			if "ERROR" == r.State {
-				haveErrorRecord = true
-				break
-			}
-		}
-		if !haveErrorRecord {
-			assert.Fail(t, "there is no record with ERROR status")
-		}
-	}
 }
