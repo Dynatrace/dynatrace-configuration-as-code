@@ -1306,35 +1306,6 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 
 }
 
-// Test if the FF gets Disabled/Enabled that the correct error is returned
-func TestDeployConfigFF(t *testing.T) {
-	// Clients here will return an error if reached
-	dummyClientSet := client.ClientSet{}
-	c := dynatrace.EnvironmentClients{
-		dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
-	}
-	tests := []struct {
-		name              string
-		projects          []project.Project
-		featureFlag       string
-		configType        config.TypeID
-		expectedErrString string
-	}{}
-
-	for _, tt := range tests {
-		t.Run(tt.name+" | FF Enabled", func(t *testing.T) {
-			t.Setenv(tt.featureFlag, "true")
-			err := deploy.DeployForAllEnvironments(t.Context(), tt.projects, c, deploy.DeployConfigsOptions{})
-			assert.Errorf(t, err, "unimplemented")
-		})
-		t.Run(tt.name+" | FF Disabled", func(t *testing.T) {
-			t.Setenv(tt.featureFlag, "false")
-			err := deploy.DeployForAllEnvironments(t.Context(), tt.projects, c, deploy.DeployConfigsOptions{})
-			assert.Errorf(t, err, fmt.Sprintf("unknown config-type (ID: %q)", tt.configType))
-		})
-	}
-}
-
 type StubOpenPipelineClient struct {
 	UpdateStub func() (openpipeline.Response, error)
 }
