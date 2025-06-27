@@ -52,6 +52,7 @@ func ReplaceName(line string, idChange func(string) string) string {
 
 	key := split[0]
 	val := split[1]
+	val = strings.SplitN(val, "#", 2)[0] // remove comments
 
 	if !isNameKey(key) {
 		return line
