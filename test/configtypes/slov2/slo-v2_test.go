@@ -19,6 +19,7 @@
 package slov2
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -60,7 +61,7 @@ func TestSloV2(t *testing.T) {
 				assert.NoError(t, err)
 
 				sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
-				result, err := sloV2Client.List(t.Context())
+				result, err := sloV2Client.List(context.TODO())
 				assert.NoError(t, err)
 				externalIDs := extractExternalIDs(t, result)
 
@@ -97,7 +98,7 @@ func TestSloV2(t *testing.T) {
 				assert.Error(t, err)
 
 				sloV2Client := createSloV2Client(t, fs, manifestPath, environment)
-				result, err := sloV2Client.List(t.Context())
+				result, err := sloV2Client.List(context.TODO())
 				assert.NoError(t, err)
 				externalIDs := extractExternalIDs(t, result)
 

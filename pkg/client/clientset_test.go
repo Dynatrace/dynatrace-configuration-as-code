@@ -17,6 +17,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -133,7 +134,7 @@ func TestCreateClientSet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			clientSet, err := CreateClientSet(t.Context(), tt.url, tt.auth)
+			clientSet, err := CreateClientSet(context.TODO(), tt.url, tt.auth)
 			assert.NoError(t, err)
 			assert.NotNil(t, clientSet)
 		})
@@ -148,7 +149,7 @@ func TestCreateClientSetWithAdditionalHeaders(t *testing.T) {
 	defer server.Close()
 
 	t.Setenv(environment.AdditionalHTTPHeaders, "Some-Header: Some-Value")
-	clientSet, _ := CreateClientSet(t.Context(), server.URL, manifest.Auth{
+	clientSet, _ := CreateClientSet(context.TODO(), server.URL, manifest.Auth{
 		AccessToken: &manifest.AuthSecret{
 			Name:  "token-env-var",
 			Value: "mock token",
@@ -157,7 +158,7 @@ func TestCreateClientSetWithAdditionalHeaders(t *testing.T) {
 	assert.NotNil(t, clientSet)
 
 	var apiErr api.APIError
-	_, err := clientSet.SettingsClient.Get(t.Context(), "")
+	_, err := clientSet.SettingsClient.Get(context.TODO(), "")
 	require.ErrorAs(t, err, &apiErr)
 	require.Equal(t, 404, apiErr.StatusCode)
 }
@@ -179,7 +180,7 @@ func TestCreateClientSetWithPlatformToken_ClientsUsePlatformToken(t *testing.T) 
 		_, _ = rw.Write([]byte(output))
 	}))
 	defer server.Close()
-	clientSet, _ := CreateClientSet(t.Context(), server.URL, manifest.Auth{
+	clientSet, _ := CreateClientSet(context.TODO(), server.URL, manifest.Auth{
 		PlatformToken: &manifest.AuthSecret{
 			Name:  "token-env-var",
 			Value: "my-platform-token",
@@ -188,7 +189,7 @@ func TestCreateClientSetWithPlatformToken_ClientsUsePlatformToken(t *testing.T) 
 	assert.NotNil(t, clientSet)
 
 	var apiErr api.APIError
-	_, err := clientSet.SettingsClient.Get(t.Context(), "")
+	_, err := clientSet.SettingsClient.Get(context.TODO(), "")
 	require.ErrorAs(t, err, &apiErr)
 	require.Equal(t, 404, apiErr.StatusCode)
 }
@@ -212,7 +213,7 @@ func TestCreateClientSetWithPlatformTokenAndOAuth_ClientsUsePlatformToken(t *tes
 	}))
 	defer server.Close()
 
-	clientSet, _ := CreateClientSet(t.Context(), server.URL, manifest.Auth{
+	clientSet, _ := CreateClientSet(context.TODO(), server.URL, manifest.Auth{
 		PlatformToken: &manifest.AuthSecret{
 			Name:  "token-env-var",
 			Value: "my-platform-token",
@@ -234,7 +235,7 @@ func TestCreateClientSetWithPlatformTokenAndOAuth_ClientsUsePlatformToken(t *tes
 	assert.NotNil(t, clientSet)
 
 	var apiErr api.APIError
-	_, err := clientSet.SettingsClient.Get(t.Context(), "")
+	_, err := clientSet.SettingsClient.Get(context.TODO(), "")
 	require.ErrorAs(t, err, &apiErr)
 	require.Equal(t, 404, apiErr.StatusCode)
 }

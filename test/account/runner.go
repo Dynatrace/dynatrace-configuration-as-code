@@ -19,6 +19,7 @@
 package account
 
 import (
+	"context"
 	"errors"
 	"os"
 	"strings"
@@ -59,7 +60,7 @@ func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name
 func createAccountClientsFromManifest(t *testing.T, fs afero.Fs, manifestFileName string) map[account.AccountInfo]*accounts.Client {
 	m, errs := manifestloader.Load(&manifestloader.Context{Fs: fs, ManifestPath: manifestFileName, Opts: manifestloader.Options{RequireAccounts: true}})
 	require.NoError(t, errors.Join(errs...))
-	accClients, err := dynatrace.CreateAccountClients(t.Context(), m.Accounts)
+	accClients, err := dynatrace.CreateAccountClients(context.TODO(), m.Accounts)
 	require.NoError(t, err)
 	return accClients
 }

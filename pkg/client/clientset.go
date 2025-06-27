@@ -298,10 +298,6 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 
 	if platformCredentialsGiven {
 		cFactory = cFactory.WithPlatformURL(url)
-		client, err := cFactory.CreatePlatformClient(ctx)
-		if err != nil {
-			return nil, err
-		}
 
 		bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, time.Second, 5*time.Minute)
 		if err != nil {
@@ -333,11 +329,19 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
+		client, err := cFactory.CreatePlatformClient(ctx)
+		if err != nil {
+			return nil, err
+		}
 		settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
 		if err != nil {
 			return nil, err
 		}
 
+		client, err = cFactory.CreatePlatformClient(ctx)
+		if err != nil {
+			return nil, err
+		}
 		classicURL, err = metadata.GetDynatraceClassicURL(ctx, *client)
 		if err != nil {
 			return nil, err
@@ -347,17 +351,21 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	if auth.AccessToken != nil {
 		cFactory = cFactory.WithAccessToken(auth.AccessToken.Value.Value()).
 			WithClassicURL(classicURL)
+
 		client, err := cFactory.CreateClassicClient()
 		if err != nil {
 			return nil, err
 		}
-
 		configClient, err = dtclient.NewClassicConfigClient(client, dtclient.WithCachingDisabledForConfigClient(opts.CachingDisabled))
 		if err != nil {
 			return nil, err
 		}
 
 		if settingsClient == nil {
+			client, err := cFactory.CreateClassicClient()
+			if err != nil {
+				return nil, err
+			}
 			settingsClient, err = dtclient.NewClassicSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
 			if err != nil {
 				return nil, err

@@ -19,6 +19,7 @@
 package settings
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -118,7 +119,7 @@ func createSettingsClientPlatform(t *testing.T, env manifest.EnvironmentDefiniti
 		clientFactory = clientFactory.WithPlatformToken(env.Auth.PlatformToken.Value.Value())
 	}
 
-	c, err := clientFactory.CreatePlatformClient(t.Context())
+	c, err := clientFactory.CreatePlatformClient(context.TODO())
 	require.NoError(t, err)
 
 	dtClient, err := dtclient.NewPlatformSettingsClient(c)

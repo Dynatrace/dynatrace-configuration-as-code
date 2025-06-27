@@ -59,7 +59,7 @@ func TestGetTokenMetadata(t *testing.T) {
 			}, nil
 		},
 		}
-		resp, err := accesstoken.GetAccessTokenMetadata(t.Context(), stub, "my-token")
+		resp, err := accesstoken.GetAccessTokenMetadata(context.TODO(), stub, "my-token")
 		assert.NoError(t, err)
 		assert.Equal(t, accesstoken.Response{
 			ID:                  "abc-xy",
@@ -76,7 +76,7 @@ func TestGetTokenMetadata(t *testing.T) {
 		stub := Stub{func() (*http.Response, error) {
 			return &http.Response{}, errors.New("client error")
 		}}
-		resp, err := accesstoken.GetAccessTokenMetadata(t.Context(), stub, "my-token")
+		resp, err := accesstoken.GetAccessTokenMetadata(context.TODO(), stub, "my-token")
 
 		assert.Equal(t, accesstoken.Response{}, resp)
 		assert.ErrorContains(t, err, "client error")
@@ -86,7 +86,7 @@ func TestGetTokenMetadata(t *testing.T) {
 		stub := Stub{func() (*http.Response, error) {
 			return &http.Response{StatusCode: 400, Body: io.NopCloser(strings.NewReader("api error"))}, nil
 		}}
-		resp, err := accesstoken.GetAccessTokenMetadata(t.Context(), stub, "my-token")
+		resp, err := accesstoken.GetAccessTokenMetadata(context.TODO(), stub, "my-token")
 
 		assert.Equal(t, accesstoken.Response{}, resp)
 		assert.ErrorContains(t, err, "api error")
@@ -96,7 +96,7 @@ func TestGetTokenMetadata(t *testing.T) {
 		stub := Stub{func() (*http.Response, error) {
 			return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader("{"))}, nil
 		}}
-		resp, err := accesstoken.GetAccessTokenMetadata(t.Context(), stub, "my-token")
+		resp, err := accesstoken.GetAccessTokenMetadata(context.TODO(), stub, "my-token")
 
 		assert.Equal(t, accesstoken.Response{}, resp)
 		assert.ErrorContains(t, err, "unmarshal")

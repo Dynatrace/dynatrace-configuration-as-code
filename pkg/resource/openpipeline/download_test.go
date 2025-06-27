@@ -17,6 +17,7 @@
 package openpipeline_test
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"testing"
@@ -118,7 +119,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		opClient := openpipelineClients.NewClient(rest.NewClient(server.URL(), server.Client()))
 		api := openpipeline.NewDownloadAPI(opClient)
-		result, err := api.Download(t.Context(), "project")
+		result, err := api.Download(context.TODO(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
@@ -138,7 +139,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		opClient := openpipelineClients.NewClient(rest.NewClient(server.URL(), server.FaultyClient()))
 		api := openpipeline.NewDownloadAPI(opClient)
-		result, err := api.Download(t.Context(), "project")
+		result, err := api.Download(context.TODO(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 

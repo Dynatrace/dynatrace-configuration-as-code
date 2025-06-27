@@ -19,6 +19,7 @@
 package version
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -115,7 +116,7 @@ func TestGetDynatraceVersion(t *testing.T) {
 			})
 			defer server.Close()
 
-			got, err := GetDynatraceVersion(t.Context(), corerest.NewClient(server.URL(), server.Client()))
+			got, err := GetDynatraceVersion(context.TODO(), corerest.NewClient(server.URL(), server.Client()))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetDynatraceVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -149,7 +150,7 @@ func TestGetDynatraceVersionWorksWithTrailingSlash(t *testing.T) {
 	urlWithSlash, err := url.Parse(server.URL().String() + "/")
 	require.NoError(t, err)
 
-	got, err := GetDynatraceVersion(t.Context(), corerest.NewClient(urlWithSlash, server.Client()))
+	got, err := GetDynatraceVersion(context.TODO(), corerest.NewClient(urlWithSlash, server.Client()))
 	assert.Equal(t, version.Version{Major: 1, Minor: 236, Patch: 5}, got)
 	assert.NoError(t, err)
 }

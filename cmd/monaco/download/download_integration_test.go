@@ -17,6 +17,7 @@
 package download
 
 import (
+	"context"
 	"encoding/json"
 	"net/http/httptest"
 	"path/filepath"
@@ -93,7 +94,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -167,7 +168,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -261,7 +262,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NoError(t, err)
 
@@ -383,7 +384,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NoError(t, err)
 
@@ -455,7 +456,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NoError(t, err)
 
@@ -530,7 +531,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -633,7 +634,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 	t.Setenv(featureflags.DownloadFilterClassicConfigs.EnvName(), "false")
 
 	// WHEN we download everything
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -753,7 +754,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN we download everything
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, projectName))
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -897,7 +898,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			require.NoError(t, err)
 
 			// WHEN we download everything
-			err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
+			err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
 			assert.NoError(t, err)
 
 			// THEN we can load the project again and verify its content
@@ -973,7 +974,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apis, options)
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apis, options)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -988,7 +989,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 		}
 	}
 
-	projects, errs := project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
+	projects, errs := project.LoadProjects(context.TODO(), fs, project.ProjectLoaderContext{
 		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      testBasePath,
 		Manifest:        man,
@@ -1069,7 +1070,7 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apis, opts)
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apis, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1125,7 +1126,7 @@ func TestDownloadGoTemplateExpressionsAreEscaped(t *testing.T) {
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, api.APIs{}, opts)
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, api.APIs{}, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1193,7 +1194,7 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apis, opts)
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, apis, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1247,7 +1248,7 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 	settingsClient, err := dtclient.NewPlatformSettingsClientForTesting(server.URL, server.Client())
 	require.NoError(t, err)
 
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, nil, opts)
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, nil, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1307,7 +1308,7 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	// GIVEN filter feature flag is turned OFF
 	t.Setenv(featureflags.DownloadFilterSettingsUnmodifiable.EnvName(), "false")
 
-	err = doDownloadConfigs(t.Context(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, nil, opts)
+	err = doDownloadConfigs(context.TODO(), fs, &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, nil, opts)
 	assert.NoError(t, err)
 
 	// THEN we can load the project again and verify its content
@@ -1374,7 +1375,7 @@ func loadDownloadedProjects(t *testing.T, fs afero.Fs, apis api.APIs) ([]project
 		return nil, errs
 	}
 
-	return project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
+	return project.LoadProjects(context.TODO(), fs, project.ProjectLoaderContext{
 		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      "out",
 		Manifest:        man,

@@ -19,6 +19,7 @@
 package scope
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -80,17 +81,17 @@ func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext ru
 
 	dashboardAPI := apis[api.Dashboard]
 	dashboardName := runner.AddSuffix("Application monitoring", testContext.Suffix)
-	exists, dashboardID, err := clientSet.ConfigClient.ExistsWithName(t.Context(), dashboardAPI, dashboardName)
+	exists, dashboardID, err := clientSet.ConfigClient.ExistsWithName(context.TODO(), dashboardAPI, dashboardName)
 
 	require.NoError(t, err, "expect to be able to get dashboard by name")
 	require.True(t, exists, "dashboard must exist")
 
-	dashboardJSONBytes, err := clientSet.ConfigClient.Get(t.Context(), dashboardAPI, dashboardID)
+	dashboardJSONBytes, err := clientSet.ConfigClient.Get(context.TODO(), dashboardAPI, dashboardID)
 	require.NoError(t, err, "expect to be able to get dashboard by ID")
 	assertDashboardSharedState(t, dashboardJSONBytes, expectShared)
 
 	dashboardShareSettingsAPI := apis[api.DashboardShareSettings].ApplyParentObjectID(dashboardID)
-	dashboardShareSettingsJSONBytes, err := clientSet.ConfigClient.Get(t.Context(), dashboardShareSettingsAPI, "")
+	dashboardShareSettingsJSONBytes, err := clientSet.ConfigClient.Get(context.TODO(), dashboardShareSettingsAPI, "")
 	require.NoError(t, err, "expect to be able to get dashboard shared settings by ID")
 	assertDashboardShareSettingsEnabledState(t, dashboardShareSettingsJSONBytes, expectShared)
 }

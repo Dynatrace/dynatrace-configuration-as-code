@@ -18,6 +18,7 @@
 package settings
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -66,7 +67,7 @@ func TestOrderedSettings(t *testing.T) {
 			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
 			settingsClient := createSettingsClient(t, environment)
 
-			results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
+			results, err := settingsClient.List(context.TODO(), "builtin:processavailability", dtclient.ListSettingsOptions{
 				DiscardValue: true,
 				Filter:       filterObjectsForScope(host),
 			})
@@ -93,7 +94,7 @@ func TestOrderedSettings(t *testing.T) {
 			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
 			settingsClient := createSettingsClient(t, environment)
 
-			results, err := settingsClient.List(t.Context(), "builtin:processavailability", dtclient.ListSettingsOptions{
+			results, err := settingsClient.List(context.TODO(), "builtin:processavailability", dtclient.ListSettingsOptions{
 				DiscardValue: true,
 				Filter:       filterObjectsForScope(host),
 			})
@@ -126,7 +127,7 @@ func TestOrderedSettingsCrossProjects(t *testing.T) {
 			loadedManifest := runner.LoadManifest(t, fs, manifestPath, "platform_env")
 			environment := loadedManifest.Environments.SelectedEnvironments["platform_env"]
 			settingsClient := createSettingsClient(t, environment)
-			results, err := settingsClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			results, err := settingsClient.List(context.TODO(), schema, dtclient.ListSettingsOptions{
 				DiscardValue: true,
 				Filter:       filterObjectsForScope(pgiMeId),
 			})
@@ -167,7 +168,7 @@ func TestOrdered_InsertAtFrontWorksWithoutBeingSet(t *testing.T) {
 			assert2.AssertAllConfigsAvailability(t, fs, manifestFile, []string{project}, specificEnvironment, true)
 
 			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
-			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			list, err := sClient.List(context.TODO(), schema, dtclient.ListSettingsOptions{
 				DiscardValue: true,
 				Filter:       filterObjectsForScope(pgiMeId),
 			})
@@ -205,7 +206,7 @@ func TestOrdered_InsertAtFrontWorks(t *testing.T) {
 
 			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			list, err := sClient.List(context.TODO(), schema, dtclient.ListSettingsOptions{
 				DiscardValue: true,
 				Filter:       filterObjectsForScope(pgiMeId),
 			})
@@ -245,7 +246,7 @@ func TestOrdered_InsertAtBackWorks(t *testing.T) {
 
 			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			list, err := sClient.List(context.TODO(), schema, dtclient.ListSettingsOptions{
 				DiscardValue: true,
 				Filter:       filterObjectsForScope(pgiMeId),
 			})
@@ -281,7 +282,7 @@ func TestOrdered_InsertAtFrontAndBackWorks(t *testing.T) {
 
 			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			list, err := sClient.List(context.TODO(), schema, dtclient.ListSettingsOptions{
 				DiscardValue: true,
 				Filter:       filterObjectsForScope(pgiMeId),
 			})
@@ -326,7 +327,7 @@ func TestOrdered_InsertAtFrontAndBackWorksDeployTwice(t *testing.T) {
 
 			sClient := createSettingsClientFromManifest(t, fs, manifestFile, "platform")
 
-			list, err := sClient.List(t.Context(), schema, dtclient.ListSettingsOptions{
+			list, err := sClient.List(context.TODO(), schema, dtclient.ListSettingsOptions{
 				DiscardValue: true,
 				Filter:       filterObjectsForScope(pgiMeId),
 			})

@@ -55,7 +55,7 @@ func Run(t *testing.T, fs afero.Fs, command string) error {
 	cmd.SetArgs(args)
 
 	// explicit cancel for each monaco run invocation
-	ctx, cancel := context.WithCancel(t.Context())
+	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
 	t.Logf("Running command: %s", command)

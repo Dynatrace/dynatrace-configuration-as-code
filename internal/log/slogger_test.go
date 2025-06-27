@@ -20,6 +20,7 @@ package log_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"strings"
@@ -50,7 +51,7 @@ func TestSlogger(t *testing.T) {
 		handler := NewTestHandler(&options)
 
 		logger := &log.Slogger{Logger: slog.New(handler)}
-		logger.DebugContext(t.Context(), "code %s reached", "here")
+		logger.DebugContext(context.TODO(), "code %s reached", "here")
 
 		assert.Contains(t, handler.Output.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(handler.Output.String()), "debug")
@@ -70,7 +71,7 @@ func TestSlogger(t *testing.T) {
 		handler := NewTestHandler(&options)
 
 		logger := &log.Slogger{Logger: slog.New(handler)}
-		logger.InfoContext(t.Context(), "code %s reached", "here")
+		logger.InfoContext(context.TODO(), "code %s reached", "here")
 
 		assert.Contains(t, handler.Output.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(handler.Output.String()), "info")
@@ -90,7 +91,7 @@ func TestSlogger(t *testing.T) {
 		handler := NewTestHandler(&options)
 
 		logger := &log.Slogger{Logger: slog.New(handler)}
-		logger.WarnContext(t.Context(), "code %s reached", "here")
+		logger.WarnContext(context.TODO(), "code %s reached", "here")
 
 		assert.Contains(t, handler.Output.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(handler.Output.String()), "warn")
@@ -110,7 +111,7 @@ func TestSlogger(t *testing.T) {
 		handler := NewTestHandler(&options)
 
 		logger := &log.Slogger{Logger: slog.New(handler)}
-		logger.ErrorContext(t.Context(), "code %s reached", "here")
+		logger.ErrorContext(context.TODO(), "code %s reached", "here")
 
 		assert.Contains(t, handler.Output.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(handler.Output.String()), "error")
@@ -121,7 +122,7 @@ func TestSlogger(t *testing.T) {
 func TestWith(t *testing.T) {
 	logSpy := bytes.Buffer{}
 	t.Setenv("MONACO_LOG_FORMAT", "json")
-	log.PrepareLogging(t.Context(), afero.NewOsFs(), false, &logSpy, false, false)
+	log.PrepareLogging(context.TODO(), afero.NewOsFs(), false, &logSpy, false, false)
 
 	log.With(
 		slog.Any("Title", "Captain"),

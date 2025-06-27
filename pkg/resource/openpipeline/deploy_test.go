@@ -19,6 +19,7 @@
 package openpipeline
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -68,5 +69,5 @@ func TestDeployOpenPipelineConfig(t *testing.T) {
 func runDeployTest(t *testing.T, client DeploySource, c *config.Config) (entities.ResolvedEntity, error) {
 	parameters, errs := c.ResolveParameterValues(entities.New())
 	require.Empty(t, errs)
-	return NewDeployAPI(client).Deploy(t.Context(), parameters, "{}", c)
+	return NewDeployAPI(client).Deploy(context.TODO(), parameters, "{}", c)
 }
