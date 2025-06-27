@@ -6,7 +6,7 @@ toolchain go1.23.2
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250627093459-a8e504c27bce
+	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250627102630-b4edfcee1f9c
 	github.com/go-logr/logr v1.4.3
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
@@ -21,7 +21,7 @@ require (
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.uber.org/mock v0.5.2
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
-	golang.org/x/oauth2 v0.30.0
+	golang.org/x/oauth2 v0.19.0
 	gonum.org/v1/gonum v0.16.0
 	gopkg.in/yaml.v2 v2.4.0
 )
