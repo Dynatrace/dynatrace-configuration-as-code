@@ -26,14 +26,19 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 )
+
+type Deleter interface {
+	Delete(context.Context, []pointer.DeletePointer) error
+	DeleteAll(context.Context) error
+}
 
 type configurationType = string
 
@@ -96,7 +101,7 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Classic configuration(s) as API client was unavailable.", len(entries))
 	} else if t == "bucket" {
 		if clients.BucketClient != nil {
-			return bucket.Delete(ctx, clients.BucketClient, entries)
+			return bucket.NewDeleter(clients.BucketClient).Delete(ctx, entries)
 		}
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
 	} else if t == "document" {

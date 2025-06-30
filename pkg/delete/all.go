@@ -25,12 +25,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/slo"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 )
 
 // All collects and deletes ALL configuration objects using the provided ClientSet.
@@ -65,7 +65,7 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 
 	if clients.BucketClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of Grail Bucket configurations as API client was unavailable.")
-	} else if err := bucket.DeleteAll(ctx, clients.BucketClient); err != nil {
+	} else if err := bucket.NewDeleter(clients.BucketClient).DeleteAll(ctx); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all Grail Bucket configurations: %v", err)
 		errCount++
 	}
