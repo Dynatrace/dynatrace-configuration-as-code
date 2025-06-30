@@ -514,7 +514,6 @@ func TestFindAllIds(t *testing.T) {
 
 	for _, tt := range tc {
 		t.Run(tt.in, func(t *testing.T) {
-			t.Parallel()
 
 			foundIds := findAllIds(tt.in)
 			assert.ElementsMatch(t, tt.expectedIds, foundIds)

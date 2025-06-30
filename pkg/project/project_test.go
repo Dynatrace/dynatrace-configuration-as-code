@@ -116,7 +116,6 @@ func TestGetConfigFor(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 
 			cfg, found := tc.givenProject.GetConfigFor(tc.givenEnv, tc.givenCoordinate)
 			assert.Equal(t, tc.wantConfig, cfg)

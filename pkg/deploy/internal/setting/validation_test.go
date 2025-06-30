@@ -324,7 +324,6 @@ func TestInsertAfterSameScopeValidator(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 
 			projects := buildProjects(test.sourceConfig, test.otherProjectConfigs)
 

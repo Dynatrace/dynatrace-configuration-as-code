@@ -17,8 +17,9 @@
 package resolver
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReplaceAll(t *testing.T) {
@@ -99,7 +100,6 @@ func TestReplaceAll(t *testing.T) {
 	for _, tt := range tc {
 		tt := tt
 		t.Run(tt.content, func(t *testing.T) {
-			t.Parallel()
 
 			c := replaceAll(tt.content, tt.key, tt.value)
 

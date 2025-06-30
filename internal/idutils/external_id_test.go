@@ -23,9 +23,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerateExternalIdIsStable(t *testing.T) {
@@ -139,16 +140,13 @@ func TestGenerateExternalID(t *testing.T) {
 	coordinate := coordinate.Coordinate{Project: "project-name", Type: "schema-id", ConfigId: "config-id"}
 	id := idutils.GenerateExternalID(coordinate)
 	t.Run("Len of id is under 50", func(t *testing.T) {
-		t.Parallel()
 		len := len(id)
 		assert.True(t, len <= 50)
 	})
 	t.Run("externalID correctly encoded", func(t *testing.T) {
-		t.Parallel()
 		assert.Equal(t, id, "monaco-ae5f7e18-84b6-3c05-98b9-3d8aba2c708c")
 	})
 	t.Run("externalID correctly prefixed", func(t *testing.T) {
-		t.Parallel()
 		assert.True(t, strings.HasPrefix(id, "monaco-"))
 	})
 }

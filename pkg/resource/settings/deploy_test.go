@@ -108,8 +108,6 @@ func TestDeploySetting_ManagementZone_FailToDecodeMZoneID(t *testing.T) {
 
 func TestDeploy_InsertAfter_NotDefined(t *testing.T) {
 
-	t.Parallel()
-
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().
 		Upsert(t.Context(), gomock.Any(), dtclient.UpsertSettingsOptions{OverrideRetry: nil, InsertAfter: nil}).
@@ -167,7 +165,6 @@ func TestDeploy_InsertAfter_ValidCases(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 
 			c := client.NewMockSettingsClient(gomock.NewController(t))
 			c.EXPECT().
@@ -222,7 +219,6 @@ func TestDeploy_InsertAfter_InvalidCases(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 
 			c := client.NewMockSettingsClient(gomock.NewController(t))
 
