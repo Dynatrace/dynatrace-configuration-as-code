@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,12 +29,20 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
-type client interface {
+type DeleteSource interface {
 	Delete(ctx context.Context, id string) (api.Response, error)
 	List(ctx context.Context) (buckets.ListResponse, error)
 }
 
-func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) error {
+type Deleter struct {
+	bucketSource DeleteSource
+}
+
+func NewDeleter(bucketSource DeleteSource) *Deleter {
+	return &Deleter{bucketSource: bucketSource}
+}
+
+func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) error {
 	logger := log.With(log.TypeAttr("bucket"))
 	logger.InfoContext(ctx, `Deleting %d config(s) of type "bucket"...`, len(entries))
 
@@ -49,7 +57,7 @@ func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) erro
 		}
 
 		logger.DebugContext(ctx, "Deleting bucket '%s'", bucketName)
-		_, err := c.Delete(ctx, bucketName)
+		_, err := d.bucketSource.Delete(ctx, bucketName)
 		if err != nil {
 			if !api.IsNotFoundError(err) {
 				logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
@@ -66,19 +74,18 @@ func Delete(ctx context.Context, c client, entries []pointer.DeletePointer) erro
 	return nil
 }
 
-// AllBuckets collects and deletes objects of type "bucket" using the provided bucketClient.
+// DeleteAll collects and deletes objects of type "bucket".
 //
 // Parameters:
 //   - ctx (context.Context): The context for the operation.
-//   - c (bucketClient): The bucketClient used for listing and deleting objects.
 //
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
-func DeleteAll(ctx context.Context, c client) error {
+func (d Deleter) DeleteAll(ctx context.Context) error {
 	logger := log.With(log.TypeAttr("bucket"))
 	logger.InfoContext(ctx, "Collecting Grail Bucket configurations...")
 
-	response, err := c.List(ctx)
+	response, err := d.bucketSource.List(ctx)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to collect Grail Bucket configurations: %v", err)
 		return err
@@ -102,7 +109,7 @@ func DeleteAll(ctx context.Context, c client) error {
 			continue
 		}
 
-		_, err := c.Delete(ctx, bucketName.BucketName)
+		_, err := d.bucketSource.Delete(ctx, bucketName.BucketName)
 		if err != nil {
 			if !api.IsNotFoundError(err) {
 				logger.ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName.BucketName, err)
