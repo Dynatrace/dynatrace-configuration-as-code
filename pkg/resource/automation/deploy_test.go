@@ -35,6 +35,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 )
 
+var idResponseData = []byte(`{ "id": "config-id" }`)
+
 func TestDeployAutomation_WrongType(t *testing.T) {
 	client := &client.DummyAutomationClient{}
 
@@ -60,10 +62,10 @@ func TestDeployAutomation_UnknownResourceType(t *testing.T) {
 	assert.NotEmpty(t, errs)
 }
 
-func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
-	t.Run("TestDeployAutomation - Workflow Upsert fails", func(t *testing.T) {
+func TestDeployAutomation_ClientUpdateFails(t *testing.T) {
+	t.Run("TestDeployAutomation - Workflow update fails", func(t *testing.T) {
 		client := automation.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("UPSERT_FAIL"))
+		client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("UPDATE_FAIL"))
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -76,9 +78,9 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 		assert.Zero(t, resp)
 		assert.Error(t, err)
 	})
-	t.Run("TestDeployAutomation - Workflow Upsert fails - HTTP Err", func(t *testing.T) {
+	t.Run("TestDeployAutomation - Workflow Update fails - HTTP Err", func(t *testing.T) {
 		client := automation.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{StatusCode: 400}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: 400})
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -90,9 +92,9 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 		_, err := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
 		assert.Error(t, err)
 	})
-	t.Run("TestDeployAutomation - BusinessCalendar Upsert fails", func(t *testing.T) {
+	t.Run("TestDeployAutomation - BusinessCalendar Update fails", func(t *testing.T) {
 		client := automation.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("UPSERT_FAIL"))
+		client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("UPDATE_FAIL"))
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -104,9 +106,9 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 		_, err := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
 		assert.Error(t, err)
 	})
-	t.Run("TestDeployAutomation - BusinessCalendar Upsert fails - HTTP Error", func(t *testing.T) {
+	t.Run("TestDeployAutomation - BusinessCalendar Update fails - HTTP Error", func(t *testing.T) {
 		client := automation.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{StatusCode: 400}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: 400})
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -118,9 +120,9 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 		_, err := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
 		assert.Error(t, err)
 	})
-	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails", func(t *testing.T) {
+	t.Run("TestDeployAutomation - Scheduling Rule Update fails", func(t *testing.T) {
 		client := automation.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("UPSERT_FAIL"))
+		client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("UPDATE_FAIL"))
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -132,9 +134,9 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 		_, err := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
 		assert.Error(t, err)
 	})
-	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails - HTTP Error", func(t *testing.T) {
+	t.Run("TestDeployAutomation - Scheduling Rule Update fails - HTTP Error", func(t *testing.T) {
 		client := automation.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{StatusCode: 400}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: 400})
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -150,9 +152,9 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 
 func TestDeployAutomation(t *testing.T) {
 	client := automation.NewMockDeploySource(gomock.NewController(t))
-	client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{
+	client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{
 		StatusCode: 200,
-		Data:       []byte("{ \"id\": \"config-id\" }"),
+		Data:       idResponseData,
 	}, nil)
 	conf := &config.Config{
 		Coordinate: coordinate.Coordinate{
@@ -174,9 +176,9 @@ func TestDeployAutomation(t *testing.T) {
 func TestDeployAutomation_WithGivenObjectId(t *testing.T) {
 	client := automation.NewMockDeploySource(gomock.NewController(t))
 	objectId := "custom-object-id"
-	client.EXPECT().Upsert(gomock.Any(), gomock.Any(), objectId, gomock.Any()).Times(1).Return(api.Response{
+	client.EXPECT().Update(gomock.Any(), gomock.Any(), objectId, gomock.Any()).Times(1).Return(api.Response{
 		StatusCode: 200,
-		Data:       []byte(`{ "id": "config-id" }`),
+		Data:       idResponseData,
 	}, nil)
 	conf := &config.Config{
 		OriginObjectId: objectId,
@@ -190,4 +192,50 @@ func TestDeployAutomation_WithGivenObjectId(t *testing.T) {
 	resolvedEntity, errs := automation.NewDeployAPI(client).Deploy(t.Context(), parameter.Properties{}, "{}", conf)
 	require.NoError(t, errs)
 	assert.Equal(t, "config-id", resolvedEntity.Properties[config.IdParameter])
+}
+
+func TestDeploy_WithCreate(t *testing.T) {
+	client := automation.NewMockDeploySource(gomock.NewController(t))
+	client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: 404})
+	client.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{StatusCode: 200, Data: idResponseData}, nil)
+	conf := &config.Config{
+		Coordinate: coordinate.Coordinate{
+			ConfigId: "config-id",
+		},
+		Type: config.AutomationType{
+			Resource: config.Workflow,
+		},
+	}
+	_, errs := automation.NewDeployAPI(client).Deploy(t.Context(), parameter.Properties{}, "{}", conf)
+	assert.NoError(t, errs)
+}
+
+func TestDeploy_FailsIfPayloadIsInvalid(t *testing.T) {
+	client := automation.NewMockDeploySource(gomock.NewController(t))
+	client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: 404})
+	conf := &config.Config{
+		Coordinate: coordinate.Coordinate{
+			ConfigId: "config-id",
+		},
+		Type: config.AutomationType{
+			Resource: config.Workflow,
+		},
+	}
+	_, errs := automation.NewDeployAPI(client).Deploy(t.Context(), parameter.Properties{}, "", conf)
+	assert.ErrorContains(t, errs, "unable to set the id field")
+}
+
+func TestDeploy_FailsIfResponseIsMissingID(t *testing.T) {
+	client := automation.NewMockDeploySource(gomock.NewController(t))
+	client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{StatusCode: 200, Data: []byte("{}")}, nil)
+	conf := &config.Config{
+		Coordinate: coordinate.Coordinate{
+			ConfigId: "config-id",
+		},
+		Type: config.AutomationType{
+			Resource: config.Workflow,
+		},
+	}
+	_, errs := automation.NewDeployAPI(client).Deploy(t.Context(), parameter.Properties{}, "{}", conf)
+	assert.ErrorContains(t, errs, "id field missing")
 }

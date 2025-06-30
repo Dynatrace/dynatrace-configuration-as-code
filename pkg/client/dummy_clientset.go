@@ -66,11 +66,6 @@ func (d *DummyAutomationClient) List(ctx context.Context, resourceType automatio
 
 // Update implements AutomationClient.
 func (d *DummyAutomationClient) Update(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (api.Response, error) {
-	panic("unimplemented")
-}
-
-// Upsert implements AutomationClient.
-func (d *DummyAutomationClient) Upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (result api.Response, err error) {
 	return api.Response{
 		StatusCode: 200,
 		Data:       []byte(fmt.Sprintf(`{"id" : "%s"}`, id)),

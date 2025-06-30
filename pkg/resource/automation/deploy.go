@@ -18,6 +18,7 @@ package automation
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -33,7 +34,8 @@ import (
 
 //go:generate mockgen -source=deploy.go -destination=automation_mock.go -package=automation DeploySource
 type DeploySource interface {
-	Upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (result api.Response, err error)
+	Create(ctx context.Context, resourceType automation.ResourceType, data []byte) (api.Response, error)
+	Update(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (api.Response, error)
 }
 
 type DeployAPI struct {
@@ -66,7 +68,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
 	}
 
-	resp, err := d.source.Upsert(ctx, resourceType, id, []byte(renderedConfig))
+	resp, err := d.upsert(ctx, resourceType, id, []byte(renderedConfig))
 	if err != nil {
 		return entities.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
 	}
@@ -84,4 +86,39 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	}
 	return resolved, nil
 
+}
+
+func (d DeployAPI) upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (api.Response, error) {
+	resp, err := d.source.Update(ctx, resourceType, id, data)
+
+	// return response if there is no error
+	if err == nil {
+		return resp, nil
+	}
+
+	// NotFound would mean that we need to create it, if not, something else is happening
+	if !api.IsNotFoundError(err) {
+		return api.Response{}, err
+	}
+
+	// make sure actual "id" field is set in payload
+	if err := setIDField(id, &data); err != nil {
+		return api.Response{}, fmt.Errorf("failed to create automation resource of type %v with id %s: unable to set the id field in order to create object: %w", resourceType, id, err)
+	}
+
+	return d.source.Create(ctx, resourceType, data)
+}
+
+func setIDField(id string, data *[]byte) error {
+	var m map[string]interface{}
+	err := json.Unmarshal(*data, &m)
+	if err != nil {
+		return err
+	}
+	m["id"] = id
+	*data, err = json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	return nil
 }
