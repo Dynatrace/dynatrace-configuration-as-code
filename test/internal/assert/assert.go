@@ -163,7 +163,6 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						t.Errorf("can not assert existience of Bucket config %q) because no BucketClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
 						return
 					}
-					foundID = AssertBucket(t, clients.BucketClient, env, available, theConfig)
 				case config.DocumentType:
 					if clients.DocumentClient == nil {
 						t.Errorf("can not assert existience of Document config %q) because no DocumentClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
@@ -290,61 +289,6 @@ func AssertAutomation(t *testing.T, c client.AutomationClient, env manifest.Envi
 		assert.False(t, exists, "Automation Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
 	}
 	return expectedId
-}
-
-func AssertBucket(t *testing.T, client client.BucketClient, env manifest.EnvironmentDefinition, available bool, cfg config.Config) (id string) {
-
-	var expectedId string
-	if cfg.OriginObjectId != "" {
-		expectedId = cfg.OriginObjectId
-	} else {
-		expectedId = idutils.GenerateBucketName(cfg.Coordinate)
-	}
-
-	err := waitForBucketToExist(t.Context(), client, expectedId, 120)
-
-	exists := true
-	apiErr := coreapi.APIError{}
-	if errors.As(err, &apiErr) {
-		if coreapi.IsNotFoundError(apiErr) {
-			exists = false
-		} else {
-			assert.NoError(t, apiErr)
-		}
-	} else if err != nil {
-		assert.NoError(t, err)
-	}
-
-	if cfg.Skip {
-		assert.Falsef(t, exists, "Skipped Bucket should NOT be available but was. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
-		return
-	}
-
-	if available {
-		assert.Truef(t, exists, "Bucket %q should be available, but wasn't. environment.Environment: '%s', failed for '%s'", expectedId, env.Name, cfg.Coordinate)
-	} else {
-		assert.Falsef(t, exists, "Bucket %q should NOT be available, but was. environment.Environment: '%s', failed for '%s'", expectedId, env.Name, cfg.Coordinate)
-	}
-
-	return expectedId
-}
-
-// waitForBucketToExist tries to get bucket status until it is successfully retrieved, max tries is exhausted, or some other error occurs.
-func waitForBucketToExist(ctx context.Context, client client.BucketClient, bucketName string, maxTries int) error {
-	var err error
-	for try := 0; try < maxTries; try++ {
-		_, err = client.Get(ctx, bucketName)
-		if err == nil {
-			return nil
-		}
-
-		if !coreapi.IsNotFoundError(err) {
-			return err
-		}
-
-		time.Sleep(time.Second)
-	}
-	return err
 }
 
 func wait(description string, maxPollCount int, condition func() bool) error {

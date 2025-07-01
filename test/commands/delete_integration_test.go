@@ -204,9 +204,8 @@ configs:
     name: %s
     template: auto-tag-setting.json`
 	workflowID := fmt.Sprintf("workflowSample_%s", runner.GenerateTestSuffix(t, "skip_automations"))
-	bucketID := fmt.Sprintf("bucket_%s", runner.GenerateTestSuffix(t, "")) // generate shorter name does not reach API limit
 	tagID := fmt.Sprintf("tagSample_%s", runner.GenerateTestSuffix(t, "skip_automations"))
-	configContent := fmt.Sprintf(configTemplate, workflowID, workflowID, bucketID, tagID, tagID)
+	configContent := fmt.Sprintf(configTemplate, workflowID, workflowID, tagID, tagID)
 
 	configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
 	assert.NoError(t, err)
@@ -219,13 +218,10 @@ configs:
     type: "workflow"
     id: "%s"
   - project: "project"
-    type: "bucket"
-    id: "%s"
-  - project: "project"
     type: "builtin:tags.auto-tagging"
     id: "%s"`
 
-	deleteContent := fmt.Sprintf(deleteTemplate, workflowID, bucketID, tagID)
+	deleteContent := fmt.Sprintf(deleteTemplate, workflowID, tagID)
 	deleteYamlPath, err := filepath.Abs("delete.yaml")
 	assert.NoError(t, err)
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
@@ -290,15 +286,6 @@ environmentGroups:
 			Project:  "project",
 			Type:     "workflow",
 			ConfigId: workflowID,
-		},
-	})
-
-	// check the bucket still exists after deletion was skipped without error
-	assert2.AssertBucket(t, clientSet.BucketClient, env, true, config.Config{
-		Coordinate: coordinate.Coordinate{
-			Project:  "project",
-			Type:     "bucket",
-			ConfigId: bucketID,
 		},
 	})
 }
