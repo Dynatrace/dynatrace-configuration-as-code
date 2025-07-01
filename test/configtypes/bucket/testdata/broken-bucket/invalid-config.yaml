@@ -1,6 +1,0 @@
-configs:
-  - id: invalid-bucket-definiton
-    type:
-      api: bucket # buckets are not a Config API type and must be defined as 'type: bucket' - this config is purposely invalid to test dry-runs
-    config:
-      template: bucket.json

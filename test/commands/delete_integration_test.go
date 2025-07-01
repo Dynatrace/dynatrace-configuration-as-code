@@ -196,10 +196,6 @@ configs:
     name: %s
     template: workflow.json
 - id: %s
-  type: bucket
-  config:
-    template: bucket.json
-- id: %s
   type:
     settings:
       schema: builtin:tags.auto-tagging

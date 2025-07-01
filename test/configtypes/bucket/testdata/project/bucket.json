@@ -1,5 +1,0 @@
-{
-  "displayName": "{{.displayName}}",
-  "retentionDays": 35,
-  "table": "logs"
-}

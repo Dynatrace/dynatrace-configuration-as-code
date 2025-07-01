@@ -1,6 +1,0 @@
-{
-    "enabled": true,
-    "ruleName": "{{.name}}",
-    "bucketName": "{{ .bucket }}",
-    "matcher": "matchesPhrase(content, \"{{.phrase}}\")"
-}
