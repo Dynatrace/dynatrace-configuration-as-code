@@ -63,7 +63,7 @@ func TestDeployAutomation_UnknownResourceType(t *testing.T) {
 }
 
 func TestDeployAutomation_ClientUpdateFails(t *testing.T) {
-	t.Run("TestDeployAutomation - Workflow update fails", func(t *testing.T) {
+	t.Run("TestDeployAutomation - Workflow Update fails", func(t *testing.T) {
 		client := automation.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("UPDATE_FAIL"))
 
