@@ -1870,54 +1870,6 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}}]}]
 			errsContain: []string{ErrNoCredentials.Error()},
 		},
 		{
-			name:            "Only platform auth configured with disabled FF",
-			manifestContent: platformManifest,
-			errsContain:     []string{ErrNoCredentials.Error()},
-		},
-		{
-			name:            "platform and OAuth configured with disabled FF does not fail",
-			manifestContent: platformAndOAuthManifest,
-			expectedManifest: manifest.Manifest{
-				Projects: map[string]manifest.ProjectDefinition{
-					"a": {
-						Name: "a",
-						Path: "a",
-					},
-				},
-				Environments: manifest.Environments{
-					SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
-						"c": {
-							Name: "c",
-							URL: manifest.URLDefinition{
-								Type:  manifest.ValueURLType,
-								Value: "d",
-							},
-							Group: "b",
-							Auth: manifest.Auth{
-								OAuth: &manifest.OAuth{
-									ClientID: manifest.AuthSecret{
-										Name:  "client-id",
-										Value: "resolved-client-id",
-									},
-									ClientSecret: manifest.AuthSecret{
-										Name:  "client-secret",
-										Value: "resolved-client-secret",
-									},
-								},
-							},
-						},
-					},
-					AllEnvironmentNames: map[string]struct{}{
-						"c": {},
-					},
-					AllGroupNames: map[string]struct{}{
-						"b": {},
-					},
-				},
-				Accounts: map[string]manifest.Account{},
-			},
-		},
-		{
 			name: "Unknown type",
 			manifestContent: `
 manifestVersion: 1.0
@@ -2065,6 +2017,86 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			assert.Equal(t, test.expectedManifest, mani)
 		})
 	}
+}
+
+// TestLoadManifestWithPlatformTokenFeatureFlagDisabled tests manifest loading when platform token FF is explicitly disabled.
+func TestLoadManifestWithPlatformTokenFeatureFlagDisabled(t *testing.T) {
+	t.Setenv(featureflags.PlatformToken.EnvName(), "false")
+
+	t.Setenv("e", "mock token")
+	t.Setenv("token-env-var", "mock token")
+	t.Setenv("empty-env-var", "")
+	t.Setenv("client-id", "resolved-client-id")
+	t.Setenv("client-secret", "resolved-client-secret")
+	t.Setenv("ENV_OAUTH_ENDPOINT", "resolved-oauth-endpoint")
+
+	t.Run("Fails if only platform token provided", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(platformManifest), 0400))
+
+		mani, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+		})
+
+		assert.Equal(t, manifest.Manifest{}, mani)
+		require.Len(t, errs, 1)
+		assert.ErrorContains(t, errs[0], ErrNoCredentials.Error())
+	})
+
+	t.Run("Succeeds if both platform token and oauth provided", func(t *testing.T) {
+
+		fs := afero.NewMemMapFs()
+		assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(platformAndOAuthManifest), 0400))
+
+		mani, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+		})
+
+		expectedManifest := manifest.Manifest{
+			Projects: map[string]manifest.ProjectDefinition{
+				"a": {
+					Name: "a",
+					Path: "a",
+				},
+			},
+			Environments: manifest.Environments{
+				SelectedEnvironments: map[string]manifest.EnvironmentDefinition{
+					"c": {
+						Name: "c",
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
+							Value: "d",
+						},
+						Group: "b",
+						Auth: manifest.Auth{
+							OAuth: &manifest.OAuth{
+								ClientID: manifest.AuthSecret{
+									Name:  "client-id",
+									Value: "resolved-client-id",
+								},
+								ClientSecret: manifest.AuthSecret{
+									Name:  "client-secret",
+									Value: "resolved-client-secret",
+								},
+							},
+						},
+					},
+				},
+				AllEnvironmentNames: map[string]struct{}{
+					"c": {},
+				},
+				AllGroupNames: map[string]struct{}{
+					"b": {},
+				},
+			},
+			Accounts: map[string]manifest.Account{},
+		}
+
+		assert.Equal(t, expectedManifest, mani)
+		assert.Empty(t, errs)
+	})
 }
 
 func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
