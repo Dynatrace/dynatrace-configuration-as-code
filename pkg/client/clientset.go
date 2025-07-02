@@ -157,12 +157,16 @@ type AutomationClient interface {
 	Delete(ctx context.Context, resourceType automation.ResourceType, id string) (libAPI.Response, error)
 }
 
+const (
+	BucketMaxRetryDuration       = time.Minute * 5
+	BucketDurationBetweenRetries = time.Second
+)
+
 type BucketClient interface {
 	Get(ctx context.Context, bucketName string) (libAPI.Response, error)
 	List(ctx context.Context) (buckets.ListResponse, error)
 	Create(ctx context.Context, bucketName string, data []byte) (libAPI.Response, error)
 	Update(ctx context.Context, bucketName string, data []byte) (libAPI.Response, error)
-	Upsert(ctx context.Context, bucketName string, data []byte) (libAPI.Response, error)
 	Delete(ctx context.Context, bucketName string) (libAPI.Response, error)
 }
 
@@ -302,7 +306,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
-		bucketClient, err = cFactory.BucketClientWithRetrySettings(ctx, time.Second, 5*time.Minute)
+		bucketClient, err = cFactory.BucketClient(ctx)
 		if err != nil {
 			return nil, err
 		}

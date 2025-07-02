@@ -26,10 +26,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	client2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
 type DeleteSource interface {
+	Get(ctx context.Context, bucketName string) (api.Response, error)
 	Delete(ctx context.Context, id string) (api.Response, error)
 	List(ctx context.Context) (buckets.ListResponse, error)
 }
@@ -57,7 +59,17 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 		}
 
 		logger.DebugContext(ctx, "Deleting bucket '%s'", bucketName)
-		_, err := d.bucketSource.Delete(ctx, bucketName)
+		bucketExists, err := buckets.AwaitBucketStable(ctx, c, bucketName, client2.BucketMaxRetryDuration, client2.BucketDurationBetweenRetries)
+		if err != nil {
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
+			deleteErrs++
+			continue
+		}
+		if !bucketExists {
+			// bucket already deleted
+			continue
+		}
+		_, err = d.bucketSource.Delete(ctx, bucketName)
 		if err != nil {
 			if !api.IsNotFoundError(err) {
 				logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
@@ -108,8 +120,18 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 		if buckettools.IsDefault(bucketName.BucketName) {
 			continue
 		}
-
-		_, err := d.bucketSource.Delete(ctx, bucketName.BucketName)
+		// before deleting wait until it can be deleted
+		bucketExists, err := buckets.AwaitBucketStable(ctx, c, bucketName.BucketName, client2.BucketMaxRetryDuration, client2.BucketDurationBetweenRetries)
+		if err != nil {
+			logger.ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName.BucketName, err)
+			errCount++
+			continue
+		}
+		if !bucketExists {
+			// bucket already deleted
+			continue
+		}
+		_, err = d.bucketSource.Delete(ctx, bucketName.BucketName)
 		if err != nil {
 			if !api.IsNotFoundError(err) {
 				logger.ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName.BucketName, err)
