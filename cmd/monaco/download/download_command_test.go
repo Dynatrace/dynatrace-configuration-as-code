@@ -85,17 +85,17 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Download using manifest - access token cannot be specified", func(t *testing.T) {
 		err := newMonaco(t).download("--token API_TOKEN")
-		assert.EqualError(t, err, "'--token', '--oauth-client-id', and '--oauth-client-secret' can only be used with '--url', while '--manifest' must NOT be set")
+		assert.EqualError(t, err, "'--token', '--oauth-client-id', '--oauth-client-secret', and '--platform-token' can only be used with '--url', while '--manifest' must NOT be set")
 	})
 
 	t.Run("Download using manifest - OAuth client ID cannot be specified", func(t *testing.T) {
 		err := newMonaco(t).download("--oauth-client-id CLIENT_ID")
-		assert.EqualError(t, err, "'--token', '--oauth-client-id', and '--oauth-client-secret' can only be used with '--url', while '--manifest' must NOT be set")
+		assert.EqualError(t, err, "'--token', '--oauth-client-id', '--oauth-client-secret', and '--platform-token' can only be used with '--url', while '--manifest' must NOT be set")
 	})
 
 	t.Run("Download using manifest - OAuth client secret cannot be specified", func(t *testing.T) {
 		err := newMonaco(t).download("--oauth-client-secret CLIENT_SECRET")
-		assert.EqualError(t, err, "'--token', '--oauth-client-id', and '--oauth-client-secret' can only be used with '--url', while '--manifest' must NOT be set")
+		assert.EqualError(t, err, "'--token', '--oauth-client-id', '--oauth-client-secret', and '--platform-token' can only be used with '--url', while '--manifest' must NOT be set")
 	})
 
 	t.Run("Download using manifest - platform token cannot be specified", func(t *testing.T) {
@@ -195,6 +195,7 @@ func TestGetDownloadCommand(t *testing.T) {
 	})
 
 	t.Run("Direct download - missing token or OAuth credentials", func(t *testing.T) {
+		t.Setenv(featureflags.PlatformToken.EnvName(), "false")
 		err := newMonaco(t).download("--url http://some.url")
 		assert.EqualError(t, err, "if '--url' is set, '--token' or '--oauth-client-id' and '--oauth-client-secret' must also be set")
 	})
