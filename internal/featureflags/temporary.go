@@ -43,5 +43,5 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	IgnoreSkippedConfigs:               false,
 	OnlyCreateReferencesInStringValues: false,
 	SanitizeBucketNames:                true,
-	PlatformToken:                      false,
+	PlatformToken:                      true,
 }
