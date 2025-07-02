@@ -154,7 +154,6 @@ type AutomationClient interface {
 	Create(ctx context.Context, resourceType automation.ResourceType, data []byte) (result libAPI.Response, err error)
 	Update(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (libAPI.Response, error)
 	List(ctx context.Context, resourceType automation.ResourceType) (libAPI.PagedListResponse, error)
-	Upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (result libAPI.Response, err error)
 	Delete(ctx context.Context, resourceType automation.ResourceType, id string) (libAPI.Response, error)
 }
 
