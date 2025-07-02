@@ -25,7 +25,9 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -33,7 +35,9 @@ import (
 )
 
 type DeploySource interface {
-	Upsert(ctx context.Context, bucketName string, data []byte) (api.Response, error)
+	Get(ctx context.Context, bucketName string) (api.Response, error)
+	Create(ctx context.Context, bucketName string, data []byte) (api.Response, error)
+	Update(ctx context.Context, bucketName string, data []byte) (api.Response, error)
 }
 
 type DeployAPI struct {
@@ -55,7 +59,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 
 	// create new context to carry logger
 	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
-	_, err := d.source.Upsert(ctx, bucketName, []byte(renderedConfig))
+	err := d.upsert(ctx, bucketName, []byte(renderedConfig))
 	if err != nil {
 		var apiErr api.APIError
 		if errors.As(err, &apiErr) {
@@ -71,4 +75,25 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 		Coordinate: c.Coordinate,
 		Properties: properties,
 	}, nil
+}
+
+func (d DeployAPI) upsert(ctx context.Context, bucketName string, data []byte) error {
+	// Check the status of a bucket (updating/creating/deleting) and if it even exists
+	if bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, d.source, bucketName, maxRetryDuration, durationBetweenRetries); err != nil {
+		return err
+	} else if bucketExists {
+		_, err := d.source.Update(ctx, bucketName, data)
+		return err
+	}
+
+	if _, err := d.source.Create(ctx, bucketName, data); err != nil {
+		return err
+	}
+	// after create wait for bucket being active/deleted
+	if bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, d.source, bucketName, maxRetryDuration, durationBetweenRetries); err != nil {
+		return err
+	} else if bucketExists {
+		log.DebugContext(ctx, "Bucket '%s' became active and is ready to use", bucketName)
+	}
+	return nil
 }
