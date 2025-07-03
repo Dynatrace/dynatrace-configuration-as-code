@@ -79,7 +79,7 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 
 	if clients.SegmentClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
-	} else if err := segment.DeleteAll(ctx, clients.SegmentClient); err != nil {
+	} else if err := segment.NewDeleter(clients.SegmentClient).DeleteAll(ctx); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.SegmentID, err)
 		errCount++
 	}
