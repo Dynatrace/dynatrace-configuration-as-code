@@ -18,6 +18,7 @@ package bucket_test
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -26,11 +27,11 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 )
 
-//#region Client
+// #region Client
 type client struct {
 	get    func(ctx context.Context, bucketName string) (api.Response, error)
 	delete func(ctx context.Context, bucketName string) (api.Response, error)
@@ -51,8 +52,8 @@ func (c client) List(ctx context.Context) (buckets.ListResponse, error) {
 
 //#endregion
 
-func TestDeleteBuckets(t *testing.T) {
-	activeBucketResponse := []byte(`{
+var (
+	activeBucketResponse = []byte(`{
 		 "bucketName": "bucket name",
 		 "table": "metrics",
 		 "displayName": "Default metrics (15 months)",
@@ -61,24 +62,27 @@ func TestDeleteBuckets(t *testing.T) {
 		 "metricInterval": "PT1M",
 		 "version": 1
 	}`)
-	deletingBucketResponse := []byte(`{
-			 "bucketName": "bucket name",
-			 "table": "metrics",
-			 "displayName": "Default metrics (15 months)",
-			 "status": "deleting",
-			 "retentionDays": 462,
-			 "metricInterval": "PT1M",
-			 "version": 1
-		}`)
-	updatingBucketResponse := []byte(`{
-			 "bucketName": "bucket name",
-			 "table": "metrics",
-			 "displayName": "Default metrics (15 months)",
-			 "status": "updating",
-			 "retentionDays": 462,
-			 "metricInterval": "PT1M",
-			 "version": 1
-		}`)
+	deletingBucketResponse = []byte(`{
+		 "bucketName": "bucket name",
+		 "table": "metrics",
+		 "displayName": "Default metrics (15 months)",
+		 "status": "deleting",
+		 "retentionDays": 462,
+		 "metricInterval": "PT1M",
+		 "version": 1
+	}`)
+	updatingBucketResponse = []byte(`{
+		 "bucketName": "bucket name",
+		 "table": "metrics",
+		 "displayName": "Default metrics (15 months)",
+		 "status": "updating",
+		 "retentionDays": 462,
+		 "metricInterval": "PT1M",
+		 "version": 1
+	}`)
+)
+
+func TestDelete(t *testing.T) {
 
 	t.Run("should succeed with one retry for the stable call", func(t *testing.T) {
 		getCalls := 0
@@ -102,7 +106,7 @@ func TestDeleteBuckets(t *testing.T) {
 				Identifier: "id1",
 			},
 		}
-		errs := bucket.Delete(t.Context(), c, entriesToDelete)
+		errs := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 		assert.Equal(t, getCalls, 2, "number of GET calls should be 2")
 	})
@@ -124,7 +128,7 @@ func TestDeleteBuckets(t *testing.T) {
 				Identifier: "id1",
 			},
 		}
-		errs := bucket.Delete(t.Context(), c, entriesToDelete)
+		errs := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -142,7 +146,7 @@ func TestDeleteBuckets(t *testing.T) {
 				Identifier: "id1",
 			},
 		}
-		errs := bucket.Delete(t.Context(), c, entriesToDelete)
+		errs := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -163,7 +167,7 @@ func TestDeleteBuckets(t *testing.T) {
 				Identifier: "id1",
 			},
 		}
-		err := bucket.Delete(t.Context(), c, entriesToDelete)
+		err := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
 		assert.Error(t, err, "there should be one delete error")
 	})
 
@@ -186,7 +190,176 @@ func TestDeleteBuckets(t *testing.T) {
 				OriginObjectId: objectID,
 			},
 		}
-		errs := bucket.Delete(t.Context(), c, entriesToDelete)
+		errs := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
+	})
+
+	t.Run("errors if the stable check errors", func(t *testing.T) {
+		c := client{
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{}, errors.New("custom error")
+			},
+		}
+
+		entriesToDelete := []pointer.DeletePointer{
+			{
+				Type:       "bucket",
+				Project:    "project",
+				Identifier: "id1",
+			},
+		}
+		err := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
+		assert.Error(t, err)
+	})
+}
+
+func TestDeleteAll(t *testing.T) {
+	listBucketResponse := [][]byte{[]byte(`{"bucketName": "bucket1"}`), []byte(`{"bucketName": "bucket2"}`)}
+
+	t.Run("calls delete of all buckets", func(t *testing.T) {
+		deleteCalls := 0
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: listBucketResponse}}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalls++
+				return api.Response{Data: deletingBucketResponse}, nil
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{Data: activeBucketResponse}, nil
+			},
+		}
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.NoError(t, err)
+		assert.Equal(t, 2, deleteCalls)
+	})
+
+	t.Run("should not call delete of all buckets if the stable check resulted in not existing", func(t *testing.T) {
+		deleteCalled := false
+		getCalls := 0
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: listBucketResponse}}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalled = true
+				return api.Response{}, nil
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				getCalls++
+				return api.Response{}, api.APIError{StatusCode: http.StatusNotFound}
+			},
+		}
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.NoError(t, err)
+		assert.False(t, deleteCalled)
+		assert.Equal(t, 2, getCalls)
+	})
+
+	t.Run("errors if stable check errors", func(t *testing.T) {
+		deleteCalled := false
+		getCalls := 0
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: listBucketResponse}}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalled = true
+				return api.Response{}, nil
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				getCalls++
+				return api.Response{}, api.APIError{StatusCode: http.StatusInternalServerError}
+			},
+		}
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.Error(t, err)
+		assert.False(t, deleteCalled)
+		assert.Equal(t, 2, getCalls)
+	})
+
+	t.Run("ignores NotFound errors on delete", func(t *testing.T) {
+		deleteCalls := 0
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: listBucketResponse}}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalls++
+				return api.Response{}, api.APIError{StatusCode: http.StatusNotFound}
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{Data: activeBucketResponse}, nil
+			},
+		}
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.NoError(t, err)
+		assert.Equal(t, 2, deleteCalls)
+	})
+
+	t.Run("should error if delete errors", func(t *testing.T) {
+		deleteCalls := 0
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: listBucketResponse}}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalls++
+				return api.Response{}, api.APIError{StatusCode: http.StatusInternalServerError}
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{Data: activeBucketResponse}, nil
+			},
+		}
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.Error(t, err)
+		assert.Equal(t, 2, deleteCalls)
+	})
+
+	t.Run("errors if list errored", func(t *testing.T) {
+		customErr := errors.New("custom error")
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{}, customErr
+			},
+		}
+
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.ErrorIs(t, err, customErr)
+	})
+
+	t.Run("errors on invalid response data", func(t *testing.T) {
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: [][]byte{[]byte("invalid json")}}}, nil
+			},
+		}
+
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.Error(t, err)
+	})
+
+	t.Run("should not delete default buckets", func(t *testing.T) {
+		getCalled := false
+		deleteCalled := false
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: [][]byte{[]byte(`{"bucketName": "default_name"}`)}}}, nil
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				getCalled = true
+				return api.Response{}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalled = true
+				return api.Response{}, nil
+			},
+		}
+
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.NoError(t, err)
+		assert.False(t, getCalled)
+		assert.False(t, deleteCalled)
 	})
 }
