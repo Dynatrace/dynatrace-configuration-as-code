@@ -27,10 +27,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/document"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/setting"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 )
 
 // All collects and deletes ALL configuration objects using the provided ClientSet.
