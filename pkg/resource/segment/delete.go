@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2024 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,10 +34,18 @@ type client interface {
 	Delete(ctx context.Context, id string) (api.Response, error)
 }
 
-func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
+type Deleter struct {
+	segmentSource client
+}
+
+func NewDeleter(segmentSource client) *Deleter {
+	return &Deleter{segmentSource: segmentSource}
+}
+
+func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error {
 	errCount := 0
 	for _, dp := range dps {
-		err := deleteSingle(ctx, c, dp)
+		err := d.deleteSingle(ctx, dp)
 		if err != nil {
 			log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
 			errCount++
@@ -49,13 +57,13 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 	return nil
 }
 
-func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error {
+func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) error {
 	logger := log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate()))
 
 	id := dp.OriginObjectId
 	if id == "" {
 		var err error
-		id, err = findEntryWithExternalID(ctx, c, dp)
+		id, err = d.findEntryWithExternalID(ctx, dp)
 		if err != nil {
 			return err
 		}
@@ -66,7 +74,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 		return nil
 	}
 
-	_, err := c.Delete(ctx, id)
+	_, err := d.segmentSource.Delete(ctx, id)
 	if err != nil && !api.IsNotFoundError(err) {
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
@@ -75,8 +83,8 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 	return nil
 }
 
-func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePointer) (string, error) {
-	items, err := list(ctx, c)
+func (d Deleter) findEntryWithExternalID(ctx context.Context, dp pointer.DeletePointer) (string, error) {
+	items, err := d.list(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -100,15 +108,15 @@ func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePoi
 	}
 }
 
-func DeleteAll(ctx context.Context, c client) error {
-	items, err := list(ctx, c)
+func (d Deleter) DeleteAll(ctx context.Context) error {
+	items, err := d.list(ctx)
 	if err != nil {
 		return err
 	}
 
 	var retErr error
 	for _, i := range items {
-		err := deleteSingle(ctx, c, pointer.DeletePointer{Type: string(config.SegmentID), OriginObjectId: i.UID})
+		err := d.deleteSingle(ctx, pointer.DeletePointer{Type: string(config.SegmentID), OriginObjectId: i.UID})
 		if err != nil {
 			retErr = errors.Join(retErr, err)
 		}
@@ -121,8 +129,8 @@ type items []struct {
 	ExternalID string `json:"externalId"`
 }
 
-func list(ctx context.Context, c client) (items, error) {
-	listResp, err := c.List(ctx)
+func (d Deleter) list(ctx context.Context) (items, error) {
+	listResp, err := d.segmentSource.List(ctx)
 	if err != nil {
 		return nil, err
 	}

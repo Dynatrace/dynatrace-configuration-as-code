@@ -2,7 +2,7 @@
 
 /*
  * @license
- * Copyright 2024 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,21 +29,21 @@ import (
 
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 )
 
-type stubClient struct {
+type deleteStubClient struct {
 	called bool
 	delete func(id string) (libAPI.Response, error)
 	list   func() (libAPI.Response, error)
 }
 
-func (s *stubClient) List(_ context.Context) (libAPI.Response, error) {
+func (s *deleteStubClient) List(_ context.Context) (libAPI.Response, error) {
 	return s.list()
 }
 
-func (s *stubClient) Delete(_ context.Context, id string) (libAPI.Response, error) {
+func (s *deleteStubClient) Delete(_ context.Context, id string) (libAPI.Response, error) {
 	s.called = true
 	return s.delete(id)
 }
@@ -57,7 +57,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 		}
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.Response, error) {
 				return libAPI.Response{Data: []byte(fmt.Sprintf(`[{"uid": "uid_1", "externalId":"%s"},{"uid": "uid_2", "externalId":"wrong"}]`, externalID))}, nil
 			},
@@ -67,7 +67,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 		assert.True(t, c.called, "delete command wasn't invoked")
 	})
@@ -79,13 +79,13 @@ func TestDeleteByCoordinate(t *testing.T) {
 			Project:    "project",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.Response, error) {
 				return libAPI.Response{Data: []byte(`[{"uid": "uid_2", "externalId":"wrong"}]`)}, nil
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 	})
 
@@ -97,13 +97,13 @@ func TestDeleteByCoordinate(t *testing.T) {
 		}
 
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.Response, error) {
 				return libAPI.Response{Data: []byte(fmt.Sprintf(`[{"uid": "uid_1", "externalId":"%s"},{"uid": "uid_2", "externalId":"%s"}]`, externalID, externalID))}, nil
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.Error(t, err)
 		assert.False(t, c.called, "it's not known what needs to be deleted")
 	})
@@ -115,13 +115,13 @@ func TestDeleteByCoordinate(t *testing.T) {
 			Project:    "project",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.Response, error) {
 				return libAPI.Response{}, errors.New("some unpredictable error")
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
 }
@@ -133,14 +133,14 @@ func TestDeleteByObjectId(t *testing.T) {
 			OriginObjectId: "originObjectID",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			delete: func(id string) (libAPI.Response, error) {
 				assert.Equal(t, given.OriginObjectId, id)
 				return libAPI.Response{}, nil
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 		assert.True(t, c.called)
 	})
@@ -151,14 +151,14 @@ func TestDeleteByObjectId(t *testing.T) {
 			OriginObjectId: "originObjectID",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			delete: func(id string) (libAPI.Response, error) {
 				assert.Equal(t, given.OriginObjectId, id)
 				return libAPI.Response{}, libAPI.APIError{StatusCode: http.StatusNotFound}
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 	})
 
@@ -169,13 +169,13 @@ func TestDeleteByObjectId(t *testing.T) {
 			Project:        "project",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			delete: func(_ string) (libAPI.Response, error) {
 				return libAPI.Response{}, errors.New("some unpredictable error")
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
 
@@ -186,13 +186,13 @@ func TestDeleteByObjectId(t *testing.T) {
 			Project:        "project",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			delete: func(_ string) (libAPI.Response, error) {
 				return libAPI.Response{}, libAPI.APIError{StatusCode: http.StatusInternalServerError}
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := segment.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
 
@@ -203,7 +203,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			Project:        "project",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			delete: func(uid string) (libAPI.Response, error) {
 				if uid == given.OriginObjectId {
 					return libAPI.Response{}, nil
@@ -212,14 +212,14 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := segment.Delete(t.Context(), &c, []pointer.DeletePointer{given, {OriginObjectId: "bla"}, given}) // the pointer in the middle is to cause error behavior
+		err := segment.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given, {OriginObjectId: "bla"}, given}) // the pointer in the middle is to cause error behavior
 		assert.ErrorContains(t, err, "failed to delete 1 segment objects(s)")
 	})
 }
 
 func TestDeleteAll(t *testing.T) {
 	t.Run("simple case", func(t *testing.T) {
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.Response, error) {
 				return libAPI.Response{Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
 			},
@@ -229,12 +229,12 @@ func TestDeleteAll(t *testing.T) {
 			},
 		}
 
-		err := segment.DeleteAll(t.Context(), &c)
+		err := segment.NewDeleter(&c).DeleteAll(t.Context())
 		assert.NoError(t, err)
 	})
 
 	t.Run("deletion continues even if error occurs during delete", func(t *testing.T) {
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.Response, error) {
 				return libAPI.Response{Data: []byte(`[{"uid": "uid_1"},{"uid": "uid_2"},{"uid": "uid_3"}]`)}, nil
 			},
@@ -247,7 +247,7 @@ func TestDeleteAll(t *testing.T) {
 			},
 		}
 
-		err := segment.DeleteAll(t.Context(), &c)
+		err := segment.NewDeleter(&c).DeleteAll(t.Context())
 		assert.Error(t, err)
 	})
 }
