@@ -27,6 +27,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -35,8 +36,10 @@ import (
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -455,6 +458,52 @@ func TestDelete_Automations(t *testing.T) {
 		}
 		errs := delete.Configs(t.Context(), client.ClientSet{AutClient: c}, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
+	})
+}
+
+func TestDeleteBuckets(t *testing.T) {
+	t.Run("should call delete of bucket", func(t *testing.T) {
+		mux := http.NewServeMux()
+		apiCalls := 0
+		mux.HandleFunc("GET /platform/storage/management/v1/bucket-definitions/{bucketName}", func(rw http.ResponseWriter, req *http.Request) {
+			rw.WriteHeader(http.StatusNotFound)
+			apiCalls++
+		})
+		server := httptest.NewServer(mux)
+		defer server.Close()
+
+		u, _ := url.Parse(server.URL)
+		c := buckets.NewClient(rest.NewClient(u, server.Client()))
+
+		entriesToDelete := delete.DeleteEntries{
+			"bucket": {
+				{
+					Type:           "bucket",
+					OriginObjectId: "origin_object_ID",
+				},
+			},
+		}
+		errs := delete.Configs(t.Context(), client.ClientSet{BucketClient: c}, entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+		// to be sure that the bucket client was actually used
+		assert.Equal(t, apiCalls, 1)
+	})
+
+	t.Run("should print a log if bucket client is not defined", func(t *testing.T) {
+		builder := strings.Builder{}
+		log.PrepareLogging(t.Context(), afero.NewOsFs(), false, &builder, false, false)
+
+		entriesToDelete := delete.DeleteEntries{
+			"bucket": {
+				{
+					Type:           "bucket",
+					OriginObjectId: "origin_object_ID",
+				},
+			},
+		}
+		errs := delete.Configs(t.Context(), client.ClientSet{}, entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+		assert.Contains(t, builder.String(), "Skipped deletion")
 	})
 }
 
