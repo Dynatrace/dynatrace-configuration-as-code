@@ -58,7 +58,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 		}
 
 		logger.DebugContext(ctx, "Deleting bucket '%s'", bucketName)
-		bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, c, bucketName, maxRetryDuration, durationBetweenRetries)
+		bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, d.bucketSource, bucketName, maxRetryDuration, durationBetweenRetries)
 		if err != nil {
 			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
 			deleteErrs++
@@ -69,12 +69,9 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 			continue
 		}
 		_, err = d.bucketSource.Delete(ctx, bucketName)
-		if err != nil {
-			if !api.IsNotFoundError(err) {
-				logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
-				deleteErrs++
-			}
-
+		if err != nil && !api.IsNotFoundError(err) {
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
+			deleteErrs++
 		}
 	}
 
@@ -120,7 +117,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			continue
 		}
 		// before deleting wait until it can be deleted
-		bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, c, bucketName.BucketName, maxRetryDuration, durationBetweenRetries)
+		bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, d.bucketSource, bucketName.BucketName, maxRetryDuration, durationBetweenRetries)
 		if err != nil {
 			logger.ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName.BucketName, err)
 			errCount++
@@ -131,13 +128,10 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			continue
 		}
 		_, err = d.bucketSource.Delete(ctx, bucketName.BucketName)
-		if err != nil {
-			if !api.IsNotFoundError(err) {
-				logger.ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName.BucketName, err)
-				errCount++
-				continue
-			}
-
+		if err != nil && !api.IsNotFoundError(err) {
+			logger.ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName.BucketName, err)
+			errCount++
+			continue
 		}
 	}
 
