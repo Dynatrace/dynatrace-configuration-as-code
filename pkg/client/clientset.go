@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/url"
 	"runtime"
-	"time"
 
 	"golang.org/x/oauth2/clientcredentials"
 
@@ -156,11 +155,6 @@ type AutomationClient interface {
 	List(ctx context.Context, resourceType automation.ResourceType) (libAPI.PagedListResponse, error)
 	Delete(ctx context.Context, resourceType automation.ResourceType, id string) (libAPI.Response, error)
 }
-
-const (
-	BucketMaxRetryDuration       = time.Minute * 5
-	BucketDurationBetweenRetries = time.Second
-)
 
 type BucketClient interface {
 	Get(ctx context.Context, bucketName string) (libAPI.Response, error)

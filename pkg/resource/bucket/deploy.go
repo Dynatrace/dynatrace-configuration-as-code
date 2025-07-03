@@ -27,7 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -79,7 +78,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 
 func (d DeployAPI) upsert(ctx context.Context, bucketName string, data []byte) error {
 	// Check the status of a bucket (updating/creating/deleting) and if it even exists
-	if bucketExists, err := buckets.AwaitBucketStable(ctx, d.source, bucketName, client.BucketMaxRetryDuration, client.BucketDurationBetweenRetries); err != nil {
+	if bucketExists, err := buckets.AwaitBucketStable(ctx, d.source, bucketName, maxRetryDuration, durationBetweenRetries); err != nil {
 		return err
 	} else if bucketExists {
 		_, err := d.source.Update(ctx, bucketName, data)

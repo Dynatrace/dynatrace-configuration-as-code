@@ -26,7 +26,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	client2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
@@ -59,7 +58,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 		}
 
 		logger.DebugContext(ctx, "Deleting bucket '%s'", bucketName)
-		bucketExists, err := buckets.AwaitBucketStable(ctx, d.bucketSource, bucketName, client2.BucketMaxRetryDuration, client2.BucketDurationBetweenRetries)
+		bucketExists, err := buckets.AwaitBucketStable(ctx, d.bucketSource, bucketName, maxRetryDuration, durationBetweenRetries)
 		if err != nil {
 			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
 			deleteErrs++
@@ -118,7 +117,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			continue
 		}
 		// before deleting wait until it can be deleted
-		bucketExists, err := buckets.AwaitBucketStable(ctx, d.bucketSource, bucketName.BucketName, client2.BucketMaxRetryDuration, client2.BucketDurationBetweenRetries)
+		bucketExists, err := buckets.AwaitBucketStable(ctx, d.bucketSource, bucketName.BucketName, maxRetryDuration, durationBetweenRetries)
 		if err != nil {
 			logger.ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName.BucketName, err)
 			errCount++
