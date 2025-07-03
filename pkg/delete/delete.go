@@ -50,11 +50,7 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 
 	remainingEntriesToDelete, errCount := deleteAutomationConfigs(ctx, deleters, entriesToDelete)
 
-	//  Dashboard share settings cannot be deleted
-	if _, ok := remainingEntriesToDelete[api.DashboardShareSettings]; ok {
-		log.WarnContext(ctx, "Classic config of type %s cannot be deleted. Note, that they can be removed by deleting the associated dashboard.", api.DashboardShareSettings)
-		delete(remainingEntriesToDelete, api.DashboardShareSettings)
-	}
+	removeNonDeletableClassicAPIs(ctx, remainingEntriesToDelete)
 
 	// Delete rest of config types
 	for t, entries := range remainingEntriesToDelete {
@@ -68,6 +64,21 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 		return fmt.Errorf("encountered %d errors", errCount)
 	}
 	return nil
+}
+
+func removeNonDeletableClassicAPIs(ctx context.Context, remainingEntriesToDelete DeleteEntries) {
+	for _, classicApi := range api.NewAPIs() {
+		if !classicApi.NonDeletable {
+			continue
+		}
+
+		if classicApi.Parent == nil {
+			log.WarnContext(ctx, "Classic config of type %s cannot be deleted.", classicApi.ID)
+		} else {
+			log.WarnContext(ctx, "Classic config of type %s cannot be deleted. Note, that they can be removed by deleting the associated '%s' type.", classicApi.ID, classicApi.Parent.ID)
+		}
+		delete(remainingEntriesToDelete, classicApi.ID)
+	}
 }
 
 func deleteAutomationConfigs(ctx context.Context, deleters Deleters, allEntries DeleteEntries) (DeleteEntries, int) {
