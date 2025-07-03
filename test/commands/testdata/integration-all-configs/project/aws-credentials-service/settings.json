@@ -1,0 +1,40 @@
+{
+    "services": [
+        {
+            "name": "lambda_builtin",
+            "monitoredMetrics": null
+        },
+        {
+            "name": "ebs_builtin",
+            "monitoredMetrics": null
+        },
+        {
+            "name": "ELB_builtin",
+            "monitoredMetrics": null
+        },
+        {
+            "name": "loadbalancer_builtin",
+            "monitoredMetrics": null
+        },
+        {
+            "name": "s3_builtin",
+            "monitoredMetrics": null
+        },
+        {
+            "name": "dynamodb_builtin",
+            "monitoredMetrics": null
+        },
+        {
+            "name": "ec2_builtin",
+            "monitoredMetrics": null
+        },
+        {
+            "name": "asg_builtin",
+            "monitoredMetrics": null
+        },
+        {
+            "name": "rds_builtin",
+            "monitoredMetrics": null
+        }
+    ]
+}

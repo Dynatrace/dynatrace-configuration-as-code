@@ -1,0 +1,13 @@
+configs:
+  - id: aws-credentials-service
+    config:
+      name: AWS credentials servcie config
+      template: settings.json
+    type:
+      api:
+        name: aws-credentials-services
+        scope:
+          configId: credentials
+          configType: aws-credentials
+          property: id
+          type: reference
