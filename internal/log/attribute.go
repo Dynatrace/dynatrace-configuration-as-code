@@ -36,39 +36,14 @@ func TypeAttr[X ~string](t X) slog.Attr {
 
 // EnvironmentAttr returns an attribute containing environment information for structured logging.
 func EnvironmentAttr(environment, group string) slog.Attr {
-	return slog.Any("environment",
-		slog.GroupValue(
-			slog.String("group", group),
-			slog.String("name", environment)))
+	return slog.Group("environment",
+		slog.String("group", group),
+		slog.String("name", environment))
 }
 
 // ErrorAttr returns an attribute containing error information for structured logging.
 func ErrorAttr(err error) slog.Attr {
-	return slog.Any(
-		"error",
-		slog.GroupValue(
-			slog.String("type", fmt.Sprintf("%T", err)),
-			slog.String("details", err.Error())))
-}
-
-const deploymentStatus = "deploymentStatus"
-
-// StatusDeployingAttr returns an attribute with deploymentStatus set to deploying.
-func StatusDeployingAttr() slog.Attr {
-	return slog.Any(deploymentStatus, "deploying")
-}
-
-// StatusDeployedAttr returns an attribute with deploymentStatus set to deployed.
-func StatusDeployedAttr() slog.Attr {
-	return slog.Any(deploymentStatus, "deployed")
-}
-
-// StatusDeploymentFailedAttr returns an attribute with deploymentStatus set to failed.
-func StatusDeploymentFailedAttr() slog.Attr {
-	return slog.Any(deploymentStatus, "failed")
-}
-
-// StatusDeploymentSkippedAttr returns an attribute with deploymentStatus set to skipped.
-func StatusDeploymentSkippedAttr() slog.Attr {
-	return slog.Any(deploymentStatus, "skipped")
+	return slog.Group("error",
+		slog.String("type", fmt.Sprintf("%T", err)),
+		slog.String("details", err.Error()))
 }
