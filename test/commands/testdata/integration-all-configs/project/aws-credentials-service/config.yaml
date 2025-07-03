@@ -1,0 +1,13 @@
+configs:
+  - id: aws-credentials-services
+    config:
+      name: AWS credentials service config
+      template: settings.json
+    type:
+      api:
+        name: aws-credentials-services #monaco-test:no-replace
+        scope:
+          configId: credentials
+          configType: aws-credentials
+          property: id
+          type: reference

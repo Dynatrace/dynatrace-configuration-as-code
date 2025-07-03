@@ -46,6 +46,7 @@ const (
 	ApplicationMobile                    = "application-mobile"
 	AppDetectionRule                     = "app-detection-rule"
 	AwsCredentials                       = "aws-credentials"
+	AwsCredentialsServices               = "aws-credentials-services"
 	KubernetesCredentials                = "kubernetes-credentials" // #nosec G101
 	AzureCredentials                     = "azure-credentials"      // #nosec G101
 	RequestAttributes                    = "request-attributes"
@@ -108,6 +109,12 @@ func NewAPIs() APIs {
 			URLPath:                      "/api/config/v1/dashboards",
 			PropertyNameOfGetAllResponse: "dashboards",
 			NonUniqueName:                true,
+		}
+		var awsCredentialsAPI = API{
+			ID:                           AwsCredentials,
+			URLPath:                      "/api/config/v1/aws/credentials",
+			PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
+			SkipDownload:                 true,
 		}
 
 		// ApplicationWeb has KeyUserActionsWeb as a child API and so is defined here explicitly
@@ -241,11 +248,20 @@ func NewAPIs() APIs {
 				PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 				DeprecatedBy:                 "builtin:rum.web.app-detection",
 			},
+			awsCredentialsAPI,
 			{
-				ID:                           AwsCredentials,
-				URLPath:                      "/api/config/v1/aws/credentials",
-				PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
-				SkipDownload:                 true,
+				ID:                  AwsCredentialsServices,
+				URLPath:             "/api/config/v1/aws/credentials/{SCOPE}/services",
+				Parent:              &awsCredentialsAPI,
+				SingleConfiguration: true,
+				NonDeletable:        true,
+				// References can't be resolved because we don't download the credentials.
+				// Therefore, we are also ignoring this config
+				SkipDownload: true,
+				// Deploy doesn't accept metadata
+				TweakResponseFunc: func(m map[string]any) {
+					delete(m, "metadata")
+				},
 			},
 			// Early adopter API !
 			{
