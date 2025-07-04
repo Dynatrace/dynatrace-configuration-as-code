@@ -23,12 +23,15 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -296,5 +299,49 @@ func TestDeploy(t *testing.T) {
 		_, err = bucket.NewDeployAPI(client).Deploy(t.Context(), props, templ, &cfg)
 		assert.ErrorIs(t, err, customErr)
 		assert.True(t, createCalled)
+	})
+
+	t.Run("logs if the bucket is active after creation", func(t *testing.T) {
+		getCount := 0
+		getResponses := []struct {
+			api.Response
+			error
+		}{
+			{
+				api.Response{}, api.APIError{StatusCode: http.StatusNotFound},
+			},
+			{
+				api.Response{Data: activeBucketResponse}, nil,
+			},
+		}
+		client := testClient{
+			create: func(_ context.Context, bucketName string, data []byte) (api.Response, error) {
+				return api.Response{
+					StatusCode: 200,
+					Data:       data,
+				}, nil
+			},
+			get: func(_ context.Context, bucketName string) (api.Response, error) {
+				response := getResponses[getCount]
+				getCount++
+				return response.Response, response.error
+			},
+		}
+		cfg := config.Config{
+			Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
+			Coordinate: testCoord,
+			Type:       config.BucketType{},
+			Parameters: config.Parameters{},
+			Skip:       false,
+		}
+		builder := strings.Builder{}
+		log.PrepareLogging(t.Context(), afero.NewOsFs(), true, &builder, false, false)
+		props, errs := cfg.ResolveParameterValues(entities.New())
+		require.Empty(t, errs)
+		templ, err := cfg.Render(props)
+		require.NoError(t, err)
+		_, err = bucket.NewDeployAPI(client).Deploy(t.Context(), props, templ, &cfg)
+		require.NoError(t, err)
+		assert.Contains(t, builder.String(), "ready to use")
 	})
 }

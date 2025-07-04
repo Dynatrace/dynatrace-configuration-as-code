@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -89,6 +90,10 @@ func (d DeployAPI) upsert(ctx context.Context, bucketName string, data []byte) e
 		return err
 	}
 	// after create wait for bucket being stable
-	_, err := buckets.AwaitBucketStable(ctx, d.source, bucketName, maxRetryDuration, durationBetweenRetries)
-	return err
+	if bucketExists, err := buckets.AwaitBucketStable(ctx, d.source, bucketName, maxRetryDuration, durationBetweenRetries); err != nil {
+		return err
+	} else if bucketExists {
+		log.DebugContext(ctx, "Bucket '%s' became active and is ready to use", bucketName)
+	}
+	return nil
 }
