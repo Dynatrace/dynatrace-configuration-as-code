@@ -85,6 +85,10 @@ func (d DeployAPI) upsert(ctx context.Context, bucketName string, data []byte) e
 		return err
 	}
 
-	_, err := d.source.Create(ctx, bucketName, data)
+	if _, err := d.source.Create(ctx, bucketName, data); err != nil {
+		return err
+	}
+	// after create wait for bucket being stable
+	_, err := buckets.AwaitBucketStable(ctx, d.source, bucketName, maxRetryDuration, durationBetweenRetries)
 	return err
 }

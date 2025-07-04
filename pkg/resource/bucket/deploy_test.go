@@ -80,6 +80,9 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("creates by generated coordinate ID", func(t *testing.T) {
 		client := testClient{
+			get: func(_ context.Context, bucketName string) (api.Response, error) {
+				return api.Response{}, api.APIError{StatusCode: http.StatusNotFound}
+			},
 			create: func(_ context.Context, bucketName string, data []byte) (api.Response, error) {
 				expectedName := "proj_my-bucket"
 				require.Equal(t, expectedName, bucketName)
@@ -112,6 +115,9 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("creates by OriginObjectId if set", func(t *testing.T) {
 		client := testClient{
+			get: func(_ context.Context, bucketName string) (api.Response, error) {
+				return api.Response{}, api.APIError{StatusCode: http.StatusNotFound}
+			},
 			create: func(_ context.Context, bucketName string, data []byte) (api.Response, error) {
 				assert.Equal(t, "PreExistingBucket", bucketName)
 				return api.Response{
@@ -227,6 +233,10 @@ func TestDeploy(t *testing.T) {
 			get: func(_ context.Context, bucketName string) (api.Response, error) {
 				return api.Response{}, customErr
 			},
+			create: func(_ context.Context, bucketName string, data []byte) (api.Response, error) {
+				t.Error("create should not be called")
+				return api.Response{}, errors.New("fail")
+			},
 		}
 		cfg := config.Config{
 			Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
@@ -241,5 +251,50 @@ func TestDeploy(t *testing.T) {
 		require.NoError(t, err)
 		_, err = bucket.NewDeployAPI(client).Deploy(t.Context(), props, templ, &cfg)
 		assert.ErrorIs(t, err, customErr)
+	})
+
+	t.Run("returns error if stable check after create failed", func(t *testing.T) {
+		customErr := errors.New("custom error")
+		getCount := 0
+		getResponses := []struct {
+			api.Response
+			error
+		}{
+			{
+				api.Response{}, api.APIError{StatusCode: http.StatusNotFound},
+			},
+			{
+				api.Response{}, customErr,
+			},
+		}
+		createCalled := false
+		client := testClient{
+			create: func(_ context.Context, bucketName string, data []byte) (api.Response, error) {
+				createCalled = true
+				return api.Response{
+					StatusCode: 200,
+					Data:       data,
+				}, nil
+			},
+			get: func(_ context.Context, bucketName string) (api.Response, error) {
+				response := getResponses[getCount]
+				getCount++
+				return response.Response, response.error
+			},
+		}
+		cfg := config.Config{
+			Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
+			Coordinate: testCoord,
+			Type:       config.BucketType{},
+			Parameters: config.Parameters{},
+			Skip:       false,
+		}
+		props, errs := cfg.ResolveParameterValues(entities.New())
+		require.Empty(t, errs)
+		templ, err := cfg.Render(props)
+		require.NoError(t, err)
+		_, err = bucket.NewDeployAPI(client).Deploy(t.Context(), props, templ, &cfg)
+		assert.ErrorIs(t, err, customErr)
+		assert.True(t, createCalled)
 	})
 }
