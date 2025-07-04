@@ -17,57 +17,88 @@
 package bucket_test
 
 import (
+	"context"
+	"errors"
 	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 )
 
-func TestDeleteBuckets(t *testing.T) {
-	t.Run("TestDeleteBuckets", func(t *testing.T) {
-		deletingBucketResponse := []byte(`{
- "bucketName": "bucket name",
- "table": "metrics",
- "displayName": "Default metrics (15 months)",
- "status": "deleting",
- "retentionDays": 462,
- "metricInterval": "PT1M",
- "version": 1
-}`)
+// #region Client
+type client struct {
+	get    func(ctx context.Context, bucketName string) (api.Response, error)
+	delete func(ctx context.Context, bucketName string) (api.Response, error)
+	list   func(ctx context.Context) (buckets.ListResponse, error)
+}
 
+func (c client) Get(ctx context.Context, bucketName string) (api.Response, error) {
+	return c.get(ctx, bucketName)
+}
+
+func (c client) Delete(ctx context.Context, bucketName string) (api.Response, error) {
+	return c.delete(ctx, bucketName)
+}
+
+func (c client) List(ctx context.Context) (buckets.ListResponse, error) {
+	return c.list(ctx)
+}
+
+//#endregion
+
+var (
+	activeBucketResponse = []byte(`{
+		 "bucketName": "bucket name",
+		 "table": "metrics",
+		 "displayName": "Default metrics (15 months)",
+		 "status": "active",
+		 "retentionDays": 462,
+		 "metricInterval": "PT1M",
+		 "version": 1
+	}`)
+	deletingBucketResponse = []byte(`{
+		 "bucketName": "bucket name",
+		 "table": "metrics",
+		 "displayName": "Default metrics (15 months)",
+		 "status": "deleting",
+		 "retentionDays": 462,
+		 "metricInterval": "PT1M",
+		 "version": 1
+	}`)
+	updatingBucketResponse = []byte(`{
+		 "bucketName": "bucket name",
+		 "table": "metrics",
+		 "displayName": "Default metrics (15 months)",
+		 "status": "updating",
+		 "retentionDays": 462,
+		 "metricInterval": "PT1M",
+		 "version": 1
+	}`)
+)
+
+func TestDelete(t *testing.T) {
+
+	t.Run("should succeed with one retry for the stable call", func(t *testing.T) {
 		getCalls := 0
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "bucket-definitions") {
-				assert.True(t, strings.HasSuffix(req.URL.Path, "/project_id1"))
-				rw.WriteHeader(http.StatusOK)
-				_, _ = rw.Write(deletingBucketResponse)
-				return
-			}
-			if req.Method == http.MethodGet && getCalls < 5 {
-				assert.True(t, strings.HasSuffix(req.URL.Path, "/project_id1"))
-				rw.WriteHeader(http.StatusOK)
-				_, _ = rw.Write(deletingBucketResponse)
+		c := client{
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
 				getCalls++
-				return
-			} else if req.Method == http.MethodGet {
-				rw.WriteHeader(http.StatusNotFound)
-				return
-			}
-			assert.Fail(t, "unexpected HTTP call")
-		}))
-		defer server.Close()
+				if getCalls > 1 {
+					return api.Response{Data: activeBucketResponse}, nil
+				}
+				return api.Response{Data: updatingBucketResponse}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{Data: deletingBucketResponse}, nil
+			},
+		}
 
-		u, _ := url.Parse(server.URL)
-		c := buckets.NewClient(rest.NewClient(u, server.Client()))
-		a := bucket.NewDeleter(c)
 		entriesToDelete := []pointer.DeletePointer{
 			{
 				Type:       "bucket",
@@ -75,25 +106,38 @@ func TestDeleteBuckets(t *testing.T) {
 				Identifier: "id1",
 			},
 		}
+		errs := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+		assert.Equal(t, getCalls, 2, "number of GET calls should be 2")
+	})
 
-		errs := a.Delete(t.Context(), entriesToDelete)
+	t.Run("succeeds if object does not exist during delete API call", func(t *testing.T) {
+		c := client{
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{Data: activeBucketResponse}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{}, api.APIError{StatusCode: http.StatusNotFound}
+			},
+		}
 
+		entriesToDelete := []pointer.DeletePointer{
+			{
+				Type:       "bucket",
+				Project:    "project",
+				Identifier: "id1",
+			},
+		}
+		errs := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
-	t.Run("TestDeleteBuckets - No Error if object does not exist", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "bucket-definitions") {
-				rw.WriteHeader(http.StatusNotFound)
-				return
-			}
-			assert.Fail(t, "unexpected HTTP call")
-		}))
-		defer server.Close()
-
-		u, _ := url.Parse(server.URL)
-		c := buckets.NewClient(rest.NewClient(u, server.Client()))
-		a := bucket.NewDeleter(c)
+	t.Run("succeeds if object does not exist during bucket stable check", func(t *testing.T) {
+		c := client{
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{}, api.APIError{StatusCode: http.StatusNotFound}
+			},
+		}
 
 		entriesToDelete := []pointer.DeletePointer{
 			{
@@ -102,25 +146,19 @@ func TestDeleteBuckets(t *testing.T) {
 				Identifier: "id1",
 			},
 		}
-
-		errs := a.Delete(t.Context(), entriesToDelete)
-
+		errs := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
-	t.Run("TestDeleteBuckets - Returns Error on HTTP error", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "bucket-definitions") {
-				rw.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			assert.Fail(t, "unexpected HTTP call")
-		}))
-		defer server.Close()
-
-		u, _ := url.Parse(server.URL)
-		c := buckets.NewClient(rest.NewClient(u, server.Client()))
-		a := bucket.NewDeleter(c)
+	t.Run("errors on HTTP error", func(t *testing.T) {
+		c := client{
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{Data: activeBucketResponse}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{}, api.APIError{StatusCode: http.StatusBadRequest}
+			},
+		}
 
 		entriesToDelete := []pointer.DeletePointer{
 			{
@@ -129,232 +167,199 @@ func TestDeleteBuckets(t *testing.T) {
 				Identifier: "id1",
 			},
 		}
-
-		err := a.Delete(t.Context(), entriesToDelete)
-
+		err := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
 		assert.Error(t, err, "there should be one delete error")
 	})
 
-	t.Run("identification via 'objectId'", func(t *testing.T) {
-		deletingBucketResponse := []byte(`{
- "bucketName": "bucket name",
- "table": "metrics",
- "displayName": "Default metrics (15 months)",
- "status": "deleting",
- "retentionDays": 462,
- "metricInterval": "PT1M",
- "version": 1
-}`)
-
-		getCalls := 0
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "bucket-definitions") {
-				assert.True(t, strings.HasSuffix(req.URL.Path, "/origin_object_ID"))
-				rw.WriteHeader(http.StatusOK)
-				_, _ = rw.Write(deletingBucketResponse)
-				return
-			}
-			if req.Method == http.MethodGet && getCalls < 5 {
-				assert.True(t, strings.HasSuffix(req.URL.Path, "/origin_object_ID"))
-				rw.WriteHeader(http.StatusOK)
-				_, _ = rw.Write(deletingBucketResponse)
-				getCalls++
-				return
-			} else if req.Method == http.MethodGet {
-				rw.WriteHeader(http.StatusNotFound)
-				return
-			}
-			assert.Fail(t, "unexpected HTTP call")
-		}))
-		defer server.Close()
-
-		u, _ := url.Parse(server.URL)
-		c := buckets.NewClient(rest.NewClient(u, server.Client()))
-		a := bucket.NewDeleter(c)
+	t.Run("succeeds via 'objectId' identification", func(t *testing.T) {
+		objectID := "origin_object_ID"
+		c := client{
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				require.Equal(t, bucketName, objectID)
+				return api.Response{Data: activeBucketResponse}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				require.Equal(t, bucketName, objectID)
+				return api.Response{Data: deletingBucketResponse}, nil
+			},
+		}
 
 		entriesToDelete := []pointer.DeletePointer{
 			{
 				Type:           "bucket",
-				OriginObjectId: "origin_object_ID",
+				OriginObjectId: objectID,
+			},
+		}
+		errs := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+	})
+
+	t.Run("errors if the stable check errors", func(t *testing.T) {
+		c := client{
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{}, errors.New("custom error")
 			},
 		}
 
-		errs := a.Delete(t.Context(), entriesToDelete)
-
-		assert.Empty(t, errs, "errors should be empty")
+		entriesToDelete := []pointer.DeletePointer{
+			{
+				Type:       "bucket",
+				Project:    "project",
+				Identifier: "id1",
+			},
+		}
+		err := bucket.NewDeleter(c).Delete(t.Context(), entriesToDelete)
+		assert.Error(t, err)
 	})
 }
 
 func TestDeleteAll(t *testing.T) {
+	listBucketResponse := [][]byte{[]byte(`{"bucketName": "bucket1"}`), []byte(`{"bucketName": "bucket2"}`)}
 
-	t.Run("one listed bucket is deleted", func(t *testing.T) {
-		deletingBucketResponse := []byte(`{
- "bucketName": "bucket-name",
- "table": "metrics",
- "displayName": "Default metrics (15 months)",
- "status": "deleting",
- "retentionDays": 462,
- "metricInterval": "PT1M",
- "version": 1
-}`)
-		listBucketsResponse := []byte(`{
-"buckets": [
-	{
-		"bucketName": "bucket-name",
- 		"table": "metrics",
- 		"displayName": "Default metrics (15 months)",
- 		"status": "deleting",
- 		"retentionDays": 462,
- 		"metricInterval": "PT1M",
- 		"version": 1
-	}
-]}`)
-
-		getCalls := 0
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			if req.Method == http.MethodGet && req.RequestURI == "/platform/storage/management/v1/bucket-definitions" {
-				rw.WriteHeader(http.StatusOK)
-				_, _ = rw.Write(listBucketsResponse)
-				return
-			}
-
-			if req.Method == http.MethodDelete && req.RequestURI == "/platform/storage/management/v1/bucket-definitions/bucket-name" {
-				rw.WriteHeader(http.StatusOK)
-				_, _ = rw.Write(deletingBucketResponse)
-				return
-			}
-			if req.Method == http.MethodGet && req.RequestURI == "/platform/storage/management/v1/bucket-definitions/bucket-name" {
-				if getCalls < 5 {
-					rw.WriteHeader(http.StatusOK)
-					_, _ = rw.Write(deletingBucketResponse)
-					getCalls++
-					return
-				} else {
-					rw.WriteHeader(http.StatusNotFound)
-					return
-				}
-			}
-			assert.Fail(t, "unexpected HTTP call")
-		}))
-		defer server.Close()
-
-		u, _ := url.Parse(server.URL)
-		c := buckets.NewClient(rest.NewClient(u, server.Client()))
-		a := bucket.NewDeleter(c)
-
-		errs := a.DeleteAll(t.Context())
-
-		assert.Empty(t, errs, "errors should be empty")
-	})
-	t.Run("default bucket is skipped", func(t *testing.T) {
-		listBucketsResponse := []byte(`{
-"buckets": [
-	{
-		"bucketName": "default_bucket",
- 		"table": "metrics",
- 		"displayName": "Default metrics (15 months)",
- 		"status": "deleting",
- 		"retentionDays": 462,
- 		"metricInterval": "PT1M",
- 		"version": 1
-	}
-]}`)
-
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			if req.Method == http.MethodGet && req.RequestURI == "/platform/storage/management/v1/bucket-definitions" {
-				rw.WriteHeader(http.StatusOK)
-				_, _ = rw.Write(listBucketsResponse)
-				return
-			}
-
-			if req.Method == http.MethodDelete && req.RequestURI == "/platform/storage/management/v1/bucket-definitions/default_bucket" {
-				assert.Fail(t, "Default buckets are skipped and should not be deleted")
-			}
-			assert.Fail(t, "unexpected HTTP call")
-		}))
-		defer server.Close()
-
-		u, _ := url.Parse(server.URL)
-		c := buckets.NewClient(rest.NewClient(u, server.Client()))
-		a := bucket.NewDeleter(c)
-
-		errs := a.DeleteAll(t.Context())
-
-		assert.Empty(t, errs, "errors should be empty")
+	t.Run("calls delete of all buckets", func(t *testing.T) {
+		deleteCalls := 0
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: listBucketResponse}}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalls++
+				return api.Response{Data: deletingBucketResponse}, nil
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{Data: activeBucketResponse}, nil
+			},
+		}
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.NoError(t, err)
+		assert.Equal(t, 2, deleteCalls)
 	})
 
-	t.Run("deletion continues on error", func(t *testing.T) {
-		deletingBucketResponse := []byte(`{
- "bucketName": "bucket-name",
- "table": "metrics",
- "displayName": "Default metrics (15 months)",
- "status": "deleting",
- "retentionDays": 462,
- "metricInterval": "PT1M",
- "version": 1
-}`)
-		listBucketsResponse := []byte(`{
-"buckets": [
-	{
-		"bucketName": "invalid-bucket",
- 		"table": "metrics",
- 		"displayName": "Default metrics (15 months)",
- 		"status": "deleting",
- 		"retentionDays": 462,
- 		"metricInterval": "PT1M",
- 		"version": 1
-	},
-	{
-		"bucketName": "bucket-name",
- 		"table": "metrics",
- 		"displayName": "Default metrics (15 months)",
- 		"status": "deleting",
- 		"retentionDays": 462,
- 		"metricInterval": "PT1M",
- 		"version": 1
-	}
-]}`)
-
-		getCalls := 0
+	t.Run("should not call delete of all buckets if the stable check resulted in not existing", func(t *testing.T) {
 		deleteCalled := false
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			if req.Method == http.MethodGet && req.RequestURI == "/platform/storage/management/v1/bucket-definitions" {
-				rw.WriteHeader(http.StatusOK)
-				_, _ = rw.Write(listBucketsResponse)
-				return
-			}
-
-			if req.Method == http.MethodDelete && req.RequestURI == "/platform/storage/management/v1/bucket-definitions/invalid-bucket" {
-				rw.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			if req.Method == http.MethodDelete && req.RequestURI == "/platform/storage/management/v1/bucket-definitions/bucket-name" {
+		getCalls := 0
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: listBucketResponse}}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
 				deleteCalled = true
-				rw.WriteHeader(http.StatusOK)
-				_, _ = rw.Write(deletingBucketResponse)
-				return
-			}
-			if req.Method == http.MethodGet && req.RequestURI == "/platform/storage/management/v1/bucket-definitions/bucket-name" {
-				if getCalls < 5 {
-					rw.WriteHeader(http.StatusOK)
-					_, _ = rw.Write(deletingBucketResponse)
-					getCalls++
-					return
-				} else {
-					rw.WriteHeader(http.StatusNotFound)
-					return
-				}
-			}
-			assert.Fail(t, "unexpected HTTP call")
-		}))
-		defer server.Close()
+				return api.Response{}, nil
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				getCalls++
+				return api.Response{}, api.APIError{StatusCode: http.StatusNotFound}
+			},
+		}
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.NoError(t, err)
+		assert.False(t, deleteCalled)
+		assert.Equal(t, 2, getCalls)
+	})
 
-		u, _ := url.Parse(server.URL)
-		c := buckets.NewClient(rest.NewClient(u, server.Client()))
-		a := bucket.NewDeleter(c)
+	t.Run("errors if stable check errors", func(t *testing.T) {
+		deleteCalled := false
+		getCalls := 0
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: listBucketResponse}}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalled = true
+				return api.Response{}, nil
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				getCalls++
+				return api.Response{}, api.APIError{StatusCode: http.StatusInternalServerError}
+			},
+		}
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.Error(t, err)
+		assert.False(t, deleteCalled)
+		assert.Equal(t, 2, getCalls)
+	})
 
-		_ = a.DeleteAll(t.Context())
+	t.Run("ignores NotFound errors on delete", func(t *testing.T) {
+		deleteCalls := 0
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: listBucketResponse}}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalls++
+				return api.Response{}, api.APIError{StatusCode: http.StatusNotFound}
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{Data: activeBucketResponse}, nil
+			},
+		}
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.NoError(t, err)
+		assert.Equal(t, 2, deleteCalls)
+	})
 
-		assert.True(t, deleteCalled)
+	t.Run("should error if delete errors", func(t *testing.T) {
+		deleteCalls := 0
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: listBucketResponse}}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalls++
+				return api.Response{}, api.APIError{StatusCode: http.StatusInternalServerError}
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				return api.Response{Data: activeBucketResponse}, nil
+			},
+		}
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.Error(t, err)
+		assert.Equal(t, 2, deleteCalls)
+	})
+
+	t.Run("errors if list errored", func(t *testing.T) {
+		customErr := errors.New("custom error")
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{}, customErr
+			},
+		}
+
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.ErrorIs(t, err, customErr)
+	})
+
+	t.Run("errors on invalid response data", func(t *testing.T) {
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: [][]byte{[]byte("invalid json")}}}, nil
+			},
+		}
+
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.Error(t, err)
+	})
+
+	t.Run("should not delete default buckets", func(t *testing.T) {
+		getCalled := false
+		deleteCalled := false
+		c := client{
+			list: func(ctx context.Context) (buckets.ListResponse, error) {
+				return buckets.ListResponse{{Objects: [][]byte{[]byte(`{"bucketName": "default_name"}`)}}}, nil
+			},
+			get: func(ctx context.Context, bucketName string) (api.Response, error) {
+				getCalled = true
+				return api.Response{}, nil
+			},
+			delete: func(ctx context.Context, bucketName string) (api.Response, error) {
+				deleteCalled = true
+				return api.Response{}, nil
+			},
+		}
+
+		err := bucket.NewDeleter(c).DeleteAll(t.Context())
+		assert.NoError(t, err)
+		assert.False(t, getCalled)
+		assert.False(t, deleteCalled)
 	})
 }
