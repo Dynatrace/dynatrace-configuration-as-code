@@ -2233,7 +2233,8 @@ projects: [{name: a, path: p}]
 }
 
 func TestManifestLoaderOnlyResolvesWhatIsRequired(t *testing.T) {
-	manifest := `manifestVersion: 1.0
+
+	manifestWithJustEnvironmentGroups := `manifestVersion: 1.0
 projects:
 - name: project
 
@@ -2243,39 +2244,75 @@ environmentGroups:
   - name: environment
     url:
       type: environment
-      value: ENVIRONMENT_ENV_VAR
+      value: DYNATRACE_API_URL
     auth:
       token:
-        name: ENVIRONMENT_ENV_VAR
-      oAuth:
-        clientId:
-          name: ENVIRONMENT_ENV_VAR
-        clientSecret:
-          name: ENVIRONMENT_ENV_VAR
-        tokenEndpoint:
-          value: ENVIRONMENT_ENV_VAR
-          type: environment
+        name: DYNATRACE_API_TOKEN
+`
+	_ = manifestWithJustEnvironmentGroups
+
+	manifestWithJustAccounts := `manifestVersion: 1.0
+projects:
+  - name: project
 
 accounts:
-- name: account
-  apiUrl:
-    type: environment
-    value: ACCOUNT_ENV_VAR
-  accountUUID:
-    type: environment
-    value: ACCOUNT_ENV_VAR
-  oAuth:
-    clientId:
-      name: ACCOUNT_ENV_VAR
-    clientSecret:
-      name: ACCOUNT_ENV_VAR
-    tokenEndpoint:
+  - name: account
+    apiUrl:
       type: environment
-      value: ACCOUNT_ENV_VAR
+      value: ACCOUNT_API_URL
+    accountUUID:
+      type: environment
+      value: ACCOUNT_UUID
+    oAuth:
+      clientId:
+        name: OAUTH_CLIENT_ID
+      clientSecret:
+        name: OAUTH_CLIENT_SECRET
 `
+	_ = manifestWithJustAccounts
+
+	manifestWithBoth := `manifestVersion: 1.0
+projects:
+- name: project
+
+environmentGroups:
+- name: group
+  environments:
+  - name: environment
+    url:
+      type: environment
+      value: DYNATRACE_API_URL
+    auth:
+      token:
+        name: DYNATRACE_API_TOKEN
+
+accounts:
+  - name: account
+    apiUrl:
+      type: environment
+      value: ACCOUNT_API_URL
+    accountUUID:
+      type: environment
+      value: ACCOUNT_UUID
+    oAuth:
+      clientId:
+        name: OAUTH_CLIENT_ID
+      clientSecret:
+        name: OAUTH_CLIENT_SECRET
+`
+
+	allEnvVars := map[string]string{
+		"DYNATRACE_API_URL":   "https://some-url.com",
+		"DYNATRACE_API_TOKEN": "api_token",
+		"ACCOUNT_API_URL":     "https://some-url.com",
+		"ACCOUNT_UUID":        "abcdef12-abcd-ef12-abcd-ef0123456789",
+		"OAUTH_CLIENT_ID":     "client_id",
+		"OAUTH_CLIENT_SECRET": "client_secret",
+	}
 
 	tests := []struct {
 		name       string
+		manifest   string
 		options    Options
 		setEnvVars []string
 		wantError  bool
@@ -2283,49 +2320,177 @@ accounts:
 
 		// Success cases
 		{
-			name:       "env variables in environment groups and accounts required and set",
-			options:    Options{},
-			setEnvVars: []string{"ENVIRONMENT_ENV_VAR", "ACCOUNT_ENV_VAR"},
+			name:     "manifest with environment groups and accounts, all env vars set",
+			manifest: manifestWithBoth,
+			options:  Options{},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+				"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET"},
 		},
 		{
-			name:       "env variables in environment groups not required and not set, in accounts required and set",
-			options:    Options{DoNotResolveEnvironmentGroupEnvVars: true},
-			setEnvVars: []string{"ACCOUNT_ENV_VAR"},
+			name:     "manifest with environment groups and accounts, all env vars set",
+			manifest: manifestWithBoth,
+			options:  Options{DoNotResolveEnvironmentGroupEnvVars: true},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+				"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET"},
+		},
+
+		{
+			name:     "manifest with environment groups and accounts, just environment group env vars set, do not resolve account env vars ",
+			manifest: manifestWithBoth,
+			options:  Options{DoNotResolveAccountEnvVars: true},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+			},
 		},
 		{
-			name:       "env variables in environment groups required and set, in accounts not required and set",
-			options:    Options{DoNotResolveAccountEnvVars: true},
-			setEnvVars: []string{"ENVIRONMENT_ENV_VAR"},
+			name:     "manifest with environment groups and accounts, just account env vars set, do not resolve environment group env vars ",
+			manifest: manifestWithBoth,
+			options:  Options{DoNotResolveEnvironmentGroupEnvVars: true},
+			setEnvVars: []string{"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET",
+			},
 		},
 		{
-			name:       "env variables in environment groups and accounts required and set",
+			name:       "manifest with environment groups and accounts, no env vars set, do not resolve any env vars ",
+			manifest:   manifestWithBoth,
 			options:    Options{DoNotResolveEnvironmentGroupEnvVars: true, DoNotResolveAccountEnvVars: true},
 			setEnvVars: []string{},
 		},
-
+		{
+			name:     "manifest with just environment groups, all env vars set",
+			manifest: manifestWithJustEnvironmentGroups,
+			options:  Options{},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+				"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET"},
+		},
+		{
+			name:     "manifest with just environment groups, just environment group env vars set",
+			manifest: manifestWithJustEnvironmentGroups,
+			options:  Options{},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+			},
+		},
+		{
+			name:     "manifest with just environment groups, all env vars set, do not resolve account env vars",
+			manifest: manifestWithJustEnvironmentGroups,
+			options:  Options{DoNotResolveAccountEnvVars: true},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+				"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET"},
+		},
+		{
+			name:     "manifest with just environment groups, just environment group env vars set, do not resolve account env vars",
+			manifest: manifestWithJustEnvironmentGroups,
+			options:  Options{DoNotResolveAccountEnvVars: true},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+			},
+		},
+		{
+			name:     "manifest with just accounts, all env vars set",
+			manifest: manifestWithJustAccounts,
+			options:  Options{},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+				"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET"},
+		},
+		{
+			name:     "manifest with just accounts, just account env vars set",
+			manifest: manifestWithJustAccounts,
+			options:  Options{},
+			setEnvVars: []string{"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET"},
+		},
+		{
+			name:     "manifest with just accounts, all env vars set, do not resolve environment group env vars",
+			manifest: manifestWithJustAccounts,
+			options:  Options{DoNotResolveEnvironmentGroupEnvVars: true},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+				"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET"},
+		},
+		{
+			name:     "manifest with just accounts, just account env vars set, do not resolve environment group env vars",
+			manifest: manifestWithJustAccounts,
+			options:  Options{DoNotResolveEnvironmentGroupEnvVars: true},
+			setEnvVars: []string{"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET"},
+		},
 		// Error cases
 		{
-			name:       "env variables in environment group required and not set, in accounts required and set",
+			name:     "manifest with environment groups and accounts, account env vars missing",
+			manifest: manifestWithBoth,
+			options:  Options{},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+			},
+			wantError: true,
+		},
+
+		{
+			name:     "manifest with environment groups and accounts, account env vars missing, do not resolve account env vars",
+			manifest: manifestWithBoth,
+			options:  Options{DoNotResolveEnvironmentGroupEnvVars: true},
+			setEnvVars: []string{"DYNATRACE_API_URL",
+				"DYNATRACE_API_TOKEN",
+			},
+			wantError: true,
+		},
+		{
+			name:     "manifest with environment groups and accounts, environment group env vars missing",
+			manifest: manifestWithBoth,
+			options:  Options{},
+			setEnvVars: []string{"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET",
+			},
+			wantError: true,
+		},
+		{
+			name:     "manifest with environment groups and accounts, environment group env vars missing, do not resolve account env vars",
+			manifest: manifestWithBoth,
+			options:  Options{DoNotResolveAccountEnvVars: true},
+			setEnvVars: []string{"ACCOUNT_API_URL",
+				"ACCOUNT_UUID",
+				"OAUTH_CLIENT_ID",
+				"OAUTH_CLIENT_SECRET",
+			},
+			wantError: true,
+		},
+		{
+			name:       "manifest with environment groups and accounts, and all env vars missing",
+			manifest:   manifestWithBoth,
 			options:    Options{},
-			setEnvVars: []string{"ACCOUNT_ENV_VAR"},
-			wantError:  true,
-		},
-		{
-			name:       "env variables in environment groups required and not set, in accounts not required and set",
-			options:    Options{},
-			setEnvVars: []string{"ENVIRONMENT_ENV_VAR"},
-			wantError:  true,
-		},
-		{
-			name:       "env variables in environment groups and accounts required and not set",
-			options:    Options{DoNotResolveAccountEnvVars: true},
-			setEnvVars: []string{"ACCOUNT_ENV_VAR"},
-			wantError:  true,
-		},
-		{
-			name:       "env variables in environment groups and accounts required and not set",
-			options:    Options{DoNotResolveEnvironmentGroupEnvVars: true},
-			setEnvVars: []string{"ENVIRONMENT_ENV_VAR"},
+			setEnvVars: []string{},
 			wantError:  true,
 		},
 	}
@@ -2334,11 +2499,11 @@ accounts:
 		t.Run(tt.name, func(t *testing.T) {
 
 			for _, e := range tt.setEnvVars {
-				t.Setenv(e, "a81bc81b-dead-4e5d-abff-90865d1e13b1")
+				t.Setenv(e, allEnvVars[e])
 			}
 
 			fs := afero.NewMemMapFs()
-			assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(manifest), 0400))
+			assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(tt.manifest), 0400))
 
 			_, errs := Load(&Context{
 				Fs:           fs,
