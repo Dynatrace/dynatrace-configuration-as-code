@@ -29,9 +29,24 @@ import (
 
 	libAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/slo"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
+
+type deleteStubClient struct {
+	called bool
+	delete func(id string) (libAPI.Response, error)
+	list   func() (libAPI.PagedListResponse, error)
+}
+
+func (s *deleteStubClient) List(context.Context) (libAPI.PagedListResponse, error) {
+	return s.list()
+}
+
+func (s *deleteStubClient) Delete(_ context.Context, id string) (libAPI.Response, error) {
+	s.called = true
+	return s.delete(id)
+}
 
 func TestDeleteWithCoordinate(t *testing.T) {
 	t.Run("success if one slo-v2 matches generated external ID", func(t *testing.T) {
@@ -43,7 +58,7 @@ func TestDeleteWithCoordinate(t *testing.T) {
 		}
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.PagedListResponse, error) {
 				return libAPI.PagedListResponse{
 					libAPI.ListResponse{
@@ -72,7 +87,7 @@ func TestDeleteWithCoordinate(t *testing.T) {
 			Project:    "project",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.PagedListResponse, error) {
 				return libAPI.PagedListResponse{
 					libAPI.ListResponse{Objects: [][]byte{[]byte(`{"uid": "uid_2", "externalId":"wrong"}`)}},
@@ -92,7 +107,7 @@ func TestDeleteWithCoordinate(t *testing.T) {
 		}
 
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.PagedListResponse, error) {
 				return libAPI.PagedListResponse{
 					libAPI.ListResponse{Objects: [][]byte{
@@ -116,7 +131,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			OriginObjectId: "originObjectID",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			delete: func(id string) (libAPI.Response, error) {
 				assert.Equal(t, given.OriginObjectId, id)
 				return libAPI.Response{}, nil
@@ -134,7 +149,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			OriginObjectId: "originObjectID",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			delete: func(id string) (libAPI.Response, error) {
 				assert.Equal(t, given.OriginObjectId, id)
 				return libAPI.Response{}, libAPI.APIError{StatusCode: http.StatusNotFound}
@@ -152,7 +167,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			Project:        "project",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			delete: func(_ string) (libAPI.Response, error) {
 				return libAPI.Response{}, errors.New("some unpredictable error")
 			},
@@ -169,7 +184,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			Project:        "project",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			delete: func(_ string) (libAPI.Response, error) {
 				return libAPI.Response{}, libAPI.APIError{StatusCode: http.StatusInternalServerError}
 			},
@@ -186,7 +201,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			Project:        "project",
 		}
 
-		c := stubClient{
+		c := deleteStubClient{
 			delete: func(uid string) (libAPI.Response, error) {
 				if uid == given.OriginObjectId {
 					return libAPI.Response{}, nil
@@ -200,24 +215,9 @@ func TestDeleteByObjectId(t *testing.T) {
 	})
 }
 
-type stubClient struct {
-	called bool
-	delete func(id string) (libAPI.Response, error)
-	list   func() (libAPI.PagedListResponse, error)
-}
-
-func (s *stubClient) List(context.Context) (libAPI.PagedListResponse, error) {
-	return s.list()
-}
-
-func (s *stubClient) Delete(_ context.Context, id string) (libAPI.Response, error) {
-	s.called = true
-	return s.delete(id)
-}
-
 func TestDeleteAll(t *testing.T) {
 	t.Run("simple case", func(t *testing.T) {
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.PagedListResponse, error) {
 				return libAPI.PagedListResponse{
 					libAPI.ListResponse{
@@ -239,7 +239,7 @@ func TestDeleteAll(t *testing.T) {
 	})
 
 	t.Run("deletion continues even if error occurs during delete", func(t *testing.T) {
-		c := stubClient{
+		c := deleteStubClient{
 			list: func() (libAPI.PagedListResponse, error) {
 				return libAPI.PagedListResponse{
 					libAPI.ListResponse{
