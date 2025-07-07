@@ -1,4 +1,4 @@
-podTemplate(yaml: readTrusted('.ci/jenkins/agents/performance-agent.yaml')) {
+podTemplate(cloud: 'linux-amd64-injected', yaml: readTrusted('.ci/jenkins/agents/performance-agent.yaml')) {
     node(POD_LABEL) {
         stage("get source") {
             checkout scm
