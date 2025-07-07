@@ -51,7 +51,7 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 
 	if clients.SettingsClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of settings configurations as API client was unavailable.")
-	} else if err := settings.DeleteAll(ctx, clients.SettingsClient); err != nil {
+	} else if err := settings.NewDeleter(clients.SettingsClient).DeleteAll(ctx); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all Settings 2.0 objects: %v", err)
 		errCount++
 	}

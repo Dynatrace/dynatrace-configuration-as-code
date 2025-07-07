@@ -121,7 +121,7 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.ServiceLevelObjectiveID)
 	} else {
 		if clients.SettingsClient != nil {
-			return settings.Delete(ctx, clients.SettingsClient, entries)
+			return settings.NewDeleter(clients.SettingsClient).Delete(ctx, entries)
 		}
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Settings configuration(s) as API client was unavailable.", len(entries))
 	}

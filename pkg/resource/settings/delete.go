@@ -23,13 +23,25 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
-func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.DeletePointer) error {
+type source interface {
+	ListSchemas(ctx context.Context) (dtclient.SchemaList, error)
+	List(ctx context.Context, schema string, options dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
+	Delete(ctx context.Context, objectID string) error
+}
 
+type Deleter struct {
+	settingsSource source
+}
+
+func NewDeleter(settingsSource source) *Deleter {
+	return &Deleter{settingsSource}
+}
+
+func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) error {
 	if len(entries) == 0 {
 		return nil
 	}
@@ -49,7 +61,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 			continue
 		}
 
-		settingsObjects, err := c.List(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
+		settingsObjects, err := d.settingsSource.List(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
 		if err != nil {
 			logger.ErrorContext(ctx, "Could not fetch settings object: %v", err)
 			deleteErrs++
@@ -72,7 +84,7 @@ func Delete(ctx context.Context, c client.SettingsClient, entries []pointer.Dele
 			}
 
 			logger.DebugContext(ctx, "Deleting settings object with objectId %q.", settingsObject.ObjectId)
-			err := c.Delete(ctx, settingsObject.ObjectId)
+			err := d.settingsSource.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
 				logger.ErrorContext(ctx, "Failed to delete settings object with object ID %s: %v", settingsObject.ObjectId, err)
 				deleteErrs++
@@ -108,10 +120,10 @@ func getFilter(deletePointer pointer.DeletePointer) (dtclient.ListSettingsFilter
 //
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
-func DeleteAll(ctx context.Context, c client.SettingsClient) error {
+func (d Deleter) DeleteAll(ctx context.Context) error {
 	errCount := 0
 
-	schemas, err := c.ListSchemas(ctx)
+	schemas, err := d.settingsSource.ListSchemas(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fetch settings schemas. No settings will be deleted. Reason: %w", err)
 	}
@@ -127,7 +139,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 		logger := log.With(log.TypeAttr(s))
 		logger.InfoContext(ctx, "Collecting objects of type %q...", s)
 
-		settingsObjects, err := c.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
+		settingsObjects, err := d.settingsSource.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
 			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect object for schema %q: %v", s, err)
 			errCount++
@@ -141,7 +153,7 @@ func DeleteAll(ctx context.Context, c client.SettingsClient) error {
 			}
 
 			logger.With(slog.Any("object", settingsObject)).DebugContext(ctx, "Deleting settings object with object ID '%s'...", settingsObject.ObjectId)
-			err := c.Delete(ctx, settingsObject.ObjectId)
+			err := d.settingsSource.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
 				logger.ErrorContext(ctx, "Failed to delete settings object with object ID '%s': %v", settingsObject.ObjectId, err)
 				errCount++
