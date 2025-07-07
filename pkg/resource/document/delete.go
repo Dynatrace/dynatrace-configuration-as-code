@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2024 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,15 +28,23 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
-type client interface {
+type source interface {
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
 	Delete(ctx context.Context, id string) (api.Response, error)
 }
 
-func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
+type Deleter struct {
+	documentSource source
+}
+
+func NewDeleter(documentSource source) *Deleter {
+	return &Deleter{documentSource}
+}
+
+func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error {
 	errCount := 0
 	for _, dp := range dps {
-		err := deleteSingle(ctx, c, dp)
+		err := d.deleteSingle(ctx, dp)
 		if err != nil {
 			log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
 			errCount++
@@ -48,7 +56,7 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 	return nil
 }
 
-func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error {
+func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) error {
 	logger := log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate()))
 	var id string
 	if dp.OriginObjectId != "" {
@@ -58,7 +66,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 		var err error
 		extID := idutils.GenerateExternalID(dp.AsCoordinate())
 
-		id, err = tryGetDocumentIDByExternalID(ctx, c, extID)
+		id, err = d.tryGetDocumentIDByExternalID(ctx, extID)
 		if err != nil {
 			return err
 		}
@@ -69,7 +77,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 		return nil
 	}
 
-	_, err := c.Delete(ctx, id)
+	_, err := d.documentSource.Delete(ctx, id)
 	if err != nil && !api.IsNotFoundError(err) {
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
@@ -78,8 +86,8 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 	return nil
 }
 
-func tryGetDocumentIDByExternalID(ctx context.Context, c client, externalId string) (string, error) {
-	switch listResponse, err := c.List(ctx, fmt.Sprintf("externalId=='%s'", externalId)); {
+func (d Deleter) tryGetDocumentIDByExternalID(ctx context.Context, externalId string) (string, error) {
+	switch listResponse, err := d.documentSource.List(ctx, fmt.Sprintf("externalId=='%s'", externalId)); {
 	case err != nil:
 		return "", err
 	case len(listResponse.Responses) == 0:
@@ -95,15 +103,15 @@ func tryGetDocumentIDByExternalID(ctx context.Context, c client, externalId stri
 	}
 }
 
-func DeleteAll(ctx context.Context, c client) error {
-	listResponse, err := c.List(ctx, fmt.Sprintf("type='%s' or type='%s'", documents.Dashboard, documents.Notebook))
+func (d Deleter) DeleteAll(ctx context.Context) error {
+	listResponse, err := d.documentSource.List(ctx, fmt.Sprintf("type='%s' or type='%s'", documents.Dashboard, documents.Notebook))
 	if err != nil {
 		return err
 	}
 
 	var retErr error
 	for _, x := range listResponse.Responses {
-		err := deleteSingle(ctx, c, pointer.DeletePointer{Type: x.Type, OriginObjectId: x.ID})
+		err := d.deleteSingle(ctx, pointer.DeletePointer{Type: x.Type, OriginObjectId: x.ID})
 		if err != nil {
 			retErr = errors.Join(retErr, err)
 		}
