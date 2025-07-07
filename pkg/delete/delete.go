@@ -106,7 +106,7 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
 	} else if t == string(config.DocumentTypeID) {
 		if clients.DocumentClient != nil {
-			return document.Delete(ctx, clients.DocumentClient, entries)
+			return document.NewDeleter(clients.DocumentClient).Delete(ctx, entries)
 		}
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
 	} else if t == string(config.SegmentID) {
