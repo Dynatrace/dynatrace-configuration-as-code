@@ -34,9 +34,9 @@ import (
 )
 
 type deleteStubClient struct {
-	called bool
-	delete func(id string) (libAPI.Response, error)
-	list   func() (libAPI.PagedListResponse, error)
+	deleteCalled bool
+	delete       func(id string) (libAPI.Response, error)
+	list         func() (libAPI.PagedListResponse, error)
 }
 
 func (s *deleteStubClient) List(context.Context) (libAPI.PagedListResponse, error) {
@@ -44,7 +44,7 @@ func (s *deleteStubClient) List(context.Context) (libAPI.PagedListResponse, erro
 }
 
 func (s *deleteStubClient) Delete(_ context.Context, id string) (libAPI.Response, error) {
-	s.called = true
+	s.deleteCalled = true
 	return s.delete(id)
 }
 
@@ -74,10 +74,10 @@ func TestDeleteWithCoordinate(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 
 		assert.NoError(t, err)
-		assert.True(t, c.called, "delete command wasn't invoked")
+		assert.True(t, c.deleteCalled, "delete command wasn't invoked")
 	})
 
 	t.Run("no error if no slo-v2 matches generated external ID", func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestDeleteWithCoordinate(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 	})
 
@@ -118,9 +118,9 @@ func TestDeleteWithCoordinate(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.Error(t, err)
-		assert.False(t, c.called, "it's not known what needs to be deleted")
+		assert.False(t, c.deleteCalled, "it's not known what needs to be deleted")
 	})
 }
 
@@ -138,9 +138,9 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
-		assert.True(t, c.called)
+		assert.True(t, c.deleteCalled)
 	})
 
 	t.Run("no error if SLOv2 doesn't exist", func(t *testing.T) {
@@ -156,7 +156,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
 	})
 
@@ -173,7 +173,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
 
@@ -190,7 +190,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given})
+		err := slo.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.Error(t, err)
 	})
 
@@ -210,7 +210,7 @@ func TestDeleteByObjectId(t *testing.T) {
 			},
 		}
 
-		err := slo.Delete(t.Context(), &c, []pointer.DeletePointer{given, {OriginObjectId: "bla"}, given}) // the pointer in the middle is to cause error behavior
+		err := slo.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given, {OriginObjectId: "bla"}, given}) // the pointer in the middle is to cause error behavior
 		assert.ErrorContains(t, err, "failed to delete 1 slo-v2 objects(s)")
 	})
 }
@@ -234,7 +234,7 @@ func TestDeleteAll(t *testing.T) {
 			},
 		}
 
-		err := slo.DeleteAll(t.Context(), &c)
+		err := slo.NewDeleter(&c).DeleteAll(t.Context())
 		assert.NoError(t, err)
 	})
 
@@ -259,7 +259,7 @@ func TestDeleteAll(t *testing.T) {
 			},
 		}
 
-		err := slo.DeleteAll(t.Context(), &c)
+		err := slo.NewDeleter(&c).DeleteAll(t.Context())
 		assert.Error(t, err)
 	})
 }

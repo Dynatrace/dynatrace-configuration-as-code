@@ -116,7 +116,7 @@ func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entri
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.SegmentID)
 	} else if t == string(config.ServiceLevelObjectiveID) {
 		if clients.ServiceLevelObjectiveClient != nil {
-			return slo.Delete(ctx, clients.ServiceLevelObjectiveClient, entries)
+			return slo.NewDeleter(clients.ServiceLevelObjectiveClient).Delete(ctx, entries)
 		}
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.ServiceLevelObjectiveID)
 	} else {
