@@ -86,7 +86,7 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 
 	if clients.ServiceLevelObjectiveClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
-	} else if err := slo.DeleteAll(ctx, clients.ServiceLevelObjectiveClient); err != nil {
+	} else if err := slo.NewDeleter(clients.ServiceLevelObjectiveClient).DeleteAll(ctx); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.ServiceLevelObjective{}, err)
 		errCount++
 	}
