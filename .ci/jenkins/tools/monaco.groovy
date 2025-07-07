@@ -54,7 +54,9 @@ void deploy(String project, boolean ignoreReturnStatus = true) {
         // to provoke memory leak remove MONACO_CONCURENT_DEPLOYMENT flag. The default value is MONACO_CONCURENT_DEPLOYMENT=100
         status = sh(label: "monaco deploy",
             returnStatus: true,
-            script: "MONACO_CONCURENT_DEPLOYMENT=30 MONACO_LOG_FORMAT=json ${monacoBin} deploy ${manifestPath} --project=${project} --verbose | ${logForwarderBin} LOG_FWD_URL LOG_FWD_TOKEN ${currentBuild.number}")
+    
+            // no log forwarded here, we used to have: | ${logForwarderBin} LOG_FWD_URL LOG_FWD_TOKEN ${currentBuild.number}
+            script: "MONACO_CONCURENT_DEPLOYMENT=30 MONACO_LOG_FORMAT=json ${monacoBin} deploy ${manifestPath} --project=${project} --verbose")
         if (!ignoreReturnStatus) {
             0 == status
         }
