@@ -29,15 +29,23 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
-type client interface {
+type source interface {
 	List(ctx context.Context) (api.PagedListResponse, error)
 	Delete(ctx context.Context, id string) (api.Response, error)
 }
 
-func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
+type Deleter struct {
+	sloSource source
+}
+
+func NewDeleter(sloSource source) *Deleter {
+	return &Deleter{sloSource}
+}
+
+func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error {
 	errCount := 0
 	for _, dp := range dps {
-		err := deleteSingle(ctx, c, dp)
+		err := d.deleteSingle(ctx, dp)
 		if err != nil {
 			log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
 			errCount++
@@ -49,13 +57,13 @@ func Delete(ctx context.Context, c client, dps []pointer.DeletePointer) error {
 	return nil
 }
 
-func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error {
+func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) error {
 	logger := log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate()))
 
 	id := dp.OriginObjectId
 	if id == "" {
 		var err error
-		id, err = findEntryWithExternalID(ctx, c, dp)
+		id, err = d.findEntryWithExternalID(ctx, dp)
 		if err != nil {
 			return err
 		}
@@ -66,7 +74,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 		return nil
 	}
 
-	_, err := c.Delete(ctx, id)
+	_, err := d.sloSource.Delete(ctx, id)
 	if err != nil && !api.IsNotFoundError(err) {
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
@@ -75,8 +83,8 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) error
 	return nil
 }
 
-func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePointer) (string, error) {
-	items, err := c.List(ctx)
+func (d Deleter) findEntryWithExternalID(ctx context.Context, dp pointer.DeletePointer) (string, error) {
+	items, err := d.sloSource.List(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -108,8 +116,8 @@ func findEntryWithExternalID(ctx context.Context, c client, dp pointer.DeletePoi
 	}
 }
 
-func DeleteAll(ctx context.Context, c client) error {
-	items, err := c.List(ctx)
+func (d Deleter) DeleteAll(ctx context.Context) error {
+	items, err := d.sloSource.List(ctx)
 	if err != nil {
 		return err
 	}
@@ -121,7 +129,7 @@ func DeleteAll(ctx context.Context, c client) error {
 			errs = append(errs, err)
 			continue
 		}
-		err := deleteSingle(ctx, c, pointer.DeletePointer{Type: string(config.ServiceLevelObjectiveID), OriginObjectId: e.ID})
+		err := d.deleteSingle(ctx, pointer.DeletePointer{Type: string(config.ServiceLevelObjectiveID), OriginObjectId: e.ID})
 		if err != nil {
 			errs = append(errs, err)
 		}
