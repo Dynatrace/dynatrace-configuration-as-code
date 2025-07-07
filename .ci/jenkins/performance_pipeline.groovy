@@ -29,7 +29,7 @@ podTemplate(cloud: 'linux-amd64-injected', yaml: readTrusted('.ci/jenkins/agents
 
         container("monaco-runner") {
             stage("test") {
-                monaco.deploy("micro-set", false)
+                monaco.deploy("small-set", false)
             }
         }
     }
