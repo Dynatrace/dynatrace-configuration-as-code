@@ -54,7 +54,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	bucketDeletes := deletePointerToBucketDelete(entries)
 
 	if errorCount := d.delete(ctx, bucketDeletes, logger); errorCount > 0 {
-		return fmt.Errorf("failed to delete %d Grail Bucket configurations", errorCount)
+		return fmt.Errorf("failed to delete %d Grail bucket configurations", errorCount)
 	}
 
 	return nil
@@ -69,11 +69,11 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
 func (d Deleter) DeleteAll(ctx context.Context) error {
 	logger := log.With(log.TypeAttr("bucket"))
-	logger.InfoContext(ctx, "Collecting Grail Bucket configurations...")
+	logger.InfoContext(ctx, "Collecting Grail bucket configurations...")
 
 	response, err := d.bucketSource.List(ctx)
 	if err != nil {
-		logger.ErrorContext(ctx, "Failed to collect Grail Bucket configurations: %v", err)
+		logger.ErrorContext(ctx, "Failed to collect Grail bucket configurations: %v", err)
 		return err
 	}
 
@@ -82,7 +82,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	errorCount := errorCountParse + errorCountDelete
 
 	if errorCount > 0 {
-		return fmt.Errorf("failed to delete %d Grail Bucket configuration(s)", errorCount)
+		return fmt.Errorf("failed to delete %d Grail bucket configuration(s)", errorCount)
 	}
 
 	return nil
@@ -115,7 +115,7 @@ func responsesToBucketDelete(ctx context.Context, bucketResponses [][]byte, logg
 
 	for _, obj := range bucketResponses {
 		if err := json.Unmarshal(obj, &bucketName); err != nil {
-			logger.ErrorContext(ctx, "Failed to parse bucket JSON: %v", err)
+			logger.ErrorContext(ctx, "Failed to parse Grail bucket JSON: %v", err)
 			errCount++
 			continue
 		}
@@ -142,11 +142,11 @@ func (d Deleter) delete(ctx context.Context, bucketDeletes []bucketDelete, baseL
 			logger = logger.With(log.CoordinateAttr(*bucketDeleteEntry.coordinate))
 		}
 
-		logger.DebugContext(ctx, "Deleting bucket '%s'", bucketName)
+		logger.DebugContext(ctx, "Deleting Grail buckets '%s'", bucketName)
 		bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, d.bucketSource, bucketName, maxRetryDuration, durationBetweenRetries)
 
 		if err != nil {
-			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail buckets '%s': %v", bucketName, err)
 			errorCount++
 			continue
 		}
@@ -159,7 +159,7 @@ func (d Deleter) delete(ctx context.Context, bucketDeletes []bucketDelete, baseL
 		_, err = d.bucketSource.Delete(ctx, bucketName)
 
 		if err != nil && !api.IsNotFoundError(err) {
-			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail bucket '%s': %v", bucketName, err)
 			errorCount++
 		}
 	}
