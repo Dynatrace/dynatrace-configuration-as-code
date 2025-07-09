@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/go-logr/logr"
 
@@ -90,10 +91,18 @@ func (d DeployAPI) upsert(ctx context.Context, bucketName string, data []byte) e
 		return err
 	}
 	// after create wait for bucket being active/deleted
+	start := time.Now()
 	if bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, d.source, bucketName, maxRetryDuration, durationBetweenRetries); err != nil {
 		return err
 	} else if bucketExists {
 		log.DebugContext(ctx, "Bucket '%s' became active and is ready to use", bucketName)
 	}
+	// wait until bucket cache refreshes, so that other calls don't have any problems
+	elapsed := time.Since(start)
+	if elapsed >= time.Minute {
+		return nil
+	}
+
+	time.Sleep(time.Minute - elapsed)
 	return nil
 }
