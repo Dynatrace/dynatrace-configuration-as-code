@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/go-logr/logr"
 
@@ -95,5 +96,7 @@ func (d DeployAPI) upsert(ctx context.Context, bucketName string, data []byte) e
 	} else if bucketExists {
 		log.DebugContext(ctx, "Bucket '%s' became active and is ready to use", bucketName)
 	}
+	// wait until bucket cache refreshes, so that other calls don't have any problems
+	time.Sleep(time.Minute)
 	return nil
 }
