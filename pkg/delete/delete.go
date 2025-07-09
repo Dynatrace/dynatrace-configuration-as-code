@@ -37,7 +37,6 @@ import (
 
 type Deleter interface {
 	Delete(context.Context, []pointer.DeletePointer) error
-	DeleteAll(context.Context) error
 }
 
 type configurationType = string
@@ -96,7 +95,7 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entries []pointer.DeletePointer) error {
 	if _, ok := api.NewAPIs()[t]; ok {
 		if clients.ConfigClient != nil {
-			return classic.Delete(ctx, clients.ConfigClient, entries)
+			return classic.NewDeleter(clients.ConfigClient).Delete(ctx, entries)
 		}
 		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Classic configuration(s) as API client was unavailable.", len(entries))
 	} else if t == string(config.BucketTypeID) {
