@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 )
 
@@ -142,8 +141,8 @@ func (c *DummyOpenPipelineClient) GetAll(ctx context.Context) ([]api.Response, e
 	panic("unimplemented")
 }
 
-func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) (openpipeline.Response, error) {
-	return openpipeline.Response{}, nil
+func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
+	return api.Response{}, nil
 }
 
 type DummySegmentClient struct{}

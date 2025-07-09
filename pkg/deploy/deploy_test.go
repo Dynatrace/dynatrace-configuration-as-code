@@ -29,7 +29,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -1307,14 +1306,14 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 }
 
 type StubOpenPipelineClient struct {
-	UpdateStub func() (openpipeline.Response, error)
+	UpdateStub func() (coreapi.Response, error)
 }
 
-func (c *StubOpenPipelineClient) GetAll(ctx context.Context) ([]openpipeline.Response, error) {
+func (c *StubOpenPipelineClient) GetAll(ctx context.Context) ([]coreapi.Response, error) {
 	return []coreapi.Response{}, nil
 }
 
-func (c *StubOpenPipelineClient) Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error) {
+func (c *StubOpenPipelineClient) Update(ctx context.Context, id string, data []byte) (coreapi.Response, error) {
 	return c.UpdateStub()
 }
 
@@ -1341,27 +1340,27 @@ func TestLogResponseErrors(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		updateStub     func() (openpipeline.Response, error)
+		updateStub     func() (coreapi.Response, error)
 		expectedErrLog string
 	}{
 		{
 			name: "500 error",
-			updateStub: func() (openpipeline.Response, error) {
-				return openpipeline.Response{}, coreapi.APIError{StatusCode: 501}
+			updateStub: func() (coreapi.Response, error) {
+				return coreapi.Response{}, coreapi.APIError{StatusCode: 501}
 			},
 			expectedErrLog: "Deployment failed - Dynatrace Server Error",
 		},
 		{
 			name: "400 error",
-			updateStub: func() (openpipeline.Response, error) {
-				return openpipeline.Response{}, coreapi.APIError{StatusCode: 404}
+			updateStub: func() (coreapi.Response, error) {
+				return coreapi.Response{}, coreapi.APIError{StatusCode: 404}
 			},
 			expectedErrLog: "Deployment failed - Dynatrace API rejected HTTP request / JSON data",
 		},
 		{
 			name: "default error",
-			updateStub: func() (openpipeline.Response, error) {
-				return openpipeline.Response{}, coreapi.APIError{StatusCode: 0}
+			updateStub: func() (coreapi.Response, error) {
+				return coreapi.Response{}, coreapi.APIError{StatusCode: 0}
 			},
 			expectedErrLog: "Deployment failed - Dynatrace API call unsuccessful",
 		},

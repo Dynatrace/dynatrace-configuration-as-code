@@ -24,7 +24,7 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -34,7 +34,7 @@ import (
 
 //go:generate mockgen -source=deploy.go -destination=openpipeline_mock.go -package=openpipeline DeploySource
 type DeploySource interface {
-	Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error)
+	Update(ctx context.Context, id string, data []byte) (api.Response, error)
 }
 
 type DeployAPI struct {

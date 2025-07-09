@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/templatetools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -30,7 +30,7 @@ import (
 )
 
 type DownloadSource interface {
-	GetAll(context.Context) ([]openpipeline.Response, error)
+	GetAll(context.Context) ([]api.Response, error)
 }
 
 type DownloadAPI struct {
@@ -64,7 +64,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	return result, nil
 }
 
-func createConfig(projectName string, response openpipeline.Response) (config.Config, error) {
+func createConfig(projectName string, response api.Response) (config.Config, error) {
 	jsonObj, err := templatetools.NewJSONObject(response.Data)
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to unmarshal payload: %w", err)

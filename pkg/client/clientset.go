@@ -30,7 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -173,8 +172,8 @@ type DocumentClient interface {
 }
 
 type OpenPipelineClient interface {
-	GetAll(ctx context.Context) ([]openpipeline.Response, error)
-	Update(ctx context.Context, id string, data []byte) (openpipeline.Response, error)
+	GetAll(ctx context.Context) ([]libAPI.Response, error)
+	Update(ctx context.Context, id string, data []byte) (libAPI.Response, error)
 }
 
 type SegmentClient interface {
