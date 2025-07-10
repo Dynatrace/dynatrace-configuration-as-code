@@ -154,11 +154,31 @@ func Load(context *Context) (manifest.Manifest, []error) {
 		return manifest.Manifest{}, []error{newManifestLoaderError(context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", err))}
 	}
 
-	if context.Opts.RequireEnvironmentGroups && len(manifestYAML.EnvironmentGroups) == 0 {
-		return manifest.Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "'environmentGroups' are required, but not defined")}
+	var errs []error
+	var environments manifest.Environments
+
+	if context.Opts.RequireEnvironmentGroups {
+		if len(manifestYAML.EnvironmentGroups) == 0 {
+			return manifest.Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "'environmentGroups' are required, but not defined")}
+		}
+		var manifestErrors []error
+		if environments, manifestErrors = parseEnvironments(context, manifestYAML.EnvironmentGroups); len(manifestErrors) > 0 {
+			errs = append(errs, manifestErrors...)
+		} else if len(environments.AllEnvironmentNames) == 0 {
+			errs = append(errs, newManifestLoaderError(context.ManifestPath, "no environments defined in manifest"))
+		}
 	}
-	if context.Opts.RequireAccounts && len(manifestYAML.Accounts) == 0 {
-		return manifest.Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "'accounts' are required, but not defined")}
+
+	accounts := make(map[string]manifest.Account)
+	if context.Opts.RequireAccounts {
+		if len(manifestYAML.Accounts) == 0 {
+			return manifest.Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "'accounts' are required, but not defined")}
+		}
+		var accErr error
+		accounts, accErr = parseAccounts(context, manifestYAML.Accounts)
+		if accErr != nil {
+			errs = append(errs, newManifestLoaderError(context.ManifestPath, accErr.Error()))
+		}
 	}
 
 	manifestPath := filepath.Clean(context.ManifestPath)
@@ -174,8 +194,6 @@ func Load(context *Context) (manifest.Manifest, []error) {
 
 	relativeManifestPath := filepath.Base(manifestPath)
 
-	var errs []error
-
 	// projects
 	projectDefinitions, projectErrors := parseProjects(&projectLoaderContext{
 		fs:           workingDirFs,
@@ -183,23 +201,6 @@ func Load(context *Context) (manifest.Manifest, []error) {
 	}, manifestYAML.Projects)
 	if projectErrors != nil {
 		errs = append(errs, projectErrors...)
-	}
-
-	// environments
-	var environments manifest.Environments
-	if len(manifestYAML.EnvironmentGroups) > 0 {
-		var manifestErrors []error
-		if environments, manifestErrors = parseEnvironments(context, manifestYAML.EnvironmentGroups); len(manifestErrors) > 0 {
-			errs = append(errs, manifestErrors...)
-		} else if len(environments.AllEnvironmentNames) == 0 {
-			errs = append(errs, newManifestLoaderError(context.ManifestPath, "no environments defined in manifest"))
-		}
-	}
-
-	// accounts
-	accounts, accErr := parseAccounts(context, manifestYAML.Accounts)
-	if accErr != nil {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, accErr.Error()))
 	}
 
 	// if any errors occurred up to now, return them
