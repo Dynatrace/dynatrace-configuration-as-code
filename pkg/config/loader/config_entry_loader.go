@@ -93,7 +93,7 @@ func warnForUndefinedGroups(loaderContext *configFileLoaderContext, groupOverrid
 
 func warnForUndefinedEnvironments(loaderContext *configFileLoaderContext, environmentOverrides []persistence.EnvironmentOverride) {
 	for _, environmentOverride := range environmentOverrides {
-		if _, exists := loaderContext.Environments.AllGroupNames[environmentOverride.Environment]; !exists {
+		if _, exists := loaderContext.Environments.AllEnvironmentNames[environmentOverride.Environment]; !exists {
 			log.Warn("environment override references unknown environment '%s' which is not defined in the manifest", environmentOverride.Environment)
 		}
 	}
