@@ -19,10 +19,13 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"os"
+
+	"github.com/google/uuid"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
-	"github.com/google/uuid"
-	"os"
 )
 
 var (
@@ -45,7 +48,7 @@ func (e invalidUUIDError) Unwrap() error {
 
 func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, error) {
 
-	accountUUID, err := parseAccountUUID(a.AccountUUID)
+	accountUUID, err := parseAccountUUID(c, a.AccountUUID)
 	if err != nil {
 		return manifest.Account{}, err
 	}
@@ -74,41 +77,41 @@ func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, er
 	return acc, nil
 }
 
-func parseAccountUUID(u persistence.TypedValue) (uuid.UUID, error) {
-	uuidValue, err := loadAccountUUID(u)
-	if err != nil {
-		return uuid.UUID{}, err
-	}
-
-	accountUUID, err := uuid.Parse(uuidValue)
-	if err != nil {
-		return uuid.UUID{}, invalidUUIDError{uuidValue, err}
-	}
-
-	return accountUUID, nil
-}
-
-func loadAccountUUID(u persistence.TypedValue) (string, error) {
+func parseAccountUUID(c *Context, u persistence.TypedValue) (uuid.UUID, error) {
 	if u.Value == "" {
-		return "", errAccUidMissing
+		return uuid.UUID{}, errAccUidMissing
 	}
 
 	if u.Type == "" || u.Type == persistence.TypeValue { // shorthand or explicit type: value
-		return u.Value, nil
+		return parseUUID(u.Value)
 	}
 
-	if u.Type == persistence.TypeEnvironment {
-		val, found := os.LookupEnv(u.Value)
-		if !found {
-			return "", fmt.Errorf("environment variable %q could not be found", u.Value)
-		}
-		if val == "" {
-			return "", fmt.Errorf("environment variable %q is defined but has no value", u.Value)
-		}
-		return val, nil
+	if u.Type != persistence.TypeEnvironment {
+		return uuid.UUID{}, fmt.Errorf("unexpected type: %q (expected one of %q, %q)", u.Type, persistence.TypeValue, persistence.TypeEnvironment)
 	}
 
-	return "", fmt.Errorf("unexpected type: %q (expected one of %q, %q)", u.Type, persistence.TypeValue, persistence.TypeEnvironment)
+	if c.Opts.DoNotResolveEnvVars {
+		log.Debug("Skipped resolving environment variable %s based on loader options", u.Value)
+		return uuid.UUID{}, nil
+	}
+
+	val, found := os.LookupEnv(u.Value)
+	if !found {
+		return uuid.UUID{}, fmt.Errorf("environment variable %q could not be found", u.Value)
+	}
+	if val == "" {
+		return uuid.UUID{}, fmt.Errorf("environment variable %q is defined but has no value", u.Value)
+	}
+	return parseUUID(val)
+}
+
+func parseUUID(value string) (uuid.UUID, error) {
+	u, err := uuid.Parse(value)
+	if err != nil {
+		return uuid.UUID{}, invalidUUIDError{value, err}
+	}
+
+	return u, nil
 }
 
 // parseAccounts converts the persistence definition to the in-memory definition

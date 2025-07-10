@@ -2143,35 +2143,45 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 }
 
 func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
-	e := persistence.Environment{
-		Name: "TEST ENV",
-		URL:  persistence.TypedValue{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment},
-		Auth: persistence.Auth{
-			AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"},
-			OAuth: &persistence.OAuth{
-				ClientID:     persistence.AuthSecret{Type: "environment", Name: "VAR_1"},
-				ClientSecret: persistence.AuthSecret{Type: "environment", Name: "VAR_2"},
-			},
-		},
-	}
+	testURL := persistence.TypedValue{Value: "TEST_TOKEN", Type: persistence.TypeEnvironment}
 
-	t.Run("URLs resolution produces error", func(t *testing.T) {
-		_, gotErr := parseURLDefinition(&Context{}, e.URL)
+	t.Run("URLs resolution produces error if environment variable is missing", func(t *testing.T) {
+		_, gotErr := parseURLDefinition(&Context{}, testURL)
 		assert.Error(t, gotErr)
 	})
 
 	t.Run("URLs are not resolved if 'DoNotResolveEnvVars' option is set", func(t *testing.T) {
-		_, gotErr := parseURLDefinition(&Context{Opts: Options{DoNotResolveEnvVars: true}}, e.URL)
+		_, gotErr := parseURLDefinition(&Context{Opts: Options{DoNotResolveEnvVars: true}}, testURL)
 		assert.NoError(t, gotErr)
 	})
 
-	t.Run("Auth token resolution produces error", func(t *testing.T) {
-		_, gotErr := parseAuth(&Context{}, e.Auth)
+	testAuth := persistence.Auth{
+		AccessToken: &persistence.AuthSecret{Type: "environment", Name: "VAR"},
+		OAuth: &persistence.OAuth{
+			ClientID:     persistence.AuthSecret{Type: "environment", Name: "VAR_1"},
+			ClientSecret: persistence.AuthSecret{Type: "environment", Name: "VAR_2"},
+		},
+	}
+
+	t.Run("Auth resolution produces error if environment variables are missing", func(t *testing.T) {
+		_, gotErr := parseAuth(&Context{}, testAuth)
 		assert.Error(t, gotErr)
 	})
 
 	t.Run("Auth tokens are not resolved if 'DoNotResolveEnvVars' option is set", func(t *testing.T) {
-		_, gotErr := parseAuth(&Context{Opts: Options{DoNotResolveEnvVars: true}}, e.Auth)
+		_, gotErr := parseAuth(&Context{Opts: Options{DoNotResolveEnvVars: true}}, testAuth)
+		assert.NoError(t, gotErr)
+	})
+
+	testAccountUUID := persistence.TypedValue{Value: "TEST_UUID", Type: persistence.TypeEnvironment}
+
+	t.Run("Account UUID resolution produces error if env var is missing", func(t *testing.T) {
+		_, gotErr := parseAccountUUID(&Context{}, testAccountUUID)
+		assert.Error(t, gotErr)
+	})
+
+	t.Run("Account UUID is not resolved if 'DoNotResolveEnvVars' option is set", func(t *testing.T) {
+		_, gotErr := parseAccountUUID(&Context{Opts: Options{DoNotResolveEnvVars: true}}, testAccountUUID)
 		assert.NoError(t, gotErr)
 	})
 }
