@@ -97,6 +97,6 @@ func (d DeployAPI) upsert(ctx context.Context, bucketName string, data []byte) e
 		log.DebugContext(ctx, "Bucket '%s' became active and is ready to use", bucketName)
 	}
 	// wait until bucket cache refreshes, so that other calls don't have any problems
-	time.Sleep(time.Minute)
+	time.Sleep(time.Minute * 2)
 	return nil
 }
