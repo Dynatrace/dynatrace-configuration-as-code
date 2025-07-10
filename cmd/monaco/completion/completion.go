@@ -95,6 +95,9 @@ func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCom
 	man, _ := manifestloader.Load(&manifestloader.Context{
 		Fs:           afero.NewOsFs(),
 		ManifestPath: manifestPath,
+		Opts: manifestloader.Options{
+			RequireEnvironmentGroups: true,
+		},
 	})
 
 	return maps.Keys(man.Environments.SelectedEnvironments), cobra.ShellCompDirectiveDefault
@@ -108,6 +111,9 @@ func loadAccountsFromManifest(manifestPath string) ([]string, cobra.ShellCompDir
 	man, _ := manifestloader.Load(&manifestloader.Context{
 		Fs:           afero.NewOsFs(),
 		ManifestPath: manifestPath,
+		Opts: manifestloader.Options{
+			RequireAccounts: true,
+		},
 	})
 
 	return maps.Keys(man.Accounts), cobra.ShellCompDirectiveDefault
