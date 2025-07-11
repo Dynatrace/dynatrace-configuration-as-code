@@ -44,16 +44,16 @@ func NewDeleter(bucketSource DeleteSource) *Deleter {
 	return &Deleter{bucketSource: bucketSource}
 }
 
-type bucketDelete struct {
+type deleteItem struct {
 	bucketName string
-	coordinate *coordinate.Coordinate
+	coordinate *coordinate.Coordinate // optional. Only used for logs.
 }
 
 func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) error {
 	logger := log.With(log.TypeAttr("bucket"))
-	bucketDeletes := deletePointerToBucketDelete(entries)
+	deleteItems := convertDeletePointerToDeleteItem(entries)
 
-	if errorCount := d.delete(ctx, bucketDeletes, logger); errorCount > 0 {
+	if errorCount := d.delete(ctx, deleteItems, logger); errorCount > 0 {
 		return fmt.Errorf("failed to delete %d Grail bucket configurations", errorCount)
 	}
 
@@ -77,8 +77,8 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 		return err
 	}
 
-	bucketDeletes, errorCountParse := responsesToBucketDelete(ctx, response.All(), logger)
-	errorCountDelete := d.delete(ctx, bucketDeletes, logger)
+	deleteItems, errorCountParse := parseResponseToDeleteItem(ctx, response.All(), logger)
+	errorCountDelete := d.delete(ctx, deleteItems, logger)
 	errorCount := errorCountParse + errorCountDelete
 
 	if errorCount > 0 {
@@ -88,8 +88,8 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	return nil
 }
 
-func deletePointerToBucketDelete(entries []pointer.DeletePointer) []bucketDelete {
-	bucketsDeletes := make([]bucketDelete, len(entries))
+func convertDeletePointerToDeleteItem(entries []pointer.DeletePointer) []deleteItem {
+	deleteItems := make([]deleteItem, len(entries))
 	for i, e := range entries {
 		cord := e.AsCoordinate()
 		bucketName := e.OriginObjectId
@@ -98,19 +98,19 @@ func deletePointerToBucketDelete(entries []pointer.DeletePointer) []bucketDelete
 			bucketName = idutils.GenerateBucketName(cord)
 		}
 
-		bucketsDeletes[i] = bucketDelete{
+		deleteItems[i] = deleteItem{
 			bucketName: bucketName,
 			coordinate: &cord,
 		}
 	}
-	return bucketsDeletes
+	return deleteItems
 }
 
-func responsesToBucketDelete(ctx context.Context, bucketResponses [][]byte, logger *log.Slogger) ([]bucketDelete, int) {
+func parseResponseToDeleteItem(ctx context.Context, bucketResponses [][]byte, logger *log.Slogger) ([]deleteItem, int) {
 	var bucketName struct {
 		BucketName string `json:"bucketName"`
 	}
-	bucketDeletes := make([]bucketDelete, 0)
+	deleteItems := make([]deleteItem, 0)
 	errCount := 0
 
 	for _, obj := range bucketResponses {
@@ -119,34 +119,34 @@ func responsesToBucketDelete(ctx context.Context, bucketResponses [][]byte, logg
 			errCount++
 			continue
 		}
-		bucketDeletes = append(bucketDeletes, bucketDelete{
+		deleteItems = append(deleteItems, deleteItem{
 			bucketName: bucketName.BucketName,
 		})
 	}
-	return bucketDeletes, errCount
+	return deleteItems, errCount
 }
 
-func (d Deleter) delete(ctx context.Context, bucketDeletes []bucketDelete, baseLogger *log.Slogger) int {
+func (d Deleter) delete(ctx context.Context, deleteItems []deleteItem, baseLogger *log.Slogger) int {
 	errorCount := 0
-	baseLogger.InfoContext(ctx, `Deleting %d config(s) of type 'bucket'...`, len(bucketDeletes))
+	baseLogger.InfoContext(ctx, `Deleting %d config(s) of type 'bucket'...`, len(deleteItems))
 
-	for _, bucketDeleteEntry := range bucketDeletes {
-		bucketName := bucketDeleteEntry.bucketName
+	for _, delItem := range deleteItems {
+		bucketName := delItem.bucketName
 		// exclude builtin bucket names, they cannot be deleted anyway
 		if buckettools.IsDefault(bucketName) {
 			continue
 		}
 
 		logger := baseLogger
-		if bucketDeleteEntry.coordinate != nil {
-			logger = logger.With(log.CoordinateAttr(*bucketDeleteEntry.coordinate))
+		if delItem.coordinate != nil {
+			logger = logger.With(log.CoordinateAttr(*delItem.coordinate))
 		}
 
-		logger.DebugContext(ctx, "Deleting Grail buckets '%s'", bucketName)
+		logger.DebugContext(ctx, "Deleting Grail bucket '%s'", bucketName)
 		bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, d.bucketSource, bucketName, maxRetryDuration, durationBetweenRetries)
 
 		if err != nil {
-			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail buckets '%s': %v", bucketName, err)
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail bucket '%s': %v", bucketName, err)
 			errorCount++
 			continue
 		}
