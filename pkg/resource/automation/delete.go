@@ -29,18 +29,31 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
-type client interface {
+type DeleteSource interface {
 	Delete(ctx context.Context, resourceType automation.ResourceType, id string) (api.Response, error)
 	List(ctx context.Context, resourceType automation.ResourceType) (api.PagedListResponse, error)
 }
 
-func Delete(ctx context.Context, c client, automationResource config.AutomationResource, entries []pointer.DeletePointer) error {
-	logger := log.With(log.TypeAttr(string(automationResource)))
+type Deleter struct {
+	source DeleteSource
+}
+
+func NewDeleter(source DeleteSource) *Deleter {
+	return &Deleter{source}
+}
+
+func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) error {
+	if len(entries) == 0 {
+		return nil
+	}
+	automationResource := entries[0].Type
+
+	logger := log.With(log.TypeAttr(automationResource))
 	logger.InfoContext(ctx, "Deleting %d config(s) of type %q...", len(entries), automationResource)
 
 	deleteErrs := 0
 	for _, e := range entries {
-		deleteErrs += deleteSingle(ctx, c, e)
+		deleteErrs += d.deleteSingle(ctx, e)
 	}
 
 	if deleteErrs > 0 {
@@ -49,7 +62,7 @@ func Delete(ctx context.Context, c client, automationResource config.AutomationR
 	return nil
 }
 
-func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
+func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) int {
 	logger := log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate()))
 
 	id := dp.OriginObjectId
@@ -64,7 +77,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
 		logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete %v with ID %q: %v", dp.Type, id, err)
 		return 1
 	}
-	_, err = c.Delete(ctx, resourceType, id)
+	_, err = d.source.Delete(ctx, resourceType, id)
 	if err != nil {
 		if !api.IsNotFoundError(err) {
 			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete %v with ID '%s': %v", dp.Type, id, err)
@@ -83,7 +96,7 @@ func deleteSingle(ctx context.Context, c client, dp pointer.DeletePointer) int {
 //
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
-func DeleteAll(ctx context.Context, c client) error {
+func (d Deleter) DeleteAll(ctx context.Context) error {
 	errCount := 0
 
 	resources := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
@@ -98,7 +111,7 @@ func DeleteAll(ctx context.Context, c client) error {
 		}
 
 		logger.InfoContext(ctx, "Collecting Automation objects of type %q...", resource)
-		resp, err := c.List(ctx, t)
+		resp, err := d.source.List(ctx, t)
 		if err != nil {
 			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect Automation objects of type '%s': %v", resource, err)
 			errCount++
@@ -114,7 +127,7 @@ func DeleteAll(ctx context.Context, c client) error {
 
 		logger.InfoContext(ctx, "Deleting %d objects of type %q...", len(objects), resource)
 		for _, o := range objects {
-			errCount += deleteSingle(ctx, c, pointer.DeletePointer{Type: string(resourceTypeToAutomationResource[t]), OriginObjectId: o.ID})
+			errCount += d.deleteSingle(ctx, pointer.DeletePointer{Type: string(resourceTypeToAutomationResource[t]), OriginObjectId: o.ID})
 		}
 	}
 
