@@ -25,13 +25,17 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
+
+type Purger interface {
+	DeleteAll(context.Context) error
+}
 
 // All collects and deletes ALL configuration objects using the provided ClientSet.
 // To delete specific configurations use Configs instead!
@@ -44,7 +48,7 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 
 	if clients.ConfigClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of classic configurations as API client was unavailable.")
-	} else if err := classic.DeleteAll(ctx, clients.ConfigClient, apis); err != nil {
+	} else if err := classic.NewPurger(clients.ConfigClient, apis).DeleteAll(ctx); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all classic API configurations: %v", err)
 		errCount++
 	}
