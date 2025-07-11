@@ -24,8 +24,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
@@ -58,7 +58,7 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 
 	if clients.AutClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of Automation configurations as API client was unavailable.")
-	} else if err := automation.DeleteAll(ctx, clients.AutClient); err != nil {
+	} else if err := automation.NewDeleter(clients.AutClient).DeleteAll(ctx); err != nil {
 		log.ErrorContext(ctx, "Failed to delete all Automation configurations: %v", err)
 		errCount++
 	}

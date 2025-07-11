@@ -40,12 +40,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-var automationTypesToResources = map[config.AutomationType]automation.ResourceType{
-	config.AutomationType{Resource: config.Workflow}:         automation.Workflows,
-	config.AutomationType{Resource: config.BusinessCalendar}: automation.BusinessCalendars,
-	config.AutomationType{Resource: config.SchedulingRule}:   automation.SchedulingRules,
-}
-
 type DownloadSource interface {
 	List(context.Context, automation.ResourceType) (api.PagedListResponse, error)
 }

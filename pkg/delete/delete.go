@@ -25,9 +25,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
@@ -84,7 +84,7 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 			log.With(log.TypeAttr(key)).WarnContext(ctx, "Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
 			continue
 		}
-		err := automation.Delete(ctx, autClient, key, entries)
+		err := automation.NewDeleter(autClient).Delete(ctx, entries)
 		if err != nil {
 			log.With(log.ErrorAttr(err)).ErrorContext(ctx, "Error during deletion: %v", err)
 			errCount += 1
