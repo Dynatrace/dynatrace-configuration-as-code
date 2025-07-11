@@ -80,6 +80,7 @@ func TestManifestLoading(t *testing.T) {
 		Opts: manifestloader.Options{
 			DoNotResolveEnvVars:      false,
 			RequireEnvironmentGroups: true,
+			RequireAccounts:          true,
 		},
 	})
 
@@ -401,6 +402,7 @@ environmentGroups:
 			mani, errs := manifestloader.Load(&manifestloader.Context{
 				Fs:           fs,
 				ManifestPath: "manifest.yaml",
+				Opts:         manifestloader.Options{RequireAccounts: true},
 			})
 
 			assert.Equal(t, mani, manifest.Manifest{}, "manifest should not contain any info")
