@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -114,7 +114,7 @@ func DeleteAll(ctx context.Context, c client) error {
 
 		logger.InfoContext(ctx, "Deleting %d objects of type %q...", len(objects), resource)
 		for _, o := range objects {
-			errCount += deleteSingle(ctx, c, pointer.DeletePointer{Type: automationTypesToResources[t], OriginObjectId: o.ID})
+			errCount += deleteSingle(ctx, c, pointer.DeletePointer{Type: string(resourceTypeToAutomationResource[t]), OriginObjectId: o.ID})
 		}
 	}
 
@@ -123,10 +123,4 @@ func DeleteAll(ctx context.Context, c client) error {
 	}
 
 	return nil
-}
-
-var automationTypesToResources = map[automation.ResourceType]string{
-	automation.Workflows:         "workflow",
-	automation.BusinessCalendars: "business-calendar",
-	automation.SchedulingRules:   "scheduling-rule",
 }
