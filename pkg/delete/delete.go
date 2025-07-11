@@ -70,6 +70,7 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 }
 
 func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationClient, allEntries DeleteEntries) (DeleteEntries, int) {
+	automationDeleter := automation.NewDeleter(autClient)
 	remainingDeleteEntries := maps.Clone(allEntries)
 	errCount := 0
 	automationTypeOrder := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
@@ -84,7 +85,7 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 			log.With(log.TypeAttr(key)).WarnContext(ctx, "Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
 			continue
 		}
-		err := automation.Delete(ctx, autClient, key, entries)
+		err := automationDeleter.Delete(ctx, entries)
 		if err != nil {
 			log.With(log.ErrorAttr(err)).ErrorContext(ctx, "Error during deletion: %v", err)
 			errCount += 1
