@@ -78,7 +78,10 @@ type DummyBucketClient struct{}
 
 // Create implements BucketClient.
 func (d *DummyBucketClient) Create(ctx context.Context, bucketName string, data []byte) (api.Response, error) {
-	panic("unimplemented")
+	return api.Response{
+		StatusCode: http.StatusOK,
+		Data:       data,
+	}, nil
 }
 
 // Delete implements BucketClient.
@@ -88,7 +91,7 @@ func (d *DummyBucketClient) Delete(ctx context.Context, bucketName string) (api.
 
 // Get implements BucketClient.
 func (d *DummyBucketClient) Get(ctx context.Context, bucketName string) (api.Response, error) {
-	panic("unimplemented")
+	return api.Response{}, api.APIError{StatusCode: http.StatusNotFound}
 }
 
 // List implements BucketClient.
@@ -99,14 +102,6 @@ func (d *DummyBucketClient) List(ctx context.Context) (api.PagedListResponse, er
 // Update implements BucketClient.
 func (d *DummyBucketClient) Update(ctx context.Context, bucketName string, data []byte) (api.Response, error) {
 	panic("unimplemented")
-}
-
-// Upsert implements BucketClient.
-func (d *DummyBucketClient) Upsert(ctx context.Context, bucketName string, data []byte) (api.Response, error) {
-	return api.Response{
-		StatusCode: http.StatusOK,
-		Data:       data,
-	}, nil
 }
 
 var _ DocumentClient = (*DummyDocumentClient)(nil)
