@@ -118,7 +118,7 @@ func PrepareLogging(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io
 
 func prepareHandler(ctx context.Context, fs afero.Fs, verbose bool, loggerSpy io.Writer, fileLogging bool, enableMemstatLogging bool) slog.Handler {
 	handlerOptions := getHandlerOptions(getLevelFromVerbose(verbose))
-	handlers := []slog.Handler{getHandler(os.Stderr, handlerOptions, true)}
+	handlers := []slog.Handler{getHandler(os.Stdout, handlerOptions, true)}
 
 	if loggerSpy != nil {
 		handlers = append(handlers, getHandler(loggerSpy, handlerOptions, true))
