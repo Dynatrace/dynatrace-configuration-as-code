@@ -104,6 +104,30 @@ func TestTeeHandler_Handle(t *testing.T) {
 		assert.Contains(t, handler2.Output.String(), "level=WARN msg=test key=value")
 	})
 
+	t.Run("handlers with different log levels handle correctly", func(t *testing.T) {
+		allLevelsHandler := NewTestHandler(&slog.HandlerOptions{})
+		errorLevelHandler := NewTestHandler(&slog.HandlerOptions{Level: slog.LevelError})
+
+		testingHandler := log.NewTeeHandler(allLevelsHandler, errorLevelHandler)
+
+		err := testingHandler.Handle(t.Context(), slog.Record{
+			Level:   slog.LevelInfo,
+			Message: "info message",
+		})
+		require.NoError(t, err)
+
+		err = testingHandler.Handle(t.Context(), slog.Record{
+			Level:   slog.LevelError,
+			Message: "error message",
+		})
+		require.NoError(t, err)
+
+		assert.Contains(t, allLevelsHandler.Output.String(), "info message")
+		assert.NotContains(t, errorLevelHandler.Output.String(), "info message")
+		assert.Contains(t, allLevelsHandler.Output.String(), "error message")
+		assert.Contains(t, errorLevelHandler.Output.String(), "error message")
+	})
+
 }
 
 // TestTeeHandler_WithAttrs tests that a TeeHandler is returned that applies the given attributes to each handled record.
