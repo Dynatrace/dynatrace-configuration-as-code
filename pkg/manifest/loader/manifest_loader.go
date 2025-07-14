@@ -53,6 +53,12 @@ type Context struct {
 	// If Environments contains items that do not match any environment in the specified manifest file, the loading errors.
 	Environments []string
 
+	// Accounts is a filter to what accounts should be loaded.
+	// If it's empty, all accounts are loaded.
+	//
+	// If Accounts contains items that do not match any account in the specified manifest file, the loading errors.
+	Accounts []string
+
 	// Groups is a filter to what environment-groups (and thus environments) should be loaded.
 	// If it's empty, all environment-groups are loaded.
 	// If both Environments and Groups are specified, the union of both results is returned.

@@ -76,26 +76,20 @@ func deployCommand(fs afero.Fs) *cobra.Command {
 }
 
 func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
+	selectedAccounts := make([]string, 0)
+	if opts.accountName != "" {
+		selectedAccounts = append(selectedAccounts, opts.accountName)
+	}
 
 	mani, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: opts.manifestName,
+		Accounts:     selectedAccounts,
 		Opts:         manifestloader.Options{RequireAccounts: true},
 	})
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)
 		return errors.New("error while loading manifest")
-	}
-
-	// filter account
-	accounts := mani.Accounts
-	if opts.accountName != "" {
-		acc, ok := accounts[opts.accountName]
-		if !ok {
-			return fmt.Errorf("required account %q was not found in manifest %q", opts.accountName, opts.manifestName)
-		}
-		clear(accounts)
-		accounts[acc.Name] = acc
 	}
 
 	// filter project
@@ -109,7 +103,7 @@ func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
 		projects[proj.Name] = proj
 	}
 
-	log.DebugContext(ctx, "Deploying to accounts: %q", maps.Keys(accounts))
+	log.DebugContext(ctx, "Deploying to accounts: %q", maps.Keys(mani.Accounts))
 	log.DebugContext(ctx, "Deploying projects: %q", maps.Keys(projects))
 
 	resources, err := loader.LoadResources(fs, opts.workingDir, projects)
@@ -122,7 +116,7 @@ func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
 		return nil
 	}
 
-	accountClients, err := dynatrace.CreateAccountClients(ctx, accounts)
+	accountClients, err := dynatrace.CreateAccountClients(ctx, mani.Accounts)
 	if err != nil {
 		return fmt.Errorf("failed to create account clients: %w", err)
 	}

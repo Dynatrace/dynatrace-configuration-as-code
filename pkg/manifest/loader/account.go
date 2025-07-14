@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/google/uuid"
 
@@ -117,9 +118,13 @@ func parseUUID(value string) (uuid.UUID, error) {
 // parseAccounts converts the persistence definition to the in-memory definition
 func parseAccounts(c *Context, accounts []persistence.Account) (map[string]manifest.Account, error) {
 
-	result := make(map[string]manifest.Account, len(accounts))
+	result := make(map[string]manifest.Account)
 
 	for i, a := range accounts {
+		if len(c.Accounts) != 0 && !slices.Contains(c.Accounts, a.Name) {
+			// skipped
+			continue
+		}
 		if a.Name == "" {
 			return nil, fmt.Errorf("failed to parse account on position %d: %w", i, errNameMissing)
 		}
@@ -130,6 +135,10 @@ func parseAccounts(c *Context, accounts []persistence.Account) (map[string]manif
 		}
 
 		result[acc.Name] = acc
+	}
+
+	if len(result) == 0 && len(c.Accounts) != 0 {
+		return nil, fmt.Errorf("required account %q was not found", c.Accounts)
 	}
 
 	return result, nil
