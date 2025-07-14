@@ -76,7 +76,7 @@ func TestTeeHandler_Handle(t *testing.T) {
 
 		testingHandler := log.NewTeeHandler(handler1, handler2)
 
-		err := testingHandler.Handle(nil, slog.Record{
+		err := testingHandler.Handle(t.Context(), slog.Record{
 			Level:   slog.LevelWarn,
 			Message: "test",
 		})
@@ -97,7 +97,7 @@ func TestTeeHandler_Handle(t *testing.T) {
 			Message: "test",
 		}
 		r.AddAttrs(slog.String("key", "value"))
-		err := testingHandler.Handle(nil, r)
+		err := testingHandler.Handle(t.Context(), r)
 		require.NoError(t, err)
 
 		assert.Contains(t, handler1.Output.String(), "level=WARN msg=test key=value")
@@ -113,7 +113,7 @@ func TestTeeHandler_WithAttrs(t *testing.T) {
 
 	testingHandler := log.NewTeeHandler(handler1, handler2).WithAttrs([]slog.Attr{slog.String("key", "value")})
 
-	err := testingHandler.Handle(nil, slog.Record{
+	err := testingHandler.Handle(t.Context(), slog.Record{
 		Level:   slog.LevelWarn,
 		Message: "test",
 	})
@@ -130,7 +130,7 @@ func TestTeeHandler_WithGroup(t *testing.T) {
 
 	testingHandler := log.NewTeeHandler(handler1, handler2).WithGroup("group1").WithAttrs([]slog.Attr{slog.String("key", "value")})
 
-	err := testingHandler.Handle(nil, slog.Record{
+	err := testingHandler.Handle(t.Context(), slog.Record{
 		Level:   slog.LevelWarn,
 		Message: "test",
 	})
