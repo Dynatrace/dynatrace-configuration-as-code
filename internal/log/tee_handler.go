@@ -59,7 +59,9 @@ func (t *TeeHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	errs := []error{}
 	for _, h := range t.handlers {
-		errs = append(errs, h.Handle(ctx, r))
+		if h.Enabled(ctx, r.Level) {
+			errs = append(errs, h.Handle(ctx, r))
+		}
 	}
 	return errors.Join(errs...)
 }
