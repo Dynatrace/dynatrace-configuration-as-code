@@ -26,10 +26,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
 type DeleteSource interface {
+	Get(ctx context.Context, bucketName string) (api.Response, error)
 	Delete(ctx context.Context, id string) (api.Response, error)
 	List(ctx context.Context) (buckets.ListResponse, error)
 }
@@ -42,33 +44,17 @@ func NewDeleter(bucketSource DeleteSource) *Deleter {
 	return &Deleter{bucketSource: bucketSource}
 }
 
+type deleteItem struct {
+	bucketName string
+	coordinate *coordinate.Coordinate // optional. Only used for logs.
+}
+
 func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) error {
 	logger := log.With(log.TypeAttr("bucket"))
-	logger.InfoContext(ctx, `Deleting %d config(s) of type "bucket"...`, len(entries))
+	deleteItems := convertDeletePointerToDeleteItem(entries)
 
-	deleteErrs := 0
-	for _, e := range entries {
-
-		logger := logger.With(log.CoordinateAttr(e.AsCoordinate()))
-
-		bucketName := e.OriginObjectId
-		if e.OriginObjectId == "" {
-			bucketName = idutils.GenerateBucketName(e.AsCoordinate())
-		}
-
-		logger.DebugContext(ctx, "Deleting bucket '%s'", bucketName)
-		_, err := d.bucketSource.Delete(ctx, bucketName)
-		if err != nil {
-			if !api.IsNotFoundError(err) {
-				logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName, err)
-				deleteErrs++
-			}
-
-		}
-	}
-
-	if deleteErrs > 0 {
-		return fmt.Errorf("failed to delete %d Grail Bucket configurations", deleteErrs)
+	if errorCount := d.delete(ctx, deleteItems, logger); errorCount > 0 {
+		return fmt.Errorf("failed to delete %d Grail bucket configurations", errorCount)
 	}
 
 	return nil
@@ -83,46 +69,99 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
 func (d Deleter) DeleteAll(ctx context.Context) error {
 	logger := log.With(log.TypeAttr("bucket"))
-	logger.InfoContext(ctx, "Collecting Grail Bucket configurations...")
+	logger.InfoContext(ctx, "Collecting Grail bucket configurations...")
 
 	response, err := d.bucketSource.List(ctx)
 	if err != nil {
-		logger.ErrorContext(ctx, "Failed to collect Grail Bucket configurations: %v", err)
+		logger.ErrorContext(ctx, "Failed to collect Grail bucket configurations: %v", err)
 		return err
 	}
 
-	logger.InfoContext(ctx, "Deleting %d objects of type %q...", len(response.All()), "bucket")
-	errCount := 0
-	for _, obj := range response.All() {
-		var bucketName struct {
-			BucketName string `json:"bucketName"`
-		}
+	deleteItems, errorCountParse := parseResponseToDeleteItem(ctx, response.All(), logger)
+	errorCountDelete := d.delete(ctx, deleteItems, logger)
+	errorCount := errorCountParse + errorCountDelete
 
-		if err := json.Unmarshal(obj, &bucketName); err != nil {
-			logger.ErrorContext(ctx, "Failed to parse bucket JSON: %v", err)
-			errCount++
-			continue
-		}
-
-		// exclude builtin bucket names, they cannot be deleted anyway
-		if buckettools.IsDefault(bucketName.BucketName) {
-			continue
-		}
-
-		_, err := d.bucketSource.Delete(ctx, bucketName.BucketName)
-		if err != nil {
-			if !api.IsNotFoundError(err) {
-				logger.ErrorContext(ctx, "Failed to delete Grail Bucket '%s': %v", bucketName.BucketName, err)
-				errCount++
-				continue
-			}
-
-		}
-	}
-
-	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d Grail Bucket configuration(s)", errCount)
+	if errorCount > 0 {
+		return fmt.Errorf("failed to delete %d Grail bucket configuration(s)", errorCount)
 	}
 
 	return nil
+}
+
+func convertDeletePointerToDeleteItem(entries []pointer.DeletePointer) []deleteItem {
+	deleteItems := make([]deleteItem, len(entries))
+	for i, e := range entries {
+		cord := e.AsCoordinate()
+		bucketName := e.OriginObjectId
+
+		if e.OriginObjectId == "" {
+			bucketName = idutils.GenerateBucketName(cord)
+		}
+
+		deleteItems[i] = deleteItem{
+			bucketName: bucketName,
+			coordinate: &cord,
+		}
+	}
+	return deleteItems
+}
+
+func parseResponseToDeleteItem(ctx context.Context, bucketResponses [][]byte, logger *log.Slogger) ([]deleteItem, int) {
+	var bucketName struct {
+		BucketName string `json:"bucketName"`
+	}
+	deleteItems := make([]deleteItem, 0)
+	errCount := 0
+
+	for _, obj := range bucketResponses {
+		if err := json.Unmarshal(obj, &bucketName); err != nil {
+			logger.ErrorContext(ctx, "Failed to parse Grail bucket JSON: %v", err)
+			errCount++
+			continue
+		}
+		deleteItems = append(deleteItems, deleteItem{
+			bucketName: bucketName.BucketName,
+		})
+	}
+	return deleteItems, errCount
+}
+
+func (d Deleter) delete(ctx context.Context, deleteItems []deleteItem, baseLogger *log.Slogger) int {
+	errorCount := 0
+	baseLogger.InfoContext(ctx, `Deleting %d config(s) of type 'bucket'...`, len(deleteItems))
+
+	for _, delItem := range deleteItems {
+		bucketName := delItem.bucketName
+		// exclude builtin bucket names, they cannot be deleted anyway
+		if buckettools.IsDefault(bucketName) {
+			continue
+		}
+
+		logger := baseLogger
+		if delItem.coordinate != nil {
+			logger = logger.With(log.CoordinateAttr(*delItem.coordinate))
+		}
+
+		logger.DebugContext(ctx, "Deleting Grail bucket '%s'", bucketName)
+		bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, d.bucketSource, bucketName, maxRetryDuration, durationBetweenRetries)
+
+		if err != nil {
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail bucket '%s': %v", bucketName, err)
+			errorCount++
+			continue
+		}
+
+		if !bucketExists {
+			// bucket already deleted
+			continue
+		}
+
+		_, err = d.bucketSource.Delete(ctx, bucketName)
+
+		if err != nil && !api.IsNotFoundError(err) {
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail bucket '%s': %v", bucketName, err)
+			errorCount++
+		}
+	}
+	return errorCount
 }
