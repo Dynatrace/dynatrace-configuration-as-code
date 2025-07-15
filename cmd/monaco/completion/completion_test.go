@@ -35,7 +35,7 @@ func TestEnvironmentByArg0(t *testing.T) {
 	assert.ElementsMatch(t, envs, []string{"env1", "env2"})
 }
 
-func TestEnvironmentByManifestFlag(t *testing.T) {
+func TestAccountsByManifestFlag(t *testing.T) {
 	manifestPath := "testdata/manifest.yaml"
 	cmd := getAccountDeployCommand(account.Command(afero.NewOsFs()).Commands())
 	require.NotNil(t, cmd)

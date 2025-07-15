@@ -117,8 +117,6 @@ environmentGroups:
               name: client-secret`
 )
 
-var environmentManifestOptions = Options{RequireEnvironmentGroups: true}
-
 func Test_parseURLDefinition(t *testing.T) {
 
 	tests := []struct {
@@ -1965,7 +1963,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				ManifestPath: "manifest.yaml",
 				Groups:       test.groups,
 				Environments: test.envs,
-				Opts:         environmentManifestOptions,
+				Opts:         Options{RequireEnvironmentGroups: true},
 			})
 
 			if len(errs) == len(test.errsContain) {
@@ -2024,7 +2022,7 @@ func TestLoadManifestWithPlatformTokenFeatureFlagDisabled(t *testing.T) {
 		mani, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
-			Opts:         environmentManifestOptions,
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 
 		assert.Equal(t, manifest.Manifest{}, mani)
@@ -2040,7 +2038,7 @@ func TestLoadManifestWithPlatformTokenFeatureFlagDisabled(t *testing.T) {
 		mani, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
-			Opts:         environmentManifestOptions,
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 
 		expectedManifest := manifest.Manifest{
@@ -2112,7 +2110,7 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 		_, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
-			Opts:         environmentManifestOptions,
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 		assert.Len(t, errs, 0)
 	})
@@ -2123,7 +2121,7 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 		_, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
-			Opts:         environmentManifestOptions,
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 		assert.Len(t, errs, 1)
 		assert.ErrorContains(t, errs[0], "failed to parse platform token")
@@ -2135,7 +2133,7 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 		mf, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
-			Opts:         environmentManifestOptions,
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 		require.Len(t, errs, 0)
 		assert.Equal(t, &manifest.AuthSecret{
@@ -2150,7 +2148,7 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 		mf, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
-			Opts:         environmentManifestOptions,
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 		require.Len(t, errs, 0)
 		assert.Equal(t, &manifest.AuthSecret{
@@ -2182,7 +2180,7 @@ func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
 	}
 
 	t.Run("Auth resolution produces error if environment variables are missing", func(t *testing.T) {
-		_, gotErr := parseAuth(&Context{Opts: environmentManifestOptions}, testAuth)
+		_, gotErr := parseAuth(&Context{Opts: Options{RequireEnvironmentGroups: true}}, testAuth)
 		assert.Error(t, gotErr)
 	})
 
@@ -2194,7 +2192,7 @@ func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
 	testAccountUUID := persistence.TypedValue{Value: "TEST_UUID", Type: persistence.TypeEnvironment}
 
 	t.Run("Account UUID resolution produces error if env var is missing", func(t *testing.T) {
-		_, gotErr := parseAccountUUID(&Context{Opts: environmentManifestOptions}, testAccountUUID)
+		_, gotErr := parseAccountUUID(&Context{Opts: Options{RequireEnvironmentGroups: true}}, testAccountUUID)
 		assert.Error(t, gotErr)
 	})
 
