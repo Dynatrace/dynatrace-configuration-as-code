@@ -20,6 +20,7 @@ package loader
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -316,6 +317,13 @@ func TestSelectedAccounts(t *testing.T) {
 
 		assert.NoError(t, err)
 		require.Len(t, parsedAccounts, 2)
+	})
+
+	t.Run("Returns an error if not account matches", func(t *testing.T) {
+		notExistingAccount := "not-existing"
+		_, err := parseAccounts(&Context{Account: notExistingAccount}, accounts)
+
+		assert.ErrorContains(t, err, fmt.Sprintf("'%s' was not found", notExistingAccount))
 	})
 }
 

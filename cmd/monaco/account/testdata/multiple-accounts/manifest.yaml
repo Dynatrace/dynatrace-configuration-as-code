@@ -1,0 +1,28 @@
+manifestVersion: 1.0
+projects:
+- name: project
+accounts:
+- name: monaco-test-account1
+  accountUUID:
+    type: environment
+    value: ACCOUNT_SECRET_1
+  apiUrl:
+    type: environment
+    value: ACCOUNT_SECRET_1
+  oAuth:
+    clientId:
+      name: ACCOUNT_SECRET_1
+    clientSecret:
+      name: ACCOUNT_SECRET_1
+- name: monaco-test-account2
+  accountUUID:
+    type: environment
+    value: ACCOUNT_SECRET_2
+  apiUrl:
+    type: environment
+    value: ACCOUNT_SECRET_2
+  oAuth:
+    clientId:
+      name: ACCOUNT_SECRET_2
+    clientSecret:
+      name: ACCOUNT_SECRET_2
