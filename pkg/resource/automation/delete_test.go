@@ -35,9 +35,9 @@ import (
 )
 
 type deleteStubClient struct {
-	called bool
-	delete func(resourceType coreautomation.ResourceType, id string) (libAPI.Response, error)
-	list   func(resourceType coreautomation.ResourceType) (libAPI.PagedListResponse, error)
+	deleteCalled bool
+	delete       func(resourceType coreautomation.ResourceType, id string) (libAPI.Response, error)
+	list         func(resourceType coreautomation.ResourceType) (libAPI.PagedListResponse, error)
 }
 
 func (s *deleteStubClient) List(_ context.Context, resourceType coreautomation.ResourceType) (libAPI.PagedListResponse, error) {
@@ -45,7 +45,7 @@ func (s *deleteStubClient) List(_ context.Context, resourceType coreautomation.R
 }
 
 func (s *deleteStubClient) Delete(_ context.Context, resourceType coreautomation.ResourceType, id string) (libAPI.Response, error) {
-	s.called = true
+	s.deleteCalled = true
 	return s.delete(resourceType, id)
 }
 
@@ -68,7 +68,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 
 		err := automation.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
-		assert.True(t, c.called, "delete command wasn't invoked")
+		assert.True(t, c.deleteCalled, "delete command wasn't invoked")
 	})
 
 	t.Run("no error if delete pointers are empty", func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 
 		err := automation.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
-		assert.True(t, c.called, "delete command wasn't invoked")
+		assert.True(t, c.deleteCalled, "delete command wasn't invoked")
 	})
 
 	t.Run("error if delete returns 500", func(t *testing.T) {
@@ -115,10 +115,10 @@ func TestDeleteByCoordinate(t *testing.T) {
 
 		err := automation.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.Error(t, err)
-		assert.True(t, c.called, "delete command wasn't invoked")
+		assert.True(t, c.deleteCalled, "delete command wasn't invoked")
 	})
 
-	t.Run("error if automation delete is called with wrong type", func(t *testing.T) {
+	t.Run("error if automation delete is deleteCalled with wrong type", func(t *testing.T) {
 		given := pointer.DeletePointer{
 			Type:       api.AlertingProfile,
 			Identifier: "monaco_identifier",
@@ -129,7 +129,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 
 		err := automation.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.Error(t, err)
-		assert.False(t, c.called, "delete command was invoked")
+		assert.False(t, c.deleteCalled, "delete command was invoked")
 	})
 }
 
@@ -150,7 +150,7 @@ func TestDeleteByObjectId(t *testing.T) {
 
 		err := automation.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
-		assert.True(t, c.called, "delete command wasn't invoked")
+		assert.True(t, c.deleteCalled, "delete command wasn't invoked")
 	})
 
 	t.Run("error if delete fails", func(t *testing.T) {
@@ -242,7 +242,7 @@ func TestDeleteAll(t *testing.T) {
 
 		err := automation.NewDeleter(&c).DeleteAll(t.Context())
 		assert.NoError(t, err)
-		assert.Equal(t, c.called, true)
+		assert.Equal(t, c.deleteCalled, true)
 	})
 
 	t.Run("deletion continues on errors with malformed json", func(t *testing.T) {
@@ -268,7 +268,7 @@ func TestDeleteAll(t *testing.T) {
 
 		err := automation.NewDeleter(&c).DeleteAll(t.Context())
 		assert.Error(t, err)
-		assert.Equal(t, c.called, true)
+		assert.Equal(t, c.deleteCalled, true)
 	})
 
 	t.Run("error if list fails", func(t *testing.T) {
@@ -307,6 +307,6 @@ func TestDeleteAll(t *testing.T) {
 
 		err := automation.NewDeleter(&c).DeleteAll(t.Context())
 		assert.Error(t, err)
-		assert.Equal(t, c.called, true)
+		assert.Equal(t, c.deleteCalled, true)
 	})
 }
