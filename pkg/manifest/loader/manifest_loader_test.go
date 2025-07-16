@@ -1402,23 +1402,6 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			},
 		},
 		{
-			name: "environmentGroups are optional",
-			manifestContent: `
-manifestVersion: 1.0
-projects: [{name: projectA}]
-`,
-			expectedManifest: manifest.Manifest{
-				Projects: map[string]manifest.ProjectDefinition{
-					"projectA": {
-						Name: "projectA",
-						Path: "projectA",
-					},
-				},
-				Accounts: map[string]manifest.Account{},
-			},
-			errsContain: []string{},
-		},
-		{
 			name: "Allow empty projects array",
 			manifestContent: `
 manifestVersion: 1.0
@@ -1980,6 +1963,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				ManifestPath: "manifest.yaml",
 				Groups:       test.groups,
 				Environments: test.envs,
+				Opts:         Options{RequireEnvironmentGroups: true},
 			})
 
 			if len(errs) == len(test.errsContain) {
@@ -1993,6 +1977,31 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			assert.Equal(t, test.expectedManifest, mani)
 		})
 	}
+}
+
+func TestLoadManifest_OptionalEnvGroups(t *testing.T) {
+	manifestContent := `manifestVersion: 1.0
+projects: [{name: projectA}]`
+	expectedManifest := manifest.Manifest{
+		Projects: map[string]manifest.ProjectDefinition{
+			"projectA": {
+				Name: "projectA",
+				Path: "projectA",
+			},
+		},
+		Accounts: make(map[string]manifest.Account),
+	}
+
+	fs := afero.NewMemMapFs()
+	assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(manifestContent), 0400))
+
+	mani, errs := Load(&Context{
+		Fs:           fs,
+		ManifestPath: "manifest.yaml",
+	})
+
+	assert.Empty(t, errs)
+	assert.Equal(t, expectedManifest, mani)
 }
 
 // TestLoadManifestWithPlatformTokenFeatureFlagDisabled tests manifest loading when platform token FF is explicitly disabled.
@@ -2013,6 +2022,7 @@ func TestLoadManifestWithPlatformTokenFeatureFlagDisabled(t *testing.T) {
 		mani, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 
 		assert.Equal(t, manifest.Manifest{}, mani)
@@ -2028,6 +2038,7 @@ func TestLoadManifestWithPlatformTokenFeatureFlagDisabled(t *testing.T) {
 		mani, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 
 		expectedManifest := manifest.Manifest{
@@ -2087,6 +2098,7 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 		_, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 		// ErrorIs does not work, because the error is not wrapped and just the error message is attached
 		assert.ErrorContains(t, errs[0], ErrPlatformCredentialConflict.Error())
@@ -2098,6 +2110,7 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 		_, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 		assert.Len(t, errs, 0)
 	})
@@ -2108,6 +2121,7 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 		_, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 		assert.Len(t, errs, 1)
 		assert.ErrorContains(t, errs[0], "failed to parse platform token")
@@ -2119,6 +2133,7 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 		mf, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 		require.Len(t, errs, 0)
 		assert.Equal(t, &manifest.AuthSecret{
@@ -2133,6 +2148,7 @@ func TestLoadManifest_WithPlatformTokenSupport(t *testing.T) {
 		mf, errs := Load(&Context{
 			Fs:           fs,
 			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true},
 		})
 		require.Len(t, errs, 0)
 		assert.Equal(t, &manifest.AuthSecret{
@@ -2164,33 +2180,54 @@ func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
 	}
 
 	t.Run("Auth resolution produces error if environment variables are missing", func(t *testing.T) {
-		_, gotErr := parseAuth(&Context{}, testAuth)
+		_, gotErr := parseAuth(&Context{Opts: Options{RequireEnvironmentGroups: true}}, testAuth)
 		assert.Error(t, gotErr)
 	})
 
 	t.Run("Auth tokens are not resolved if 'DoNotResolveEnvVars' option is set", func(t *testing.T) {
-		_, gotErr := parseAuth(&Context{Opts: Options{DoNotResolveEnvVars: true}}, testAuth)
+		_, gotErr := parseAuth(&Context{Opts: Options{DoNotResolveEnvVars: true, RequireEnvironmentGroups: true}}, testAuth)
 		assert.NoError(t, gotErr)
 	})
 
 	testAccountUUID := persistence.TypedValue{Value: "TEST_UUID", Type: persistence.TypeEnvironment}
 
 	t.Run("Account UUID resolution produces error if env var is missing", func(t *testing.T) {
-		_, gotErr := parseAccountUUID(&Context{}, testAccountUUID)
+		_, gotErr := parseAccountUUID(&Context{Opts: Options{RequireEnvironmentGroups: true}}, testAccountUUID)
 		assert.Error(t, gotErr)
 	})
 
 	t.Run("Account UUID is not resolved if 'DoNotResolveEnvVars' option is set", func(t *testing.T) {
-		_, gotErr := parseAccountUUID(&Context{Opts: Options{DoNotResolveEnvVars: true}}, testAccountUUID)
+		_, gotErr := parseAccountUUID(&Context{Opts: Options{DoNotResolveEnvVars: true, RequireEnvironmentGroups: true}}, testAccountUUID)
 		assert.NoError(t, gotErr)
 	})
 }
 
 func TestEnvironmentsAndAccountsAreOptionalUnlessDefined(t *testing.T) {
+	accountAndEnvGroupManifest := `manifestVersion: "1.0"
+accounts:
+- name: "name"
+  accountUUID: 8f9935ee-2068-455d-85ce-47447f19d5d5
+  apiUrl:
+    value: "https://[13::37]:42"
+  oAuth:
+    clientId:
+      name: A_SECRET
+    clientSecret:
+      name: A_SECRET
+projects: [{name: proj}]
+environmentGroups:
+- name: a
+  environments:
+  - name: b
+    url: {value: "https://e.url"}
+    auth: {token: {name: "E_SECRET"}}
+`
+
 	tests := []struct {
 		name                 string
 		givenManifestContent string
 		givenOptions         Options
+		envs                 []string
 		wantErr              bool
 	}{
 		{
@@ -2200,6 +2237,7 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 `,
 			Options{},
+			[]string{},
 			false,
 		},
 		{
@@ -2209,6 +2247,7 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 `,
 			Options{RequireAccounts: true},
+			[]string{},
 			true,
 		},
 		{
@@ -2218,11 +2257,51 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 `,
 			Options{RequireEnvironmentGroups: true},
+			[]string{},
 			true,
+		},
+		{
+			name:                 "account envs are validated while env group ones aren't",
+			givenManifestContent: accountAndEnvGroupManifest,
+			givenOptions:         Options{RequireAccounts: true},
+			envs:                 []string{"A_SECRET"},
+		},
+		{
+			name:                 "account envs are validated while env group ones aren't and fail",
+			givenManifestContent: accountAndEnvGroupManifest,
+			givenOptions:         Options{RequireAccounts: true},
+			wantErr:              true,
+		},
+		{
+			name:                 "env group envs are validated while account ones aren't",
+			givenManifestContent: accountAndEnvGroupManifest,
+			givenOptions:         Options{RequireEnvironmentGroups: true},
+			envs:                 []string{"E_SECRET"},
+		},
+		{
+			name:                 "env group envs are validated while account ones aren't and fail",
+			givenManifestContent: accountAndEnvGroupManifest,
+			givenOptions:         Options{RequireEnvironmentGroups: true},
+			wantErr:              true,
+		},
+		{
+			name:                 "env group envs and account are validated",
+			givenManifestContent: accountAndEnvGroupManifest,
+			givenOptions:         Options{RequireEnvironmentGroups: true, RequireAccounts: true},
+			envs:                 []string{"E_SECRET", "A_SECRET"},
+		},
+		{
+			name:                 "env group envs and account are validated and fail",
+			givenManifestContent: accountAndEnvGroupManifest,
+			givenOptions:         Options{RequireEnvironmentGroups: true, RequireAccounts: true},
+			wantErr:              true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			for _, env := range tt.envs {
+				t.Setenv(env, "given")
+			}
 			fs := afero.NewMemMapFs()
 			assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(tt.givenManifestContent), 0400))
 

@@ -1,0 +1,9 @@
+configs:
+  - id: dummy-config
+    config:
+      name: Dummy config
+      template: template.json
+    type:
+      settings:
+        schema: 'my-not-existing-schema'
+        scope: environment

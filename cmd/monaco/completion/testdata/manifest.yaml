@@ -1,0 +1,39 @@
+manifestVersion: "1.0"
+environmentGroups:
+  - name: default
+    environments:
+      - name: env1
+        url:
+          type: environment
+          value: E_SECRET_1
+        auth:
+          token:
+            name: E_SECRET_1
+  - name: default2
+    environments:
+      - name: env2
+        url:
+          type: environment
+          value: E_SECRET_2
+        auth:
+          token:
+            name: E_SECRET_2
+accounts:
+  - name: account1
+    accountUUID:
+      type: environment
+      value: A_SECRET1
+    oAuth:
+      clientId:
+        name: A_SECRET1
+      clientSecret:
+        name: A_SECRET1
+  - name: account2
+    accountUUID:
+      type: environment
+      value: A_SECRET2
+    oAuth:
+      clientId:
+        name: A_SECRET2
+      clientSecret:
+        name: A_SECRET2

@@ -65,6 +65,31 @@ func TestDryRunWithPlatformToken(t *testing.T) {
 		})
 }
 
+func TestDryRunWithEnvRequirement(t *testing.T) {
+	configFolder := "testdata/env_requirements/"
+	manifest := configFolder + "manifest.yaml"
+
+	t.Run("only environmentGroup env vars are validated", func(t *testing.T) {
+		runner.Run(t, configFolder,
+			runner.Options{
+				runner.WithManifestPath(manifest),
+				runner.WithSuffix("ENV_REQUIREMENTS_ENV_GROUP"),
+				runner.WithEnvVars(map[string]string{
+					"ENVIRONMENT_SECRET": "secret",
+				}),
+			},
+			func(fs afero.Fs, _ runner.TestContext) {
+				dryRun(t, fs, manifest, "")
+			})
+	})
+
+	t.Run("only account env vars are validated", func(t *testing.T) {
+		t.Setenv("ACCOUNT_SECRET", "11111111-1111-1111-1111-111111111111") // valid uuid
+		err := monaco.Run(t, afero.NewOsFs(), fmt.Sprintf("monaco account deploy -m %s --verbose --dry-run", manifest))
+		assert.NoError(t, err)
+	})
+}
+
 func dryRun(t *testing.T, fs afero.Fs, manifest string, environment string) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		t.Fatalf("unexpected HTTP request made during dry run: %s", req.RequestURI)

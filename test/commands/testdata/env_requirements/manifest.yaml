@@ -1,0 +1,47 @@
+manifestVersion: 1.0
+projects:
+- name: project
+environmentGroups:
+- name: default
+  environments:
+  - name: classic_env
+    url:
+      type: environment
+      value: ENVIRONMENT_SECRET
+    auth:
+      token:
+        name: ENVIRONMENT_SECRET
+  - name: platform_oauth_env
+    url:
+      type: environment
+      value: ENVIRONMENT_SECRET
+    auth:
+      token:
+        name: ENVIRONMENT_SECRET
+      oAuth:
+        clientId:
+          name: ENVIRONMENT_SECRET
+        clientSecret:
+          name: ENVIRONMENT_SECRET
+  - name: platform_token_env
+    url:
+      type: environment
+      value: ENVIRONMENT_SECRET
+    auth:
+      token:
+        name: ENVIRONMENT_SECRET
+      platformToken:
+        name: ENVIRONMENT_SECRET
+accounts:
+- name: monaco-test-account
+  accountUUID:
+    type: environment
+    value: ACCOUNT_SECRET
+  apiUrl:
+    type: environment
+    value: ACCOUNT_SECRET
+  oAuth:
+    clientId:
+      name: ACCOUNT_SECRET
+    clientSecret:
+      name: ACCOUNT_SECRET
