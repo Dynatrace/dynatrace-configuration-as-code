@@ -7,41 +7,41 @@ environmentGroups:
   - name: classic_env
     url:
       type: environment
-      value: E_SECRET
+      value: ENVIRONMENT_SECRET
     auth:
       token:
-        name: E_SECRET
+        name: ENVIRONMENT_SECRET
   - name: platform_oauth_env
     url:
       type: environment
-      value: E_SECRET
+      value: ENVIRONMENT_SECRET
     auth:
       token:
-        name: E_SECRET
+        name: ENVIRONMENT_SECRET
       oAuth:
         clientId:
-          name: E_SECRET
+          name: ENVIRONMENT_SECRET
         clientSecret:
-          name: E_SECRET
+          name: ENVIRONMENT_SECRET
   - name: platform_token_env
     url:
       type: environment
-      value: E_SECRET
+      value: ENVIRONMENT_SECRET
     auth:
       token:
-        name: E_SECRET
+        name: ENVIRONMENT_SECRET
       platformToken:
-        name: E_SECRET
+        name: ENVIRONMENT_SECRET
 accounts:
-  - name: monaco-test-account
-    accountUUID:
-      type: environment
-      value: A_SECRET
-    apiUrl:
-      type: environment
-      value: A_SECRET
-    oAuth:
-      clientId:
-        name: A_SECRET
-      clientSecret:
-        name: A_SECRET
+- name: monaco-test-account
+  accountUUID:
+    type: environment
+    value: ACCOUNT_SECRET
+  apiUrl:
+    type: environment
+    value: ACCOUNT_SECRET
+  oAuth:
+    clientId:
+      name: ACCOUNT_SECRET
+    clientSecret:
+      name: ACCOUNT_SECRET
