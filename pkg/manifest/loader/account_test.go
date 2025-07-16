@@ -300,7 +300,7 @@ func TestSelectedAccounts(t *testing.T) {
 	t.Setenv("SECRET", "secret")
 
 	t.Run("Returns selected account", func(t *testing.T) {
-		parsedAccounts, err := parseAccounts(&Context{Accounts: []string{b.Name}}, accounts)
+		parsedAccounts, err := parseAccounts(&Context{Account: b.Name}, accounts)
 		assert.NoError(t, err)
 		require.Len(t, parsedAccounts, 1)
 

@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"slices"
 
 	"github.com/google/uuid"
 
@@ -121,7 +120,7 @@ func parseAccounts(c *Context, accounts []persistence.Account) (map[string]manif
 	result := make(map[string]manifest.Account)
 
 	for i, a := range accounts {
-		if len(c.Accounts) != 0 && !slices.Contains(c.Accounts, a.Name) {
+		if c.Account != "" && c.Account != a.Name {
 			// skipped
 			continue
 		}
@@ -137,8 +136,8 @@ func parseAccounts(c *Context, accounts []persistence.Account) (map[string]manif
 		result[acc.Name] = acc
 	}
 
-	if len(result) == 0 && len(c.Accounts) != 0 {
-		return nil, fmt.Errorf("required account %q was not found", c.Accounts)
+	if len(result) == 0 && c.Account != "" {
+		return nil, fmt.Errorf("required account '%s' was not found", c.Account)
 	}
 
 	return result, nil

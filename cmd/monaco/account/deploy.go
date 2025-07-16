@@ -76,15 +76,10 @@ func deployCommand(fs afero.Fs) *cobra.Command {
 }
 
 func deploy(ctx context.Context, fs afero.Fs, opts deployOpts) error {
-	selectedAccounts := make([]string, 0)
-	if opts.accountName != "" {
-		selectedAccounts = append(selectedAccounts, opts.accountName)
-	}
-
 	mani, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: opts.manifestName,
-		Accounts:     selectedAccounts,
+		Account:      opts.accountName,
 		Opts:         manifestloader.Options{RequireAccounts: true},
 	})
 	if len(errs) > 0 {
