@@ -29,17 +29,17 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
-type source interface {
+type DeleteSource interface {
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
 	Delete(ctx context.Context, id string) (api.Response, error)
 }
 
 type Deleter struct {
-	documentSource source
+	source DeleteSource
 }
 
-func NewDeleter(documentSource source) *Deleter {
-	return &Deleter{documentSource}
+func NewDeleter(source DeleteSource) *Deleter {
+	return &Deleter{source}
 }
 
 func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error {
@@ -78,7 +78,7 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 		return nil
 	}
 
-	_, err := d.documentSource.Delete(ctx, id)
+	_, err := d.source.Delete(ctx, id)
 	if err != nil && !api.IsNotFoundError(err) {
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
@@ -88,7 +88,7 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 }
 
 func (d Deleter) tryGetDocumentIDByExternalID(ctx context.Context, externalId string) (string, error) {
-	switch listResponse, err := d.documentSource.List(ctx, fmt.Sprintf("externalId=='%s'", externalId)); {
+	switch listResponse, err := d.source.List(ctx, fmt.Sprintf("externalId=='%s'", externalId)); {
 	case err != nil:
 		return "", err
 	case len(listResponse.Responses) == 0:
@@ -105,7 +105,7 @@ func (d Deleter) tryGetDocumentIDByExternalID(ctx context.Context, externalId st
 }
 
 func (d Deleter) DeleteAll(ctx context.Context) error {
-	listResponse, err := d.documentSource.List(ctx, getFilterForAllSupportedDocumentTypes())
+	listResponse, err := d.source.List(ctx, getFilterForAllSupportedDocumentTypes())
 	if err != nil {
 		return err
 	}
