@@ -442,7 +442,7 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 		// assert log for skipped deletion
 		log, err := afero.ReadFile(fs, logFile)
 		assert.NoError(t, err)
-		assert.Contains(t, string(log), "Skipped deletion of 1 Classic configuration(s) as API client was unavailable")
+		assert.Contains(t, string(log), "Skipped deletion of 1 aws-credentials configuration(s) as API client was unavailable")
 	})
 
 	t.Run("Platform token only should not throw error but skip delete for Classic API", func(t *testing.T) {
@@ -461,7 +461,7 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 		// assert log for skipped deletion
 		log, err := afero.ReadFile(fs, logFile)
 		assert.NoError(t, err)
-		assert.Contains(t, string(log), "Skipped deletion of 1 Classic configuration(s) as API client was unavailable")
+		assert.Contains(t, string(log), "Skipped deletion of 1 aws-credentials configuration(s) as API client was unavailable")
 	})
 
 	t.Run("Token only should not throw error but skip delete for Automation API", func(t *testing.T) {
@@ -478,6 +478,6 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 		// assert log for skipped deletion
 		log, err := afero.ReadFile(fs, logFile)
 		assert.NoError(t, err)
-		assert.Contains(t, string(log), "Skipped deletion of 1 Automation configuration(s)")
+		assert.Contains(t, string(log), "Skipped deletion of 1 workflow configuration(s)")
 	})
 }
