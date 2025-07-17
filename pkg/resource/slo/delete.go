@@ -29,17 +29,17 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
-type source interface {
+type DeleteSource interface {
 	List(ctx context.Context) (api.PagedListResponse, error)
 	Delete(ctx context.Context, id string) (api.Response, error)
 }
 
 type Deleter struct {
-	sloSource source
+	source DeleteSource
 }
 
-func NewDeleter(sloSource source) *Deleter {
-	return &Deleter{sloSource}
+func NewDeleter(source DeleteSource) *Deleter {
+	return &Deleter{source}
 }
 
 func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error {
@@ -74,7 +74,7 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 		return nil
 	}
 
-	_, err := d.sloSource.Delete(ctx, id)
+	_, err := d.source.Delete(ctx, id)
 	if err != nil && !api.IsNotFoundError(err) {
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
@@ -84,7 +84,7 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 }
 
 func (d Deleter) findEntryWithExternalID(ctx context.Context, dp pointer.DeletePointer) (string, error) {
-	items, err := d.sloSource.List(ctx)
+	items, err := d.source.List(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -117,7 +117,7 @@ func (d Deleter) findEntryWithExternalID(ctx context.Context, dp pointer.DeleteP
 }
 
 func (d Deleter) DeleteAll(ctx context.Context) error {
-	items, err := d.sloSource.List(ctx)
+	items, err := d.source.List(ctx)
 	if err != nil {
 		return err
 	}
