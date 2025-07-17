@@ -134,7 +134,13 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			errs = append(errs, err)
 		}
 	}
-	return errors.Join(errs...)
+
+	retErr := errors.Join(errs...)
+	if retErr != nil {
+		log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.ServiceLevelObjective{}, retErr)
+	}
+
+	return retErr
 }
 
 type entry struct {

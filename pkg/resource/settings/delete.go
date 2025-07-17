@@ -162,7 +162,9 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	}
 
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d setting(s)", errCount)
+		returnedError := fmt.Errorf("failed to delete %d setting(s)", errCount)
+		log.ErrorContext(ctx, "Failed to delete all Settings 2.0 objects: %v", returnedError)
+		return returnedError
 	}
 
 	return nil
