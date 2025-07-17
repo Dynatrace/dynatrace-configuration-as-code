@@ -117,6 +117,11 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			retErr = errors.Join(retErr, err)
 		}
 	}
+
+	if retErr != nil {
+		log.ErrorContext(ctx, "Failed to delete all Document configurations: %v", retErr)
+	}
+
 	return retErr
 }
 
