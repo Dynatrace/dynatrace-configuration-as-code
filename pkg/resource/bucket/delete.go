@@ -37,11 +37,11 @@ type DeleteSource interface {
 }
 
 type Deleter struct {
-	bucketSource DeleteSource
+	source DeleteSource
 }
 
-func NewDeleter(bucketSource DeleteSource) *Deleter {
-	return &Deleter{bucketSource: bucketSource}
+func NewDeleter(source DeleteSource) *Deleter {
+	return &Deleter{source: source}
 }
 
 type deleteItem struct {
@@ -71,7 +71,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	logger := log.With(log.TypeAttr("bucket"))
 	logger.InfoContext(ctx, "Collecting Grail bucket configurations...")
 
-	response, err := d.bucketSource.List(ctx)
+	response, err := d.source.List(ctx)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to collect Grail bucket configurations: %v", err)
 		return err
@@ -143,7 +143,7 @@ func (d Deleter) delete(ctx context.Context, deleteItems []deleteItem, baseLogge
 		}
 
 		logger.DebugContext(ctx, "Deleting Grail bucket '%s'", bucketName)
-		bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, d.bucketSource, bucketName, maxRetryDuration, durationBetweenRetries)
+		bucketExists, err := buckets.AwaitActiveOrNotFound(ctx, d.source, bucketName, maxRetryDuration, durationBetweenRetries)
 
 		if err != nil {
 			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail bucket '%s': %v", bucketName, err)
@@ -156,7 +156,7 @@ func (d Deleter) delete(ctx context.Context, deleteItems []deleteItem, baseLogge
 			continue
 		}
 
-		_, err = d.bucketSource.Delete(ctx, bucketName)
+		_, err = d.source.Delete(ctx, bucketName)
 
 		if err != nil && !api.IsNotFoundError(err) {
 			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete Grail bucket '%s': %v", bucketName, err)
