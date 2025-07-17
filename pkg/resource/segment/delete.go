@@ -121,6 +121,11 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			retErr = errors.Join(retErr, err)
 		}
 	}
+
+	if retErr != nil {
+		log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.SegmentID, retErr)
+	}
+
 	return retErr
 }
 
