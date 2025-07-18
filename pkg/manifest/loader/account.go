@@ -116,10 +116,17 @@ func parseUUID(value string) (uuid.UUID, error) {
 
 // parseAccounts converts the persistence definition to the in-memory definition
 func parseAccounts(c *Context, accounts []persistence.Account) (map[string]manifest.Account, error) {
-
-	result := make(map[string]manifest.Account, len(accounts))
+	length := len(accounts)
+	if c.Account != "" {
+		length = 1
+	}
+	result := make(map[string]manifest.Account, length)
 
 	for i, a := range accounts {
+		if c.Account != "" && c.Account != a.Name {
+			// skipped
+			continue
+		}
 		if a.Name == "" {
 			return nil, fmt.Errorf("failed to parse account on position %d: %w", i, errNameMissing)
 		}
@@ -130,6 +137,10 @@ func parseAccounts(c *Context, accounts []persistence.Account) (map[string]manif
 		}
 
 		result[acc.Name] = acc
+	}
+
+	if len(result) == 0 && c.Account != "" {
+		return nil, fmt.Errorf("required account '%s' was not found", c.Account)
 	}
 
 	return result, nil
