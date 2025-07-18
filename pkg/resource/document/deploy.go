@@ -154,24 +154,18 @@ func createResolvedEntity(id string, coordinate coordinate.Coordinate, propertie
 	}
 }
 
-func getDocumentAttributesFromConfigType(t config.Type) (doctype string, private bool, err error) {
-	documentMapping := map[config.DocumentKind]documents.DocumentType{
-		config.DashboardKind: documents.Dashboard,
-		config.NotebookKind:  documents.Notebook,
-		config.LaunchpadKind: documents.Launchpad,
-	}
-
+func getDocumentAttributesFromConfigType(t config.Type) (docType string, private bool, err error) {
 	documentType, ok := t.(config.DocumentType)
 	if !ok {
 		return "", false, fmt.Errorf("expected document config type but found %v", t)
 	}
 
-	kind, f := documentMapping[documentType.Kind]
-	if !f {
+	docType, found := documentKindToType[documentType.Kind]
+	if !found {
 		return "", false, nil
 	}
 
-	return kind, documentType.Private, nil
+	return docType, documentType.Private, nil
 }
 
 // validateDashboardPayload returns an error if the JSON data is 1) malformed or 2) if the payload is not a Dynatrace platform dashboard payload.

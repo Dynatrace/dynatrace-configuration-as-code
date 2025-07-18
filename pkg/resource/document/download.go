@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -46,15 +46,9 @@ func NewDownloadAPI(documentSource DownloadSource) *DownloadAPI {
 
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
 	log.InfoContext(ctx, "Downloading documents")
-	// due to the current test setup, the types must be downloaded in order. This should be changed eventually
-	var typesToDownload = []documents.DocumentType{
-		documents.Dashboard,
-		documents.Notebook,
-		documents.Launchpad,
-	}
 
 	var allConfigs []config.Config
-	for _, docKind := range typesToDownload {
+	for _, docKind := range supportedDocumentTypes {
 		configs := downloadDocumentsOfType(ctx, a.documentSource, projectName, docKind)
 		allConfigs = append(allConfigs, configs...)
 	}
@@ -149,13 +143,7 @@ func createTemplateFromResponse(response documents.Response) (template.Template,
 }
 
 func validateDocumentType(documentType string) (config.DocumentType, error) {
-	var documentMapping = map[string]config.DocumentKind{
-		documents.Dashboard: config.DashboardKind,
-		documents.Notebook:  config.NotebookKind,
-		documents.Launchpad: config.LaunchpadKind,
-	}
-
-	kind, f := documentMapping[documentType]
+	kind, f := documentTypeToKind[documentType]
 	if !f {
 		return config.DocumentType{}, fmt.Errorf("unsupported document type: %s", documentType)
 	}

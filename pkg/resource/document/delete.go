@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
@@ -104,7 +105,7 @@ func (d Deleter) tryGetDocumentIDByExternalID(ctx context.Context, externalId st
 }
 
 func (d Deleter) DeleteAll(ctx context.Context) error {
-	listResponse, err := d.documentSource.List(ctx, fmt.Sprintf("type='%s' or type='%s'", documents.Dashboard, documents.Notebook))
+	listResponse, err := d.documentSource.List(ctx, getFilterForAllSupportedDocumentTypes())
 	if err != nil {
 		return err
 	}
@@ -117,4 +118,16 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 		}
 	}
 	return retErr
+}
+
+func getFilterForAllSupportedDocumentTypes() string {
+	return strings.Join(getMatchersForAllSupportedDocumentTypes(), " or ")
+}
+
+func getMatchersForAllSupportedDocumentTypes() []string {
+	matchers := make([]string, len(supportedDocumentTypes))
+	for i, t := range supportedDocumentTypes {
+		matchers[i] = fmt.Sprintf("type='%s'", t)
+	}
+	return matchers
 }
