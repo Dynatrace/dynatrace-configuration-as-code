@@ -116,8 +116,11 @@ func parseUUID(value string) (uuid.UUID, error) {
 
 // parseAccounts converts the persistence definition to the in-memory definition
 func parseAccounts(c *Context, accounts []persistence.Account) (map[string]manifest.Account, error) {
-
-	result := make(map[string]manifest.Account)
+	length := len(accounts)
+	if c.Account != "" {
+		length = 1
+	}
+	result := make(map[string]manifest.Account, length)
 
 	for i, a := range accounts {
 		if c.Account != "" && c.Account != a.Name {
