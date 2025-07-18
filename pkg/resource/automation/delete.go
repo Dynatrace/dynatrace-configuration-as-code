@@ -132,7 +132,9 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	}
 
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d Automation object(s)", errCount)
+		returnedError := fmt.Errorf("failed to delete %d Automation object(s)", errCount)
+		log.ErrorContext(ctx, "Failed to delete all Automation configurations: %v", returnedError)
+		return returnedError
 	}
 
 	return nil
