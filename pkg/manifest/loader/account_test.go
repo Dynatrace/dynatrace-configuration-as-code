@@ -20,11 +20,39 @@ package loader
 
 import (
 	"encoding/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
+	"fmt"
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/require"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
+)
+
+var (
+	// default account to permute
+	validAccount = persistence.Account{
+		Name: "name",
+		AccountUUID: persistence.TypedValue{
+			Value: uuid.New().String(),
+		},
+		ApiUrl: &persistence.TypedValue{
+			Value: "https://example.com",
+		},
+		OAuth: persistence.OAuth{
+			ClientID: persistence.AuthSecret{
+				Name: "SECRET",
+			},
+			ClientSecret: persistence.AuthSecret{
+				Name: "SECRET",
+			},
+			TokenEndpoint: &persistence.TypedValue{
+				Value: "https://example.com",
+			},
+		},
+	}
 )
 
 func TestValidAccounts(t *testing.T) {
@@ -196,28 +224,6 @@ func TestValidAccounts(t *testing.T) {
 func TestInvalidAccounts(t *testing.T) {
 	t.Setenv("SECRET", "secret")
 
-	// default account to permute
-	validAccount := persistence.Account{
-		Name: "name",
-		AccountUUID: persistence.TypedValue{
-			Value: uuid.New().String(),
-		},
-		ApiUrl: &persistence.TypedValue{
-			Value: "https://example.com",
-		},
-		OAuth: persistence.OAuth{
-			ClientID: persistence.AuthSecret{
-				Name: "SECRET",
-			},
-			ClientSecret: persistence.AuthSecret{
-				Name: "SECRET",
-			},
-			TokenEndpoint: &persistence.TypedValue{
-				Value: "https://example.com",
-			},
-		},
-	}
-
 	// validate that the default is valid
 	_, err := parseAccounts(&Context{}, []persistence.Account{validAccount})
 	assert.NoError(t, err)
@@ -281,6 +287,43 @@ func TestInvalidAccounts(t *testing.T) {
 
 		_, err := parseAccounts(&Context{}, []persistence.Account{a})
 		assert.ErrorContains(t, err, "ClientSecret: no name given or empty")
+	})
+}
+
+func TestSelectedAccounts(t *testing.T) {
+	a := deepCopy(t, validAccount)
+	a.OAuth.ClientSecret = persistence.AuthSecret{
+		Name: "SECRET_2",
+	}
+	b := deepCopy(t, validAccount)
+	b.Name = "other"
+	accounts := []persistence.Account{a, b}
+	t.Setenv("SECRET", "secret")
+
+	t.Run("Returns selected account", func(t *testing.T) {
+		parsedAccounts, err := parseAccounts(&Context{Account: b.Name}, accounts)
+		assert.NoError(t, err)
+		require.Len(t, parsedAccounts, 1)
+
+		account, ok := parsedAccounts[b.Name]
+
+		assert.True(t, ok)
+		assert.Equal(t, b.Name, account.Name)
+	})
+
+	t.Run("Returns all accounts", func(t *testing.T) {
+		t.Setenv("SECRET_2", "secret")
+		parsedAccounts, err := parseAccounts(&Context{}, accounts)
+
+		assert.NoError(t, err)
+		require.Len(t, parsedAccounts, 2)
+	})
+
+	t.Run("Returns an error if no account matches", func(t *testing.T) {
+		notExistingAccount := "not-existing"
+		_, err := parseAccounts(&Context{Account: notExistingAccount}, accounts)
+
+		assert.ErrorContains(t, err, fmt.Sprintf("'%s' was not found", notExistingAccount))
 	})
 }
 
