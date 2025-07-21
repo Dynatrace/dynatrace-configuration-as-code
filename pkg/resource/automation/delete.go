@@ -57,7 +57,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	}
 
 	if deleteErrs > 0 {
-		return fmt.Errorf("failed to delete %d Automation objects(s) of type %q", deleteErrs, automationResource)
+		return fmt.Errorf("failed to delete %d automation object(s) of type %q", deleteErrs, automationResource)
 	}
 	return nil
 }
@@ -105,22 +105,22 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 
 		t, err := automationutils.ClientResourceTypeFromConfigType(resource)
 		if err != nil {
-			logger.ErrorContext(ctx, "Failed to delete Automation objects of type '%s': %v", resource, err)
+			logger.ErrorContext(ctx, "Failed to delete automation objects of type '%s': %v", resource, err)
 			errCount++
 			continue
 		}
 
-		logger.InfoContext(ctx, "Collecting Automation objects of type %q...", resource)
+		logger.InfoContext(ctx, "Collecting automation objects of type %q...", resource)
 		resp, err := d.source.List(ctx, t)
 		if err != nil {
-			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect Automation objects of type '%s': %v", resource, err)
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect automation objects of type '%s': %v", resource, err)
 			errCount++
 			continue
 		}
 
 		objects, err := automationutils.DecodeListResponse(resp)
 		if err != nil {
-			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect Automation objects of type '%s': %v", resource, err)
+			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect automation objects of type '%s': %v", resource, err)
 			errCount++
 			continue
 		}
@@ -132,8 +132,8 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	}
 
 	if errCount > 0 {
-		returnedError := fmt.Errorf("failed to delete %d Automation object(s)", errCount)
-		log.ErrorContext(ctx, "Failed to delete all Automation configurations: %v", returnedError)
+		returnedError := fmt.Errorf("failed to delete %d automation object(s)", errCount)
+		log.ErrorContext(ctx, "Failed to delete all automation configurations: %v", returnedError)
 		return returnedError
 	}
 

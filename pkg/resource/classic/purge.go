@@ -57,7 +57,7 @@ func (d Purger) DeleteAll(ctx context.Context) error {
 	for _, a := range d.apisToPurge {
 		logger := log.With(log.TypeAttr(a.ID))
 		if a.HasParent() {
-			logger.DebugContext(ctx, "Skipping %q, will be deleted by the parent api %q", a.ID, a.Parent)
+			logger.DebugContext(ctx, "Skipping %q, will be deleted by the parent API %q", a.ID, a.Parent)
 		}
 		logger.InfoContext(ctx, "Collecting configs of type %q...", a.ID)
 		values, err := d.configSource.List(ctx, a)

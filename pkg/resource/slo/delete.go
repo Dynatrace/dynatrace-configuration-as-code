@@ -52,7 +52,7 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 		}
 	}
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d %s objects(s)", errCount, config.ServiceLevelObjectiveID)
+		return fmt.Errorf("failed to delete %d %s object(s)", errCount, config.ServiceLevelObjectiveID)
 	}
 	return nil
 }

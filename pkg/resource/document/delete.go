@@ -52,7 +52,7 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 		}
 	}
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d document objects(s)", errCount)
+		return fmt.Errorf("failed to delete %d document object(s)", errCount)
 	}
 	return nil
 }
@@ -119,7 +119,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	}
 
 	if retErr != nil {
-		log.ErrorContext(ctx, "Failed to delete all Document configurations: %v", retErr)
+		log.ErrorContext(ctx, "Failed to delete all document configurations: %v", retErr)
 	}
 
 	return retErr
