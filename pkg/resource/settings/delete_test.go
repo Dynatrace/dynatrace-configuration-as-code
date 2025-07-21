@@ -365,7 +365,7 @@ func TestDeleteByObjectId(t *testing.T) {
 		}
 
 		err := settings.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given, other, given}) // the pointer in the middle is to cause error behavior
-		assert.ErrorContains(t, err, "failed to delete 1 settings objects(s)")
+		assert.ErrorContains(t, err, "failed to delete 1 settings object(s)")
 		assert.True(t, c.deleteCalled)
 	})
 }

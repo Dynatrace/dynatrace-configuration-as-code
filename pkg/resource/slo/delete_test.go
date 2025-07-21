@@ -211,7 +211,7 @@ func TestDeleteByObjectId(t *testing.T) {
 		}
 
 		err := slo.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given, {OriginObjectId: "bla"}, given}) // the pointer in the middle is to cause error behavior
-		assert.ErrorContains(t, err, "failed to delete 1 slo-v2 objects(s)")
+		assert.ErrorContains(t, err, "failed to delete 1 slo-v2 object(s)")
 	})
 }
 

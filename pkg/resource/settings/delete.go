@@ -48,7 +48,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	schema := entries[0].Type
 
 	logger := log.With(log.TypeAttr(schema))
-	logger.InfoContext(ctx, "Deleting %d settings objects(s) of schema %q...", len(entries), schema)
+	logger.InfoContext(ctx, "Deleting %d settings object(s) of schema %q...", len(entries), schema)
 
 	deleteErrs := 0
 	for _, e := range entries {
@@ -93,7 +93,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	}
 
 	if deleteErrs > 0 {
-		return fmt.Errorf("failed to delete %d settings objects(s) of schema %q", deleteErrs, schema)
+		return fmt.Errorf("failed to delete %d settings object(s) of schema %q", deleteErrs, schema)
 	}
 
 	return nil
