@@ -319,7 +319,7 @@ func TestSelectedAccounts(t *testing.T) {
 		require.Len(t, parsedAccounts, 2)
 	})
 
-	t.Run("Returns an error if not account matches", func(t *testing.T) {
+	t.Run("Returns an error if no account matches", func(t *testing.T) {
 		notExistingAccount := "not-existing"
 		_, err := parseAccounts(&Context{Account: notExistingAccount}, accounts)
 
