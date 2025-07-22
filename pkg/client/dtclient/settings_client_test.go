@@ -2701,6 +2701,28 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 				},
 				PermissionObject: PermissionObject{},
 			},
+			{
+				name: "fails after retry on 403",
+				id:   "id",
+				responses: []testutils.ResponseDef{
+					{
+						GET: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusForbidden, ResponseBody: `{}`}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							require.Equal(t, req.URL.Query().Get("adminAccess"), "true")
+						},
+					},
+					{
+						GET: func(t *testing.T, req *http.Request) testutils.Response {
+							return testutils.Response{ResponseCode: http.StatusForbidden, ResponseBody: `{}`}
+						},
+						ValidateRequest: func(t *testing.T, req *http.Request) {
+							require.Equal(t, req.URL.Query().Get("adminAccess"), "false")
+						},
+					},
+				},
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -2714,6 +2736,40 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 				assert.Error(t, err)
 			})
 		}
+	})
+
+	t.Run("succeeds after retry on 403", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusForbidden, ResponseBody: `{}`}
+				},
+				ValidateRequest: func(t *testing.T, req *http.Request) {
+					require.Equal(t, req.URL.Query().Get("adminAccess"), "true")
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusOK, ResponseBody: `{}`}
+				},
+				ValidateRequest: func(t *testing.T, req *http.Request) {
+					require.Equal(t, req.URL.Query().Get("adminAccess"), "false")
+				},
+			},
+			{
+				PUT: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusOK}
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+		require.NoError(t, err)
+
+		err = dcl.UpsertPermission(t.Context(), "id", PermissionObject{Permissions: []TypePermissions{Read, Write}})
+		assert.NoError(t, err)
 	})
 }
 
@@ -2781,6 +2837,66 @@ func TestSettingsClient_DeletePermission(t *testing.T) {
 				assert.Error(t, err)
 			})
 		}
+	})
+
+	t.Run("fails after retry on 403", func(t *testing.T) {
+		delResponse := []testutils.ResponseDef{
+			{
+				DELETE: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusForbidden}
+				},
+				ValidateRequest: func(t *testing.T, req *http.Request) {
+					require.Equal(t, req.URL.Query().Get("adminAccess"), "true")
+				},
+			},
+			{
+				DELETE: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusForbidden}
+				},
+				ValidateRequest: func(t *testing.T, req *http.Request) {
+					require.Equal(t, req.URL.Query().Get("adminAccess"), "false")
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, delResponse)
+		defer server.Close()
+
+		dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+		assert.NoError(t, err)
+
+		err = dcl.DeletePermission(t.Context(), "id")
+		assert.Error(t, err)
+	})
+
+	t.Run("succeeds after retry on 403", func(t *testing.T) {
+		delResponse := []testutils.ResponseDef{
+			{
+				DELETE: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusForbidden}
+				},
+				ValidateRequest: func(t *testing.T, req *http.Request) {
+					require.Equal(t, req.URL.Query().Get("adminAccess"), "true")
+				},
+			},
+			{
+				DELETE: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusOK, ResponseBody: "{}"}
+				},
+				ValidateRequest: func(t *testing.T, req *http.Request) {
+					require.Equal(t, req.URL.Query().Get("adminAccess"), "false")
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, delResponse)
+		defer server.Close()
+
+		dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
+		assert.NoError(t, err)
+
+		err = dcl.DeletePermission(t.Context(), "id")
+		assert.NoError(t, err)
 	})
 }
 
