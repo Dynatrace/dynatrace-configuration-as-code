@@ -4,8 +4,6 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    reviewers:
-      - "Dynatrace/monaco-maintainers"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -13,8 +11,6 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    reviewers:
-      - "Dynatrace/monaco-maintainers"
     commit-message:
       prefix: "chore"
       include: "scope"
