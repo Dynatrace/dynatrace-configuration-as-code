@@ -125,7 +125,7 @@ jobs:
           echo "GIT_TAG=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
 
       - name: 🔍 SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@2500896589ef8f7247069a56136f8dc177c27ccf # nosemgrep false detection of commit v5.2.0
+        uses: SonarSource/sonarqube-scan-action@8c71dc039c2dd71d3821e89a2b58ecc7fee6ced9 # nosemgrep false detection of commit v5.3.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
