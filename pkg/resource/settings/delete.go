@@ -27,18 +27,18 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
-type source interface {
+type DeleteSource interface {
 	ListSchemas(ctx context.Context) (dtclient.SchemaList, error)
 	List(ctx context.Context, schema string, options dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
 	Delete(ctx context.Context, objectID string) error
 }
 
 type Deleter struct {
-	settingsSource source
+	source DeleteSource
 }
 
-func NewDeleter(settingsSource source) *Deleter {
-	return &Deleter{settingsSource}
+func NewDeleter(source DeleteSource) *Deleter {
+	return &Deleter{source}
 }
 
 func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) error {
@@ -48,7 +48,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	schema := entries[0].Type
 
 	logger := log.With(log.TypeAttr(schema))
-	logger.InfoContext(ctx, "Deleting %d settings objects(s) of schema %q...", len(entries), schema)
+	logger.InfoContext(ctx, "Deleting %d settings object(s) of schema %q...", len(entries), schema)
 
 	deleteErrs := 0
 	for _, e := range entries {
@@ -61,7 +61,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 			continue
 		}
 
-		settingsObjects, err := d.settingsSource.List(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
+		settingsObjects, err := d.source.List(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
 		if err != nil {
 			logger.ErrorContext(ctx, "Could not fetch settings object: %v", err)
 			deleteErrs++
@@ -84,7 +84,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 			}
 
 			logger.DebugContext(ctx, "Deleting settings object with objectId %q.", settingsObject.ObjectId)
-			err := d.settingsSource.Delete(ctx, settingsObject.ObjectId)
+			err := d.source.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
 				logger.ErrorContext(ctx, "Failed to delete settings object with object ID %s: %v", settingsObject.ObjectId, err)
 				deleteErrs++
@@ -93,7 +93,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	}
 
 	if deleteErrs > 0 {
-		return fmt.Errorf("failed to delete %d settings objects(s) of schema %q", deleteErrs, schema)
+		return fmt.Errorf("failed to delete %d settings object(s) of schema %q", deleteErrs, schema)
 	}
 
 	return nil
@@ -123,7 +123,7 @@ func getFilter(deletePointer pointer.DeletePointer) (dtclient.ListSettingsFilter
 func (d Deleter) DeleteAll(ctx context.Context) error {
 	errCount := 0
 
-	schemas, err := d.settingsSource.ListSchemas(ctx)
+	schemas, err := d.source.ListSchemas(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fetch settings schemas. No settings will be deleted. Reason: %w", err)
 	}
@@ -139,7 +139,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 		logger := log.With(log.TypeAttr(s))
 		logger.InfoContext(ctx, "Collecting objects of type %q...", s)
 
-		settingsObjects, err := d.settingsSource.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
+		settingsObjects, err := d.source.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
 			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect object for schema %q: %v", s, err)
 			errCount++
@@ -153,7 +153,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			}
 
 			logger.With(slog.Any("object", settingsObject)).DebugContext(ctx, "Deleting settings object with object ID '%s'...", settingsObject.ObjectId)
-			err := d.settingsSource.Delete(ctx, settingsObject.ObjectId)
+			err := d.source.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
 				logger.ErrorContext(ctx, "Failed to delete settings object with object ID '%s': %v", settingsObject.ObjectId, err)
 				errCount++
@@ -162,7 +162,9 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	}
 
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d setting(s)", errCount)
+		returnedError := fmt.Errorf("failed to delete %d setting(s)", errCount)
+		log.ErrorContext(ctx, "Failed to delete all Settings 2.0 objects: %v", returnedError)
+		return returnedError
 	}
 
 	return nil

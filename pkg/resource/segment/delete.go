@@ -29,17 +29,17 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
-type client interface {
+type DeleteSource interface {
 	List(ctx context.Context) (api.Response, error)
 	Delete(ctx context.Context, id string) (api.Response, error)
 }
 
 type Deleter struct {
-	segmentSource client
+	source DeleteSource
 }
 
-func NewDeleter(segmentSource client) *Deleter {
-	return &Deleter{segmentSource: segmentSource}
+func NewDeleter(source DeleteSource) *Deleter {
+	return &Deleter{source: source}
 }
 
 func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error {
@@ -52,7 +52,7 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 		}
 	}
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d %s objects(s)", errCount, config.SegmentID)
+		return fmt.Errorf("failed to delete %d %s object(s)", errCount, config.SegmentID)
 	}
 	return nil
 }
@@ -74,7 +74,7 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 		return nil
 	}
 
-	_, err := d.segmentSource.Delete(ctx, id)
+	_, err := d.source.Delete(ctx, id)
 	if err != nil && !api.IsNotFoundError(err) {
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
@@ -121,6 +121,11 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			retErr = errors.Join(retErr, err)
 		}
 	}
+
+	if retErr != nil {
+		log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.SegmentID, retErr)
+	}
+
 	return retErr
 }
 
@@ -130,7 +135,7 @@ type items []struct {
 }
 
 func (d Deleter) list(ctx context.Context) (items, error) {
-	listResp, err := d.segmentSource.List(ctx)
+	listResp, err := d.source.List(ctx)
 	if err != nil {
 		return nil, err
 	}

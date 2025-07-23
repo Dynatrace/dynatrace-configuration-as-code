@@ -193,7 +193,7 @@ func TestDeleteByObjectId(t *testing.T) {
 		}
 
 		err := automation.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given, other, given}) // the pointer in the middle is to cause error behavior
-		assert.ErrorContains(t, err, "failed to delete 1 Automation objects(s)")
+		assert.ErrorContains(t, err, "failed to delete 1 automation object(s)")
 	})
 }
 

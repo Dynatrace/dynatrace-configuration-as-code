@@ -46,7 +46,9 @@ type DeleteEntries = map[configurationType][]pointer.DeletePointer
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
 func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete DeleteEntries) error {
-	remainingEntriesToDelete, errCount := deleteAutomationConfigs(ctx, clients.AutClient, entriesToDelete)
+	deleters := clientSetToDeleters(clients)
+
+	remainingEntriesToDelete, errCount := deleteAutomationConfigs(ctx, deleters, entriesToDelete)
 
 	//  Dashboard share settings cannot be deleted
 	if _, ok := remainingEntriesToDelete[api.DashboardShareSettings]; ok {
@@ -56,7 +58,7 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 
 	// Delete rest of config types
 	for t, entries := range remainingEntriesToDelete {
-		if err := deleteConfig(ctx, clients, t, entries); err != nil {
+		if err := deleters.Delete(ctx, t, entries); err != nil {
 			log.With(log.ErrorAttr(err)).ErrorContext(ctx, "Error during deletion: %v", err)
 			errCount += 1
 		}
@@ -68,7 +70,7 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 	return nil
 }
 
-func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationClient, allEntries DeleteEntries) (DeleteEntries, int) {
+func deleteAutomationConfigs(ctx context.Context, deleters Deleters, allEntries DeleteEntries) (DeleteEntries, int) {
 	remainingDeleteEntries := maps.Clone(allEntries)
 	errCount := 0
 	automationTypeOrder := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
@@ -79,11 +81,7 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 			continue
 		}
 
-		if autClient == nil {
-			log.With(log.TypeAttr(key)).WarnContext(ctx, "Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), key)
-			continue
-		}
-		err := automation.NewDeleter(autClient).Delete(ctx, entries)
+		err := deleters.Delete(ctx, string(key), entries)
 		if err != nil {
 			log.With(log.ErrorAttr(err)).ErrorContext(ctx, "Error during deletion: %v", err)
 			errCount += 1
@@ -92,37 +90,70 @@ func deleteAutomationConfigs(ctx context.Context, autClient client.AutomationCli
 	return remainingDeleteEntries, errCount
 }
 
-func deleteConfig(ctx context.Context, clients client.ClientSet, t string, entries []pointer.DeletePointer) error {
-	if _, ok := api.NewAPIs()[t]; ok {
-		if clients.ConfigClient != nil {
-			return classic.NewDeleter(clients.ConfigClient).Delete(ctx, entries)
-		}
-		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Classic configuration(s) as API client was unavailable.", len(entries))
-	} else if t == string(config.BucketTypeID) {
-		if clients.BucketClient != nil {
-			return bucket.NewDeleter(clients.BucketClient).Delete(ctx, entries)
-		}
-		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
-	} else if t == string(config.DocumentTypeID) {
-		if clients.DocumentClient != nil {
-			return document.NewDeleter(clients.DocumentClient).Delete(ctx, entries)
-		}
-		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Document configuration(s) as API client was unavailable.", len(entries))
-	} else if t == string(config.SegmentID) {
-		if clients.SegmentClient != nil {
-			return segment.NewDeleter(clients.SegmentClient).Delete(ctx, entries)
-		}
-		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.SegmentID)
-	} else if t == string(config.ServiceLevelObjectiveID) {
-		if clients.ServiceLevelObjectiveClient != nil {
-			return slo.NewDeleter(clients.ServiceLevelObjectiveClient).Delete(ctx, entries)
-		}
-		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), config.ServiceLevelObjectiveID)
-	} else {
-		if clients.SettingsClient != nil {
-			return settings.NewDeleter(clients.SettingsClient).Delete(ctx, entries)
-		}
-		log.With(log.TypeAttr(t)).WarnContext(ctx, "Skipped deletion of %d Settings configuration(s) as API client was unavailable.", len(entries))
+type Deleters struct {
+	deleterForType     map[string]Deleter
+	unknownTypeDeleter Deleter
+}
+
+func (d Deleters) Delete(ctx context.Context, configType string, entries []pointer.DeletePointer) error {
+	chosenDeleter, ok := d.deleterForType[configType]
+	if !ok {
+		chosenDeleter = d.unknownTypeDeleter
 	}
-	return nil
+
+	if chosenDeleter == nil {
+		log.With(log.TypeAttr(configType)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), configType)
+		return nil
+	}
+
+	return chosenDeleter.Delete(ctx, entries)
+}
+
+func clientSetToDeleters(clients client.ClientSet) Deleters {
+	deleterForConfigType := make(map[string]Deleter)
+	var classicDeleter Deleter = nil
+	if clients.ConfigClient != nil {
+		classicDeleter = classic.NewDeleter(clients.ConfigClient)
+	}
+	for configType := range api.NewAPIs() {
+		deleterForConfigType[configType] = classicDeleter
+	}
+
+	var automationDeleter Deleter = nil
+	if clients.AutClient != nil {
+		automationDeleter = automation.NewDeleter(clients.AutClient)
+	}
+	for _, configType := range []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar} {
+		deleterForConfigType[string(configType)] = automationDeleter
+	}
+
+	deleterForConfigType[string(config.BucketTypeID)] = nil
+	if clients.BucketClient != nil {
+		deleterForConfigType[string(config.BucketTypeID)] = bucket.NewDeleter(clients.BucketClient)
+	}
+
+	deleterForConfigType[string(config.DocumentTypeID)] = nil
+	if clients.DocumentClient != nil {
+		deleterForConfigType[string(config.DocumentTypeID)] = document.NewDeleter(clients.DocumentClient)
+	}
+
+	deleterForConfigType[string(config.SegmentID)] = nil
+	if clients.SegmentClient != nil {
+		deleterForConfigType[string(config.SegmentID)] = segment.NewDeleter(clients.SegmentClient)
+	}
+
+	deleterForConfigType[string(config.ServiceLevelObjectiveID)] = nil
+	if clients.ServiceLevelObjectiveClient != nil {
+		deleterForConfigType[string(config.ServiceLevelObjectiveID)] = slo.NewDeleter(clients.ServiceLevelObjectiveClient)
+	}
+
+	var unknownTypeDeleter Deleter = nil
+	if clients.SettingsClient != nil {
+		unknownTypeDeleter = settings.NewDeleter(clients.SettingsClient)
+	}
+
+	return Deleters{
+		deleterForType:     deleterForConfigType,
+		unknownTypeDeleter: unknownTypeDeleter,
+	}
 }

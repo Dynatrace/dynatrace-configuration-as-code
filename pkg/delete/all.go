@@ -44,55 +44,54 @@ type Purger interface {
 //   - ctx (context.Context): The context in which the function operates.
 //   - clients (ClientSet): A set of API clients used to collect and delete configurations from an environment.
 func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
-	errCount := 0
-
+	purgers := make([]Purger, 0)
 	if clients.ConfigClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of classic configurations as API client was unavailable.")
-	} else if err := classic.NewPurger(clients.ConfigClient, apis).DeleteAll(ctx); err != nil {
-		log.ErrorContext(ctx, "Failed to delete all classic API configurations: %v", err)
-		errCount++
+	} else {
+		purgers = append(purgers, classic.NewPurger(clients.ConfigClient, apis))
 	}
 
 	if clients.SettingsClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of settings configurations as API client was unavailable.")
-	} else if err := settings.NewDeleter(clients.SettingsClient).DeleteAll(ctx); err != nil {
-		log.ErrorContext(ctx, "Failed to delete all Settings 2.0 objects: %v", err)
-		errCount++
+	} else {
+		purgers = append(purgers, settings.NewDeleter(clients.SettingsClient))
 	}
-
 	if clients.AutClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of Automation configurations as API client was unavailable.")
-	} else if err := automation.NewDeleter(clients.AutClient).DeleteAll(ctx); err != nil {
-		log.ErrorContext(ctx, "Failed to delete all Automation configurations: %v", err)
-		errCount++
+	} else {
+		purgers = append(purgers, automation.NewDeleter(clients.AutClient))
 	}
-
 	if clients.BucketClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of Grail Bucket configurations as API client was unavailable.")
-	} else if err := bucket.NewDeleter(clients.BucketClient).DeleteAll(ctx); err != nil {
-		log.ErrorContext(ctx, "Failed to delete all Grail Bucket configurations: %v", err)
-		errCount++
+	} else {
+		purgers = append(purgers, bucket.NewDeleter(clients.BucketClient))
 	}
-
 	if clients.DocumentClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of Documents configurations as appropriate client was unavailable.")
-	} else if err := document.NewDeleter(clients.DocumentClient).DeleteAll(ctx); err != nil {
-		log.ErrorContext(ctx, "Failed to delete all Document configurations: %v", err)
-		errCount++
+	} else {
+		purgers = append(purgers, document.NewDeleter(clients.DocumentClient))
 	}
-
 	if clients.SegmentClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
-	} else if err := segment.NewDeleter(clients.SegmentClient).DeleteAll(ctx); err != nil {
-		log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.SegmentID, err)
-		errCount++
+	} else {
+		purgers = append(purgers, segment.NewDeleter(clients.SegmentClient))
 	}
-
 	if clients.ServiceLevelObjectiveClient == nil {
 		log.WarnContext(ctx, "Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
-	} else if err := slo.NewDeleter(clients.ServiceLevelObjectiveClient).DeleteAll(ctx); err != nil {
-		log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.ServiceLevelObjective{}, err)
-		errCount++
+	} else {
+		purgers = append(purgers, slo.NewDeleter(clients.ServiceLevelObjectiveClient))
+	}
+
+	return all(ctx, purgers)
+}
+
+func all(ctx context.Context, purgers []Purger) error {
+	errCount := 0
+
+	for _, pp := range purgers {
+		if err := pp.DeleteAll(ctx); err != nil {
+			errCount++
+		}
 	}
 
 	if errCount > 0 {
