@@ -29,10 +29,8 @@ secrets = [[path        : "keptn-jenkins/monaco/integration-tests/performance",
 void build(String sourcePath) {
     String monacoBin = "${JENKINS_AGENT_WORKDIR}/monaco"
     sh(label: "build monaco",
-        script: """CGO_ENABLED=0
-                go build
-                  -a -tags=netgo -buildvcs=false
-                  -ldflags=\"-X github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version.MonitoringAsCode=2.x -w -extldflags -static\"
+        script: """
+                CGO_ENABLED=0 go build -a -tags=netgo -buildvcs=false -ldflags=\"-X github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version.MonitoringAsCode=2.x -w -extldflags -static\"
                   -o ${monacoBin}
                   ${sourcePath}/cmd/monaco
             """.replaceAll("\n", " ").replaceAll(/ +/, " "))
@@ -46,7 +44,7 @@ void purge() {
     }
 }
 
-void deploy(String project, boolean ignoreReturnStatus = true) {
+void deploy(String project, String commitHash, boolean ignoreReturnStatus = true) {
     String monacoBin = "${JENKINS_AGENT_WORKDIR}/monaco"
     String logForwarderBin = "${JENKINS_AGENT_WORKDIR}/logForwarder"
     String manifestPath = "${JENKINS_AGENT_WORKDIR}/deployment/manifest.yaml"
@@ -54,12 +52,27 @@ void deploy(String project, boolean ignoreReturnStatus = true) {
         // to provoke memory leak remove MONACO_CONCURENT_DEPLOYMENT flag. The default value is MONACO_CONCURENT_DEPLOYMENT=100
         status = sh(label: "monaco deploy",
             returnStatus: true,
-            script: "MONACO_CONCURENT_DEPLOYMENT=30 MONACO_LOG_FORMAT=json ${monacoBin} deploy ${manifestPath} --project=${project} --verbose | ${logForwarderBin} LOG_FWD_URL LOG_FWD_TOKEN ${currentBuild.number}")
+            script: "DT_TAGS=\"BUILD_NUMBER=${currentBuild.number} COMMIT_HASH=${commitHash}\" MONACO_CONCURENT_DEPLOYMENT=30 MONACO_LOG_FORMAT=json ${monacoBin} deploy ${manifestPath} --project=${project} --verbose")
         if (!ignoreReturnStatus) {
             0 == status
         }
     }
 }
+
+void installLibC6Compat() {
+    sh(label: "install libc6-compat",
+        script: """apk add --no-cache libc6-compat""")
+}
+
+String getCommitHash() {
+    return sh(label: "get commit hash",
+        script: """git rev-parse HEAD""", returnStdout:true)
+}
+
+void printCommitHash(String hash) {
+    println hash
+}
+ 
 
 void buildForwarder() {
     String logForwarderBin = "${JENKINS_AGENT_WORKDIR}/logForwarder"
