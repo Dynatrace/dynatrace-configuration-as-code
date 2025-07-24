@@ -879,7 +879,7 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 }
 
 func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (PermissionObject, error) {
-	resp, err, _ := ExecuteWithAdminAccess(func(adminAccess bool) (coreapi.Response, error) {
+	resp, err, _ := doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
 		return d.permissionClient.GetAllUsersAccessor(ctx, objectID, adminAccess)
 	})
 
@@ -910,7 +910,7 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 	}
 
 	// admin access is validated after it's validated that the object exists.
-	_, err, adminAccess := ExecuteWithAdminAccess(func(adminAccess bool) (coreapi.Response, error) {
+	_, err, adminAccess := doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
 		return d.permissionClient.GetAllUsersAccessor(ctx, objectID, adminAccess)
 	})
 
@@ -929,7 +929,7 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 		return fmt.Errorf("failed to get permission: %w", err)
 	}
 
-	_, err, _ = ExecuteWithAdminAccess(func(adminAccess bool) (coreapi.Response, error) {
+	_, err, _ = doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
 		return d.permissionClient.Create(ctx, objectID, adminAccess, payload)
 	})
 	if err != nil {
@@ -940,7 +940,7 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 }
 
 func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) error {
-	_, err, _ := ExecuteWithAdminAccess(func(adminAccess bool) (coreapi.Response, error) {
+	_, err, _ := doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
 		return d.permissionClient.DeleteAllUsersAccessor(ctx, objectID, adminAccess)
 	})
 
