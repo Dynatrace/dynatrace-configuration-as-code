@@ -879,7 +879,9 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 }
 
 func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (PermissionObject, error) {
-	resp, err := d.permissionClient.GetAllUsersAccessor(ctx, objectID)
+	resp, err, _ := doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
+		return d.permissionClient.GetAllUsersAccessor(ctx, objectID, adminAccess)
+	})
 
 	// when the API returns a 404 it means that you don't have permission (no-access), or the object does not exist
 	if coreapi.IsNotFoundError(err) {
@@ -907,11 +909,14 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 		return fmt.Errorf("failed to marshal permission: %w", err)
 	}
 
-	_, err = d.permissionClient.GetAllUsersAccessor(ctx, objectID)
+	// admin access is validated after it's validated that the object exists.
+	_, err, adminAccess := doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
+		return d.permissionClient.GetAllUsersAccessor(ctx, objectID, adminAccess)
+	})
 
 	// When there is no error the object is found and we update it.
 	if err == nil {
-		_, err = d.permissionClient.UpdateAllUsersAccessor(ctx, objectID, payload)
+		_, err = d.permissionClient.UpdateAllUsersAccessor(ctx, objectID, adminAccess, payload)
 		if err != nil {
 			return fmt.Errorf("failed to update permission: %w", err)
 		}
@@ -924,7 +929,9 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 		return fmt.Errorf("failed to get permission: %w", err)
 	}
 
-	_, err = d.permissionClient.Create(ctx, objectID, payload)
+	_, err, _ = doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
+		return d.permissionClient.Create(ctx, objectID, adminAccess, payload)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create permission: %w", err)
 	}
@@ -933,7 +940,9 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 }
 
 func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) error {
-	_, err := d.permissionClient.DeleteAllUsersAccessor(ctx, objectID)
+	_, err, _ := doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
+		return d.permissionClient.DeleteAllUsersAccessor(ctx, objectID, adminAccess)
+	})
 
 	// deployments with "none" for all-user will always try to delete. This could be an update (restricted to shared) or it stays the same (delete 404)
 	if err != nil && !coreapi.IsNotFoundError(err) {
