@@ -19,6 +19,7 @@ package dependencygraph
 import (
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -57,7 +58,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 			err := writeGraphFiles(cmd.Context(), fs, manifestName, environments, groups, outputFolder, writeJSONIDs)
 			if err != nil {
-				log.With(log.ErrorAttr(err), slog.Any("manifestFile", manifestName), slog.Any("outputFolder", outputFolder)).Error("Failed to create dependency graph files: %v", err)
+				slog.Error("Failed to create dependency graph files", log.ErrorAttr(err), slog.Any("manifestFile", manifestName), slog.Any("outputFolder", outputFolder))
 			}
 			return err
 		},
@@ -81,11 +82,13 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 	cmd.Flags().StringVar(&idEncoding, "id-encoding", "default", "Set to 'json' to generate a DOT file encoding each node's coordinate as JSON, instead of the 'default' string representation. JSON encoding can be useful when processing generated DOT files automatically.")
 
 	if err := cmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
-		log.Fatal("failed to setup CLI %v", err)
+		slog.Error("Failed to set up CLI", log.ErrorAttr(err))
+		os.Exit(1)
 	}
 
 	if err := cmd.RegisterFlagCompletionFunc("id-encoding", completion.DependencyGraphEncodingOptions); err != nil {
-		log.Fatal("failed to setup CLI %v", err)
+		slog.Error("Failed to set up CLI", log.ErrorAttr(err))
+		os.Exit(1)
 	}
 
 	cmd.MarkFlagsMutuallyExclusive("environment", "group")
