@@ -17,6 +17,7 @@ package delete
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -40,7 +41,7 @@ func Delete(ctx context.Context, environments manifest.EnvironmentDefinitionsByN
 	for _, env := range environments {
 		ctx := context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 		if containsPlatformTypes(entriesToDelete) && !env.HasPlatformCredentials() {
-			log.WarnContext(ctx, "Delete file contains Dynatrace Platform specific types, but no platform credentials are defined for environment %q - Dynatrace Platform configurations won't be deleted.", env.Name)
+			slog.WarnContext(ctx, "Delete file contains entries referencing platform configurations, but environment is missing platform credentials. These configurations won't be deleted.")
 		}
 
 		clientSet, err := client.CreateClientSet(ctx, env.URL.Value, env.Auth)
@@ -48,10 +49,10 @@ func Delete(ctx context.Context, environments manifest.EnvironmentDefinitionsByN
 			return fmt.Errorf("failed to create API client for environment %q due to the following error: %w", env.Name, err)
 		}
 
-		log.InfoContext(ctx, "Deleting configs for environment %q...", env.Name)
+		slog.InfoContext(ctx, "Deleting configs...")
 
 		if err := delete.Configs(ctx, *clientSet, entriesToDelete); err != nil {
-			log.ErrorContext(ctx, "Failed to delete all configurations from environment %q - check log for details", env.Name)
+			slog.ErrorContext(ctx, "Failed to delete all configurations from environment - check log for details")
 			envsWithDeleteErrs = append(envsWithDeleteErrs, env.Name)
 		}
 	}
