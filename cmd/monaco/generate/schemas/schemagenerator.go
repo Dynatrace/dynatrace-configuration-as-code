@@ -18,11 +18,11 @@ package schemas
 
 import (
 	"fmt"
+	"log/slog"
 	"path/filepath"
 
 	"github.com/spf13/afero"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	accountDelete "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 	account "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/writer"
@@ -73,6 +73,6 @@ func writeSchemaFile(fs afero.Fs, path string, schema []byte) error {
 		return fmt.Errorf("failed to create schema file %q: %w", path, err)
 	}
 
-	log.Info("Generated JSON schema %q", path)
+	slog.Info("Generated JSON schema", slog.String("file", path))
 	return nil
 }
