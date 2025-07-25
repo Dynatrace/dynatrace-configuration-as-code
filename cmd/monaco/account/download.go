@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/exp/maps"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
