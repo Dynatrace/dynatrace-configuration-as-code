@@ -23,7 +23,7 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal/http"

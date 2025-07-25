@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"

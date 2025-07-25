@@ -25,8 +25,8 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"

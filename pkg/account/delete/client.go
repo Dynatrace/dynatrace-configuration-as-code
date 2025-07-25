@@ -23,8 +23,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 )
 
