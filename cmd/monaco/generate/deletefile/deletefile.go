@@ -52,7 +52,7 @@ type createDeleteFileOptions struct {
 func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, options createDeleteFileOptions) error {
 	content, err := generateDeleteFileContent(apis, projects, options)
 	if err != nil {
-		log.With(log.ErrorAttr(err)).Error("Failed to generate delete file content: %v", err)
+		slog.Error("Failed to generate delete file content", log.ErrorAttr(err))
 		return err
 	}
 
@@ -87,7 +87,7 @@ func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, op
 		}
 
 		newFile := filepath.Join(folderPath, newFileName)
-		log.With(slog.Any("file", newFile), slog.Any("existingFile", options.fileName)).Debug("Output file %q already exists, creating %q instead", options.fileName, newFile)
+		slog.Debug("Output file already exists, creating a new file instead", slog.String("newFile", newFile), slog.String("existingFile", options.fileName))
 		file = newFile
 	}
 
@@ -95,14 +95,14 @@ func createDeleteFile(fs afero.Fs, projects []project.Project, apis api.APIs, op
 	if err != nil {
 		return fmt.Errorf("failed to create delete file %q: %w", file, err)
 	}
-	log.With(slog.Any("file", file)).Info("Delete file written to %q", file)
+	slog.Info("Delete file created", slog.String("file", file))
 
 	return nil
 }
 
 func generateDeleteFileContent(apis api.APIs, projects []project.Project, options createDeleteFileOptions) ([]byte, error) {
 
-	log.Info("Generating delete file...")
+	slog.Info("Generating delete file...")
 
 	var entries []persistence.DeleteEntry
 	if len(options.environmentNames) == 0 {
@@ -127,18 +127,18 @@ func generateDeleteEntries(apis api.APIs, projects []project.Project, options cr
 	exclTypesLookup := toStrLookupMap(options.excludeTypes)
 
 	for _, p := range projects {
-		log.Info("Adding delete entries for project %q...", p.Id)
+		slog.Info("Adding delete entries for project...", slog.String("project", p.Id))
 		p.ForEveryConfigDo(func(c config.Config) {
 			if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
 				if c.Coordinate.Type == string(config.OpenPipelineTypeID) {
-					log.Info("Skipped creating delete entry for %q as openpipeline configurations cannot be deleted", c.Coordinate)
+					slog.Info("Skipped creating delete entry as openpipeline configurations cannot be deleted", log.CoordinateAttr(c.Coordinate))
 				}
 				return
 			}
 
 			entry, err := createDeleteEntry(c, apis, p)
 			if err != nil {
-				log.With(log.ErrorAttr(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
+				slog.Warn("Failed to automatically create delete entry", log.CoordinateAttr(c.Coordinate), log.ErrorAttr(err))
 				return
 			}
 			entries[toMapKey(entry)] = entry
@@ -156,17 +156,17 @@ func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Proj
 
 	for _, p := range projects {
 		for _, env := range options.environmentNames {
-			log.Info("Adding delete entries for project %q and environment %q...", p.Id, env)
+			slog.Info("Adding delete entries for project and environment...", slog.String("project", p.Id), slog.Group("environment", slog.String("name", env)))
 			p.ForEveryConfigInEnvironmentDo(env, func(c config.Config) {
 				if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
 					if c.Coordinate.Type == string(config.OpenPipelineTypeID) {
-						log.Info("Skipped creating delete entry for %q as openpipeline configurations cannot be deleted", c.Coordinate)
+						slog.Info("Skipped creating delete entry as openpipeline configurations cannot be deleted", log.CoordinateAttr(c.Coordinate))
 					}
 					return
 				}
 				entry, err := createDeleteEntry(c, apis, p)
 				if err != nil {
-					log.With(log.ErrorAttr(err)).Warn("Failed to automatically create delete entry for '%s': %s", c.Coordinate, err)
+					slog.Warn("Failed to automatically create delete entry", log.CoordinateAttr(c.Coordinate), log.ErrorAttr(err))
 					return
 				}
 				entries[toMapKey(entry)] = entry
@@ -286,7 +286,7 @@ func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Projec
 
 		nameOfRefCfg, err := refCfgNamParamVal.ResolveValue(parameter.ResolveContext{})
 		if err != nil {
-			log.Warn("Unable to create delete entry for %s: %s", c.Coordinate, err)
+			slog.Warn("Unable to create delete entry for config", log.CoordinateAttr(c.Coordinate), log.ErrorAttr(err))
 			return persistence.DeleteEntry{}, err
 		}
 

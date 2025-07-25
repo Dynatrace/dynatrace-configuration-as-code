@@ -18,6 +18,8 @@ package deletefile
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/afero"
@@ -109,7 +111,8 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 		"Specify one (or multiple) environment(s) to generate delete entries for. If not defined, entries for all environments will be generated. It is generally safe and recommended to generate a full delete file for all environments, but you may sometimes want to create a file limited to a specific environment's overrides.")
 
 	if err := cmd.RegisterFlagCompletionFunc("project", completion.ProjectsFromManifest); err != nil {
-		log.Fatal("failed to setup CLI %v", err)
+		slog.Error("Failed to set up CLI", log.ErrorAttr(err))
+		os.Exit(1)
 	}
 
 	return cmd
