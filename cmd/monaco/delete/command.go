@@ -19,6 +19,8 @@ package delete
 import (
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/afero"
@@ -103,7 +105,8 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 			"If neither --groups nor --environment is present, all environments will be used for deletion")
 
 	if err := deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
-		log.Fatal("failed to setup CLI %v", err)
+		slog.Error("Failed to set up CLI", log.ErrorAttr(err))
+		os.Exit(1)
 	}
 
 	deleteCmd.MarkFlagsMutuallyExclusive("environment", "group")

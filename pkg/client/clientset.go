@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"runtime"
 
@@ -32,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -227,7 +227,7 @@ type PlatformAuth struct {
 	Token                                           string
 }
 
-func validateURL(dtURL string) error {
+func validateURL(ctx context.Context, dtURL string) error {
 	parsedUrl, err := url.ParseRequestURI(dtURL)
 	if err != nil {
 		return fmt.Errorf("environment url %q was not valid: %w", dtURL, err)
@@ -238,7 +238,7 @@ func validateURL(dtURL string) error {
 	}
 
 	if parsedUrl.Scheme != "https" {
-		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
+		slog.WarnContext(ctx, "You are using an insecure connection, consider switching to HTTPS.", slog.String("scheme", parsedUrl.Scheme))
 	}
 	return nil
 }
@@ -259,7 +259,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		serviceLevelObjectiveClient ServiceLevelObjectiveClient
 		err                         error
 	)
-	if err = validateURL(url); err != nil {
+	if err = validateURL(ctx, url); err != nil {
 		return nil, err
 	}
 
