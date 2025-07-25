@@ -19,11 +19,10 @@ package delete
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
@@ -46,38 +45,38 @@ type Purger interface {
 func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 	purgers := make([]Purger, 0)
 	if clients.ConfigClient == nil {
-		log.WarnContext(ctx, "Skipped deletion of classic configurations as API client was unavailable.")
+		slog.WarnContext(ctx, "Skipped deletion of classic configurations as API client was unavailable.")
 	} else {
 		purgers = append(purgers, classic.NewPurger(clients.ConfigClient, apis))
 	}
 
 	if clients.SettingsClient == nil {
-		log.WarnContext(ctx, "Skipped deletion of settings configurations as API client was unavailable.")
+		slog.WarnContext(ctx, "Skipped deletion of settings configurations as API client was unavailable.")
 	} else {
 		purgers = append(purgers, settings.NewDeleter(clients.SettingsClient))
 	}
 	if clients.AutClient == nil {
-		log.WarnContext(ctx, "Skipped deletion of Automation configurations as API client was unavailable.")
+		slog.WarnContext(ctx, "Skipped deletion of automation configurations as API client was unavailable.")
 	} else {
 		purgers = append(purgers, automation.NewDeleter(clients.AutClient))
 	}
 	if clients.BucketClient == nil {
-		log.WarnContext(ctx, "Skipped deletion of Grail Bucket configurations as API client was unavailable.")
+		slog.WarnContext(ctx, "Skipped deletion of Grail bucket configurations as API client was unavailable.")
 	} else {
 		purgers = append(purgers, bucket.NewDeleter(clients.BucketClient))
 	}
 	if clients.DocumentClient == nil {
-		log.WarnContext(ctx, "Skipped deletion of Documents configurations as appropriate client was unavailable.")
+		slog.WarnContext(ctx, "Skipped deletion of document configurations as API client was unavailable.")
 	} else {
 		purgers = append(purgers, document.NewDeleter(clients.DocumentClient))
 	}
 	if clients.SegmentClient == nil {
-		log.WarnContext(ctx, "Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
+		slog.WarnContext(ctx, "Skipped deletion of segment configurations as API client was unavailable.")
 	} else {
 		purgers = append(purgers, segment.NewDeleter(clients.SegmentClient))
 	}
 	if clients.ServiceLevelObjectiveClient == nil {
-		log.WarnContext(ctx, "Skipped deletion of %s configurations as appropriate client was unavailable.", config.SegmentID)
+		slog.WarnContext(ctx, "Skipped deletion of SLO-v2 configurations as API client was unavailable.")
 	} else {
 		purgers = append(purgers, slo.NewDeleter(clients.ServiceLevelObjectiveClient))
 	}

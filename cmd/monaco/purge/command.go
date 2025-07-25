@@ -18,6 +18,8 @@ package purge
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -59,10 +61,12 @@ func GetPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
 	purgeCmd.Flags().StringSliceVarP(&specificApis, "api", "a", make([]string, 0), "One or more specific APIs to delete from (flag can be repeated or value defined as comma-separated list)")
 
 	if err := purgeCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
-		log.Fatal("failed to setup CLI %v", err)
+		slog.Error("Failed to set up CLI", log.ErrorAttr(err))
+		os.Exit(1)
 	}
 	if err := purgeCmd.RegisterFlagCompletionFunc("api", completion.AllAvailableApis); err != nil {
-		log.Fatal("failed to setup CLI %v", err)
+		slog.Error("Failed to set up CLI", log.ErrorAttr(err))
+		os.Exit(1)
 	}
 
 	return purgeCmd
