@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
