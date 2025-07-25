@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 
 	"github.com/spf13/afero"
@@ -80,10 +81,10 @@ func purgeForEnvironment(ctx context.Context, env manifest.EnvironmentDefinition
 		return fmt.Errorf("failed to create a client for env `%s`: %w", env.Name, err)
 	}
 
-	log.InfoContext(ctx, "Deleting configs for environment `%s`", env.Name)
+	slog.InfoContext(ctx, "Purging configs...")
 
 	if err := delete.All(ctx, *clients, apis); err != nil {
-		log.ErrorContext(ctx, "Encountered errors while puring configurations from environment %s, further manual cleanup may be needed - check logs for details.", env.Name)
+		slog.ErrorContext(ctx, "Failed to purge all configurations, further manual cleanup may be needed - check logs for details.", log.ErrorAttr(err))
 	}
 	return nil
 }
