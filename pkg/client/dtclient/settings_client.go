@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"slices"
@@ -869,7 +870,7 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		if coreapi.IsNotFoundError(err) {
-			log.DebugContext(ctx, "No settings object with id '%s' found to delete (HTTP 404 response)", objectID)
+			slog.DebugContext(ctx, "No settings object found to delete (HTTP 404 response)", slog.String("id", objectID))
 			return nil
 		}
 		return err

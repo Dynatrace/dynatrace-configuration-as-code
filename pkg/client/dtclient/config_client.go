@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -121,7 +122,7 @@ func (d *ConfigClient) Delete(ctx context.Context, api api.API, id string) error
 	_, err = coreapi.AsResponseOrError(d.client.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
 	if err != nil {
 		if coreapi.IsNotFoundError(err) {
-			log.DebugContext(ctx, "No config with id '%s' found to delete (HTTP 404 response)", id)
+			slog.DebugContext(ctx, "No config found to delete (HTTP 404 response)", slog.String("id", id))
 			return nil
 		}
 		return err
