@@ -19,6 +19,7 @@ package delete
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -55,7 +56,7 @@ func Configs(ctx context.Context, clients client.ClientSet, entriesToDelete Dele
 	// Delete rest of config types
 	for t, entries := range remainingEntriesToDelete {
 		if err := deleters.Delete(ctx, t, entries); err != nil {
-			log.With(log.ErrorAttr(err)).ErrorContext(ctx, "Error during deletion: %v", err)
+			slog.ErrorContext(ctx, "Error during deletion", log.ErrorAttr(err))
 			errCount += 1
 		}
 	}
@@ -77,9 +78,9 @@ func removeNonDeletableClassicAPIs(ctx context.Context, remainingEntriesToDelete
 		}
 
 		if classicApi.Parent == nil {
-			log.WarnContext(ctx, "Classic config of type %s cannot be deleted.", classicApi.ID)
+			slog.WarnContext(ctx, "Classic configs of this type cannot be deleted", log.TypeAttr(classicApi.ID))
 		} else {
-			log.WarnContext(ctx, "Classic config of type %s cannot be deleted. Note, that they can be removed by deleting the associated '%s' type.", classicApi.ID, classicApi.Parent.ID)
+			slog.WarnContext(ctx, "Classic configs of this type can only be removed by deleting the associated parent type", log.TypeAttr(classicApi.ID), slog.String("parentType", classicApi.Parent.ID))
 		}
 		delete(remainingEntriesToDelete, classicApi.ID)
 	}
@@ -98,7 +99,7 @@ func deleteAutomationConfigs(ctx context.Context, deleters Deleters, allEntries 
 
 		err := deleters.Delete(ctx, string(key), entries)
 		if err != nil {
-			log.With(log.ErrorAttr(err)).ErrorContext(ctx, "Error during deletion: %v", err)
+			slog.ErrorContext(ctx, "Error during deletion", log.ErrorAttr(err))
 			errCount += 1
 		}
 	}
@@ -117,7 +118,7 @@ func (d Deleters) Delete(ctx context.Context, configType string, entries []point
 	}
 
 	if chosenDeleter == nil {
-		log.With(log.TypeAttr(configType)).WarnContext(ctx, "Skipped deletion of %d %s configuration(s) as API client was unavailable.", len(entries), configType)
+		slog.WarnContext(ctx, "Skipped deletion of configurations as API client was unavailable", log.TypeAttr(configType), slog.Int("count", len(entries)))
 		return nil
 	}
 
