@@ -19,6 +19,7 @@
 package delete_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -1073,4 +1074,17 @@ func TestDelete_SLOv2(t *testing.T) {
 	err := delete.Configs(t.Context(), client.ClientSet{ServiceLevelObjectiveClient: &c}, given)
 	// DummyClient returns unimplemented error on every execution of any method
 	assert.Error(t, err, "unimplemented")
+}
+
+// TestDelete_EmptyDeleteEntriesShouldNotLog tests that no logs are produced when no configs are requested to be deleted.
+func TestDelete_EmptyDeleteEntriesShouldNotLog(t *testing.T) {
+	logSpy := bytes.Buffer{}
+	log.PrepareLogging(t.Context(), afero.NewOsFs(), false, &logSpy, false, false)
+
+	c := client.NewMockConfigClient(gomock.NewController(t))
+	given := delete.DeleteEntries{}
+
+	err := delete.Configs(t.Context(), client.ClientSet{ConfigClient: c}, given)
+	require.NoError(t, err)
+	assert.Empty(t, logSpy.String())
 }
