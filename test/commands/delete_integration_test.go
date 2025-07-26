@@ -430,7 +430,7 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 
 	t.Run("OAuth only should not throw error but skip delete for Classic API", func(t *testing.T) {
 		// DELETE Config
-		deleteFileName := configFolder + "oauth-delete.yaml"
+		deleteFileName := configFolder + "delete-with-just-classic-aws-credentials.yaml"
 		cmdFlag := "--manifest=" + configFolder + "oauth-only-manifest.yaml --file=" + deleteFileName
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco delete %s --verbose", cmdFlag))
 		assert.NoError(t, err)
@@ -442,14 +442,14 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 		// assert log for skipped deletion
 		log, err := afero.ReadFile(fs, logFile)
 		assert.NoError(t, err)
-		assert.Contains(t, string(log), "Skipped deletion of 1 aws-credentials configuration(s) as API client was unavailable")
+		assert.Regexp(t, ".*?level=WARN.*?Skipped deletion of configurations as API client was unavailable.*?type=aws-credentials.*?count=1.*", string(log))
 	})
 
 	t.Run("Platform token only should not throw error but skip delete for Classic API", func(t *testing.T) {
 		t.Setenv(featureflags.PlatformToken.EnvName(), "true")
 
 		// DELETE Config
-		deleteFileName := configFolder + "platform-token-delete.yaml"
+		deleteFileName := configFolder + "delete-with-just-classic-aws-credentials.yaml"
 		cmdFlag := "--manifest=" + configFolder + "platform-token-only-manifest.yaml --file=" + deleteFileName
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco delete %s --verbose", cmdFlag))
 		assert.NoError(t, err)
@@ -461,12 +461,12 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 		// assert log for skipped deletion
 		log, err := afero.ReadFile(fs, logFile)
 		assert.NoError(t, err)
-		assert.Contains(t, string(log), "Skipped deletion of 1 aws-credentials configuration(s) as API client was unavailable")
+		assert.Regexp(t, ".*?level=WARN.*?Skipped deletion of configurations as API client was unavailable.*?type=aws-credentials.*?count=1.*", string(log))
 	})
 
 	t.Run("Token only should not throw error but skip delete for Automation API", func(t *testing.T) {
 		// DELETE Config
-		deleteFileName := configFolder + "token-delete.yaml"
+		deleteFileName := configFolder + "delete-with-just-platform-automation-workflow.yaml"
 		cmdFlag := "--manifest=" + configFolder + "token-only-manifest.yaml --file=" + deleteFileName
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco delete %s --verbose", cmdFlag))
 		assert.NoError(t, err)
@@ -478,6 +478,6 @@ func TestDeleteWithOAuthOrTokenOnlyManifest(t *testing.T) {
 		// assert log for skipped deletion
 		log, err := afero.ReadFile(fs, logFile)
 		assert.NoError(t, err)
-		assert.Contains(t, string(log), "Skipped deletion of 1 workflow configuration(s)")
+		assert.Regexp(t, ".*?level=WARN.*?Skipped deletion of configurations as API client was unavailable.*?type=workflow.*?count=1.*", string(log))
 	})
 }
