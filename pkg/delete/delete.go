@@ -72,6 +72,10 @@ func removeNonDeletableClassicAPIs(ctx context.Context, remainingEntriesToDelete
 			continue
 		}
 
+		if _, found := remainingEntriesToDelete[classicApi.ID]; !found {
+			continue
+		}
+
 		if classicApi.Parent == nil {
 			log.WarnContext(ctx, "Classic config of type %s cannot be deleted.", classicApi.ID)
 		} else {
