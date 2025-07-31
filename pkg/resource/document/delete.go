@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -47,7 +48,6 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 	for _, dp := range dps {
 		err := d.deleteSingle(ctx, dp)
 		if err != nil {
-			log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
 			errCount++
 		}
 	}
@@ -58,32 +58,36 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 }
 
 func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) error {
-	logger := log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate()))
-	var id string
-	if dp.OriginObjectId != "" {
-		id = dp.OriginObjectId
-	}
-	if id == "" {
-		var err error
-		extID := idutils.GenerateExternalID(dp.AsCoordinate())
+	logger := slog.With(log.TypeAttr(dp.Type), slog.String("id", dp.OriginObjectId))
+	id := dp.OriginObjectId
 
+	if id == "" {
+		coordinate := dp.AsCoordinate()
+		logger = slog.With(log.CoordinateAttr(coordinate))
+		extID := idutils.GenerateExternalID(coordinate)
+
+		var err error
 		id, err = d.tryGetDocumentIDByExternalID(ctx, extID)
 		if err != nil {
+			logger.ErrorContext(ctx, "Failed to get document by external ID", slog.String("externalId", extID), log.ErrorAttr(err))
 			return err
 		}
-	}
 
-	if id == "" {
-		logger.DebugContext(ctx, "no action needed")
-		return nil
+		if id == "" {
+			logger.DebugContext(ctx, "No document found with external ID", slog.String("externalId", extID))
+			return nil
+		}
+
+		logger = logger.With(slog.String("id", id))
 	}
 
 	_, err := d.source.Delete(ctx, id)
 	if err != nil && !api.IsNotFoundError(err) {
+		logger.ErrorContext(ctx, "Failed to delete document", log.ErrorAttr(err))
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
 
-	logger.DebugContext(ctx, "Config with ID '%s' successfully deleted", id)
+	logger.DebugContext(ctx, "Document deleted successfully")
 	return nil
 }
 
@@ -119,7 +123,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	}
 
 	if retErr != nil {
-		log.ErrorContext(ctx, "Failed to delete all document configurations: %v", retErr)
+		slog.ErrorContext(ctx, "Failed to delete all document configurations", log.ErrorAttr(retErr))
 	}
 
 	return retErr

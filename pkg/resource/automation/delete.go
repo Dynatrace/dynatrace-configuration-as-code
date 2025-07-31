@@ -19,6 +19,7 @@ package automation
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
@@ -48,8 +49,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	}
 	automationResource := entries[0].Type
 
-	logger := log.With(log.TypeAttr(automationResource))
-	logger.InfoContext(ctx, "Deleting %d config(s) of type %q...", len(entries), automationResource)
+	slog.InfoContext(ctx, "Deleting configs", log.TypeAttr(automationResource), slog.Int("count", len(entries)))
 
 	deleteErrs := 0
 	for _, e := range entries {
@@ -63,28 +63,28 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 }
 
 func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) int {
-	logger := log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate()))
-
+	var logger *slog.Logger
 	id := dp.OriginObjectId
 	if id == "" {
 		id = idutils.GenerateUUIDFromCoordinate(dp.AsCoordinate())
+		logger = slog.With(log.CoordinateAttr(dp.AsCoordinate()), slog.String("id", id))
+	} else {
+		logger = slog.With(log.TypeAttr(dp.Type), slog.String("id", id))
 	}
-
-	logger.DebugContext(ctx, "Deleting %v with id %q.", dp.Type, id)
 
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(config.AutomationResource(dp.Type))
 	if err != nil {
-		logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete %v with ID %q: %v", dp.Type, id, err)
+		logger.ErrorContext(ctx, "Failed to delete automation object", log.ErrorAttr(err))
 		return 1
 	}
 	_, err = d.source.Delete(ctx, resourceType, id)
 	if err != nil {
 		if !api.IsNotFoundError(err) {
-			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to delete %v with ID '%s': %v", dp.Type, id, err)
+			logger.ErrorContext(ctx, "Failed to delete automation object", log.ErrorAttr(err))
 			return 1
 		}
 	}
-	logger.DebugContext(ctx, "Automation object with id %q deleted", id)
+	logger.DebugContext(ctx, "Automation object deleted")
 	return 0
 }
 
@@ -101,40 +101,39 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 
 	resources := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
 	for _, resource := range resources {
-		logger := log.With(log.TypeAttr(string(resource)))
+		logger := slog.With(log.TypeAttr(string(resource)))
 
 		t, err := automationutils.ClientResourceTypeFromConfigType(resource)
 		if err != nil {
-			logger.ErrorContext(ctx, "Failed to delete automation objects of type '%s': %v", resource, err)
+			logger.ErrorContext(ctx, "Failed to delete automation objects", log.ErrorAttr(err))
 			errCount++
 			continue
 		}
 
-		logger.InfoContext(ctx, "Collecting automation objects of type %q...", resource)
+		logger.InfoContext(ctx, "Collecting automation objects...")
 		resp, err := d.source.List(ctx, t)
 		if err != nil {
-			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect automation objects of type '%s': %v", resource, err)
+			logger.ErrorContext(ctx, "Failed to collect automation objects", log.ErrorAttr(err))
 			errCount++
 			continue
 		}
 
 		objects, err := automationutils.DecodeListResponse(resp)
 		if err != nil {
-			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect automation objects of type '%s': %v", resource, err)
+			logger.ErrorContext(ctx, "Failed to collect automation objects", log.ErrorAttr(err))
 			errCount++
 			continue
 		}
 
-		logger.InfoContext(ctx, "Deleting %d objects of type %q...", len(objects), resource)
+		logger.InfoContext(ctx, "Deleting automation objects", slog.Int("count", len(objects)))
 		for _, o := range objects {
 			errCount += d.deleteSingle(ctx, pointer.DeletePointer{Type: string(resourceTypeToAutomationResource[t]), OriginObjectId: o.ID})
 		}
 	}
 
 	if errCount > 0 {
-		returnedError := fmt.Errorf("failed to delete %d automation object(s)", errCount)
-		log.ErrorContext(ctx, "Failed to delete all automation configurations: %v", returnedError)
-		return returnedError
+		slog.ErrorContext(ctx, "Failed to delete some automation objects", slog.Int("count", errCount))
+		return fmt.Errorf("failed to delete %d automation object(s)", errCount)
 	}
 
 	return nil
