@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -47,7 +48,6 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 	for _, dp := range dps {
 		err := d.deleteSingle(ctx, dp)
 		if err != nil {
-			log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate())).ErrorContext(ctx, "Failed to delete entry: %v", err)
 			errCount++
 		}
 	}
@@ -58,38 +58,44 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 }
 
 func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) error {
-	logger := log.With(log.TypeAttr(dp.Type), log.CoordinateAttr(dp.AsCoordinate()))
-
+	logger := slog.With(log.TypeAttr(dp.Type), slog.String("id", dp.OriginObjectId))
 	id := dp.OriginObjectId
+
 	if id == "" {
+		coordinate := dp.AsCoordinate()
+		logger = slog.With(log.CoordinateAttr(coordinate))
+		extID := idutils.GenerateExternalID(coordinate)
+
 		var err error
-		id, err = d.findEntryWithExternalID(ctx, dp)
+		id, err = d.findEntryWithExternalID(ctx, extID)
 		if err != nil {
+			logger.ErrorContext(ctx, "Failed to get slo-v2 by external ID", slog.String("externalId", extID), log.ErrorAttr(err))
 			return err
 		}
-	}
 
-	if id == "" {
-		logger.DebugContext(ctx, "no action needed")
-		return nil
+		if id == "" {
+			logger.DebugContext(ctx, "No slo-v2 found with external ID", slog.String("externalId", extID))
+			return nil
+		}
+
+		logger = logger.With(slog.String("id", id))
 	}
 
 	_, err := d.source.Delete(ctx, id)
 	if err != nil && !api.IsNotFoundError(err) {
+		logger.ErrorContext(ctx, "Failed to delete slo-v2", log.ErrorAttr(err))
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
 
-	logger.DebugContext(ctx, "Config with ID '%s' successfully deleted", id)
+	logger.DebugContext(ctx, "SLO-v2 deleted successfully")
 	return nil
 }
 
-func (d Deleter) findEntryWithExternalID(ctx context.Context, dp pointer.DeletePointer) (string, error) {
+func (d Deleter) findEntryWithExternalID(ctx context.Context, externalID string) (string, error) {
 	items, err := d.source.List(ctx)
 	if err != nil {
 		return "", err
 	}
-
-	extID := idutils.GenerateExternalID(dp.AsCoordinate())
 
 	var found []entry
 	for _, i := range items.All() {
@@ -97,7 +103,7 @@ func (d Deleter) findEntryWithExternalID(ctx context.Context, dp pointer.DeleteP
 		if err := json.Unmarshal(i, &e); err != nil {
 			return "", err
 		}
-		if e.ExternalID == extID {
+		if e.ExternalID == externalID {
 			found = append(found, e)
 		}
 	}
@@ -110,7 +116,7 @@ func (d Deleter) findEntryWithExternalID(ctx context.Context, dp pointer.DeleteP
 		for _, i := range found {
 			ids = append(ids, i.ID)
 		}
-		return "", fmt.Errorf("found more than one %s with same externalId (%s); matching IDs: %s", config.ServiceLevelObjectiveID, extID, ids)
+		return "", fmt.Errorf("found more than one %s with same externalId (%s); matching IDs: %s", config.ServiceLevelObjectiveID, externalID, ids)
 	default:
 		return found[0].ID, nil
 	}
@@ -137,7 +143,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 
 	retErr := errors.Join(errs...)
 	if retErr != nil {
-		log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.ServiceLevelObjective{}, retErr)
+		slog.ErrorContext(ctx, "Failed to delete all slo-v2 configurations", log.ErrorAttr(retErr))
 	}
 
 	return retErr

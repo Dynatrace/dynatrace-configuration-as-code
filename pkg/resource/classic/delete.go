@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -46,18 +47,18 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 	var err error
 
 	for _, dp := range dps {
-		logger := log.With(log.CoordinateAttr(dp.AsCoordinate()))
+		logger := slog.With(log.CoordinateAttr(dp.AsCoordinate()))
 		theAPI := api.NewAPIs()[dp.Type]
 		var parentID string
 		var e error
 		if theAPI.HasParent() {
 			parentID, e = d.resolveIdentifier(ctx, theAPI.Parent, toIdentifier(dp.Scope, "", ""))
 			if e != nil && !coreapi.IsNotFoundError(e) {
-				logger.With(log.ErrorAttr(e)).ErrorContext(ctx, "unable to resolve config ID: %v", e)
+				logger.ErrorContext(ctx, "Unable to resolve config ID", log.ErrorAttr(e))
 				err = errors.Join(err, e)
 				continue
 			} else if parentID == "" {
-				logger.DebugContext(ctx, "parent doesn't exist - no need for action")
+				logger.DebugContext(ctx, "Parent doesn't exist - no need for action")
 				continue
 			}
 		}
@@ -67,20 +68,20 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 		if id == "" {
 			id, e = d.resolveIdentifier(ctx, &a, toIdentifier(dp.Identifier, dp.ActionType, dp.Domain))
 			if e != nil && !coreapi.IsNotFoundError(e) {
-				logger.With(log.ErrorAttr(e)).ErrorContext(ctx, "unable to resolve config ID: %v", e)
+				logger.ErrorContext(ctx, "Unable to resolve config ID", log.ErrorAttr(e))
 				err = errors.Join(err, e)
 				continue
 			} else if id == "" {
-				logger.DebugContext(ctx, "config doesn't exist - no need for action")
+				logger.DebugContext(ctx, "Config doesn't exist - no need for action")
 				continue
 			}
 		}
 
 		if e := d.source.Delete(ctx, a, id); e != nil && !coreapi.IsNotFoundError(e) {
-			logger.With(log.ErrorAttr(e)).ErrorContext(ctx, "failed to delete config: %v", e)
+			logger.ErrorContext(ctx, "Failed to delete config", log.ErrorAttr(e))
 			err = errors.Join(err, e)
 		}
-		logger.DebugContext(ctx, "successfully deleted")
+		logger.DebugContext(ctx, "Config deleted successfully")
 	}
 	return err
 }

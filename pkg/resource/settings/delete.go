@@ -47,8 +47,8 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	}
 	schema := entries[0].Type
 
-	logger := log.With(log.TypeAttr(schema))
-	logger.InfoContext(ctx, "Deleting %d settings object(s) of schema %q...", len(entries), schema)
+	logger := slog.With(log.TypeAttr(schema))
+	logger.InfoContext(ctx, "Deleting settings objects...", slog.String("schema", schema), slog.Int("count", len(entries)))
 
 	deleteErrs := 0
 	for _, e := range entries {
@@ -56,37 +56,37 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 
 		filterFunc, err := getFilter(e)
 		if err != nil {
-			logger.ErrorContext(ctx, "Setting will not be deleted: %v", err)
+			logger.ErrorContext(ctx, "Setting will not be deleted", log.ErrorAttr(err))
 			deleteErrs++
 			continue
 		}
 
 		settingsObjects, err := d.source.List(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: filterFunc})
 		if err != nil {
-			logger.ErrorContext(ctx, "Could not fetch settings object: %v", err)
+			logger.ErrorContext(ctx, "Could not fetch settings object", log.ErrorAttr(err))
 			deleteErrs++
 			continue
 		}
 
 		if len(settingsObjects) == 0 {
 			if e.OriginObjectId != "" {
-				logger.DebugContext(ctx, "No settings object found to delete. Could not find object with matching object id.")
+				logger.DebugContext(ctx, "No settings object found to delete with matching object id", slog.String("objectId", e.OriginObjectId))
 				continue
 			}
-			logger.DebugContext(ctx, "No settings object found to delete. Could not find object with matching external id.")
+			logger.DebugContext(ctx, "No settings object found to delete with matching external id")
 			continue
 		}
 
 		for _, settingsObject := range settingsObjects {
 			if !settingsObject.IsDeletable() {
-				logger.With(slog.Any("object", settingsObject)).WarnContext(ctx, "Requested settings object with ID %s is not deletable.", settingsObject.ObjectId)
+				logger.WarnContext(ctx, "Requested settings object is not deletable", slog.String("id", settingsObject.ObjectId))
 				continue
 			}
 
-			logger.DebugContext(ctx, "Deleting settings object with objectId %q.", settingsObject.ObjectId)
+			logger.DebugContext(ctx, "Deleting settings object", slog.String("id", settingsObject.ObjectId))
 			err := d.source.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
-				logger.ErrorContext(ctx, "Failed to delete settings object with object ID %s: %v", settingsObject.ObjectId, err)
+				logger.ErrorContext(ctx, "Failed to delete settings object", slog.String("id", settingsObject.ObjectId), log.ErrorAttr(err))
 				deleteErrs++
 			}
 		}
@@ -136,26 +136,26 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	log.DebugContext(ctx, "Deleting settings of schemas %v...", schemaIds)
 
 	for _, s := range schemaIds {
-		logger := log.With(log.TypeAttr(s))
-		logger.InfoContext(ctx, "Collecting objects of type %q...", s)
+		logger := slog.With(log.TypeAttr(s))
+		logger.InfoContext(ctx, "Collecting objects for schema...")
 
 		settingsObjects, err := d.source.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
-			logger.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to collect object for schema %q: %v", s, err)
+			logger.ErrorContext(ctx, "Failed to collect objects for schema", log.ErrorAttr(err))
 			errCount++
 			continue
 		}
 
-		logger.InfoContext(ctx, "Deleting %d objects of type %q...", len(settingsObjects), s)
+		logger.InfoContext(ctx, "Deleting objects for schema...", slog.Int("count", len(settingsObjects)))
 		for _, settingsObject := range settingsObjects {
 			if !settingsObject.IsDeletable() {
 				continue
 			}
 
-			logger.With(slog.Any("object", settingsObject)).DebugContext(ctx, "Deleting settings object with object ID '%s'...", settingsObject.ObjectId)
+			logger.DebugContext(ctx, "Deleting settings object", slog.String("id", settingsObject.ObjectId))
 			err := d.source.Delete(ctx, settingsObject.ObjectId)
 			if err != nil {
-				logger.ErrorContext(ctx, "Failed to delete settings object with object ID '%s': %v", settingsObject.ObjectId, err)
+				logger.ErrorContext(ctx, "Failed to delete settings object", slog.String("id", settingsObject.ObjectId), log.ErrorAttr(err))
 				errCount++
 			}
 		}
@@ -163,7 +163,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 
 	if errCount > 0 {
 		returnedError := fmt.Errorf("failed to delete %d setting(s)", errCount)
-		log.ErrorContext(ctx, "Failed to delete all Settings 2.0 objects: %v", returnedError)
+		slog.ErrorContext(ctx, "Failed to delete all Settings 2.0 objects", log.ErrorAttr(returnedError))
 		return returnedError
 	}
 
