@@ -1,0 +1,24 @@
+{
+    "name": "{{ .name }}",
+    "rules": [
+        {
+            "enabled": true,
+            "valueNormalization": "Leave text as-is",
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "PROCESS_GROUP",
+                "conditions": [
+                    {
+                        "key": "PROCESS_GROUP_PREDEFINED_METADATA",
+                        "dynamicKey": "DYNATRACE_CLUSTER_ID",
+                        "operator": "BEGINS_WITH",
+                        "stringValue": "{{ .nested.multiline }}",
+                        "caseSensitive": true
+                    }
+                ],
+                "pgToHostPropagation": true,
+                "pgToServicePropagation": true
+            }
+        }
+    ]
+}

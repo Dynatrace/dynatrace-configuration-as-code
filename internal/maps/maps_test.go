@@ -20,12 +20,14 @@ package maps
 
 import (
 	"fmt"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestToStringMap(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name  string
 		input map[interface{}]interface{}
@@ -68,22 +70,24 @@ func TestToStringMap(t *testing.T) {
 				}): 52,
 			},
 		},
+		{
+			"Applies the stringify recursively",
+			map[interface{}]interface{}{
+				"property": map[interface{}]interface{}{
+					"subproperty": "value",
+				},
+			},
+			map[string]interface{}{
+				"property": map[string]interface{}{
+					"subproperty": "value",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ToStringMap(tt.input); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ToStringMap() = %v, want %v", got, tt.want)
-			}
+			result := ToStringMap(tt.input)
+			assert.Equal(t, tt.want, result)
 		})
 	}
 }
-
-// OrderInts can be used in assert.DeepEqual to order an int-slice before comparing
-var OrderInts = cmpopts.SortSlices(func(a, b int) bool {
-	return a < b
-})
-
-// OrderStrings can be used in assert.DeepEqual to order a string-slice before comparing
-var OrderStrings = cmpopts.SortSlices(func(a, b string) bool {
-	return a < b
-})
