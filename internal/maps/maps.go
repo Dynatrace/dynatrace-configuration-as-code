@@ -18,13 +18,19 @@ package maps
 
 import "fmt"
 
-// ToStringMap turns the Keys of a map[interface{}]interface{} into string keys
-// will be transformed using fmt.Sprintf
-func ToStringMap(m map[interface{}]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
+// ToStringMap turns the Keys of a map[any]any into string keys.
+// Keys will be transformed using fmt.Sprint.
+// This function works recursively, so nested maps will be converted as well.
+func ToStringMap(original map[any]any) map[string]any {
+	result := make(map[string]any)
 
-	for key, value := range m {
-		result[fmt.Sprintf("%v", key)] = value
+	for key, value := range original {
+		// recursively convert all 'map[any]any' to 'map[string]any'
+		if subMap, ok := value.(map[any]any); ok {
+			value = ToStringMap(subMap)
+		}
+
+		result[fmt.Sprint(key)] = value
 	}
 
 	return result

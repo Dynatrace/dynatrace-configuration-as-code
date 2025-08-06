@@ -1,0 +1,17 @@
+configs:
+- id: application-tagging
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: "DTServer"
+    template: "auto-tag.json"
+    parameters:
+      nested:
+        type: value
+        value:
+          multiline: |
+            I am a
+            multiline YAML
+            string

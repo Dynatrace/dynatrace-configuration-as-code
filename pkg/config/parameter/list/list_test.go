@@ -17,12 +17,14 @@
 package list
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 )
@@ -76,7 +78,7 @@ func TestParseListParameter(t *testing.T) {
 					},
 				},
 			},
-			[]value.ValueParameter{{map[interface{}]interface{}{
+			[]value.ValueParameter{{map[string]interface{}{
 				"firstName": "John",
 				"lastName":  "Dorian",
 			}}},
