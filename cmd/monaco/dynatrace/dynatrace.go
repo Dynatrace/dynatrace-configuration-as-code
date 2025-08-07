@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"strings"
 
-	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
@@ -88,7 +88,7 @@ func checkClassicConnection(ctx context.Context, classicURL string, accessToken 
 		WithCustomHeaders(additionalHeaders)
 
 	if supportarchive.IsEnabled(ctx) {
-		factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
+		factory = factory.WithHTTPListener(&rest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
 
 	client, err := factory.CreateClassicClient()
@@ -102,30 +102,9 @@ func checkClassicConnection(ctx context.Context, classicURL string, accessToken 
 
 // CreateAccountClients gives back clients to use for specific accounts
 func CreateAccountClients(ctx context.Context, manifestAccounts map[string]manifest.Account) (map[account.AccountInfo]*accounts.Client, error) {
-	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
-	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	accClients := make(map[account.AccountInfo]*accounts.Client, len(manifestAccounts))
 	for _, acc := range manifestAccounts {
-		oauthCreds := clientcredentials.Config{
-			ClientID:     acc.OAuth.ClientID.Value.Value(),
-			ClientSecret: acc.OAuth.ClientSecret.Value.Value(),
-			TokenURL:     acc.OAuth.GetTokenEndpointValue(),
-		}
-
-		factory := clients.Factory().
-			WithConcurrentRequestLimit(concurrentRequestLimit).
-			WithOAuthCredentials(oauthCreds).
-			WithUserAgent(client.DefaultMonacoUserAgent).
-			WithRateLimiter(true).
-			WithRetryOptions(&client.DefaultRetryOptions).
-			WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl)).
-			WithCustomHeaders(additionalHeaders)
-
-		if supportarchive.IsEnabled(ctx) {
-			factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
-		}
-
-		accClient, err := factory.AccountClient(ctx)
+		accClient, err := CreateAccountClient(ctx, acc)
 		if err != nil {
 			return accClients, err
 		}
@@ -136,6 +115,30 @@ func CreateAccountClients(ctx context.Context, manifestAccounts map[string]manif
 		}] = accClient
 	}
 	return accClients, nil
+}
+
+// CreateAccountClient creates a client for the given account.
+func CreateAccountClient(ctx context.Context, acc manifest.Account) (*accounts.Client, error) {
+	oauthCreds := clientcredentials.Config{
+		ClientID:     acc.OAuth.ClientID.Value.Value(),
+		ClientSecret: acc.OAuth.ClientSecret.Value.Value(),
+		TokenURL:     acc.OAuth.GetTokenEndpointValue(),
+	}
+
+	factory := clients.Factory().
+		WithConcurrentRequestLimit(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)).
+		WithOAuthCredentials(oauthCreds).
+		WithUserAgent(client.DefaultMonacoUserAgent).
+		WithRateLimiter(true).
+		WithRetryOptions(&client.DefaultRetryOptions).
+		WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl)).
+		WithCustomHeaders(environment.GetAdditionalHTTPHeadersFromEnv())
+
+	if supportarchive.IsEnabled(ctx) {
+		factory = factory.WithHTTPListener(&rest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
+	}
+
+	return factory.AccountClient(ctx)
 }
 
 // accountApiUrlOrDefault returns the API URL if available or the default.
@@ -215,7 +218,7 @@ func getDynatraceClassicURL(ctx context.Context, platformURL string, oauth *mani
 		})
 	}
 	if supportarchive.IsEnabled(ctx) {
-		factory = factory.WithHTTPListener(&corerest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
+		factory = factory.WithHTTPListener(&rest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
 	client, err := factory.CreatePlatformClient(ctx)
 	if err != nil {
