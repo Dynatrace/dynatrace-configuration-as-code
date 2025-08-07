@@ -22,17 +22,14 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
-	"golang.org/x/oauth2/clientcredentials"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 )
@@ -148,26 +145,7 @@ func deleteFromAccount(ctx context.Context, account manifest.Account, resourcesT
 }
 
 func createAccountDeleteClient(ctx context.Context, a manifest.Account) (delete.Account, error) {
-	oauthCreds := clientcredentials.Config{
-		ClientID:     a.OAuth.ClientID.Value.Value(),
-		ClientSecret: a.OAuth.ClientSecret.Value.Value(),
-		TokenURL:     a.OAuth.GetTokenEndpointValue(),
-	}
-
-	var apiUrl string
-	if a.ApiUrl == nil || a.ApiUrl.Value == "" {
-		apiUrl = "https://api.dynatrace.com"
-	} else {
-		apiUrl = a.ApiUrl.Value
-	}
-
-	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
-	c, err := clients.Factory().
-		WithAccountURL(apiUrl).
-		WithOAuthCredentials(oauthCreds).
-		WithUserAgent(client.DefaultMonacoUserAgent).
-		WithCustomHeaders(additionalHeaders).
-		AccountClient(ctx)
+	c, err := dynatrace.CreateAccountClient(ctx, a)
 	if err != nil {
 		return delete.Account{}, err
 	}
