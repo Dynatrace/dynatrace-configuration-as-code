@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 
@@ -477,4 +478,51 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		})
 		assert.Error(t, err)
 	})
+}
+func TestCreateAccountClientReturnsClient(t *testing.T) {
+	acc := manifest.Account{
+		OAuth: manifest.OAuth{
+			ClientID:     manifest.AuthSecret{Value: "id"},
+			ClientSecret: manifest.AuthSecret{Value: "secret"},
+		},
+	}
+
+	client, err := CreateAccountClient(t.Context(), acc)
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+}
+func TestCreateAccountClients_Success(t *testing.T) {
+	testUUID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+
+	acc1 := manifest.Account{
+		Name:        "account1",
+		AccountUUID: testUUID,
+		OAuth: manifest.OAuth{
+			ClientID:     manifest.AuthSecret{Value: "id1"},
+			ClientSecret: manifest.AuthSecret{Value: "secret1"},
+			TokenEndpoint: &manifest.URLDefinition{
+				Value: "https://example.com/oauth/token",
+			},
+		},
+	}
+	acc2 := manifest.Account{
+		Name:        "account2",
+		AccountUUID: testUUID,
+		OAuth: manifest.OAuth{
+			ClientID:     manifest.AuthSecret{Value: "id2"},
+			ClientSecret: manifest.AuthSecret{Value: "secret2"},
+			TokenEndpoint: &manifest.URLDefinition{
+				Value: "https://example.com/oauth/token",
+			},
+		},
+	}
+
+	accountsMap := map[string]manifest.Account{
+		"account1": acc1,
+		"account2": acc2,
+	}
+
+	clients, err := CreateAccountClients(t.Context(), accountsMap)
+	assert.NoError(t, err)
+	assert.Len(t, clients, 2)
 }
