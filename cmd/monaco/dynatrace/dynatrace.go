@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
@@ -130,7 +131,7 @@ func CreateAccountClient(ctx context.Context, acc manifest.Account) (*accounts.C
 		WithOAuthCredentials(oauthCreds).
 		WithUserAgent(client.DefaultMonacoUserAgent).
 		WithRateLimiter(true).
-		WithRetryOptions(&client.DefaultRetryOptions).
+		WithRetryOptions(&rest.RetryOptions{DelayAfterRetry: 30 * time.Second, MaxRetries: 10, ShouldRetryFunc: rest.RetryIfTooManyRequests}).
 		WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl)).
 		WithCustomHeaders(environment.GetAdditionalHTTPHeadersFromEnv())
 
