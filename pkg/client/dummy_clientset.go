@@ -148,7 +148,7 @@ func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) 
 type DummySegmentClient struct{}
 
 func (c *DummySegmentClient) List(_ context.Context) (api.Response, error) {
-	return api.Response{}, nil
+	return api.Response{Data: []byte(`[]`)}, nil
 }
 
 func (c *DummySegmentClient) GetAll(_ context.Context) ([]api.Response, error) {

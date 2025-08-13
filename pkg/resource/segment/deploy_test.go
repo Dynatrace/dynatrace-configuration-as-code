@@ -38,15 +38,15 @@ import (
 type testClient struct {
 	updateStub func() (api.Response, error)
 	createStub func() (api.Response, error)
-	getAllStub func() ([]api.Response, error)
+	listStub   func() (api.Response, error)
 }
 
 func (tc *testClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
 	return tc.updateStub()
 }
 
-func (tc *testClient) GetAll(_ context.Context) ([]api.Response, error) {
-	return tc.getAllStub()
+func (tc *testClient) List(_ context.Context) (api.Response, error) {
+	return tc.listStub()
 }
 
 func (tc *testClient) Create(_ context.Context, _ []byte) (api.Response, error) {
@@ -64,7 +64,7 @@ func TestDeploy(t *testing.T) {
 		inputConfig config.Config
 		updateStub  func() (api.Response, error)
 		createStub  func() (api.Response, error)
-		getAllStub  func() ([]api.Response, error)
+		listStub    func() (api.Response, error)
 		expected    entities.ResolvedEntity
 		expectErr   bool
 	}{
@@ -88,9 +88,9 @@ func TestDeploy(t *testing.T) {
 					StatusCode: http.StatusOK,
 				}, nil
 			},
-			getAllStub: func() ([]api.Response, error) {
+			listStub: func() (api.Response, error) {
 				t.Fatalf("should not be called")
-				return nil, nil
+				return api.Response{}, nil
 			},
 			expected: entities.ResolvedEntity{
 				Coordinate: testCoordinate,
@@ -119,9 +119,9 @@ func TestDeploy(t *testing.T) {
 			updateStub: func() (api.Response, error) {
 				return api.Response{}, fmt.Errorf("error")
 			},
-			getAllStub: func() ([]api.Response, error) {
+			listStub: func() (api.Response, error) {
 				t.Fatalf("should not be called")
-				return nil, nil
+				return api.Response{}, nil
 			},
 			expectErr: true,
 		},
@@ -151,9 +151,8 @@ func TestDeploy(t *testing.T) {
 					}, t),
 				}, nil
 			},
-			getAllStub: func() ([]api.Response, error) {
-				var response []api.Response
-				return response, nil
+			listStub: func() (api.Response, error) {
+				return api.Response{Data: []byte("[]")}, nil
 			},
 			expected: entities.ResolvedEntity{
 				Coordinate: testCoordinate,
@@ -178,30 +177,23 @@ func TestDeploy(t *testing.T) {
 					StatusCode: http.StatusOK,
 				}, nil
 			},
-			getAllStub: func() ([]api.Response, error) {
-				response := []api.Response{
-					{
-						StatusCode: http.StatusOK,
-						Data: marshal(map[string]any{
+			listStub: func() (api.Response, error) {
+				response := api.Response{
+					StatusCode: http.StatusOK,
+					Data: []byte(`[
+						{
 							"uid":         "JMhNaJ0Zbf9",
 							"name":        "no-match",
-							"description": "post - update from monaco - change - 2",
 							"isPublic":    false,
-							"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
-							"externalId":  "monaco-e2320031-d6c6-3c83-9706-b3e82b834129",
-						}, t),
-					},
-					{
-						StatusCode: http.StatusOK,
-						Data: marshal(map[string]any{
+							"externalId":  "monaco-e2320031-d6c6-3c83-9706-b3e82b834129"
+						},
+						{
 							"uid":         "should-not-be-this-id",
 							"name":        "match",
-							"description": "post - update from monaco - change - 2",
 							"isPublic":    false,
-							"owner":       "79a4c92e-379b-4cd7-96a3-78a601b6a69b",
-							"externalId":  "not-a-match",
-						}, t),
-					},
+							"externalId":  "not-a-match"
+						}
+					]`),
 				}
 				return response, nil
 			},
@@ -228,9 +220,8 @@ func TestDeploy(t *testing.T) {
 					StatusCode: http.StatusBadRequest,
 				}
 			},
-			getAllStub: func() ([]api.Response, error) {
-				var response []api.Response
-				return response, nil
+			listStub: func() (api.Response, error) {
+				return api.Response{}, nil
 			},
 			expectErr: true,
 		},
@@ -247,9 +238,8 @@ func TestDeploy(t *testing.T) {
 				t.Fatalf("should not be called")
 				return api.Response{}, nil
 			},
-			getAllStub: func() ([]api.Response, error) {
-				var response []api.Response
-				return response, api.APIError{
+			listStub: func() (api.Response, error) {
+				return api.Response{}, api.APIError{
 					StatusCode: http.StatusBadRequest,
 				}
 			},
@@ -259,7 +249,7 @@ func TestDeploy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := testClient{updateStub: tt.updateStub, getAllStub: tt.getAllStub, createStub: tt.createStub}
+			c := testClient{updateStub: tt.updateStub, listStub: tt.listStub, createStub: tt.createStub}
 
 			props, errs := tt.inputConfig.ResolveParameterValues(entities.New())
 			assert.Empty(t, errs)
