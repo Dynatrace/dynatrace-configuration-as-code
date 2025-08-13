@@ -1,5 +1,5 @@
 {
-    "name": "{{ .mzName }}",
+    "name": "{{ .name }}",
     "rules": [
         {
             "enabled": true,
@@ -40,7 +40,7 @@
                     {
                         "key": "AWS_CLASSIC_LOAD_BALANCER_TAGS",
                         "operator": "TAG_KEY_EQUALS",
-                        "tag": "[AWS]kubernetes.io/cluster/{{ .mzName }}"
+                        "tag": "[AWS]kubernetes.io/cluster/{{ .name }}"
                     }
                 ]
             }

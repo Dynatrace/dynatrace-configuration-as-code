@@ -5,8 +5,8 @@ configs:
       schema: builtin:management-zones
       scope: environment
   config:
+    name: mzone-setting
     parameters:
-      mzName: mzone-setting
       environment: environment1
       meId: HOST_GROUP-1234567890123456
     template: settings_template.json
