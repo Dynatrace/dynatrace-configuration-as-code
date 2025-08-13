@@ -1,6 +1,6 @@
 module github.com/dynatrace/dynatrace-configuration-as-code/v2
 
-go 1.24.3
+go 1.24.6
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
