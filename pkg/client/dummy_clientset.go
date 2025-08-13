@@ -162,7 +162,7 @@ func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) 
 type DummySegmentClient struct{}
 
 func (c *DummySegmentClient) List(_ context.Context) (segments.Response, error) {
-	return segments.Response{}, nil
+	return segments.Response{Data: []byte(`[]`)}, nil
 }
 
 func (c *DummySegmentClient) GetAll(_ context.Context) ([]segments.Response, error) {

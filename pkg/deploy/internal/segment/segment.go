@@ -37,7 +37,7 @@ import (
 type deploySegmentClient interface {
 	Update(ctx context.Context, id string, data []byte) (segment.Response, error)
 	Create(ctx context.Context, data []byte) (segment.Response, error)
-	GetAll(ctx context.Context) ([]segment.Response, error)
+	List(ctx context.Context) (api.Response, error)
 }
 type jsonResponse struct {
 	UID        string `json:"uid"`
@@ -106,19 +106,19 @@ func addExternalId(externalId string, renderedConfig string) ([]byte, error) {
 }
 
 func findMatchOnRemote(ctx context.Context, client deploySegmentClient, externalId string) (jsonResponse, bool, error) {
-	segmentsResponses, err := client.GetAll(ctx)
+	segmentsListResponse, err := client.List(ctx)
 	if err != nil {
 		return jsonResponse{}, false, fmt.Errorf("failed to GET segments: %w", err)
 	}
 
-	var responseData jsonResponse
-	for _, segmentResponse := range segmentsResponses {
-		responseData, err = getJsonResponseFromSegmentsResponse(segmentResponse)
-		if err != nil {
-			return jsonResponse{}, false, err
-		}
-		if responseData.ExternalId == externalId {
-			return responseData, true, nil
+	var segments []jsonResponse
+	if err = json.Unmarshal(segmentsListResponse.Data, &segments); err != nil {
+		return jsonResponse{}, false, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	for _, segment := range segments {
+		if segment.ExternalId == externalId {
+			return segment, true, nil
 		}
 	}
 
