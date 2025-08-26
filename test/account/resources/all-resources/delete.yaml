@@ -13,4 +13,4 @@ delete:
     name: My Policy 2%RAND%
     level:
       type: environment
-      environment: vkb66581
+      environment: ${ENVIRONMENT_ID_2}

@@ -20,7 +20,9 @@ package account
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"os"
 	"slices"
 	"testing"
 
@@ -49,7 +51,10 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		myLocalGroup := "My LOCAL Group%RAND%"
 		myPolicy := "My Policy%RAND%"
 		myPolicy2 := "My Policy 2%RAND%"
-		envVkb := "vkb66581"
+		env1, ok := os.LookupEnv("ENVIRONMENT_ID_1")
+		require.True(t, ok)
+		env2, ok := os.LookupEnv("ENVIRONMENT_ID_2")
+		require.True(t, ok)
 
 		check := AccountResourceChecker{
 			Client:      clients[account.AccountInfo{Name: accountName, AccountUUID: accountUUID}],
@@ -81,7 +86,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 			check.UserNotAvailable(t, accountUUID, myEmail)
 			check.ServiceUserNotAvailable(t, accountUUID, myServiceUserName)
 			check.PolicyNotAvailable(t, "account", accountUUID, myPolicy)
-			check.PolicyNotAvailable(t, "environment", envVkb, myPolicy2)
+			check.PolicyNotAvailable(t, "environment", env2, myPolicy2)
 			check.GroupNotAvailable(t, accountUUID, myGroup)
 		}()
 
@@ -94,7 +99,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.UserAvailable(t, accountUUID, myEmail)
 		check.ServiceUserAvailable(t, accountUUID, myServiceUserName)
 		check.PolicyAvailable(t, "account", accountUUID, myPolicy)
-		check.PolicyAvailable(t, "environment", envVkb, myPolicy2)
+		check.PolicyAvailable(t, "environment", env2, myPolicy2)
 		check.GroupAvailable(t, accountUUID, myGroup)
 
 		// Group created with federatedAttributeValues should be a group with SAML owner
@@ -105,9 +110,9 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		localGroup := check.GetGroupByName(t, accountUUID, myLocalGroup)
 		require.EqualValues(t, "LOCAL", localGroup.Owner)
 
-		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 2)
-		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, myPolicy2, envVkb)
-		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, "Environment role - Replay session data without masking", envVkb)
+		check.PolicyBindingsCount(t, accountUUID, "environment", env2, myGroup, 2)
+		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, myPolicy2, env2)
+		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, "Environment role - Replay session data without masking", env2)
 
 		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 2)
 		check.AccountPolicyBinding(t, accountUUID, myGroup, "Environment role - Access environment")
@@ -115,9 +120,9 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 6)
 		check.PermissionBinding(t, accountUUID, "account", accountUUID, "account-viewer", myGroup)
-		check.PermissionBinding(t, accountUUID, "tenant", envVkb, "tenant-viewer", myGroup)
-		check.PermissionBinding(t, accountUUID, "tenant", envVkb, "tenant-logviewer", myGroup)
-		check.PermissionBinding(t, accountUUID, "management-zone", "wbm16058:"+mzoneID, "tenant-viewer", myGroup)
+		check.PermissionBinding(t, accountUUID, "tenant", env2, "tenant-viewer", myGroup)
+		check.PermissionBinding(t, accountUUID, "tenant", env2, "tenant-logviewer", myGroup)
+		check.PermissionBinding(t, accountUUID, "management-zone", fmt.Sprintf("%s:%s", env1, mzoneID), "tenant-viewer", myGroup)
 
 		// REMOVE SOME BINDINGS
 		resources, err := loader.Load(o.fs, "accounts")
@@ -146,7 +151,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		require.NoError(t, err)
 
 		// CHECK BINDINGS ARE REMOVED
-		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 1)
+		check.PolicyBindingsCount(t, accountUUID, "environment", env2, myGroup, 1)
 		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 1)
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 3)
 
@@ -165,7 +170,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		err = cli.Execute()
 		require.NoError(t, err)
 
-		check.PolicyBindingsCount(t, accountUUID, "environment", envVkb, myGroup, 0)
+		check.PolicyBindingsCount(t, accountUUID, "environment", env2, myGroup, 0)
 		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 0)
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 0)
 	})

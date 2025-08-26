@@ -10,7 +10,7 @@ policies:
     id: my-policy-2
     level:
       type: environment
-      environment: vkb66581
+      environment: ${ENVIRONMENT_ID_2}
     description: Policy from deploy-download e2e test
     policy: |-
       ALLOW automation:workflows:read;

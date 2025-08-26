@@ -61,8 +61,8 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	baseFs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(afero.NewOsFs(), "resources/deploy-download"), afero.NewMemMapFs())
 
 	randomString := strconv.Itoa(rand.Int())
-	randomizeConfiguration(t, baseFs, project, randomString)
-	randomizeConfiguration(t, baseFs, "delete.yaml", randomString)
+	randomizeAndResolveConfiguration(t, baseFs, project, randomString)
+	randomizeAndResolveConfiguration(t, baseFs, "delete.yaml", randomString)
 	baseFs = afero.NewReadOnlyFs(baseFs)
 
 	defer func() {
