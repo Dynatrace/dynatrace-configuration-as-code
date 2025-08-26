@@ -1,0 +1,8 @@
+configs:
+  - id: location
+    config:
+      name: Location
+      template: request.json
+      skip: false
+    type:
+      api: synthetic-location

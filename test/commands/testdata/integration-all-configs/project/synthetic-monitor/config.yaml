@@ -11,7 +11,11 @@ configs:
         property: id
         type: reference
       host: https://www.google.com
-      location: GEOLOCATION-9999453BE4BDB3CD
+      location:
+        type: reference
+        configId: location
+        configType: synthetic-location
+        property: id
       managementZoneId:
         configType: management-zone
         configId: zone
@@ -28,7 +32,11 @@ configs:
   config:
     name: Borg Availability
     parameters:
-      location: GEOLOCATION-9999453BE4BDB3CD
+      location:
+        type: reference
+        configId: location
+        configType: synthetic-location
+        property: id
     template: browser-test.json
     skip: false
   type:
