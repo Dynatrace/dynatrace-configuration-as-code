@@ -3,4 +3,4 @@ users:
     groups:
       - type: reference
         id: my-group
-      - Log viewer
+      - Default group with all users
