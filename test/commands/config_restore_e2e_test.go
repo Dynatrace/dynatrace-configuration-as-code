@@ -98,10 +98,6 @@ func TestRestoreConfigs_FromDownloadWithPlatformTokenManifestFile(t *testing.T) 
 // As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
 // Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
-	if runner.IsHardeningEnvironment() {
-		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
-	}
-
 	initialConfigsFolder := "testdata/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
 	downloadFolder := "testdata/download"
@@ -126,10 +122,6 @@ func TestRestoreConfigs_FromDownloadWithPlatformOAuthWithCLIParameters(t *testin
 }
 
 func TestRestoreConfigs_FromDownloadWithPlatformTokenWithCLIParameters(t *testing.T) {
-	if runner.IsHardeningEnvironment() {
-		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
-	}
-
 	t.Setenv(featureflags.PlatformToken.EnvName(), "true")
 
 	initialConfigsFolder := "testdata/integration-download-configs/"
@@ -164,11 +156,6 @@ func TestRestoreConfigs_FromDownloadWithPlatformTokenManifestFile_withPlatformCo
 }
 
 func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
-
-	if runner.IsHardeningEnvironment() {
-		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
-	}
-
 	configsFolder, _ := filepath.Abs("testdata/download-with-flags")
 	configsFolderManifest := filepath.Join(configsFolder, "manifest.yaml")
 
