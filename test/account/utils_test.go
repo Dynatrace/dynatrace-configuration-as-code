@@ -19,8 +19,8 @@
 package account
 
 import (
-	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -47,7 +47,8 @@ func printCommand(c string) {
 	fmt.Printf("%s %s\n", "monaco", c)
 }
 
-func randomizeConfiguration(t *testing.T, fs afero.Fs, path string, randomStr string) {
+// randomizeAndResolveConfiguration replaces %RAND% with a random value and resolves environment variables set via ${MY_ENV}
+func randomizeAndResolveConfiguration(t *testing.T, fs afero.Fs, path string, randomStr string) {
 	ff, err := files.FindYamlFiles(fs, path)
 	require.NoError(t, err)
 	for _, f := range ff {
@@ -55,8 +56,9 @@ func randomizeConfiguration(t *testing.T, fs afero.Fs, path string, randomStr st
 		if err != nil {
 			t.Fatal(err)
 		}
-		fileContentRandomized := bytes.ReplaceAll(fileContent, []byte("%RAND%"), []byte(randomStr))
-		err = afero.WriteFile(fs, f, fileContentRandomized, 0644)
+		contentWithEnv := os.ExpandEnv(string(fileContent))
+		fileContentRandomized := strings.ReplaceAll(contentWithEnv, "%RAND%", randomStr)
+		err = afero.WriteFile(fs, f, []byte(fileContentRandomized), 0644)
 		if err != nil {
 			t.Fatal(err)
 		}
