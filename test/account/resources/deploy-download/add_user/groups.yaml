@@ -12,7 +12,7 @@ groups:
           id: my-policy
 
     environments:
-      - environment: vkb66581
+      - environment: ${ENVIRONMENT_ID_2}
         permissions:
           - tenant-viewer
           - tenant-logviewer
@@ -22,7 +22,7 @@ groups:
             id: my-policy-2
 
     managementZones:
-      - environment: wbm16058
+      - environment: ${ENVIRONMENT_ID_1}
         managementZone: Management Zone 2000
         permissions:
           - tenant-viewer

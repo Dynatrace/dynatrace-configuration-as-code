@@ -45,7 +45,7 @@ type options struct {
 
 func RunAccountTestCase(t *testing.T, path string, manifestFileName string, name string, fn func(map[account.AccountInfo]*accounts.Client, options)) {
 	fs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(afero.NewOsFs(), path), afero.NewMemMapFs())
-	randomStr := randomizeYAMLResources(t, fs, name)
+	randomStr := randomizeAndResolveYAMLResources(t, fs, name)
 	accClients := createAccountClientsFromManifest(t, fs, manifestFileName)
 
 	accountUUID, found := os.LookupEnv("ACCOUNT_UUID")
@@ -64,16 +64,17 @@ func createAccountClientsFromManifest(t *testing.T, fs afero.Fs, manifestFileNam
 	return accClients
 }
 
-// randomizeYAMLResources loops over each *.yaml file, replaces %RAND% with a random string and returns the random string
+// randomizeAndResolveYAMLResources loops over each *.yaml file, replaces %RAND% with a random string, resolves environment variables set via ${MY_ENV} and returns the random string
 // that was used
-func randomizeYAMLResources(t *testing.T, fs afero.Fs, name string) string {
+func randomizeAndResolveYAMLResources(t *testing.T, fs afero.Fs, name string) string {
 	randStr := runner.GenerateTestSuffix(t, name)
 	ff, err := files.FindYamlFiles(fs, ".")
 	require.NoError(t, err)
 	for _, file := range ff {
 		fileContent, err := afero.ReadFile(fs, file)
 		require.NoError(t, err)
-		fileContentRandomized := randomizeFn(randStr)(string(fileContent))
+		contentWithEnv := os.ExpandEnv(string(fileContent))
+		fileContentRandomized := randomizeFn(randStr)(contentWithEnv)
 		err = afero.WriteFile(fs, file, []byte(fileContentRandomized), 0644)
 		require.NoError(t, err)
 	}
