@@ -102,6 +102,7 @@ func checkClassicConnection(ctx context.Context, classicURL string, accessToken 
 }
 
 // CreateAccountClients gives back clients to use for specific accounts
+// Note: The HTTP client used behind is set/overwritten in main.go
 func CreateAccountClients(ctx context.Context, manifestAccounts map[string]manifest.Account) (map[account.AccountInfo]*accounts.Client, error) {
 	accClients := make(map[account.AccountInfo]*accounts.Client, len(manifestAccounts))
 	for _, acc := range manifestAccounts {

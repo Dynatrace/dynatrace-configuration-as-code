@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
 
@@ -34,7 +35,7 @@ func main() {
 	// furthermore it should honor the desired format, such as JSON
 	// full logging is set up in PreRunE method of the root command, created with runner.BuildCli
 	// that is the earliest point calls to log will be also written into files and adhere to user controlled verbosity
-	ctx := context.Background()
+	ctx := client.SetCustomHTTPClientInContext(context.Background())
 	log.PrepareLogging(ctx, nil, true, nil, false, false)
 
 	var versionNotification string

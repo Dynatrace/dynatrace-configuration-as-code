@@ -247,6 +247,8 @@ func CreateClientSet(ctx context.Context, url string, auth manifest.Auth) (*Clie
 	return CreateClientSetWithOptions(ctx, url, auth, ClientOptions{})
 }
 
+// CreateClientSetWithOptions creates different kinds of clients depending on the set auth.
+// Note: The HTTP client used behind is set/overwritten in main.go
 func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.Auth, opts ClientOptions) (*ClientSet, error) {
 	var (
 		configClient                ConfigClient
