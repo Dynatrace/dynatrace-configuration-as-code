@@ -59,6 +59,8 @@ const (
 
 	//LogMemStats enables/disables memory stat logging
 	LogMemStats FeatureFlag = "MONACO_LOG_MEM_STATS"
+	// SkipCertificateVerification enables skipping SSL certificate checks via the "InsecureSkipVerify" option
+	SkipCertificateVerification FeatureFlag = "MONACO_SKIP_CERTIFICATE_VERIFICATION"
 )
 
 // permanentDefaultValues defines permanent feature flags and their default values.
@@ -78,4 +80,5 @@ var permanentDefaultValues = map[FeatureFlag]defaultValue{
 	LogToFile:                              true,
 	UpdateNonUniqueByNameIfSingleOneExists: true,
 	LogMemStats:                            false,
+	SkipCertificateVerification:            false,
 }
