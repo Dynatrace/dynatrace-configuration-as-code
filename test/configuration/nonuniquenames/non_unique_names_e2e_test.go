@@ -58,7 +58,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	factory := clients.Factory().
 		WithAccessToken(token).WithClassicURL(url)
 
-	httpClient, err := factory.CreateClassicClient()
+	httpClient, err := factory.CreateClassicClientWithContext(t.Context())
 	require.NoError(t, err)
 
 	c, err := dtclient.NewClassicConfigClient(httpClient)
@@ -133,7 +133,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 	otherMonacoGeneratedUUID := uuid2.GenerateUUIDFromConfigId("test_project", "other-config_"+testSuffix)
 	secondExistingObjectUUID := getRandomUUID(t)
 
-	classicClient, err := clients.Factory().WithClassicURL(url).WithAccessToken(token).CreateClassicClient()
+	classicClient, err := clients.Factory().WithClassicURL(url).WithAccessToken(token).CreateClassicClientWithContext(t.Context())
 	require.NoError(t, err)
 
 	c, err := dtclient.NewClassicConfigClient(classicClient)

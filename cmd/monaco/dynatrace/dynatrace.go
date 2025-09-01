@@ -92,7 +92,7 @@ func checkClassicConnection(ctx context.Context, classicURL string, accessToken 
 		factory = factory.WithHTTPListener(&rest.HTTPListener{Callback: trafficlogs.GetInstance().LogToFiles})
 	}
 
-	client, err := factory.CreateClassicClient()
+	client, err := factory.CreateClassicClientWithContext(ctx)
 	if err != nil {
 		return fmt.Errorf("could not create client: %w", err)
 	}
@@ -237,7 +237,7 @@ func findSimpleClassicURL(ctx context.Context, platformURL string) (classicUrl s
 	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	classicUrl = strings.Replace(platformURL, ".apps.", ".live.", 1)
 
-	client, err := clients.Factory().WithClassicURL(classicUrl).WithCustomHeaders(additionalHeaders).CreateClassicClient()
+	client, err := clients.Factory().WithClassicURL(classicUrl).WithCustomHeaders(additionalHeaders).CreateClassicClientWithContext(ctx)
 	if err != nil {
 		return "", false
 	}

@@ -211,7 +211,7 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 
 	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(env.Auth.AccessToken.Value.Value())
 
-	classicClient, err := clientFactory.CreateClassicClient()
+	classicClient, err := clientFactory.CreateClassicClientWithContext(t.Context())
 	require.NoError(t, err)
 
 	dtClient, err := dtclient.NewClassicSettingsClient(classicClient)
