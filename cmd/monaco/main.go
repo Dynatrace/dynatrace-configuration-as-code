@@ -30,6 +30,7 @@ import (
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
 
+// change
 func main() {
 	// initial logging should be verbose even if it is too early for it to go to a file
 	// furthermore it should honor the desired format, such as JSON
