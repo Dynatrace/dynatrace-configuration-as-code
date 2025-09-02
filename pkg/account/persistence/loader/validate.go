@@ -118,6 +118,12 @@ func policyExists(a *account.Resources, id string) bool {
 }
 
 func validateFile(file types.File) error {
+	for _, b := range file.Boundaries {
+		if err := validateBoundary(b); err != nil {
+			return err
+		}
+	}
+
 	for _, p := range file.Policies {
 		if err := validatePolicy(p); err != nil {
 			return err
@@ -196,6 +202,19 @@ func validateGroup(g types.Group) error {
 		}
 	}
 
+	return nil
+}
+
+func validateBoundary(b types.Boundary) error {
+	if b.ID == "" {
+		return errors.New("missing required field 'id' for boundary")
+	}
+	if b.Name == "" {
+		return fmt.Errorf("missing required field 'name' for boundary %q", b.ID)
+	}
+	if b.Query == "" {
+		return fmt.Errorf("missing required field 'query' for boundary %q", b.ID)
+	}
 	return nil
 }
 

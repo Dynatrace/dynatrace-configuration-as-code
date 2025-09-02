@@ -21,6 +21,15 @@ import (
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
 
+func transformBoundary(bBoundary persistence.Boundary) account.Boundary {
+	return account.Boundary{
+		ID:             bBoundary.ID,
+		Name:           bBoundary.Name,
+		Query:          bBoundary.Query,
+		OriginObjectID: bBoundary.OriginObjectID,
+	}
+}
+
 func transformPolicy(pPolicy persistence.Policy) account.Policy {
 	return account.Policy{
 		ID:             pPolicy.ID,
