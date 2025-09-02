@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
@@ -56,6 +57,14 @@ users:
 `,
 		},
 		{
+			description: "Load Resources - duplicate boundary",
+			content: `boundaries:
+- name: My Boundary
+  id: my-boundary
+  query: shared:app-id = "my-app"
+`,
+		},
+		{
 			description: "Load Resources - duplicate group",
 			content: `groups:
 - name: My Group
@@ -65,6 +74,7 @@ users:
 		},
 	}
 
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
@@ -100,25 +110,34 @@ users:
   policy: |-
     ALLOW automation:workflows:read;
 `
+	boundaryContent := `boundaries:
+- name: My Boundary
+  id: my-boundary
+  query: shared:app-id = "my-app"
+`
 	groupContent := `groups:
 - name: My Group
   id: my-group
   description: This is my group
 `
 	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p1", "user.yaml"), []byte(userContent), 0644)
-	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p2", "policy.yaml"), []byte(policyContent), 0644)
-	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p3", "group.yaml"), []byte(groupContent), 0644)
+	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p2", "boundary.yaml"), []byte(boundaryContent), 0644)
+	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p3", "policy.yaml"), []byte(policyContent), 0644)
+	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p4", "group.yaml"), []byte(groupContent), 0644)
 
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
 	res, err := LoadResources(fs, ".", manifest.ProjectDefinitionByProjectID{
 		"p1": manifest.ProjectDefinition{Name: "p1", Group: "g1", Path: "p1"},
 		"p2": manifest.ProjectDefinition{Name: "p2", Group: "g1", Path: "p2"},
 		"p3": manifest.ProjectDefinition{Name: "p3", Group: "g1", Path: "p3"},
+		"p4": manifest.ProjectDefinition{Name: "p4", Group: "g1", Path: "p4"},
 	})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 
 	assert.Len(t, res.Users, 1)
 	assert.Len(t, res.Policies, 1)
+	assert.Len(t, res.Boundaries, 1)
 	assert.Len(t, res.Groups, 1)
 
 }
@@ -136,6 +155,7 @@ func TestLoad(t *testing.T) {
 	}
 
 	t.Run("Load single file", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
 		assert.NoError(t, err)
 
@@ -150,11 +170,15 @@ func TestLoad(t *testing.T) {
 		assert.Len(t, loaded.Policies, 1)
 		assert.Contains(t, loaded.Policies, "my-policy", "expected policy to exist: my-policy")
 
+		assert.Len(t, loaded.Boundaries, 1)
+		assert.Contains(t, loaded.Boundaries, "my-boundary", "expected boundary to exist: my-boundary")
+
 		require.Len(t, loaded.ServiceUsers, 1)
 		assert.Equal(t, "Service User 1", loaded.ServiceUsers[0].Name, "expected service user to exist: Service User 1")
 	})
 
 	t.Run("Load single file - with refs", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid-with-refs.yaml")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Groups, 1)
@@ -169,18 +193,22 @@ func TestLoad(t *testing.T) {
 		assert.IsType(t, account.Reference{}, loaded.Groups["monaco-group"].Environment[0].Policies[0])
 		assert.IsType(t, account.StrReference(""), loaded.Groups["monaco-group"].Environment[0].Policies[1])
 		assert.Len(t, loaded.Policies, 2)
+		assert.Len(t, loaded.Boundaries, 1)
 	})
 
 	t.Run("Load multiple files", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/multi")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
 		assert.Len(t, loaded.Groups, 1)
 		assert.Len(t, loaded.Policies, 1)
 		assert.Len(t, loaded.ServiceUsers, 1)
+		assert.Len(t, loaded.Boundaries, 1)
 	})
 
 	t.Run("Loads origin objectIDs", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid-origin-object-id.yaml")
 		assert.NoError(t, err)
 		assert.Contains(t, loaded.Users, "monaco@dynatrace.com", "expected user to exist: monaco@dynatrace.com")
@@ -195,22 +223,31 @@ func TestLoad(t *testing.T) {
 		p, exists := loaded.Policies["my-policy"]
 		assert.Equal(t, "2338ebda-4aad-4911-96a2-6f60d7c3d2cb", p.OriginObjectID, "expected policy to be loaded with originObjectID")
 		assert.True(t, exists, "expected policy to exist: my-policy")
+
+		assert.Len(t, loaded.Boundaries, 1)
+		b, exists := loaded.Boundaries["my-boundary"]
+		assert.Equal(t, "0cd9c365-ed0e-4ef5-8440-46d02fceea3e", b.OriginObjectID, "expected boundary to be loaded with originObjectID")
+		assert.True(t, exists, "expected boundary to exist: my-boundary")
 	})
 
 	t.Run("Load multiple files but ignore config files", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/multi-with-configs")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
 		assert.Len(t, loaded.Groups, 1)
 		assert.Len(t, loaded.Policies, 1)
+		assert.Len(t, loaded.Boundaries, 1)
 	})
 
 	t.Run("Load multiple files and ignores any delete file", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/multi-with-delete-file")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
 		assert.Len(t, loaded.Groups, 1)
 		assert.Len(t, loaded.Policies, 1)
+		assert.Len(t, loaded.Boundaries, 1)
 	})
 
 	t.Run("Loading a file with only configs does not lead to errors", func(t *testing.T) {
@@ -219,6 +256,7 @@ func TestLoad(t *testing.T) {
 		assert.Empty(t, loaded.Users)
 		assert.Empty(t, loaded.Groups)
 		assert.Empty(t, loaded.Policies)
+		assert.Empty(t, loaded.Boundaries)
 	})
 
 	t.Run("Load service users with same name but different originObjectIds", func(t *testing.T) {
@@ -242,6 +280,12 @@ func TestLoad(t *testing.T) {
 
 	t.Run("Duplicate policy produces error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/duplicate-policy.yaml")
+		assert.Error(t, err)
+	})
+
+	t.Run("Duplicate boundary produces error", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
+		_, err := Load(afero.NewOsFs(), "testdata/duplicate-boundary.yaml")
 		assert.Error(t, err)
 	})
 
@@ -275,6 +319,11 @@ func TestLoad(t *testing.T) {
 		assert.Error(t, err)
 	})
 
+	t.Run("Partial boundary definition produces error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/partial-boundary.yaml")
+		assert.Error(t, err)
+	})
+
 	t.Run("Partial user definition produces error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/partial-user.yaml")
 		assert.Error(t, err)
@@ -299,6 +348,7 @@ func TestLoad(t *testing.T) {
 	t.Run("root folder not found", func(t *testing.T) {
 		result, err := Load(afero.NewOsFs(), "testdata/non-existent-folder")
 		assert.Equal(t, &account.Resources{
+			Boundaries:   make(map[string]account.Boundary, 0),
 			Policies:     make(map[string]account.Policy, 0),
 			Groups:       make(map[string]account.Group, 0),
 			Users:        make(map[string]account.User, 0),
@@ -335,5 +385,12 @@ func TestLoad(t *testing.T) {
 	t.Run("mixed delete and account resources produces an error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/deletefile-accounts-mixed.yaml")
 		assert.ErrorIs(t, err, ErrMixingDelete)
+	})
+
+	t.Run("boundaries are not loaded if the feature is disabled", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "false")
+		data, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
+		assert.NoError(t, err)
+		assert.Len(t, data.Boundaries, 0)
 	})
 }

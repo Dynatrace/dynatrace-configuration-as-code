@@ -24,21 +24,31 @@ func NewAccountManagementResources() *Resources {
 		Policies:     make(map[PolicyId]Policy),
 		Users:        make(map[UserId]User),
 		ServiceUsers: []ServiceUser{},
+		Boundaries:   make(map[BoundaryId]Boundary),
 	}
 	return &resources
 }
 
 type (
+	BoundaryId  = string
 	PolicyId    = string
 	GroupId     = string
 	UserId      = string
 	PolicyLevel = any // either PolicyLevelAccount or PolicyLevelEnvironment is allowed
 
 	Resources struct {
+		Boundaries   map[BoundaryId]Boundary
 		Policies     map[PolicyId]Policy
 		Groups       map[GroupId]Group
 		Users        map[UserId]User
 		ServiceUsers []ServiceUser
+	}
+
+	Boundary struct {
+		ID             string
+		Name           string
+		Query          string
+		OriginObjectID string
 	}
 
 	Policy struct {

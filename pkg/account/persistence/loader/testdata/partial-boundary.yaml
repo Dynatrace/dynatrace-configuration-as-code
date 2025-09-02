@@ -1,0 +1,4 @@
+boundaries:
+  - name: My Boundary
+    id: my-boundary
+    # missing required 'query'

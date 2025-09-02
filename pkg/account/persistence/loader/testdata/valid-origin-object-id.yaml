@@ -49,3 +49,9 @@ serviceUsers:
       - type: reference
         id: my-group
       - Log viewer
+
+boundaries:
+  - name: My Boundary
+    id: my-boundary
+    query: shared:app-id = "my-app"
+    originObjectId: 0cd9c365-ed0e-4ef5-8440-46d02fceea3e

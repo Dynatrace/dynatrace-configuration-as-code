@@ -34,10 +34,18 @@ const (
 
 type (
 	File struct {
+		Boundaries   []Boundary    `yaml:"boundaries,omitempty" json:"boundaries,omitempty" jsonschema:"description=Boundaries to configure for this account."`
 		Policies     []Policy      `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies to configure for this account."`
 		Groups       []Group       `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups to configure for this account."`
 		Users        []User        `yaml:"users,omitempty" json:"users,omitempty" jsonschema:"description=Users to configure for this account."`
 		ServiceUsers []ServiceUser `yaml:"serviceUsers,omitempty" json:"serviceUsers,omitempty" jsonschema:"description=Service users to configure for this account."`
+	}
+
+	Boundary struct {
+		ID             string `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this boundary configuration - this can be freely defined, used by monaco."`
+		Name           string `yaml:"name" json:"name" jsonschema:"required,description=The name of this boundary."`
+		Query          string `yaml:"query" json:"query" jsonschema:"required,description=The query definition of the boundary."`
+		OriginObjectID string `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the boundary this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
 	}
 
 	Policy struct {
@@ -165,4 +173,5 @@ const (
 	KeyServiceUsers string = "serviceUsers"
 	KeyGroups       string = "groups"
 	KeyPolicies     string = "policies"
+	KeyBoundaries   string = "boundaries"
 )

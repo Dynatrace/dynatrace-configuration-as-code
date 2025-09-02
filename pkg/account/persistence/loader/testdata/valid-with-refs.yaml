@@ -35,3 +35,8 @@ policies:
     description: Just a monaco test policy 2
     policy: |-
       ALLOW automation:workflows:read;
+
+boundaries:
+  - name: My Boundary
+    id: my-boundary
+    query: shared:app-id = "my-app"
