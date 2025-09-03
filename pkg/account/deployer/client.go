@@ -203,7 +203,13 @@ func (c *accountManagementClient) getGroupsByName(ctx context.Context, name stri
 
 func (c *accountManagementClient) createGroup(ctx context.Context, group Group) (remoteId, error) {
 	var createdGroups []accountmanagement.GetGroupDto
-	createdGroups, resp, err := c.client.GroupManagementAPI.CreateGroups(ctx, c.accountInfo.AccountUUID).PutGroupDto([]accountmanagement.PutGroupDto{group}).Execute()
+	createdGroups, resp, err := c.client.GroupManagementAPI.
+		CreateGroups(ctx, c.accountInfo.AccountUUID).
+		InsertGroupDto([]accountmanagement.InsertGroupDto{
+			accountmanagement.InsertGroupDto(group),
+		}).
+		Execute()
+
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to create group with name: "+group.Name); err != nil {
 		return "", err
