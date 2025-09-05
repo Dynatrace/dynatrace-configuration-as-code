@@ -848,7 +848,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 	t.Run("Does not call delete permissions if permissions are not set", func(t *testing.T) {
 		mux := http.NewServeMux()
 
-		mux.HandleFunc("GET /api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
 			payload, err := json.Marshal(schemaACL)
 			require.NoError(t, err)
 
@@ -856,12 +856,12 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("GET /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("POST /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("POST /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			payload, err := json.Marshal(objResp)
 			require.NoError(t, err)
 
@@ -885,7 +885,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		restClient := corerest.NewClient(serverURL, server.Client())
 
-		c, err := NewClassicSettingsClient(restClient)
+		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
 		// setup cache
@@ -901,7 +901,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		mux := http.NewServeMux()
 
-		mux.HandleFunc("GET /api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
 			payload, err := json.Marshal(schemaACL)
 			require.NoError(t, err)
 
@@ -909,12 +909,12 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("GET /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("POST /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("POST /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			payload, err := json.Marshal(objResp)
 			require.NoError(t, err)
 
@@ -926,7 +926,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			t.Errorf("Called '%s' but it should not be called", r.Pattern)
 		})
 
-		mux.HandleFunc("DELETE "+"/platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("DELETE /platform/classic/environment-api/v2/settings/objects/{objectId}/permissions/all-users", func(w http.ResponseWriter, r *http.Request) {
 			deleteCalled = true
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
@@ -940,7 +940,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		restClient := corerest.NewClient(serverURL, server.Client())
 
-		c, err := NewClassicSettingsClient(restClient)
+		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
 		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.NonePermission)})
@@ -953,7 +953,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		mux := http.NewServeMux()
 
-		mux.HandleFunc("GET /api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
 			payload, err := json.Marshal(schemaACL)
 			require.NoError(t, err)
 
@@ -961,12 +961,12 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("GET /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("POST /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("POST /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			payload, err := json.Marshal(objResp)
 			require.NoError(t, err)
 
@@ -998,7 +998,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		restClient := corerest.NewClient(serverURL, server.Client())
 
-		c, err := NewClassicSettingsClient(restClient)
+		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
 		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
@@ -1011,7 +1011,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		mux := http.NewServeMux()
 
-		mux.HandleFunc("GET /api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
 			payload, err := json.Marshal(schemaACL)
 			require.NoError(t, err)
 
@@ -1019,12 +1019,12 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("GET /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("POST /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("POST /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			payload, err := json.Marshal(objResp)
 			require.NoError(t, err)
 
@@ -1055,7 +1055,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		restClient := corerest.NewClient(serverURL, server.Client())
 
-		c, err := NewClassicSettingsClient(restClient)
+		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
 		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
@@ -1070,7 +1070,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		mux := http.NewServeMux()
 
-		mux.HandleFunc("GET /api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
 			payload, err := json.Marshal(schemaNoACL)
 			require.NoError(t, err)
 
@@ -1078,12 +1078,12 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("GET /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("POST /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("POST /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			t.Errorf("Called '%s' but it should not be called", r.Pattern)
 		})
 
@@ -1095,7 +1095,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		restClient := corerest.NewClient(serverURL, server.Client())
 
-		c, err := NewClassicSettingsClient(restClient)
+		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
 		// setup cache
@@ -1114,7 +1114,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		mux := http.NewServeMux()
 
-		mux.HandleFunc("GET /api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/schemas/schema", func(w http.ResponseWriter, r *http.Request) {
 			payload, err := json.Marshal(schemaACLFalse)
 			require.NoError(t, err)
 
@@ -1122,12 +1122,12 @@ func TestUpsertSettings_ACL(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("GET /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("{}"))
 			require.NoError(t, err)
 		})
 
-		mux.HandleFunc("POST /api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("POST /platform/classic/environment-api/v2/settings/objects", func(w http.ResponseWriter, r *http.Request) {
 			t.Errorf("Called '%s' but it should not be called", r.Pattern)
 		})
 
@@ -1136,10 +1136,9 @@ func TestUpsertSettings_ACL(t *testing.T) {
 
 		serverURL, err := url.Parse(server.URL)
 		require.NoError(t, err)
-
 		restClient := corerest.NewClient(serverURL, server.Client())
 
-		c, err := NewClassicSettingsClient(restClient)
+		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
 		// setup cache

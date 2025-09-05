@@ -2,7 +2,7 @@
 
 /**
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,12 +19,15 @@
 package settings
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"testing"
 
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
@@ -32,6 +35,7 @@ import (
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -60,12 +64,14 @@ func TestDownloadAll(t *testing.T) {
 		GetPermissionCalls int
 	}
 	tests := []struct {
-		name       string
-		mockValues mockValues
-		filters    map[string]Filter
-		schemas    []string
-		envVars    map[string]string
-		want       project.ConfigsPerType
+		name                  string
+		mockValues            mockValues
+		filters               map[string]Filter
+		schemas               []string
+		classicSettingsSource bool
+		envVars               map[string]string
+		want                  project.ConfigsPerType
+		logAssert             func(t assert.TestingT, logSpy string)
 	}{
 		{
 			name: "DownloadSettings - List Schemas fails",
@@ -819,6 +825,7 @@ func TestDownloadAll(t *testing.T) {
 					OriginObjectId: "oid1",
 				},
 			}},
+			logAssert: func(t assert.TestingT, logSpy string) { assert.NotContains(t, logSpy, "Skipped getting permissions") },
 		},
 		{
 			name: "Downloading settings with ACL fails on permission fetch",
@@ -856,9 +863,111 @@ func TestDownloadAll(t *testing.T) {
 			schemas: []string{"app:my-app:schema"},
 			want:    project.ConfigsPerType{},
 		},
+		{
+			name: "Downloading settings with ACL skips GetPermission calls and warns if using classicSettingsSource",
+			mockValues: mockValues{
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{
+						{
+							SchemaId:                "app:my-app:schema",
+							OwnerBasedAccessControl: pointer.Pointer(true),
+						},
+					}, nil
+				},
+				ListSchemasCalls: 1,
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
+						ExternalId:    "ex1",
+						SchemaVersion: "1.2.3",
+						SchemaId:      "app:my-app:schema",
+						ObjectId:      "oid1",
+						Scope:         "environment",
+						Value:         json.RawMessage(`{}`),
+					}}, nil
+				},
+				ListSettingsCalls: 1,
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, errors.New("settings client has no permission client")
+				},
+				GetPermissionCalls: 0,
+			},
+			schemas:               []string{"app:my-app:schema"},
+			classicSettingsSource: true,
+			want: project.ConfigsPerType{"app:my-app:schema": {
+				{
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "app:my-app:schema",
+						ConfigId: uuid1,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "app:my-app:schema",
+						SchemaVersion: "1.2.3",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
+					},
+					OriginObjectId: "oid1",
+				},
+			}},
+			logAssert: func(t assert.TestingT, logSpy string) { assert.Contains(t, logSpy, "Skipped getting permissions") },
+		},
+		{
+			name: "Downloading settings without ACL using classicSettingsSource doesnt warn about permissions",
+			mockValues: mockValues{
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{
+						{
+							SchemaId: "builtin:alerting-profile",
+						},
+					}, nil
+				},
+				ListSchemasCalls: 1,
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
+						ExternalId:    "ex1",
+						SchemaVersion: "1.2.3",
+						SchemaId:      "builtin:alerting-profile",
+						ObjectId:      "oid1",
+						Scope:         "environment",
+						Value:         json.RawMessage(`{}`),
+					}}, nil
+				},
+				ListSettingsCalls: 1,
+				Permissions: func() (dtclient.PermissionObject, error) {
+					return dtclient.PermissionObject{}, errors.New("settings client has no permission client")
+				},
+				GetPermissionCalls: 0,
+			},
+			schemas:               []string{"builtin:alerting-profile"},
+			classicSettingsSource: true,
+			want: project.ConfigsPerType{"builtin:alerting-profile": {
+				{
+					Template: template.NewInMemoryTemplate(uuid1, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "builtin:alerting-profile",
+						ConfigId: uuid1,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "builtin:alerting-profile",
+						SchemaVersion: "1.2.3",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
+					},
+					OriginObjectId: "oid1",
+				},
+			}},
+			logAssert: func(t assert.TestingT, logSpy string) { assert.NotContains(t, logSpy, "Skipped getting permissions") },
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			logSpy := bytes.Buffer{}
+			log.PrepareLogging(t.Context(), afero.NewMemMapFs(), false, &logSpy, false, false)
 
 			for k, v := range tt.envVars {
 				t.Setenv(k, v)
@@ -876,10 +985,14 @@ func TestDownloadAll(t *testing.T) {
 
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			settingsAPI := NewDownloadAPI(c, tt.filters, tt.schemas)
+			settingsAPI := NewDownloadAPI(c, tt.filters, tt.schemas, tt.classicSettingsSource)
 			res, err := settingsAPI.Download(t.Context(), "projectName")
 
 			assert.Equal(t, tt.want, res)
+
+			if tt.logAssert != nil {
+				tt.logAssert(t, logSpy.String())
+			}
 		})
 	}
 }
