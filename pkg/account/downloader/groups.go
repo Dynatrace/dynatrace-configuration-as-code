@@ -72,7 +72,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		acc := account.Account{
 			Permissions: getPermissionFor("account", perDTO),
 			Policies: policyReferencesOn(
-				getPoliciesFor(binding, *g.dto.Uuid), policies),
+				getPoliciesFor(binding, *g.dto.Uuid), policies, boundaries),
 		}
 
 		var envs []account.Environment
@@ -89,7 +89,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 				Name:        t.id,
 				Permissions: getPermissionFor(t.id, perDTO),
 				Policies: policyReferencesOn(
-					getPoliciesFor(binding, *g.dto.Uuid), policies),
+					getPoliciesFor(binding, *g.dto.Uuid), policies, boundaries),
 			})
 
 			for k, v := range getManagementZonesFor(t.id, perDTO) {
@@ -121,18 +121,18 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 	return groups, nil
 }
 
-func policyReferencesOn(policyIds []string, policies Policies) []account.PolicyBinding {
-	if len(policyIds) == 0 {
-		return nil
-	}
-
-	retVal := make([]account.PolicyBinding, 0, len(policies))
-	for _, p := range policyIds {
+func policyReferencesOn(policiesWithBoundaries map[string][]string, policies Policies, boundaries Boundaries) []account.PolicyBinding {
+	retVal := make([]account.PolicyBinding, 0, len(policiesWithBoundaries))
+	for p, b := range policiesWithBoundaries {
 		polRefs := policies.RefOn(p)
 		if len(polRefs) == 0 {
 			continue
 		}
-		retVal = append(retVal, account.PolicyBinding{PolicyReference: polRefs[0]})
+
+		retVal = append(retVal, account.PolicyBinding{
+			PolicyReference: polRefs[0],
+			Boundaries:      boundaries.RefOn(b...),
+		})
 	}
 	return retVal
 }
@@ -184,17 +184,18 @@ func getManagementZonesFor(scope string, perDTOs *accountmanagement.PermissionsG
 	return retVal
 }
 
-func getPoliciesFor(binding *accountmanagement.LevelPolicyBindingDto, groupUUID string) []string {
-	var retVal []string
+func getPoliciesFor(binding *accountmanagement.LevelPolicyBindingDto, groupUUID string) map[string][]string {
+	policies := make(map[string][]string)
+
 	for _, b := range binding.PolicyBindings {
 		for _, g := range b.Groups {
 			if g == groupUUID {
-				retVal = append(retVal, b.PolicyUuid)
+				policies[b.PolicyUuid] = b.Boundaries
 				break
 			}
 		}
 	}
-	return retVal
+	return policies
 }
 
 func effectiveAccount(a account.Account) *account.Account {

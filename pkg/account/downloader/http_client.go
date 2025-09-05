@@ -27,6 +27,7 @@ type httpClient interface {
 	GetUsers(ctx context.Context, accountUUID string) ([]accountmanagement.UsersDto, error)
 	GetServiceUsers(ctx context.Context, accountUUID string) ([]accountmanagement.ExternalServiceUserDto, error)
 	GetGroupsForUser(ctx context.Context, userEmail string, accountUUID string) (*accountmanagement.GroupUserDto, error)
+	GetBoundaries(ctx context.Context, account string) ([]accountmanagement.PolicyBoundaryOverview, error)
 	GetPolicies(ctx context.Context, account string) ([]accountmanagement.PolicyOverview, error)
 	GetPolicyDefinition(ctx context.Context, dto accountmanagement.PolicyOverview) (*accountmanagement.LevelPolicyDto, error)
 	GetPolicyGroupBindings(ctx context.Context, levelType string, levelId string) (*accountmanagement.LevelPolicyBindingDto, error)
