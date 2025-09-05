@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
 
@@ -95,6 +96,7 @@ func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 	var serviceUsers []ServiceUser
 	var accountPolicies []AccountPolicy
 	var environmentPolicies []EnvironmentPolicy
+	var boundaries []Boundary
 
 	for i, e := range definition.DeleteEntries {
 		var parsed DeleteEntry
@@ -138,7 +140,20 @@ func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 			default:
 				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown policy level %q - needs to be either "account" or "environment"`, parsed.Level))
 			}
+		case "boundary":
+			if !featureflags.Boundaries.Enabled() {
+				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown type %q - needs to be one of "user", "serviceUser", "group" or "policy"`, parsed.Type))
+			}
+			var parsed BoundaryDeleteEntry
+			err := mapstructure.Decode(e, &parsed)
+			if err != nil {
+				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, err.Error())
+			}
+			boundaries = append(boundaries, Boundary(parsed))
 		default:
+			if featureflags.Boundaries.Enabled() {
+				return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown type %q - needs to be one of "user", "serviceUser", "group", "policy" or "boundary"`, parsed.Type))
+			}
 			return Resources{}, newDeleteEntryParserError(fmt.Sprintf("%v", e), i, fmt.Sprintf(`unknown type %q - needs to be one of "user", "serviceUser", "group" or "policy"`, parsed.Type))
 		}
 
@@ -150,5 +165,6 @@ func parseDeleteFileDefinition(definition FileDefinition) (Resources, error) {
 		Groups:              groups,
 		AccountPolicies:     accountPolicies,
 		EnvironmentPolicies: environmentPolicies,
+		Boundaries:          boundaries,
 	}, nil
 }

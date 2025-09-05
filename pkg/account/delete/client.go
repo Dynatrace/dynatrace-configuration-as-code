@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
@@ -35,6 +36,7 @@ type Client interface {
 	DeleteGroup(ctx context.Context, name string) error
 	DeleteAccountPolicy(ctx context.Context, name string) error
 	DeleteEnvironmentPolicy(ctx context.Context, environment, name string) error
+	DeleteBoundary(ctx context.Context, name string) error
 }
 
 var _ Client = (*AccountAPIClient)(nil)
@@ -226,6 +228,76 @@ func (c *AccountAPIClient) getPolicyID(ctx context.Context, levelType, levelID, 
 		}
 	}
 	return "", &ResourceNotFoundError{Identifier: name}
+}
+
+func (c *AccountAPIClient) DeleteBoundary(ctx context.Context, name string) error {
+	uuid, err := c.getBoundaryID(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.client.PolicyManagementAPI.DeletePolicyBoundary(ctx, uuid, c.accountUUID).Execute()
+	defer closeResponseBody(resp)
+	if resp != nil && resp.StatusCode == 404 {
+		return &ResourceNotFoundError{Identifier: name}
+	}
+	if err := handleClientResponseError(resp, err, fmt.Sprintf("failed to delete boundary %q", name)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *AccountAPIClient) getBoundaryID(ctx context.Context, name string) (string, error) {
+	boundaries, err := c.getBoundaries(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	var foundBoundary *accountmanagement.PolicyBoundaryOverview
+	for _, b := range boundaries {
+		if b.Name == name {
+			if foundBoundary != nil {
+				return "", fmt.Errorf("found multiple boundaries with name '%s'", name)
+			}
+			foundBoundary = &b
+		}
+	}
+	if foundBoundary == nil {
+		return "", &ResourceNotFoundError{Identifier: name}
+	}
+
+	return foundBoundary.Uuid, nil
+}
+
+func (c *AccountAPIClient) getBoundaries(ctx context.Context) ([]accountmanagement.PolicyBoundaryOverview, error) {
+	boundaries := make([]accountmanagement.PolicyBoundaryOverview, 0)
+	const pageSize = 100
+	for page := (int32)(1); page < math.MaxInt32; page++ {
+		r, err := c.getBoundariesPage(ctx, c.accountUUID, page, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		boundaries = append(boundaries, r.Content...)
+		// If the amount of boundaries returned on the page is less than the requested 100, we can assume it was the last page.
+		if len(r.Content) < 100 {
+			break
+		}
+	}
+
+	return boundaries, nil
+}
+
+func (c *AccountAPIClient) getBoundariesPage(ctx context.Context, accountUUID string, page int32, pageSize int32) (*accountmanagement.PolicyBoundaryDtoList, error) {
+	r, resp, err := c.client.PolicyManagementAPI.GetPolicyBoundaries(ctx, accountUUID).Page(page).Size(pageSize).Execute()
+	defer closeResponseBody(resp)
+	if err = handleClientResponseError(resp, err, "failed to get boundaries"); err != nil {
+		return nil, err
+	}
+	if r == nil {
+		return nil, errors.New("the received data are empty")
+	}
+	return r, nil
 }
 
 func handleClientResponseError(resp *http.Response, clientErr error, errMessage string) error {

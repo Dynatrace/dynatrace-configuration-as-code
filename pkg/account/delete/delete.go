@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
@@ -44,6 +45,10 @@ type EnvironmentPolicy struct {
 	Environment string
 }
 
+type Boundary struct {
+	Name string
+}
+
 // Resources defines which account resources to delete. Each field defines the information required to delete that type.
 type Resources struct {
 	Users               []User
@@ -51,6 +56,7 @@ type Resources struct {
 	Groups              []Group
 	AccountPolicies     []AccountPolicy
 	EnvironmentPolicies []EnvironmentPolicy
+	Boundaries          []Boundary
 }
 
 // Account defines everything required to access the account management API
@@ -75,6 +81,10 @@ func DeleteAccountResources(ctx context.Context, account Account, resourcesToDel
 		deleteGroups(ctx, account, resourcesToDelete.Groups) +
 		deleteAccountPolicies(ctx, account, resourcesToDelete.AccountPolicies) +
 		deleteEnvironmentPolicies(ctx, account, resourcesToDelete.EnvironmentPolicies)
+
+	if featureflags.Boundaries.Enabled() {
+		totalErrorCount += deleteBoundaries(ctx, account, resourcesToDelete.Boundaries)
+	}
 
 	if totalErrorCount > 0 {
 		return fmt.Errorf("encountered %d errors - please check logs for details", totalErrorCount)
@@ -181,6 +191,27 @@ func deleteEnvironmentPolicies(ctx context.Context, account Account, environment
 		}
 
 		log.ErrorContext(ctx, "Failed to delete policy %q for environment %s: %v", policy.Name, policy.Environment, err)
+		errCount++
+	}
+	return errCount
+}
+
+func deleteBoundaries(ctx context.Context, account Account, boundaries []Boundary) int {
+	errCount := 0
+	for _, boundary := range boundaries {
+		err := account.APIClient.DeleteBoundary(ctx, boundary.Name)
+		if err == nil {
+			log.InfoContext(ctx, "Deleted boundary %q", boundary.Name)
+			continue
+		}
+
+		notFoundErr := ResourceNotFoundError{}
+		if errors.As(err, &notFoundErr) {
+			log.InfoContext(ctx, "Boundary %q does not exist", boundary.Name)
+			continue
+		}
+
+		log.ErrorContext(ctx, "Failed to delete boundary %q: %v", boundary.Name, err)
 		errCount++
 	}
 	return errCount
