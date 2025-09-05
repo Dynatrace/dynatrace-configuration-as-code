@@ -1,0 +1,26 @@
+groups:
+  - name: My Group
+    id: my-group
+    description: This is my group
+    account:
+      policies:
+        - type: reference # Use either "policy" OR "type and id" but not both
+          id: my-policy
+          policy: My Policy2
+
+policies:
+  - name: My Policy
+    id: my-policy
+    level:
+      type: account
+    description: abcde
+    policy: |-
+      ALLOW a:b:c;
+      - name: My Policy
+  - name: My Policy2
+    id: my-policy2
+    level:
+      type: account
+    description: abcde
+    policy: |-
+      ALLOW a:b:c;

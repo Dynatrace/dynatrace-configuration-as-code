@@ -17,6 +17,7 @@
 package loader
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
@@ -72,7 +73,7 @@ func transformAccount(pAccount *persistence.Account) *account.Account {
 
 	return &account.Account{
 		Permissions: pAccount.Permissions,
-		Policies:    transformReferences(pAccount.Policies),
+		Policies:    transformPolicyBindings(pAccount.Policies),
 	}
 }
 
@@ -82,7 +83,7 @@ func transformEnvironments(pEnvironments []persistence.Environment) []account.En
 		env[i] = account.Environment{
 			Name:        e.Name,
 			Permissions: e.Permissions,
-			Policies:    transformReferences(e.Policies),
+			Policies:    transformPolicyBindings(e.Policies),
 		}
 	}
 	return env
@@ -119,13 +120,33 @@ func transformServiceUser(pServiceUser persistence.ServiceUser) account.ServiceU
 func transformReferences(pReferences []persistence.Reference) []account.Ref {
 	res := make([]account.Ref, len(pReferences))
 	for i, el := range pReferences {
-		switch el.Type {
-		case persistence.ReferenceType:
-			res[i] = account.Reference{Id: el.Id}
-		case "":
-			res[i] = account.StrReference(el.Value)
-		default:
-			panic("unable to convert persistence model")
+		res[i] = transformReference(el)
+	}
+	return res
+}
+
+func transformReference(ref persistence.Reference) account.Ref {
+	switch ref.Type {
+	case persistence.ReferenceType:
+		return account.Reference{Id: ref.Id}
+	case "":
+		return account.StrReference(ref.Value)
+	default:
+		panic("unable to convert persistence model")
+	}
+}
+
+func transformPolicyBindings(pPolicyReferences []persistence.PolicyBinding) []account.PolicyBinding {
+	res := make([]account.PolicyBinding, len(pPolicyReferences))
+	for i, el := range pPolicyReferences {
+		if el.Policy != nil && featureflags.Boundaries.Enabled() {
+			res[i].Policy = transformReference(*el.Policy)
+		} else {
+			res[i].Policy = transformReference(persistence.Reference{Id: el.Id, Type: el.Type, Value: el.Value})
+		}
+
+		if featureflags.Boundaries.Enabled() {
+			res[i].Boundaries = transformReferences(el.Boundaries)
 		}
 	}
 	return res

@@ -519,7 +519,7 @@ func (d *AccountDeployer) getAccountPolicyRefs(group account.Group) ([]remoteId,
 	var policyIds []remoteId
 	var err error
 	if group.Account != nil {
-		policyIds, err = d.processItems(group.Account.Policies, d.policyIdLookup)
+		policyIds, err = d.processPolicyBindings(group.Account.Policies)
 		if err != nil {
 			return nil, err
 		}
@@ -532,7 +532,7 @@ func (d *AccountDeployer) getEnvPolicyRefs(group account.Group) (map[envName][]r
 	var err error
 	if group.Environment != nil {
 		for _, e := range group.Environment {
-			result[e.Name], err = d.processItems(e.Policies, d.policyIdLookup)
+			result[e.Name], err = d.processPolicyBindings(e.Policies)
 			if err != nil {
 				return nil, err
 			}
@@ -547,6 +547,17 @@ func (d *AccountDeployer) getUserGroupRefs(user account.User) ([]remoteId, error
 
 func (d *AccountDeployer) getServiceUserGroupRefs(serviceUser account.ServiceUser) ([]remoteId, error) {
 	return d.processItems(serviceUser.Groups, d.groupIdLookup)
+}
+
+func (d *AccountDeployer) processPolicyBindings(items []account.PolicyBinding) ([]remoteId, error) {
+	refs := make([]remoteId, len(items))
+	for _, item := range items {
+		polRef := d.policyIdLookup(item.Policy.ID())
+		if polRef == "" {
+			return nil, fmt.Errorf("could not find remote id for policy with id '%s'", item.Policy.ID())
+		}
+	}
+	return refs, nil
 }
 
 func (d *AccountDeployer) processItems(items []account.Ref, remoteIdLookup idLookupFn) ([]remoteId, error) {

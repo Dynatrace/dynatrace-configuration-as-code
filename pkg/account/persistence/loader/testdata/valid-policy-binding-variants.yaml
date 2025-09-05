@@ -1,0 +1,57 @@
+groups:
+  - name: My Group
+    id: my-group
+    description: This is my group
+    account:
+      permissions:
+        - View my Group Stuff
+      policies:
+        - My Policy # match by name
+        - type: reference # match by reference
+          id: my-policy2
+        - policy: My Policy3 # policy struct match by name
+        - policy: # policy struct match by reference
+            type: reference
+            id: my-policy4
+          boundaries:
+            - type: reference
+              id: my-boundary
+            - My Boundary2
+
+policies:
+  - name: My Policy
+    id: my-policy
+    level:
+      type: account
+    description: abcde
+    policy: |-
+      ALLOW a:b:c;
+  - name: My Policy2
+    id: my-policy2
+    level:
+      type: account
+    description: abcdef
+    policy: |-
+      ALLOW a:b:c:d;
+  - name: My Policy3
+    id: my-policy3
+    level:
+      type: account
+    description: abcdefg
+    policy: |-
+      ALLOW a:b:c:d:e;
+  - name: My Policy4
+    id: my-policy4
+    level:
+      type: account
+    description: abcdefg
+    policy: |-
+      ALLOW a:b:c:d:e;
+
+boundaries:
+  - name: My Boundary
+    id: my-boundary
+    query: shared:app-id = "my-app"
+  - name: My Boundary2
+    id: my-boundary2
+    query: shared:app-id = "my-app"

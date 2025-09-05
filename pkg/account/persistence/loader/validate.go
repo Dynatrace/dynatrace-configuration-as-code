@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
@@ -76,31 +77,43 @@ func validateServiceUserReferences(res *account.Resources, serviceUser account.S
 	return nil
 }
 
-func validateGroupReferences(res *account.Resources, group account.Group) error {
-	// check references in environment policies
-	for _, env := range group.Environment {
-		for _, policyRef := range env.Policies {
-			policyReference, ok := policyRef.(account.Reference)
+func validatePolicyBindingReferences(res *account.Resources, policies []account.PolicyBinding) error {
+	for _, policyRef := range policies {
+		policyReference, ok := policyRef.Policy.(account.Reference)
+		if !ok {
+			continue
+		}
+
+		if !policyExists(res, policyReference.ID()) {
+			return fmt.Errorf("missing policy '%s'", policyReference.ID())
+		}
+
+		for _, boundaryRef := range policyRef.Boundaries {
+			boundaryReference, ok := boundaryRef.(account.Reference)
 			if !ok {
 				continue
 			}
 
-			if !policyExists(res, policyReference.ID()) {
-				return fmt.Errorf("group '%s' environment '%s' references missing policy '%s'", group.Name, env.Name, policyReference.ID())
+			if !boundaryExists(res, boundaryReference.ID()) {
+				return fmt.Errorf("policy '%s' references missing boundary '%s'", policyRef.Policy.ID(), boundaryReference.ID())
 			}
 		}
 	}
-	if group.Account != nil {
-		// check references in account policies
-		for _, policyRef := range group.Account.Policies {
-			policyReference, ok := policyRef.(account.Reference)
-			if !ok {
-				continue
-			}
 
-			if !policyExists(res, policyReference.ID()) {
-				return fmt.Errorf("group '%s' account references missing policy '%s'", group.Name, policyReference.ID())
-			}
+	return nil
+}
+
+func validateGroupReferences(res *account.Resources, group account.Group) error {
+	// check policy bindings in environment policies
+	for _, env := range group.Environment {
+		if err := validatePolicyBindingReferences(res, env.Policies); err != nil {
+			return fmt.Errorf("group '%s' has an invalid policy reference for environment '%s': %w", group.Name, env.Name, err)
+		}
+	}
+	if group.Account != nil {
+		// check policy bindings in account policies
+		if err := validatePolicyBindingReferences(res, group.Account.Policies); err != nil {
+			return fmt.Errorf("group '%s' has an invalid account policy reference: %w", group.Name, err)
 		}
 	}
 	return nil
@@ -114,13 +127,19 @@ func groupExists(a *account.Resources, id string) bool {
 func policyExists(a *account.Resources, id string) bool {
 	_, exists := a.Policies[id]
 	return exists
+}
 
+func boundaryExists(a *account.Resources, id string) bool {
+	_, exists := a.Boundaries[id]
+	return exists
 }
 
 func validateFile(file types.File) error {
-	for _, b := range file.Boundaries {
-		if err := validateBoundary(b); err != nil {
-			return err
+	if featureflags.Boundaries.Enabled() {
+		for _, b := range file.Boundaries {
+			if err := validateBoundary(b); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -187,7 +206,7 @@ func validateGroup(g types.Group) error {
 
 	for _, env := range g.Environment {
 		for _, policyRef := range env.Policies {
-			if err := validateReference(policyRef); err != nil {
+			if err := validatePolicyBinding(policyRef); err != nil {
 				return err
 			}
 		}
@@ -196,7 +215,7 @@ func validateGroup(g types.Group) error {
 	if g.Account != nil {
 		// check references in account policies
 		for _, policyRef := range g.Account.Policies {
-			if err := validateReference(policyRef); err != nil {
+			if err := validatePolicyBinding(policyRef); err != nil {
 				return err
 			}
 		}
@@ -247,6 +266,48 @@ func validateReference(reference types.Reference) error {
 		}
 	} else if reference.Value == "" {
 		return errors.New("missing reference value")
+	}
+	return nil
+}
+
+func validatePolicyBinding(policyBinding types.PolicyBinding) error {
+	// We don't need to check for the Value field. The Value field is only set when no key is used, i.e.
+	// policies:
+	//   - My policy
+	// In such a case it would be an invalid yaml file anyway if a child element "policy" was to be added.
+
+	if policyBinding.Policy == nil {
+		return validateLegacyPolicyBinding(policyBinding)
+	}
+
+	if policyBinding.Id != "" {
+		return fmt.Errorf("policy definition is ambiguous. Use the 'policy' key only and remove the keys 'id' and 'type' for policy with id '%v'", policyBinding.Id)
+	}
+
+	if err := validateReference(*policyBinding.Policy); err != nil {
+		return err
+	}
+
+	for _, boundaryRef := range policyBinding.Boundaries {
+		if err := validateReference(boundaryRef); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateLegacyPolicyBinding(policyBinding types.PolicyBinding) error {
+	if policyBinding.Type == types.ReferenceType {
+		if policyBinding.Id == "" {
+			return errors.New("missing required field 'id' for reference")
+		}
+	} else if policyBinding.Value == "" {
+		return errors.New("missing reference value")
+	}
+
+	if len(policyBinding.Boundaries) > 0 {
+		return fmt.Errorf("error when loading boundary reference with id %v: boundaries are only supported when using the 'policy' key", policyBinding.Id)
 	}
 	return nil
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
 )
@@ -34,17 +35,21 @@ func TestWriteAccountResources(t *testing.T) {
 		users        string
 		policies     string
 		serviceUsers string
+		boundaries   string
 	}
-	tests := []struct {
-		name           string
-		givenResources account.Resources
-		wantPersisted  want
-	}{
+	type testCase struct {
+		name              string
+		givenResources    account.Resources
+		wantPersisted     want
+		boundariesEnabled bool
+	}
+
+	tests := []testCase{
 		{
-			"only users",
-			account.Resources{
+			name: "only users",
+			givenResources: account.Resources{
 				Users: map[account.UserId]account.User{
-					"monaco@dynatrace.com": account.User{
+					"monaco@dynatrace.com": {
 						Email: "monaco@dynatrace.com",
 						Groups: []account.Ref{
 							account.Reference{Id: "my-group"},
@@ -53,7 +58,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{
+			wantPersisted: want{
 				users: `users:
 - email: monaco@dynatrace.com
   groups:
@@ -64,21 +69,21 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"groups are not written if user has none",
-			account.Resources{
+			name: "groups are not written if user has none",
+			givenResources: account.Resources{
 				Users: map[account.UserId]account.User{
 					"monaco@dynatrace.com": {Email: "monaco@dynatrace.com"},
 				},
 			},
-			want{
+			wantPersisted: want{
 				users: `users:
 - email: monaco@dynatrace.com
 `,
 			},
 		},
 		{
-			"only groups",
-			account.Resources{
+			name: "only groups",
+			givenResources: account.Resources{
 				Groups: map[account.GroupId]account.Group{
 					"my-group": {
 						ID:          "my-group",
@@ -86,15 +91,15 @@ func TestWriteAccountResources(t *testing.T) {
 						Description: "This is my group",
 						Account: &account.Account{
 							Permissions: []string{"View my Group Stuff"},
-							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
+							Policies:    []account.PolicyBinding{{Policy: account.StrReference("Request my Group Stuff")}},
 						},
 						Environment: []account.Environment{
 							{
 								Name:        "myenv123",
 								Permissions: []string{"View environment"},
-								Policies: []account.Ref{
-									account.StrReference("View environment"),
-									account.Reference{Id: "my-policy"},
+								Policies: []account.PolicyBinding{
+									{Policy: account.StrReference("View environment")},
+									{Policy: account.Reference{Id: "my-policy"}},
 								},
 							},
 						},
@@ -108,7 +113,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{
+			wantPersisted: want{
 				groups: `groups:
 - id: my-group
   name: My Group
@@ -135,20 +140,90 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"empty optional values are not included when writing groups",
-			account.Resources{
+			name: "only groups with boundaries serialize to new structure with `policy` nesting and boundaries",
+			givenResources: account.Resources{
+				Groups: map[account.GroupId]account.Group{
+					"my-group": {
+						ID:          "my-group",
+						Name:        "My Group",
+						Description: "This is my group",
+						Account: &account.Account{
+							Permissions: []string{"View my Group Stuff"},
+							Policies:    []account.PolicyBinding{{Policy: account.StrReference("Request my Group Stuff")}},
+						},
+						Environment: []account.Environment{
+							{
+								Name:        "myenv123",
+								Permissions: []string{"View environment"},
+								Policies: []account.PolicyBinding{
+									{
+										Policy: account.StrReference("View environment"),
+										Boundaries: []account.Ref{
+											account.StrReference("My boundary"),
+											account.Reference{Id: "my-boundary"},
+										},
+									},
+									{Policy: account.Reference{Id: "my-policy"}},
+								},
+							},
+						},
+						ManagementZone: []account.ManagementZone{
+							{
+								Environment:    "myenv123",
+								ManagementZone: "My MZone",
+								Permissions:    []string{"Do Stuff"},
+							},
+						},
+					},
+				},
+			},
+			wantPersisted: want{
+				groups: `groups:
+- id: my-group
+  name: My Group
+  description: This is my group
+  account:
+    permissions:
+    - View my Group Stuff
+    policies:
+    - policy: Request my Group Stuff
+  environments:
+  - environment: myenv123
+    permissions:
+    - View environment
+    policies:
+    - policy:
+        type: reference
+        id: my-policy
+    - policy: View environment
+      boundaries:
+      - My boundary
+      - type: reference
+        id: my-boundary
+  managementZones:
+  - environment: myenv123
+    managementZone: My MZone
+    permissions:
+    - Do Stuff
+`,
+			},
+			boundariesEnabled: true,
+		},
+		{
+			name: "empty optional values are not included when writing groups",
+			givenResources: account.Resources{
 				Groups: map[account.GroupId]account.Group{
 					"my-group": {
 						ID:   "my-group",
 						Name: "My Group",
 						Account: &account.Account{
 							Permissions: []string{"View my Group Stuff"},
-							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
+							Policies:    []account.PolicyBinding{{Policy: account.StrReference("Request my Group Stuff")}},
 						},
 					},
 				},
 			},
-			want{
+			wantPersisted: want{
 				groups: `groups:
 - id: my-group
   name: My Group
@@ -161,8 +236,8 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"group without any bindings is written correctly",
-			account.Resources{
+			name: "group without any bindings is written correctly",
+			givenResources: account.Resources{
 				Groups: map[account.GroupId]account.Group{
 					"my-group": {
 						ID:   "my-group",
@@ -170,7 +245,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{
+			wantPersisted: want{
 				groups: `groups:
 - id: my-group
   name: My Group
@@ -178,19 +253,19 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"group without any permissions is written correctly",
-			account.Resources{
+			name: "group without any permissions is written correctly",
+			givenResources: account.Resources{
 				Groups: map[account.GroupId]account.Group{
 					"my-group": {
 						ID:   "my-group",
 						Name: "My Group",
 						Account: &account.Account{
-							Policies: []account.Ref{account.StrReference("Request my Group Stuff")},
+							Policies: []account.PolicyBinding{{Policy: account.StrReference("Request my Group Stuff")}},
 						},
 					},
 				},
 			},
-			want{
+			wantPersisted: want{
 				groups: `groups:
 - id: my-group
   name: My Group
@@ -201,8 +276,8 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"group without any policies is written correctly",
-			account.Resources{
+			name: "group without any policies is written correctly",
+			givenResources: account.Resources{
 				Groups: map[account.GroupId]account.Group{
 					"my-group": {
 						ID:   "my-group",
@@ -213,7 +288,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{
+			wantPersisted: want{
 				groups: `groups:
 - id: my-group
   name: My Group
@@ -224,8 +299,8 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"only policies",
-			account.Resources{
+			name: "only policies",
+			givenResources: account.Resources{
 				Policies: map[account.PolicyId]account.Policy{
 					"my-policy": {
 						ID:          "my-policy",
@@ -236,7 +311,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{policies: `policies:
+			wantPersisted: want{policies: `policies:
 - id: my-policy
   name: My Policy
   level:
@@ -247,8 +322,44 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"only service users",
-			account.Resources{
+			name:              "only boundaries",
+			boundariesEnabled: true,
+			givenResources: account.Resources{
+				Boundaries: map[account.BoundaryId]account.Boundary{
+					"my-boundary": {
+						ID:             "my-boundary",
+						Name:           "My Boundary",
+						Query:          "Some query here",
+						OriginObjectID: "some-id",
+					},
+				},
+			},
+			wantPersisted: want{boundaries: `boundaries:
+- id: my-boundary
+  name: My Boundary
+  query: Some query here
+  originObjectId: some-id
+`,
+			},
+		},
+		{
+			name:              "only boundaries - FF disabled",
+			boundariesEnabled: false,
+			givenResources: account.Resources{
+				Boundaries: map[account.BoundaryId]account.Boundary{
+					"my-boundary": {
+						ID:             "my-boundary",
+						Name:           "My Boundary",
+						Query:          "Some query here",
+						OriginObjectID: "some-id",
+					},
+				},
+			},
+			wantPersisted: want{boundaries: ``},
+		},
+		{
+			name: "only service users",
+			givenResources: account.Resources{
 				ServiceUsers: []account.ServiceUser{
 					{
 						Name:        "Service User 1",
@@ -260,7 +371,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{serviceUsers: `serviceUsers:
+			wantPersisted: want{serviceUsers: `serviceUsers:
 - name: Service User 1
   description: Description of service user
   groups:
@@ -271,8 +382,8 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"two service users with same name but different origin object IDs",
-			account.Resources{
+			name: "two service users with same name but different origin object IDs",
+			givenResources: account.Resources{
 				ServiceUsers: []account.ServiceUser{
 					{
 						Name:           "Service User",
@@ -294,7 +405,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{serviceUsers: `serviceUsers:
+			wantPersisted: want{serviceUsers: `serviceUsers:
 - name: Service User
   description: Description of service user
   groups:
@@ -313,8 +424,8 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"groups are not written if service user has none",
-			account.Resources{
+			name: "groups are not written if service user has none",
+			givenResources: account.Resources{
 				ServiceUsers: []account.ServiceUser{
 					{
 						Name:        "Service User 1",
@@ -322,7 +433,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{
+			wantPersisted: want{
 				serviceUsers: `serviceUsers:
 - name: Service User 1
   description: Description of service user
@@ -330,10 +441,10 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"full resources",
-			account.Resources{
+			name: "full resources",
+			givenResources: account.Resources{
 				Users: map[account.UserId]account.User{
-					"monaco@dynatrace.com": account.User{
+					"monaco@dynatrace.com": {
 						Email: "monaco@dynatrace.com",
 						Groups: []account.Ref{
 							account.Reference{Id: "my-group"},
@@ -348,15 +459,15 @@ func TestWriteAccountResources(t *testing.T) {
 						Description: "This is my group",
 						Account: &account.Account{
 							Permissions: []string{"View my Group Stuff"},
-							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
+							Policies:    []account.PolicyBinding{{Policy: account.StrReference("Request my Group Stuff")}},
 						},
 						Environment: []account.Environment{
 							{
 								Name:        "myenv123",
 								Permissions: []string{"View environment"},
-								Policies: []account.Ref{
-									account.StrReference("View environment"),
-									account.Reference{Id: "my-policy"},
+								Policies: []account.PolicyBinding{
+									{Policy: account.StrReference("View environment")},
+									{Policy: account.Reference{Id: "my-policy"}},
 								},
 							},
 						},
@@ -389,7 +500,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{
+			wantPersisted: want{
 				users: `users:
 - email: monaco@dynatrace.com
   groups:
@@ -439,10 +550,10 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"with origin objectIDs",
-			account.Resources{
+			name: "with origin objectIDs",
+			givenResources: account.Resources{
 				Users: map[account.UserId]account.User{
-					"monaco@dynatrace.com": account.User{
+					"monaco@dynatrace.com": {
 						Email: "monaco@dynatrace.com",
 						Groups: []account.Ref{
 							account.Reference{Id: "my-group"},
@@ -458,15 +569,15 @@ func TestWriteAccountResources(t *testing.T) {
 						Description:    "This is my group",
 						Account: &account.Account{
 							Permissions: []string{"View my Group Stuff"},
-							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
+							Policies:    []account.PolicyBinding{{Policy: account.StrReference("Request my Group Stuff")}},
 						},
 						Environment: []account.Environment{
 							{
 								Name:        "myenv123",
 								Permissions: []string{"View environment"},
-								Policies: []account.Ref{
-									account.StrReference("View environment"),
-									account.Reference{Id: "my-policy"},
+								Policies: []account.PolicyBinding{
+									{Policy: account.StrReference("View environment")},
+									{Policy: account.Reference{Id: "my-policy"}},
 								},
 							},
 						},
@@ -501,7 +612,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{
+			wantPersisted: want{
 				users: `users:
 - email: monaco@dynatrace.com
   groups:
@@ -554,8 +665,8 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			"file contents are sorted",
-			account.Resources{
+			name: "file contents are sorted",
+			givenResources: account.Resources{
 				Users: map[account.UserId]account.User{
 					"first@dynatrace.com": account.User{
 						Email: "first@dynatrace.com",
@@ -579,7 +690,7 @@ func TestWriteAccountResources(t *testing.T) {
 						Description: "This is my group",
 						Account: &account.Account{
 							Permissions: []string{},
-							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
+							Policies:    []account.PolicyBinding{{Policy: account.StrReference("Request my Group Stuff")}},
 						},
 						Environment:    []account.Environment{},
 						ManagementZone: []account.ManagementZone{},
@@ -590,23 +701,23 @@ func TestWriteAccountResources(t *testing.T) {
 						Description: "This is my group",
 						Account: &account.Account{
 							Permissions: []string{"View my Group Stuff"},
-							Policies:    []account.Ref{account.StrReference("Request my Group Stuff")},
+							Policies:    []account.PolicyBinding{{Policy: account.StrReference("Request my Group Stuff")}},
 						},
 						Environment: []account.Environment{
 							{
 								Name:        "myenv456",
 								Permissions: []string{"View environment"},
-								Policies: []account.Ref{
-									account.StrReference("View environment"),
-									account.Reference{Id: "second-policy"},
+								Policies: []account.PolicyBinding{
+									{Policy: account.StrReference("View environment")},
+									{Policy: account.Reference{Id: "second-policy"}},
 								},
 							},
 							{
 								Name:        "myenv123",
 								Permissions: []string{"View environment"},
-								Policies: []account.Ref{
-									account.StrReference("View environment"),
-									account.Reference{Id: "first-policy"},
+								Policies: []account.PolicyBinding{
+									{Policy: account.StrReference("View environment")},
+									{Policy: account.Reference{Id: "first-policy"}},
 								},
 							},
 						},
@@ -664,7 +775,7 @@ func TestWriteAccountResources(t *testing.T) {
 					},
 				},
 			},
-			want{
+			wantPersisted: want{
 				users: `users:
 - email: first@dynatrace.com
   groups:
@@ -758,6 +869,12 @@ func TestWriteAccountResources(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.boundariesEnabled {
+				t.Setenv(featureflags.Boundaries.EnvName(), "true")
+			} else {
+				t.Setenv(featureflags.Boundaries.EnvName(), "false")
+			}
+
 			c := writer.Context{
 				Fs:            afero.NewMemMapFs(),
 				OutputFolder:  "test",
@@ -794,6 +911,13 @@ func TestWriteAccountResources(t *testing.T) {
 				assertNoFile(t, c.Fs, serviceUsersFilename)
 			} else {
 				assertFile(t, c.Fs, serviceUsersFilename, tt.wantPersisted.serviceUsers)
+			}
+
+			boundariesFileName := filepath.Join(expectedFolder, c.ProjectFolder, "boundaries.yaml")
+			if tt.wantPersisted.boundaries == "" {
+				assertNoFile(t, c.Fs, boundariesFileName)
+			} else {
+				assertFile(t, c.Fs, boundariesFileName, tt.wantPersisted.boundaries)
 			}
 
 		})

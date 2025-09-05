@@ -82,13 +82,13 @@ type (
 
 	Account struct {
 		Permissions []string
-		Policies    []Ref
+		Policies    []PolicyBinding
 	}
 
 	Environment struct {
 		Name        string
 		Permissions []string
-		Policies    []Ref
+		Policies    []PolicyBinding
 	}
 
 	ManagementZone struct {
@@ -107,6 +107,11 @@ type (
 		Description    string
 		Groups         []Ref
 		OriginObjectID string
+	}
+
+	PolicyBinding struct {
+		Policy     Ref
+		Boundaries []Ref
 	}
 
 	Reference struct {

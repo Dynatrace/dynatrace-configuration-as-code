@@ -22,6 +22,7 @@ import (
 	"github.com/invopop/jsonschema"
 	"github.com/mitchellh/mapstructure"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
@@ -77,14 +78,14 @@ type (
 	}
 
 	Account struct {
-		Permissions []string       `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for the whole account."`
-		Policies    ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for the whole account."`
+		Permissions []string           `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for the whole account."`
+		Policies    PolicyBindingSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for the whole account."`
 	}
 
 	Environment struct {
-		Name        string         `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment."`
-		Permissions []string       `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for this environment."`
-		Policies    ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for this environment."`
+		Name        string             `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment."`
+		Permissions []string           `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for this environment."`
+		Policies    PolicyBindingSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for this environment."`
 	}
 
 	ManagementZone struct {
@@ -110,6 +111,14 @@ type (
 		Id    string `yaml:"id" json:"id" mapstructure:"id" jsonschema:"description=The 'id' of the account configuration being referenced."`
 		Value string `yaml:"-" json:"-" mapstructure:"-"` // omitted from being written/read
 	}
+
+	PolicyBinding struct {
+		Type       string         `yaml:"type,omitempty" json:"type,omitempty" mapstructure:"type" jsonschema:"enum=reference"`                                                // shorthand syntax for backwards compatibility
+		Id         string         `yaml:"id,omitempty" json:"id,omitempty" mapstructure:"id" jsonschema:"description=The 'id' of the account configuration being referenced."` // shorthand syntax for backwards compatibility
+		Value      string         `yaml:"-" json:"-" mapstructure:"-"`                                                                                                         // omitted from being written/read // shorthand syntax for backwards compatibility
+		Policy     *Reference     `yaml:"policy,omitempty" json:"policy,omitempty" mapstructure:"policy" jsonschema:"description=Policy."`
+		Boundaries ReferenceSlice `yaml:"boundaries,omitempty" json:"boundaries,omitempty" mapstructure:"boundaries" jsonschema:"description=Boundaries attached to the policy."`
+	}
 )
 
 // UnmarshalYAML is a custom yaml.Unmarshaler for Reference able to parse simple string values and actual references.
@@ -129,6 +138,48 @@ func (r *Reference) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 	}
 	return nil
+}
+
+// UnmarshalYAML is a custom yaml.Unmarshaler for PolicyBinding able to parse simple string values and references.
+// As it unmarshalls data into the PolicyBinding r, it has a pointer receiver.
+func (r *PolicyBinding) UnmarshalYAML(unmarshal func(any) error) error {
+	// We first try to unmarshal the YAML value as a string to supported shorthand syntax like "policy: My policy name"
+	var data string
+	if err := unmarshal(&data); err == nil {
+		r.Value = data
+		return nil
+	}
+
+	// The shorthand syntax unmarshalling did not work, so it must be the PolicyBinding struct.
+	// A temporary struct is defined. We cannot just use "any" as then the UnmarshalYAML function for Reference would not get called.
+	type policyBinding PolicyBinding
+	var temp policyBinding
+
+	if err := unmarshal(&temp); err != nil {
+		return err
+	}
+
+	if !featureflags.Boundaries.Enabled() {
+		temp.Policy = nil
+		temp.Boundaries = nil
+	}
+	*r = PolicyBinding(temp)
+	return nil
+}
+
+// MarshalYAML is a custom yaml.Marshaler for PolicyBinding, able to write simple string values and actual references.
+// As it is called when marshalling PolicyBinding values, it has a value receiver.
+func (r PolicyBinding) MarshalYAML() (interface{}, error) {
+	if !featureflags.Boundaries.Enabled() {
+		if r.Type == ReferenceType {
+			return r, nil
+		}
+
+		// if not a reference, just marshal the value string
+		return r.Value, nil
+	}
+
+	return r, nil
 }
 
 // MarshalYAML is a custom yaml.Marshaler for Reference, able to write simple string values and actual references.
@@ -167,6 +218,8 @@ func (ReferenceSlice) JSONSchema() *jsonschema.Schema {
 		},
 	}
 }
+
+type PolicyBindingSlice []PolicyBinding
 
 const (
 	KeyUsers        string = "users"

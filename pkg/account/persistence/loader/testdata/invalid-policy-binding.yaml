@@ -1,0 +1,24 @@
+groups:
+  - name: My Group
+    id: my-group
+    description: This is my group
+    account:
+      policies:
+        - type: reference # If you want to use boundaries, you need to use the "policy" nesting
+          id: my-policy
+          boundaries:
+            - My Boundary
+
+policies:
+  - name: My Policy
+    id: my-policy
+    level:
+      type: account
+    description: abcde
+    policy: |-
+      ALLOW a:b:c;
+
+boundaries:
+  - name: My Boundary
+    id: my-boundary
+    query: shared:app-id = "my-app"
