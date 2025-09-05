@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
@@ -53,6 +54,13 @@ func LoadResources(fs afero.Fs, workingDir string, projects manifest.ProjectDefi
 }
 
 func addProjectResources(targetResources *account.Resources, sourceResources *account.Resources) error {
+	for _, bnd := range sourceResources.Boundaries {
+		if _, exists := targetResources.Boundaries[bnd.ID]; exists {
+			return fmt.Errorf("boundary with id '%s' already defined in another project", bnd.ID)
+		}
+		targetResources.Boundaries[bnd.ID] = bnd
+	}
+
 	for _, pol := range sourceResources.Policies {
 		if _, exists := targetResources.Policies[pol.ID]; exists {
 			return fmt.Errorf("policy with id '%s' already defined in another project", pol.ID)
@@ -88,7 +96,7 @@ func addProjectResources(targetResources *account.Resources, sourceResources *ac
 // Load loads account management resources from YAML configuration files
 // located within the specified root directory path.
 // It:
-//  1. parses YAML files found under rootPath, extracts policies, groups, users and service users
+//  1. parses YAML files found under rootPath, extracts boundaries, policies, groups, users and service users
 //  2. validates the loaded data for correct syntax
 //  3. returns the data in the in-memory account.Resources representation
 func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
@@ -105,17 +113,18 @@ func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
 }
 
 // HasAnyAccountKeyDefined checks whether the map has any AM key defined.
-// The current keys are `users`, `serviceUsers`, `groups`, and `policies`.
+// The current keys are `users`, `serviceUsers`, `groups`, `policies`, and `boundaries`.
 func HasAnyAccountKeyDefined(m map[string]any) bool {
 	if len(m) == 0 {
 		return false
 	}
 
-	return m[persistence.KeyUsers] != nil || m[persistence.KeyServiceUsers] != nil || m[persistence.KeyGroups] != nil || m[persistence.KeyPolicies] != nil
+	return m[persistence.KeyUsers] != nil || m[persistence.KeyServiceUsers] != nil || m[persistence.KeyGroups] != nil || m[persistence.KeyPolicies] != nil || m[persistence.KeyBoundaries] != nil && featureflags.Boundaries.Enabled()
 }
 
 func findAndLoadResources(fs afero.Fs, rootPath string) (*account.Resources, error) {
 	resources := account.Resources{
+		Boundaries:   make(map[string]account.Boundary),
 		Policies:     make(map[string]account.Policy),
 		Groups:       make(map[string]account.Group),
 		Users:        make(map[string]account.User),
@@ -187,6 +196,15 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 }
 
 func addResourcesFromFile(res *account.Resources, file persistence.File) error {
+	if featureflags.Boundaries.Enabled() {
+		for _, b := range file.Boundaries {
+			if _, exists := res.Boundaries[b.ID]; exists {
+				return fmt.Errorf("found duplicate boundary with id %q", b.ID)
+			}
+			res.Boundaries[b.ID] = transformBoundary(b)
+		}
+	}
+
 	for _, p := range file.Policies {
 		if _, exists := res.Policies[p.ID]; exists {
 			return fmt.Errorf("found duplicate policy with id %q", p.ID)
