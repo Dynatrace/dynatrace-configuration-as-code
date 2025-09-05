@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -47,6 +48,10 @@ const (
 	DeleteOperation = "delete"
 	WriteOperation  = "write"
 )
+
+// errMissingPermissionsClient is an error that the settings client has no permissions client set.
+// this indicates a misconfiguration of the settings client.
+var errMissingPermissionsClient = errors.New("settings client has no permission client")
 
 // DownloadSettingsObject is the response type for the ListSettings operation
 type DownloadSettingsObject struct {
@@ -345,7 +350,6 @@ func NewPlatformSettingsClient(client *corerest.Client, opts ...func(dynatraceCl
 func NewClassicSettingsClient(client *corerest.Client, opts ...func(dynatraceClient *SettingsClient)) (*SettingsClient, error) {
 	d := &SettingsClient{
 		client:                client,
-		permissionClient:      coresettings.NewClient(client),
 		retrySettings:         DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
 		settingsObjectAPIPath: settingsObjectAPIPathClassic,
@@ -880,6 +884,10 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 }
 
 func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (PermissionObject, error) {
+	if d.permissionClient == nil {
+		return PermissionObject{}, errMissingPermissionsClient
+	}
+
 	resp, err, _ := doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
 		return d.permissionClient.GetAllUsersAccessor(ctx, objectID, adminAccess)
 	})
@@ -905,6 +913,10 @@ func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (Pe
 }
 
 func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, permission PermissionObject) error {
+	if d.permissionClient == nil {
+		return errMissingPermissionsClient
+	}
+
 	payload, err := json.Marshal(permission)
 	if err != nil {
 		return fmt.Errorf("failed to marshal permission: %w", err)
@@ -941,6 +953,10 @@ func (d *SettingsClient) UpsertPermission(ctx context.Context, objectID string, 
 }
 
 func (d *SettingsClient) DeletePermission(ctx context.Context, objectID string) error {
+	if d.permissionClient == nil {
+		return errMissingPermissionsClient
+	}
+
 	_, err, _ := doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
 		return d.permissionClient.DeleteAllUsersAccessor(ctx, objectID, adminAccess)
 	})
