@@ -246,6 +246,283 @@ func TestAccountAPIClient_DeleteGroup(t *testing.T) {
 	})
 }
 
+func TestAccountAPIClient_DeleteBoundary(t *testing.T) {
+	t.Run("successful delete", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if !strings.HasPrefix(req.URL.Path, "/iam/v1/repo/account/1234/boundaries") {
+				t.Fatalf("expected API call to '/iam/v1/repo/account/1234/boundaries' but got %q", req.URL.Path)
+			}
+
+			switch req.URL.Path {
+			case "/iam/v1/repo/account/1234/boundaries":
+				assert.Equal(t, http.MethodGet, req.Method)
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = rw.Write([]byte(`{
+  "pageSize": 100,
+  "pageNumber": 1,
+  "totalCount": 2,
+  "content": [
+    {
+      "uuid": "5678",
+      "levelType": "account",
+      "levelId": "26a91eca-a946-4fa5-a79f-6bce23c3f75f",
+      "name": "BOUNDARY-TO-DELETE",
+      "boundaryQuery": "cloudautomation:event = \"helloworld\";",
+      "boundaryConditions": [
+        {
+          "name": "cloudautomation:event",
+          "operator": "EQ",
+          "values": [
+            "helloworld"
+          ]
+        }
+      ],
+      "metadata": {}
+    },
+	{
+      "uuid": "8765",
+      "levelType": "account",
+      "levelId": "26a91eca-a946-4fa5-a79f-6bce23c3f75f",
+      "name": "SOME-OTHER-THING",
+      "boundaryQuery": "cloudautomation:event = \"helloworld\";",
+      "boundaryConditions": [
+        {
+          "name": "cloudautomation:event",
+          "operator": "EQ",
+          "values": [
+            "helloworld"
+          ]
+        }
+      ],
+      "metadata": {}
+    }
+  ]
+}`))
+			case "/iam/v1/repo/account/1234/boundaries/5678":
+				assert.Equal(t, http.MethodDelete, req.Method)
+				rw.WriteHeader(200)
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteBoundary(t.Context(), "BOUNDARY-TO-DELETE")
+		assert.NoError(t, err)
+	})
+
+	t.Run("does nothing if name is not found", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if !strings.HasPrefix(req.URL.Path, "/iam/v1/repo/account/1234/boundaries") {
+				t.Fatalf("expected API call to '/iam/v1/repo/account/1234/boundaries' but got %q", req.URL.Path)
+			}
+
+			switch req.URL.Path {
+			case "/iam/v1/repo/account/1234/boundaries":
+				assert.Equal(t, http.MethodGet, req.Method)
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = rw.Write([]byte(`{
+	"pageSize": 100,
+	"pageNumber": 1,
+	"totalCount": 1,
+    "content": [
+		{
+		  "uuid": "8765",
+		  "levelType": "account",
+		  "levelId": "26a91eca-a946-4fa5-a79f-6bce23c3f75f",
+		  "name": "SOME-OTHER-THING",
+		  "boundaryQuery": "cloudautomation:event = \"helloworld\";",
+		  "boundaryConditions": [
+			{
+			  "name": "cloudautomation:event",
+			  "operator": "EQ",
+			  "values": [
+				"helloworld"
+			  ]
+			}
+		  ],
+		  "metadata": {}
+		}
+	  ]
+	}`))
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteBoundary(t.Context(), "BOUNDARY-TO-DELETE")
+		notFoundErr := &delete.ResourceNotFoundError{}
+		assert.ErrorAs(t, err, &notFoundErr)
+	})
+	t.Run("returns NotFoundError if delete result is a 404", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if !strings.HasPrefix(req.URL.Path, "/iam/v1/repo/account/1234/boundaries") {
+				t.Fatalf("expected API call to '/iam/v1/repo/account/1234/boundaries' but got %q", req.URL.Path)
+			}
+
+			switch req.URL.Path {
+			case "/iam/v1/repo/account/1234/boundaries":
+				assert.Equal(t, http.MethodGet, req.Method)
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = rw.Write([]byte(`{
+  "pageSize": 100,
+  "pageNumber": 1,
+  "totalCount": 2,
+  "content": [
+    {
+      "uuid": "5678",
+      "levelType": "account",
+      "levelId": "26a91eca-a946-4fa5-a79f-6bce23c3f75f",
+      "name": "BOUNDARY-TO-DELETE",
+      "boundaryQuery": "cloudautomation:event = \"helloworld\";",
+      "boundaryConditions": [
+        {
+          "name": "cloudautomation:event",
+          "operator": "EQ",
+          "values": [
+            "helloworld"
+          ]
+        }
+      ],
+      "metadata": {}
+    },
+	{
+      "uuid": "8765",
+      "levelType": "account",
+      "levelId": "26a91eca-a946-4fa5-a79f-6bce23c3f75f",
+      "name": "SOME-OTHER-THING",
+      "boundaryQuery": "cloudautomation:event = \"helloworld\";",
+      "boundaryConditions": [
+        {
+          "name": "cloudautomation:event",
+          "operator": "EQ",
+          "values": [
+            "helloworld"
+          ]
+        }
+      ],
+      "metadata": {}
+    }
+  ]
+}`))
+			case "/iam/v1/repo/account/1234/boundaries/5678":
+				assert.Equal(t, http.MethodDelete, req.Method)
+				rw.WriteHeader(404)
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteBoundary(t.Context(), "BOUNDARY-TO-DELETE")
+		notFoundErr := &delete.ResourceNotFoundError{}
+		assert.ErrorAs(t, err, &notFoundErr)
+	})
+	t.Run("returns an error if finding ID failed", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if !strings.HasPrefix(req.URL.Path, "/iam/v1/repo/account/1234/boundaries") {
+				t.Fatalf("expected API call to '/iam/v1/repo/account/1234/boundaries' but got %q", req.URL.Path)
+			}
+
+			switch req.URL.Path {
+			case "/iam/v1/repo/account/1234/boundaries":
+				assert.Equal(t, http.MethodGet, req.Method)
+				rw.WriteHeader(400)
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteBoundary(t.Context(), "BOUNDARY-TO-DELETE")
+		assert.Error(t, err)
+	})
+	t.Run("returns an error if delete failed", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if !strings.HasPrefix(req.URL.Path, "/iam/v1/repo/account/1234/boundaries") {
+				t.Fatalf("expected API call to /iam/v1/repo/account/1234/boundaries' but got %q", req.URL.Path)
+			}
+
+			switch req.URL.Path {
+			case "/iam/v1/repo/account/1234/boundaries":
+				assert.Equal(t, http.MethodGet, req.Method)
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = rw.Write([]byte(`{
+  "pageSize": 100,
+  "pageNumber": 1,
+  "totalCount": 2,
+  "content": [
+    {
+      "uuid": "5678",
+      "levelType": "account",
+      "levelId": "26a91eca-a946-4fa5-a79f-6bce23c3f75f",
+      "name": "BOUNDARY-TO-DELETE",
+      "boundaryQuery": "cloudautomation:event = \"helloworld\";",
+      "boundaryConditions": [
+        {
+          "name": "cloudautomation:event",
+          "operator": "EQ",
+          "values": [
+            "helloworld"
+          ]
+        }
+      ],
+      "metadata": {}
+    },
+	{
+      "uuid": "8765",
+      "levelType": "account",
+      "levelId": "26a91eca-a946-4fa5-a79f-6bce23c3f75f",
+      "name": "SOME-OTHER-THING",
+      "boundaryQuery": "cloudautomation:event = \"helloworld\";",
+      "boundaryConditions": [
+        {
+          "name": "cloudautomation:event",
+          "operator": "EQ",
+          "values": [
+            "helloworld"
+          ]
+        }
+      ],
+      "metadata": {}
+    }
+  ]
+}`))
+			case "/iam/v1/repo/account/1234/boundaries/5678":
+				assert.Equal(t, http.MethodDelete, req.Method)
+				rw.WriteHeader(400)
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		restClient := rest.NewClient(serverURL, server.Client())
+		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
+
+		err = accountClient.DeleteBoundary(t.Context(), "BOUNDARY-TO-DELETE")
+		assert.Error(t, err)
+	})
+}
+
 func TestAccountAPIClient_DeleteAccountPolicy(t *testing.T) {
 	t.Run("successful delete", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {

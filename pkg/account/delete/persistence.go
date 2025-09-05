@@ -20,6 +20,7 @@ import (
 	"github.com/invopop/jsonschema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 )
 
@@ -29,7 +30,7 @@ type (
 	}
 
 	// DeleteEntry defines the one shared property of account delete entries - their Type
-	// Individual entries are to be loaded as UserDeleteEntry, GroupDeleteEntry or PolicyDeleteEntry nased on the content of Type
+	// Individual entries are to be loaded as UserDeleteEntry, GroupDeleteEntry, PolicyDeleteEntry or BoundaryDeleteEntry based on the content of Type
 	DeleteEntry struct {
 		Type string `yaml:"type" json:"type" mapstructure:"type" jsonschema:"required,enum=user,enum=group,enum=policy"`
 	}
@@ -49,6 +50,9 @@ type (
 	PolicyLevel struct {
 		Type        string `mapstructure:"type"`
 		Environment string `mapstructure:"environment"`
+	}
+	BoundaryDeleteEntry struct {
+		Name string `mapstructure:"name"`
 	}
 
 	SchemaDef struct {
@@ -110,6 +114,14 @@ func (Entries) JSONSchema() *jsonschema.Schema {
 			orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "policy"}})),
 		Required: []string{"name", "level"},
 	})
+
+	if featureflags.Boundaries.Enabled() {
+		conditionalRequiredFields = append(conditionalRequiredFields, &jsonschema.Schema{
+			Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
+				orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "boundary"}})),
+			Required: []string{"name"},
+		})
+	}
 
 	return &jsonschema.Schema{
 		Type: "array",

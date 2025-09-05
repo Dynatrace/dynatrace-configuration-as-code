@@ -33,6 +33,8 @@ const (
 	SanitizeBucketNames FeatureFlag = "MONACO_SANITIZE_BUCKET_NAMES"
 	// PlatformToken toggles whether the use of platform tokens is enabled or not (deploy, download, read manifest, etc.)
 	PlatformToken FeatureFlag = "MONACO_FEAT_ENABLE_PLATFORM_TOKENS"
+	// Boundaries toggles whether the account management boundary resources are read, written, deployed, downloaded, deleted, ...
+	Boundaries FeatureFlag = "MONACO_FEAT_ENABLE_BOUNDARIES"
 )
 
 // temporaryDefaultValues defines temporary feature flags and their default values.
@@ -44,4 +46,5 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	OnlyCreateReferencesInStringValues: false,
 	SanitizeBucketNames:                true,
 	PlatformToken:                      true,
+	Boundaries:                         false,
 }

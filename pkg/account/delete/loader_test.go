@@ -25,10 +25,25 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
 
+func TestLoader_BoundariesAreNotLoadedAndProduceErrorIfFeatureFlagIsOff(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "false")
+
+	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
+  - type: boundary
+    name: my-special-boundary`)
+
+	result, err := delete.LoadResourcesToDelete(fs, deleteFilename)
+	assert.Equal(t, delete.Resources{}, result)
+	assert.Error(t, err)
+}
+
 func TestLoader_BasicAllTypesSucceeds(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
+
 	fs, deleteFilename := newMemMapFsWithDeleteFile(t, `delete:
   - type: user
     email: test.account.1@user.com
@@ -44,7 +59,9 @@ func TestLoader_BasicAllTypesSucceeds(t *testing.T) {
     name: AppEngine - Admin
     level:
       type: environment
-      environment: vuc`)
+      environment: vuc
+  - type: boundary
+    name: my-special-boundary`)
 
 	resources, err := delete.LoadResourcesToDelete(fs, deleteFilename)
 	assert.NoError(t, err)
@@ -55,7 +72,7 @@ func TestLoader_BasicAllTypesSucceeds(t *testing.T) {
 			},
 		},
 		ServiceUsers: []delete.ServiceUser{
-			delete.ServiceUser{
+			{
 				Name: "my-service-user",
 			},
 		},
@@ -73,6 +90,11 @@ func TestLoader_BasicAllTypesSucceeds(t *testing.T) {
 			{
 				Name:        "AppEngine - Admin",
 				Environment: "vuc",
+			},
+		},
+		Boundaries: []delete.Boundary{
+			{
+				Name: "my-special-boundary",
 			},
 		},
 	}
