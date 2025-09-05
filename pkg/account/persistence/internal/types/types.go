@@ -22,6 +22,7 @@ import (
 	"github.com/invopop/jsonschema"
 	"github.com/mitchellh/mapstructure"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
@@ -34,10 +35,18 @@ const (
 
 type (
 	File struct {
+		Boundaries   []Boundary    `yaml:"boundaries,omitempty" json:"boundaries,omitempty" jsonschema:"description=Boundaries to configure for this account."`
 		Policies     []Policy      `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies to configure for this account."`
 		Groups       []Group       `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups to configure for this account."`
 		Users        []User        `yaml:"users,omitempty" json:"users,omitempty" jsonschema:"description=Users to configure for this account."`
 		ServiceUsers []ServiceUser `yaml:"serviceUsers,omitempty" json:"serviceUsers,omitempty" jsonschema:"description=Service users to configure for this account."`
+	}
+
+	Boundary struct {
+		ID             string `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this boundary configuration - this can be freely defined, used by monaco."`
+		Name           string `yaml:"name" json:"name" jsonschema:"required,description=The name of this boundary."`
+		Query          string `yaml:"query" json:"query" jsonschema:"required,description=The query definition of the boundary."`
+		OriginObjectID string `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the boundary this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
 	}
 
 	Policy struct {
@@ -69,14 +78,14 @@ type (
 	}
 
 	Account struct {
-		Permissions []string       `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for the whole account."`
-		Policies    ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for the whole account."`
+		Permissions []string             `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for the whole account."`
+		Policies    PolicyReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for the whole account."`
 	}
 
 	Environment struct {
-		Name        string         `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment."`
-		Permissions []string       `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for this environment."`
-		Policies    ReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for this environment."`
+		Name        string               `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment."`
+		Permissions []string             `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for this environment."`
+		Policies    PolicyReferenceSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for this environment."`
 	}
 
 	ManagementZone struct {
@@ -102,6 +111,14 @@ type (
 		Id    string `yaml:"id" json:"id" mapstructure:"id" jsonschema:"description=The 'id' of the account configuration being referenced."`
 		Value string `yaml:"-" json:"-" mapstructure:"-"` // omitted from being written/read
 	}
+
+	PolicyReference struct {
+		Type       string         `yaml:"type,omitempty" json:"type,omitempty" mapstructure:"type" jsonschema:"enum=reference"`                                                // shorthand syntax for backwards compatibility
+		Id         string         `yaml:"id,omitempty" json:"id,omitempty" mapstructure:"id" jsonschema:"description=The 'id' of the account configuration being referenced."` // shorthand syntax for backwards compatibility
+		Value      string         `yaml:"-" json:"-" mapstructure:"-"`                                                                                                         // omitted from being written/read // shorthand syntax for backwards compatibility
+		Policy     *Reference     `yaml:"policy,omitempty" json:"policy,omitempty" mapstructure:"policy" jsonschema:"description=Policy."`
+		Boundaries ReferenceSlice `yaml:"boundaries,omitempty" json:"boundaries,omitempty" mapstructure:"boundaries" jsonschema:"description=Boundaries attached to the policy."`
+	}
 )
 
 // UnmarshalYAML is a custom yaml.Unmarshaler for Reference able to parse simple string values and actual references.
@@ -121,6 +138,61 @@ func (r *Reference) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 	}
 	return nil
+}
+
+// UnmarshalYAML is a custom yaml.Unmarshaler for PolicyReference able to parse simple string values and actual references.
+// As it unmarshalls data into the PolicyReference r, it has a pointer receiver.
+func (r *PolicyReference) UnmarshalYAML(unmarshal func(any) error) error {
+	// We first try to unmarshal the YAML value as a string to supported shorthand syntax like "policy: My policy name"
+	var data string
+	if err := unmarshal(&data); err == nil {
+		r.Value = data
+		return nil
+	}
+
+	// The shorthand syntax unmarshalling did not work, so it must be the PolicyReference struct.
+	// A temporary struct is defined. We cannot just use "any" as then the UnmarshalYAML function for Reference would not get called.
+	var temp struct {
+		Type       string
+		Id         string
+		Value      string
+		Policy     *Reference
+		Boundaries ReferenceSlice
+	}
+
+	if err := unmarshal(&temp); err != nil {
+		return err
+	}
+
+	if !featureflags.Boundaries.Enabled() {
+		temp.Policy = nil
+		temp.Boundaries = nil
+	}
+	*r = PolicyReference(temp)
+	return nil
+}
+
+// MarshalYAML is a custom yaml.Marshaler for PolicyReference, able to write simple string values and actual references.
+// As it is called when marshalling PolicyReference values, it has a value receiver.
+func (r PolicyReference) MarshalYAML() (interface{}, error) {
+	// If boundaries are enabled, we disregard the top-level reference. We marshal "policy" and "boundaries"
+	if featureflags.Boundaries.Enabled() {
+		var tempStruct struct {
+			Policy     *Reference     `yaml:"policy,omitempty" json:"policy,omitempty" mapstructure:"policy" jsonschema:"description=Policy."`
+			Boundaries ReferenceSlice `yaml:"boundaries,omitempty" json:"boundaries,omitempty" mapstructure:"boundaries" jsonschema:"description=Boundaries attached to the policy."`
+		}
+
+		tempStruct.Policy = r.Policy
+		tempStruct.Boundaries = r.Boundaries
+		return tempStruct, nil
+	}
+
+	if r.Type == ReferenceType {
+		return r, nil
+	}
+
+	// if not a reference, just marshal the value string
+	return r.Value, nil
 }
 
 // MarshalYAML is a custom yaml.Marshaler for Reference, able to write simple string values and actual references.
@@ -160,9 +232,12 @@ func (ReferenceSlice) JSONSchema() *jsonschema.Schema {
 	}
 }
 
+type PolicyReferenceSlice []PolicyReference
+
 const (
 	KeyUsers        string = "users"
 	KeyServiceUsers string = "serviceUsers"
 	KeyGroups       string = "groups"
 	KeyPolicies     string = "policies"
+	KeyBoundaries   string = "boundaries"
 )

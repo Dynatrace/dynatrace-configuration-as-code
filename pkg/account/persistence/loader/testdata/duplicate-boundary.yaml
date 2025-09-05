@@ -1,0 +1,7 @@
+boundaries:
+  - name: My Boundary
+    id: my-boundary
+    query: shared:app-id = "my-app"
+  - name: My Boundary
+    id: my-boundary
+    query: shared:app-id = "my-app"
