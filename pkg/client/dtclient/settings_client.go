@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -345,7 +346,6 @@ func NewPlatformSettingsClient(client *corerest.Client, opts ...func(dynatraceCl
 func NewClassicSettingsClient(client *corerest.Client, opts ...func(dynatraceClient *SettingsClient)) (*SettingsClient, error) {
 	d := &SettingsClient{
 		client:                client,
-		permissionClient:      coresettings.NewClient(client),
 		retrySettings:         DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
 		settingsObjectAPIPath: settingsObjectAPIPathClassic,
@@ -880,6 +880,10 @@ func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
 }
 
 func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (PermissionObject, error) {
+	if d.permissionClient == nil {
+		return PermissionObject{}, errors.New("settings client has no permission client")
+	}
+
 	resp, err, _ := doWithAdminAccessRetry(func(adminAccess bool) (coreapi.Response, error) {
 		return d.permissionClient.GetAllUsersAccessor(ctx, objectID, adminAccess)
 	})
