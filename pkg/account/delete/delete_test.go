@@ -25,6 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
 
@@ -35,6 +36,7 @@ type testClient struct {
 	groupFunc             func(ctx context.Context, accountUUID, name string) error
 	accountPolicyFunc     func(ctx context.Context, name string) error
 	environmentPolicyFunc func(ctx context.Context, environmentID, name string) error
+	boundaryFunc          func(ctx context.Context, accountUUID, name string) error
 }
 
 var _ delete.Client = (*testClient)(nil)
@@ -59,12 +61,45 @@ func (c *testClient) DeleteEnvironmentPolicy(ctx context.Context, environmentID,
 	return c.environmentPolicyFunc(ctx, environmentID, name)
 }
 
+func (c *testClient) DeleteBoundary(ctx context.Context, name string) error {
+	return c.boundaryFunc(ctx, c.AccountUUID, name)
+}
+
+func TestBoundariesAreNotDeletedIfFeatureFlagIsOff(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "false")
+	boundaryDeleteCalled := 0
+	c := testClient{
+		boundaryFunc: func(ctx context.Context, accountUUID, name string) error {
+			boundaryDeleteCalled++
+			return nil
+		},
+	}
+	entriesToDelete := delete.Resources{
+		Boundaries: []delete.Boundary{
+			{
+				Name: "test-boundary",
+			},
+		},
+	}
+	acc := delete.Account{
+		Name:      "name",
+		UUID:      "1234",
+		APIClient: &c,
+	}
+	err := delete.DeleteAccountResources(t.Context(), acc, entriesToDelete)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, boundaryDeleteCalled)
+}
+
 func TestDeletesResources(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
+
 	userDeleteCalled := 0
 	serviceUserDeleteCalled := 0
 	groupDeleteCalled := 0
 	accountPolicyDeleteCalled := 0
 	environmentPolicyDeleteCalled := 0
+	boundaryDeleteCalled := 0
 	c := testClient{
 		userFunc: func(ctx context.Context, accountUUID, email string) error {
 			userDeleteCalled++
@@ -84,6 +119,10 @@ func TestDeletesResources(t *testing.T) {
 		},
 		environmentPolicyFunc: func(ctx context.Context, envID, name string) error {
 			environmentPolicyDeleteCalled++
+			return nil
+		},
+		boundaryFunc: func(ctx context.Context, accountUUID, name string) error {
+			boundaryDeleteCalled++
 			return nil
 		},
 	}
@@ -120,6 +159,11 @@ func TestDeletesResources(t *testing.T) {
 				Environment: "abc1234567",
 			},
 		},
+		Boundaries: []delete.Boundary{
+			{
+				Name: "test-boundary",
+			},
+		},
 	}
 	acc := delete.Account{
 		Name:      "name",
@@ -133,13 +177,17 @@ func TestDeletesResources(t *testing.T) {
 	assert.Equal(t, 1, groupDeleteCalled)
 	assert.Equal(t, 1, accountPolicyDeleteCalled)
 	assert.Equal(t, 1, environmentPolicyDeleteCalled)
+	assert.Equal(t, 1, boundaryDeleteCalled)
 }
 
 func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
+
 	userDeleteCalled := 0
 	serviceUserCalled := 0
 	accountPolicyDeleteCalled := 0
 	environmentPolicyDeleteCalled := 0
+	boundaryDeleteCalled := 0
 	c := testClient{
 		userFunc: func(ctx context.Context, accountUUID, email string) error {
 			userDeleteCalled++
@@ -158,6 +206,10 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 		},
 		environmentPolicyFunc: func(ctx context.Context, envID, name string) error {
 			environmentPolicyDeleteCalled++
+			return nil
+		},
+		boundaryFunc: func(ctx context.Context, envID, name string) error {
+			boundaryDeleteCalled++
 			return nil
 		},
 	}
@@ -191,6 +243,11 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 				Environment: "abc1234567",
 			},
 		},
+		Boundaries: []delete.Boundary{
+			{
+				Name: "test-boundary",
+			},
+		},
 	}
 	acc := delete.Account{
 		Name:      "name",
@@ -203,14 +260,18 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 	assert.Equal(t, 1, serviceUserCalled)
 	assert.Equal(t, 1, accountPolicyDeleteCalled)
 	assert.Equal(t, 1, environmentPolicyDeleteCalled)
+	assert.Equal(t, 1, boundaryDeleteCalled)
 }
 
 func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
+
 	userDeleteCalled := 0
 	serviceUserDeleteCalled := 0
 	groupDeleteCalled := 0
 	accountPolicyDeleteCalled := 0
 	environmentPolicyDeleteCalled := 0
+	boundaryDeleteCalled := 0
 	c := testClient{
 		userFunc: func(ctx context.Context, accountUUID, email string) error {
 			userDeleteCalled++
@@ -243,6 +304,13 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 		environmentPolicyFunc: func(ctx context.Context, envID, name string) error {
 			environmentPolicyDeleteCalled++
 			if environmentPolicyDeleteCalled > 1 {
+				return errors.New("fail")
+			}
+			return nil
+		},
+		boundaryFunc: func(ctx context.Context, envID, name string) error {
+			boundaryDeleteCalled++
+			if boundaryDeleteCalled > 1 {
 				return errors.New("fail")
 			}
 			return nil
@@ -291,6 +359,14 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 				Environment: "def7654321",
 			},
 		},
+		Boundaries: []delete.Boundary{
+			{
+				Name: "test-boundary",
+			},
+			{
+				Name: "test-boundary-2",
+			},
+		},
 	}
 	acc := delete.Account{
 		Name:      "name",
@@ -304,4 +380,5 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 	assert.Equal(t, 2, groupDeleteCalled)
 	assert.Equal(t, 2, accountPolicyDeleteCalled)
 	assert.Equal(t, 2, environmentPolicyDeleteCalled)
+	assert.Equal(t, 2, boundaryDeleteCalled)
 }
