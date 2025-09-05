@@ -35,7 +35,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader"
-	presistance "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
+	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	manifestwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/writer"
@@ -155,12 +155,12 @@ func downloadAndPersist(ctx context.Context, fs afero.Fs, opts *downloadOpts, ac
 		return fmt.Errorf("failed to download resources: %w", err)
 	}
 
-	c := presistance.Context{
+	c := persistence.Context{
 		Fs:            fs,
 		OutputFolder:  opts.outputFolder,
 		ProjectFolder: filepath.Join(opts.projectName, accInfo.Name),
 	}
-	err = presistance.Write(c, *resources)
+	err = persistence.Write(c, *resources)
 	if err != nil {
 		return fmt.Errorf("failed to persist resources: %w", err)
 	}
