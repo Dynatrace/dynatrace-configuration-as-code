@@ -18,6 +18,7 @@ package delete
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 )
 
