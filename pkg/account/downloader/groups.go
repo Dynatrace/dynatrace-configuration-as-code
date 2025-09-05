@@ -71,7 +71,8 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		log.DebugContext(ctx, "Downloading definition for group %q", groupDTOs[i].Name)
 		acc := account.Account{
 			Permissions: getPermissionFor("account", perDTO),
-			Policies:    policies.RefOn(getPoliciesFor(binding, *g.dto.Uuid)...),
+			Policies: policyReferencesOn(
+				getPoliciesFor(binding, *g.dto.Uuid), policies),
 		}
 
 		var envs []account.Environment
@@ -87,7 +88,8 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 			envs = append(envs, account.Environment{
 				Name:        t.id,
 				Permissions: getPermissionFor(t.id, perDTO),
-				Policies:    policies.RefOn(getPoliciesFor(binding, *g.dto.Uuid)...),
+				Policies: policyReferencesOn(
+					getPoliciesFor(binding, *g.dto.Uuid), policies),
 			})
 
 			for k, v := range getManagementZonesFor(t.id, perDTO) {
@@ -117,6 +119,22 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 	log.InfoContext(ctx, "Downloaded %d groups", len(groups))
 
 	return groups, nil
+}
+
+func policyReferencesOn(policyIds []string, policies Policies) []account.PolicyBinding {
+	if len(policyIds) == 0 {
+		return nil
+	}
+
+	retVal := make([]account.PolicyBinding, 0, len(policies))
+	for _, p := range policyIds {
+		polRefs := policies.RefOn(p)
+		if len(polRefs) == 0 {
+			continue
+		}
+		retVal = append(retVal, account.PolicyBinding{Policy: polRefs[0]})
+	}
+	return retVal
 }
 
 func (g Groups) asAccountGroups() map[account.GroupId]account.Group {

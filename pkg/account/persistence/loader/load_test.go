@@ -184,14 +184,18 @@ func TestLoad(t *testing.T) {
 		assert.Len(t, loaded.Groups, 1)
 		assert.NotNil(t, loaded.Groups["monaco-group"].Account)
 		assert.Len(t, loaded.Groups["monaco-group"].Account.Policies, 2)
-		assert.IsType(t, account.Reference{}, loaded.Groups["monaco-group"].Account.Policies[0])
-		assert.IsType(t, account.StrReference(""), loaded.Groups["monaco-group"].Account.Policies[1])
+		assert.IsType(t, account.PolicyBinding{}, loaded.Groups["monaco-group"].Account.Policies[0])
+		assert.IsType(t, account.Reference{}, loaded.Groups["monaco-group"].Account.Policies[0].Policy)
+		assert.IsType(t, account.PolicyBinding{}, loaded.Groups["monaco-group"].Account.Policies[1])
+		assert.IsType(t, account.StrReference(""), loaded.Groups["monaco-group"].Account.Policies[1].Policy)
 		assert.NotNil(t, loaded.Groups["monaco-group"].Environment)
 		assert.Len(t, loaded.Groups["monaco-group"].Environment, 1)
 		assert.Equal(t, "vsy13800", loaded.Groups["monaco-group"].Environment[0].Name)
 		assert.Len(t, loaded.Groups["monaco-group"].Environment[0].Policies, 2)
-		assert.IsType(t, account.Reference{}, loaded.Groups["monaco-group"].Environment[0].Policies[0])
-		assert.IsType(t, account.StrReference(""), loaded.Groups["monaco-group"].Environment[0].Policies[1])
+		assert.IsType(t, account.PolicyBinding{}, loaded.Groups["monaco-group"].Environment[0].Policies[0])
+		assert.IsType(t, account.Reference{}, loaded.Groups["monaco-group"].Environment[0].Policies[0].Policy)
+		assert.IsType(t, account.PolicyBinding{}, loaded.Groups["monaco-group"].Environment[0].Policies[1])
+		assert.IsType(t, account.StrReference(""), loaded.Groups["monaco-group"].Environment[0].Policies[1].Policy)
 		assert.Len(t, loaded.Policies, 2)
 		assert.Len(t, loaded.Boundaries, 1)
 	})
@@ -320,6 +324,7 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Partial boundary definition produces error", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		_, err := Load(afero.NewOsFs(), "testdata/partial-boundary.yaml")
 		assert.Error(t, err)
 	})
@@ -369,12 +374,12 @@ func TestLoad(t *testing.T) {
 
 	t.Run("environment level policy reference not found", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/no-ref-policy-env.yaml")
-		assert.ErrorContains(t, err, "references missing policy")
+		assert.ErrorContains(t, err, "has an invalid policy reference for environment")
 	})
 
 	t.Run("referencing a missing account level policy produces an error", func(t *testing.T) {
 		_, err := Load(afero.NewOsFs(), "testdata/no-ref-policy-account.yaml")
-		assert.ErrorContains(t, err, "references missing policy")
+		assert.ErrorContains(t, err, "has an invalid account policy reference")
 	})
 
 	t.Run("mixed configs and account resources produces an error", func(t *testing.T) {
@@ -392,5 +397,43 @@ func TestLoad(t *testing.T) {
 		data, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
 		assert.NoError(t, err)
 		assert.Len(t, data.Boundaries, 0)
+	})
+
+	t.Run("loading boundary references leads to error is the feature is disabled", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "false")
+		_, err := Load(afero.NewOsFs(), "testdata/valid-policy-binding-variants.yaml")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "missing reference value")
+	})
+
+	t.Run("All different policy structure variants are supported when loading groups", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
+		data, err := Load(afero.NewOsFs(), "testdata/valid-policy-binding-variants.yaml")
+		assert.NoError(t, err)
+		assert.Len(t, data.Boundaries, 2)
+
+		bindings := data.Groups["my-group"].Account.Policies
+		assert.Len(t, bindings, 4)
+
+		assert.Equal(t, account.PolicyBinding{Policy: account.StrReference("My Policy"), Boundaries: []account.Ref{}}, bindings[0])
+		assert.Equal(t, account.PolicyBinding{Policy: account.Reference{Id: "my-policy2"}, Boundaries: []account.Ref{}}, bindings[1])
+		assert.Equal(t, account.PolicyBinding{Policy: account.StrReference("My Policy3"), Boundaries: []account.Ref{}}, bindings[2])
+		assert.Equal(t, account.PolicyBinding{Policy: account.Reference{Id: "my-policy4"},
+			Boundaries: []account.Ref{account.Reference{Id: "my-boundary"}, account.StrReference("My Boundary2")}},
+			bindings[3])
+	})
+
+	t.Run("Invalid policy binding leads to error", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
+		_, err := Load(afero.NewOsFs(), "testdata/invalid-policy-binding.yaml")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "boundaries are only supported when using the 'policy' key")
+	})
+
+	t.Run("Ambiguous policy binding leads to error", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
+		_, err := Load(afero.NewOsFs(), "testdata/ambiguous-policy-binding.yaml")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "policy definition is ambiguous")
 	})
 }

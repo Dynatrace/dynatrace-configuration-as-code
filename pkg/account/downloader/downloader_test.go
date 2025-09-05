@@ -476,12 +476,12 @@ func TestDownloader_GroupsWithPolicies(t *testing.T) {
 			Name:           "test group",
 			OriginObjectID: groupUUID1,
 			Account: &account.Account{
-				Policies: []account.Ref{account.Reference{Id: toID("account policy")}},
+				Policies: []account.PolicyBinding{{Policy: account.Reference{Id: toID("account policy")}}},
 			},
 			Environment: []account.Environment{
 				{
 					Name:     "abc12345",
-					Policies: []account.Ref{account.Reference{Id: toID("environment policy")}},
+					Policies: []account.PolicyBinding{{Policy: account.Reference{Id: toID("environment policy")}}},
 				},
 			},
 		},
@@ -490,7 +490,7 @@ func TestDownloader_GroupsWithPolicies(t *testing.T) {
 			Name:           "second test group",
 			OriginObjectID: groupUUID2,
 			Account: &account.Account{
-				Policies: []account.Ref{account.Reference{Id: toID("account policy")}},
+				Policies: []account.PolicyBinding{{Policy: account.Reference{Id: toID("account policy")}}},
 			},
 		},
 	}, result.Groups)
