@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,6 +18,7 @@ package resolver
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 
@@ -68,10 +69,10 @@ func sanitizeTemplateVar(templateVarName string) string {
 	return templatePattern.ReplaceAllString(templateVarName, "")
 }
 
-func replaceAll(content string, key string, s string) string {
+func replaceAll(content string, key string, s string, configType config.Type) string {
 	if featureflags.OnlyCreateReferencesInStringValues.Enabled() {
 		f := func(v string) string {
-			return replaceAllUsingRegEx(v, key, s)
+			return replaceAllUsingRegEx(v, key, s, configType)
 		}
 		result, err := json.ApplyToStringValues(content, f)
 		if err == nil {
@@ -80,22 +81,31 @@ func replaceAll(content string, key string, s string) string {
 
 		log.Debug("Failed to replace %q with %q in string values in %q: %s", key, s, content, err)
 	}
-	return replaceAllUsingRegEx(content, key, s)
+	return replaceAllUsingRegEx(content, key, s, configType)
 }
 
-func replaceAllUsingRegEx(content string, key string, s string) string {
-	// The prefix and suffix we search for are alphanumerical, as well as the "-", and "_".
-	// From investigating, this character set seems to be the most basic regex that still avoids false positive substring matches.
-	str := fmt.Sprintf("([^a-zA-Z0-9_-])(%s)([^a-zA-Z0-9_-])", key)
-
-	// replace only strings that are not part of another larger string. See testcases for exact in/out values.
-	re, err := regexp.Compile(str)
+func replaceAllUsingRegEx(content string, key string, s string, configType config.Type) string {
+	re, err := getMatchingRegEx(key, configType)
 	if err != nil {
-		log.Debug("Failed to compile string %q to regex. Falling back to use simple string replace.", str)
+		slog.Debug("Failed to compile regex. Falling back to use simple string replace.", slog.String("key", key), slog.String("configType", string(configType.ID())))
 		return strings.ReplaceAll(content, key, s)
 	}
 
 	return re.ReplaceAllString(content, fmt.Sprintf("$1%s$3", s))
+}
+
+// getMatchingRegEx returns a regex for finding the specified key related to the config type.
+func getMatchingRegEx(key string, configType config.Type) (*regexp.Regexp, error) {
+	if featureflags.RestrictDocumentReferenceCreation.Enabled() && configType.ID() == config.DocumentTypeID {
+		// Documents must have a `/` as a prefix and something from [^a-zA-Z0-9_-] as a suffix.
+		// The aim of this is to match document IDs that are part of a URL.
+		return regexp.Compile(fmt.Sprintf("([\\/])(%s)([^a-zA-Z0-9_-])", key))
+	}
+
+	// Replace only strings that are not part of another larger string. See testcases for exact in/out values.
+	// The prefix and suffix we search for are alphanumerical, as well as the "-", and "_".
+	// From investigating, this character set seems to be the most basic regex that still avoids false positive substring matches.
+	return regexp.Compile(fmt.Sprintf("([^a-zA-Z0-9_-])(%s)([^a-zA-Z0-9_-])", key))
 }
 
 // canReference verifies whether configToUpdateFrom can actually reference configToBeUpdated.

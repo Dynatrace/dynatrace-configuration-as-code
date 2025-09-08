@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -56,11 +56,13 @@ const (
 	// to turn it off until a generally better solution is available.
 	// Introduced: 2023-09-01; v2.9.1
 	UpdateNonUniqueByNameIfSingleOneExists FeatureFlag = "MONACO_FEAT_UPDATE_SINGLE_NON_UNIQUE_BY_NAME"
-
 	//LogMemStats enables/disables memory stat logging
 	LogMemStats FeatureFlag = "MONACO_LOG_MEM_STATS"
 	// SkipCertificateVerification enables skipping SSL certificate checks via the "InsecureSkipVerify" option
 	SkipCertificateVerification FeatureFlag = "MONACO_SKIP_CERTIFICATE_VERIFICATION"
+	// RestrictDocumentReferenceCreation toggles whether the creation of references to documents on download is resticted due to the API's support of liberal custom IDs.
+	// Introduced: 2025-09-08: v2.25.2
+	RestrictDocumentReferenceCreation FeatureFlag = "MONACO_RESTRICT_DOCUMENT_REFERENCE_CREATION"
 )
 
 // permanentDefaultValues defines permanent feature flags and their default values.
@@ -81,4 +83,5 @@ var permanentDefaultValues = map[FeatureFlag]defaultValue{
 	UpdateNonUniqueByNameIfSingleOneExists: true,
 	LogMemStats:                            false,
 	SkipCertificateVerification:            false,
+	RestrictDocumentReferenceCreation:      true,
 }
