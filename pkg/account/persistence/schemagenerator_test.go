@@ -24,13 +24,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence"
 )
 
 func Test_GenerateJSONSchema(t *testing.T) {
 	type testCase struct {
-		name     string
-		fileName string
+		name             string
+		fileName         string
+		enableBoundaries bool
 	}
 
 	cases := []testCase{
@@ -38,9 +40,20 @@ func Test_GenerateJSONSchema(t *testing.T) {
 			name:     "schema generated as expected",
 			fileName: "testdata/schema.json",
 		},
+		{
+			name:             "schema generated as expected with boundaries enabled",
+			fileName:         "testdata/schema_with_boundaries.json",
+			enableBoundaries: true,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.enableBoundaries {
+				t.Setenv(featureflags.Boundaries.EnvName(), "true")
+			} else {
+				t.Setenv(featureflags.Boundaries.EnvName(), "false")
+			}
+
 			expectedRaw, err := afero.ReadFile(afero.NewOsFs(), tc.fileName)
 			require.NoError(t, err)
 

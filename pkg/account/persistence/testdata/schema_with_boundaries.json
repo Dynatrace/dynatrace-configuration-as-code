@@ -1,0 +1,421 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types/file",
+    "properties": {
+        "boundaries": {
+            "items": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "A unique identifier of this boundary configuration - this can be freely defined"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of this boundary."
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "The query definition of the boundary."
+                    },
+                    "originObjectId": {
+                        "type": "string",
+                        "description": "The identifier of the boundary this config originated from - this is filled when downloading"
+                    }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "query"
+                ]
+            },
+            "type": "array",
+            "description": "Boundaries to configure for this account."
+        },
+        "policies": {
+            "items": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "A unique identifier of this policy configuration - this can be freely defined"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of this policy."
+                    },
+                    "level": {
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "account",
+                                    "environment"
+                                ],
+                                "description": "This defines which level this policy applies to - either the whole 'account' or a specific 'environment'. For environment level"
+                            },
+                            "environment": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                            "type"
+                        ],
+                        "description": "The level this policy applies to."
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "policy": {
+                        "type": "string",
+                        "description": "The policy definition."
+                    },
+                    "originObjectId": {
+                        "type": "string",
+                        "description": "The identifier of the policy this config originated from - this is filled when downloading"
+                    }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "level",
+                    "policy"
+                ]
+            },
+            "type": "array",
+            "description": "Policies to configure for this account."
+        },
+        "groups": {
+            "items": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "A unique identifier of this group configuration - this can be freely defined"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of this group."
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "federatedAttributeValues": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "account": {
+                        "properties": {
+                            "permissions": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array",
+                                "description": "Permissions for the whole account."
+                            },
+                            "policies": {
+                                "items": {
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": [
+                                                "reference"
+                                            ]
+                                        },
+                                        "id": {
+                                            "type": "string",
+                                            "description": "The 'id' of the account configuration being referenced."
+                                        },
+                                        "policy": {
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "reference"
+                                                    ]
+                                                },
+                                                "id": {
+                                                    "type": "string",
+                                                    "description": "The 'id' of the account configuration being referenced."
+                                                }
+                                            },
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "description": "Policy."
+                                        },
+                                        "boundaries": {
+                                            "items": {
+                                                "oneOf": [
+                                                    {
+                                                        "type": "string"
+                                                    },
+                                                    {
+                                                        "type": "object"
+                                                    }
+                                                ],
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "reference"
+                                                        ]
+                                                    },
+                                                    "id": {
+                                                        "type": "string",
+                                                        "description": "The 'id' of the account configuration being referenced."
+                                                    }
+                                                },
+                                                "additionalProperties": false
+                                            },
+                                            "type": "array",
+                                            "description": "Boundaries attached to the policy."
+                                        }
+                                    },
+                                    "additionalProperties": false,
+                                    "type": "object"
+                                },
+                                "type": "array",
+                                "description": "Policies for the whole account."
+                            }
+                        },
+                        "additionalProperties": false,
+                        "type": "object",
+                        "description": "Account level permissions and policies that apply to users in this group."
+                    },
+                    "environments": {
+                        "items": {
+                            "properties": {
+                                "environment": {
+                                    "type": "string",
+                                    "description": "Name/identifier of the environment."
+                                },
+                                "permissions": {
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "type": "array",
+                                    "description": "Permissions for this environment."
+                                },
+                                "policies": {
+                                    "items": {
+                                        "properties": {
+                                            "type": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "reference"
+                                                ]
+                                            },
+                                            "id": {
+                                                "type": "string",
+                                                "description": "The 'id' of the account configuration being referenced."
+                                            },
+                                            "policy": {
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "reference"
+                                                        ]
+                                                    },
+                                                    "id": {
+                                                        "type": "string",
+                                                        "description": "The 'id' of the account configuration being referenced."
+                                                    }
+                                                },
+                                                "additionalProperties": false,
+                                                "type": "object",
+                                                "description": "Policy."
+                                            },
+                                            "boundaries": {
+                                                "items": {
+                                                    "oneOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "object"
+                                                        }
+                                                    ],
+                                                    "properties": {
+                                                        "type": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "reference"
+                                                            ]
+                                                        },
+                                                        "id": {
+                                                            "type": "string",
+                                                            "description": "The 'id' of the account configuration being referenced."
+                                                        }
+                                                    },
+                                                    "additionalProperties": false
+                                                },
+                                                "type": "array",
+                                                "description": "Boundaries attached to the policy."
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "type": "object"
+                                    },
+                                    "type": "array",
+                                    "description": "Policies for this environment."
+                                }
+                            },
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                                "environment"
+                            ]
+                        },
+                        "type": "array",
+                        "description": "Environment level permissions and policies that apply to users in this group."
+                    },
+                    "managementZones": {
+                        "items": {
+                            "properties": {
+                                "environment": {
+                                    "type": "string",
+                                    "description": "Name/identifier of the environment the management zone is in."
+                                },
+                                "managementZone": {
+                                    "type": "string",
+                                    "description": "Identifier of the management zone."
+                                },
+                                "permissions": {
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "type": "array",
+                                    "description": "Permissions for this management zone."
+                                }
+                            },
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                                "environment",
+                                "managementZone",
+                                "permissions"
+                            ]
+                        },
+                        "type": "array",
+                        "description": "ManagementZone level permissions that apply to users in this group."
+                    },
+                    "originObjectId": {
+                        "type": "string",
+                        "description": "The identifier of the group this config originated from - this is filled when downloading"
+                    }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                    "id",
+                    "name"
+                ]
+            },
+            "type": "array",
+            "description": "Groups to configure for this account."
+        },
+        "users": {
+            "items": {
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "description": "Email address of this user."
+                    },
+                    "groups": {
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "object"
+                                }
+                            ],
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "reference"
+                                    ]
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "The 'id' of the account configuration being referenced."
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "type": "array",
+                        "description": "Groups this user is part of - either defined by name directly or as a reference to a group configuration."
+                    }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                    "email"
+                ]
+            },
+            "type": "array",
+            "description": "Users to configure for this account."
+        },
+        "serviceUsers": {
+            "items": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The name of this service user."
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "groups": {
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "object"
+                                }
+                            ],
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "reference"
+                                    ]
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "The 'id' of the account configuration being referenced."
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "type": "array",
+                        "description": "Groups this user is part of - either defined by name directly or as a reference to a group configuration."
+                    },
+                    "originObjectId": {
+                        "type": "string",
+                        "description": "The identifier of the service user this config originated from - this is filled when downloading"
+                    }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                    "name"
+                ]
+            },
+            "type": "array",
+            "description": "Service users to configure for this account."
+        }
+    },
+    "additionalProperties": false,
+    "type": "object"
+}

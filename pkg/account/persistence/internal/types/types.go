@@ -78,14 +78,14 @@ type (
 	}
 
 	Account struct {
-		Permissions []string           `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for the whole account."`
-		Policies    PolicyBindingSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for the whole account."`
+		Permissions []string        `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for the whole account."`
+		Policies    []PolicyBinding `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for the whole account."`
 	}
 
 	Environment struct {
-		Name        string             `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment."`
-		Permissions []string           `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for this environment."`
-		Policies    PolicyBindingSlice `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for this environment."`
+		Name        string          `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment."`
+		Permissions []string        `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for this environment."`
+		Policies    []PolicyBinding `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for this environment."`
 	}
 
 	ManagementZone struct {
@@ -219,7 +219,57 @@ func (ReferenceSlice) JSONSchema() *jsonschema.Schema {
 	}
 }
 
-type PolicyBindingSlice []PolicyBinding
+// JSONSchema defines a custom schema definition for Account. ID and Version are removed from the reflection result.
+// If boundaries are disabled, the schema for the "policies" property is replaced with the schema for ReferenceSlice.
+func (Account) JSONSchema() *jsonschema.Schema {
+	type accountSchema Account
+	base := jsonutils.ReflectJSONSchema(accountSchema{})
+	base.ID = ""
+	base.Version = ""
+
+	if !featureflags.Boundaries.Enabled() {
+		policiesBase := jsonutils.ReflectJSONSchema(ReferenceSlice{})
+		policiesBase.Description = "Policies for the whole account."
+		policiesBase.ID = ""
+		policiesBase.Version = ""
+		base.Properties.Set("policies", policiesBase)
+	}
+
+	return base
+}
+
+// JSONSchema defines a custom schema definition for Environment. ID and Version are removed from the reflection result.
+// If boundaries are disabled, the schema for the "policies" property is replaced with the schema for ReferenceSlice.
+func (Environment) JSONSchema() *jsonschema.Schema {
+	type environmentSchema Environment
+	base := jsonutils.ReflectJSONSchema(environmentSchema{})
+	base.ID = ""
+	base.Version = ""
+
+	if !featureflags.Boundaries.Enabled() {
+		policiesBase := jsonutils.ReflectJSONSchema(ReferenceSlice{})
+		policiesBase.Description = "Policies for this environment."
+		policiesBase.ID = ""
+		policiesBase.Version = ""
+		base.Properties.Set("policies", policiesBase)
+	}
+
+	return base
+}
+
+// JSONSchema defines a custom schema definition for File. ID and Version are removed from the reflection result.
+// If boundaries are disabled, the "boundaries" property is removed from the reflection result.
+func (File) JSONSchema() *jsonschema.Schema {
+	type fileSchema File
+	base := jsonutils.ReflectJSONSchema(fileSchema{})
+	base.ID = ""
+	base.Version = ""
+	if !featureflags.Boundaries.Enabled() {
+		base.Properties.Delete("boundaries")
+	}
+
+	return base
+}
 
 const (
 	KeyUsers        string = "users"
