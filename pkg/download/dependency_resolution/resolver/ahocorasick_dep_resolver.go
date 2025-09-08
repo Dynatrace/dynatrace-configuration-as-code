@@ -1,6 +1,6 @@
 /*
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2025 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -113,7 +113,7 @@ func findAndReplaceIDs(apiName string, configToBeUpdated config.Config, c depend
 
 		parameterName := CreateParameterName(conf.Coordinate.Type, conf.Coordinate.ConfigId)
 
-		newContent := replaceAll(content, key, "{{."+parameterName+"}}")
+		newContent := replaceAll(content, key, "{{."+parameterName+"}}", conf.Type)
 		if newContent != content {
 			parameters[parameterName] = reference.NewWithCoordinate(conf.Coordinate, "id")
 			content = newContent
