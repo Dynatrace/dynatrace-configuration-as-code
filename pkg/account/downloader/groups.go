@@ -38,9 +38,11 @@ type (
 		permissionDTO *accountmanagement.PermissionsGroupDto
 		bindings      map[levelID]*accountmanagement.LevelPolicyBindingDto
 	}
+
+	PolicyToBoundaries map[account.PolicyId][]account.BoundaryId
 )
 
-func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Environments) (Groups, error) {
+func (a *Downloader) groups(ctx context.Context, policies Policies, boundaries Boundaries, tenants Environments) (Groups, error) {
 	log.InfoContext(ctx, "Downloading groups")
 	groupDTOs, err := a.httpClient.GetGroups(ctx, a.accountInfo.AccountUUID)
 	if err != nil {
@@ -72,7 +74,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 		acc := account.Account{
 			Permissions: getPermissionFor("account", perDTO),
 			Policies: policyReferencesOn(
-				getPoliciesFor(binding, *g.dto.Uuid), policies),
+				getPoliciesFor(binding, *g.dto.Uuid), policies, boundaries),
 		}
 
 		var envs []account.Environment
@@ -89,7 +91,7 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 				Name:        t.id,
 				Permissions: getPermissionFor(t.id, perDTO),
 				Policies: policyReferencesOn(
-					getPoliciesFor(binding, *g.dto.Uuid), policies),
+					getPoliciesFor(binding, *g.dto.Uuid), policies, boundaries),
 			})
 
 			for k, v := range getManagementZonesFor(t.id, perDTO) {
@@ -121,18 +123,21 @@ func (a *Downloader) groups(ctx context.Context, policies Policies, tenants Envi
 	return groups, nil
 }
 
-func policyReferencesOn(policyIds []string, policies Policies) []account.PolicyBinding {
-	if len(policyIds) == 0 {
+func policyReferencesOn(policyToBoundaries PolicyToBoundaries, policies Policies, boundaries Boundaries) []account.PolicyBinding {
+	if len(policyToBoundaries) == 0 {
 		return nil
 	}
 
-	retVal := make([]account.PolicyBinding, 0, len(policies))
-	for _, p := range policyIds {
+	retVal := make([]account.PolicyBinding, 0, len(policyToBoundaries))
+	for p, b := range policyToBoundaries {
 		polRefs := policies.RefOn(p)
 		if len(polRefs) == 0 {
 			continue
 		}
-		retVal = append(retVal, account.PolicyBinding{Policy: polRefs[0]})
+		retVal = append(retVal, account.PolicyBinding{
+			Policy:     polRefs[0],
+			Boundaries: boundaries.RefOn(b...),
+		})
 	}
 	return retVal
 }
@@ -184,17 +189,17 @@ func getManagementZonesFor(scope string, perDTOs *accountmanagement.PermissionsG
 	return retVal
 }
 
-func getPoliciesFor(binding *accountmanagement.LevelPolicyBindingDto, groupUUID string) []string {
-	var retVal []string
+func getPoliciesFor(binding *accountmanagement.LevelPolicyBindingDto, groupUUID string) PolicyToBoundaries {
+	policies := make(PolicyToBoundaries)
 	for _, b := range binding.PolicyBindings {
 		for _, g := range b.Groups {
 			if g == groupUUID {
-				retVal = append(retVal, b.PolicyUuid)
+				policies[b.PolicyUuid] = b.Boundaries
 				break
 			}
 		}
 	}
-	return retVal
+	return policies
 }
 
 func effectiveAccount(a account.Account) *account.Account {

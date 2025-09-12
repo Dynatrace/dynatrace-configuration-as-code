@@ -85,6 +85,38 @@ func (c *Client) GetGroupsForUser(ctx context.Context, userEmail string, account
 	return r, nil
 }
 
+func (c *Client) GetBoundaries(ctx context.Context, accountUUID string) ([]accountmanagement.PolicyBoundaryOverview, error) {
+	boundaries := make([]accountmanagement.PolicyBoundaryOverview, 0)
+	const pageSize = 100
+	for page := (int32)(1); page < math.MaxInt32; page++ {
+		r, err := c.getBoundariesPage(ctx, accountUUID, page, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		boundaries = append(boundaries, r.Content...)
+		// If the amount of boundaries returned on the page is less than the requested page size, we can assume it was the last page.
+		if len(r.Content) < pageSize {
+			break
+		}
+	}
+
+	return boundaries, nil
+}
+
+func (c *Client) getBoundariesPage(ctx context.Context, accountUUID string, page int32, pageSize int32) (*accountmanagement.PolicyBoundaryDtoList, error) {
+	r, resp, err := c.PolicyManagementAPI.GetPolicyBoundaries(ctx, accountUUID).Page(page).Size(pageSize).Execute()
+	defer closeResponseBody(resp)
+	if err = getErrorMessageFromResponse(resp, err); err != nil {
+		return nil, err
+	}
+	if r == nil {
+		return nil, errors.New("the received data are empty")
+	}
+
+	return r, nil
+}
+
 func (c *Client) GetPolicies(ctx context.Context, account string) ([]accountmanagement.PolicyOverview, error) {
 	r, resp, err := c.PolicyManagementAPI.GetPolicyOverviewList(ctx, account, "account").Execute()
 	defer closeResponseBody(resp)
