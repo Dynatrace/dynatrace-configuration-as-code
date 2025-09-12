@@ -17,11 +17,14 @@
 package deployer
 
 import (
-	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"sync"
+
+	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 )
 
 type idMap struct {
+	bndIds map[localId]remoteId
+	bMu    sync.RWMutex
 	polIds map[localId]remoteId
 	pMu    sync.RWMutex
 	grIds  map[localId]remoteId
@@ -32,6 +35,8 @@ type idMap struct {
 
 func newIdMap() idMap {
 	return idMap{
+		bndIds: make(map[localId]remoteId),
+		bMu:    sync.RWMutex{},
 		polIds: make(map[localId]remoteId),
 		pMu:    sync.RWMutex{},
 		grIds:  make(map[localId]remoteId),
@@ -40,6 +45,12 @@ func newIdMap() idMap {
 		mzMu:   sync.RWMutex{},
 	}
 }
+func (d *idMap) addBoundary(localId localId, remoteId remoteId) {
+	d.bMu.Lock()
+	defer d.bMu.Unlock()
+	d.bndIds[localId] = remoteId
+}
+
 func (d *idMap) addPolicy(localId localId, remoteId remoteId) {
 	d.pMu.Lock()
 	defer d.pMu.Unlock()
@@ -50,6 +61,14 @@ func (d *idMap) addGroup(localId localId, remoteId remoteId) {
 	d.grMu.Lock()
 	defer d.grMu.Unlock()
 	d.grIds[localId] = remoteId
+}
+
+func (d *idMap) addBoundaries(boundaries map[string]remoteId) {
+	d.bMu.Lock()
+	defer d.bMu.Unlock()
+	for k, v := range boundaries {
+		d.bndIds[k] = v
+	}
 }
 
 func (d *idMap) addPolicies(policies map[string]remoteId) {
@@ -78,6 +97,12 @@ func (d *idMap) getPolicyUUID(id localId) remoteId {
 	d.pMu.RLock()
 	defer d.pMu.RUnlock()
 	return d.polIds[id]
+}
+
+func (d *idMap) getBoundaryUUID(id localId) remoteId {
+	d.bMu.RLock()
+	defer d.bMu.RUnlock()
+	return d.bndIds[id]
 }
 
 func (d *idMap) getGroupUUID(id localId) remoteId {

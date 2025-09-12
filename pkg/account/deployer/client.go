@@ -21,9 +21,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 
 	"github.com/go-logr/logr"
+	"golang.org/x/exp/maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
@@ -35,6 +37,7 @@ import (
 type (
 	Permissions    = accountmanagement.PermissionsDto
 	Policy         = accountmanagement.CreateOrUpdateLevelPolicyRequestDto
+	Boundary       = accountmanagement.PolicyBoundaryDto
 	Group          = accountmanagement.PutGroupDto
 	ServiceUser    = accountmanagement.ServiceUserDto
 	ManagementZone = accountmanagement.ManagementZoneResourceDto
@@ -54,6 +57,19 @@ func NewClient(info account.AccountInfo, client *accounts.Client) *accountManage
 
 func (c *accountManagementClient) getAccountInfo() account.AccountInfo {
 	return c.accountInfo
+}
+
+func (c *accountManagementClient) getBoundaryIds(ctx context.Context) (map[string]remoteId, error) {
+	boundaries, err := c.getBoundaries(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]remoteId)
+	for _, bnd := range boundaries {
+		result[bnd.Name] = bnd.GetUuid()
+	}
+	return result, nil
 }
 
 func (c *accountManagementClient) getGlobalPolicies(ctx context.Context) (map[string]remoteId, error) {
@@ -94,6 +110,108 @@ func (c *accountManagementClient) getManagementZones(ctx context.Context) ([]Man
 		return []ManagementZone{}, nil
 	}
 	return envResources.ManagementZoneResources, nil
+}
+
+func (c *accountManagementClient) upsertBoundary(ctx context.Context, boundaryId string, boundary Boundary) (remoteId, error) {
+	if boundaryId == "" {
+		logr.FromContextOrDiscard(ctx).V(1).Info("Trying to get boundary with name " + boundary.Name)
+		bnd, err := c.getBoundaryByName(ctx, boundary.Name)
+		if err != nil {
+			var rnfErr *ResourceNotFoundError
+			if !errors.As(err, &rnfErr) {
+				return "", err
+			}
+
+			logr.FromContextOrDiscard(ctx).V(1).Info("No boundary with name " + boundary.Name + " found. Creating a new one")
+			return c.createBoundary(ctx, boundary)
+		}
+		boundaryId = bnd.Uuid
+	}
+
+	return c.updateBoundary(ctx, boundaryId, boundary)
+}
+
+func (c *accountManagementClient) updateBoundary(ctx context.Context, boundaryId string, boundary Boundary) (string, error) {
+	logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update existing boundary with name " + boundary.Name + " and UUID " + boundaryId)
+	_, resp, err := c.client.PolicyManagementAPI.PutPolicyBoundary(ctx, boundaryId, c.accountInfo.AccountUUID).PolicyBoundaryDto(boundary).Execute()
+	defer closeResponseBody(resp)
+
+	// handle a 404 here if need be as handleClientResponseError discards it!
+	if is404(resp) {
+		return "", ResourceNotFoundError{Identifier: boundaryId}
+	}
+
+	if err = handleClientResponseError(resp, err, "unable to update boundary with name: "+boundary.Name); err != nil {
+		return "", err
+	}
+	return boundaryId, nil
+}
+
+func (c *accountManagementClient) createBoundary(ctx context.Context, boundary Boundary) (string, error) {
+	createdBoundary, resp, err := c.client.PolicyManagementAPI.PostPolicyBoundary(ctx, c.accountInfo.AccountUUID).PolicyBoundaryDto(boundary).Execute()
+	defer closeResponseBody(resp)
+	if err = handleClientResponseError(resp, err, "unable to create boundary with name: "+boundary.Name); err != nil {
+		return "", err
+	}
+
+	if createdBoundary == nil {
+		return "", errors.New("the received data are empty")
+	}
+
+	return createdBoundary.Uuid, nil
+}
+
+func (c *accountManagementClient) getBoundaryByName(ctx context.Context, name string) (*accountmanagement.PolicyBoundaryOverview, error) {
+	boundaries, err := c.getBoundaries(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var foundBoundary *accountmanagement.PolicyBoundaryOverview
+	for _, b := range boundaries {
+		if b.Name == name {
+			if foundBoundary != nil {
+				return nil, fmt.Errorf("found multiple boundaries with name '%s'", name)
+			}
+			foundBoundary = &b
+		}
+	}
+	if foundBoundary == nil {
+		return nil, &ResourceNotFoundError{Identifier: name}
+	}
+
+	return foundBoundary, nil
+}
+
+func (c *accountManagementClient) getBoundaries(ctx context.Context) ([]accountmanagement.PolicyBoundaryOverview, error) {
+	boundaries := make([]accountmanagement.PolicyBoundaryOverview, 0)
+	const pageSize = 100
+	for page := (int32)(1); page < math.MaxInt32; page++ {
+		r, err := c.getBoundariesPage(ctx, c.accountInfo.AccountUUID, page, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		boundaries = append(boundaries, r.Content...)
+		// If the amount of boundaries returned on the page is less than the requested page size, we can assume it was the last page.
+		if len(r.Content) < pageSize {
+			break
+		}
+	}
+
+	return boundaries, nil
+}
+
+func (c *accountManagementClient) getBoundariesPage(ctx context.Context, accountUUID string, page int32, pageSize int32) (*accountmanagement.PolicyBoundaryDtoList, error) {
+	r, resp, err := c.client.PolicyManagementAPI.GetPolicyBoundaries(ctx, accountUUID).Page(page).Size(pageSize).Execute()
+	defer closeResponseBody(resp)
+	if err = handleClientResponseError(resp, err, "failed to get boundaries"); err != nil {
+		return nil, err
+	}
+	if r == nil {
+		return nil, errors.New("the received data are empty")
+	}
+	return r, nil
 }
 
 func (c *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel string, policyLevelId string, policyId string, policy Policy) (remoteId, error) {
@@ -427,12 +545,16 @@ func (c *accountManagementClient) updatePermissions(ctx context.Context, groupId
 	return nil
 }
 
-func (c *accountManagementClient) updateAccountPolicyBindings(ctx context.Context, groupId string, policyIds []string) error {
+func (c *accountManagementClient) updateAccountPolicyBindings(ctx context.Context, groupId string, boundariesForPolicyIds map[string][]string) error {
 	if groupId == "" {
 		return fmt.Errorf("group id must not be empty")
 	}
-	if policyIds == nil {
+
+	var policyIds []string
+	if boundariesForPolicyIds == nil {
 		policyIds = []string{}
+	} else {
+		policyIds = maps.Keys(boundariesForPolicyIds)
 	}
 	data := accountmanagement.PolicyUuidsDto{PolicyUuids: policyIds}
 
@@ -442,24 +564,46 @@ func (c *accountManagementClient) updateAccountPolicyBindings(ctx context.Contex
 		return err
 	}
 
+	if !featureflags.Boundaries.Enabled() {
+		return nil
+	}
+
+	for policyId, boundaryIds := range boundariesForPolicyIds {
+		if err := c.updateBoundariesForPolicyBinding(ctx, "account", c.accountInfo.AccountUUID, groupId, policyId, boundaryIds); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func (c *accountManagementClient) updateEnvironmentPolicyBindings(ctx context.Context, envName string, groupId string, policyIds []string) error {
+func (c *accountManagementClient) updateEnvironmentPolicyBindings(ctx context.Context, envName string, groupId string, boundariesForPolicyIds map[string][]string) error {
 	if envName == "" {
 		return fmt.Errorf("environment name must not be empty")
 	}
 	if groupId == "" {
 		return fmt.Errorf("group id must not be empty")
 	}
-	if policyIds == nil {
+	var policyIds []string
+	if boundariesForPolicyIds == nil {
 		policyIds = []string{}
+	} else {
+		policyIds = maps.Keys(boundariesForPolicyIds)
 	}
 	data := accountmanagement.PolicyUuidsDto{PolicyUuids: policyIds}
 	resp, err := c.client.PolicyManagementAPI.UpdatePolicyBindingsToGroup(ctx, groupId, envName, "environment").PolicyUuidsDto(data).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to update policy binding between group with UUID "+groupId+" and policies with UUIDs "+fmt.Sprintf("%v", policyIds)); err != nil {
 		return err
+	}
+
+	if !featureflags.Boundaries.Enabled() {
+		return nil
+	}
+
+	for policyId, boundaryIds := range boundariesForPolicyIds {
+		if err := c.updateBoundariesForPolicyBinding(ctx, "environment", envName, groupId, policyId, boundaryIds); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -484,6 +628,26 @@ func (c *accountManagementClient) deleteAllEnvironmentPolicyBindings(ctx context
 				return err
 			}
 		}
+	}
+	return nil
+}
+
+func (c *accountManagementClient) updateBoundariesForPolicyBinding(ctx context.Context, levelType string, levelId string, groupId string, policyId string, boundaryIds []string) error {
+	if groupId == "" {
+		return fmt.Errorf("group id must not be empty")
+	}
+	if policyId == "" {
+		return fmt.Errorf("policy id must not be empty")
+	}
+	if boundaryIds == nil {
+		boundaryIds = []string{}
+	}
+
+	data := accountmanagement.AppendLevelPolicyBindingForGroupDto{Boundaries: boundaryIds}
+	resp, err := c.client.PolicyManagementAPI.UpdateLevelPolicyBindingForPolicyAndGroup(ctx, groupId, policyId, levelId, levelType).AppendLevelPolicyBindingForGroupDto(data).Execute()
+	defer closeResponseBody(resp)
+	if err = handleClientResponseError(resp, err, "unable to update boundaries for policy binding between group with UUID "+groupId+", policy with UUID "+policyId+" and boundaries with UUIDs "+fmt.Sprintf("%v", boundaryIds)); err != nil {
+		return err
 	}
 	return nil
 }
