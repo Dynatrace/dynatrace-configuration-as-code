@@ -1,0 +1,7 @@
+boundaries:
+- id: my-boundary
+  name: My boundary %RAND%
+  query: shared:app-id = "my-app-id";
+- id: my-boundary-2
+  name: My boundary 2 %RAND%
+  query: shared:app-id = "my-app-id-2";

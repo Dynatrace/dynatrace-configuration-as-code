@@ -8,8 +8,12 @@ groups:
         - account-company-info
       policies:
         - Environment role - Access environment
-        - type: reference
-          id: my-policy
+        - policy:
+            type: reference
+            id: my-policy
+          boundaries:
+            - type: reference
+              id: my-boundary
 
     environments:
       - environment: ${ENVIRONMENT_ID_2}
@@ -18,8 +22,12 @@ groups:
           - tenant-logviewer
         policies:
           - Environment role - Replay session data without masking
-          - type: reference
-            id: my-policy-2
+          - policy:
+              type: reference
+              id: my-policy-2
+            boundaries:
+              - type: reference
+                id: my-boundary
 
     managementZones:
       - environment: ${ENVIRONMENT_ID_1}

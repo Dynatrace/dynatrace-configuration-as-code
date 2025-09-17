@@ -8,8 +8,12 @@ groups:
         - account-company-info
       policies:
         - Environment role - Access environment
-        - type: reference
-          id: my-policy
+        - policy:
+            type: reference
+            id: my-policy
+          boundaries:
+            - type: reference
+              id: my-boundary
 
     environments:
       - environment: ${ENVIRONMENT_ID_2}
@@ -18,8 +22,12 @@ groups:
           - tenant-logviewer
         policies:
           - Environment role - Replay session data without masking
-          - type: reference
-            id: my-policy-2
+          - policy:
+              type: reference
+              id: my-policy-2
+            boundaries:
+              - type: reference
+                id: my-boundary
 
     managementZones:
       - environment: ${ENVIRONMENT_ID_1}
@@ -39,3 +47,21 @@ groups:
   - name: My LOCAL Group%RAND%
     id: my-local-group
     description: This is my LOCAL group from all-resources e2e test
+
+  - name: "My Group with policies defined via policy: myName %RAND%"
+    id: my-group-2
+    description: This is my group from all-resources e2e test
+    account:
+      policies:
+        - policy: Environment role - Access environment
+        - policy:
+            type: reference
+            id: my-policy
+
+    environments:
+      - environment: ${ENVIRONMENT_ID_2}
+        policies:
+          - policy: Environment role - Replay session data without masking
+          - policy:
+              type: reference
+              id: my-policy-2
