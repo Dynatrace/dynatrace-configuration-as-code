@@ -25,6 +25,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader"
@@ -32,11 +33,12 @@ import (
 )
 
 var (
-	accountUUID = "32ee817e-0db4-4f28-b1d1-a2b7032cdf29"
-	groupUUID1  = "27dde8b6-2ed3-48f1-90b5-e4c0eae8b9bd"
-	groupUUID2  = "3c345885-ff01-428b-ba49-b3381819f6dd"
-	toID        = stringutils.Sanitize
-	originalErr = errors.New("original error")
+	accountUUID   = "32ee817e-0db4-4f28-b1d1-a2b7032cdf29"
+	groupUUID1    = "27dde8b6-2ed3-48f1-90b5-e4c0eae8b9bd"
+	groupUUID2    = "3c345885-ff01-428b-ba49-b3381819f6dd"
+	boundaryUUID1 = "2e3a1a18-6803-4742-aca2-70fbe312bd18"
+	toID          = stringutils.Sanitize
+	originalErr   = errors.New("original error")
 )
 
 // TestDownloader_EmptyAccount tests that downloading an empty account succeeds.
@@ -491,6 +493,158 @@ func TestDownloader_GroupsWithPolicies(t *testing.T) {
 			OriginObjectID: groupUUID2,
 			Account: &account.Account{
 				Policies: []account.PolicyBinding{{Policy: account.Reference{Id: toID("account policy")}}},
+			},
+		},
+	}, result.Groups)
+	assert.Empty(t, result.Users)
+	assert.Empty(t, result.ServiceUsers)
+}
+
+// TestDownloader_GroupsWithPoliciesAndBoundaries tests that downloading groups with policies and boundaries succeeds.
+func TestDownloader_GroupsWithPoliciesAndBoundaries(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
+	client := http.NewMockhttpClient(gomock.NewController(t))
+	downloader := downloader.New4Test(&account.AccountInfo{
+		Name:        "test",
+		AccountUUID: accountUUID,
+	}, client)
+
+	accountPolicyOverview := accountmanagement.PolicyOverview{
+		Uuid:      "2ff9314d-3c97-4607-bd49-460a53de1390",
+		Name:      "account policy",
+		LevelType: "account",
+	}
+
+	environmentPolicyOverview := accountmanagement.PolicyOverview{
+		Uuid:      "bc7df7b7-9387-45ff-974f-56573c072e4c",
+		Name:      "environment policy",
+		LevelId:   "abc12345",
+		LevelType: "environment",
+	}
+
+	policyBoundaryOverview := accountmanagement.PolicyBoundaryOverview{
+		Uuid:          boundaryUUID1,
+		Name:          "boundary name",
+		BoundaryQuery: "some boundary query",
+	}
+
+	client.EXPECT().GetEnvironmentsAndMZones(gomock.Any(), accountUUID).Return([]accountmanagement.TenantResourceDto{{Id: "abc12345"}}, []accountmanagement.ManagementZoneResourceDto{}, nil)
+	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{accountPolicyOverview, environmentPolicyOverview}, nil)
+
+	client.EXPECT().GetPolicyDefinition(gomock.Any(), accountPolicyOverview).Return(&accountmanagement.LevelPolicyDto{}, nil)
+	client.EXPECT().GetPolicyDefinition(gomock.Any(), environmentPolicyOverview).Return(&accountmanagement.LevelPolicyDto{}, nil)
+
+	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{policyBoundaryOverview}, nil)
+
+	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{
+		{
+			Uuid: &groupUUID1,
+			Name: "test group",
+		},
+		{
+			Uuid: &groupUUID2,
+			Name: "second test group",
+		}}, nil)
+
+	client.EXPECT().GetPolicyGroupBindings(gomock.Any(), "account", accountUUID).Return(&accountmanagement.LevelPolicyBindingDto{
+		PolicyBindings: []accountmanagement.Binding{{
+			PolicyUuid: "2ff9314d-3c97-4607-bd49-460a53de1390",
+			Groups:     []string{groupUUID1, groupUUID2},
+			Boundaries: []string{boundaryUUID1},
+		}}}, nil)
+
+	client.EXPECT().GetPermissionFor(gomock.Any(), accountUUID, groupUUID1).Return(&accountmanagement.PermissionsGroupDto{}, nil)
+
+	client.EXPECT().GetPolicyGroupBindings(gomock.Any(), "environment", "abc12345").Return(&accountmanagement.LevelPolicyBindingDto{
+		PolicyBindings: []accountmanagement.Binding{{
+			PolicyUuid: "bc7df7b7-9387-45ff-974f-56573c072e4c",
+			Groups:     []string{groupUUID1},
+			Boundaries: []string{boundaryUUID1},
+		}},
+	}, nil)
+
+	client.EXPECT().GetPolicyGroupBindings(gomock.Any(), "account", accountUUID).Return(&accountmanagement.LevelPolicyBindingDto{
+		PolicyBindings: []accountmanagement.Binding{{
+			PolicyUuid: "2ff9314d-3c97-4607-bd49-460a53de1390",
+			Groups:     []string{groupUUID1, groupUUID2},
+			Boundaries: []string{boundaryUUID1},
+		}}}, nil)
+
+	client.EXPECT().GetPermissionFor(gomock.Any(), accountUUID, groupUUID2).Return(&accountmanagement.PermissionsGroupDto{}, nil)
+
+	client.EXPECT().GetPolicyGroupBindings(gomock.Any(), "environment", "abc12345").Return(&accountmanagement.LevelPolicyBindingDto{
+		PolicyBindings: []accountmanagement.Binding{{
+			PolicyUuid: "bc7df7b7-9387-45ff-974f-56573c072e4c",
+			Groups:     []string{groupUUID1},
+			Boundaries: []string{boundaryUUID1},
+		}},
+	}, nil)
+
+	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+
+	result, err := downloader.DownloadResources(t.Context())
+	assert.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.Equal(t, map[account.BoundaryId]account.Boundary{
+		toID("boundary name"): {
+			ID:             toID("boundary name"),
+			Name:           "boundary name",
+			Query:          "some boundary query",
+			OriginObjectID: boundaryUUID1,
+		},
+	}, result.Boundaries)
+	assert.Equal(t, map[account.PolicyId]account.Policy{
+		toID("account policy"): {
+			ID:             toID("account policy"),
+			Name:           "account policy",
+			Level:          account.PolicyLevelAccount{Type: "account"},
+			OriginObjectID: "2ff9314d-3c97-4607-bd49-460a53de1390",
+		},
+		toID("environment policy"): {
+			ID:             toID("environment policy"),
+			Name:           "environment policy",
+			Level:          account.PolicyLevelEnvironment{Type: "environment", Environment: "abc12345"},
+			OriginObjectID: "bc7df7b7-9387-45ff-974f-56573c072e4c",
+		},
+	}, result.Policies)
+	assert.Equal(t, map[account.GroupId]account.Group{
+		toID("test group"): {
+			ID:             toID("test group"),
+			Name:           "test group",
+			OriginObjectID: groupUUID1,
+			Account: &account.Account{
+				Policies: []account.PolicyBinding{
+					{
+						Policy:     account.Reference{Id: toID("account policy")},
+						Boundaries: []account.Ref{account.Reference{Id: toID("boundary name")}},
+					},
+				},
+			},
+			Environment: []account.Environment{
+				{
+					Name: "abc12345",
+					Policies: []account.PolicyBinding{
+						{
+							Policy:     account.Reference{Id: toID("environment policy")},
+							Boundaries: []account.Ref{account.Reference{Id: toID("boundary name")}},
+						},
+					},
+				},
+			},
+		},
+		toID("second test group"): {
+			ID:             toID("second test group"),
+			Name:           "second test group",
+			OriginObjectID: groupUUID2,
+			Account: &account.Account{
+				Policies: []account.PolicyBinding{
+					{
+						Policy:     account.Reference{Id: toID("account policy")},
+						Boundaries: []account.Ref{account.Reference{Id: toID("boundary name")}},
+					},
+				},
 			},
 		},
 	}, result.Groups)
