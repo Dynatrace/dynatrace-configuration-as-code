@@ -32,12 +32,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
 )
 
 func TestDeployAndDelete_AllResources(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
 	createMZone(t)
 
 	RunAccountTestCase(t, "resources/all-resources", "manifest-account.yaml", "am-all-resources", func(clients map[account.AccountInfo]*accounts.Client, o options) {
@@ -47,6 +49,10 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		myServiceUserName := "monaco service user %RAND%"
 		myEmail := "monaco+%RAND%@dynatrace.com"
 		myGroup := "My Group%RAND%"
+		myBoundary := "My boundary %RAND%"
+		myBoundary2 := "My boundary 2 %RAND%"
+		myDefaultBoundaries := []string{myBoundary}
+		myUpdatedBoundaries := []string{myBoundary, myBoundary2}
 		mySAMLGroup := "My SAML Group%RAND%"
 		myLocalGroup := "My LOCAL Group%RAND%"
 		myPolicy := "My Policy%RAND%"
@@ -101,6 +107,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PolicyAvailable(t, "account", accountUUID, myPolicy)
 		check.PolicyAvailable(t, "environment", env2, myPolicy2)
 		check.GroupAvailable(t, accountUUID, myGroup)
+		check.BoundaryAvailable(t, accountUUID, myBoundary)
 
 		// Group created with federatedAttributeValues should be a group with SAML owner
 		samlGroup := check.GetGroupByName(t, accountUUID, mySAMLGroup)
@@ -111,12 +118,12 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		require.EqualValues(t, "LOCAL", localGroup.Owner)
 
 		check.PolicyBindingsCount(t, accountUUID, "environment", env2, myGroup, 2)
-		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, myPolicy2, env2)
-		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, "Environment role - Replay session data without masking", env2)
+		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, myPolicy2, env2, myDefaultBoundaries)
+		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, "Environment role - Replay session data without masking", env2, []string{})
 
 		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 2)
-		check.AccountPolicyBinding(t, accountUUID, myGroup, "Environment role - Access environment")
-		check.AccountPolicyBinding(t, accountUUID, myGroup, myPolicy)
+		check.AccountPolicyBinding(t, accountUUID, myGroup, "Environment role - Access environment", []string{})
+		check.AccountPolicyBinding(t, accountUUID, myGroup, myPolicy, myDefaultBoundaries)
 
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 6)
 		check.PermissionBinding(t, accountUUID, "account", accountUUID, "account-viewer", myGroup)
@@ -142,6 +149,13 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		resources.Groups["my-group"].ManagementZone[0].Permissions = slices.DeleteFunc(resources.Groups["my-group"].ManagementZone[0].Permissions, func(s string) bool {
 			return s == "tenant-logviewer"
 		})
+		// UPDATE SOME BOUNDARIES
+		newBoundaries := []account.Ref{
+			account.Reference{Id: "my-boundary-2"},
+			account.Reference{Id: "my-boundary"},
+		}
+		updateBoundary(t, resources.Groups["my-group"].Environment[0].Policies, "my-policy-2", newBoundaries)
+		updateBoundary(t, resources.Groups["my-group"].Account.Policies, "my-policy", newBoundaries)
 
 		// WRITE RESOURCES
 		err = writer.Write(writer.Context{Fs: o.fs, OutputFolder: ".", ProjectFolder: "accounts"}, *resources)
@@ -155,6 +169,10 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PolicyBindingsCount(t, accountUUID, "environment", env2, myGroup, 1)
 		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 1)
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 3)
+
+		// CHECK BOUNDARY BINDING UPDATE
+		check.AccountPolicyBinding(t, accountUUID, myGroup, myPolicy, myUpdatedBoundaries)
+		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, myPolicy2, env2, myUpdatedBoundaries)
 
 		// DELETE ALL BINDINGS
 		resources.Groups["my-group"].Environment[0].Policies = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Policies, func(pb account.PolicyBinding) bool { return true })
@@ -175,6 +193,14 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 0)
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 0)
 	})
+}
+
+func updateBoundary(t *testing.T, policies []account.PolicyBinding, policyID string, newBoundaries []account.Ref) {
+	idx := slices.IndexFunc(policies, func(pb account.PolicyBinding) bool {
+		return pb.Policy.ID() == policyID
+	})
+	require.NotEqual(t, -1, idx)
+	policies[idx].Boundaries = newBoundaries
 }
 
 func getPolicyIdByName(ctx context.Context, cl *accounts.Client, name, level, levelId string) (string, bool) {
@@ -243,8 +269,21 @@ func (a AccountResourceChecker) GetGroupByName(t *testing.T, accountUUID, groupN
 	return group
 }
 
+func (a AccountResourceChecker) GetBoundaryByName(t *testing.T, accountUUID string, boundaryName string) *accountmanagement.PolicyBoundaryOverview {
+	expectedBoundaryName := a.randomize(boundaryName)
+	all, _, err := a.Client.PolicyManagementAPI.GetPolicyBoundaries(t.Context(), accountUUID).Execute()
+	require.NotNil(t, all)
+	require.NoError(t, err)
+	boundary, _ := assertElementInSlice(t, all.GetContent(), func(el accountmanagement.PolicyBoundaryOverview) bool { return el.Name == expectedBoundaryName })
+	return boundary
+}
+
 func (a AccountResourceChecker) GroupAvailable(t *testing.T, accountUUID, groupName string) {
 	_ = a.GetGroupByName(t, accountUUID, groupName)
+}
+
+func (a AccountResourceChecker) BoundaryAvailable(t *testing.T, accountUUID, boundaryName string) {
+	_ = a.GetBoundaryByName(t, accountUUID, boundaryName)
 }
 
 func (a AccountResourceChecker) PolicyAvailable(t *testing.T, levelType, levelId, policyName string) {
@@ -272,7 +311,7 @@ func (a AccountResourceChecker) GroupNotAvailable(t *testing.T, accountUUID, gro
 	assertElementNotInSlice(t, groups.GetItems(), func(el accountmanagement.GetGroupDto) bool { return el.Name == expectedGroupName })
 }
 
-func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUUID, groupName, policyName, environmentID string) {
+func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUUID, groupName, policyName, environmentID string, boundaries []string) {
 	expectedPolicyName := a.randomize(policyName)
 	var pid string
 	pid, found := getPolicyIdByName(t.Context(), a.Client, expectedPolicyName, "environment", environmentID)
@@ -291,9 +330,21 @@ func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUU
 	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(t.Context(), environmentID, "environment").Execute()
 	require.NoError(t, err)
 	require.NotNil(t, envPolBindings)
-	assertElementInSlice(t, envPolBindings.PolicyBindings, func(el accountmanagement.Binding) bool {
+
+	a.AssertPolicyBinding(t, accountUUID, pid, gid, envPolBindings.PolicyBindings, boundaries)
+}
+
+func (a AccountResourceChecker) AssertPolicyBinding(t *testing.T, accountUUID, pid, gid string, bindings []accountmanagement.Binding, boundaries []string) {
+	idx := slices.IndexFunc(bindings, func(el accountmanagement.Binding) bool {
 		return el.PolicyUuid == pid && slices.Contains(el.Groups, gid)
 	})
+	require.NotEqual(t, -1, idx)
+	assert.Len(t, bindings[idx].Boundaries, len(boundaries))
+	boundaryIDs := make([]string, 0, len(boundaries))
+	for _, boundary := range boundaries {
+		boundaryIDs = append(boundaryIDs, a.GetBoundaryByName(t, accountUUID, a.randomize(boundary)).Uuid)
+	}
+	require.ElementsMatch(t, boundaryIDs, bindings[idx].Boundaries)
 }
 
 func (a AccountResourceChecker) PolicyBindingsCount(t *testing.T, accountUUID string, levelType string, levelId string, groupName string, number int) {
@@ -312,7 +363,7 @@ func (a AccountResourceChecker) PolicyBindingsCount(t *testing.T, accountUUID st
 	require.Equal(t, number, len(result))
 }
 
-func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, groupName, policyName string) {
+func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, groupName, policyName string, boundaries []string) {
 	expectedPolicyName := a.randomize(policyName)
 	var pid string
 	pid, found := getPolicyIdByName(t.Context(), a.Client, expectedPolicyName, "account", accountUUID)
@@ -328,9 +379,7 @@ func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, 
 	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(t.Context(), accountUUID, "account").Execute()
 	require.NoError(t, err)
 	require.NotNil(t, envPolBindings)
-	assertElementInSlice(t, envPolBindings.PolicyBindings, func(el accountmanagement.Binding) bool {
-		return el.PolicyUuid == pid && slices.Contains(el.Groups, gid)
-	})
+	a.AssertPolicyBinding(t, accountUUID, pid, gid, envPolBindings.PolicyBindings, boundaries)
 }
 
 func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, scopeType, scope, permissionName, groupName string) {

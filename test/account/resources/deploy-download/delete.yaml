@@ -14,4 +14,5 @@ delete:
     level:
       type: environment
       environment: ${ENVIRONMENT_ID_2}
-
+  - type: boundary
+    name: My boundary %RAND%

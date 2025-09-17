@@ -5,6 +5,8 @@ delete:
     name: monaco service user %RAND%
   - type: group
     name: My Group%RAND%
+  - type: group
+    name: "My Group with policies defined via policy: myName %RAND%"
   - type: policy
     name: My Policy%RAND%
     level:
@@ -14,3 +16,5 @@ delete:
     level:
       type: environment
       environment: ${ENVIRONMENT_ID_2}
+  - type: boundary
+    name: My boundary %RAND%

@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
@@ -35,6 +36,8 @@ import (
 )
 
 func TestIdempotenceOfDeployment(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
+
 	deploy := func(project string, fs afero.Fs) *account.Resources {
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco account deploy --project %s --verbose", project))
 
@@ -96,6 +99,11 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 			allDeployedItemsDownloaded = false
 		}
 	}
+	for _, b := range deploy1st.Boundaries {
+		if !assert.Contains(t, download1st.Boundaries, toID(b.Name)) { // when downloading, ID is generated from name
+			allDeployedItemsDownloaded = false
+		}
+	}
 
 	require.True(t, allDeployedItemsDownloaded, "Not all deployed items were downloaded")
 
@@ -125,6 +133,12 @@ func TestIdempotenceOfDeployment(t *testing.T) {
 	for _, g := range deploy1st.Groups {
 		g.ID = toID(g.Name)
 		if !assert.Equal(t, download1st.Groups[g.ID], download2nd.Groups[g.ID]) {
+			redownloadedItemsAreIdentical = false
+		}
+	}
+	for _, b := range deploy1st.Boundaries {
+		b.ID = toID(b.Name)
+		if !assert.Equal(t, download1st.Boundaries[b.ID], download2nd.Boundaries[b.ID]) {
 			redownloadedItemsAreIdentical = false
 		}
 	}
