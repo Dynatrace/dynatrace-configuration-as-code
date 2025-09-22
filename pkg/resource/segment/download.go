@@ -77,7 +77,7 @@ func createConfig(projectName string, response api.Response) (config.Config, err
 	}
 
 	// delete fields that prevent a re-upload of the configuration
-	jsonObj.Delete("uid", "version", "externalId")
+	jsonObj.Delete("uid", "version", "externalId", "owner")
 
 	jsonRaw, err := jsonObj.ToJSON(true)
 	if err != nil {

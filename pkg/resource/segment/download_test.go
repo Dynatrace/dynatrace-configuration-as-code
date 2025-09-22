@@ -48,6 +48,7 @@ func TestDownloader_Download(t *testing.T) {
 					StatusCode: http.StatusOK,
 					Data: []byte(`{
     "uid": "uid",
+	"owner": "uid",
     "externalId": "some_external_ID",
     "version": 1,
     "name": "segment_name"
@@ -71,7 +72,7 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Equal(t, "uid", actual.OriginObjectId)
 		actualTemplate, err := actual.Template.Content()
 		assert.NoError(t, err)
-		assert.JSONEq(t, `{"name":"segment_name"}`, actualTemplate, "uid, externalId and version must be deleted")
+		assert.JSONEq(t, `{"name":"segment_name"}`, actualTemplate, "uid, owner, externalId and version must be deleted")
 
 		assert.False(t, actual.Skip)
 		assert.Empty(t, actual.Group)
@@ -166,7 +167,6 @@ func TestDownloader_Download(t *testing.T) {
     "value": "fetch dt.entity.host | fields id, entity.name"
   },
   "isPublic": true,
-  "owner": "cd3fc936-5b1a-4d6c-b1b6-f1025dbde7d5",
   "allowedOperations": [
     "READ"
   ],
