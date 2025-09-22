@@ -17,7 +17,9 @@
         "type": "dashboard",
         "isPrivate": false,
         "version": 3,
-        "owner": "01234567-0123-0123-0123-0123456789ab"
+        "owner": "01234567-0123-0123-0123-0123456789ab",
+        "originAppId": null,
+        "originExtensionId": null
       },
       {
         "modificationInfo": {
@@ -37,9 +39,31 @@
         "isPrivate": false,
         "version": 3,
         "owner": "01234567-0123-0123-0123-0123456789ab",
-        "originAppId": "dynatrace.some.app"
+        "originAppId": "dynatrace.some.app",
+         "originExtensionId": null
+      },
+      {
+        "modificationInfo": {
+          "createdBy": "01234567-0123-0123-0123-0123456789ab",
+          "createdTime": "2024-04-02T11:49:47.726Z",
+          "lastModifiedBy": "01234567-0123-0123-0123-0123456789ab",
+          "lastModifiedTime": "2024-04-05T08:20:15.143Z"
+        },
+        "access": [
+          "read",
+          "delete",
+          "write"
+        ],
+        "id": "12345678-1234-1234-1234-0123456789ac",
+        "name": "Data Ingest Overview",
+        "type": "dashboard",
+        "isPrivate": false,
+        "version": 3,
+        "owner": "01234567-0123-0123-0123-0123456789ab",
+        "originAppId": null,
+        "originExtensionId": "dynatrace.some.extension"
       }
     ],
     "nextPageKey": null,
-    "totalCount": 2
+    "totalCount": 3
   }

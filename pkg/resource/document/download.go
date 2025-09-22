@@ -71,7 +71,7 @@ func downloadDocumentsOfType(ctx context.Context, documentSource DownloadSource,
 
 	for _, response := range listResponse.Responses {
 		// skip downloading ready-made documents - these are presets that cannot be redeployed
-		if isReadyMadeByAnApp(response.Metadata) {
+		if isReadyMadeByAnAppOrExtension(response.Metadata) {
 			continue
 		}
 
@@ -88,8 +88,8 @@ func downloadDocumentsOfType(ctx context.Context, documentSource DownloadSource,
 	return configs
 }
 
-func isReadyMadeByAnApp(metadata documents.Metadata) bool {
-	return (metadata.OriginAppID != nil) && (len(*metadata.OriginAppID) > 0)
+func isReadyMadeByAnAppOrExtension(metadata documents.Metadata) bool {
+	return ((metadata.OriginAppID != nil) && (len(*metadata.OriginAppID) > 0)) || (metadata.OriginExtensionID != nil) && (len(*metadata.OriginExtensionID) > 0)
 }
 
 func convertDocumentResponse(ctx context.Context, documentSource DownloadSource, projectName string, response documents.Response) (config.Config, error) {

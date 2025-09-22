@@ -17,7 +17,9 @@
         "type": "notebook",
         "isPrivate": true,
         "version": 3,
-        "owner": "01234567-0123-0123-0123-0123456789ab"
+        "owner": "01234567-0123-0123-0123-0123456789ab",
+        "originAppId": null,
+        "originExtensionId": null
       }
     ],
     "nextPageKey": null,

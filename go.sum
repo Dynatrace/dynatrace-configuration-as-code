@@ -9,8 +9,8 @@ github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx2
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250909143246-7fb4c95b93f2 h1:o3Qk+FADLz3RQ4mVslL+IEeZXkW9rMb/V68gtUZjDus=
-github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250909143246-7fb4c95b93f2/go.mod h1:WS25NEP6eSgnnj3Uul4aJKE3ozR6SLeCLcs2f01v1vU=
+github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250922131540-d315e8195c1f h1:77IpHnVxKZJNEPSd1Wm5dLbbUH+TUPe2+d6CcqA7SCI=
+github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20250922131540-d315e8195c1f/go.mod h1:WS25NEP6eSgnnj3Uul4aJKE3ozR6SLeCLcs2f01v1vU=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
 github.com/go-logr/logr v1.4.3/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
