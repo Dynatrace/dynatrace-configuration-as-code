@@ -550,12 +550,13 @@ func (d *AccountDeployer) getServiceUserGroupRefs(serviceUser account.ServiceUse
 }
 
 func (d *AccountDeployer) processPolicyBindings(items []account.PolicyBinding) ([]remoteId, error) {
-	refs := make([]remoteId, len(items))
+	refs := make([]remoteId, 0, len(items))
 	for _, item := range items {
 		polRef := d.policyIdLookup(item.Policy.ID())
 		if polRef == "" {
 			return nil, fmt.Errorf("could not find remote id for policy with id '%s'", item.Policy.ID())
 		}
+		refs = append(refs, polRef)
 	}
 	return refs, nil
 }
