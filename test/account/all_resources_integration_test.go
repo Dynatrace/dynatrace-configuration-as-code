@@ -66,7 +66,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		require.NoError(t, err)
 		var mzoneID string
 		for _, mz := range mzones.ManagementZoneResources {
-			if mz.Name == "Management Zone 2000" {
+			if mz.Name == "Management Zone 2000" && mz.Parent == env1 {
 				mzoneID = mz.Id
 				break
 			}
@@ -127,13 +127,14 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		// REMOVE SOME BINDINGS
 		resources, err := loader.Load(o.fs, "accounts")
 		require.NoError(t, err)
-		resources.Groups["my-group"].Environment[0].Policies = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Policies, func(ref account.Ref) bool {
-			return ref.ID() == "Environment role - Replay session data without masking"
+		resources.Groups["my-group"].Environment[0].Policies = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Policies, func(pb account.PolicyBinding) bool {
+			return pb.Policy.ID() == "Environment role - Replay session data without masking"
 		})
 		resources.Groups["my-group"].Environment[0].Permissions = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Permissions, func(s string) bool { return s == "tenant-logviewer" })
 
-		resources.Groups["my-group"].Account.Policies = slices.DeleteFunc(resources.Groups["my-group"].Account.Policies, func(ref account.Ref) bool {
-			return ref.ID() == "Environment role - Access environment"
+		resources.Groups["my-group"].Account.Policies = slices.DeleteFunc(resources.Groups["my-group"].Account.Policies, func(pb account.PolicyBinding) bool {
+
+			return pb.Policy.ID() == "Environment role - Access environment"
 		})
 		resources.Groups["my-group"].Account.Permissions = slices.DeleteFunc(resources.Groups["my-group"].Account.Permissions, func(s string) bool {
 			return s == "account-company-info"
@@ -156,9 +157,9 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 3)
 
 		// DELETE ALL BINDINGS
-		resources.Groups["my-group"].Environment[0].Policies = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Policies, func(ref account.Ref) bool { return true })
+		resources.Groups["my-group"].Environment[0].Policies = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Policies, func(pb account.PolicyBinding) bool { return true })
 		resources.Groups["my-group"].Environment[0].Permissions = slices.DeleteFunc(resources.Groups["my-group"].Environment[0].Permissions, func(s string) bool { return true })
-		resources.Groups["my-group"].Account.Policies = slices.DeleteFunc(resources.Groups["my-group"].Account.Policies, func(ref account.Ref) bool { return true })
+		resources.Groups["my-group"].Account.Policies = slices.DeleteFunc(resources.Groups["my-group"].Account.Policies, func(pb account.PolicyBinding) bool { return true })
 		resources.Groups["my-group"].Account.Permissions = slices.DeleteFunc(resources.Groups["my-group"].Account.Permissions, func(s string) bool { return true })
 		resources.Groups["my-group"].ManagementZone[0].Permissions = slices.DeleteFunc(resources.Groups["my-group"].ManagementZone[0].Permissions, func(s string) bool { return true })
 
