@@ -171,8 +171,8 @@ jobs:
           ACCOUNT_URL: https://api.dynatrace.com
           ACCOUNT_OAUTH_CLIENT_ID: ${{ secrets.ACCOUNT_OAUTH_CLIENT_ID }}
           ACCOUNT_OAUTH_CLIENT_SECRET: ${{ secrets.ACCOUNT_OAUTH_CLIENT_SECRET }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
           ENVIRONMENT_ID_1: ${{ secrets.ENVIRONMENT_ID_1 }}
           ENVIRONMENT_ID_2: ${{ secrets.ENVIRONMENT_ID_2 }}
           OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
