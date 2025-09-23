@@ -146,7 +146,7 @@ jobs:
 
   account-management-test:
     name: 🗂️ Account Management E2E tests
-    if: github.event.label.name == 'run-iam-test'
+    if: github.event.action != 'labeled' || github.event.label.name == 'run-iam-test'
     needs: [setup]
     runs-on: ubuntu-latest
     permissions:
