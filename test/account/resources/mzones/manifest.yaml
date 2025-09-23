@@ -9,10 +9,10 @@ environmentGroups:
   - name: platform_env
     url:
       type: environment
-      value: PLATFORM_URL_ENVIRONMENT_2
+      value: PLATFORM_URL_ENVIRONMENT_1
     auth:
       token:
-        name: TOKEN_ENVIRONMENT_2
+        name: TOKEN_ENVIRONMENT_1
       oAuth:
         clientId:
           name: OAUTH_CLIENT_ID
