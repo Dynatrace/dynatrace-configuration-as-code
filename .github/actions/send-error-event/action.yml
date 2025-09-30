@@ -1,0 +1,47 @@
+name: 'Send Error Event'
+description: 'Sends an error event to Dynatrace when a job fails'
+inputs:
+  test_type:
+    description: 'The test type (integration, nightly, etc.)'
+    required: true
+  sfm_tenant_url:
+    description: 'The classic URL of the tenant to send the event to'
+    required: true
+  sfm_notification_api_token:
+    description: 'The API token of the tenant needed for ingesting the event'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Send error event
+      if: failure() && github.ref == 'refs/heads/main'
+      shell: bash
+      env:
+        SFM_NOTIFICATION_API_TOKEN: ${{ inputs.sfm_notification_api_token }}
+        SFM_TENANT_URL: ${{ inputs.sfm_tenant_url }}
+        TEST_TYPE: ${{ inputs.test_type }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_JOB: ${{ github.job }}
+      run: |
+        curl \
+          -H "Authorization: Api-Token $SFM_NOTIFICATION_API_TOKEN" \
+          -H 'Content-Type: application/json' \
+          -X POST "$SFM_TENANT_URL/platform/ingest/v1/events" \
+          -d '[{ \
+              "title": "Monaco E2E", \
+              "source": "GitHub", \
+              "type": "ERROR_EVENT", \
+              "test.type": "'"$TEST_TYPE"'", \
+              "github.repository": "'"$GITHUB_REPOSITORY"'", \
+              "github.ref": "'"$GITHUB_REF"'", \
+              "github.event_name": "'"$GITHUB_EVENT_NAME"'", \
+              "github.actor": "'"$GITHUB_ACTOR"'", \
+              "github.run_id": "'"$GITHUB_RUN_ID"'", \
+              "github.job": "'"$GITHUB_JOB"'" \
+          }]'
+
