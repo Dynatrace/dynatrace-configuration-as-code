@@ -96,6 +96,26 @@ jobs:
         OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
         PLATFORM_TOKEN: ${{ secrets.PLATFORM_TOKEN }}
 
+    - name: Upload error
+      if: failure() && github.ref == 'refs/heads/main'
+      # classic URL
+      run: |
+        curl \
+          -H 'Authorization: Api-Token ${{ secrets.SFM_API_TOKEN }}' \
+          -H 'Content-Type: application/json' \
+          -X POST https://${{secrets.SFM_TENANT_URL}}/platform/ingest/v1/events \
+          -d '[{ \
+              "title": "Monaco E2E", \
+              "type": "ERROR_EVENT", \
+              "test.type": "integration", \
+              "github.repository": "${{ github.repository }}", \
+              "github.ref": "${{ github.ref }}", \
+              "github.event_name": "${{ github.event_name }}", \
+              "github.actor": "${{ github.actor }}", \
+              "github.run_id": "${{ github.run_id }}", \
+              "github.job": "${{ github.job }}" \
+          }]'
+
     - name: ⬆️ Upload Test Results
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
       if: always()
@@ -144,6 +164,26 @@ jobs:
         name: Test Results - Integration Download
         path: test-result-*.xml
 
+    - name: Upload error
+      if: failure() && github.ref == 'refs/heads/main'
+      # classic URL
+      run: |
+        curl \
+          -H 'Authorization: Api-Token ${{ secrets.SFM_API_TOKEN }}' \
+          -H 'Content-Type: application/json' \
+          -X POST https://${{secrets.SFM_TENANT_URL}}/platform/ingest/v1/events \
+          -d '[{ \
+              "title": "Monaco E2E", \
+              "type": "ERROR_EVENT", \
+              "test.type": "download-restore", \
+              "github.repository": "${{ github.repository }}", \
+              "github.ref": "${{ github.ref }}", \
+              "github.event_name": "${{ github.event_name }}", \
+              "github.actor": "${{ github.actor }}", \
+              "github.run_id": "${{ github.run_id }}", \
+              "github.job": "${{ github.job }}" \
+          }]'
+
   account-management-test:
     name: 🗂️ Account Management E2E tests
     if: github.event.action != 'labeled' || github.event.label.name == 'run-iam-test'
@@ -186,6 +226,26 @@ jobs:
         with:
           name: Test Results - Account Management
           path: test-result-*.xml
+
+      - name: Upload error
+        if: failure() && github.ref == 'refs/heads/main'
+        # classic URL
+        run: |
+          curl \
+            -H 'Authorization: Api-Token ${{ secrets.SFM_API_TOKEN }}' \
+            -H 'Content-Type: application/json' \
+            -X POST https://${{secrets.SFM_TENANT_URL}}/platform/ingest/v1/events \
+            -d '[{ \
+                "title": "Monaco E2E", \
+                "type": "ERROR_EVENT", \
+                "test.type": "account-management", \
+                "github.repository": "${{ github.repository }}", \
+                "github.ref": "${{ github.ref }}", \
+                "github.event_name": "${{ github.event_name }}", \
+                "github.actor": "${{ github.actor }}", \
+                "github.run_id": "${{ github.run_id }}", \
+                "github.job": "${{ github.job }}" \
+            }]'
 
   windows-unit-tests:
     name: 🪟 Windows tests
@@ -269,12 +329,25 @@ jobs:
         name: Test Results - Integration Nightly
         path: test-result-*.xml
 
-    - name: Trigger Dynatrace Workflow on Failure
-      if: failure()
+    - name: Upload error
+      if: failure() && github.ref == 'refs/heads/main'
+      # classic URL
       run: |
         curl \
-          -H 'Authorization: Bearer ${{ secrets.SFM_OAUTH_SECRET }}' \
-          -X POST https://${{secrets.SFM_TENANT_URL}}/platform/automation/v1/workflows/${{secrets.SFM_WORKFLOW_ID}}/run
+          -H 'Authorization: Api-Token ${{ secrets.SFM_API_TOKEN }}' \
+          -H 'Content-Type: application/json' \
+          -X POST https://${{secrets.SFM_TENANT_URL}}/platform/ingest/v1/events \
+          -d '[{ \
+              "title": "Monaco E2E", \
+              "type": "ERROR_EVENT", \
+              "test.type": "nightly", \
+              "github.repository": "${{ github.repository }}", \
+              "github.ref": "${{ github.ref }}", \
+              "github.event_name": "${{ github.event_name }}", \
+              "github.actor": "${{ github.actor }}", \
+              "github.run_id": "${{ github.run_id }}", \
+              "github.job": "${{ github.job }}" \
+          }]'
 
   upload_event:
     name: "Upload Event File"
