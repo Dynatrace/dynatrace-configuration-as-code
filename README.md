@@ -5,8 +5,6 @@ from automating the standard configuration of all your Dynatrace environments to
 
 **The documentation for the Dynatrace Configuration as Code tool Monaco is available [here](https://www.dynatrace.com/support/help/shortlink/configuration-as-code).**
 
-> Documentation for the previous 1.x versions is still available [here](https://dynatrace.github.io/dynatrace-configuration-as-code/)
-
 You can download the CLI as well as a copy of the Software Bill of Materials (SBOM) from the [release page](https://github.com/Dynatrace/dynatrace-configuration-as-code/releases).\
 If you're new to Monaco and want to learn more, check out the [Observability Clinic on Monaco 2.0](https://dt-url.net/monaco-observability-clinic).
 
