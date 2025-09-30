@@ -1,0 +1,43 @@
+name: Send error event
+on:
+  workflow_call:
+    inputs:
+      test_type:
+        description: "The test type (integration, nightly, etc.)"
+        required: true
+        type: string
+      caller:
+        description: "Job id of the caller of this workflow"
+        required: true
+        type: string
+    secrets:
+      SFM_TENANT_URL:
+        description: "The classic URL of the tenant to send the event to"
+        required: true
+      SFM_API_TOKEN:
+        description: "The API token of the tenant needed for ingesting the event. Required scope: 'openpipeline.events'"
+        required: true
+
+
+jobs:
+  send-event:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send error event
+        if: failure() && github.ref == 'refs/heads/main'
+        run: |
+          curl \
+            -H 'Authorization: Api-Token ${{ secrets.SFM_API_TOKEN }}' \
+            -H 'Content-Type: application/json' \
+            -X POST https://${{secrets.SFM_TENANT_URL}}/platform/ingest/v1/events \
+            -d '[{ \
+                "title": "Monaco E2E", \
+                "type": "ERROR_EVENT", \
+                "test.type": "${{inputs.test_type}}", \
+                "github.repository": "${{ github.repository }}", \
+                "github.ref": "${{ github.ref }}", \
+                "github.event_name": "${{ github.event_name }}", \
+                "github.actor": "${{ github.actor }}", \
+                "github.run_id": "${{ github.run_id }}", \
+                "github.job": "${{ inputs.caller }}" \
+            }]'
