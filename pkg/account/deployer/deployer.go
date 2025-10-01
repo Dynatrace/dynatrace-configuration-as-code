@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -58,15 +59,17 @@ type Options struct {
 type client interface {
 	getAllGroups(ctx context.Context) (map[string]remoteId, error)
 	getGlobalPolicies(ctx context.Context) (map[string]remoteId, error)
+	getBoundaryIds(ctx context.Context) (map[string]remoteId, error)
 	getManagementZones(ctx context.Context) ([]ManagementZone, error)
 	upsertPolicy(ctx context.Context, policyLevel string, policyLevelId string, policyId string, policy Policy) (remoteId, error)
+	upsertBoundary(ctx context.Context, boundaryId string, boundary Boundary) (remoteId, error)
 	upsertGroup(ctx context.Context, groupId string, group Group) (remoteId, error)
 	upsertUser(ctx context.Context, userId string) (remoteId, error)
 	upsertServiceUser(ctx context.Context, serviceUserId string, serviceUser ServiceUser) (remoteId, error)
 	getServiceUserEmailByUid(ctx context.Context, uid string) (string, error)
 	getServiceUserEmailByName(ctx context.Context, name string) (string, error)
-	updateAccountPolicyBindings(ctx context.Context, groupId string, policyIds []string) error
-	updateEnvironmentPolicyBindings(ctx context.Context, envName string, groupId string, policyIds []string) error
+	updateAccountPolicyBindings(ctx context.Context, groupId string, boundariesForPolicyIds map[string][]string) error
+	updateEnvironmentPolicyBindings(ctx context.Context, envName string, groupId string, boundariesForPolicyIds map[string][]string) error
 	deleteAllEnvironmentPolicyBindings(ctx context.Context, groupId string) error
 	updateGroupBindings(ctx context.Context, userId string, groupIds []string) error
 	updatePermissions(ctx context.Context, groupId string, permissions []accountmanagement.PermissionsDto) error
@@ -122,10 +125,14 @@ func (d *AccountDeployer) fetchExistingResources(ctx context.Context) error {
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
-	fetchResourcesJob := func(wg *sync.WaitGroup, errCh chan error) {
-		fetchResources(ctx, d.fetchGlobalPolicies, wg, errCh)
-
+	fetchBoundariesJob := func(wg *sync.WaitGroup, errCh chan error) {
+		fetchResources(ctx, d.fetchBoundaries, wg, errCh)
 	}
+
+	fetchGlobalPoliciesJob := func(wg *sync.WaitGroup, errCh chan error) {
+		fetchResources(ctx, d.fetchGlobalPolicies, wg, errCh)
+	}
+
 	fetchMZonesJob := func(wg *sync.WaitGroup, errCh chan error) {
 		fetchResources(ctx, d.fetchManagementZones, wg, errCh)
 	}
@@ -134,7 +141,10 @@ func (d *AccountDeployer) fetchExistingResources(ctx context.Context) error {
 		fetchResources(ctx, d.fetchGroups, wg, errCh)
 	}
 
-	dispatcher.AddJob(fetchResourcesJob)
+	if featureflags.Boundaries.Enabled() {
+		dispatcher.AddJob(fetchBoundariesJob)
+	}
+	dispatcher.AddJob(fetchGlobalPoliciesJob)
 	dispatcher.AddJob(fetchMZonesJob)
 	dispatcher.AddJob(fetchGroupsJob)
 
@@ -147,6 +157,9 @@ func (d *AccountDeployer) deployResources(ctx context.Context, res *account.Reso
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
+	if featureflags.Boundaries.Enabled() {
+		d.deployBoundaries(ctx, res.Boundaries, dispatcher)
+	}
 	d.deployPolicies(ctx, res.Policies, dispatcher)
 	d.deployGroups(ctx, res.Groups, dispatcher)
 	d.deployUsers(ctx, res.Users, dispatcher)
@@ -165,6 +178,16 @@ func (d *AccountDeployer) updateBindings(ctx context.Context, res *account.Resou
 	d.deployServiceUserBindings(ctx, res.ServiceUsers, dispatcher)
 	return dispatcher.Wait()
 
+}
+
+func (d *AccountDeployer) fetchBoundaries(ctx context.Context) error {
+	d.logger.DebugContext(ctx, "Getting existing boundaries")
+	deployedBoundaries, err := d.accClient.getBoundaryIds(d.logCtx(ctx))
+	if err != nil {
+		return err
+	}
+	d.idMap.addBoundaries(deployedBoundaries)
+	return nil
 }
 
 func (d *AccountDeployer) fetchGlobalPolicies(ctx context.Context) error {
@@ -195,7 +218,6 @@ func (d *AccountDeployer) fetchGroups(ctx context.Context) error {
 	}
 	d.idMap.addGroups(deployedGroups)
 	return err
-
 }
 
 func fetchResources(ctx context.Context, fetchFunc func(ctx context.Context) error, wg *sync.WaitGroup, errCh chan<- error) {
@@ -216,6 +238,22 @@ func (d *AccountDeployer) deployPolicies(ctx context.Context, policies map[strin
 			d.idMap.addPolicy(policy.ID, pUuid)
 		}
 		dispatcher.AddJob(deployPolicyJob)
+	}
+}
+
+func (d *AccountDeployer) deployBoundaries(ctx context.Context, boundaries map[string]account.Boundary, dispatcher *Dispatcher) {
+	for _, boundary := range boundaries {
+		boundary := boundary
+		deployBoundaryJob := func(wg *sync.WaitGroup, errCh chan error) {
+			defer wg.Done()
+			d.logger.InfoContext(ctx, "Deploying boundary '%s'", boundary.Name)
+			pUuid, err := d.upsertBoundary(d.logCtx(ctx), boundary)
+			if err != nil {
+				errCh <- fmt.Errorf("unable to deploy boundary '%s' for account %s: %w", boundary.Name, d.accClient.getAccountInfo().AccountUUID, err)
+			}
+			d.idMap.addBoundary(boundary.ID, pUuid)
+		}
+		dispatcher.AddJob(deployBoundaryJob)
 	}
 }
 
@@ -318,6 +356,15 @@ func (d *AccountDeployer) deployServiceUserBindings(ctx context.Context, service
 			}
 		dispatcher.AddJob(deployUserBindingsJob)
 	}
+}
+
+func (d *AccountDeployer) upsertBoundary(ctx context.Context, boundary account.Boundary) (remoteId, error) {
+	data := accountmanagement.PolicyBoundaryDto{
+		Name:          boundary.Name,
+		BoundaryQuery: boundary.Query,
+	}
+
+	return d.accClient.upsertBoundary(ctx, boundary.OriginObjectID, data)
 }
 
 func (d *AccountDeployer) upsertPolicy(ctx context.Context, policy account.Policy) (remoteId, error) {
@@ -515,8 +562,8 @@ func (d *AccountDeployer) getManagementZonePermissions(mzones []account.Manageme
 
 	return perms, nil
 }
-func (d *AccountDeployer) getAccountPolicyRefs(group account.Group) ([]remoteId, error) {
-	var policyIds []remoteId
+func (d *AccountDeployer) getAccountPolicyRefs(group account.Group) (map[remoteId][]remoteId, error) {
+	var policyIds map[remoteId][]remoteId
 	var err error
 	if group.Account != nil {
 		policyIds, err = d.processPolicyBindings(group.Account.Policies)
@@ -527,8 +574,8 @@ func (d *AccountDeployer) getAccountPolicyRefs(group account.Group) ([]remoteId,
 	return policyIds, nil
 }
 
-func (d *AccountDeployer) getEnvPolicyRefs(group account.Group) (map[envName][]remoteId, error) {
-	result := make(map[envName][]remoteId)
+func (d *AccountDeployer) getEnvPolicyRefs(group account.Group) (map[envName]map[remoteId][]remoteId, error) {
+	result := make(map[envName]map[remoteId][]remoteId)
 	var err error
 	if group.Environment != nil {
 		for _, e := range group.Environment {
@@ -549,14 +596,23 @@ func (d *AccountDeployer) getServiceUserGroupRefs(serviceUser account.ServiceUse
 	return d.processItems(serviceUser.Groups, d.groupIdLookup)
 }
 
-func (d *AccountDeployer) processPolicyBindings(items []account.PolicyBinding) ([]remoteId, error) {
-	refs := make([]remoteId, 0, len(items))
+func (d *AccountDeployer) processPolicyBindings(items []account.PolicyBinding) (map[remoteId][]remoteId, error) {
+	refs := make(map[remoteId][]remoteId)
 	for _, item := range items {
 		polRef := d.policyIdLookup(item.Policy.ID())
 		if polRef == "" {
 			return nil, fmt.Errorf("could not find remote id for policy with id '%s'", item.Policy.ID())
 		}
-		refs = append(refs, polRef)
+
+		var bndRefs []remoteId
+		var err error
+		if featureflags.Boundaries.Enabled() {
+			bndRefs, err = d.processItems(item.Boundaries, d.boundaryIdLookup)
+			if err != nil {
+				return nil, err
+			}
+		}
+		refs[polRef] = bndRefs
 	}
 	return refs, nil
 }
@@ -580,6 +636,10 @@ func (d *AccountDeployer) processItems(items []account.Ref, remoteIdLookup idLoo
 	}
 
 	return ids, nil
+}
+
+func (d *AccountDeployer) boundaryIdLookup(id localId) remoteId {
+	return d.idMap.getBoundaryUUID(id)
 }
 
 func (d *AccountDeployer) policyIdLookup(id localId) remoteId {
