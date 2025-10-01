@@ -194,6 +194,20 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 	}
 }
 
+func TestSupportArchiveContainsCommandErrors(t *testing.T) {
+	fs := testutils.CreateTestFileSystem()
+
+	err := cleanupLogsDir()
+	require.NoError(t, err)
+
+	err = monaco.Run(t, fs, "monaco deploy notExisting.txt --verbose --support-archive")
+	require.Error(t, err)
+
+	fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
+	archive := "support-archive-" + fixedTime + ".zip"
+	testutils.AssertSupportArchiveContainsError(t, fs, archive, "wrong format for manifest file")
+}
+
 func TestDeployReport(t *testing.T) {
 	t.Run("report is generated", func(t *testing.T) {
 		const (

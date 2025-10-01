@@ -20,6 +20,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -39,6 +40,25 @@ func AssertSupportArchive(t *testing.T, fs afero.Fs, archive string, expectedFil
 
 	assert.Len(t, foundFiles, len(expectedFiles), "expected archive to contain exactly %d files but got %d", len(expectedFiles), len(foundFiles))
 	assert.ElementsMatchf(t, foundFiles, expectedFiles, "expected archive to contain all expected files %v", expectedFiles)
+}
+
+func AssertSupportArchiveContainsError(t *testing.T, fs afero.Fs, archive string, errorMessage string) {
+	t.Helper()
+	zipReader := ReadZipArchive(t, fs, archive)
+	var errorFile *zip.File
+
+	for _, file := range zipReader.File {
+		if strings.HasSuffix(file.Name, "errors.log") {
+			errorFile = file
+		}
+	}
+	require.NotNil(t, errorFile)
+	file, err := errorFile.Open()
+	require.NoError(t, err)
+	defer file.Close()
+	content, err := io.ReadAll(file)
+	require.NoError(t, err)
+	assert.Contains(t, string(content), errorMessage)
 }
 
 func ReadZipArchive(t *testing.T, fs afero.Fs, archive string) *zip.Reader {
