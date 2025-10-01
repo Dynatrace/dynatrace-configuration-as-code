@@ -36,7 +36,7 @@ func createMZone(t *testing.T) {
 	command := "deploy resources/mzones/manifest.yaml"
 	printCommand(command)
 
-	cli := runner.BuildCmd(afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()))
+	cli, _ := runner.BuildCmd(afero.NewCopyOnWriteFs(afero.NewOsFs(), afero.NewMemMapFs()))
 	cli.SetArgs(strings.Split(command, " "))
 	err := cli.Execute()
 	require.NoError(t, err)
