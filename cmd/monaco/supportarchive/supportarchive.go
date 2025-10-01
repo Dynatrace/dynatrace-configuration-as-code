@@ -49,12 +49,21 @@ func Write(fs afero.Fs) error {
 	if err != nil {
 		return err
 	}
+
+	requestFilePath := trafficlogs.RequestFilePath()
+	responseFilePath := trafficlogs.ResponseFilePath()
 	files := []string{
-		trafficlogs.RequestFilePath(),
-		trafficlogs.ResponseFilePath(),
 		log.LogFilePath(),
 		log.ErrorFilePath(),
 		ffState,
+	}
+
+	if exists, _ := afero.Exists(fs, requestFilePath); exists {
+		files = append(files, requestFilePath)
+	}
+
+	if exists, _ := afero.Exists(fs, responseFilePath); exists {
+		files = append(files, responseFilePath)
 	}
 
 	if featureflags.LogMemStats.Enabled() {
