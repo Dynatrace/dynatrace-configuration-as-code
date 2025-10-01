@@ -19,8 +19,6 @@
 package logging
 
 import (
-	"archive/zip"
-	"bytes"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -117,9 +115,9 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 						expectedFiles = append(expectedFiles, fixedTime+"-memstat.log")
 					}
 
-					assertSupportArchive(t, fs, archive, expectedFiles)
+					testutils.AssertSupportArchive(t, fs, archive, expectedFiles)
 
-					zipReader := readZipArchive(t, fs, archive)
+					zipReader := testutils.ReadZipArchive(t, fs, archive)
 					logFile, err := zipReader.Open(fixedTime + ".log")
 					defer logFile.Close()
 					assert.NoError(t, err)
@@ -191,7 +189,7 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 				expectedFiles = append(expectedFiles, fixedTime+"-"+"resp.log")
 			}
 
-			assertSupportArchive(t, fs, archive, expectedFiles)
+			testutils.AssertSupportArchive(t, fs, archive, expectedFiles)
 		})
 	}
 }
@@ -244,40 +242,6 @@ func TestDeployReport(t *testing.T) {
 				require.NoError(t, err)
 			})
 	})
-}
-
-func assertSupportArchive(t *testing.T, fs afero.Fs, archive string, expectedFiles []string) {
-	zipReader := readZipArchive(t, fs, archive)
-
-	// Check that each expected file is present in the zip archive
-	var foundFiles []string
-	for _, file := range zipReader.File {
-		foundFiles = append(foundFiles, file.Name)
-	}
-
-	assert.Len(t, foundFiles, len(expectedFiles), "expected archive to contain exactly %d files but got %d", len(expectedFiles), len(foundFiles))
-	assert.ElementsMatchf(t, foundFiles, expectedFiles, "expected archive to contain all expected files %v", expectedFiles)
-}
-
-func readZipArchive(t *testing.T, fs afero.Fs, archive string) *zip.Reader {
-	exists, err := afero.Exists(fs, archive)
-	assert.NoError(t, err)
-	assert.True(t, exists, "Expected support archive %s to exist, but it didn't", archive)
-
-	// Read the created zip file
-	zipFile, err := fs.Open(archive)
-	assert.NoError(t, err, "Expected no error")
-	defer zipFile.Close()
-
-	// Extract the file names from the zip archive
-	archiveData, err := io.ReadAll(zipFile)
-	assert.NoError(t, err, "Expected no error")
-
-	// Open the zip archive for reading
-	zipReader, err := zip.NewReader(bytes.NewReader(archiveData), int64(len(archiveData)))
-	assert.NoError(t, err, "Expected no error")
-
-	return zipReader
 }
 
 // traffic logs always write to the OsFs so to ensure we tests start with a clean slate cleanupLogsDir removes the folder
