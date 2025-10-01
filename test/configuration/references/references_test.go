@@ -242,7 +242,7 @@ func TestReferencesFromClassicConfigsToSettingsResultInError(t *testing.T) {
 	fs := testutils.CreateTestFileSystem()
 	logOutput := strings.Builder{}
 
-	cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
+	cmd, _ := runner.BuildCmdWithLogSpy(fs, &logOutput)
 	cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", "platform_env", "--dry-run"})
 	err := cmd.Execute()
 	assert.Error(t, err, "expected invalid configurations to result in user error")

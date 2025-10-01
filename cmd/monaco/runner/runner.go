@@ -39,7 +39,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 )
 
-func RunCmd(ctx context.Context, cmd *cobra.Command) error {
+func RunCmd(ctx context.Context, cmd *cobra.Command, fs afero.Fs, supportArchiveEnabled *bool) error {
+	defer func() {
+		if supportArchiveEnabled != nil && *supportArchiveEnabled {
+			writeSupportArchive(fs)
+		}
+	}()
 	err := cmd.ExecuteContext(ctx)
 	if err != nil {
 		log.With(log.ErrorAttr(err)).ErrorContext(ctx, "Error: %v", err)
@@ -48,22 +53,28 @@ func RunCmd(ctx context.Context, cmd *cobra.Command) error {
 	return err
 }
 
-func BuildCmd(fs afero.Fs) *cobra.Command {
+// BuildCmd builds the root Monaco command
+// Returns:
+//   - The built command
+//   - A pointer to a boolean flag indicating if the support archive should be created or not, which is set during execution
+func BuildCmd(fs afero.Fs) (cmd *cobra.Command, supportArchiveEnabled *bool) {
 	return BuildCmdWithLogSpy(fs, nil)
 }
 
-func writeSupportArchive(fs afero.Fs) func() {
-	return func() {
-		if err := trafficlogs.GetInstance().Sync(); err != nil {
-			log.With(log.ErrorAttr(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
-		}
-		if err := supportarchive.Write(fs); err != nil {
-			log.With(log.ErrorAttr(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
-		}
+func writeSupportArchive(fs afero.Fs) {
+	if err := trafficlogs.GetInstance().Sync(); err != nil {
+		log.With(log.ErrorAttr(err)).Error("Encountered error while syncing/flushing traffic log files: %s", err)
+	}
+	if err := supportarchive.Write(fs); err != nil {
+		log.With(log.ErrorAttr(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
 	}
 }
 
-func BuildCmdWithLogSpy(fs afero.Fs, logSpy io.Writer) *cobra.Command {
+// BuildCmdWithLogSpy builds the root Monaco command with a given log writer
+// Returns:
+//   - The built command
+//   - A pointer to a boolean flag indicating if the support archive should be created or not, which is set during execution
+func BuildCmdWithLogSpy(fs afero.Fs, logSpy io.Writer) (cmd *cobra.Command, supportArchiveEnabled *bool) {
 	var verbose bool
 	var supportArchive bool
 
@@ -80,7 +91,6 @@ Examples:
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if supportArchive {
-				cobra.OnFinalize(writeSupportArchive(fs))
 				cmd.SetContext(supportarchive.ContextWithSupportArchive(cmd.Context()))
 			}
 
@@ -130,5 +140,5 @@ Examples:
 		rootCmd.AddCommand(purge.GetPurgeCommand(fs))
 	}
 
-	return rootCmd
+	return rootCmd, &supportArchive
 }
