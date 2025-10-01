@@ -41,7 +41,7 @@ func TestIntegrationSloV1AndSloV2(t *testing.T) {
 			},
 			func(fs afero.Fs, _ runner2.TestContext) {
 				logOutput := strings.Builder{}
-				cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
+				cmd, _ := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 				cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--continue-on-error", "--project", "slo-v1-to-slo-v2"})
 				err := cmd.Execute()
 
@@ -60,7 +60,7 @@ func TestIntegrationSloV1AndSloV2(t *testing.T) {
 			},
 			func(fs afero.Fs, _ runner2.TestContext) {
 				logOutput := strings.Builder{}
-				cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
+				cmd, _ := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 				cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--continue-on-error", "--project", "slo-v2-to-slo-v1"})
 				err := cmd.Execute()
 

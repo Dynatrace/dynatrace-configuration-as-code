@@ -44,8 +44,8 @@ func main() {
 	}
 
 	fs := afero.NewOsFs()
-	cmd := runner.BuildCmd(fs)
-	err := runner.RunCmd(ctx, cmd)
+	cmd, supportArchiveEnabled := runner.BuildCmd(fs)
+	err := runner.RunCmd(ctx, cmd, fs, supportArchiveEnabled)
 	notifyUser(versionNotification)
 
 	if err != nil {

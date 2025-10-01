@@ -42,7 +42,7 @@ func TestAPIErrorsAreReported(t *testing.T) {
 		func(fs afero.Fs, _ runner2.TestContext) {
 
 			logOutput := strings.Builder{}
-			cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
+			cmd, _ := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 			cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--continue-on-error"})
 			err := cmd.Execute()
 

@@ -196,6 +196,20 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 	}
 }
 
+func TestSupportArchiveContainsCommandErrors(t *testing.T) {
+	fs := testutils.CreateTestFileSystem()
+
+	err := cleanupLogsDir()
+	require.NoError(t, err)
+
+	err = monaco.Run(t, fs, "monaco deploy notExisting.txt --verbose --support-archive")
+	require.Error(t, err)
+
+	fixedTime := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat) // freeze time to ensure log files are created with expected names
+	archive := "support-archive-" + fixedTime + ".zip"
+	assertSupportArchiveContainsError(t, fs, archive, "wrong format for manifest file")
+}
+
 func TestDeployReport(t *testing.T) {
 	t.Run("report is generated", func(t *testing.T) {
 		const (
@@ -244,6 +258,25 @@ func TestDeployReport(t *testing.T) {
 				require.NoError(t, err)
 			})
 	})
+}
+
+func assertSupportArchiveContainsError(t *testing.T, fs afero.Fs, archive string, errorMessage string) {
+	t.Helper()
+	zipReader := readZipArchive(t, fs, archive)
+	var errorFile *zip.File
+
+	for _, file := range zipReader.File {
+		if strings.HasSuffix(file.Name, "errors.log") {
+			errorFile = file
+		}
+	}
+	require.NotNil(t, errorFile)
+	file, err := errorFile.Open()
+	require.NoError(t, err)
+	defer file.Close()
+	content, err := io.ReadAll(file)
+	require.NoError(t, err)
+	assert.Contains(t, string(content), errorMessage)
 }
 
 func assertSupportArchive(t *testing.T, fs afero.Fs, archive string, expectedFiles []string) {

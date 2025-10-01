@@ -69,7 +69,7 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 			manifest := filepath.Join("testdata/invalid-manifests/", tt.manifestFileName)
 
 			logOutput := strings.Builder{}
-			cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
+			cmd, _ := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 			cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 			err := cmd.Execute()
 
@@ -86,7 +86,7 @@ func TestNonExistentProjectInManifestReturnsError(t *testing.T) {
 	manifest := "testdata/invalid-manifests/manifest_non_existent_project.yaml"
 
 	logOutput := strings.Builder{}
-	cmd := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
+	cmd, _ := runner.BuildCmdWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 

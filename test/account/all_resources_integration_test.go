@@ -73,7 +73,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		}
 		require.NotZero(t, mzoneID, "Could not get exact management zone id for assertions")
 
-		cli := runner.BuildCmd(o.fs)
+		cli, _ := runner.BuildCmd(o.fs)
 
 		defer func() {
 			t.Log("Starting cleanup")

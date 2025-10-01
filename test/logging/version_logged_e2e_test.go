@@ -86,7 +86,7 @@ func TestMonacoVersionLogging(t *testing.T) {
 			fs := testutils.CreateTestFileSystem()
 			logOutput := strings.Builder{}
 
-			cmd := runner.BuildCmdWithLogSpy(fs, &logOutput)
+			cmd, _ := runner.BuildCmdWithLogSpy(fs, &logOutput)
 			cmd.SetArgs(tt.args)
 			_ = cmd.Execute()
 

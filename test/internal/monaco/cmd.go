@@ -51,7 +51,7 @@ func Run(t *testing.T, fs afero.Fs, command string) error {
 
 	args := strings.Split(c, " ")
 
-	cmd := runner.BuildCmd(fs)
+	cmd, supportArchiveEnabled := runner.BuildCmd(fs)
 	cmd.SetArgs(args)
 
 	// explicit cancel for each monaco run invocation
@@ -59,7 +59,7 @@ func Run(t *testing.T, fs afero.Fs, command string) error {
 	defer cancel()
 
 	t.Logf("Running command: %s", command)
-	err := runner.RunCmd(ctx, cmd)
+	err := runner.RunCmd(ctx, cmd, fs, supportArchiveEnabled)
 	t.Logf("Finished command: %s", command)
 
 	return err
