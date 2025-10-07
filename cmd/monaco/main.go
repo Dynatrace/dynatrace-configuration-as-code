@@ -31,6 +31,12 @@ import (
 )
 
 func main() {
+	os.Exit(executeMain(afero.NewOsFs()))
+}
+
+// executeMain is decoupled from main for testing reasons.
+// it executes the command and returns the exiting code
+func executeMain(fs afero.Fs) int {
 	// initial logging should be verbose even if it is too early for it to go to a file
 	// furthermore it should honor the desired format, such as JSON
 	// full logging is set up in PreRunE method of the root command, created with runner.BuildCli
@@ -43,15 +49,13 @@ func main() {
 		go setVersionNotificationStr(ctx, &versionNotification)
 	}
 
-	fs := afero.NewOsFs()
 	cmd, supportArchiveEnabled := runner.BuildCmd(fs)
 	err := runner.RunCmd(ctx, cmd, fs, supportArchiveEnabled)
 	notifyUser(versionNotification)
-
 	if err != nil {
-		os.Exit(1)
+		return 1
 	}
-	os.Exit(0)
+	return 0
 }
 
 func setVersionNotificationStr(ctx context.Context, msg *string) {
