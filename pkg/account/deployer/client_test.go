@@ -505,6 +505,7 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 func TestClient_UpdatePolicyBindings(t *testing.T) {
 
 	t.Run("Update Account Policy Bindings - OK", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		responses := []testutils.ResponseDef{
 			{
 				PUT: func(t *testing.T, request *http.Request) testutils.Response {
@@ -519,15 +520,28 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 					require.JSONEq(t, `{"policyUuids":["155a39a5-159f-475e-b2ff-681dad70896e"]}`, string(body))
 				},
 			},
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/account/abcde/bindings/155a39a5-159f-475e-b2ff-681dad70896e/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
+					body, _ := io.ReadAll(request.Body)
+					require.JSONEq(t, `{"boundaries" : ["11e8a1ca-7e75-4714-8f31-825d344094ae"]}`, string(body))
+				},
+			},
 		}
 
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		err := instance.updateAccountPolicyBindings(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
+		err := instance.updateAccountPolicyBindings(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674745", map[string][]string{"155a39a5-159f-475e-b2ff-681dad70896e": {"11e8a1ca-7e75-4714-8f31-825d344094ae"}})
 		assert.NoError(t, err)
-		assert.Equal(t, 1, server.Calls())
+		assert.Equal(t, 2, server.Calls())
 	})
 
 	t.Run("Update Account Policy Bindings - API call fails", func(t *testing.T) {
@@ -546,7 +560,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		err := instance.updateAccountPolicyBindings(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
+		err := instance.updateAccountPolicyBindings(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674745", map[string][]string{"155a39a5-159f-475e-b2ff-681dad70896e": {}})
 		assert.Error(t, err)
 		assert.Equal(t, "unable to update policy binding between group with UUID 8b78ac8d-74fd-456f-bb19-13e078674745 and policies with UUIDs [155a39a5-159f-475e-b2ff-681dad70896e] (HTTP 500): {\"error\" : \"some-error\"}", err.Error())
 		assert.Equal(t, 1, server.Calls())
@@ -557,7 +571,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		err := instance.updateAccountPolicyBindings(t.Context(), "", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
+		err := instance.updateAccountPolicyBindings(t.Context(), "", map[string][]string{"155a39a5-159f-475e-b2ff-681dad70896e": {}})
 		assert.Error(t, err)
 		assert.Equal(t, "group id must not be empty", err.Error())
 		assert.Equal(t, 0, server.Calls())
@@ -584,12 +598,13 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		err := instance.updateAccountPolicyBindings(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
+		err := instance.updateAccountPolicyBindings(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674745", map[string][]string{})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, server.Calls())
 	})
 
 	t.Run("Update Environment Policy Bindings - OK", func(t *testing.T) {
+		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		responses := []testutils.ResponseDef{
 			{
 				PUT: func(t *testing.T, request *http.Request) testutils.Response {
@@ -604,15 +619,28 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 					require.JSONEq(t, `{"policyUuids":["155a39a5-159f-475e-b2ff-681dad70896e"]}`, string(body))
 				},
 			},
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/iam/v1/repo/environment/env1234/bindings/155a39a5-159f-475e-b2ff-681dad70896e/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
+					body, _ := io.ReadAll(request.Body)
+					require.JSONEq(t, `{"boundaries" : ["11e8a1ca-7e75-4714-8f31-825d344094ae"]}`, string(body))
+				},
+			},
 		}
 
 		server := testutils.NewHTTPTestServer(t, responses)
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		err := instance.updateEnvironmentPolicyBindings(t.Context(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
+		err := instance.updateEnvironmentPolicyBindings(t.Context(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", map[string][]string{"155a39a5-159f-475e-b2ff-681dad70896e": {"11e8a1ca-7e75-4714-8f31-825d344094ae"}})
 		assert.NoError(t, err)
-		assert.Equal(t, 1, server.Calls())
+		assert.Equal(t, 2, server.Calls())
 	})
 
 	t.Run("Update Environment Policy Bindings - API call fails", func(t *testing.T) {
@@ -631,7 +659,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		err := instance.updateEnvironmentPolicyBindings(t.Context(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
+		err := instance.updateEnvironmentPolicyBindings(t.Context(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", map[string][]string{"155a39a5-159f-475e-b2ff-681dad70896e": {}})
 		assert.Error(t, err)
 		assert.Equal(t, "unable to update policy binding between group with UUID 8b78ac8d-74fd-456f-bb19-13e078674745 and policies with UUIDs [155a39a5-159f-475e-b2ff-681dad70896e] (HTTP 500): {\"error\" : \"some-error\"}", err.Error())
 		assert.Equal(t, 1, server.Calls())
@@ -642,7 +670,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		err := instance.updateEnvironmentPolicyBindings(t.Context(), "env1234", "", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
+		err := instance.updateEnvironmentPolicyBindings(t.Context(), "env1234", "", map[string][]string{"155a39a5-159f-475e-b2ff-681dad70896e": {}})
 		assert.Error(t, err)
 		assert.Equal(t, "group id must not be empty", err.Error())
 		assert.Equal(t, 0, server.Calls())
@@ -668,7 +696,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		err := instance.updateEnvironmentPolicyBindings(t.Context(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", []string{})
+		err := instance.updateEnvironmentPolicyBindings(t.Context(), "env1234", "8b78ac8d-74fd-456f-bb19-13e078674745", map[string][]string{})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, server.Calls())
 	})
@@ -678,7 +706,7 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		err := instance.updateEnvironmentPolicyBindings(t.Context(), "", "8b78ac8d-74fd-456f-bb19-13e078674745", []string{"155a39a5-159f-475e-b2ff-681dad70896e"})
+		err := instance.updateEnvironmentPolicyBindings(t.Context(), "", "8b78ac8d-74fd-456f-bb19-13e078674745", map[string][]string{"155a39a5-159f-475e-b2ff-681dad70896e": {}})
 		assert.Error(t, err)
 		assert.Equal(t, "environment name must not be empty", err.Error())
 		assert.Equal(t, 0, server.Calls())
@@ -1007,6 +1035,247 @@ func TestClient_GetGlobalPolicies(t *testing.T) {
 	assert.Equal(t, policiesMap["Policy 1"], "8d68fb35-0fa9-499e-b924-55f1629dc71e")
 	assert.Equal(t, policiesMap["Policy 2"], "a6f0bf51-dc92-4712-8fe7-73dfff2c3898")
 
+}
+
+func TestClient_UpsertBoundary_UpdateExisting(t *testing.T) {
+	responses := []testutils.ResponseDef{
+		{
+			GET: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: `{
+  "pageSize": 1,
+  "pageNumber": 1,
+  "totalCount": 1,
+  "content": [
+	{
+	  "uuid": "256d42d9-5a75-49d8-94cf-673c45b9410d",
+	  "name": "Monaco Test Boundary",
+	  "boundaryQuery": "cloudautomation:event = \"helloworld\";",
+	  "levelType": "account",
+	  "levelId": "abcde",
+	  "boundaryConditions": [],
+	  "metadata": null
+	}
+  ]
+}`,
+				}
+			},
+			ValidateRequest: func(t *testing.T, request *http.Request) {
+				assert.Equal(t, "/iam/v1/repo/account/abcde/boundaries?page=1&size=100", request.URL.String())
+			},
+		},
+		{
+			PUT: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: `{
+	"uuid": "256d42d9-5a75-49d8-94cf-673c45b9410d",
+	"name": "Monaco Test Boundary",
+	"tags": [],
+	"description": "",
+	"boundaryQuery":"cloudautomation:event = \"goodbye\";",
+	"boundaryConditions": [],
+	"levelType": "account",
+	"levelId": "abcde",
+	"statements": [],
+	"metadata": null
+}`,
+				}
+			},
+			ValidateRequest: func(t *testing.T, request *http.Request) {
+				assert.Equal(t, "/iam/v1/repo/account/abcde/boundaries/256d42d9-5a75-49d8-94cf-673c45b9410d", request.URL.String())
+				body, _ := io.ReadAll(request.Body)
+				assert.JSONEq(t, `{
+   "name": "Monaco Test Boundary",
+   "boundaryQuery": "cloudautomation:event = \"goodbye\";",
+   "metadata": null
+ }`, string(body))
+
+			},
+		},
+	}
+
+	server := testutils.NewHTTPTestServer(t, responses)
+	defer server.Close()
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+	id, err := instance.upsertBoundary(t.Context(), "", Boundary{
+		Name:          "Monaco Test Boundary",
+		BoundaryQuery: "cloudautomation:event = \"goodbye\";",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "256d42d9-5a75-49d8-94cf-673c45b9410d", id)
+}
+
+func TestClient_UpsertBoundary_UpdateExisting_UpdateFails(t *testing.T) {
+	responses := []testutils.ResponseDef{
+		{
+			GET: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: `{
+  "pageSize": 1,
+  "pageNumber": 1,
+  "totalCount": 1,
+  "content": [
+	{
+	  "uuid": "256d42d9-5a75-49d8-94cf-673c45b9410d",
+	  "name": "Monaco Test Boundary",
+	  "boundaryQuery": "cloudautomation:event = \"helloworld\";",
+	  "levelType": "account",
+	  "levelId": "abcde",
+	  "boundaryConditions": [],
+	  "metadata": null
+	}
+  ]
+}`,
+				}
+			},
+			ValidateRequest: func(t *testing.T, request *http.Request) {
+				assert.Equal(t, "/iam/v1/repo/account/abcde/boundaries?page=1&size=100", request.URL.String())
+			},
+		},
+		{
+			PUT: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusInternalServerError,
+					ResponseBody: `{"error" : "some-error"}`,
+				}
+			},
+		},
+	}
+
+	server := testutils.NewHTTPTestServer(t, responses)
+	defer server.Close()
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+	id, err := instance.upsertBoundary(t.Context(), "", Boundary{
+		Name:          "Monaco Test Boundary",
+		BoundaryQuery: "cloudautomation:event = \"goodbye\";",
+	})
+	assert.Error(t, err)
+	assert.Zero(t, id)
+	assert.Equal(t, "unable to update boundary with name: Monaco Test Boundary (HTTP 500): {\"error\" : \"some-error\"}", err.Error())
+}
+
+func TestClient_UpsertBoundary_CreateNew(t *testing.T) {
+	responses := []testutils.ResponseDef{
+		{
+			GET: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: `{
+  "pageSize": 0,
+  "pageNumber": 1,
+  "totalCount": 0,
+  "content": []
+}`,
+				}
+			},
+			ValidateRequest: func(t *testing.T, request *http.Request) {
+				assert.Equal(t, "/iam/v1/repo/account/abcde/boundaries?page=1&size=100", request.URL.String())
+			},
+		},
+		{
+			POST: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: `{
+	"uuid": "256d42d9-5a75-49d8-94cf-673c45b9410d",
+	"name": "Monaco Test Boundary",
+	"tags": [],
+	"description": "",
+	"boundaryQuery":"cloudautomation:event = \"goodbye\";",
+	"boundaryConditions": [],
+	"levelType": "account",
+	"levelId": "abcde",
+	"statements": [],
+	"metadata": null
+}`,
+				}
+			},
+			ValidateRequest: func(t *testing.T, request *http.Request) {
+				assert.Equal(t, "/iam/v1/repo/account/abcde/boundaries", request.URL.String())
+				body, _ := io.ReadAll(request.Body)
+				assert.JSONEq(t, `{
+   "name": "Monaco Test Boundary",
+   "boundaryQuery": "cloudautomation:event = \"goodbye\";",
+   "metadata": null
+ }`, string(body))
+
+			},
+		},
+	}
+
+	server := testutils.NewHTTPTestServer(t, responses)
+	defer server.Close()
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+	id, err := instance.upsertBoundary(t.Context(), "", Boundary{
+		Name:          "Monaco Test Boundary",
+		BoundaryQuery: "cloudautomation:event = \"goodbye\";",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "256d42d9-5a75-49d8-94cf-673c45b9410d", id)
+}
+
+func TestClient_UpsertBoundary_CreateNew_CreateFails(t *testing.T) {
+	responses := []testutils.ResponseDef{
+		{
+			GET: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusOK,
+					ResponseBody: `{
+  "pageSize": 0,
+  "pageNumber": 1,
+  "totalCount": 0,
+  "content": []
+}`,
+				}
+			},
+		},
+		{
+			POST: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusInternalServerError,
+					ResponseBody: `{"error" : "some-error"}`,
+				}
+			},
+		},
+	}
+
+	server := testutils.NewHTTPTestServer(t, responses)
+	defer server.Close()
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+	id, err := instance.upsertBoundary(t.Context(), "", Boundary{
+		Name:          "Monaco Test Boundary",
+		BoundaryQuery: "cloudautomation:event = \"goodbye\";",
+	})
+	assert.Error(t, err)
+	assert.Zero(t, id)
+	assert.Equal(t, "unable to create boundary with name: Monaco Test Boundary (HTTP 500): {\"error\" : \"some-error\"}", err.Error())
+}
+
+func TestClient_UpsertBoundary_GetPoliciesFails(t *testing.T) {
+	responses := []testutils.ResponseDef{
+		{
+			GET: func(t *testing.T, request *http.Request) testutils.Response {
+				return testutils.Response{
+					ResponseCode: http.StatusInternalServerError,
+					ResponseBody: `{"error" : "some-error"}`,
+				}
+			},
+		},
+	}
+
+	server := testutils.NewHTTPTestServer(t, responses)
+	defer server.Close()
+	instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+	id, err := instance.upsertBoundary(t.Context(), "", Boundary{
+		Name:          "Monaco Test Boundary",
+		BoundaryQuery: "cloudautomation:event = \"goodbye\";",
+	})
+	assert.Error(t, err)
+	assert.Zero(t, id)
+	assert.Equal(t, "failed to get boundaries (HTTP 500): {\"error\" : \"some-error\"}", err.Error())
 }
 
 func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
