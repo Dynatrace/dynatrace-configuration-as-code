@@ -7,6 +7,12 @@
       "LINUX"
     ],
     "minimumProcesses": 1,
-    "rules": [],
+    "rules": [
+        {
+            "ruleType": "RuleTypeProcess",
+            "property": "executable",
+            "condition": "$contains(svc)"
+        }
+    ],
     "metadata": []
   }
