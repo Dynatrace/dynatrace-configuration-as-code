@@ -31,6 +31,15 @@ func TestIdMap(t *testing.T) {
 		validate func(*idMap)
 	}{
 		{
+			name: "AddBoundary",
+			action: func(d *idMap) {
+				d.addBoundary("local1", "remote1")
+			},
+			validate: func(d *idMap) {
+				assert.Equal(t, "remote1", d.getBoundaryUUID("local1"))
+			},
+		},
+		{
 			name: "AddPolicy",
 			action: func(d *idMap) {
 				d.addPolicy("local1", "remote1")
@@ -46,6 +55,20 @@ func TestIdMap(t *testing.T) {
 			},
 			validate: func(d *idMap) {
 				assert.Equal(t, "remote2", d.getGroupUUID("local2"))
+			},
+		},
+		{
+			name: "AddBoundaries",
+			action: func(d *idMap) {
+				boundaries := map[string]remoteId{
+					"local3": "remote3",
+					"local4": "remote4",
+				}
+				d.addBoundaries(boundaries)
+			},
+			validate: func(d *idMap) {
+				assert.Equal(t, "remote3", d.getBoundaryUUID("local3"))
+				assert.Equal(t, "remote4", d.getBoundaryUUID("local4"))
 			},
 		},
 		{
