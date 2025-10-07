@@ -28,6 +28,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 )
@@ -45,9 +46,11 @@ func mockClient(t *testing.T) *Mockclient {
 }
 
 func TestDeployer(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
 	t.Run("Deployer - Getting global policies fails", func(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(nil, errors.New("ERR - GET GLOBAL POLICIES"))
@@ -58,6 +61,7 @@ func TestDeployer(t *testing.T) {
 	t.Run("Deployer - Getting management zones fails", func(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(nil, errors.New("ERR - GET GLOBAL POLICIES"))
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return(nil, errors.New("ERR - GET MANAGEMENT ZONES"))
@@ -69,9 +73,11 @@ func TestDeployer(t *testing.T) {
 
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
+		mockedClient.EXPECT().upsertBoundary(gomock.Any(), gomock.Any(), gomock.Any()).Return("11e8a1ca-7e75-4714-8f31-825d344094ae", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("8f14c703-aa31-4d33-b888-edd553aea02c", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("ERR - UPSERT POLICY"))
 		mockedClient.EXPECT().upsertGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return("3158497c-7fc7-44bc-ab15-c3ab8fea8560", nil)
@@ -85,9 +91,11 @@ func TestDeployer(t *testing.T) {
 	t.Run("Deployer - Upserting group fails", func(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
+		mockedClient.EXPECT().upsertBoundary(gomock.Any(), gomock.Any(), gomock.Any()).Return("11e8a1ca-7e75-4714-8f31-825d344094ae", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("8f14c703-aa31-4d33-b888-edd553aea02c", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("e59db51f-2ce1-4489-82ba-f1f00a93a85e", nil)
 		mockedClient.EXPECT().upsertGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("ERR - UPSERT GROUP"))
@@ -102,9 +110,11 @@ func TestDeployer(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
 
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
+		mockedClient.EXPECT().upsertBoundary(gomock.Any(), gomock.Any(), gomock.Any()).Return("11e8a1ca-7e75-4714-8f31-825d344094ae", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("8f14c703-aa31-4d33-b888-edd553aea02c", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("e59db51f-2ce1-4489-82ba-f1f00a93a85e", nil)
 		mockedClient.EXPECT().upsertGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return("3158497c-7fc7-44bc-ab15-c3ab8fea8560", nil)
@@ -124,9 +134,11 @@ func TestDeployer(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
 
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
+		mockedClient.EXPECT().upsertBoundary(gomock.Any(), gomock.Any(), gomock.Any()).Return("11e8a1ca-7e75-4714-8f31-825d344094ae", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("8f14c703-aa31-4d33-b888-edd553aea02c", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("e59db51f-2ce1-4489-82ba-f1f00a93a85e", nil)
 		mockedClient.EXPECT().upsertGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return("3158497c-7fc7-44bc-ab15-c3ab8fea8560", nil)
@@ -146,9 +158,11 @@ func TestDeployer(t *testing.T) {
 	t.Run("Deployer - Upserting User fails", func(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
+		mockedClient.EXPECT().upsertBoundary(gomock.Any(), gomock.Any(), gomock.Any()).Return("11e8a1ca-7e75-4714-8f31-825d344094ae", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("8f14c703-aa31-4d33-b888-edd553aea02c", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("e59db51f-2ce1-4489-82ba-f1f00a93a85e", nil)
 		mockedClient.EXPECT().upsertGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return("3158497c-7fc7-44bc-ab15-c3ab8fea8560", nil)
@@ -162,9 +176,11 @@ func TestDeployer(t *testing.T) {
 	t.Run("Deployer - Upserting service user fails", func(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
+		mockedClient.EXPECT().upsertBoundary(gomock.Any(), gomock.Any(), gomock.Any()).Return("11e8a1ca-7e75-4714-8f31-825d344094ae", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("8f14c703-aa31-4d33-b888-edd553aea02c", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("e59db51f-2ce1-4489-82ba-f1f00a93a85e", nil)
 		mockedClient.EXPECT().upsertGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return("3158497c-7fc7-44bc-ab15-c3ab8fea8560", nil)
@@ -178,9 +194,11 @@ func TestDeployer(t *testing.T) {
 	t.Run("Deployer - Updating Group Bindings fails", func(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
+		mockedClient.EXPECT().upsertBoundary(gomock.Any(), gomock.Any(), gomock.Any()).Return("11e8a1ca-7e75-4714-8f31-825d344094ae", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("8f14c703-aa31-4d33-b888-edd553aea02c", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("e59db51f-2ce1-4489-82ba-f1f00a93a85e", nil)
 		mockedClient.EXPECT().upsertGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return("31»58497c-7fc7-44bc-ab15-c3ab8fea8560", nil)
@@ -199,9 +217,11 @@ func TestDeployer(t *testing.T) {
 	t.Run("Deployer - OK", func(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
+		mockedClient.EXPECT().upsertBoundary(gomock.Any(), gomock.Any(), gomock.Any()).Return("11e8a1ca-7e75-4714-8f31-825d344094ae", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("8f14c703-aa31-4d33-b888-edd553aea02c", nil)
 		mockedClient.EXPECT().upsertPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("e59db51f-2ce1-4489-82ba-f1f00a93a85e", nil)
 		mockedClient.EXPECT().upsertGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return("3158497c-7fc7-44bc-ab15-c3ab8fea8560", nil)
@@ -219,12 +239,14 @@ func TestDeployer(t *testing.T) {
 }
 
 func TestDeployer_ServiceUsers(t *testing.T) {
+	t.Setenv(featureflags.Boundaries.EnvName(), "true")
 	t.Run("Single service user with name", func(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
 		resources, err := loader.Load(afero.NewOsFs(), "testdata/service-user-with-name.yaml")
 		assert.NoError(t, err)
 
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{"Default Group": "10f4f379-3134-4c6f-88b3-013a365af81d"}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
@@ -242,6 +264,7 @@ func TestDeployer_ServiceUsers(t *testing.T) {
 		resources, err := loader.Load(afero.NewOsFs(), "testdata/service-user-with-origin-object-id.yaml")
 		assert.NoError(t, err)
 
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{"Default Group": "10f4f379-3134-4c6f-88b3-013a365af81d"}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
@@ -259,6 +282,7 @@ func TestDeployer_ServiceUsers(t *testing.T) {
 		resources, err := loader.Load(afero.NewOsFs(), "testdata/service-users-with-same-name-but-different-origin-object-ids.yaml")
 		assert.NoError(t, err)
 
+		mockedClient.EXPECT().getBoundaryIds(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{"Default Group": "10f4f379-3134-4c6f-88b3-013a365af81d"}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(map[string]remoteId{"builtin-policy-1": "6a269841-ac77-47ca-9e39-3663ddd9bf9b"}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)

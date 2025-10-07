@@ -4,7 +4,6 @@ users:
       - type: reference
         id: monaco-group
 
-
 serviceUsers:
   - name: service-user
     groups:
@@ -17,15 +16,23 @@ groups:
     description: Just a Monaco test group
     account:
       policies:
-        - type: reference
-          id: monaco-policy
+        - policy:
+            type: reference
+            id: monaco-policy
+          boundaries:
+            - type: reference
+              id: monaco-boundary
       permissions:
         - account-viewer
     environments:
       - environment: vsy13800
         policies:
-          - type: reference
-            id: monaco-policy-2
+          - policy:
+              type: reference
+              id: monaco-policy-2
+            boundaries:
+              - type: reference
+                id: monaco-boundary
         permissions:
           - tenant-viewer
     managementZones:
@@ -50,3 +57,7 @@ policies:
     policy: |-
       ALLOW automation:workflows:read;
 
+boundaries:
+  - name: Monaco Test Boundary
+    id: monaco-boundary
+    query: cloudautomation:event = "test-event";
