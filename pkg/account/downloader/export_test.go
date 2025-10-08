@@ -20,7 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 )
 
-func New4Test(accountInfo *account.AccountInfo, client httpClient) *Downloader {
+func NewForTesting(accountInfo *account.AccountInfo, client httpClient) *Downloader {
 	return &Downloader{
 		httpClient:  client,
 		accountInfo: accountInfo,
