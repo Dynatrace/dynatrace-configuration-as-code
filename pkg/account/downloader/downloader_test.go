@@ -44,7 +44,7 @@ var (
 // TestDownloader_EmptyAccount tests that downloading an empty account succeeds.
 func TestDownloader_EmptyAccount(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -68,7 +68,7 @@ func TestDownloader_EmptyAccount(t *testing.T) {
 // TestDownloader_AccountPolicy tests that downloading an account-level policy succeeds.
 func TestDownloader_AccountPolicy(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -112,7 +112,7 @@ func TestDownloader_AccountPolicy(t *testing.T) {
 // TestDownloader_EnvironmentPolicy tests that downloading an environment-level policy succeeds.
 func TestDownloader_EnvironmentPolicy(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -163,7 +163,7 @@ func TestDownloader_EnvironmentPolicy(t *testing.T) {
 // TestDownloader_GlobalPolicy tests that downloading a global policy succeeds.
 func TestDownloader_GlobalPolicy(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -195,7 +195,7 @@ func TestDownloader_GlobalPolicy(t *testing.T) {
 // TestDownloader_NoPolicyDetails tests that downloading a policy without details fails as expected.
 func TestDownloader_NoPolicyDetails(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -220,7 +220,7 @@ func TestDownloader_NoPolicyDetails(t *testing.T) {
 // TestDownloader_OnlyUser tests that downloading an account with a single user succeeds.
 func TestDownloader_OnlyUser(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -247,7 +247,7 @@ func TestDownloader_OnlyUser(t *testing.T) {
 // TestDownloader_UserWithOneGroup tests that downloading an account with a user that belongs to one group succeeds.
 func TestDownloader_UserWithOneGroup(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -291,7 +291,7 @@ func TestDownloader_UserWithOneGroup(t *testing.T) {
 // TestDownloader_NoRequestedUserDetails tests that downloading a user without user details fails as expected.
 func TestDownloader_NoRequestedUserDetails(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -311,7 +311,7 @@ func TestDownloader_NoRequestedUserDetails(t *testing.T) {
 // TestDownloader_EmptyGroup tests that downloading an account with an empty group succeeds.
 func TestDownloader_EmptyGroup(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -348,7 +348,7 @@ func TestDownloader_EmptyGroup(t *testing.T) {
 // TestDownloader_GroupWithFederatedAttributeValues tests that downloading a group with federated attribute values succeeds.
 func TestDownloader_GroupWithFederatedAttributeValues(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -387,7 +387,7 @@ func TestDownloader_GroupWithFederatedAttributeValues(t *testing.T) {
 // TestDownloader_GroupsWithPolicies tests that downloading groups with policies succeeds.
 func TestDownloader_GroupsWithPolicies(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -504,7 +504,7 @@ func TestDownloader_GroupsWithPolicies(t *testing.T) {
 func TestDownloader_GroupsWithPoliciesAndBoundaries(t *testing.T) {
 	t.Setenv(featureflags.Boundaries.EnvName(), "true")
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -655,7 +655,7 @@ func TestDownloader_GroupsWithPoliciesAndBoundaries(t *testing.T) {
 // TestDownloader_NoGroupDetails tests that downloading a group without details fails as expected.
 func TestDownloader_NoGroupDetails(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -674,7 +674,7 @@ func TestDownloader_NoGroupDetails(t *testing.T) {
 // TestDownloader_GroupsWithPermissions tests that downloading a group with permissions succeeds.
 func TestDownloader_GroupsWithPermissions(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -797,7 +797,7 @@ func TestDownloader_GroupsWithPermissions(t *testing.T) {
 // TestDownloader_OnlyServiceUser tests that downloading an account with a single service user succeeds.
 func TestDownloader_OnlyServiceUser(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -824,7 +824,7 @@ func TestDownloader_OnlyServiceUser(t *testing.T) {
 // TestDownloader_TwoServiceUsersWithSameName tests that downloading an account with two service users with the same name succeeds.
 func TestDownloader_TwoServiceUsersWithSameName(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -856,7 +856,7 @@ func TestDownloader_TwoServiceUsersWithSameName(t *testing.T) {
 // TestDownloader_ServiceUserWithOneGroup tests that downloading a service user belonging to one group succeeds.
 func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -902,7 +902,7 @@ func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
 // TestDownloader_NoRequestedServiceUserDetails tests that downloading a service user without details fails as expected.
 func TestDownloader_NoRequestedServiceUserDetails(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -924,7 +924,7 @@ func TestDownloader_NoRequestedServiceUserDetails(t *testing.T) {
 func TestDownloader_GetEnvironmentsAndMZonesErrors(t *testing.T) {
 
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -941,7 +941,7 @@ func TestDownloader_GetEnvironmentsAndMZonesErrors(t *testing.T) {
 func TestDownloader_GetPoliciesErrors(t *testing.T) {
 
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -958,7 +958,7 @@ func TestDownloader_GetPoliciesErrors(t *testing.T) {
 // TestDownloader_GetUsersErrors tests that downloading fails if GetUsers errors.
 func TestDownloader_GetUsersErrors(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -977,7 +977,7 @@ func TestDownloader_GetUsersErrors(t *testing.T) {
 // TestDownloader_GetGroupsErrors tests that downloading fails if GetGroups errors.
 func TestDownloader_GetGroupsErrors(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -995,7 +995,7 @@ func TestDownloader_GetGroupsErrors(t *testing.T) {
 // TestDownloader_GetGroupsForUserErrors tests that downloading fails if GetGroupsForUsers errors.
 func TestDownloader_GetGroupsForUserErrors(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
@@ -1015,7 +1015,7 @@ func TestDownloader_GetGroupsForUserErrors(t *testing.T) {
 // TestDownloader_GetServiceUsersErrors tests that downloading fails if GetServiceUsers errors.
 func TestDownloader_GetServiceUsersErrors(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
-	downloader := downloader.New4Test(&account.AccountInfo{
+	downloader := downloader.NewForTesting(&account.AccountInfo{
 		Name:        "test",
 		AccountUUID: accountUUID,
 	}, client)
