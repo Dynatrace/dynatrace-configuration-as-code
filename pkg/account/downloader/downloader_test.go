@@ -587,14 +587,15 @@ func TestDownloader_GroupsWithPoliciesAndBoundaries(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
-	assert.Equal(t, map[account.BoundaryId]account.Boundary{
+	expectedBoundaries := map[account.BoundaryId]account.Boundary{
 		toID("boundary name"): {
 			ID:             toID("boundary name"),
 			Name:           "boundary name",
 			Query:          "some boundary query",
 			OriginObjectID: boundaryUUID1,
 		},
-	}, result.Boundaries)
+	}
+	assert.Equal(t, expectedBoundaries, result.Boundaries)
 	assert.Equal(t, map[account.PolicyId]account.Policy{
 		toID("account policy"): {
 			ID:             toID("account policy"),

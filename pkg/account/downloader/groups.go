@@ -190,7 +190,7 @@ func getManagementZonesFor(scope string, perDTOs *accountmanagement.PermissionsG
 }
 
 func getPoliciesFor(binding *accountmanagement.LevelPolicyBindingDto, groupUUID string) PolicyToBoundaries {
-	policies := make(PolicyToBoundaries)
+	policies := PolicyToBoundaries{}
 	for _, b := range binding.PolicyBindings {
 		for _, g := range b.Groups {
 			if g == groupUUID {
