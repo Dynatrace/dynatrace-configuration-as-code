@@ -162,7 +162,9 @@ func (g Groups) refOn(groupUUID string) account.Ref {
 func (g Groups) refFromDTOs(dtos []accountmanagement.AccountGroupDto) []account.Ref {
 	var retVal []account.Ref
 	for _, dto := range dtos {
-		retVal = append(retVal, g.refOn(dto.Uuid))
+		if ref := g.refOn(dto.Uuid); ref != nil {
+			retVal = append(retVal, ref)
+		}
 	}
 	return retVal
 }

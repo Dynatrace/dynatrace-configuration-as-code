@@ -1032,6 +1032,41 @@ func TestDownloader_GetUsersErrors(t *testing.T) {
 	assert.ErrorContains(t, err, "failed to get a list of users for account", "Return error must contain additional information")
 }
 
+func TestDownloader_GetUsersWithMissingReference(t *testing.T) {
+	// It may be the case during download that new groups are added and assigned to a user
+	// Fetched groups -> fetching users **group-and-user-update-here** -> assigning the reference user.groups to fetched groups (configID)
+
+	client := http.NewMockhttpClient(gomock.NewController(t))
+	downloader := downloader.NewForTesting(&account.AccountInfo{
+		Name:        "test",
+		AccountUUID: accountUUID,
+	}, client)
+
+	client.EXPECT().GetEnvironmentsAndMZones(gomock.Any(), accountUUID).Return([]accountmanagement.TenantResourceDto{}, []accountmanagement.ManagementZoneResourceDto{}, nil)
+	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{}, nil)
+	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
+	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{
+		{
+			Uid:   "uuid",
+			Email: "mail",
+		},
+	}, nil)
+	client.EXPECT().GetGroupsForUser(gomock.Any(), "mail", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "mail", Groups: []accountmanagement.AccountGroupDto{
+		{
+			GroupName: "new-group",
+			Uuid:      "g-uuid",
+		},
+	}}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
+	if featureflags.Boundaries.Enabled() {
+		client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
+	}
+
+	result, err := downloader.DownloadResources(t.Context())
+	require.NoError(t, err)
+	assert.NotContains(t, result.Users["mail"].Groups, nil)
+}
+
 // TestDownloader_GetGroupsErrors tests that downloading fails if GetGroups errors.
 func TestDownloader_GetGroupsErrors(t *testing.T) {
 	client := http.NewMockhttpClient(gomock.NewController(t))
