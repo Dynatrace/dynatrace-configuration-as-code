@@ -86,7 +86,7 @@ func (c *Client) GetGroupsForUser(ctx context.Context, userEmail string, account
 }
 
 func (c *Client) GetBoundaries(ctx context.Context, accountUUID string) ([]accountmanagement.PolicyBoundaryOverview, error) {
-	boundaries := make([]accountmanagement.PolicyBoundaryOverview, 0)
+	boundaries := []accountmanagement.PolicyBoundaryOverview{}
 	const pageSize = 100
 	for page := (int32)(1); page < math.MaxInt32; page++ {
 		r, err := c.getBoundariesPage(ctx, accountUUID, page, pageSize)
