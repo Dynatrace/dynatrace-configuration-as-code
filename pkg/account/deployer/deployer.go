@@ -575,7 +575,7 @@ func (d *AccountDeployer) getAccountPolicyRefs(group account.Group) (map[remoteI
 }
 
 func (d *AccountDeployer) getEnvPolicyRefs(group account.Group) (map[envName]map[remoteId][]remoteId, error) {
-	result := make(map[envName]map[remoteId][]remoteId)
+	result := map[envName]map[remoteId][]remoteId{}
 	var err error
 	if group.Environment != nil {
 		for _, e := range group.Environment {
@@ -597,7 +597,7 @@ func (d *AccountDeployer) getServiceUserGroupRefs(serviceUser account.ServiceUse
 }
 
 func (d *AccountDeployer) processPolicyBindings(items []account.PolicyBinding) (map[remoteId][]remoteId, error) {
-	refs := make(map[remoteId][]remoteId)
+	refs := map[remoteId][]remoteId{}
 	for _, item := range items {
 		polRef := d.policyIdLookup(item.Policy.ID())
 		if polRef == "" {

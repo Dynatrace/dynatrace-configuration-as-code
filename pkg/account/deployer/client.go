@@ -65,7 +65,7 @@ func (c *accountManagementClient) getBoundaryIds(ctx context.Context) (map[strin
 		return nil, err
 	}
 
-	result := make(map[string]remoteId)
+	result := map[string]remoteId{}
 	for _, bnd := range boundaries {
 		result[bnd.Name] = bnd.GetUuid()
 	}
@@ -155,7 +155,7 @@ func (c *accountManagementClient) createBoundary(ctx context.Context, boundary B
 	}
 
 	if createdBoundary == nil {
-		return "", errors.New("the received data are empty")
+		return "", errors.New("the received data is empty")
 	}
 
 	return createdBoundary.Uuid, nil
@@ -184,7 +184,7 @@ func (c *accountManagementClient) getBoundaryByName(ctx context.Context, name st
 }
 
 func (c *accountManagementClient) getBoundaries(ctx context.Context) ([]accountmanagement.PolicyBoundaryOverview, error) {
-	boundaries := make([]accountmanagement.PolicyBoundaryOverview, 0)
+	boundaries := []accountmanagement.PolicyBoundaryOverview{}
 	const pageSize = 100
 	for page := (int32)(1); page < math.MaxInt32; page++ {
 		r, err := c.getBoundariesPage(ctx, c.accountInfo.AccountUUID, page, pageSize)
@@ -209,7 +209,7 @@ func (c *accountManagementClient) getBoundariesPage(ctx context.Context, account
 		return nil, err
 	}
 	if r == nil {
-		return nil, errors.New("the received data are empty")
+		return nil, errors.New("the received data is empty")
 	}
 	return r, nil
 }
@@ -550,10 +550,8 @@ func (c *accountManagementClient) updateAccountPolicyBindings(ctx context.Contex
 		return fmt.Errorf("group id must not be empty")
 	}
 
-	var policyIds []string
-	if boundariesForPolicyIds == nil {
-		policyIds = []string{}
-	} else {
+	policyIds := []string{}
+	if boundariesForPolicyIds != nil {
 		policyIds = maps.Keys(boundariesForPolicyIds)
 	}
 	data := accountmanagement.PolicyUuidsDto{PolicyUuids: policyIds}
@@ -646,7 +644,7 @@ func (c *accountManagementClient) updateBoundariesForPolicyBinding(ctx context.C
 	data := accountmanagement.AppendLevelPolicyBindingForGroupDto{Boundaries: boundaryIds}
 	resp, err := c.client.PolicyManagementAPI.UpdateLevelPolicyBindingForPolicyAndGroup(ctx, groupId, policyId, levelId, levelType).AppendLevelPolicyBindingForGroupDto(data).Execute()
 	defer closeResponseBody(resp)
-	if err = handleClientResponseError(resp, err, "unable to update boundaries for policy binding between group with UUID "+groupId+", policy with UUID "+policyId+" and boundaries with UUIDs "+fmt.Sprintf("%v", boundaryIds)); err != nil {
+	if err = handleClientResponseError(resp, err, fmt.Sprintf("unable to update boundaries for policy binding between group with UUID %s, policy with UUID %s and boundaries with UUIDs %v", groupId, policyId, boundaryIds)); err != nil {
 		return err
 	}
 	return nil
