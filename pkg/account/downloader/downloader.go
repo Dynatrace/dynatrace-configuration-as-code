@@ -21,11 +21,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/go-logr/logr"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal/http"
 )
@@ -43,8 +40,7 @@ func New(accountInfo *account.AccountInfo, client *accounts.Client) *Downloader 
 }
 
 func (a *Downloader) DownloadResources(ctx context.Context) (*account.Resources, error) {
-	log.InfoContext(ctx, "Starting download")
-	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
+	slog.InfoContext(ctx, "Starting download")
 	tenants, err := a.environments(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch environments: %w", err)

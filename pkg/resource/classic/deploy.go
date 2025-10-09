@@ -19,9 +19,6 @@ package classic
 import (
 	"context"
 	"fmt"
-	"log/slog"
-
-	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
@@ -48,9 +45,6 @@ func NewDeployAPI(source DeploySource, apis api.APIs) *DeployAPI {
 }
 
 func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, conf *config.Config) (entities.ResolvedEntity, error) {
-	// create new context to carry logger
-	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
-
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
 		return entities.ResolvedEntity{}, fmt.Errorf("config was not of expected type '%s', but '%s'", config.ClassicApiTypeID, conf.Type.ID())
