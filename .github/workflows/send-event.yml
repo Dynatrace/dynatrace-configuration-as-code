@@ -1,0 +1,53 @@
+name: Send error event
+on:
+  workflow_call:
+    inputs:
+      test_type:
+        description: "The test type (integration, nightly, etc.)"
+        required: true
+        type: string
+      caller:
+        description: "Job id of the caller of this workflow"
+        required: true
+        type: string
+    secrets:
+      SFM_TENANT_URL:
+        description: "The classic URL of the tenant to send the event to"
+        required: true
+      SFM_NOTIFICATION_API_TOKEN:
+        description: "The API token of the tenant needed for ingesting the event. Required scope: 'openpipeline.events'"
+        required: true
+
+
+jobs:
+  send-event:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send error event
+        if: failure() && github.ref == 'refs/heads/main'
+        env:
+          SFM_NOTIFICATION_API_TOKEN: ${{ secrets.SFM_NOTIFICATION_API_TOKEN }}
+          SFM_TENANT_URL: ${{ secrets.SFM_TENANT_URL }}
+          TEST_TYPE: ${{ inputs.test_type }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          CALLER: ${{ inputs.caller }}
+        run: |
+          curl \
+            -H "Authorization: Api-Token $SFM_NOTIFICATION_API_TOKEN" \
+            -H 'Content-Type: application/json' \
+            -X POST "$SFM_TENANT_URL/platform/ingest/v1/events" \
+            -d '[{ \
+                "title": "Monaco E2E", \
+                "type": "ERROR_EVENT", \
+                "test.type": "$TEST_TYPE", \
+                "github.repository": "$GITHUB_REPOSITORY", \
+                "github.ref": "$GITHUB_REF", \
+                "github.event_name": "$GITHUB_EVENT_NAME", \
+                "github.actor": "$GITHUB_ACTOR", \
+                "github.run_id": "$GITHUB_RUN_ID", \
+                "github.job": "$CALLER" \
+            }]'
