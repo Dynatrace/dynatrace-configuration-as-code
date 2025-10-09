@@ -46,5 +46,5 @@ var temporaryDefaultValues = map[FeatureFlag]defaultValue{
 	OnlyCreateReferencesInStringValues: false,
 	SanitizeBucketNames:                true,
 	PlatformToken:                      true,
-	Boundaries:                         false,
+	Boundaries:                         true,
 }
