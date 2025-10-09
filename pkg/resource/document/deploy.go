@@ -21,9 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
-
-	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
@@ -58,9 +55,6 @@ func NewDeployAPI(source DeploySource) *DeployAPI {
 }
 
 func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
-	// create new context to carry logger
-	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
-
 	documentType, isPrivate, err := getDocumentAttributesFromConfigType(c.Type)
 	if err != nil {
 		return entities.ResolvedEntity{}, fmt.Errorf("cannot get document type for config: %w", err)

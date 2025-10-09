@@ -21,10 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"math"
 	"net/http"
 
-	"github.com/go-logr/logr"
 	"golang.org/x/exp/maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
@@ -114,7 +114,7 @@ func (c *accountManagementClient) getManagementZones(ctx context.Context) ([]Man
 
 func (c *accountManagementClient) upsertBoundary(ctx context.Context, boundaryId string, boundary Boundary) (remoteId, error) {
 	if boundaryId == "" {
-		logr.FromContextOrDiscard(ctx).V(1).Info("Trying to get boundary with name " + boundary.Name)
+		slog.DebugContext(ctx, "Trying to get boundary", slog.String("name", boundary.Name))
 		bnd, err := c.getBoundaryByName(ctx, boundary.Name)
 		if err != nil {
 			var rnfErr *ResourceNotFoundError
@@ -122,7 +122,7 @@ func (c *accountManagementClient) upsertBoundary(ctx context.Context, boundaryId
 				return "", err
 			}
 
-			logr.FromContextOrDiscard(ctx).V(1).Info("No boundary with name " + boundary.Name + " found. Creating a new one")
+			slog.DebugContext(ctx, "No boundary found. Creating a new one", slog.String("name", boundary.Name))
 			return c.createBoundary(ctx, boundary)
 		}
 		boundaryId = bnd.Uuid
@@ -132,7 +132,7 @@ func (c *accountManagementClient) upsertBoundary(ctx context.Context, boundaryId
 }
 
 func (c *accountManagementClient) updateBoundary(ctx context.Context, boundaryId string, boundary Boundary) (string, error) {
-	logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update existing boundary with name " + boundary.Name + " and UUID " + boundaryId)
+	slog.DebugContext(ctx, "Trying to update boundary", slog.String("name", boundary.Name), slog.String("uuid", boundaryId))
 	_, resp, err := c.client.PolicyManagementAPI.PutPolicyBoundary(ctx, boundaryId, c.accountInfo.AccountUUID).PolicyBoundaryDto(boundary).Execute()
 	defer closeResponseBody(resp)
 
@@ -217,7 +217,7 @@ func (c *accountManagementClient) getBoundariesPage(ctx context.Context, account
 func (c *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel string, policyLevelId string, policyId string, policy Policy) (remoteId, error) {
 	if policyId != "" {
 
-		logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update policy with origin object ID (UUID) " + policyId)
+		slog.DebugContext(ctx, "Trying to update policy", slog.String("uuid", policyId))
 		_, resp, err := c.client.PolicyManagementAPI.UpdateLevelPolicy(ctx, policyId, policyLevelId, policyLevel).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
 		defer closeResponseBody(resp)
 		if err = handleClientResponseError(resp, err, "unable to update policy with UUID: "+policyId); err != nil {
@@ -226,7 +226,7 @@ func (c *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 		return policyId, nil
 	}
 
-	logr.FromContextOrDiscard(ctx).V(1).Info("Trying to get policy with name " + policy.Name)
+	slog.DebugContext(ctx, "Trying to get policy", slog.String("name", policy.Name))
 	result, resp, err := c.client.PolicyManagementAPI.GetLevelPolicies(ctx, policyLevelId, policyLevel).Name(policy.Name).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to get policy with name: "+policy.Name); err != nil {
@@ -236,7 +236,7 @@ func (c *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 	existingPolicies := result.GetPolicies()
 
 	if len(existingPolicies) == 0 {
-		logr.FromContextOrDiscard(ctx).V(1).Info("No policy with name " + policy.Name + " found. Creating a new one")
+		slog.DebugContext(ctx, "No policy found. Creating a new one", slog.String("name", policy.Name))
 		var createdPolicy *accountmanagement.LevelPolicyDto
 		createdPolicy, resp, err = c.client.PolicyManagementAPI.CreateLevelPolicy(ctx, policyLevelId, policyLevel).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
 		defer closeResponseBody(resp)
@@ -247,10 +247,10 @@ func (c *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 	}
 
 	if len(existingPolicies) > 1 { // shouldn't happen
-		logr.FromContextOrDiscard(ctx).V(-1).Info("Found multiple policies with name " + policy.Name + ". Updating policy with UUID " + existingPolicies[0].GetUuid())
+		slog.DebugContext(ctx, "Found multiple policies", slog.String("name", policy.Name), slog.String("uuid", existingPolicies[0].GetUuid()))
 	}
 
-	logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update existing policy with name " + policy.Name + " and UUID " + existingPolicies[0].GetUuid())
+	slog.DebugContext(ctx, "Trying to update existing policy", slog.String("name", policy.Name), slog.String("uuid", existingPolicies[0].GetUuid()))
 	_, resp, err = c.client.PolicyManagementAPI.UpdateLevelPolicy(ctx, existingPolicies[0].GetUuid(), policyLevelId, policyLevel).CreateOrUpdateLevelPolicyRequestDto(policy).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to update policy with name: "+policy.Name); err != nil {
@@ -261,7 +261,7 @@ func (c *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 
 func (c *accountManagementClient) upsertGroup(ctx context.Context, groupId string, group Group) (remoteId, error) {
 	if groupId != "" {
-		logr.FromContextOrDiscard(ctx).V(1).Info("Trying to update group with origin object ID (UUID) " + groupId)
+		slog.DebugContext(ctx, "Trying to update group", slog.String("id", groupId))
 		existingGroup, err := c.getGroupByID(ctx, groupId)
 		if err != nil {
 			return "", err
@@ -280,7 +280,7 @@ func (c *accountManagementClient) upsertGroup(ctx context.Context, groupId strin
 	}
 
 	if len(existingGroupsWithName) > 1 { // shouldn't happen
-		logr.FromContextOrDiscard(ctx).V(-1).Info("Updating multiple policies with name " + group.Name + ". Updating group with UUID " + existingGroupsWithName[0].GetUuid())
+		slog.DebugContext(ctx, "Updating multiple groups", slog.String("name", group.Name), slog.String("uuid", existingGroupsWithName[0].GetUuid()))
 	}
 
 	return c.updateExistingGroup(ctx, existingGroupsWithName[0], group)

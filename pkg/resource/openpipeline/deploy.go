@@ -19,10 +19,7 @@ package openpipeline
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
-
-	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -46,8 +43,6 @@ func NewDeployAPI(source DeploySource) *DeployAPI {
 }
 
 func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
-	//create new context to carry logger
-	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 

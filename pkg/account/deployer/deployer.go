@@ -7,11 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/go-logr/logr"
-
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
@@ -79,7 +76,7 @@ type client interface {
 type AccountDeployer struct {
 	accClient            client
 	idMap                idMap
-	logger               *log.Slogger
+	logger               *slog.Logger
 	maxConcurrentDeploys int
 }
 
@@ -93,7 +90,7 @@ func NewAccountDeployer(client client, opts ...func(*AccountDeployer)) *AccountD
 	ac := &AccountDeployer{
 		accClient: client,
 		idMap:     newIdMap(),
-		logger:    log.With(slog.Any("account", client.getAccountInfo().Name)),
+		logger:    slog.With(slog.Any("account", client.getAccountInfo().Name)),
 	}
 	for _, o := range opts {
 		o(ac)
@@ -182,7 +179,7 @@ func (d *AccountDeployer) updateBindings(ctx context.Context, res *account.Resou
 
 func (d *AccountDeployer) fetchBoundaries(ctx context.Context) error {
 	d.logger.DebugContext(ctx, "Getting existing boundaries")
-	deployedBoundaries, err := d.accClient.getBoundaryIds(d.logCtx(ctx))
+	deployedBoundaries, err := d.accClient.getBoundaryIds(ctx)
 	if err != nil {
 		return err
 	}
@@ -192,7 +189,7 @@ func (d *AccountDeployer) fetchBoundaries(ctx context.Context) error {
 
 func (d *AccountDeployer) fetchGlobalPolicies(ctx context.Context) error {
 	d.logger.DebugContext(ctx, "Getting existing global policies")
-	deployedPolicies, err := d.accClient.getGlobalPolicies(d.logCtx(ctx))
+	deployedPolicies, err := d.accClient.getGlobalPolicies(ctx)
 	if err != nil {
 		return err
 	}
@@ -202,7 +199,7 @@ func (d *AccountDeployer) fetchGlobalPolicies(ctx context.Context) error {
 
 func (d *AccountDeployer) fetchManagementZones(ctx context.Context) error {
 	d.logger.DebugContext(ctx, "Getting existing management zones")
-	deployedMgmtZones, err := d.accClient.getManagementZones(d.logCtx(ctx))
+	deployedMgmtZones, err := d.accClient.getManagementZones(ctx)
 	if err != nil {
 		return err
 	}
@@ -212,7 +209,7 @@ func (d *AccountDeployer) fetchManagementZones(ctx context.Context) error {
 
 func (d *AccountDeployer) fetchGroups(ctx context.Context) error {
 	d.logger.DebugContext(ctx, "Getting existing groups")
-	deployedGroups, err := d.accClient.getAllGroups(d.logCtx(ctx))
+	deployedGroups, err := d.accClient.getAllGroups(ctx)
 	if err != nil {
 		return err
 	}
@@ -230,8 +227,8 @@ func (d *AccountDeployer) deployPolicies(ctx context.Context, policies map[strin
 		policy := policy
 		deployPolicyJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.InfoContext(ctx, "Deploying policy '%s'", policy.Name)
-			pUuid, err := d.upsertPolicy(d.logCtx(ctx), policy)
+			d.logger.InfoContext(ctx, "Deploying policy", slog.String("name", policy.Name))
+			pUuid, err := d.upsertPolicy(ctx, policy)
 			if err != nil {
 				errCh <- fmt.Errorf("unable to deploy policy '%s' for account %s: %w", policy.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
@@ -246,8 +243,8 @@ func (d *AccountDeployer) deployBoundaries(ctx context.Context, boundaries map[s
 		boundary := boundary
 		deployBoundaryJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.InfoContext(ctx, "Deploying boundary '%s'", boundary.Name)
-			pUuid, err := d.upsertBoundary(d.logCtx(ctx), boundary)
+			d.logger.InfoContext(ctx, "Deploying boundary", slog.String("name", boundary.Name))
+			pUuid, err := d.upsertBoundary(ctx, boundary)
 			if err != nil {
 				errCh <- fmt.Errorf("unable to deploy boundary '%s' for account %s: %w", boundary.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
@@ -262,8 +259,8 @@ func (d *AccountDeployer) deployGroups(ctx context.Context, groups map[string]ac
 		group := group
 		deployGroupJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.InfoContext(ctx, "Deploying group '%s'", group.Name)
-			gUuid, err := d.upsertGroup(d.logCtx(ctx), group)
+			d.logger.InfoContext(ctx, "Deploying group", slog.String("name", group.Name))
+			gUuid, err := d.upsertGroup(ctx, group)
 			if err != nil {
 				errCh <- fmt.Errorf("unable to deploy group '%s' for account %s: %w", group.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
@@ -280,8 +277,8 @@ func (d *AccountDeployer) deployUsers(ctx context.Context, users map[string]acco
 		user := user
 		deployUserJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.InfoContext(ctx, "Deploying user '%s'", user.Email)
-			if _, err := d.upsertUser(d.logCtx(ctx), user); err != nil {
+			d.logger.InfoContext(ctx, "Deploying user", slog.String("email", user.Email.String()))
+			if _, err := d.upsertUser(ctx, user); err != nil {
 				errCh <- fmt.Errorf("unable to deploy user '%s' for account %s: %w", user.Email, d.accClient.getAccountInfo().AccountUUID, err)
 			}
 		}
@@ -295,8 +292,8 @@ func (d *AccountDeployer) deployServiceUsers(ctx context.Context, serviceUsers [
 		serviceUser := serviceUser
 		deployServiceUserJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			d.logger.InfoContext(ctx, "Deploying service user '%s'", serviceUser.Name)
-			if _, err := d.upsertServiceUser(d.logCtx(ctx), serviceUser); err != nil {
+			d.logger.InfoContext(ctx, "Deploying service user", slog.String("name", serviceUser.Name))
+			if _, err := d.upsertServiceUser(ctx, serviceUser); err != nil {
 				errCh <- fmt.Errorf("unable to deploy service user '%s' for account %s: %w", serviceUser.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
 		}
@@ -308,15 +305,15 @@ func (d *AccountDeployer) deployServiceUsers(ctx context.Context, serviceUsers [
 func (d *AccountDeployer) deployGroupBindings(ctx context.Context, groups map[account.GroupId]account.Group, dispatcher *Dispatcher) {
 	for _, group := range groups {
 		group := group
-		d.logger.InfoContext(ctx, "Updating policy bindings and permissions for group '%s'", group.Name)
+		d.logger.InfoContext(ctx, "Updating policy bindings and permissions for group", slog.String("name", group.Name))
 
 		updateBindingsJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
-			if err := d.updateGroupPolicyBindings(d.logCtx(ctx), group); err != nil {
+			if err := d.updateGroupPolicyBindings(ctx, group); err != nil {
 				errCh <- fmt.Errorf("unable to update policy bindings for group '%s' for account %s: %w", group.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
 
-			if err := d.updateGroupPermissions(d.logCtx(ctx), group); err != nil {
+			if err := d.updateGroupPermissions(ctx, group); err != nil {
 				errCh <- fmt.Errorf("unable to update permissions for group '%s' for account %s: %w", group.Name, d.accClient.getAccountInfo().AccountUUID, err)
 			}
 		}
@@ -332,8 +329,8 @@ func (d *AccountDeployer) deployUserBindings(ctx context.Context, users map[acco
 		deployUserBindingsJob :=
 			func(wg *sync.WaitGroup, errCh chan error) {
 				defer wg.Done()
-				d.logger.InfoContext(ctx, "Updating group bindings for user '%s'", user.Email)
-				if err := d.updateUserGroupBindings(d.logCtx(ctx), user); err != nil {
+				d.logger.InfoContext(ctx, "Updating group bindings for user", slog.String("email", user.Email.String()))
+				if err := d.updateUserGroupBindings(ctx, user); err != nil {
 					errCh <- fmt.Errorf("unable to update bindings for user '%s' for account %s: %w", user.Email, d.accClient.getAccountInfo().AccountUUID, err)
 				}
 			}
@@ -349,8 +346,8 @@ func (d *AccountDeployer) deployServiceUserBindings(ctx context.Context, service
 		deployUserBindingsJob :=
 			func(wg *sync.WaitGroup, errCh chan error) {
 				defer wg.Done()
-				d.logger.InfoContext(ctx, "Updating group bindings for service user '%s'", serviceUser.Name)
-				if err := d.updateServiceUserGroupBindings(d.logCtx(ctx), serviceUser); err != nil {
+				d.logger.InfoContext(ctx, "Updating group bindings for service user", slog.String("name", serviceUser.Name))
+				if err := d.updateServiceUserGroupBindings(ctx, serviceUser); err != nil {
 					errCh <- fmt.Errorf("unable to update bindings for service user '%s' for account %s: %w", serviceUser.Name, d.accClient.getAccountInfo().AccountUUID, err)
 				}
 			}
@@ -421,7 +418,7 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 		return fmt.Errorf("failed to fetch policies for group %s: %w", group.Name, err)
 	}
 
-	d.logger.DebugContext(ctx, "Updating account level policy bindings for group with ID %s --> %v", remoteGroupId, accPolicyUuids)
+	d.logger.DebugContext(ctx, "Updating account level policy bindings for group ", slog.String("groupId", remoteGroupId), slog.Any("policyUuids", accPolicyUuids))
 	if err = d.accClient.updateAccountPolicyBindings(ctx, remoteGroupId, accPolicyUuids); err != nil {
 		return fmt.Errorf("failed to update group-account-policy bindings for group %s: %w", group.Name, err)
 	}
@@ -432,12 +429,12 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 	}
 
 	if len(envPolicyUuids) == 0 {
-		d.logger.DebugContext(ctx, "Deleting all policy bindings of group with ID %s", remoteGroupId)
+		d.logger.DebugContext(ctx, "Deleting all policy bindings of group", slog.String("groupId", remoteGroupId))
 		return d.accClient.deleteAllEnvironmentPolicyBindings(ctx, remoteGroupId)
 	}
 
 	for env, uuids := range envPolicyUuids {
-		d.logger.DebugContext(ctx, "Updating environment level policy bindings for group with ID %s and environment with name %s --> %v", remoteGroupId, env, uuids)
+		d.logger.DebugContext(ctx, "Updating environment level policy bindings for group", slog.String("groupId", remoteGroupId), slog.String("environmentName", env), slog.Any("policyUuids", uuids))
 		if err = d.accClient.updateEnvironmentPolicyBindings(ctx, env, remoteGroupId, uuids); err != nil {
 			return fmt.Errorf("failed to update group-environment-policy bindings for group %s and environment %s: %w", group.Name, env, err)
 		}
@@ -507,7 +504,7 @@ func (d *AccountDeployer) updateGroupPermissions(ctx context.Context, group acco
 		return fmt.Errorf("no group UUID found to update group <--> permissions bindings %s", group.ID)
 	}
 
-	d.logger.DebugContext(ctx, "Updating permissions for group with ID %s --> %v", remoteGroupId, allPermissions)
+	d.logger.DebugContext(ctx, "Updating permissions for group", slog.String("groupId", remoteGroupId), slog.Any("permissions", allPermissions))
 	if err := d.accClient.updatePermissions(ctx, remoteGroupId, allPermissions); err != nil {
 		return fmt.Errorf("unable to update group %s: %w", group.ID, err)
 	}
@@ -652,8 +649,4 @@ func (d *AccountDeployer) groupIdLookup(id localId) remoteId {
 
 func (d *AccountDeployer) managementZoneIdLookup(envName, mzName string) remoteId {
 	return d.idMap.getMZoneUUID(envName, mzName)
-}
-
-func (d *AccountDeployer) logCtx(ctx context.Context) context.Context {
-	return logr.NewContextWithSlogLogger(ctx, d.logger.SLogger())
 }

@@ -20,9 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
-
-	"github.com/go-logr/logr"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
@@ -57,8 +54,6 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 		bucketName = idutils.GenerateBucketName(c.Coordinate)
 	}
 
-	// create new context to carry logger
-	ctx = logr.NewContextWithSlogLogger(ctx, slog.Default())
 	err := d.upsert(ctx, bucketName, []byte(renderedConfig))
 	if err != nil {
 		var apiErr api.APIError
