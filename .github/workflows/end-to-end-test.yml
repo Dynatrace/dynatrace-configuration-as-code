@@ -96,14 +96,6 @@ jobs:
         OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
         PLATFORM_TOKEN: ${{ secrets.PLATFORM_TOKEN }}
 
-    - name: Upload error
-      if: failure() && github.ref == 'refs/heads/main'
-      uses: ./.github/actions/send-error-event
-      with:
-        test_type: "integration"
-        sfm_tenant_url: ${{ secrets.SFM_TENANT_URL }}
-        sfm_notification_api_token: ${{ secrets.SFM_NOTIFICATION_API_TOKEN }}
-
     - name: ⬆️ Upload Test Results
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
       if: always()
@@ -152,14 +144,6 @@ jobs:
         name: Test Results - Integration Download
         path: test-result-*.xml
 
-    - name: Upload error
-      if: failure() && github.ref == 'refs/heads/main'
-      uses: ./.github/actions/send-error-event
-      with:
-        test_type: "download-restore"
-        sfm_tenant_url: ${{ secrets.SFM_TENANT_URL }}
-        sfm_notification_api_token: ${{ secrets.SFM_NOTIFICATION_API_TOKEN }}
-
   account-management-test:
     name: 🗂️ Account Management E2E tests
     if: github.event.action != 'labeled' || github.event.label.name == 'run-iam-test'
@@ -202,14 +186,6 @@ jobs:
         with:
           name: Test Results - Account Management
           path: test-result-*.xml
-
-      - name: Upload error
-        if: failure() && github.ref == 'refs/heads/main'
-        uses: ./.github/actions/send-error-event
-        with:
-          test_type: "account-management"
-          sfm_tenant_url: ${{ secrets.SFM_TENANT_URL }}
-          sfm_notification_api_token: ${{ secrets.SFM_NOTIFICATION_API_TOKEN }}
 
   windows-unit-tests:
     name: 🪟 Windows tests
@@ -293,13 +269,37 @@ jobs:
         name: Test Results - Integration Nightly
         path: test-result-*.xml
 
-    - name: Upload error
-      if: failure() && github.ref == 'refs/heads/main'
-      uses: ./.github/actions/send-error-event
-      with:
-        test_type: "nightly"
-        sfm_tenant_url: ${{ secrets.SFM_TENANT_URL }}
-        sfm_notification_api_token: ${{ secrets.SFM_NOTIFICATION_API_TOKEN }}
+  error-reporting:
+    name: 📤 Error Reporting
+    if: always() && github.ref == 'refs/heads/main' && (needs.integration-test.result == 'failure' || needs.download-restore-test.result == 'failure' || needs.account-management-test.result == 'failure' || needs.nightly-run.result == 'failure')
+    needs: [integration-test, download-restore-test, account-management-test, nightly-run]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - job: integration-test
+            test_type: integration
+            condition: ${{ needs.integration-test.result == 'failure' }}
+          - job: download-restore-test
+            test_type: download-restore
+            condition: ${{ needs.download-restore-test.result == 'failure' }}
+          - job: account-management-test
+            test_type: account-management
+            condition: ${{ needs.account-management-test.result == 'failure' }}
+          - job: nightly-run
+            test_type: nightly
+            condition: ${{ needs.nightly-run.result == 'failure' }}
+
+    steps:
+      - name: Send error event
+        if: fromJSON(matrix.condition)
+        uses: ./.github/actions/send-error-event
+        with:
+          test_type: ${{ matrix.test_type }}
+          sfm_tenant_url: ${{ secrets.SFM_TENANT_URL }}
+          sfm_notification_api_token: ${{ secrets.SFM_NOTIFICATION_API_TOKEN }}
 
   upload_event:
     name: "Upload Event File"
