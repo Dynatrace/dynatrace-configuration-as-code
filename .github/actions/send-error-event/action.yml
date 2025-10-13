@@ -15,7 +15,6 @@ runs:
   using: 'composite'
   steps:
     - name: Send error event
-      if: failure() && github.ref == 'refs/heads/main'
       shell: bash
       env:
         SFM_NOTIFICATION_API_TOKEN: ${{ inputs.sfm_notification_api_token }}
