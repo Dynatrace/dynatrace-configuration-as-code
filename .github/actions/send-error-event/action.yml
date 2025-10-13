@@ -31,16 +31,18 @@ runs:
           -H "Authorization: Api-Token $SFM_NOTIFICATION_ACCESS_TOKEN" \
           -H 'Content-Type: application/json' \
           -X POST "$SFM_TENANT_URL/platform/ingest/v1/events" \
-          -d '[{ \
-              "title": "Monaco E2E", \
-              "source": "GitHub", \
-              "type": "ERROR_EVENT", \
-              "test.type": "'"$TEST_TYPE"'", \
-              "github.repository": "'"$GITHUB_REPOSITORY"'", \
-              "github.ref": "'"$GITHUB_REF"'", \
-              "github.event_name": "'"$GITHUB_EVENT_NAME"'", \
-              "github.actor": "'"$GITHUB_ACTOR"'", \
-              "github.run_id": "'"$GITHUB_RUN_ID"'", \
-              "github.job": "'"$GITHUB_JOB"'" \
-          }]'
+          --data-binary @- << EOF
+        [{
+              "title": "Monaco E2E",
+              "source": "GitHub",
+              "type": "ERROR_EVENT",
+              "test.type": "$TEST_TYPE",
+              "github.repository": "$GITHUB_REPOSITORY",
+              "github.ref": "$GITHUB_REF",
+              "github.event_name": "$GITHUB_EVENT_NAME",
+              "github.actor": "$GITHUB_ACTOR",
+              "github.run_id": "$GITHUB_RUN_ID",
+              "github.job": "$GITHUB_JOB"
+        }]
+        EOF
 
