@@ -35,6 +35,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
@@ -260,17 +261,37 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 		lock.Unlock()
 
 		if failed {
-			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateError, details, err)
+			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateError, "", details, err)
 			return err
 		}
-		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateExcluded, details, nil)
+		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateExcluded, "", details, nil)
 		return nil
 	}
 
 	resolvedEntities.Put(resolvedEntity)
-	report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateSuccess, details, nil)
+
+	objectID, err := getObjectIDFromProperties(resolvedEntity.Properties)
+	if err != nil {
+		slog.DebugContext(ctx, "Failed to get deployed object ID from properties", log.ErrorAttr(err))
+	}
+
+	report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateSuccess, objectID, details, nil)
 	log.With(statusDeployedAttr()).InfoContext(ctx, "Deployment successful")
 	return nil
+}
+
+func getObjectIDFromProperties(properties parameter.Properties) (string, error) {
+	id, ok := properties[config.IdParameter]
+	if !ok {
+		return "", errors.New("ID not found")
+	}
+
+	idStr, ok := id.(string)
+	if !ok {
+		return "", errors.New("ID was not a string")
+	}
+
+	return idStr, nil
 }
 
 func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGraph graph.ConfigGraph, failed bool) {
@@ -301,7 +322,7 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 		}
 
 		l.WarnContext(ctx, "%s", skipDeploymentWarning)
-		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.StateSkipped, []report.Detail{{Type: report.DetailTypeWarn, Message: skipDeploymentWarning}}, nil)
+		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.StateSkipped, "", []report.Detail{{Type: report.DetailTypeWarn, Message: skipDeploymentWarning}}, nil)
 
 		removeChildren(ctx, child, root, configGraph, failed)
 

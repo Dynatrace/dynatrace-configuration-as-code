@@ -39,7 +39,7 @@ func TestReporter_ContextWithNoReporterDiscards(t *testing.T) {
 	reporter := report.GetReporterFromContextOrDiscard(t.Context())
 	require.NotNil(t, reporter)
 
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard"}, report.StateSuccess, nil, nil)
+	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard"}, report.StateSuccess, "object-id", nil, nil)
 	reporter.Stop()
 	assert.Empty(t, reporter.GetSummary(), "discarding Reporter should not return a summary")
 }
@@ -62,10 +62,10 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 	reporter.ReportLoading(report.StateSuccess, nil, "", &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"})
 	reporter.ReportLoading(report.StateError, errors.New("my-error"), "my-message", nil)
 	reporter.ReportCaching(report.StateWarn, "my-warning")
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, report.StateSuccess, nil, nil)
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, report.StateError, []report.Detail{report.Detail{Type: report.DetailTypeError, Message: "error"}}, errors.New("an error"))
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, report.StateSkipped, []report.Detail{report.Detail{Type: report.DetailTypeInfo, Message: "skipped"}}, nil)
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, report.StateExcluded, nil, nil)
+	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, report.StateSuccess, "object-id", nil, nil)
+	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, report.StateError, "", []report.Detail{{Type: report.DetailTypeError, Message: "error"}}, errors.New("an error"))
+	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, report.StateSkipped, "", []report.Detail{{Type: report.DetailTypeInfo, Message: "skipped"}}, nil)
+	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, report.StateExcluded, "", nil, nil)
 
 	reporter.Stop()
 
@@ -84,7 +84,7 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 	matcher.ContainsRecord(t, records, report.Record{Type: "LOAD", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS"}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "LOAD", Time: report.JSONTime(testTime), State: "ERROR", Error: "My-error", Message: "my-message"}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "CACHE", Time: report.JSONTime(testTime), State: "WARNING", Message: "my-warning"}, true)
-	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS", Details: nil, Error: ""}, true)
+	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, State: "SUCCESS", ObjectID: "object-id", Details: nil, Error: ""}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, State: "ERROR", Details: []report.Detail{{Type: report.DetailTypeError, Message: "error"}}, Error: anError}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, State: "SKIPPED", Details: []report.Detail{{Type: report.DetailTypeInfo, Message: "skipped"}}, Error: ""}, true)
 	matcher.ContainsRecord(t, records, report.Record{Type: "DEPLOY", Time: report.JSONTime(testTime), Config: &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, State: "EXCLUDED", Details: nil, Error: ""}, true)

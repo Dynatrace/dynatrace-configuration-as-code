@@ -57,7 +57,7 @@ func GetReporterFromContextOrDiscard(ctx context.Context) Reporter {
 // Reporter is a minimal interface for reporting events and retrieving summaries.
 type Reporter interface {
 	// ReportDeployment reports the result of deploying a config.
-	ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error)
+	ReportDeployment(config coordinate.Coordinate, state RecordState, objectID string, details []Detail, err error)
 	// ReportLoading reports the result of a load config
 	ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate)
 	// ReportCaching reports the result of caching actions, like settings.
@@ -179,14 +179,15 @@ func (d *defaultReporter) updateSummaryFromRecord(r Record) {
 }
 
 // ReportDeployment reports the result of deploying a config.
-func (d *defaultReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error) {
+func (d *defaultReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, objectID string, details []Detail, err error) {
 	record := Record{
-		Type:    TypeDeploy,
-		Time:    JSONTime(d.clockFunc()),
-		Config:  &config,
-		State:   state,
-		Details: details,
-		Error:   convertErrorToString(err),
+		Type:     TypeDeploy,
+		Time:     JSONTime(d.clockFunc()),
+		Config:   &config,
+		State:    state,
+		ObjectID: objectID,
+		Details:  details,
+		Error:    convertErrorToString(err),
 	}
 
 	d.updateSummaryFromRecord(record)
@@ -256,7 +257,7 @@ func (d *defaultReporter) Stop() {
 
 type discardReporter struct{}
 
-func (*discardReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, details []Detail, err error) {
+func (*discardReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, objectID string, details []Detail, err error) {
 }
 func (*discardReporter) ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate) {
 }

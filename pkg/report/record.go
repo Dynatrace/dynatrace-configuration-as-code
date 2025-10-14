@@ -68,6 +68,8 @@ type Record struct {
 	// Config provides the config ID, project and type of the config associated with the Record.
 	Config *coordinate.Coordinate `json:"config,omitempty"`
 
+	ObjectID string `json:"objectId,omitempty"`
+
 	// State is the result of the deployment of the config, currently StateSuccess, StateInfo, StateError, StateExcluded, StateSkipped.
 	State RecordState `json:"state"`
 
