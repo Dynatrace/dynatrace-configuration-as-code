@@ -31,10 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
-func TestFail(t *testing.T) {
-	t.FailNow()
-}
-
 // tests all configs for a single environment
 func TestIntegrationAutomation(t *testing.T) {
 
