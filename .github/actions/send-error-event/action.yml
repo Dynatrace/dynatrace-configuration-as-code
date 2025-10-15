@@ -20,12 +20,7 @@ runs:
         SFM_NOTIFICATION_ACCESS_TOKEN: ${{ inputs.sfm_notification_access_token }}
         SFM_TENANT_URL: ${{ inputs.sfm_tenant_url }}
         TEST_TYPE: ${{ inputs.test_type }}
-        GITHUB_REPOSITORY: ${{ github.repository }}
-        GITHUB_REF: ${{ github.ref }}
-        GITHUB_EVENT_NAME: ${{ github.event_name }}
-        GITHUB_ACTOR: ${{ github.actor }}
-        GITHUB_RUN_ID: ${{ github.run_id }}
-        GITHUB_JOB: ${{ job.check_run_id }}
+        JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
       run: |
         curl \
           -H "Authorization: Api-Token $SFM_NOTIFICATION_ACCESS_TOKEN" \
@@ -42,7 +37,7 @@ runs:
               "github.event_name": "$GITHUB_EVENT_NAME",
               "github.actor": "$GITHUB_ACTOR",
               "github.run_id": "$GITHUB_RUN_ID",
-              "github.job": "$GITHUB_JOB"
+              "github.job": "$JOB_CHECK_RUN_ID"
         }]
         EOF
 
