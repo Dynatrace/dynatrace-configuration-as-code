@@ -25,6 +25,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -55,8 +56,8 @@ func TestSegments(t *testing.T) {
 				assert.NoError(t, err)
 
 				segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-				result, err := segmentsClient.GetAll(t.Context())
-				assert.NoError(t, err)
+				result, err := segmentsClient.List(t.Context())
+				require.NoError(t, err)
 
 				coord := coordinate.Coordinate{
 					Project:  "standalone-segment",
@@ -83,7 +84,7 @@ func TestSegments(t *testing.T) {
 				assert.NoError(t, err)
 
 				segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-				result, err := segmentsClient.GetAll(t.Context())
+				result, err := segmentsClient.List(t.Context())
 				assert.NoError(t, err)
 
 				coord := coordinate.Coordinate{
@@ -111,7 +112,7 @@ func TestSegments(t *testing.T) {
 				assert.NoError(t, err)
 
 				segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-				result, err := segmentsClient.GetAll(t.Context())
+				result, err := segmentsClient.List(t.Context())
 				assert.NoError(t, err)
 
 				coord := coordinate.Coordinate{
@@ -144,7 +145,7 @@ func TestSegments(t *testing.T) {
 				assert.NoError(t, err)
 
 				segmentsClient := createSegmentsClient(t, fs, manifestPath, environment)
-				result, err := segmentsClient.GetAll(t.Context())
+				result, err := segmentsClient.List(t.Context())
 				assert.NoError(t, err)
 
 				coord := coordinate.Coordinate{
@@ -173,8 +174,8 @@ type segmentsResponse struct {
 	ExternalId string `json:"externalId"`
 }
 
-func parseSegmentsPayload(t *testing.T, resp api.Response) segmentsResponse {
-	segResp := segmentsResponse{}
+func parseSegmentsPayload(t *testing.T, resp api.Response) []segmentsResponse {
+	var segResp []segmentsResponse
 
 	err := json.Unmarshal(resp.Data, &segResp)
 	assert.NoError(t, err)
@@ -182,14 +183,12 @@ func parseSegmentsPayload(t *testing.T, resp api.Response) segmentsResponse {
 	return segResp
 }
 
-func assertSegmentIsInResponse(t *testing.T, present bool, responses []api.Response, coord coordinate.Coordinate) {
+func assertSegmentIsInResponse(t *testing.T, present bool, response api.Response, coord coordinate.Coordinate) {
 	externalId := idutils.GenerateExternalID(coord)
 
 	found := false
-
-	for _, resp := range responses {
-		payload := parseSegmentsPayload(t, resp)
-
+	segments := parseSegmentsPayload(t, response)
+	for _, payload := range segments {
 		if payload.ExternalId == externalId {
 			found = true
 			break
