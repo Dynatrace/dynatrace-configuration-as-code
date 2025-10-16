@@ -97,7 +97,7 @@ jobs:
         PLATFORM_TOKEN: ${{ secrets.PLATFORM_TOKEN }}
 
     - name: Upload error
-      if: failure() && github.ref == 'refs/heads/main'
+      if: failure() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request_target'
       uses: ./.github/actions/send-error-event
       with:
         test_type: "integration"
@@ -153,7 +153,7 @@ jobs:
         path: test-result-*.xml
 
     - name: Upload error
-      if: failure() && github.ref == 'refs/heads/main'
+      if: failure() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request_target'
       uses: ./.github/actions/send-error-event
       with:
         test_type: "download-restore"
@@ -204,7 +204,7 @@ jobs:
           path: test-result-*.xml
 
       - name: Upload error
-        if: failure() && github.ref == 'refs/heads/main'
+        if: failure() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request_target'
         uses: ./.github/actions/send-error-event
         with:
           test_type: "account-management"
@@ -294,7 +294,7 @@ jobs:
         path: test-result-*.xml
 
     - name: Upload error
-      if: failure() && github.ref == 'refs/heads/main'
+      if: failure() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request_target'
       uses: ./.github/actions/send-error-event
       with:
         test_type: "nightly"
