@@ -26,7 +26,7 @@ func TestResolvePropValue(t *testing.T) {
 	tests := []struct {
 		name     string
 		key      string
-		props    map[any]any
+		props    any
 		expected any
 		found    bool
 	}{
@@ -41,6 +41,13 @@ func TestResolvePropValue(t *testing.T) {
 			name:     "Nested key found",
 			key:      "first.second.third",
 			props:    map[any]any{"first": map[any]any{"second": map[any]any{"third": 99}}},
+			expected: 99,
+			found:    true,
+		},
+		{
+			name:     "Nested key in string map found",
+			key:      "first.second.third",
+			props:    map[string]any{"first": map[string]any{"second": map[string]any{"third": 99}}},
 			expected: 99,
 			found:    true,
 		},

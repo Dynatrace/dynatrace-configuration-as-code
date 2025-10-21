@@ -277,7 +277,7 @@ func TestSearchValueParameterForKey(t *testing.T) {
 		name       string
 		key        string
 		paramName  string
-		paramValue interface{}
+		paramValue any
 		expected   bool
 	}{
 		{
@@ -302,17 +302,24 @@ func TestSearchValueParameterForKey(t *testing.T) {
 			true,
 		},
 		{
-			"more nested key does exist",
-			"key.keyy.keyyy",
+			"nested key in string map does exist",
+			"key.keyy",
 			"key",
-			map[interface{}]interface{}{"keyy": map[interface{}]interface{}{"keyyy": "value"}},
+			map[string]any{"keyy": "value"},
 			true,
 		},
 		{
 			"more nested key does exist",
 			"key.keyy.keyyy",
 			"key",
-			map[interface{}]interface{}{"keyy": map[interface{}]interface{}{"other": "value"}},
+			map[any]any{"keyy": map[any]any{"keyyy": "value"}},
+			true,
+		},
+		{
+			"more nested key does exist",
+			"key.keyy.keyyy",
+			"key",
+			map[any]any{"keyy": map[any]any{"other": "value"}},
 			false,
 		},
 	}

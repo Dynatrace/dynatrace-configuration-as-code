@@ -17,6 +17,9 @@
 package config
 
 import (
+	"sort"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -24,8 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	s "sort"
-	"strings"
 )
 
 func getSortedParameters(c *Config) ([]parameter.NamedParameter, []error) {
@@ -38,7 +39,7 @@ func getSortedParameters(c *Config) ([]parameter.NamedParameter, []error) {
 		})
 	}
 
-	s.SliceStable(parametersWithName, func(i, j int) bool {
+	sort.SliceStable(parametersWithName, func(i, j int) bool {
 		return strings.Compare(parametersWithName[i].Name, parametersWithName[j].Name) < 0
 	})
 
@@ -118,9 +119,10 @@ func parameterReference(sourceParam parameter.NamedParameter, config coordinate.
 }
 
 func searchValueParameterForKey(key string, paramName string, param *value.ValueParameter) bool {
-	if vpm, ok := param.Value.(map[any]any); ok {
+	switch valMap := param.Value.(type) {
+	case map[any]any, map[string]any:
 		if first, rest, found := strings.Cut(key, "."); found && first == paramName {
-			_, isRef := entities.ResolvePropValue(rest, vpm)
+			_, isRef := entities.ResolvePropValue(rest, valMap)
 			return isRef
 		}
 	}
