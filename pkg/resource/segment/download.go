@@ -19,6 +19,7 @@ package segment
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -42,36 +43,51 @@ func NewDownloadAPI(segmentSource DownloadSource) *DownloadAPI {
 }
 
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
-	log.InfoContext(ctx, "Downloading segments")
+	slog.InfoContext(ctx, "Downloading segments")
 	result := project.ConfigsPerType{}
 
+	lg := slog.With(log.TypeAttr(config.SegmentID))
 	downloadedConfigs, err := a.segmentSource.GetAll(ctx)
 	if err != nil {
-		log.With(log.TypeAttr(config.SegmentID), log.ErrorAttr(err)).ErrorContext(ctx, "Failed to fetch the list of existing segments: %v", err)
+		lg.ErrorContext(ctx, "Failed to fetch the list of existing segments: %v", err)
 		return nil, nil
 	}
 
+	countReadyMade := 0
 	var configs []config.Config
 	for _, downloadedConfig := range downloadedConfigs {
 		jsonConfig, err := unmarshalConfig(downloadedConfig)
 		if err != nil {
-			log.With(log.TypeAttr(config.SegmentID), log.ErrorAttr(err)).ErrorContext(ctx, "Failed to convert segment: %v", err)
+			lg.ErrorContext(ctx, "Failed to convert segment: %v", err)
 			continue
 		}
 		if isReadyMadeSegment(jsonConfig) {
-			log.With(log.TypeAttr(config.SegmentID)).DebugContext(ctx, "Skipping ready-made segment")
+			countReadyMade++
 			continue
 		}
 		c, err := createConfig(projectName, jsonConfig)
 		if err != nil {
-			log.With(log.TypeAttr(config.SegmentID), log.ErrorAttr(err)).ErrorContext(ctx, "Failed to convert segment: %v", err)
+			lg.ErrorContext(ctx, "Failed to convert segment: %v", err)
 			continue
 		}
 		configs = append(configs, c)
 	}
 	result[string(config.SegmentID)] = configs
+	logDownloadResult(ctx, lg, len(downloadedConfigs), len(configs), countReadyMade)
 
 	return result, nil
+}
+
+func logDownloadResult(ctx context.Context, lg *slog.Logger, totalDownloaded int, totalPersisted, readyMade int) {
+	if totalDownloaded == 0 {
+		lg.DebugContext(ctx, "Did not find any segments to download")
+	} else {
+		if readyMade > 0 {
+			lg.InfoContext(ctx, "Downloaded segments. Skipped persisting ready-made segments", slog.Int("count", totalPersisted), slog.Int("skipCount", readyMade))
+		} else {
+			lg.InfoContext(ctx, "Downloaded segments", slog.Int("count", totalPersisted))
+		}
+	}
 }
 
 func unmarshalConfig(response api.Response) (templatetools.JSONObject, error) {
