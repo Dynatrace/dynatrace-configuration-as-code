@@ -121,6 +121,24 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Len(t, actual[string(config.SegmentID)], 3, "must contain all downloaded configs")
 	})
 
+	t.Run("Ready-made segments are ignored", func(t *testing.T) {
+		c := stubClient{getAll: func() ([]api.Response, error) {
+			return []api.Response{
+				{Data: []byte(`{"uid": "uid1","isReadyMade": true,"name": "segment_name"}`), StatusCode: http.StatusOK},
+				{Data: []byte(`{"uid": "uid2","isReadyMade": false,"name": "segment_name"}`), StatusCode: http.StatusOK},
+				{Data: []byte(`{"uid": "uid3","name": "segment_name"}`), StatusCode: http.StatusOK},
+			}, nil
+		}}
+
+		segmentApi := segment.NewDownloadAPI(c)
+		actual, err := segmentApi.Download(t.Context(), "project")
+
+		assert.NoError(t, err)
+		assert.Len(t, actual, 1)
+
+		assert.Len(t, actual[string(config.SegmentID)], 2, "must only contain segments that are not ready-made")
+	})
+
 	t.Run("no error downloading segments with faulty client", func(t *testing.T) {
 		c := stubClient{getAll: func() ([]api.Response, error) {
 			return []api.Response{}, errors.New("some unexpected error")
