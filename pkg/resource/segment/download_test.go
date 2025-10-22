@@ -18,6 +18,7 @@ package segment_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"testing"
@@ -135,8 +136,20 @@ func TestDownloader_Download(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Len(t, actual, 1)
-
 		assert.Len(t, actual[string(config.SegmentID)], 2, "must only contain segments that are not ready-made")
+
+		for _, s := range actual[string(config.SegmentID)] {
+			cfgContent, err := s.Template.Content()
+			require.NoError(t, err)
+
+			var parsed map[string]interface{}
+			err = json.Unmarshal([]byte(cfgContent), &parsed)
+			require.NoError(t, err)
+
+			isReadyMade, _ := parsed["isReadyMade"].(bool)
+			assert.True(t, !isReadyMade, "downloaded segment must not be a ready-made segment")
+		}
+
 	})
 
 	t.Run("no error downloading segments with faulty client", func(t *testing.T) {
