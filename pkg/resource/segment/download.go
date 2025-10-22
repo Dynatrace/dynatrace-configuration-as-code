@@ -49,7 +49,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	lg := slog.With(log.TypeAttr(config.SegmentID))
 	downloadedConfigs, err := a.segmentSource.GetAll(ctx)
 	if err != nil {
-		lg.ErrorContext(ctx, "Failed to fetch the list of existing segments: %v", err)
+		lg.ErrorContext(ctx, "Failed to fetch the list of existing segments", log.ErrorAttr(err))
 		return nil, nil
 	}
 
@@ -58,7 +58,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	for _, downloadedConfig := range downloadedConfigs {
 		jsonConfig, err := unmarshalConfig(downloadedConfig)
 		if err != nil {
-			lg.ErrorContext(ctx, "Failed to convert segment: %v", err)
+			lg.ErrorContext(ctx, "Failed to convert segment", log.ErrorAttr(err))
 			continue
 		}
 		if isReadyMadeSegment(jsonConfig) {
@@ -67,7 +67,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 		}
 		c, err := createConfig(projectName, jsonConfig)
 		if err != nil {
-			lg.ErrorContext(ctx, "Failed to convert segment: %v", err)
+			lg.ErrorContext(ctx, "Failed to convert segment", log.ErrorAttr(err))
 			continue
 		}
 		configs = append(configs, c)
