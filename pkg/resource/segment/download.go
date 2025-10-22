@@ -58,7 +58,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	for _, downloadedConfig := range downloadedConfigs {
 		jsonConfig, err := unmarshalConfig(downloadedConfig)
 		if err != nil {
-			lg.ErrorContext(ctx, "Failed to convert segment", log.ErrorAttr(err))
+			lg.ErrorContext(ctx, "Failed to parse fetched segment", log.ErrorAttr(err))
 			continue
 		}
 		if isReadyMadeSegment(jsonConfig) {
@@ -78,16 +78,17 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	return result, nil
 }
 
-func logDownloadResult(ctx context.Context, lg *slog.Logger, totalDownloaded int, totalPersisted, readyMade int) {
+func logDownloadResult(ctx context.Context, lg *slog.Logger, totalDownloaded int, totalPersisted, readyMadeCount int) {
 	if totalDownloaded == 0 {
 		lg.DebugContext(ctx, "Did not find any segments to download")
-	} else {
-		if readyMade > 0 {
-			lg.InfoContext(ctx, "Downloaded segments. Skipped persisting ready-made segments", slog.Int("count", totalPersisted), slog.Int("skipCount", readyMade))
-		} else {
-			lg.InfoContext(ctx, "Downloaded segments", slog.Int("count", totalPersisted))
-		}
+		return
 	}
+	if readyMadeCount > 0 {
+		lg.InfoContext(ctx, "Downloaded segments. Skipped persisting ready-made segments", slog.Int("count", totalPersisted), slog.Int("readyMadeCount", readyMadeCount))
+		return
+	}
+
+	lg.InfoContext(ctx, "Downloaded segments", slog.Int("count", totalPersisted))
 }
 
 func unmarshalConfig(response api.Response) (templatetools.JSONObject, error) {
