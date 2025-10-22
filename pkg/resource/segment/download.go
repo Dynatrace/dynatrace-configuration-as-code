@@ -53,7 +53,16 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 	var configs []config.Config
 	for _, downloadedConfig := range downloadedConfigs {
-		c, err := createConfig(projectName, downloadedConfig)
+		jsonConfig, err := unmarshalConfig(downloadedConfig)
+		if err != nil {
+			log.With(log.TypeAttr(config.SegmentID), log.ErrorAttr(err)).ErrorContext(ctx, "Failed to convert segment: %v", err)
+			continue
+		}
+		if isReadyMadeSegment(jsonConfig) {
+			log.With(log.TypeAttr(config.SegmentID)).DebugContext(ctx, "Skipping ready-made segment")
+			continue
+		}
+		c, err := createConfig(projectName, jsonConfig)
 		if err != nil {
 			log.With(log.TypeAttr(config.SegmentID), log.ErrorAttr(err)).ErrorContext(ctx, "Failed to convert segment: %v", err)
 			continue
@@ -65,21 +74,30 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	return result, nil
 }
 
-func createConfig(projectName string, response api.Response) (config.Config, error) {
-	jsonObj, err := templatetools.NewJSONObject(response.Data)
+func unmarshalConfig(response api.Response) (templatetools.JSONObject, error) {
+	jsonConfig, err := templatetools.NewJSONObject(response.Data)
 	if err != nil {
-		return config.Config{}, fmt.Errorf("failed to unmarshal payload: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
+	return jsonConfig, nil
+}
 
-	id, ok := jsonObj.Get("uid").(string)
+func isReadyMadeSegment(jsonConfig templatetools.JSONObject) bool {
+	isReadyMade, ok := jsonConfig.Get("isReadyMade").(bool)
+	// If the field is missing or not a bool, we assume it's not a ready-made segment
+	return ok && isReadyMade
+}
+
+func createConfig(projectName string, jsonConfig templatetools.JSONObject) (config.Config, error) {
+	id, ok := jsonConfig.Get("uid").(string)
 	if !ok {
 		return config.Config{}, fmt.Errorf("API payload is missing 'uid'")
 	}
 
 	// delete fields that prevent a re-upload of the configuration
-	jsonObj.Delete("uid", "version", "externalId", "owner")
+	jsonConfig.Delete("uid", "version", "externalId", "owner")
 
-	jsonRaw, err := jsonObj.ToJSON(true)
+	jsonRaw, err := jsonConfig.ToJSON(true)
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to marshal payload: %w", err)
 	}
