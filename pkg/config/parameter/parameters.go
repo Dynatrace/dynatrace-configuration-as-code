@@ -89,8 +89,7 @@ type ParameterParserContext struct {
 	Environment      string
 	ParameterName    string
 	Fs               afero.Fs
-	Value            map[string]interface {
-	}
+	Value            map[string]any
 }
 
 type ParameterParserError struct {

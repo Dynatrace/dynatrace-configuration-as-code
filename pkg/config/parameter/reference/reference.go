@@ -16,6 +16,7 @@ package reference
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
@@ -93,7 +94,7 @@ func (p *ReferenceParameter) ResolveValue(context parameter.ResolveContext) (int
 	// in case we are referencing a parameter in the same config, we do not have to check
 	// the resolved entities
 	if context.ConfigCoordinate.Match(p.Config) {
-		m := make(map[interface{}]any)
+		m := make(map[string]any)
 		for k, v := range context.ResolvedParameterValues {
 			m[k] = v
 		}

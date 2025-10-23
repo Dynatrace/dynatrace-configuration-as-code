@@ -44,23 +44,21 @@ type ResolvedEntity struct {
 //
 // If the key is found, the function returns the associated value and true. If the
 // key is not found, it returns nil and false.
-func ResolvePropValue(key string, props any) (any, bool) {
+func ResolvePropValue(key string, props map[string]any) (any, bool) {
 	first, rest, _ := strings.Cut(key, ".")
-
-	switch valMap := props.(type) {
-	case map[any]any:
-		if p, found := valMap[first]; found {
-			if rest == "" {
-				return p, true
-			}
-			return ResolvePropValue(rest, p)
+	if p, f := props[first]; f {
+		if rest == "" {
+			return p, true
 		}
-	case map[string]any:
-		if p, found := valMap[first]; found {
-			if rest == "" {
-				return p, true
+		if valMap, ok := p.(map[string]any); ok {
+			// If the value is a map, recursively call ResolvePropValue
+			if strings.Contains(rest, ".") {
+				return ResolvePropValue(rest, valMap)
 			}
-			return ResolvePropValue(rest, p)
+			// Otherwise, check if the rest of the key exists in the nested map
+			if val, found := valMap[rest]; found {
+				return val, true
+			}
 		}
 	}
 	// Key not found

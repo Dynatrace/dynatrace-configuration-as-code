@@ -119,10 +119,9 @@ func parameterReference(sourceParam parameter.NamedParameter, config coordinate.
 }
 
 func searchValueParameterForKey(key string, paramName string, param *value.ValueParameter) bool {
-	switch valMap := param.Value.(type) {
-	case map[any]any, map[string]any:
+	if vpm, ok := param.Value.(map[string]any); ok {
 		if first, rest, found := strings.Cut(key, "."); found && first == paramName {
-			_, isRef := entities.ResolvePropValue(rest, valMap)
+			_, isRef := entities.ResolvePropValue(rest, vpm)
 			return isRef
 		}
 	}

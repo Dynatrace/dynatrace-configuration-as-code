@@ -26,26 +26,19 @@ func TestResolvePropValue(t *testing.T) {
 	tests := []struct {
 		name     string
 		key      string
-		props    any
+		props    map[string]any
 		expected any
 		found    bool
 	}{
 		{
 			name:     "Simple key found",
 			key:      "first",
-			props:    map[any]any{"first": 42},
+			props:    map[string]any{"first": 42},
 			expected: 42,
 			found:    true,
 		},
 		{
 			name:     "Nested key found",
-			key:      "first.second.third",
-			props:    map[any]any{"first": map[any]any{"second": map[any]any{"third": 99}}},
-			expected: 99,
-			found:    true,
-		},
-		{
-			name:     "Nested key in string map found",
 			key:      "first.second.third",
 			props:    map[string]any{"first": map[string]any{"second": map[string]any{"third": 99}}},
 			expected: 99,
@@ -54,14 +47,14 @@ func TestResolvePropValue(t *testing.T) {
 		{
 			name:     "Key not found",
 			key:      "nonexistent.key",
-			props:    map[any]any{"existing": 123},
+			props:    map[string]any{"existing": 123},
 			expected: nil,
 			found:    false,
 		},
 		{
 			name:     "Partial key not found",
 			key:      "first.second.nonexistent",
-			props:    map[any]any{"first": map[any]any{"second": 456}},
+			props:    map[string]any{"first": map[string]any{"second": 456}},
 			expected: nil,
 			found:    false,
 		},
