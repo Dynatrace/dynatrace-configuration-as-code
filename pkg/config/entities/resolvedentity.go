@@ -17,7 +17,7 @@
 package entities
 
 import (
-	str "strings"
+	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -44,15 +44,15 @@ type ResolvedEntity struct {
 //
 // If the key is found, the function returns the associated value and true. If the
 // key is not found, it returns nil and false.
-func ResolvePropValue(key string, props map[any]any) (any, bool) {
-	first, rest, _ := str.Cut(key, ".")
+func ResolvePropValue(key string, props map[string]any) (any, bool) {
+	first, rest, _ := strings.Cut(key, ".")
 	if p, f := props[first]; f {
 		if rest == "" {
 			return p, true
 		}
-		if valMap, ok := p.(map[any]any); ok {
+		if valMap, ok := p.(map[string]any); ok {
 			// If the value is a map, recursively call ResolvePropValue
-			if str.Contains(rest, ".") {
+			if strings.Contains(rest, ".") {
 				return ResolvePropValue(rest, valMap)
 			}
 			// Otherwise, check if the rest of the key exists in the nested map

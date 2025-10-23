@@ -231,7 +231,7 @@ func TestResolveComplexValueMap(t *testing.T) {
 	entityMap.Put(entities.ResolvedEntity{
 		Coordinate: referenceCoordinate,
 		Properties: map[string]any{
-			"keys": map[any]any{"key": "value"},
+			"keys": map[string]any{"key": "value"},
 		},
 	})
 
@@ -265,7 +265,7 @@ func TestResolveComplexValueMapInSameConfig(t *testing.T) {
 		},
 		PropertyResolver: entityMap,
 		ResolvedParameterValues: map[string]any{
-			"keys": map[any]any{"key": "value"},
+			"keys": map[string]any{"key": "value"},
 		},
 	})
 
@@ -285,10 +285,10 @@ func TestResolveComplexValueNestedMap(t *testing.T) {
 	entityMap.Put(entities.ResolvedEntity{
 		Coordinate: referenceCoordinate,
 		Properties: map[string]any{
-			"keys": map[any]any{
-				"key": map[any]any{
-					"another": map[any]any{
-						"one": map[any]any{
+			"keys": map[string]any{
+				"key": map[string]any{
+					"another": map[string]any{
+						"one": map[string]any{
 							"more": "value",
 						},
 					},
@@ -327,10 +327,10 @@ func TestResolveComplexValueNestedMapInSameConfig(t *testing.T) {
 		},
 		PropertyResolver: entityMap,
 		ResolvedParameterValues: map[string]any{
-			"keys": map[any]any{
-				"key": map[any]any{
-					"another": map[any]any{
-						"one": map[any]any{
+			"keys": map[string]any{
+				"key": map[string]any{
+					"another": map[string]any{
+						"one": map[string]any{
 							"more": "value",
 						},
 					},

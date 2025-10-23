@@ -259,8 +259,8 @@ func TestIsReferencingOneOfSeveralMaps(t *testing.T) {
 	referencedParameter := parameter.NamedParameter{
 		Name: "map",
 		Parameter: &value.ValueParameter{
-			Value: map[any]any{
-				"is": map[any]any{
+			Value: map[string]any{
+				"is": map[string]any{
 					"found": true,
 				},
 			},
@@ -298,21 +298,21 @@ func TestSearchValueParameterForKey(t *testing.T) {
 			"nested key does exist",
 			"key.keyy",
 			"key",
-			map[any]any{"keyy": "value"},
+			map[string]any{"keyy": "value"},
 			true,
 		},
 		{
 			"more nested key does exist",
 			"key.keyy.keyyy",
 			"key",
-			map[interface{}]interface{}{"keyy": map[interface{}]interface{}{"keyyy": "value"}},
+			map[string]interface{}{"keyy": map[string]interface{}{"keyyy": "value"}},
 			true,
 		},
 		{
 			"more nested key does exist",
 			"key.keyy.keyyy",
 			"key",
-			map[interface{}]interface{}{"keyy": map[interface{}]interface{}{"other": "value"}},
+			map[string]interface{}{"keyy": map[string]interface{}{"other": "value"}},
 			false,
 		},
 	}

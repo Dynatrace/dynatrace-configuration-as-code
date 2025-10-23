@@ -17,8 +17,9 @@
 package entities
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"sync"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
 type EntityMap struct {
@@ -58,7 +59,7 @@ func (r *EntityMap) GetResolvedProperty(coordinate coordinate.Coordinate, proper
 
 	if e, f := r.resolvedEntities[coordinate]; f {
 
-		m := make(map[any]any)
+		m := make(map[string]any)
 		for k, v := range e.Properties {
 			m[k] = v
 		}

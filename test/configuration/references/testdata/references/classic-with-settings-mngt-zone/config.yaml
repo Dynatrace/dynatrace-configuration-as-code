@@ -13,12 +13,18 @@ configs:
     type:
       settings:
         schema: builtin:management-zones
-        scope: environment
+        scope:
+          property: extractedIDs.my_id
+          type: reference
     config:
       name: zone-cws
       parameters:
         environment: environment1
         meId: HOST_GROUP-1234567890123456
+        extractedIDs: # this also tests if nested self-references work
+          type: value
+          value:
+            my_id: environment
       template: zone.json
 
   - id: slack
