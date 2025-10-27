@@ -55,7 +55,7 @@ jobs:
         run: gotestsum --format testdox --format-icons hivis -- -coverprofile=cov.out -tags=unit -v -race ./...
 
       - name: ⬆️ Archive code coverage results
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 #v5.0.0
         with:
           name: code-coverage-report
           path: cov.out
@@ -89,7 +89,7 @@ jobs:
           args: '--output.checkstyle.path=lint-report.xml --issues-exit-code=0' # if issues are found, don't exit with "1". Sonar decides if it fails or not
 
       - name: ⬆️ Archive lint results
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 #v5.0.0
         with:
           name: lint-report
           path: lint-report.xml
