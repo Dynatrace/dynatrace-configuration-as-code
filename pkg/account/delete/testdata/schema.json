@@ -45,6 +45,16 @@
                             "name",
                             "level"
                         ]
+                    },
+                    {
+                        "properties": {
+                            "type": {
+                                "const": "boundary"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ]
                     }
                 ],
                 "properties": {

@@ -26,7 +26,6 @@ import (
 	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
@@ -64,7 +63,7 @@ func Write(writerContext Context, resources account.Resources) error {
 	}
 
 	var errOccurred bool
-	if len(resources.Boundaries) > 0 && featureflags.Boundaries.Enabled() {
+	if len(resources.Boundaries) > 0 {
 		boundaries := toPersistenceBoundaries(resources.Boundaries)
 		if err := persistToFile(persistence.File{Boundaries: boundaries}, writerContext.Fs, filepath.Join(projectFolder, "boundaries.yaml")); err != nil {
 			errOccurred = true
@@ -178,37 +177,6 @@ func transformRefs(in []account.Ref) []persistence.Reference {
 }
 
 func transformPolicyRefs(in []account.PolicyBinding) []persistence.PolicyBinding {
-	if featureflags.Boundaries.Enabled() {
-		return transformPolicyRefsWithBoundaries(in)
-	}
-
-	return transformPolicyRefsWithoutBoundaries(in)
-}
-
-// transformPolicyRefsWithoutBoundaries keeps the old behaviour with the policy reference directly referenced at the
-// root level and no boundaries set
-func transformPolicyRefsWithoutBoundaries(in []account.PolicyBinding) []persistence.PolicyBinding {
-	var res []persistence.PolicyBinding
-	// sort refs by ID() so that they are stable for both full refs and strings within a persisted file
-	slices.SortFunc(in, func(a, b account.PolicyBinding) int {
-		return caseInsensitiveLexicographicSmaller(a.Policy.ID(), b.Policy.ID())
-	})
-	for _, el := range in {
-		switch polRef := el.Policy.(type) {
-		case account.Reference:
-			res = append(res, persistence.PolicyBinding{Type: persistence.ReferenceType, Id: polRef.Id})
-		case account.StrReference:
-			res = append(res, persistence.PolicyBinding{Value: string(polRef)})
-		default:
-			panic(errConvertPersistenceModel)
-		}
-	}
-	return res
-}
-
-// transformPolicyRefsWithBoundaries also includes boundary references in the returned policies and the
-// reference to the policy itself is nested in a "policy" struct
-func transformPolicyRefsWithBoundaries(in []account.PolicyBinding) []persistence.PolicyBinding {
 	var res []persistence.PolicyBinding
 	// sort refs by ID() so that they are stable for both full refs and strings within a persisted file
 	slices.SortFunc(in, func(a, b account.PolicyBinding) int {

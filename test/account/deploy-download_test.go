@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	stringutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
@@ -36,8 +35,6 @@ import (
 )
 
 func TestIdempotenceOfDeployment(t *testing.T) {
-	t.Setenv(featureflags.Boundaries.EnvName(), "true")
-
 	deploy := func(project string, fs afero.Fs) *account.Resources {
 		err := monaco.Run(t, fs, fmt.Sprintf("monaco account deploy --project %s --verbose", project))
 

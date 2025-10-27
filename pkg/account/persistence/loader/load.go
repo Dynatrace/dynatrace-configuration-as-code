@@ -25,7 +25,6 @@ import (
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
@@ -119,7 +118,7 @@ func HasAnyAccountKeyDefined(m map[string]any) bool {
 		return false
 	}
 
-	return m[persistence.KeyUsers] != nil || m[persistence.KeyServiceUsers] != nil || m[persistence.KeyGroups] != nil || m[persistence.KeyPolicies] != nil || m[persistence.KeyBoundaries] != nil && featureflags.Boundaries.Enabled()
+	return m[persistence.KeyUsers] != nil || m[persistence.KeyServiceUsers] != nil || m[persistence.KeyGroups] != nil || m[persistence.KeyPolicies] != nil || m[persistence.KeyBoundaries] != nil
 }
 
 func findAndLoadResources(fs afero.Fs, rootPath string) (*account.Resources, error) {
@@ -196,13 +195,11 @@ func loadFile(fs afero.Fs, yamlFilePath string) (*persistence.File, error) {
 }
 
 func addResourcesFromFile(res *account.Resources, file persistence.File) error {
-	if featureflags.Boundaries.Enabled() {
-		for _, b := range file.Boundaries {
-			if _, exists := res.Boundaries[b.ID]; exists {
-				return fmt.Errorf("found duplicate boundary with id %q", b.ID)
-			}
-			res.Boundaries[b.ID] = transformBoundary(b)
+	for _, b := range file.Boundaries {
+		if _, exists := res.Boundaries[b.ID]; exists {
+			return fmt.Errorf("found duplicate boundary with id %q", b.ID)
 		}
+		res.Boundaries[b.ID] = transformBoundary(b)
 	}
 
 	for _, p := range file.Policies {

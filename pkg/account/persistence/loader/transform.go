@@ -17,7 +17,6 @@
 package loader
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
@@ -139,15 +138,12 @@ func transformReference(ref persistence.Reference) account.Ref {
 func transformPolicyBindings(pPolicyReferences []persistence.PolicyBinding) []account.PolicyBinding {
 	res := make([]account.PolicyBinding, len(pPolicyReferences))
 	for i, el := range pPolicyReferences {
-		if el.Policy != nil && featureflags.Boundaries.Enabled() {
+		if el.Policy != nil {
 			res[i].Policy = transformReference(*el.Policy)
 		} else {
 			res[i].Policy = transformReference(persistence.Reference{Id: el.Id, Type: el.Type, Value: el.Value})
 		}
-
-		if featureflags.Boundaries.Enabled() {
-			res[i].Boundaries = transformReferences(el.Boundaries)
-		}
+		res[i].Boundaries = transformReferences(el.Boundaries)
 	}
 	return res
 }

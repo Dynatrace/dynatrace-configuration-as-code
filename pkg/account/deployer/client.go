@@ -562,10 +562,6 @@ func (c *accountManagementClient) updateAccountPolicyBindings(ctx context.Contex
 		return err
 	}
 
-	if !featureflags.Boundaries.Enabled() {
-		return nil
-	}
-
 	for policyId, boundaryIds := range boundariesForPolicyIds {
 		if err := c.updateBoundariesForPolicyBinding(ctx, "account", c.accountInfo.AccountUUID, groupId, policyId, boundaryIds); err != nil {
 			return err
@@ -592,10 +588,6 @@ func (c *accountManagementClient) updateEnvironmentPolicyBindings(ctx context.Co
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to update policy binding between group with UUID "+groupId+" and policies with UUIDs "+fmt.Sprintf("%v", policyIds)); err != nil {
 		return err
-	}
-
-	if !featureflags.Boundaries.Enabled() {
-		return nil
 	}
 
 	for policyId, boundaryIds := range boundariesForPolicyIds {

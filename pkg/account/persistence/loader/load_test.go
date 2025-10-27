@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 )
@@ -74,7 +73,6 @@ users:
 		},
 	}
 
-	t.Setenv(featureflags.Boundaries.EnvName(), "true")
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
@@ -125,7 +123,6 @@ users:
 	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p3", "policy.yaml"), []byte(policyContent), 0644)
 	afero.WriteFile(fs, fmt.Sprintf("%s/%s", "p4", "group.yaml"), []byte(groupContent), 0644)
 
-	t.Setenv(featureflags.Boundaries.EnvName(), "true")
 	res, err := LoadResources(fs, ".", manifest.ProjectDefinitionByProjectID{
 		"p1": manifest.ProjectDefinition{Name: "p1", Group: "g1", Path: "p1"},
 		"p2": manifest.ProjectDefinition{Name: "p2", Group: "g1", Path: "p2"},
@@ -155,7 +152,6 @@ func TestLoad(t *testing.T) {
 	}
 
 	t.Run("Load single file", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
 		assert.NoError(t, err)
 
@@ -178,7 +174,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Load single file - with refs", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid-with-refs.yaml")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Groups, 1)
@@ -201,7 +196,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Load multiple files", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/multi")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
@@ -212,7 +206,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Loads origin objectIDs", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/valid-origin-object-id.yaml")
 		assert.NoError(t, err)
 		assert.Contains(t, loaded.Users, "monaco@dynatrace.com", "expected user to exist: monaco@dynatrace.com")
@@ -235,7 +228,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Load multiple files but ignore config files", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/multi-with-configs")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
@@ -245,7 +237,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Load multiple files and ignores any delete file", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		loaded, err := Load(afero.NewOsFs(), "testdata/multi-with-delete-file")
 		assert.NoError(t, err)
 		assert.Len(t, loaded.Users, 1)
@@ -288,7 +279,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Duplicate boundary produces error", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		_, err := Load(afero.NewOsFs(), "testdata/duplicate-boundary.yaml")
 		assert.Error(t, err)
 	})
@@ -324,7 +314,6 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Partial boundary definition produces error", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		_, err := Load(afero.NewOsFs(), "testdata/partial-boundary.yaml")
 		assert.Error(t, err)
 	})
@@ -392,22 +381,7 @@ func TestLoad(t *testing.T) {
 		assert.ErrorIs(t, err, ErrMixingDelete)
 	})
 
-	t.Run("boundaries are not loaded if the feature is disabled", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "false")
-		data, err := Load(afero.NewOsFs(), "testdata/valid.yaml")
-		assert.NoError(t, err)
-		assert.Len(t, data.Boundaries, 0)
-	})
-
-	t.Run("loading boundary references leads to error is the feature is disabled", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "false")
-		_, err := Load(afero.NewOsFs(), "testdata/valid-policy-binding-variants.yaml")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "missing reference value")
-	})
-
 	t.Run("All different policy structure variants are supported when loading groups", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		data, err := Load(afero.NewOsFs(), "testdata/valid-policy-binding-variants.yaml")
 		assert.NoError(t, err)
 		assert.Len(t, data.Boundaries, 2)
@@ -424,14 +398,12 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("Invalid policy binding leads to error", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		_, err := Load(afero.NewOsFs(), "testdata/invalid-policy-binding.yaml")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "boundaries are only supported when using the 'policy' key")
 	})
 
 	t.Run("Ambiguous policy binding leads to error", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		_, err := Load(afero.NewOsFs(), "testdata/ambiguous-policy-binding.yaml")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "policy definition is ambiguous")

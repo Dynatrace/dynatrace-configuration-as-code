@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
@@ -138,9 +137,7 @@ func (d *AccountDeployer) fetchExistingResources(ctx context.Context) error {
 		fetchResources(ctx, d.fetchGroups, wg, errCh)
 	}
 
-	if featureflags.Boundaries.Enabled() {
-		dispatcher.AddJob(fetchBoundariesJob)
-	}
+	dispatcher.AddJob(fetchBoundariesJob)
 	dispatcher.AddJob(fetchGlobalPoliciesJob)
 	dispatcher.AddJob(fetchMZonesJob)
 	dispatcher.AddJob(fetchGroupsJob)
@@ -154,9 +151,7 @@ func (d *AccountDeployer) deployResources(ctx context.Context, res *account.Reso
 	dispatcher.Run()
 	defer dispatcher.Stop()
 
-	if featureflags.Boundaries.Enabled() {
-		d.deployBoundaries(ctx, res.Boundaries, dispatcher)
-	}
+	d.deployBoundaries(ctx, res.Boundaries, dispatcher)
 	d.deployPolicies(ctx, res.Policies, dispatcher)
 	d.deployGroups(ctx, res.Groups, dispatcher)
 	d.deployUsers(ctx, res.Users, dispatcher)
@@ -601,13 +596,9 @@ func (d *AccountDeployer) processPolicyBindings(items []account.PolicyBinding) (
 			return nil, fmt.Errorf("could not find remote id for policy with id '%s'", item.Policy.ID())
 		}
 
-		var bndRefs []remoteId
-		var err error
-		if featureflags.Boundaries.Enabled() {
-			bndRefs, err = d.processItems(item.Boundaries, d.boundaryIdLookup)
-			if err != nil {
-				return nil, err
-			}
+		bndRefs, err := d.processItems(item.Boundaries, d.boundaryIdLookup)
+		if err != nil {
+			return nil, err
 		}
 		refs[polRef] = bndRefs
 	}

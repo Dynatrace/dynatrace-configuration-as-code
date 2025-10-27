@@ -28,7 +28,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 )
@@ -46,7 +45,6 @@ func mockClient(t *testing.T) *Mockclient {
 }
 
 func TestDeployer(t *testing.T) {
-	t.Setenv(featureflags.Boundaries.EnvName(), "true")
 	t.Run("Deployer - Getting global policies fails", func(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)
@@ -239,7 +237,6 @@ func TestDeployer(t *testing.T) {
 }
 
 func TestDeployer_ServiceUsers(t *testing.T) {
-	t.Setenv(featureflags.Boundaries.EnvName(), "true")
 	t.Run("Single service user with name", func(t *testing.T) {
 		mockedClient := mockClient(t)
 		instance := NewAccountDeployer(mockedClient)

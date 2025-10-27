@@ -25,7 +25,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
 )
 
@@ -65,35 +64,7 @@ func (c *testClient) DeleteBoundary(ctx context.Context, name string) error {
 	return c.boundaryFunc(ctx, c.AccountUUID, name)
 }
 
-func TestBoundariesAreNotDeletedIfFeatureFlagIsOff(t *testing.T) {
-	t.Setenv(featureflags.Boundaries.EnvName(), "false")
-	boundaryDeleteCalled := 0
-	c := testClient{
-		boundaryFunc: func(ctx context.Context, accountUUID, name string) error {
-			boundaryDeleteCalled++
-			return nil
-		},
-	}
-	entriesToDelete := delete.Resources{
-		Boundaries: []delete.Boundary{
-			{
-				Name: "test-boundary",
-			},
-		},
-	}
-	acc := delete.Account{
-		Name:      "name",
-		UUID:      "1234",
-		APIClient: &c,
-	}
-	err := delete.DeleteAccountResources(t.Context(), acc, entriesToDelete)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, boundaryDeleteCalled)
-}
-
 func TestDeletesResources(t *testing.T) {
-	t.Setenv(featureflags.Boundaries.EnvName(), "true")
-
 	userDeleteCalled := 0
 	serviceUserDeleteCalled := 0
 	groupDeleteCalled := 0
@@ -181,8 +152,6 @@ func TestDeletesResources(t *testing.T) {
 }
 
 func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
-	t.Setenv(featureflags.Boundaries.EnvName(), "true")
-
 	userDeleteCalled := 0
 	serviceUserCalled := 0
 	accountPolicyDeleteCalled := 0
@@ -264,8 +233,6 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 }
 
 func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
-	t.Setenv(featureflags.Boundaries.EnvName(), "true")
-
 	userDeleteCalled := 0
 	serviceUserDeleteCalled := 0
 	groupDeleteCalled := 0
