@@ -2,6 +2,37 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types/file",
     "properties": {
+        "boundaries": {
+            "items": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "A unique identifier of this boundary configuration - this can be freely defined"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of this boundary."
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "The query definition of the boundary."
+                    },
+                    "originObjectId": {
+                        "type": "string",
+                        "description": "The identifier of the boundary this config originated from - this is filled when downloading"
+                    }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "query"
+                ]
+            },
+            "type": "array",
+            "description": "Boundaries to configure for this account."
+        },
         "policies": {
             "items": {
                 "properties": {
@@ -89,14 +120,6 @@
                             },
                             "policies": {
                                 "items": {
-                                    "oneOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "object"
-                                        }
-                                    ],
                                     "properties": {
                                         "type": {
                                             "type": "string",
@@ -107,9 +130,54 @@
                                         "id": {
                                             "type": "string",
                                             "description": "The 'id' of the account configuration being referenced."
+                                        },
+                                        "policy": {
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "reference"
+                                                    ]
+                                                },
+                                                "id": {
+                                                    "type": "string",
+                                                    "description": "The 'id' of the account configuration being referenced."
+                                                }
+                                            },
+                                            "additionalProperties": false,
+                                            "type": "object",
+                                            "description": "Policy."
+                                        },
+                                        "boundaries": {
+                                            "items": {
+                                                "oneOf": [
+                                                    {
+                                                        "type": "string"
+                                                    },
+                                                    {
+                                                        "type": "object"
+                                                    }
+                                                ],
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "reference"
+                                                        ]
+                                                    },
+                                                    "id": {
+                                                        "type": "string",
+                                                        "description": "The 'id' of the account configuration being referenced."
+                                                    }
+                                                },
+                                                "additionalProperties": false
+                                            },
+                                            "type": "array",
+                                            "description": "Boundaries attached to the policy."
                                         }
                                     },
-                                    "additionalProperties": false
+                                    "additionalProperties": false,
+                                    "type": "object"
                                 },
                                 "type": "array",
                                 "description": "Policies for the whole account."
@@ -135,14 +203,6 @@
                                 },
                                 "policies": {
                                     "items": {
-                                        "oneOf": [
-                                            {
-                                                "type": "string"
-                                            },
-                                            {
-                                                "type": "object"
-                                            }
-                                        ],
                                         "properties": {
                                             "type": {
                                                 "type": "string",
@@ -153,9 +213,54 @@
                                             "id": {
                                                 "type": "string",
                                                 "description": "The 'id' of the account configuration being referenced."
+                                            },
+                                            "policy": {
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "reference"
+                                                        ]
+                                                    },
+                                                    "id": {
+                                                        "type": "string",
+                                                        "description": "The 'id' of the account configuration being referenced."
+                                                    }
+                                                },
+                                                "additionalProperties": false,
+                                                "type": "object",
+                                                "description": "Policy."
+                                            },
+                                            "boundaries": {
+                                                "items": {
+                                                    "oneOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "object"
+                                                        }
+                                                    ],
+                                                    "properties": {
+                                                        "type": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "reference"
+                                                            ]
+                                                        },
+                                                        "id": {
+                                                            "type": "string",
+                                                            "description": "The 'id' of the account configuration being referenced."
+                                                        }
+                                                    },
+                                                    "additionalProperties": false
+                                                },
+                                                "type": "array",
+                                                "description": "Boundaries attached to the policy."
                                             }
                                         },
-                                        "additionalProperties": false
+                                        "additionalProperties": false,
+                                        "type": "object"
                                     },
                                     "type": "array",
                                     "description": "Policies for this environment."

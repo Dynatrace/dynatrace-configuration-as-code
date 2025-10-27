@@ -505,7 +505,6 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 func TestClient_UpdatePolicyBindings(t *testing.T) {
 
 	t.Run("Update Account Policy Bindings - OK", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		responses := []testutils.ResponseDef{
 			{
 				PUT: func(t *testing.T, request *http.Request) testutils.Response {
@@ -604,7 +603,6 @@ func TestClient_UpdatePolicyBindings(t *testing.T) {
 	})
 
 	t.Run("Update Environment Policy Bindings - OK", func(t *testing.T) {
-		t.Setenv(featureflags.Boundaries.EnvName(), "true")
 		responses := []testutils.ResponseDef{
 			{
 				PUT: func(t *testing.T, request *http.Request) testutils.Response {

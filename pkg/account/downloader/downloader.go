@@ -22,7 +22,6 @@ import (
 	"log/slog"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/accounts"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/downloader/internal/http"
 )
@@ -46,14 +45,9 @@ func (a *Downloader) DownloadResources(ctx context.Context) (*account.Resources,
 		return nil, fmt.Errorf("failed to fetch environments: %w", err)
 	}
 
-	var boundaries Boundaries
-	if featureflags.Boundaries.Enabled() {
-		boundaries, err = a.boundaries(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch boundaries: %w", err)
-		}
-	} else {
-		boundaries = make(Boundaries, 0)
+	boundaries, err := a.boundaries(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch boundaries: %w", err)
 	}
 
 	policies, err := a.policies(ctx)

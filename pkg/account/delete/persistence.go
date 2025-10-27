@@ -20,7 +20,6 @@ import (
 	"github.com/invopop/jsonschema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 )
 
@@ -115,13 +114,11 @@ func (Entries) JSONSchema() *jsonschema.Schema {
 		Required: []string{"name", "level"},
 	})
 
-	if featureflags.Boundaries.Enabled() {
-		conditionalRequiredFields = append(conditionalRequiredFields, &jsonschema.Schema{
-			Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
-				orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "boundary"}})),
-			Required: []string{"name"},
-		})
-	}
+	conditionalRequiredFields = append(conditionalRequiredFields, &jsonschema.Schema{
+		Properties: orderedmap.New[string, *jsonschema.Schema](orderedmap.WithInitialData(
+			orderedmap.Pair[string, *jsonschema.Schema]{Key: "type", Value: &jsonschema.Schema{Const: "boundary"}})),
+		Required: []string{"name"},
+	})
 
 	return &jsonschema.Schema{
 		Type: "array",

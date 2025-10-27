@@ -22,7 +22,6 @@ import (
 	"github.com/invopop/jsonschema"
 	"github.com/mitchellh/mapstructure"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
@@ -158,11 +157,6 @@ func (r *PolicyBinding) UnmarshalYAML(unmarshal func(any) error) error {
 	if err := unmarshal(&temp); err != nil {
 		return err
 	}
-
-	if !featureflags.Boundaries.Enabled() {
-		temp.Policy = nil
-		temp.Boundaries = nil
-	}
 	*r = PolicyBinding(temp)
 	return nil
 }
@@ -170,7 +164,7 @@ func (r *PolicyBinding) UnmarshalYAML(unmarshal func(any) error) error {
 // MarshalYAML is a custom yaml.Marshaler for PolicyBinding, able to write simple string values and actual references.
 // As it is called when marshalling PolicyBinding values, it has a value receiver.
 func (r PolicyBinding) MarshalYAML() (interface{}, error) {
-	if !featureflags.Boundaries.Enabled() {
+	if r.Policy == nil {
 		if r.Type == ReferenceType {
 			return r, nil
 		}
@@ -227,14 +221,6 @@ func (Account) JSONSchema() *jsonschema.Schema {
 	base.ID = ""
 	base.Version = ""
 
-	if !featureflags.Boundaries.Enabled() {
-		policiesBase := jsonutils.ReflectJSONSchema(ReferenceSlice{})
-		policiesBase.Description = "Policies for the whole account."
-		policiesBase.ID = ""
-		policiesBase.Version = ""
-		base.Properties.Set("policies", policiesBase)
-	}
-
 	return base
 }
 
@@ -246,14 +232,6 @@ func (Environment) JSONSchema() *jsonschema.Schema {
 	base.ID = ""
 	base.Version = ""
 
-	if !featureflags.Boundaries.Enabled() {
-		policiesBase := jsonutils.ReflectJSONSchema(ReferenceSlice{})
-		policiesBase.Description = "Policies for this environment."
-		policiesBase.ID = ""
-		policiesBase.Version = ""
-		base.Properties.Set("policies", policiesBase)
-	}
-
 	return base
 }
 
@@ -264,9 +242,6 @@ func (File) JSONSchema() *jsonschema.Schema {
 	base := jsonutils.ReflectJSONSchema(fileSchema{})
 	base.ID = ""
 	base.Version = ""
-	if !featureflags.Boundaries.Enabled() {
-		base.Properties.Delete("boundaries")
-	}
 
 	return base
 }

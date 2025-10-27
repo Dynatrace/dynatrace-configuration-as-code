@@ -24,7 +24,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
 )
@@ -38,10 +37,9 @@ func TestWriteAccountResources(t *testing.T) {
 		boundaries   string
 	}
 	type testCase struct {
-		name              string
-		givenResources    account.Resources
-		wantPersisted     want
-		boundariesEnabled bool
+		name           string
+		givenResources account.Resources
+		wantPersisted  want
 	}
 
 	tests := []testCase{
@@ -78,64 +76,6 @@ func TestWriteAccountResources(t *testing.T) {
 			wantPersisted: want{
 				users: `users:
 - email: monaco@dynatrace.com
-`,
-			},
-		},
-		{
-			name: "only groups",
-			givenResources: account.Resources{
-				Groups: map[account.GroupId]account.Group{
-					"my-group": {
-						ID:          "my-group",
-						Name:        "My Group",
-						Description: "This is my group",
-						Account: &account.Account{
-							Permissions: []string{"View my Group Stuff"},
-							Policies:    []account.PolicyBinding{{Policy: account.StrReference("Request my Group Stuff")}},
-						},
-						Environment: []account.Environment{
-							{
-								Name:        "myenv123",
-								Permissions: []string{"View environment"},
-								Policies: []account.PolicyBinding{
-									{Policy: account.StrReference("View environment")},
-									{Policy: account.Reference{Id: "my-policy"}},
-								},
-							},
-						},
-						ManagementZone: []account.ManagementZone{
-							{
-								Environment:    "myenv123",
-								ManagementZone: "My MZone",
-								Permissions:    []string{"Do Stuff"},
-							},
-						},
-					},
-				},
-			},
-			wantPersisted: want{
-				groups: `groups:
-- id: my-group
-  name: My Group
-  description: This is my group
-  account:
-    permissions:
-    - View my Group Stuff
-    policies:
-    - Request my Group Stuff
-  environments:
-  - environment: myenv123
-    permissions:
-    - View environment
-    policies:
-    - type: reference
-      id: my-policy
-    - View environment
-  managementZones:
-  - environment: myenv123
-    managementZone: My MZone
-    permissions:
-    - Do Stuff
 `,
 			},
 		},
@@ -207,7 +147,6 @@ func TestWriteAccountResources(t *testing.T) {
     - Do Stuff
 `,
 			},
-			boundariesEnabled: true,
 		},
 		{
 			name: "empty optional values are not included when writing groups",
@@ -231,7 +170,7 @@ func TestWriteAccountResources(t *testing.T) {
     permissions:
     - View my Group Stuff
     policies:
-    - Request my Group Stuff
+    - policy: Request my Group Stuff
 `,
 			},
 		},
@@ -271,7 +210,7 @@ func TestWriteAccountResources(t *testing.T) {
   name: My Group
   account:
     policies:
-    - Request my Group Stuff
+    - policy: Request my Group Stuff
 `,
 			},
 		},
@@ -322,8 +261,7 @@ func TestWriteAccountResources(t *testing.T) {
 			},
 		},
 		{
-			name:              "only boundaries",
-			boundariesEnabled: true,
+			name: "only boundaries",
 			givenResources: account.Resources{
 				Boundaries: map[account.BoundaryId]account.Boundary{
 					"my-boundary": {
@@ -341,21 +279,6 @@ func TestWriteAccountResources(t *testing.T) {
   originObjectId: some-id
 `,
 			},
-		},
-		{
-			name:              "only boundaries - FF disabled",
-			boundariesEnabled: false,
-			givenResources: account.Resources{
-				Boundaries: map[account.BoundaryId]account.Boundary{
-					"my-boundary": {
-						ID:             "my-boundary",
-						Name:           "My Boundary",
-						Query:          "Some query here",
-						OriginObjectID: "some-id",
-					},
-				},
-			},
-			wantPersisted: want{boundaries: ``},
 		},
 		{
 			name: "only service users",
@@ -516,15 +439,16 @@ func TestWriteAccountResources(t *testing.T) {
     permissions:
     - View my Group Stuff
     policies:
-    - Request my Group Stuff
+    - policy: Request my Group Stuff
   environments:
   - environment: myenv123
     permissions:
     - View environment
     policies:
-    - type: reference
-      id: my-policy
-    - View environment
+    - policy:
+        type: reference
+        id: my-policy
+    - policy: View environment
   managementZones:
   - environment: myenv123
     managementZone: My MZone
@@ -628,15 +552,16 @@ func TestWriteAccountResources(t *testing.T) {
     permissions:
     - View my Group Stuff
     policies:
-    - Request my Group Stuff
+    - policy: Request my Group Stuff
   environments:
   - environment: myenv123
     permissions:
     - View environment
     policies:
-    - type: reference
-      id: my-policy
-    - View environment
+    - policy:
+        type: reference
+        id: my-policy
+    - policy: View environment
   managementZones:
   - environment: myenv123
     managementZone: My MZone
@@ -796,22 +721,24 @@ func TestWriteAccountResources(t *testing.T) {
     permissions:
     - View my Group Stuff
     policies:
-    - Request my Group Stuff
+    - policy: Request my Group Stuff
   environments:
   - environment: myenv123
     permissions:
     - View environment
     policies:
-    - type: reference
-      id: first-policy
-    - View environment
+    - policy:
+        type: reference
+        id: first-policy
+    - policy: View environment
   - environment: myenv456
     permissions:
     - View environment
     policies:
-    - type: reference
-      id: second-policy
-    - View environment
+    - policy:
+        type: reference
+        id: second-policy
+    - policy: View environment
   managementZones:
   - environment: myenv123
     managementZone: First MZone
@@ -834,7 +761,7 @@ func TestWriteAccountResources(t *testing.T) {
   description: This is my group
   account:
     policies:
-    - Request my Group Stuff
+    - policy: Request my Group Stuff
 `,
 				policies: `policies:
 - id: first-policy
@@ -869,12 +796,6 @@ func TestWriteAccountResources(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.boundariesEnabled {
-				t.Setenv(featureflags.Boundaries.EnvName(), "true")
-			} else {
-				t.Setenv(featureflags.Boundaries.EnvName(), "false")
-			}
-
 			c := writer.Context{
 				Fs:            afero.NewMemMapFs(),
 				OutputFolder:  "test",

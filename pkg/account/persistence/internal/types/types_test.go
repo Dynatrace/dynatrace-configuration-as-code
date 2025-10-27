@@ -22,16 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	persistence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
 
 func TestPolicyBinding_MarshalYAML(t *testing.T) {
 	type testCase struct {
-		name              string
-		policyBinding     persistence.PolicyBinding
-		expected          any
-		boundariesEnabled bool
+		name          string
+		policyBinding persistence.PolicyBinding
+		expected      any
 	}
 	tests := []testCase{
 		{
@@ -57,7 +55,6 @@ id: policy-id
 			policyBinding: persistence.PolicyBinding{Policy: &persistence.Reference{Value: "policy-name"}},
 			expected: `policy: policy-name
 `,
-			boundariesEnabled: true,
 		},
 		{
 			name:          "policy reference nested",
@@ -66,7 +63,6 @@ id: policy-id
   type: reference
   id: policy-id
 `,
-			boundariesEnabled: true,
 		},
 		{
 			name: "policy reference nested with boundaries",
@@ -82,17 +78,10 @@ boundaries:
   id: boundary-id
 - My boundary
 `,
-			boundariesEnabled: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.boundariesEnabled {
-				t.Setenv(featureflags.Boundaries.EnvName(), "true")
-			} else {
-				t.Setenv(featureflags.Boundaries.EnvName(), "false")
-			}
-
 			got, err := yaml.Marshal(tt.policyBinding)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, string(got))
@@ -103,10 +92,9 @@ boundaries:
 
 func TestPolicyBinding_UnmarshalYAML(t *testing.T) {
 	type testCase struct {
-		name              string
-		yaml              string
-		expected          any
-		boundariesEnabled bool
+		name     string
+		yaml     string
+		expected any
 	}
 	tests := []testCase{
 		{
@@ -124,8 +112,7 @@ func TestPolicyBinding_UnmarshalYAML(t *testing.T) {
 			name: "policy name at root level - boundaries enabled",
 			yaml: `policy name
 `,
-			expected:          persistence.PolicyBinding{Value: "policy name"},
-			boundariesEnabled: true,
+			expected: persistence.PolicyBinding{Value: "policy name"},
 		},
 		{
 			name: "policy reference at root level",
@@ -138,15 +125,13 @@ id: policy-id
 			name: "policy reference at root level - boundaries enabled",
 			yaml: `policy name
 `,
-			expected:          persistence.PolicyBinding{Value: "policy name"},
-			boundariesEnabled: true,
+			expected: persistence.PolicyBinding{Value: "policy name"},
 		},
 		{
 			name: "policy name nested",
 			yaml: `policy: policy-name
 `,
-			expected:          persistence.PolicyBinding{Policy: &persistence.Reference{Value: "policy-name"}},
-			boundariesEnabled: true,
+			expected: persistence.PolicyBinding{Policy: &persistence.Reference{Value: "policy-name"}},
 		},
 		{
 			name: "policy reference nested",
@@ -154,8 +139,7 @@ id: policy-id
   type: reference
   id: policy-id
 `,
-			expected:          persistence.PolicyBinding{Policy: &persistence.Reference{Id: "policy-id", Type: "reference"}},
-			boundariesEnabled: true,
+			expected: persistence.PolicyBinding{Policy: &persistence.Reference{Id: "policy-id", Type: "reference"}},
 		},
 		{
 			name: "policy reference nested with boundaries",
@@ -171,17 +155,10 @@ boundaries:
 				Policy:     &persistence.Reference{Id: "policy-id", Type: "reference"},
 				Boundaries: []persistence.Reference{{Id: "boundary-id", Type: "reference"}, {Value: "My boundary"}},
 			},
-			boundariesEnabled: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.boundariesEnabled {
-				t.Setenv(featureflags.Boundaries.EnvName(), "true")
-			} else {
-				t.Setenv(featureflags.Boundaries.EnvName(), "false")
-			}
-
 			var got persistence.PolicyBinding
 			err := yaml.Unmarshal([]byte(tt.yaml), &got)
 			assert.NoError(t, err)

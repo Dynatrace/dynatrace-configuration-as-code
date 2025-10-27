@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
@@ -80,11 +79,8 @@ func DeleteAccountResources(ctx context.Context, account Account, resourcesToDel
 		deleteServiceUsers(ctx, account, resourcesToDelete.ServiceUsers) +
 		deleteGroups(ctx, account, resourcesToDelete.Groups) +
 		deleteAccountPolicies(ctx, account, resourcesToDelete.AccountPolicies) +
-		deleteEnvironmentPolicies(ctx, account, resourcesToDelete.EnvironmentPolicies)
-
-	if featureflags.Boundaries.Enabled() {
-		totalErrorCount += deleteBoundaries(ctx, account, resourcesToDelete.Boundaries)
-	}
+		deleteEnvironmentPolicies(ctx, account, resourcesToDelete.EnvironmentPolicies) +
+		deleteBoundaries(ctx, account, resourcesToDelete.Boundaries)
 
 	if totalErrorCount > 0 {
 		return fmt.Errorf("encountered %d errors - please check logs for details", totalErrorCount)

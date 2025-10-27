@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/internal/types"
 )
@@ -135,11 +134,9 @@ func boundaryExists(a *account.Resources, id string) bool {
 }
 
 func validateFile(file types.File) error {
-	if featureflags.Boundaries.Enabled() {
-		for _, b := range file.Boundaries {
-			if err := validateBoundary(b); err != nil {
-				return err
-			}
+	for _, b := range file.Boundaries {
+		if err := validateBoundary(b); err != nil {
+			return err
 		}
 	}
 
