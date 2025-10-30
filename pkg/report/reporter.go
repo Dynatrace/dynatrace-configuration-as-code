@@ -56,12 +56,24 @@ func GetReporterFromContextOrDiscard(ctx context.Context) Reporter {
 
 // Reporter is a minimal interface for reporting events and retrieving summaries.
 type Reporter interface {
-	// ReportDeployment reports the result of deploying a config.
-	ReportDeployment(config coordinate.Coordinate, state RecordState, objectID string, details []Detail, err error)
+	// ReportSuccessfulDeployment reports the successful result of deploying a config.
+	ReportSuccessfulDeployment(config coordinate.Coordinate, objectID string, details []Detail)
+
+	// ReportExcludedDeployment reports that a config was excluded from deployment.
+	ReportExcludedDeployment(config coordinate.Coordinate, details []Detail)
+
+	// ReportSkippedDeployment reports that a config was skipped from deployment.
+	ReportSkippedDeployment(config coordinate.Coordinate, details []Detail)
+
+	// ReportFailedDeployment reports that a config failed to deploy.
+	ReportFailedDeployment(config coordinate.Coordinate, details []Detail, err error)
+
 	// ReportLoading reports the result of a load config
 	ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate)
+
 	// ReportCaching reports the result of caching actions, like settings.
 	ReportCaching(state RecordState, message string)
+
 	// ReportInfo reports info messages like monaco version or that the deployment succeeded
 	ReportInfo(message string)
 
@@ -178,8 +190,27 @@ func (d *defaultReporter) updateSummaryFromRecord(r Record) {
 	}
 }
 
-// ReportDeployment reports the result of deploying a config.
-func (d *defaultReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, objectID string, details []Detail, err error) {
+// ReportSuccessfulDeployment reports the successful result of deploying a config.
+func (d *defaultReporter) ReportSuccessfulDeployment(config coordinate.Coordinate, objectID string, details []Detail) {
+	d.reportDeployment(config, StateSuccess, objectID, details, nil)
+}
+
+// ReportExcludedDeployment reports that a config was excluded from deployment.
+func (d *defaultReporter) ReportExcludedDeployment(config coordinate.Coordinate, details []Detail) {
+	d.reportDeployment(config, StateExcluded, "", details, nil)
+}
+
+// ReportSkippedDeployment reports that a config was skipped from deployment.
+func (d *defaultReporter) ReportSkippedDeployment(config coordinate.Coordinate, details []Detail) {
+	d.reportDeployment(config, StateSkipped, "", details, nil)
+}
+
+// ReportFailedDeployment reports that a config failed to deploy.
+func (d *defaultReporter) ReportFailedDeployment(config coordinate.Coordinate, details []Detail, err error) {
+	d.reportDeployment(config, StateError, "", details, err)
+}
+
+func (d *defaultReporter) reportDeployment(config coordinate.Coordinate, state RecordState, objectID string, details []Detail, err error) {
 	record := Record{
 		Type:     TypeDeploy,
 		Time:     JSONTime(d.clockFunc()),
@@ -257,8 +288,15 @@ func (d *defaultReporter) Stop() {
 
 type discardReporter struct{}
 
-func (*discardReporter) ReportDeployment(config coordinate.Coordinate, state RecordState, objectID string, details []Detail, err error) {
+func (*discardReporter) ReportSuccessfulDeployment(config coordinate.Coordinate, objectID string, details []Detail) {
 }
+func (*discardReporter) ReportExcludedDeployment(config coordinate.Coordinate, details []Detail) {
+}
+func (*discardReporter) ReportSkippedDeployment(config coordinate.Coordinate, details []Detail) {
+}
+func (*discardReporter) ReportFailedDeployment(config coordinate.Coordinate, details []Detail, err error) {
+}
+
 func (*discardReporter) ReportLoading(state RecordState, err error, message string, config *coordinate.Coordinate) {
 }
 func (*discardReporter) ReportCaching(state RecordState, message string) {
