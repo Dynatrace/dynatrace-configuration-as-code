@@ -83,7 +83,7 @@ func getDeploymentLimiterFromContext(ctx context.Context) *rest.ConcurrentReques
 func DeployForAllEnvironments(ctx context.Context, projects []project.Project, environmentClients dynatrace.EnvironmentClients, opts DeployConfigsOptions) error {
 	maxConcurrentDeployments := environment.GetEnvValueIntLog(environment.ConcurrentDeploymentsEnvKey)
 	if maxConcurrentDeployments > 0 {
-		log.InfoContext(ctx, "%s set, limiting concurrent deployments to %d", environment.ConcurrentDeploymentsEnvKey, maxConcurrentDeployments)
+		slog.InfoContext(ctx, fmt.Sprintf("%s set, limiting concurrent deployments", environment.ConcurrentDeploymentsEnvKey), slog.Int("maxConcurrentDeployments", maxConcurrentDeployments))
 		limiter := rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
 		ctx = newContextWithDeploymentLimiter(ctx, limiter)
 	}
@@ -123,14 +123,14 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 		ctx = newContextWithEnvironment(ctx, env)
 
 		if depErr := deploy(ctx, clientSet, projects, sortedConfigs, env.Name); depErr != nil {
-			log.With(log.EnvironmentAttr(env.Name, env.Group), log.ErrorAttr(depErr)).ErrorContext(ctx, "Deployment failed for environment '%s': %v", env.Name, depErr)
+			slog.ErrorContext(ctx, "Deployment failed for environment", log.ErrorAttr(depErr))
 			deploymentErrs = deploymentErrs.Append(env.Name, depErr)
 
 			if !opts.ContinueOnErr && !opts.DryRun {
 				return deploymentErrs
 			}
 		} else {
-			log.With(log.EnvironmentAttr(env.Name, env.Group)).InfoContext(ctx, "Deployment successful for environment '%s'", env.Name)
+			slog.InfoContext(ctx, "Deployment successful for environment")
 		}
 	}
 
@@ -158,7 +158,7 @@ func deploy(ctx context.Context, clientSet *client.ClientSet, projects []project
 	preloadCaches(ctx, projects, clientSet, environment)
 	defer clearCaches(clientSet)
 	deployables := createDeployables(clientSet)
-	log.InfoContext(ctx, "Deploying configurations to environment %q...", environment)
+	slog.InfoContext(ctx, "Deploying configurations to environment")
 
 	return deployComponents(ctx, sortedConfigs, deployables)
 }
@@ -177,7 +177,7 @@ func getSortedEnvConfigs(g graph.ConfigGraphPerEnvironment, envNames []string) (
 }
 
 func deployComponents(ctx context.Context, components []graph.SortedComponent, deployables resource.Deployables) error {
-	log.InfoContext(ctx, "Deploying %d independent configuration sets in parallel...", len(components))
+	slog.InfoContext(ctx, "Deploying independent configuration sets in parallel...", slog.Int("componentCount", len(components)))
 	errCount := 0
 	errChan := make(chan error, len(components))
 
@@ -276,7 +276,7 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 	}
 
 	report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateSuccess, objectID, details, nil)
-	log.With(statusDeployedAttr()).InfoContext(ctx, "Deployment successful")
+	slog.InfoContext(ctx, "Deployment successful", statusDeployedAttr())
 	return nil
 }
 
@@ -306,7 +306,7 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 		}
 		childCfg := child.Config
 
-		l := log.With(
+		l := slog.With(
 			slog.Any("parent", parent.Config.Coordinate),
 			slog.Any("deploymentFailed", failed),
 			slog.Any("child", childCfg.Coordinate),
@@ -321,7 +321,7 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 			skipDeploymentWarning = fmt.Sprintf("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
 		}
 
-		l.WarnContext(ctx, "%s", skipDeploymentWarning)
+		l.WarnContext(ctx, skipDeploymentWarning)
 		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.StateSkipped, "", []report.Detail{{Type: report.DetailTypeWarn, Message: skipDeploymentWarning}}, nil)
 
 		removeChildren(ctx, child, root, configGraph, failed)
@@ -345,26 +345,26 @@ func deployConfig(ctx context.Context, c *config.Config, deployables resource.De
 	}
 
 	if c.Skip {
-		log.With(statusDeploymentSkippedAttr()).InfoContext(ctx, "Skipping deployment of config")
+		slog.InfoContext(ctx, "Skipping deployment of config", statusDeploymentSkippedAttr())
 		return entities.ResolvedEntity{}, errSkip // fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
 	}
 
 	properties, errs := c.ResolveParameterValues(resolvedEntities)
 	if len(errs) > 0 {
 		err := multierror.New(errs...)
-		log.With(log.ErrorAttr(err), statusDeploymentFailedAttr()).ErrorContext(ctx, "Invalid configuration - failed to resolve parameter values: %v", err)
+		slog.ErrorContext(ctx, "Failed to resolve parameter values", log.ErrorAttr(err), statusDeploymentFailedAttr())
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to resolve parameter values: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
-		log.With(log.ErrorAttr(err), statusDeploymentFailedAttr()).ErrorContext(ctx, "Invalid configuration - failed to render JSON template: %v", err)
+		slog.ErrorContext(ctx, "Failed to render JSON template", log.ErrorAttr(err), statusDeploymentFailedAttr())
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
 		return entities.ResolvedEntity{}, err
 	}
 
-	log.With(statusDeploying()).InfoContext(ctx, "Deploying config")
+	slog.InfoContext(ctx, "Deploying config", statusDeploying())
 	var resolvedEntity entities.ResolvedEntity
 	var deployErr error
 	if deployable, ok := deployables[c.Type.ID()]; ok {
@@ -380,7 +380,7 @@ func deployConfig(ctx context.Context, c *config.Config, deployables resource.De
 			return entities.ResolvedEntity{}, responseErr
 		}
 
-		log.With(log.ErrorAttr(deployErr)).ErrorContext(ctx, "Deployment failed - Monaco Error: %v", deployErr)
+		slog.ErrorContext(ctx, "Deployment failed: Monaco error", log.ErrorAttr(deployErr))
 		return entities.ResolvedEntity{}, deployErr
 	}
 	return resolvedEntity, nil
@@ -389,17 +389,17 @@ func deployConfig(ctx context.Context, c *config.Config, deployables resource.De
 // logResponseError prints user-friendly messages based on the response errors status
 func logResponseError(ctx context.Context, responseErr coreapi.APIError) {
 	if responseErr.StatusCode >= 400 && responseErr.StatusCode <= 499 {
-		log.With(log.ErrorAttr(responseErr), statusDeploymentFailedAttr()).ErrorContext(ctx, "Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
+		slog.ErrorContext(ctx, "Deployment failed: Dynatrace API rejected HTTP request / JSON data", log.ErrorAttr(responseErr), statusDeploymentFailedAttr())
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Dynatrace API rejected request: : %v", responseErr)})
 		return
 	}
 
 	if responseErr.StatusCode >= 500 && responseErr.StatusCode <= 599 {
-		log.With(log.ErrorAttr(responseErr), statusDeploymentFailedAttr()).ErrorContext(ctx, "Deployment failed - Dynatrace Server Error: %v", responseErr)
+		slog.ErrorContext(ctx, "Deployment failed: Dynatrace server error", log.ErrorAttr(responseErr), statusDeploymentFailedAttr())
 		return
 	}
 
-	log.With(log.ErrorAttr(responseErr), statusDeploymentFailedAttr()).ErrorContext(ctx, "Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
+	slog.ErrorContext(ctx, "Deployment failed: Dynatrace API call unsuccessful", log.ErrorAttr(responseErr), statusDeploymentFailedAttr())
 }
 
 func newContextWithEnvironment(ctx context.Context, env dynatrace.EnvironmentInfo) context.Context {

@@ -1348,21 +1348,21 @@ func TestLogResponseErrors(t *testing.T) {
 			updateStub: func() (coreapi.Response, error) {
 				return coreapi.Response{}, coreapi.APIError{StatusCode: 501}
 			},
-			expectedErrLog: "Deployment failed - Dynatrace Server Error",
+			expectedErrLog: "Deployment failed: Dynatrace server error",
 		},
 		{
 			name: "400 error",
 			updateStub: func() (coreapi.Response, error) {
 				return coreapi.Response{}, coreapi.APIError{StatusCode: 404}
 			},
-			expectedErrLog: "Deployment failed - Dynatrace API rejected HTTP request / JSON data",
+			expectedErrLog: "Deployment failed: Dynatrace API rejected HTTP request / JSON data",
 		},
 		{
 			name: "default error",
 			updateStub: func() (coreapi.Response, error) {
 				return coreapi.Response{}, coreapi.APIError{StatusCode: 0}
 			},
-			expectedErrLog: "Deployment failed - Dynatrace API call unsuccessful",
+			expectedErrLog: "Deployment failed: Dynatrace API call unsuccessful",
 		},
 	}
 	logSpy := bytes.Buffer{}
