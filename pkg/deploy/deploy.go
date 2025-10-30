@@ -261,10 +261,10 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 		lock.Unlock()
 
 		if failed {
-			report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateError, "", details, err)
+			report.GetReporterFromContextOrDiscard(ctx).ReportFailedDeployment(n.Config.Coordinate, details, err)
 			return err
 		}
-		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateExcluded, "", details, nil)
+		report.GetReporterFromContextOrDiscard(ctx).ReportExcludedDeployment(n.Config.Coordinate, details)
 		return nil
 	}
 
@@ -275,7 +275,7 @@ func deployNode(ctx context.Context, n graph.ConfigNode, configGraph graph.Confi
 		slog.DebugContext(ctx, "Failed to get deployed object ID from properties", log.ErrorAttr(err))
 	}
 
-	report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(n.Config.Coordinate, report.StateSuccess, objectID, details, nil)
+	report.GetReporterFromContextOrDiscard(ctx).ReportSuccessfulDeployment(n.Config.Coordinate, objectID, details)
 	slog.InfoContext(ctx, "Deployment successful", statusDeployedAttr())
 	return nil
 }
@@ -322,7 +322,7 @@ func removeChildren(ctx context.Context, parent, root graph.ConfigNode, configGr
 		}
 
 		l.WarnContext(ctx, skipDeploymentWarning)
-		report.GetReporterFromContextOrDiscard(ctx).ReportDeployment(childCfg.Coordinate, report.StateSkipped, "", []report.Detail{{Type: report.DetailTypeWarn, Message: skipDeploymentWarning}}, nil)
+		report.GetReporterFromContextOrDiscard(ctx).ReportSkippedDeployment(childCfg.Coordinate, []report.Detail{{Type: report.DetailTypeWarn, Message: skipDeploymentWarning}})
 
 		removeChildren(ctx, child, root, configGraph, failed)
 

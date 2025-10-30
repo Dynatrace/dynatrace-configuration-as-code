@@ -39,7 +39,7 @@ func TestReporter_ContextWithNoReporterDiscards(t *testing.T) {
 	reporter := report.GetReporterFromContextOrDiscard(t.Context())
 	require.NotNil(t, reporter)
 
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard"}, report.StateSuccess, "object-id", nil, nil)
+	reporter.ReportSuccessfulDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard"}, "object-id", nil)
 	reporter.Stop()
 	assert.Empty(t, reporter.GetSummary(), "discarding Reporter should not return a summary")
 }
@@ -62,10 +62,10 @@ func TestReporter_ContextWithDefaultReporterCollectsEvents(t *testing.T) {
 	reporter.ReportLoading(report.StateSuccess, nil, "", &coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"})
 	reporter.ReportLoading(report.StateError, errors.New("my-error"), "my-message", nil)
 	reporter.ReportCaching(report.StateWarn, "my-warning")
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, report.StateSuccess, "object-id", nil, nil)
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, report.StateError, "", []report.Detail{{Type: report.DetailTypeError, Message: "error"}}, errors.New("an error"))
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, report.StateSkipped, "", []report.Detail{{Type: report.DetailTypeInfo, Message: "skipped"}}, nil)
-	reporter.ReportDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, report.StateExcluded, "", nil, nil)
+	reporter.ReportSuccessfulDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard1"}, "object-id", nil)
+	reporter.ReportFailedDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard2"}, []report.Detail{{Type: report.DetailTypeError, Message: "error"}}, errors.New("an error"))
+	reporter.ReportSkippedDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard3"}, []report.Detail{{Type: report.DetailTypeInfo, Message: "skipped"}})
+	reporter.ReportExcludedDeployment(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "my-dashboard4"}, []report.Detail{{Type: report.DetailTypeInfo, Message: "excluded"}})
 
 	reporter.Stop()
 
