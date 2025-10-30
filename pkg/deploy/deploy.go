@@ -122,7 +122,7 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 		}
 		ctx = newContextWithEnvironment(ctx, env)
 
-		if depErr := Deploy(ctx, clientSet, projects, sortedConfigs, env.Name); depErr != nil {
+		if depErr := deploy(ctx, clientSet, projects, sortedConfigs, env.Name); depErr != nil {
 			log.With(log.EnvironmentAttr(env.Name, env.Group), log.ErrorAttr(depErr)).ErrorContext(ctx, "Deployment failed for environment '%s': %v", env.Name, depErr)
 			deploymentErrs = deploymentErrs.Append(env.Name, depErr)
 
@@ -154,7 +154,7 @@ func createDeployables(clientSet *client.ClientSet) resource.Deployables {
 	}
 }
 
-func Deploy(ctx context.Context, clientSet *client.ClientSet, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
+func deploy(ctx context.Context, clientSet *client.ClientSet, projects []project.Project, sortedConfigs []graph.SortedComponent, environment string) error {
 	preloadCaches(ctx, projects, clientSet, environment)
 	defer clearCaches(clientSet)
 	deployables := createDeployables(clientSet)
