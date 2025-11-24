@@ -1439,6 +1439,30 @@ func TestClient_DeleteAllEnvironmentPolicyBindings(t *testing.T) {
 		assert.Equal(t, 4, server.Calls())
 	})
 
+	t.Run("Delete all Policy Bindings skips inactive ones", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"data":[{"id":"vsy13800","url":"https://vsy13800.dev.dynatracelabs.com","active":false,"name": "vsy13800"}]}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/env/v2/accounts/abcde/environments", request.URL.String())
+				},
+			},
+		}
+
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		err := instance.deleteAllEnvironmentPolicyBindings(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674745")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, server.Calls())
+	})
+
 }
 
 func TestClient_getServiceUserEmailByUid(t *testing.T) {

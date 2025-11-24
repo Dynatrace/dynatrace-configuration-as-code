@@ -606,6 +606,10 @@ func (c *accountManagementClient) deleteAllEnvironmentPolicyBindings(ctx context
 	}
 
 	for _, e := range environments.Data {
+		if !e.Active {
+			// inactive environments can't be updated and result in a 403
+			continue
+		}
 		policies, resp, err := c.client.PolicyManagementAPI.GetPolicyUuidsBindings(ctx, groupId, e.Id, "environment").Execute()
 		closeResponseBody(resp)
 		if err = handleClientResponseError(resp, err, "unable to list all environments policy bindings for account with UUID "+c.accountInfo.AccountUUID+" and group with UUID "+groupId); err != nil {
