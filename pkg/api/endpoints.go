@@ -342,9 +342,10 @@ func NewAPIs() APIs {
 				URLPath:                      "/api/v2/slo",
 				PropertyNameOfGetAllResponse: "slo",
 			},
+			// Environment API not Config API
 			{
 				ID:                           CredentialVault,
-				URLPath:                      "/api/config/v1/credentials",
+				URLPath:                      "/api/v2/credentials",
 				PropertyNameOfGetAllResponse: "credentials",
 				SkipDownload:                 true,
 			},
