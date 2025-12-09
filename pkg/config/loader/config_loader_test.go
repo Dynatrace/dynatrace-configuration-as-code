@@ -1751,6 +1751,40 @@ configs:
 			},
 		},
 		{
+			name:             "Document dashboard config with custom ID",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: dashboard-id
+  config:
+    name: Test dashboard
+    originObjectId: custom-id
+    template: 'profile.json'
+  type:
+    document:
+      id: "custom-id"
+      kind: dashboard`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "document",
+						ConfigId: "dashboard-id",
+					},
+					OriginObjectId: "custom-id",
+					Type:           config.DocumentType{Kind: config.DashboardKind, Private: false, CustomID: "custom-id"},
+					Template:       template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						config.NameParameter: &value.ValueParameter{Value: "Test dashboard"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
 			name:             "Document private dashboard config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",

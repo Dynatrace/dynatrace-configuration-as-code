@@ -63,6 +63,7 @@ type AutomationDefinition struct {
 
 type DocumentDefinition struct {
 	Kind    config.DocumentKind `yaml:"kind" json:"kind" jsonschema:"required,enum=dashboard,enum=notebook,description=This defines the kind of document this config is for." mapstructure:"kind"`
+	ID      string              `yaml:"id,omitempty" json:"id,omitempty" jsonschema:"description=If provided, this will be the id of the document. If not provided, a system-generated id is used"  mapstructure:"id"`
 	Private bool                `yaml:"private,omitempty" json:"private,omitempty" jsonschema:"description=Set to true to make the document private"  mapstructure:"private"`
 }
 
@@ -184,8 +185,9 @@ func (c *TypeDefinition) parseDocumentType(a any) error {
 	}
 
 	c.Type = config.DocumentType{
-		Kind:    r.Kind,
-		Private: r.Private,
+		Kind:     r.Kind,
+		Private:  r.Private,
+		CustomID: r.ID,
 	}
 
 	return nil
@@ -330,6 +332,7 @@ func (c TypeDefinition) MarshalYAML() (interface{}, error) {
 			"document": DocumentDefinition{
 				Kind:    t.Kind,
 				Private: t.Private,
+				ID:      t.CustomID,
 			},
 		}, nil
 

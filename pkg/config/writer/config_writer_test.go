@@ -1339,6 +1339,20 @@ func TestWriteConfigs(t *testing.T) {
 					},
 					Skip: true,
 				},
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/document-dashboard/c.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "document",
+						ConfigId: "configId4",
+					},
+					Type:           config.DocumentType{Kind: config.DashboardKind, CustomID: "custom-id"},
+					OriginObjectId: "custom-id",
+					Parameters: map[string]parameter.Parameter{
+						config.NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					Skip: true,
+				},
 			},
 			expectedConfigs: map[string]persistence.TopLevelDefinition{
 				"document-dashboard": {
@@ -1367,6 +1381,19 @@ func TestWriteConfigs(t *testing.T) {
 							},
 							Type: persistence.TypeDefinition{
 								Type: config.DocumentType{Kind: config.DashboardKind, Private: true},
+							},
+						},
+						{
+							Id: "configId4",
+							Config: persistence.ConfigDefinition{
+								Name:           "name",
+								Parameters:     nil,
+								Template:       "c.json",
+								OriginObjectId: "custom-id",
+								Skip:           true,
+							},
+							Type: persistence.TypeDefinition{
+								Type: config.DocumentType{Kind: config.DashboardKind, Private: false, CustomID: "custom-id"},
 							},
 						},
 					},

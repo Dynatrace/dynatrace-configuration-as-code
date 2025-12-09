@@ -108,6 +108,9 @@ type DocumentType struct {
 
 	// Private indicates if a document is private, otherwise by default it is visible to other users.
 	Private bool
+
+	// CustomID is an optional custom identifier for the document. If not provided, Dynatrace will generate one.
+	CustomID string
 }
 
 // DocumentKind defines the type of document. Currently, it can be a dashboard or a notebook.
