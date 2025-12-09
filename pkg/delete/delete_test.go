@@ -38,7 +38,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils/matcher"
@@ -954,10 +953,7 @@ func TestDelete_Documents(t *testing.T) {
 
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 		c := client.NewMockDocumentClient(gomock.NewController(t))
-		c.EXPECT().List(gomock.Any(), gomock.Eq(fmt.Sprintf("externalId=='%s'", externalID))).
-			Times(1).
-			Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: "originObjectID"}}}}, nil)
-		c.EXPECT().Delete(gomock.Any(), gomock.Eq("originObjectID")).Times(1)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq(externalID)).Times(1)
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
 		err := delete.Configs(t.Context(), client.ClientSet{DocumentClient: c}, entriesToDelete)
@@ -973,31 +969,11 @@ func TestDelete_Documents(t *testing.T) {
 
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 		c := client.NewMockDocumentClient(gomock.NewController(t))
-		c.EXPECT().List(gomock.Any(), gomock.Eq(fmt.Sprintf("externalId=='%s'", externalID))).
-			Times(1).
-			Return(documents.ListResponse{Responses: []documents.Response{}}, nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq(externalID)).Times(1).Return(libAPI.Response{}, coreapi.APIError{StatusCode: http.StatusNotFound})
 
 		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
 		err := delete.Configs(t.Context(), client.ClientSet{DocumentClient: c}, entriesToDelete)
 		assert.NoError(t, err)
-	})
-
-	t.Run("config declared via coordinate have multiple match - no delete, no error", func(t *testing.T) {
-		given := pointer.DeletePointer{
-			Type:       "document",
-			Identifier: "monaco_identifier",
-			Project:    "project",
-		}
-
-		externalID := idutils.GenerateExternalID(given.AsCoordinate())
-		c := client.NewMockDocumentClient(gomock.NewController(t))
-		c.EXPECT().List(gomock.Any(), gomock.Eq(fmt.Sprintf("externalId=='%s'", externalID))).
-			Times(1).
-			Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: "originObjectID_1"}}, {Metadata: documents.Metadata{ID: "originObjectID_2"}}}}, nil)
-
-		entriesToDelete := delete.DeleteEntries{given.Type: {given}}
-		err := delete.Configs(t.Context(), client.ClientSet{DocumentClient: c}, entriesToDelete)
-		assert.Error(t, err)
 	})
 
 	t.Run("delete via originID", func(t *testing.T) {

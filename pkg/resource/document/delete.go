@@ -63,22 +63,8 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 
 	if id == "" {
 		coordinate := dp.AsCoordinate()
-		logger = slog.With(log.CoordinateAttr(coordinate))
-		extID := idutils.GenerateExternalID(coordinate)
-
-		var err error
-		id, err = d.tryGetDocumentIDByExternalID(ctx, extID)
-		if err != nil {
-			logger.ErrorContext(ctx, "Failed to get document by external ID", slog.String("externalId", extID), log.ErrorAttr(err))
-			return err
-		}
-
-		if id == "" {
-			logger.DebugContext(ctx, "No document found with external ID", slog.String("externalId", extID))
-			return nil
-		}
-
-		logger = logger.With(slog.String("id", id))
+		id = idutils.GenerateExternalID(coordinate)
+		logger = slog.With(log.CoordinateAttr(coordinate), slog.String("id", id))
 	}
 
 	_, err := d.source.Delete(ctx, id)
@@ -89,23 +75,6 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 
 	logger.DebugContext(ctx, "Document deleted successfully")
 	return nil
-}
-
-func (d Deleter) tryGetDocumentIDByExternalID(ctx context.Context, externalId string) (string, error) {
-	switch listResponse, err := d.source.List(ctx, fmt.Sprintf("externalId=='%s'", externalId)); {
-	case err != nil:
-		return "", err
-	case len(listResponse.Responses) == 0:
-		return "", nil
-	case len(listResponse.Responses) > 1:
-		var ids []string
-		for _, r := range listResponse.Responses {
-			ids = append(ids, r.ID)
-		}
-		return "", fmt.Errorf("found more than one document with same externalId (%s); matching document IDs: %s", externalId, ids)
-	default:
-		return listResponse.Responses[0].ID, nil
-	}
 }
 
 func (d Deleter) DeleteAll(ctx context.Context) error {
