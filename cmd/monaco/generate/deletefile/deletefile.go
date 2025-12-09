@@ -227,6 +227,14 @@ func createDeleteEntry(c config.Config, apis api.APIs, project project.Project) 
 		return createConfigAPIEntry(c, apis, project)
 	}
 
+	// An externalID can't be used if there is a customID set on a DocumentType
+	if docType, isDocument := c.Type.(config.DocumentType); isDocument && docType.CustomID != "" {
+		return persistence.DeleteEntry{
+			Type:     c.Coordinate.Type,
+			ObjectId: docType.CustomID,
+		}, nil
+	}
+
 	return persistence.DeleteEntry{
 		Project:  c.Coordinate.Project,
 		Type:     c.Coordinate.Type,
