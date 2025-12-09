@@ -21,7 +21,6 @@ package document_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -49,10 +48,6 @@ func (s *deleteStubClient) Delete(_ context.Context, id string) (libAPI.Response
 	return s.delete(id)
 }
 
-func externalIDToFilter(externalId string) string {
-	return fmt.Sprintf("externalId=='%s'", externalId)
-}
-
 func TestDeleteByCoordinate(t *testing.T) {
 	t.Run("success if one document matches generated external ID", func(t *testing.T) {
 		given := pointer.DeletePointer{
@@ -63,20 +58,8 @@ func TestDeleteByCoordinate(t *testing.T) {
 
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 		c := deleteStubClient{
-			list: func(filter string) (documents.ListResponse, error) {
-				assert.Equal(t, externalIDToFilter(externalID), filter)
-				return documents.ListResponse{
-					libAPI.Response{},
-					[]documents.Response{
-						{
-							libAPI.Response{},
-							documents.Metadata{ID: "uid_1"},
-						},
-					},
-				}, nil
-			},
 			delete: func(id string) (libAPI.Response, error) {
-				assert.Equal(t, "uid_1", id)
+				assert.Equal(t, externalID, id)
 				return libAPI.Response{}, nil
 			},
 		}
@@ -95,71 +78,15 @@ func TestDeleteByCoordinate(t *testing.T) {
 
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 		c := deleteStubClient{
-			list: func(filter string) (documents.ListResponse, error) {
-				assert.Equal(t, externalIDToFilter(externalID), filter)
-				return documents.ListResponse{
-					libAPI.Response{},
-					[]documents.Response{},
-				}, nil
+			delete: func(id string) (libAPI.Response, error) {
+				assert.Equal(t, externalID, id)
+				return libAPI.Response{}, libAPI.APIError{StatusCode: http.StatusNotFound}
 			},
 		}
 
 		err := document.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
 		assert.NoError(t, err)
-		assert.False(t, c.deleteCalled, "delete command was invoked")
-	})
-
-	t.Run("error if multiple documents are matching generated external ID", func(t *testing.T) {
-		given := pointer.DeletePointer{
-			Type:       "document",
-			Identifier: "monaco_identifier",
-			Project:    "project",
-		}
-
-		externalID := idutils.GenerateExternalID(given.AsCoordinate())
-		c := deleteStubClient{
-			list: func(filter string) (documents.ListResponse, error) {
-				assert.Equal(t, externalIDToFilter(externalID), filter)
-				return documents.ListResponse{
-					libAPI.Response{},
-					[]documents.Response{
-						{
-							libAPI.Response{},
-							documents.Metadata{ID: "uid_1"},
-						},
-						{
-							libAPI.Response{},
-							documents.Metadata{ID: "uid_2"},
-						},
-					},
-				}, nil
-			},
-		}
-
-		err := document.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
-		assert.Error(t, err)
-		assert.False(t, c.deleteCalled, "it's not known what needs to be deleted")
-	})
-
-	t.Run("error if list fails", func(t *testing.T) {
-		given := pointer.DeletePointer{
-			Type:       "document",
-			Identifier: "monaco_identifier",
-			Project:    "project",
-		}
-
-		c := deleteStubClient{
-			list: func(filter string) (documents.ListResponse, error) {
-				return documents.ListResponse{
-					libAPI.Response{},
-					[]documents.Response{},
-				}, errors.New("some unpredictable error")
-			},
-		}
-
-		err := document.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given})
-		assert.Error(t, err)
-		assert.False(t, c.deleteCalled, "delete command was invoked")
+		assert.True(t, c.deleteCalled, "delete command was invoked")
 	})
 }
 
