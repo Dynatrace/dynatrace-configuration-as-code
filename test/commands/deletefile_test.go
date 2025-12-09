@@ -101,7 +101,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "scheduling-rule", "ca-scheduling-rule")
 	assertDeleteEntries(t, entries, "workflow", "ca-jira-issue-workflow")
 	assertDeleteEntries(t, entries, "bucket", "my-bucket")
-	assertDeleteEntries(t, entries, "document", "my-dashboard", "my-notebook")
+	assertDeleteEntries(t, entries, "document", "my-dashboard", "my-notebook", "" /*non-coordinate references (direct ones) don't have an identifier */)
 	assertDeleteEntries(t, entries, "segment", "segmentID")
 
 	assert.Empty(t, entries[api.DashboardShareSettings])
@@ -131,6 +131,34 @@ func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {
 		ConfigName:   "first-kua",
 		Scope:        "My first Web application",
 		CustomValues: map[string]string{"actionType": "Load", "domain": "domain.com"},
+	})
+}
+
+func TestGeneratesValidDeleteFileWithCorrectDocumentPointers(t *testing.T) {
+	t.Setenv("TOKEN", "some-value")
+
+	fs := testutils.CreateTestFileSystem()
+	outputFolder := "output-folder"
+	err := monaco.Run(t, fs, fmt.Sprintf("monaco generate deletefile ./testdata/deletefile/manifest.yaml --types=document --output-folder=%s", outputFolder))
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join(outputFolder, "delete.yaml")
+	assertFileExists(t, fs, expectedFile)
+
+	deleteFileContent := readFile(t, fs, expectedFile)
+
+	var deleteEntries persistence.FullFileDefinition
+	err = yaml.Unmarshal(deleteFileContent, &deleteEntries)
+	require.NoError(t, err)
+
+	assert.Contains(t, deleteEntries.DeleteEntries, persistence.DeleteEntry{
+		Type:     string(config.DocumentTypeID),
+		ObjectId: "custom-id",
+	})
+	assert.Contains(t, deleteEntries.DeleteEntries, persistence.DeleteEntry{
+		Type:     string(config.DocumentTypeID),
+		Project:  "project",
+		ConfigId: "my-dashboard",
 	})
 }
 
