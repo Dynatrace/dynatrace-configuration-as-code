@@ -7,3 +7,12 @@ configs:
   type:
     document:
       kind: dashboard
+- id: my-dashboard-with-custom-id
+  config:
+    name: My dashboard with a custom ID
+    template: dashboard.json
+    skip: false
+  type:
+    document:
+      kind: dashboard
+      id: custom-id
