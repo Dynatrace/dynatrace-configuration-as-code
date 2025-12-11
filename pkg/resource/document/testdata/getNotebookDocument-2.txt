@@ -1,0 +1,11 @@
+--LGaFEwDyfzC3cW23idF7YWRXxPuNGk
+Content-Disposition: form-data; name="metadata"
+Content-Type: application/json
+
+{"modificationInfo":{"createdBy":"01234567-0123-0123-0123-0123456789ab","createdTime":"2024-04-02T11:49:51.342Z","lastModifiedBy":"01234567-0123-0123-0123-0123456789ab","lastModifiedTime":"2024-04-05T08:19:36.873Z"},"access":["read","delete","write"],"id":"my-custom-id","name":"Getting started","type":"notebook","isPrivate":true,"version":4,"owner":"01234567-0123-0123-0123-0123456789ab"}
+--LGaFEwDyfzC3cW23idF7YWRXxPuNGk
+Content-Disposition: form-data; name="content"; filename="Getting started"
+Content-Type: application/json
+
+{}
+--LGaFEwDyfzC3cW23idF7YWRXxPuNGk--
