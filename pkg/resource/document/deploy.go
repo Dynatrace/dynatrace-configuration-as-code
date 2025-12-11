@@ -55,17 +55,18 @@ func NewDeployAPI(source DeploySource) *DeployAPI {
 }
 
 func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
-	documentType, isPrivate, err := getDocumentAttributesFromConfigType(c.Type)
+	documentType, err := getDocumentType(c.Type)
 	if err != nil {
 		return entities.ResolvedEntity{}, fmt.Errorf("cannot get document type for config: %w", err)
 	}
 
+	documentKind, isPrivate := getDocumentAttributesFromConfigType(documentType)
 	documentName, ok := properties[config.NameParameter].(string)
 	if !ok {
 		return entities.ResolvedEntity{}, ErrMissingNameParameter
 	}
 
-	if documentType == documents.Dashboard {
+	if documentKind == documents.Dashboard {
 		if valErr := validateDashboardPayload(renderedConfig); valErr != nil {
 			return entities.ResolvedEntity{}, valErr
 		}
@@ -73,7 +74,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 
 	// strategy 1: if an origin id is available, try to update that document
 	if c.OriginObjectId != "" {
-		updateResponse, err := d.source.Update(ctx, c.OriginObjectId, documentName, isPrivate, []byte(renderedConfig), documentType)
+		updateResponse, err := d.source.Update(ctx, c.OriginObjectId, documentName, isPrivate, []byte(renderedConfig), documentKind)
 		if err == nil {
 			md, err := documents.UnmarshallMetadata(updateResponse.Data)
 			if err != nil {
@@ -96,7 +97,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	}
 
 	if id != "" {
-		updateResponse, err := d.source.Update(ctx, id, documentName, isPrivate, []byte(renderedConfig), documentType)
+		updateResponse, err := d.source.Update(ctx, id, documentName, isPrivate, []byte(renderedConfig), documentKind)
 		if err != nil {
 			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", c.OriginObjectId)).WithError(err)
 		}
@@ -109,7 +110,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	}
 
 	// strategy 3: try to create a new document
-	createResponse, err := d.source.Create(ctx, documentName, isPrivate, externalId, []byte(renderedConfig), documentType)
+	createResponse, err := d.source.Create(ctx, documentName, isPrivate, externalId, []byte(renderedConfig), documentKind)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", documentName)).WithError(err)
 	}
@@ -148,18 +149,22 @@ func createResolvedEntity(id string, coordinate coordinate.Coordinate, propertie
 	}
 }
 
-func getDocumentAttributesFromConfigType(t config.Type) (docType string, private bool, err error) {
+func getDocumentType(t config.Type) (config.DocumentType, error) {
 	documentType, ok := t.(config.DocumentType)
 	if !ok {
-		return "", false, fmt.Errorf("expected document config type but found %v", t)
+		return config.DocumentType{}, fmt.Errorf("expected document config type but found %v", t)
 	}
 
+	return documentType, nil
+}
+
+func getDocumentAttributesFromConfigType(documentType config.DocumentType) (docType string, private bool) {
 	docType, found := documentKindToType[documentType.Kind]
 	if !found {
-		return "", false, nil
+		return "", false
 	}
 
-	return docType, documentType.Private, nil
+	return docType, documentType.Private
 }
 
 // validateDashboardPayload returns an error if the JSON data is 1) malformed or 2) if the payload is not a Dynatrace platform dashboard payload.
