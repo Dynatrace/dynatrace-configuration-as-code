@@ -34,8 +34,7 @@ import (
 
 //go:generate mockgen -source=deploy.go -destination=document_mock.go -package=document DeploySource
 type DeploySource interface {
-	List(ctx context.Context, filter string) (documents.ListResponse, error)
-	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (api.Response, error)
+	Create(ctx context.Context, name string, isPrivate bool, customId string, data []byte, documentType documents.DocumentType) (api.Response, error)
 	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (api.Response, error)
 }
 
@@ -57,7 +56,7 @@ func NewDeployAPI(source DeploySource) *DeployAPI {
 func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, renderedConfig string, c *config.Config) (entities.ResolvedEntity, error) {
 	documentType, err := getDocumentType(c.Type)
 	if err != nil {
-		return entities.ResolvedEntity{}, fmt.Errorf("cannot get document type for config: %w", err)
+		return entities.ResolvedEntity{}, fmt.Errorf("cannot get document type: %w", err)
 	}
 
 	documentKind, isPrivate := getDocumentAttributesFromConfigType(documentType)
@@ -72,47 +71,50 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 		}
 	}
 
-	// strategy 1: if an origin id is available, try to update that document
+	// Try updating using origin ID
 	if c.OriginObjectId != "" {
-		updateResponse, err := d.source.Update(ctx, c.OriginObjectId, documentName, isPrivate, []byte(renderedConfig), documentKind)
-		if err == nil {
-			md, err := documents.UnmarshallMetadata(updateResponse.Data)
-			if err != nil {
-				return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
-			}
-			return createResolvedEntity(md.ID, c.Coordinate, properties), nil
+		entity, err := d.updateDocument(ctx, c.OriginObjectId, documentName, isPrivate, renderedConfig, documentKind, c, properties)
+		if err == nil || !api.IsNotFoundError(err) {
+			return entity, err
 		}
+		// If not found, continue to try with customID
+	}
 
+	// Try updating using custom ID or generated external ID
+	customID := documentType.CustomID
+	if customID == "" {
+		customID = idutils.GenerateExternalID(c.Coordinate)
+	}
+
+	entity, err := d.updateDocument(ctx, customID, documentName, isPrivate, renderedConfig, documentKind, c, properties)
+	if err == nil || !api.IsNotFoundError(err) {
+		return entity, err
+	}
+
+	// If not found, create a new document with custom ID or generated external ID
+	return d.createDocument(ctx, customID, documentName, isPrivate, renderedConfig, documentKind, c, properties)
+}
+
+func (d DeployAPI) updateDocument(ctx context.Context, id, name string, isPrivate bool, config string, kind string, c *config.Config, properties parameter.Properties) (entity entities.ResolvedEntity, err error) {
+	updateResponse, err := d.source.Update(ctx, id, name, isPrivate, []byte(config), kind)
+	if err != nil {
 		if !api.IsNotFoundError(err) {
-			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", c.OriginObjectId)).WithError(err)
+			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", id)).WithError(err)
 		}
+		return entities.ResolvedEntity{}, err
 	}
 
-	// strategy 2: find and update document via external id
-	externalId := idutils.GenerateExternalID(c.Coordinate)
-
-	id, err := d.tryGetDocumentIDByExternalID(ctx, externalId)
+	md, err := documents.UnmarshallMetadata(updateResponse.Data)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("error finding document with externalId='%s'", externalId)).WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
 	}
+	return createResolvedEntity(md.ID, c.Coordinate, properties), nil
+}
 
-	if id != "" {
-		updateResponse, err := d.source.Update(ctx, id, documentName, isPrivate, []byte(renderedConfig), documentKind)
-		if err != nil {
-			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", c.OriginObjectId)).WithError(err)
-		}
-
-		md, err := documents.UnmarshallMetadata(updateResponse.Data)
-		if err != nil {
-			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
-		}
-		return createResolvedEntity(md.ID, c.Coordinate, properties), nil
-	}
-
-	// strategy 3: try to create a new document
-	createResponse, err := d.source.Create(ctx, documentName, isPrivate, externalId, []byte(renderedConfig), documentKind)
+func (d DeployAPI) createDocument(ctx context.Context, id, name string, isPrivate bool, config string, kind string, c *config.Config, properties parameter.Properties) (entities.ResolvedEntity, error) {
+	createResponse, err := d.source.Create(ctx, name, isPrivate, id, []byte(config), kind)
 	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", documentName)).WithError(err)
+		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", name)).WithError(err)
 	}
 	md, err := documents.UnmarshallMetadata(createResponse.Data)
 	if err != nil {
@@ -120,24 +122,6 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	}
 
 	return createResolvedEntity(md.ID, c.Coordinate, properties), nil
-}
-
-func (d DeployAPI) tryGetDocumentIDByExternalID(ctx context.Context, externalId string) (string, error) {
-	listResponse, err := d.source.List(ctx, fmt.Sprintf("externalId=='%s'", externalId))
-	if err != nil {
-		return "", err
-	}
-
-	//  it is an error if more than one document was found with the same external id: it should be unique
-	if len(listResponse.Responses) > 1 {
-		return "", fmt.Errorf("multiple documents found with externalId='%s'", externalId)
-	}
-
-	if len(listResponse.Responses) == 0 {
-		return "", nil
-	}
-
-	return listResponse.Responses[0].ID, nil
 }
 
 func createResolvedEntity(id string, coordinate coordinate.Coordinate, properties parameter.Properties) entities.ResolvedEntity {

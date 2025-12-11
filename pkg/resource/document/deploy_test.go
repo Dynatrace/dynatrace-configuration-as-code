@@ -30,7 +30,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -43,8 +42,6 @@ import (
 )
 
 const documentName = "my dashboard"
-
-const documentIdForExternalId = "document-id-for-external-id"
 
 var documentConfigCoordinate = coordinate.Coordinate{
 	Project:  "proj",
@@ -83,7 +80,77 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 	}
 
 	expectedExternalId := idutils.GenerateExternalID(documentConfigCoordinate)
-	expectedFilterString := fmt.Sprintf("externalId=='%s'", expectedExternalId)
+	t.Run("Update by originObjectId succeeds", func(t *testing.T) {
+		client := document.NewMockDeploySource(gomock.NewController(t))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Eq(documentName), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, originObjectId))}, nil)
+
+		result, err := runDeployTest(t, client, documentConfig)
+		assert.NoError(t, err)
+		require.NotEmpty(t, result.Properties)
+		assert.Equal(t, originObjectId, result.Properties[config.IdParameter])
+	})
+
+	t.Run("Update by originObjectId fails", func(t *testing.T) {
+		client := document.NewMockDeploySource(gomock.NewController(t))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Eq(documentName), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
+
+		_, err := runDeployTest(t, client, documentConfig)
+		assert.Error(t, err)
+	})
+
+	t.Run("Document with originObjectId doesnt exist, update by externalId succeeds", func(t *testing.T) {
+		client := document.NewMockDeploySource(gomock.NewController(t))
+		client.EXPECT().
+			Update(gomock.Any(), originObjectId, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+			Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().
+			Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+			Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, expectedExternalId))}, nil)
+		result, err := runDeployTest(t, client, documentConfig)
+		assert.NoError(t, err)
+		require.NotEmpty(t, result.Properties)
+		assert.Equal(t, expectedExternalId, result.Properties[config.IdParameter])
+	})
+
+	t.Run("Document with originObjectId doesnt exist, update by externalId fails", func(t *testing.T) {
+		client := document.NewMockDeploySource(gomock.NewController(t))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
+		_, err := runDeployTest(t, client, documentConfig)
+		assert.Error(t, err)
+	})
+
+	t.Run("Document with originObjectId doesnt exist, document with externalId doesnt exist, create succeeds", func(t *testing.T) {
+		client := document.NewMockDeploySource(gomock.NewController(t))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, expectedExternalId))}, nil)
+		result, err := runDeployTest(t, client, documentConfig)
+		assert.NoError(t, err)
+		require.NotEmpty(t, result.Properties)
+		assert.Equal(t, expectedExternalId, result.Properties[config.IdParameter])
+	})
+
+	t.Run("Document with originObjectId doesnt exist, document with externalId doesnt exist, create fails", func(t *testing.T) {
+		client := document.NewMockDeploySource(gomock.NewController(t))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
+		_, err := runDeployTest(t, client, documentConfig)
+		assert.Error(t, err)
+	})
+}
+
+func TestDeploy_ConfigWithOriginObjectId_WithCustomID(t *testing.T) {
+	const originObjectId = "document-id"
+	const documentCustomID = "custom-id"
+	documentConfig := &config.Config{
+		Type:           config.DocumentType{Kind: config.DashboardKind, CustomID: documentCustomID},
+		Coordinate:     documentConfigCoordinate,
+		OriginObjectId: originObjectId,
+		Template:       testutils.GenerateDummyTemplate(t),
+		Parameters:     defaultParameters,
+	}
 
 	t.Run("Update by originObjectId succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
@@ -103,63 +170,50 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("Document with originObjectId doesnt exist, list and update by externalId succeeds", func(t *testing.T) {
+	t.Run("Document with originObjectId doesnt exist, update by customID succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().
 			Update(gomock.Any(), originObjectId, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 			Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 		client.EXPECT().
-			List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).
-			Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: documentIdForExternalId}}}}, nil)
-		client.EXPECT().
-			Update(gomock.Any(), gomock.Eq(documentIdForExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-			Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentIdForExternalId))}, nil)
+			Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+			Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentCustomID))}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
-		assert.Equal(t, documentIdForExternalId, result.Properties[config.IdParameter])
+		assert.Equal(t, documentCustomID, result.Properties[config.IdParameter])
 	})
 
-	t.Run("Document with originObjectId doesnt exist, list by externalId fails", func(t *testing.T) {
+	t.Run("Document with originObjectId doesnt exist, update by customID fails", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
-		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, errors.New("connection error"))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
 		_, err := runDeployTest(t, client, documentConfig)
 		assert.Error(t, err)
 	})
 
-	t.Run("Document with originObjectId doesnt exist, list by externalId succeeds, update fails", func(t *testing.T) {
+	t.Run("Document with originObjectId doesnt exist, document with customID doesnt exist, create succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
-		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: documentIdForExternalId}}}}, nil)
-		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentIdForExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
-		_, err := runDeployTest(t, client, documentConfig)
-		assert.Error(t, err)
-	})
-
-	t.Run("Document with originObjectId doesnt exist, document with externalId doesnt exist, create succeeds", func(t *testing.T) {
-		client := document.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
-		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, nil)
-		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentIdForExternalId))}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentCustomID))}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
-		assert.Equal(t, documentIdForExternalId, result.Properties[config.IdParameter])
+		assert.Equal(t, documentCustomID, result.Properties[config.IdParameter])
 	})
 
-	t.Run("Document with originObjectId doesnt exist, document with externalId doesnt exist, create fails", func(t *testing.T) {
+	t.Run("Document with originObjectId doesnt exist, document with customID doesnt exist, create fails", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
-		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, nil)
-		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
 		_, err := runDeployTest(t, client, documentConfig)
 		assert.Error(t, err)
 	})
 }
 
 func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
-
 	documentConfig := &config.Config{
 		Type:       config.DocumentType{Kind: config.DashboardKind},
 		Coordinate: documentConfigCoordinate,
@@ -169,47 +223,80 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 
 	expectedExternalId := idutils.GenerateExternalID(documentConfigCoordinate)
 
-	expectedFilterString := fmt.Sprintf("externalId=='%s'", expectedExternalId)
-
-	t.Run("Document list and update by externalId succeeds", func(t *testing.T) {
+	t.Run("Document update by externalId succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: documentIdForExternalId}}}}, nil)
-		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentIdForExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentIdForExternalId))}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, expectedExternalId))}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
-		assert.Equal(t, documentIdForExternalId, result.Properties[config.IdParameter])
+		assert.Equal(t, expectedExternalId, result.Properties[config.IdParameter])
 	})
 
-	t.Run("Document list by externalId fails", func(t *testing.T) {
+	t.Run("Document update by externalId fails", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, errors.New("connection error"))
-		_, err := runDeployTest(t, client, documentConfig)
-		assert.Error(t, err)
-	})
-
-	t.Run("Document list by externalId succeeds, update fails", func(t *testing.T) {
-		client := document.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: documentIdForExternalId}}}}, nil)
-		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentIdForExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
 		_, err := runDeployTest(t, client, documentConfig)
 		assert.Error(t, err)
 	})
 
 	t.Run("Document with externalId doesnt exist, create succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, nil)
-		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentIdForExternalId))}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, expectedExternalId))}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
-		assert.Equal(t, documentIdForExternalId, result.Properties[config.IdParameter])
+		assert.Equal(t, expectedExternalId, result.Properties[config.IdParameter])
 	})
 
 	t.Run("Document with externalId doesnt exist, create fails", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().List(gomock.Any(), gomock.Eq(expectedFilterString)).Times(1).Return(documents.ListResponse{}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
+		_, err := runDeployTest(t, client, documentConfig)
+		assert.Error(t, err)
+	})
+}
+
+func TestDeploy_ConfigWithoutOriginObjectId_WithCustomID(t *testing.T) {
+	documentCustomID := "custom-id"
+	documentConfig := &config.Config{
+		Type:       config.DocumentType{Kind: config.DashboardKind, CustomID: documentCustomID},
+		Coordinate: documentConfigCoordinate,
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: defaultParameters,
+	}
+
+	t.Run("Document update by customID succeeds", func(t *testing.T) {
+		client := document.NewMockDeploySource(gomock.NewController(t))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentCustomID))}, nil)
+		result, err := runDeployTest(t, client, documentConfig)
+		assert.NoError(t, err)
+		require.NotEmpty(t, result.Properties)
+		assert.Equal(t, documentCustomID, result.Properties[config.IdParameter])
+	})
+
+	t.Run("Document update by customID fails", func(t *testing.T) {
+		client := document.NewMockDeploySource(gomock.NewController(t))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
+		_, err := runDeployTest(t, client, documentConfig)
+		assert.Error(t, err)
+	})
+
+	t.Run("Document with customID doesnt exist, create succeeds", func(t *testing.T) {
+		client := document.NewMockDeploySource(gomock.NewController(t))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentCustomID))}, nil)
+		result, err := runDeployTest(t, client, documentConfig)
+		assert.NoError(t, err)
+		require.NotEmpty(t, result.Properties)
+		assert.Equal(t, documentCustomID, result.Properties[config.IdParameter])
+	})
+
+	t.Run("Document with customID doesnt exist, create fails", func(t *testing.T) {
+		client := document.NewMockDeploySource(gomock.NewController(t))
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, errors.New("connection error"))
 		_, err := runDeployTest(t, client, documentConfig)
 		assert.Error(t, err)
 	})
@@ -268,13 +355,31 @@ func TestDeploy_WithInvalidUpdateResponseViaExternalID_Fails(t *testing.T) {
 		Parameters: defaultParameters,
 	}
 
+	expectedExternalId := idutils.GenerateExternalID(documentConfigCoordinate)
+
 	cl := document.NewMockDeploySource(gomock.NewController(t))
 	cl.EXPECT().
-		List(gomock.Any(), gomock.Any()).
+		Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Times(1).
-		Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: documentIdForExternalId}}}}, nil)
+		Return(api.Response{Data: make([]byte, 0)}, nil)
+
+	_, err := runDeployTest(t, cl, documentConfig)
+	synErr := &json.SyntaxError{}
+	assert.ErrorAs(t, err, &synErr)
+}
+
+func TestDeploy_WithInvalidUpdateResponseViaCustomID_Fails(t *testing.T) {
+	documentCustomID := "custom-id"
+	documentConfig := &config.Config{
+		Type:       config.DocumentType{Kind: config.DashboardKind, CustomID: documentCustomID},
+		Coordinate: documentConfigCoordinate,
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: defaultParameters,
+	}
+
+	cl := document.NewMockDeploySource(gomock.NewController(t))
 	cl.EXPECT().
-		Update(gomock.Any(), gomock.Eq(documentIdForExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Times(1).
 		Return(api.Response{Data: make([]byte, 0)}, nil)
 
@@ -292,10 +397,11 @@ func TestDeploy_WithInvalidUpdateResponseViaCreate_Fails(t *testing.T) {
 	}
 
 	cl := document.NewMockDeploySource(gomock.NewController(t))
+
 	cl.EXPECT().
-		List(gomock.Any(), gomock.Any()).
+		Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Times(1).
-		Return(documents.ListResponse{Responses: []documents.Response{}}, nil)
+		Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 
 	cl.EXPECT().
 		Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -305,24 +411,6 @@ func TestDeploy_WithInvalidUpdateResponseViaCreate_Fails(t *testing.T) {
 	_, err := runDeployTest(t, cl, documentConfig)
 	synErr := &json.SyntaxError{}
 	assert.ErrorAs(t, err, &synErr)
-}
-
-func TestDeploy_WithDuplicateExternalID_Fails(t *testing.T) {
-	documentConfig := &config.Config{
-		Type:       config.DocumentType{Kind: config.DashboardKind},
-		Coordinate: documentConfigCoordinate,
-		Template:   testutils.GenerateDummyTemplate(t),
-		Parameters: defaultParameters,
-	}
-
-	cl := document.NewMockDeploySource(gomock.NewController(t))
-	cl.EXPECT().
-		List(gomock.Any(), gomock.Any()).
-		Times(1).
-		Return(documents.ListResponse{Responses: []documents.Response{{Metadata: documents.Metadata{ID: documentIdForExternalId}}, {Metadata: documents.Metadata{ID: documentIdForExternalId}}}}, nil)
-
-	_, err := runDeployTest(t, cl, documentConfig)
-	assert.ErrorContains(t, err, "multiple documents")
 }
 
 func TestDeploy_WithInvalidPayload_Fails(t *testing.T) {
