@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -93,12 +94,10 @@ func isReadyMadeByAnAppOrExtension(metadata documents.Metadata) bool {
 }
 
 func convertDocumentResponse(ctx context.Context, documentSource DownloadSource, projectName string, response documents.Response) (config.Config, error) {
-	documentType, err := validateDocumentType(response.Type)
+	documentType, err := getDocumentTypeFromResponse(response)
 	if err != nil {
 		return config.Config{}, err
 	}
-
-	documentType.Private = response.IsPrivate
 
 	documentResponse, err := documentSource.Get(ctx, response.ID)
 	if err != nil {
@@ -142,11 +141,16 @@ func createTemplateFromResponse(response documents.Response) (template.Template,
 	return template.NewInMemoryTemplate(response.ID, string(bytes)), nil
 }
 
-func validateDocumentType(documentType string) (config.DocumentType, error) {
-	kind, f := documentTypeToKind[documentType]
+func getDocumentTypeFromResponse(response documents.Response) (config.DocumentType, error) {
+	kind, f := documentTypeToKind[response.Type]
 	if !f {
-		return config.DocumentType{}, fmt.Errorf("unsupported document type: %s", documentType)
+		return config.DocumentType{}, fmt.Errorf("unsupported document type: %s", response.Type)
 	}
 
-	return config.DocumentType{Kind: kind}, nil
+	if idutils.IsUUID(response.ID) {
+		return config.DocumentType{Kind: kind, Private: response.IsPrivate}, nil
+	}
+
+	// if the ID is not a UUID, it is a custom ID
+	return config.DocumentType{Kind: kind, Private: response.IsPrivate, CustomID: response.ID}, nil
 }
