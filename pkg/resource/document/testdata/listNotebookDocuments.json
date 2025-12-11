@@ -20,6 +20,27 @@
         "owner": "01234567-0123-0123-0123-0123456789ab",
         "originAppId": null,
         "originExtensionId": null
+      },
+        {
+            "modificationInfo": {
+                "createdBy": "01234567-0123-0123-0123-0123456789ab",
+                "createdTime": "2024-04-02T11:49:47.726Z",
+                "lastModifiedBy": "01234567-0123-0123-0123-0123456789ab",
+                "lastModifiedTime": "2024-04-05T08:20:15.143Z"
+            },
+            "access": [
+                "read",
+                "delete",
+                "write"
+            ],
+            "id": "my-custom-id",
+            "name": "Getting started",
+            "type": "notebook",
+            "isPrivate": true,
+            "version": 3,
+            "owner": "01234567-0123-0123-0123-0123456789ab",
+            "originAppId": null,
+            "originExtensionId": null
       }
     ],
     "nextPageKey": null,
