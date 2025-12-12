@@ -66,61 +66,57 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	}
 
 	if documentKind == documents.Dashboard {
-		if valErr := validateDashboardPayload(renderedConfig); valErr != nil {
-			return entities.ResolvedEntity{}, valErr
+		if err := validateDashboardPayload(renderedConfig); err != nil {
+			return entities.ResolvedEntity{}, err
 		}
 	}
 
-	// Try updating using origin ID
-	if c.OriginObjectId != "" {
-		entity, err := d.updateDocument(ctx, c.OriginObjectId, documentName, isPrivate, renderedConfig, documentKind, c, properties)
-		if err == nil || !api.IsNotFoundError(err) {
-			return entity, err
-		}
-		// If not found, continue to try with customID
-	}
-
-	// Try updating using custom ID or generated external ID
-	customID := documentType.CustomID
-	if customID == "" {
-		customID = idutils.GenerateExternalID(c.Coordinate)
-	}
-
-	entity, err := d.updateDocument(ctx, customID, documentName, isPrivate, renderedConfig, documentKind, c, properties)
-	if err == nil || !api.IsNotFoundError(err) {
-		return entity, err
-	}
-
-	// If not found, create a new document with custom ID or generated external ID
-	return d.createDocument(ctx, customID, documentName, isPrivate, renderedConfig, documentKind, c, properties)
-}
-
-func (d DeployAPI) updateDocument(ctx context.Context, id, name string, isPrivate bool, config string, kind string, c *config.Config, properties parameter.Properties) (entity entities.ResolvedEntity, err error) {
-	updateResponse, err := d.source.Update(ctx, id, name, isPrivate, []byte(config), kind)
+	customID := resolveCustomID(documentType.CustomID, c.Coordinate)
+	response, err := d.upsertDocument(ctx, c, documentName, isPrivate, customID, []byte(renderedConfig), documentKind)
 	if err != nil {
-		if !api.IsNotFoundError(err) {
-			return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", id)).WithError(err)
-		}
 		return entities.ResolvedEntity{}, err
 	}
 
-	md, err := documents.UnmarshallMetadata(updateResponse.Data)
-	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
-	}
-	return createResolvedEntity(md.ID, c.Coordinate, properties), nil
+	return handleResponse(response, c, properties)
 }
 
-func (d DeployAPI) createDocument(ctx context.Context, id, name string, isPrivate bool, config string, kind string, c *config.Config, properties parameter.Properties) (entities.ResolvedEntity, error) {
-	createResponse, err := d.source.Create(ctx, name, isPrivate, id, []byte(config), kind)
-	if err != nil {
-		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", name)).WithError(err)
+func resolveCustomID(configCustomID string, coord coordinate.Coordinate) string {
+	// customID is either the one defined in the config, or a generated external ID
+	if configCustomID != "" {
+		return configCustomID
 	}
-	md, err := documents.UnmarshallMetadata(createResponse.Data)
+	return idutils.GenerateExternalID(coord)
+}
+
+func (d DeployAPI) upsertDocument(ctx context.Context, c *config.Config, name string, isPrivate bool, customID string, payload []byte, kind documents.DocumentType) (api.Response, error) {
+	// We try both IDs in order: originObjectId (UUID) first, then customID
+	idsToTry := []string{c.OriginObjectId, customID}
+	for _, id := range idsToTry {
+		if id == "" {
+			continue
+		}
+		response, err := d.source.Update(ctx, id, name, isPrivate, payload, kind)
+		if err == nil {
+			return response, nil
+		}
+		if !api.IsNotFoundError(err) {
+			return api.Response{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to update document '%s'", id)).WithError(err)
+		}
+	}
+
+	// If not found, create a new document with custom ID or generated external ID
+	response, err := d.source.Create(ctx, name, isPrivate, customID, payload, kind)
+	if err != nil {
+		return api.Response{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", name)).WithError(err)
+	}
+	return response, nil
+}
+
+func handleResponse(response api.Response, c *config.Config, properties parameter.Properties) (entities.ResolvedEntity, error) {
+	md, err := documents.UnmarshallMetadata(response.Data)
 	if err != nil {
 		return entities.ResolvedEntity{}, deployErrors.NewConfigDeployErr(c, errReadDataMsg).WithError(err)
 	}
-
 	return createResolvedEntity(md.ID, c.Coordinate, properties), nil
 }
 
