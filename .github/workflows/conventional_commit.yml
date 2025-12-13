@@ -18,4 +18,4 @@ jobs:
         with:
           fetch-depth: 0
       - name: Commitsar check
-        uses: aevea/commitsar@916c7b483225a30d3a17f407fa25f5b25888ea69 #v0.20.2
+        uses: aevea/commitsar@2ff90444999e3c3a4619fcd7e1eaf72328165f47 #v1.0.1
