@@ -18,3 +18,5 @@ delete:
       environment: ${ENVIRONMENT_ID_2}
   - type: boundary
     name: My boundary %RAND%
+  - type: boundary
+    name: My boundary 2 %RAND%
