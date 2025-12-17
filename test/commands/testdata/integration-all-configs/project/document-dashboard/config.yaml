@@ -12,3 +12,17 @@ configs:
     - environment: classic_env
       override:
         skip: true # platform only config
+- id: cad82d3e-77d9-4efd-84b5-5bd579602d3d
+  config:
+    name: my-customid-dashboard
+    template: cad82d3e-77d9-4efd-84b5-5bd579602d3d.json
+    skip: false
+  type:
+    document:
+      kind: dashboard
+      private: false
+      id: my-customid-dashboard-id #monaco-test:underscore-to-dash
+  environmentOverrides:
+    - environment: classic_env
+      override:
+        skip: true # platform only config

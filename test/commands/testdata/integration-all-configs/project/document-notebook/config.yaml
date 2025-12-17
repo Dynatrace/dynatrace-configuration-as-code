@@ -12,3 +12,17 @@ configs:
     - environment: classic_env
       override:
         skip: true # platform only config
+- id: 157f33cd-27b8-4437-b669-e1b807c0d0b4
+  config:
+    name: my-customid-notebook
+    template: 157f33cd-27b8-4437-b669-e1b807c0d0b4.json
+    skip: false
+  type:
+    document:
+      kind: notebook
+      private: false
+      id: my-customid-notebook-id #monaco-test:underscore-to-dash
+  environmentOverrides:
+    - environment: classic_env
+      override:
+        skip: true # platform only config

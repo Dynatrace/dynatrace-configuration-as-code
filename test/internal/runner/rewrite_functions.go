@@ -91,7 +91,13 @@ func ReplaceId(line string, idChange func(string) string) string {
 	}
 
 	if strings.Contains(line, "id:") || strings.Contains(line, "configId:") {
-		trimmed := strings.TrimSpace(line)
+		initialTrim := line
+		underscoreToDash := strings.HasSuffix(line, "#monaco-test:underscore-to-dash")
+		if underscoreToDash {
+			initialTrim = strings.TrimSuffix(line, "#monaco-test:underscore-to-dash")
+		}
+
+		trimmed := strings.TrimSpace(initialTrim)
 		if strings.HasPrefix(trimmed, "-") {
 			trimmed = trimmed[1:]
 			trimmed = strings.TrimSpace(trimmed)
@@ -109,6 +115,9 @@ func ReplaceId(line string, idChange func(string) string) string {
 		}
 		id = strings.Trim(id, `"'`)
 		replaced := strings.ReplaceAll(line, id, idChange(id))
+		if underscoreToDash {
+			replaced = strings.ReplaceAll(replaced, "_", "-")
+		}
 		return replaced
 	}
 
