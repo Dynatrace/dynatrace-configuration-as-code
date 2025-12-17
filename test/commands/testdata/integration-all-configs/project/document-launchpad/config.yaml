@@ -1,0 +1,28 @@
+configs:
+  - id: e6edea1a-d4e8-44bd-8000-e090a3af67b4
+    config:
+      name: my-launchpad
+      template: e6edea1a-d4e8-44bd-8000-e090a3af67b4.json
+      skip: false
+    type:
+      document:
+        kind: launchpad
+        private: true
+    environmentOverrides:
+      - environment: classic_env
+        override:
+          skip: true # platform only config
+  - id: 6520c79a-83c7-44c9-b01e-17f817bd9a0f
+    config:
+      name: my-customid-launchpad
+      template: 6520c79a-83c7-44c9-b01e-17f817bd9a0f.json
+      skip: false
+    type:
+      document:
+        kind: launchpad
+        private: false
+        id: my-customid-launchpad-id #monaco-test:underscore-to-dash
+    environmentOverrides:
+      - environment: classic_env
+        override:
+          skip: true # platform only config
