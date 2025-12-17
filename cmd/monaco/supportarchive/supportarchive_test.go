@@ -19,6 +19,7 @@
 package supportarchive_test
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"testing"
@@ -37,7 +38,7 @@ import (
 
 func TestIsEnabled(t *testing.T) {
 	t.Run("If support archive is set, it's enabled", func(t *testing.T) {
-		ctx := supportarchive.ContextWithSupportArchive(t.Context())
+		ctx := supportarchive.ContextWithSupportArchive(context.TODO())
 
 		assert.True(t, supportarchive.IsEnabled(ctx))
 	})

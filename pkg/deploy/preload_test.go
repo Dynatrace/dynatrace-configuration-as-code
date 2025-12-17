@@ -17,6 +17,7 @@
 package deploy
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -190,7 +191,7 @@ func Test_gatherPreloadConfigTypeEntries_OneEntryForSameEnvironmentInDifferentPr
 func Test_CacheSettingsFails(t *testing.T) {
 	expectedErrMsg := "error happened"
 	logOutput := strings.Builder{}
-	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), false, &logOutput, false, false)
+	log.PrepareLogging(context.TODO(), afero.NewMemMapFs(), false, &logOutput, false, false)
 
 	dtClient := client.NewMockSettingsClient(gomock.NewController(t))
 	dtClient.EXPECT().Cache(gomock.Any(), gomock.Any()).Times(1).Return(errors.New(expectedErrMsg))
@@ -218,13 +219,13 @@ func Test_CacheSettingsFails(t *testing.T) {
 		},
 	}
 	clientSet := &client.ClientSet{SettingsClient: dtClient}
-	preloadCaches(t.Context(), projects, clientSet, "env1")
+	preloadCaches(context.TODO(), projects, clientSet, "env1")
 	assert.Contains(t, logOutput.String(), expectedErrMsg)
 }
 
 func Test_CacheSettingsSucceeds(t *testing.T) {
 	logOutput := strings.Builder{}
-	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), true, &logOutput, false, false)
+	log.PrepareLogging(context.TODO(), afero.NewMemMapFs(), true, &logOutput, false, false)
 
 	dtClient := client.NewMockSettingsClient(gomock.NewController(t))
 	dtClient.EXPECT().Cache(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -252,14 +253,14 @@ func Test_CacheSettingsSucceeds(t *testing.T) {
 		},
 	}
 	clientSet := &client.ClientSet{SettingsClient: dtClient}
-	preloadCaches(t.Context(), projects, clientSet, "env1")
+	preloadCaches(context.TODO(), projects, clientSet, "env1")
 	assert.NotContains(t, logOutput.String(), "warn")
 	assert.Contains(t, logOutput.String(), "Cached")
 }
 
 func Test_CacheClassicSucceeds(t *testing.T) {
 	logOutput := strings.Builder{}
-	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), true, &logOutput, false, false)
+	log.PrepareLogging(context.TODO(), afero.NewMemMapFs(), true, &logOutput, false, false)
 
 	dtClient := client.NewMockConfigClient(gomock.NewController(t))
 	dtClient.EXPECT().Cache(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -286,7 +287,7 @@ func Test_CacheClassicSucceeds(t *testing.T) {
 		},
 	}
 	clientSet := &client.ClientSet{ConfigClient: dtClient}
-	preloadCaches(t.Context(), projects, clientSet, "env1")
+	preloadCaches(context.TODO(), projects, clientSet, "env1")
 	output := logOutput.String()
 	assert.NotContains(t, output, "warn")
 	assert.Contains(t, output, "Cached")
@@ -295,7 +296,7 @@ func Test_CacheClassicSucceeds(t *testing.T) {
 func Test_CacheClassicFails(t *testing.T) {
 	logOutput := strings.Builder{}
 	expectedErr := "my error"
-	log.PrepareLogging(t.Context(), afero.NewMemMapFs(), true, &logOutput, false, false)
+	log.PrepareLogging(context.TODO(), afero.NewMemMapFs(), true, &logOutput, false, false)
 
 	dtClient := client.NewMockConfigClient(gomock.NewController(t))
 	dtClient.EXPECT().Cache(gomock.Any(), gomock.Any()).Times(1).Return(errors.New(expectedErr))
@@ -322,7 +323,7 @@ func Test_CacheClassicFails(t *testing.T) {
 		},
 	}
 	clientSet := &client.ClientSet{ConfigClient: dtClient}
-	preloadCaches(t.Context(), projects, clientSet, "env1")
+	preloadCaches(context.TODO(), projects, clientSet, "env1")
 	output := logOutput.String()
 	assert.Contains(t, output, expectedErr)
 }
@@ -368,7 +369,7 @@ func Test_ScopedConfigsAreNotCached(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			preloadCaches(t.Context(), tt.args.projects, tt.args.clientSet, tt.args.environment)
+			preloadCaches(context.TODO(), tt.args.projects, tt.args.clientSet, tt.args.environment)
 		})
 	}
 }

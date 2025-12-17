@@ -19,6 +19,7 @@
 package document_test
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"testing"
@@ -258,7 +259,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		documentClient := documents.NewClient(rest.NewClient(server.URL(), server.Client()))
 		documentApi := document.NewDownloadAPI(documentClient)
-		result, err := documentApi.Download(t.Context(), "project")
+		result, err := documentApi.Download(context.TODO(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
@@ -287,7 +288,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		documentClient := documents.NewClient(rest.NewClient(server.URL(), server.FaultyClient()))
 		documentApi := document.NewDownloadAPI(documentClient)
-		result, err := documentApi.Download(t.Context(), "project")
+		result, err := documentApi.Download(context.TODO(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 		assert.True(t, true)
@@ -408,7 +409,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		documentClient := documents.NewClient(rest.NewClient(server.URL(), server.Client()))
 		documentApi := document.NewDownloadAPI(documentClient)
-		result, err := documentApi.Download(t.Context(), "project")
+		result, err := documentApi.Download(context.TODO(), "project")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 

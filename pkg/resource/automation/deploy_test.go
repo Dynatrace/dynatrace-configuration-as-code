@@ -19,6 +19,7 @@
 package automation_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -45,7 +46,7 @@ func TestDeployAutomation_WrongType(t *testing.T) {
 		Template: testutils.GenerateFaultyTemplate(t),
 	}
 
-	_, errs := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
+	_, errs := automation.NewDeployAPI(client).Deploy(context.TODO(), nil, "", conf)
 	assert.NotEmpty(t, errs)
 }
 
@@ -58,7 +59,7 @@ func TestDeployAutomation_UnknownResourceType(t *testing.T) {
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 	}
-	_, errs := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
+	_, errs := automation.NewDeployAPI(client).Deploy(context.TODO(), nil, "", conf)
 	assert.NotEmpty(t, errs)
 }
 
@@ -74,7 +75,7 @@ func TestDeployAutomation_ClientUpdateFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		resp, err := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
+		resp, err := automation.NewDeployAPI(client).Deploy(context.TODO(), nil, "", conf)
 		assert.Zero(t, resp)
 		assert.Error(t, err)
 	})
@@ -89,7 +90,7 @@ func TestDeployAutomation_ClientUpdateFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
+		_, err := automation.NewDeployAPI(client).Deploy(context.TODO(), nil, "", conf)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - BusinessCalendar Update fails", func(t *testing.T) {
@@ -103,7 +104,7 @@ func TestDeployAutomation_ClientUpdateFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
+		_, err := automation.NewDeployAPI(client).Deploy(context.TODO(), nil, "", conf)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - BusinessCalendar Update fails - HTTP Error", func(t *testing.T) {
@@ -117,7 +118,7 @@ func TestDeployAutomation_ClientUpdateFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
+		_, err := automation.NewDeployAPI(client).Deploy(context.TODO(), nil, "", conf)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - Scheduling Rule Update fails", func(t *testing.T) {
@@ -131,7 +132,7 @@ func TestDeployAutomation_ClientUpdateFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
+		_, err := automation.NewDeployAPI(client).Deploy(context.TODO(), nil, "", conf)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - Scheduling Rule Update fails - HTTP Error", func(t *testing.T) {
@@ -145,7 +146,7 @@ func TestDeployAutomation_ClientUpdateFails(t *testing.T) {
 			Template:   testutils.GenerateDummyTemplate(t),
 			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 		}
-		_, err := automation.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
+		_, err := automation.NewDeployAPI(client).Deploy(context.TODO(), nil, "", conf)
 		assert.Error(t, err)
 	})
 }
@@ -166,7 +167,7 @@ func TestDeployAutomation(t *testing.T) {
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
 	}
-	resolvedEntity, errs := automation.NewDeployAPI(client).Deploy(t.Context(), parameter.Properties{}, "{}", conf)
+	resolvedEntity, errs := automation.NewDeployAPI(client).Deploy(context.TODO(), parameter.Properties{}, "{}", conf)
 	assert.NotNil(t, resolvedEntity)
 	assert.Equal(t, "config-id", resolvedEntity.Properties[config.IdParameter])
 	assert.False(t, resolvedEntity.Skip)
@@ -189,7 +190,7 @@ func TestDeployAutomation_WithGivenObjectId(t *testing.T) {
 			Resource: config.Workflow,
 		},
 	}
-	resolvedEntity, errs := automation.NewDeployAPI(client).Deploy(t.Context(), parameter.Properties{}, "{}", conf)
+	resolvedEntity, errs := automation.NewDeployAPI(client).Deploy(context.TODO(), parameter.Properties{}, "{}", conf)
 	require.NoError(t, errs)
 	assert.Equal(t, "config-id", resolvedEntity.Properties[config.IdParameter])
 }

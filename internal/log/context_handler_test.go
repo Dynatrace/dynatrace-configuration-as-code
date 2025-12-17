@@ -34,15 +34,15 @@ import (
 func TestContextHandler_Enabled(t *testing.T) {
 	testingHandler := log.NewContextHandler(NewTestHandler(&slog.HandlerOptions{Level: slog.LevelWarn}))
 
-	assert.False(t, testingHandler.Enabled(t.Context(), slog.LevelDebug))
-	assert.False(t, testingHandler.Enabled(t.Context(), slog.LevelInfo))
-	assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelWarn))
-	assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelError))
+	assert.False(t, testingHandler.Enabled(context.TODO(), slog.LevelDebug))
+	assert.False(t, testingHandler.Enabled(context.TODO(), slog.LevelInfo))
+	assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelWarn))
+	assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelError))
 }
 
 // TestContextHandler_Handle tests that a ContextHandler extracts and adds attributes to a handled record.
 func TestContextHandler_Handle(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.TODO()
 	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: "environment1", Group: "group1"})
 	ctx = context.WithValue(ctx, log.CtxKeyCoord{}, coordinate.Coordinate{Project: "project1", Type: "api1", ConfigId: "configId1"})
 	ctx = context.WithValue(ctx, log.CtxKeyAccount{}, "account1")
@@ -68,7 +68,7 @@ func TestContextHandler_Handle(t *testing.T) {
 
 // TestContextHandle_WithAttrs tests that a ContextHandler applies the given attributes to a handled record.
 func TestContextHandle_WithAttrs(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.TODO()
 	ctx = context.WithValue(ctx, log.CtxKeyAccount{}, "account1")
 
 	handler := NewTestHandler(&slog.HandlerOptions{})
@@ -87,7 +87,7 @@ func TestContextHandle_WithAttrs(t *testing.T) {
 
 // TestContextHandle_WithGroup tests that a ContextHandler applies the given group to a handled record.
 func TestContextHandle_WithGroup(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.TODO()
 	ctx = context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(4))
 
 	handler := NewTestHandler(&slog.HandlerOptions{})

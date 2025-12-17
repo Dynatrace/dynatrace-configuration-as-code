@@ -19,6 +19,7 @@
 package log_test
 
 import (
+	"context"
 	"log/slog"
 	"strings"
 	"testing"
@@ -37,10 +38,10 @@ func TestTeeHandler_Enabled(t *testing.T) {
 			NewTestHandler(&slog.HandlerOptions{Level: slog.LevelDebug}),
 		)
 
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelDebug))
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelInfo))
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelWarn))
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelError))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelDebug))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelInfo))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelWarn))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelError))
 	})
 
 	t.Run("all enabled if one has level debug, other info", func(t *testing.T) {
@@ -49,10 +50,10 @@ func TestTeeHandler_Enabled(t *testing.T) {
 			NewTestHandler(&slog.HandlerOptions{Level: slog.LevelInfo}),
 		)
 
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelDebug))
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelInfo))
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelWarn))
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelError))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelDebug))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelInfo))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelWarn))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelError))
 	})
 
 	t.Run("all enabled if both have level info", func(t *testing.T) {
@@ -61,10 +62,10 @@ func TestTeeHandler_Enabled(t *testing.T) {
 			NewTestHandler(&slog.HandlerOptions{Level: slog.LevelInfo}),
 		)
 
-		assert.False(t, testingHandler.Enabled(t.Context(), slog.LevelDebug))
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelInfo))
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelWarn))
-		assert.True(t, testingHandler.Enabled(t.Context(), slog.LevelError))
+		assert.False(t, testingHandler.Enabled(context.TODO(), slog.LevelDebug))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelInfo))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelWarn))
+		assert.True(t, testingHandler.Enabled(context.TODO(), slog.LevelError))
 	})
 }
 

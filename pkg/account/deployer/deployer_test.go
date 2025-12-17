@@ -19,6 +19,7 @@
 package deployer
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -52,7 +53,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return([]accountmanagement.ManagementZoneResourceDto{{Parent: "env12345", Name: "Mzone", Id: "-3664092122630505211"}}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(nil, errors.New("ERR - GET GLOBAL POLICIES"))
-		err := instance.Deploy(t.Context(), testResources(t))
+		err := instance.Deploy(context.TODO(), testResources(t))
 		assert.Error(t, err)
 	})
 
@@ -63,7 +64,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().getAllGroups(gomock.Any()).Return(map[string]remoteId{}, nil)
 		mockedClient.EXPECT().getGlobalPolicies(gomock.Any()).Return(nil, errors.New("ERR - GET GLOBAL POLICIES"))
 		mockedClient.EXPECT().getManagementZones(gomock.Any()).Return(nil, errors.New("ERR - GET MANAGEMENT ZONES"))
-		err := instance.Deploy(t.Context(), testResources(t))
+		err := instance.Deploy(context.TODO(), testResources(t))
 		assert.Error(t, err)
 	})
 
@@ -82,7 +83,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().upsertUser(gomock.Any(), gomock.Any()).Return("5b9aaf94-26d0-4464-a469-3d8563612554", nil)
 		mockedClient.EXPECT().upsertServiceUser(gomock.Any(), gomock.Any(), gomock.Any()).Return("26d0af94-26d0-4464-a469-3d8563612554", nil)
 
-		err := instance.Deploy(t.Context(), testResources(t))
+		err := instance.Deploy(context.TODO(), testResources(t))
 		assert.Error(t, err)
 	})
 
@@ -100,7 +101,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().upsertUser(gomock.Any(), gomock.Any()).Return("5b9aaf94-26d0-4464-a469-3d8563612554", nil)
 		mockedClient.EXPECT().upsertServiceUser(gomock.Any(), gomock.Any(), gomock.Any()).Return("26d0af94-26d0-4464-a469-3d8563612554", nil)
 
-		err := instance.Deploy(t.Context(), testResources(t))
+		err := instance.Deploy(context.TODO(), testResources(t))
 		assert.Error(t, err)
 	})
 
@@ -124,7 +125,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().updatePermissions(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		mockedClient.EXPECT().updateAccountPolicyBindings(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("ERR - POLICY BINDINGS"))
 
-		err := instance.Deploy(t.Context(), testResources(t))
+		err := instance.Deploy(context.TODO(), testResources(t))
 		assert.Error(t, err)
 	})
 
@@ -149,7 +150,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().updateGroupBindings(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		mockedClient.EXPECT().updatePermissions(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("ERR - GROUP PERMISSIONS"))
 
-		err := instance.Deploy(t.Context(), testResources(t))
+		err := instance.Deploy(context.TODO(), testResources(t))
 		assert.Error(t, err)
 	})
 
@@ -167,7 +168,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().upsertUser(gomock.Any(), gomock.Any()).Return("", errors.New("ERR - UPSERT USER"))
 		mockedClient.EXPECT().upsertServiceUser(gomock.Any(), gomock.Any(), gomock.Any()).Return("26d0af94-26d0-4464-a469-3d8563612554", nil)
 
-		err := instance.Deploy(t.Context(), testResources(t))
+		err := instance.Deploy(context.TODO(), testResources(t))
 		assert.Error(t, err)
 	})
 
@@ -185,7 +186,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().upsertUser(gomock.Any(), gomock.Any()).Return("5b9aaf94-26d0-4464-a469-3d8563612554", nil)
 		mockedClient.EXPECT().upsertServiceUser(gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("ERR - UPSERT SERVICE USER"))
 
-		err := instance.Deploy(t.Context(), testResources(t))
+		err := instance.Deploy(context.TODO(), testResources(t))
 		assert.Error(t, err)
 	})
 
@@ -208,7 +209,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().updateGroupBindings(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("ERR - GROUP BINDINGS"))
 		mockedClient.EXPECT().getServiceUserEmailByName(gomock.Any(), gomock.Any()).Return("26d0af94-26d0-4464-a469-3d8563612554@service.sso.dynatrace.com", nil)
 		mockedClient.EXPECT().updateGroupBindings(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-		err := instance.Deploy(t.Context(), testResources(t))
+		err := instance.Deploy(context.TODO(), testResources(t))
 		assert.Error(t, err)
 	})
 
@@ -231,7 +232,7 @@ func TestDeployer(t *testing.T) {
 		mockedClient.EXPECT().updateGroupBindings(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		mockedClient.EXPECT().getServiceUserEmailByName(gomock.Any(), gomock.Any()).Return("26d0af94-26d0-4464-a469-3d8563612554@service.sso.dynatrace.com", nil)
 		mockedClient.EXPECT().updateGroupBindings(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-		err := instance.Deploy(t.Context(), testResources(t))
+		err := instance.Deploy(context.TODO(), testResources(t))
 		assert.NoError(t, err)
 	})
 }
@@ -251,7 +252,7 @@ func TestDeployer_ServiceUsers(t *testing.T) {
 		mockedClient.EXPECT().getServiceUserEmailByName(gomock.Any(), "service-user").Return("26d0af94-26d0-4464-a469-3d8563612554@service.sso.dynatrace.com", nil)
 		mockedClient.EXPECT().updateGroupBindings(gomock.Any(), "26d0af94-26d0-4464-a469-3d8563612554@service.sso.dynatrace.com", []string{"10f4f379-3134-4c6f-88b3-013a365af81d"}).Return(nil)
 
-		err = instance.Deploy(t.Context(), resources)
+		err = instance.Deploy(context.TODO(), resources)
 		assert.NoError(t, err)
 	})
 
@@ -269,7 +270,7 @@ func TestDeployer_ServiceUsers(t *testing.T) {
 		mockedClient.EXPECT().getServiceUserEmailByUid(gomock.Any(), "26d0af94-26d0-4464-a469-3d8563612554").Return("26d0af94-26d0-4464-a469-3d8563612554@service.sso.dynatrace.com", nil)
 		mockedClient.EXPECT().updateGroupBindings(gomock.Any(), "26d0af94-26d0-4464-a469-3d8563612554@service.sso.dynatrace.com", []string{"10f4f379-3134-4c6f-88b3-013a365af81d"}).Return(nil)
 
-		err = instance.Deploy(t.Context(), resources)
+		err = instance.Deploy(context.TODO(), resources)
 		assert.NoError(t, err)
 	})
 
@@ -290,7 +291,7 @@ func TestDeployer_ServiceUsers(t *testing.T) {
 		mockedClient.EXPECT().getServiceUserEmailByUid(gomock.Any(), "26d0af94-26d0-4464-a469-3d8563612555").Return("26d0af94-26d0-4464-a469-3d8563612555@service.sso.dynatrace.com", nil)
 		mockedClient.EXPECT().updateGroupBindings(gomock.Any(), "26d0af94-26d0-4464-a469-3d8563612555@service.sso.dynatrace.com", []string{"10f4f379-3134-4c6f-88b3-013a365af81d"}).Return(nil)
 
-		err = instance.Deploy(t.Context(), resources)
+		err = instance.Deploy(context.TODO(), resources)
 		assert.NoError(t, err)
 	})
 

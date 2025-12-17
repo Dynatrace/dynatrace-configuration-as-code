@@ -19,6 +19,7 @@
 package settings_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -53,7 +54,7 @@ func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 	props := map[string]interface{}{"scope": "environment"}
-	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "", conf)
+	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(context.TODO(), props, "", conf)
 	assert.Equal(t, entities.ResolvedEntity{
 		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:management-zones", ConfigId: "abcde"},
 		Properties: map[string]any{"scope": "environment", "id": "-4292415658385853785", "name": "[UNKNOWN NAME]vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ"},
@@ -77,7 +78,7 @@ func TestDeploySetting_ManagementZone_NameGetsExtracted_ifPresent(t *testing.T) 
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 	props := map[string]interface{}{"scope": "environment", "name": "the-name"}
-	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "", conf)
+	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(context.TODO(), props, "", conf)
 	assert.Equal(t, entities.ResolvedEntity{
 		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:some-setting", ConfigId: "abcde"},
 		Properties: map[string]any{"scope": "environment", "id": "abcdefghijk", "name": "the-name"},
@@ -101,7 +102,7 @@ func TestDeploySetting_ManagementZone_FailToDecodeMZoneID(t *testing.T) {
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 	props := map[string]interface{}{"scope": "environment"}
-	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "", conf)
+	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(context.TODO(), props, "", conf)
 	assert.Zero(t, resolvedEntity)
 	assert.Error(t, err)
 }
@@ -112,7 +113,7 @@ func TestDeploy_InsertAfter_NotDefined(t *testing.T) {
 
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().
-		Upsert(t.Context(), gomock.Any(), dtclient.UpsertSettingsOptions{OverrideRetry: nil, InsertAfter: nil}).
+		Upsert(context.TODO(), gomock.Any(), dtclient.UpsertSettingsOptions{OverrideRetry: nil, InsertAfter: nil}).
 		Times(1).
 		Return(dtclient.DynatraceEntity{}, nil)
 
@@ -124,7 +125,7 @@ func TestDeploy_InsertAfter_NotDefined(t *testing.T) {
 		"scope": "environment",
 	}
 
-	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
+	_, err := settings.NewDeployAPI(c).Deploy(context.TODO(), props, "{}", &conf)
 	assert.NoError(t, err)
 
 }
@@ -171,7 +172,7 @@ func TestDeploy_InsertAfter_ValidCases(t *testing.T) {
 
 			c := client.NewMockSettingsClient(gomock.NewController(t))
 			c.EXPECT().
-				Upsert(t.Context(), gomock.Any(), gomock.Eq(dtclient.UpsertSettingsOptions{OverrideRetry: nil, InsertAfter: &test.expectedInsertAfter})).
+				Upsert(context.TODO(), gomock.Any(), gomock.Eq(dtclient.UpsertSettingsOptions{OverrideRetry: nil, InsertAfter: &test.expectedInsertAfter})).
 				Times(1).
 				Return(dtclient.DynatraceEntity{}, nil)
 
@@ -184,7 +185,7 @@ func TestDeploy_InsertAfter_ValidCases(t *testing.T) {
 				"insertAfter": test.insertAfterProperty,
 			}
 
-			_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
+			_, err := settings.NewDeployAPI(c).Deploy(context.TODO(), props, "{}", &conf)
 			assert.NoError(t, err)
 		})
 	}
@@ -235,7 +236,7 @@ func TestDeploy_InsertAfter_InvalidCases(t *testing.T) {
 				"insertAfter": test.insertAfterProperty,
 			}
 
-			_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
+			_, err := settings.NewDeployAPI(c).Deploy(context.TODO(), props, "{}", &conf)
 			assert.ErrorContains(t, err, test.errorContains)
 		})
 	}
@@ -248,7 +249,7 @@ func TestDeploy_FailsWithInvalidConfigType(t *testing.T) {
 		Type: config.ClassicApiType{},
 	}
 
-	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), nil, "{}", &conf)
+	_, err := settings.NewDeployAPI(c).Deploy(context.TODO(), nil, "{}", &conf)
 	assert.ErrorContains(t, err, "config was not of expected type")
 }
 
@@ -259,14 +260,14 @@ func TestDeploy_FailsWithoutScope(t *testing.T) {
 		Type: config.SettingsType{SchemaId: "builtin:monaco-test", SchemaVersion: "1.2.3"},
 	}
 
-	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), nil, "{}", &conf)
+	_, err := settings.NewDeployAPI(c).Deploy(context.TODO(), nil, "{}", &conf)
 	assert.ErrorContains(t, err, fmt.Sprintf("'%s' not found", config.ScopeParameter))
 }
 
 func TestDeploy_WithBucketRetrySetting(t *testing.T) {
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().
-		Upsert(t.Context(), gomock.Any(), gomock.Eq(dtclient.UpsertSettingsOptions{OverrideRetry: &dtclient.RetrySetting{WaitTime: 10 * time.Second, MaxRetries: 12}})).
+		Upsert(context.TODO(), gomock.Any(), gomock.Eq(dtclient.UpsertSettingsOptions{OverrideRetry: &dtclient.RetrySetting{WaitTime: 10 * time.Second, MaxRetries: 12}})).
 		Times(1).
 		Return(dtclient.DynatraceEntity{}, nil)
 
@@ -294,14 +295,14 @@ func TestDeploy_WithBucketRetrySetting(t *testing.T) {
 		"scope": "environment",
 	}
 
-	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
+	_, err := settings.NewDeployAPI(c).Deploy(context.TODO(), props, "{}", &conf)
 	assert.NoError(t, err)
 }
 
 func TestDeploy_WithVeryLongRetrySetting(t *testing.T) {
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().
-		Upsert(t.Context(), gomock.Any(), gomock.Eq(dtclient.UpsertSettingsOptions{OverrideRetry: &dtclient.DefaultRetrySettings.VeryLong})).
+		Upsert(context.TODO(), gomock.Any(), gomock.Eq(dtclient.UpsertSettingsOptions{OverrideRetry: &dtclient.DefaultRetrySettings.VeryLong})).
 		Times(1).
 		Return(dtclient.DynatraceEntity{}, nil)
 
@@ -329,7 +330,7 @@ func TestDeploy_WithVeryLongRetrySetting(t *testing.T) {
 		"scope": "environment",
 	}
 
-	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
+	_, err := settings.NewDeployAPI(c).Deploy(context.TODO(), props, "{}", &conf)
 	assert.NoError(t, err)
 }
 
@@ -338,7 +339,7 @@ func TestDeploy_WithFailedRequest(t *testing.T) {
 	wantErrMsg := "custom error"
 	customErr := errors.New(wantErrMsg)
 	c.EXPECT().
-		Upsert(t.Context(), gomock.Any(), gomock.Any()).
+		Upsert(context.TODO(), gomock.Any(), gomock.Any()).
 		Times(1).
 		Return(dtclient.DynatraceEntity{}, customErr)
 
@@ -349,6 +350,6 @@ func TestDeploy_WithFailedRequest(t *testing.T) {
 		"scope": "environment",
 	}
 
-	_, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "{}", &conf)
+	_, err := settings.NewDeployAPI(c).Deploy(context.TODO(), props, "{}", &conf)
 	assert.ErrorContains(t, err, wantErrMsg)
 }

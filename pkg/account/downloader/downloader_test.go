@@ -17,6 +17,7 @@
 package downloader_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -55,7 +56,7 @@ func TestDownloader_EmptyAccount(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -91,7 +92,7 @@ func TestDownloader_AccountPolicy(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -140,7 +141,7 @@ func TestDownloader_EnvironmentPolicy(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -185,7 +186,7 @@ func TestDownloader_GlobalPolicy(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -216,7 +217,7 @@ func TestDownloader_NoPolicyDetails(t *testing.T) {
 	client.EXPECT().GetPolicyDefinition(gomock.Any(), policyOverview).Return(nil, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.Error(t, err)
 	require.Nil(t, result)
 }
@@ -237,7 +238,7 @@ func TestDownloader_OnlyUser(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -275,7 +276,7 @@ func TestDownloader_UserWithOneGroup(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -310,7 +311,7 @@ func TestDownloader_NoRequestedUserDetails(t *testing.T) {
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "usert@some.org", accountUUID).Return(nil, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.Error(t, err)
 	assert.Nil(t, result)
 }
@@ -337,7 +338,7 @@ func TestDownloader_EmptyGroup(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -376,7 +377,7 @@ func TestDownloader_GroupWithFederatedAttributeValues(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -464,7 +465,7 @@ func TestDownloader_GroupsWithPolicies(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -677,7 +678,7 @@ func TestDownloader_NoGroupDetails(t *testing.T) {
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "test.user@some.org", accountUUID).Return(nil, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.Error(t, err)
 	assert.Nil(t, result)
 }
@@ -768,7 +769,7 @@ func TestDownloader_GroupsWithPermissions(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -822,7 +823,7 @@ func TestDownloader_OnlyServiceUser(t *testing.T) {
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "service.user@some.org"}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -854,7 +855,7 @@ func TestDownloader_TwoServiceUsersWithSameName(t *testing.T) {
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "abc2@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "abc2@some.org"}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -894,7 +895,7 @@ func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
 	}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -931,7 +932,7 @@ func TestDownloader_NoRequestedServiceUserDetails(t *testing.T) {
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(nil, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.Error(t, err)
 	assert.Nil(t, result)
 }
@@ -947,7 +948,7 @@ func TestDownloader_GetEnvironmentsAndMZonesErrors(t *testing.T) {
 
 	client.EXPECT().GetEnvironmentsAndMZones(gomock.Any(), accountUUID).Return(nil, nil, originalErr)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.Nil(t, result)
 	assert.ErrorContains(t, err, originalErr.Error(), "Returned error must contain original error")
 	assert.ErrorContains(t, err, "failed to get a list of environments and management zones for account", "Return error must contain additional information")
@@ -966,7 +967,7 @@ func TestDownloader_GetPoliciesErrors(t *testing.T) {
 	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return(nil, originalErr)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.Nil(t, result)
 	assert.ErrorContains(t, err, originalErr.Error(), "Returned error must contain original error")
 	assert.ErrorContains(t, err, "failed to get a list of policies for account", "Return error must contain additional information")
@@ -986,7 +987,7 @@ func TestDownloader_GetUsersErrors(t *testing.T) {
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return(nil, originalErr)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.Nil(t, result)
 	assert.ErrorContains(t, err, originalErr.Error(), "Returned error must contain original error")
 	assert.ErrorContains(t, err, "failed to get a list of users for account", "Return error must contain additional information")
@@ -1038,7 +1039,7 @@ func TestDownloader_GetGroupsErrors(t *testing.T) {
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return(nil, originalErr)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.Nil(t, result)
 	assert.ErrorContains(t, err, originalErr.Error(), "Returned error must contain original error")
 	assert.ErrorContains(t, err, "failed to get a list of groups for account", "Return error must contain additional information")
@@ -1059,7 +1060,7 @@ func TestDownloader_GetGroupsForUserErrors(t *testing.T) {
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "usert@some.org", accountUUID).Return(nil, originalErr)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.Nil(t, result)
 	assert.ErrorContains(t, err, originalErr.Error(), "Returned error must contain original error")
 	assert.ErrorContains(t, err, "failed to get a list of bind groups for user", "Return error must contain additional information")
@@ -1080,7 +1081,7 @@ func TestDownloader_GetServiceUsersErrors(t *testing.T) {
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return(nil, originalErr)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
-	result, err := downloader.DownloadResources(t.Context())
+	result, err := downloader.DownloadResources(context.TODO())
 	assert.Nil(t, result)
 	assert.ErrorContains(t, err, originalErr.Error(), "Returned error must contain original error")
 	assert.ErrorContains(t, err, "failed to get a list of service users for account", "Return error must contain additional information")

@@ -19,6 +19,7 @@
 package runner
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -41,7 +42,7 @@ import (
 // resources immediately after they've been created (e.g. to assert that they exist)
 func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefinition) *client.ClientSet {
 	clients, err := client.CreateClientSetWithOptions(
-		t.Context(),
+		context.TODO(),
 		environment.URL.Value,
 		environment.Auth,
 		client.ClientOptions{
@@ -73,7 +74,7 @@ func LoadProjects(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest
 	cwd, err := filepath.Abs(filepath.Dir(manifestPath))
 	assert.NoError(t, err)
 
-	projects, errs := project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
+	projects, errs := project.LoadProjects(context.TODO(), fs, project.ProjectLoaderContext{
 		KnownApis:       api.NewAPIs().GetApiNameLookup(),
 		WorkingDir:      cwd,
 		Manifest:        loadedManifest,

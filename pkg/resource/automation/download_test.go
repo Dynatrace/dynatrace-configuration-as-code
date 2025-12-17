@@ -19,6 +19,7 @@
 package automation
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -56,7 +57,7 @@ func TestDownloader_Download(t *testing.T) {
 		assert.NoError(t, err)
 		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 		automationApi := NewDownloadAPI(httpClient)
-		result, err := automationApi.Download(t.Context(), "projectName")
+		result, err := automationApi.Download(context.TODO(), "projectName")
 		assert.Len(t, result, 3)
 		assert.Len(t, result[string(config.Workflow)], 3)
 		assert.Len(t, result[string(config.SchedulingRule)], 6)
@@ -87,7 +88,7 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 	assert.NoError(t, err)
 	httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 	automationApi := NewDownloadAPI(httpClient)
-	result, err := automationApi.Download(t.Context(), "projectName")
+	result, err := automationApi.Download(context.TODO(), "projectName")
 	assert.Len(t, result, 2)
 	assert.Len(t, result[string(config.Workflow)], 3)
 	assert.Len(t, result[string(config.SchedulingRule)], 6)

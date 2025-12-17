@@ -257,7 +257,7 @@ func TestDeploy(t *testing.T) {
 			renderedConfig, err := tt.inputConfig.Render(props)
 			assert.NoError(t, err)
 
-			resolvedEntity, err := segment.NewDeployAPI(&c).Deploy(t.Context(), props, renderedConfig, &tt.inputConfig)
+			resolvedEntity, err := segment.NewDeployAPI(&c).Deploy(context.TODO(), props, renderedConfig, &tt.inputConfig)
 			if tt.expectErr {
 				assert.Error(t, err)
 			}

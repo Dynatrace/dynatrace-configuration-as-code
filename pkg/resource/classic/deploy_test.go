@@ -83,7 +83,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	}
 	entityMap := entities.New()
 	entityMap.Put(entities.ResolvedEntity{Coordinate: coordinate.Coordinate{Type: "dashboard"}})
-	_, errors := classic.NewDeployAPI(client, testApiMap).Deploy(t.Context(), nil, "", &conf)
+	_, errors := classic.NewDeployAPI(client, testApiMap).Deploy(context.TODO(), nil, "", &conf)
 
 	assert.NotEmpty(t, errors)
 }
@@ -105,7 +105,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := classic.NewDeployAPI(client, testApiMap).Deploy(t.Context(), nil, "", &conf)
+	_, errors := classic.NewDeployAPI(client, testApiMap).Deploy(context.TODO(), nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -142,7 +142,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := classic.NewDeployAPI(client, testApiMap).Deploy(t.Context(), nil, "", &conf)
+	_, errors := classic.NewDeployAPI(client, testApiMap).Deploy(context.TODO(), nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -181,7 +181,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := classic.NewDeployAPI(client, testApiMap).Deploy(t.Context(), nil, "", &conf)
+	_, errors := classic.NewDeployAPI(client, testApiMap).Deploy(context.TODO(), nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -191,7 +191,7 @@ func TestDeploy_FailOnInvalidConfigType(t *testing.T) {
 		Type:     config.Segment{},
 		Template: testutils.GenerateDummyTemplate(t),
 	}
-	_, err := classic.NewDeployAPI(client, testApiMap).Deploy(t.Context(), nil, "", &conf)
+	_, err := classic.NewDeployAPI(client, testApiMap).Deploy(context.TODO(), nil, "", &conf)
 	assert.ErrorContains(t, err, "not of expected type")
 }
 
@@ -201,7 +201,7 @@ func TestDeploy_FailOnInvalidAPI(t *testing.T) {
 		Type:     config.ClassicApiType{Api: "invalid"},
 		Template: testutils.GenerateDummyTemplate(t),
 	}
-	_, err := classic.NewDeployAPI(client, api.NewAPIs()).Deploy(t.Context(), nil, "", &conf)
+	_, err := classic.NewDeployAPI(client, api.NewAPIs()).Deploy(context.TODO(), nil, "", &conf)
 	assert.ErrorContains(t, err, "unknown API")
 }
 
@@ -211,7 +211,7 @@ func TestDeploy_FailOnMissingScopeForParentAPI(t *testing.T) {
 		Type:     config.ClassicApiType{Api: api.DashboardShareSettings},
 		Template: testutils.GenerateDummyTemplate(t),
 	}
-	_, err := classic.NewDeployAPI(client, api.NewAPIs()).Deploy(t.Context(), nil, "", &conf)
+	_, err := classic.NewDeployAPI(client, api.NewAPIs()).Deploy(context.TODO(), nil, "", &conf)
 	assert.ErrorContains(t, err, "failed to extract scope")
 }
 
@@ -233,7 +233,7 @@ func TestDeploy_ReplacesWithParentAPI_ID(t *testing.T) {
 	properties := parameter.Properties{
 		config.ScopeParameter: parentID,
 	}
-	_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(t.Context(), properties, "", &conf)
+	_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(context.TODO(), properties, "", &conf)
 	assert.NoError(t, err)
 }
 
@@ -248,7 +248,7 @@ func TestDeploy_FailsOnDeploy(t *testing.T) {
 		Type:     config.ClassicApiType{Api: api.Dashboard},
 		Template: testutils.GenerateDummyTemplate(t),
 	}
-	_, err := classic.NewDeployAPI(c, testApiMap).Deploy(t.Context(), parameter.Properties{config.NameParameter: "name"}, "", &conf)
+	_, err := classic.NewDeployAPI(c, testApiMap).Deploy(context.TODO(), parameter.Properties{config.NameParameter: "name"}, "", &conf)
 	assert.ErrorIs(t, err, customErr)
 }
 
@@ -270,7 +270,7 @@ func TestDeploy_UpdatesByNonUniqueName(t *testing.T) {
 				config.NonUniqueNameConfigDuplicationParameter: &valueParam.ValueParameter{Value: true},
 			},
 		}
-		_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(t.Context(), nameParameter, "", &conf)
+		_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(context.TODO(), nameParameter, "", &conf)
 		assert.NoError(t, err)
 	})
 
@@ -283,7 +283,7 @@ func TestDeploy_UpdatesByNonUniqueName(t *testing.T) {
 				config.NonUniqueNameConfigDuplicationParameter: &reference.ReferenceParameter{},
 			},
 		}
-		_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(t.Context(), nameParameter, "", &conf)
+		_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(context.TODO(), nameParameter, "", &conf)
 		expectedErr := &reference.UnresolvedReferenceError{}
 		assert.ErrorAs(t, err, &expectedErr)
 	})
@@ -297,7 +297,7 @@ func TestDeploy_UpdatesByNonUniqueName(t *testing.T) {
 				config.NonUniqueNameConfigDuplicationParameter: &valueParam.ValueParameter{Value: "true"},
 			},
 		}
-		_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(t.Context(), nameParameter, "", &conf)
+		_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(context.TODO(), nameParameter, "", &conf)
 		assert.ErrorContains(t, err, "invalid boolean")
 	})
 
@@ -312,7 +312,7 @@ func TestDeploy_UpdatesByNonUniqueName(t *testing.T) {
 			Type:     config.ClassicApiType{Api: api.Dashboard},
 			Template: testutils.GenerateDummyTemplate(t),
 		}
-		_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(t.Context(), nameParameter, "", &conf)
+		_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(context.TODO(), nameParameter, "", &conf)
 		assert.NoError(t, err)
 	})
 
@@ -330,7 +330,7 @@ func TestDeploy_UpdatesByNonUniqueName(t *testing.T) {
 			Template:       testutils.GenerateDummyTemplate(t),
 			OriginObjectId: objectID,
 		}
-		_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(t.Context(), scopeAndNameParameter, "", &conf)
+		_, err := classic.NewDeployAPI(c, api.NewAPIs()).Deploy(context.TODO(), scopeAndNameParameter, "", &conf)
 		assert.NoError(t, err)
 	})
 }

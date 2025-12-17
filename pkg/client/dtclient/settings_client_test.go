@@ -20,6 +20,7 @@ package dtclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -104,7 +105,7 @@ func Test_schemaDetails(t *testing.T) {
 	t.Run("unmarshall data", func(t *testing.T) {
 		expected := Schema{SchemaId: "builtin:span-attribute", UniqueProperties: [][]string{{"key0", "key1"}, {"key2", "key3"}}}
 
-		actual, err := d.GetSchema(t.Context(), "builtin:span-attribute")
+		actual, err := d.GetSchema(context.TODO(), "builtin:span-attribute")
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)
@@ -129,13 +130,13 @@ func Test_GetSchemaUsesCache(t *testing.T) {
 	d, err := NewPlatformSettingsClient(restClient)
 	require.NoError(t, err)
 
-	_, err = d.GetSchema(t.Context(), "builtin:span-attribute")
+	_, err = d.GetSchema(context.TODO(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, apiHits)
-	_, err = d.GetSchema(t.Context(), "builtin:alerting.profile")
+	_, err = d.GetSchema(context.TODO(), "builtin:alerting.profile")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
-	_, err = d.GetSchema(t.Context(), "builtin:span-attribute")
+	_, err = d.GetSchema(context.TODO(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
 }
@@ -814,7 +815,7 @@ func TestUpsertSettings(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			resp, err := c.Upsert(t.Context(), SettingsObject{
+			resp, err := c.Upsert(context.TODO(), SettingsObject{
 				OriginObjectId: "anObjectID",
 				Coordinate:     cord,
 				SchemaId:       "builtin:alerting.profile",
@@ -889,10 +890,10 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		require.NoError(t, err)
 
 		// setup cache
-		_, err = c.GetSchema(t.Context(), testSchema)
+		_, err = c.GetSchema(context.TODO(), testSchema)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{})
+		_, err = c.Upsert(context.TODO(), obj, UpsertSettingsOptions{})
 		assert.NoError(t, err)
 	})
 
@@ -943,7 +944,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.NonePermission)})
+		_, err = c.Upsert(context.TODO(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.NonePermission)})
 		assert.NoError(t, err)
 		assert.True(t, deleteCalled)
 	})
@@ -1001,7 +1002,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
+		_, err = c.Upsert(context.TODO(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
 		assert.NoError(t, err)
 		assert.True(t, postPermissionCalled)
 	})
@@ -1058,7 +1059,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
+		_, err = c.Upsert(context.TODO(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
 		assert.NoError(t, err)
 		assert.True(t, putPermissionCalled)
 	})
@@ -1099,10 +1100,10 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		require.NoError(t, err)
 
 		// setup cache
-		_, err = c.GetSchema(t.Context(), testSchema)
+		_, err = c.GetSchema(context.TODO(), testSchema)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
+		_, err = c.Upsert(context.TODO(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
 		assert.Error(t, err)
 	})
 
@@ -1142,10 +1143,10 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		require.NoError(t, err)
 
 		// setup cache
-		_, err = c.GetSchema(t.Context(), testSchema)
+		_, err = c.GetSchema(context.TODO(), testSchema)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
+		_, err = c.Upsert(context.TODO(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
 		assert.Error(t, err)
 	})
 }
@@ -1247,7 +1248,7 @@ func TestUpsert_InsertAfter(t *testing.T) {
 				InsertAfter: test.givenInsertAfter,
 			}
 
-			_, err = c.Upsert(t.Context(), obj, options)
+			_, err = c.Upsert(context.TODO(), obj, options)
 			assert.NoError(t, err)
 		})
 	}
@@ -1286,7 +1287,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	_, err = client.Upsert(t.Context(), SettingsObject{
+	_, err = client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -1328,7 +1329,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	_, err = client.Upsert(t.Context(), SettingsObject{
+	_, err = client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -1338,7 +1339,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	assert.Equal(t, 1, numAPIGetCalls)
 	assert.Equal(t, 1, numAPIPostCalls)
 
-	_, err = client.Upsert(t.Context(), SettingsObject{
+	_, err = client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -1379,21 +1380,21 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 		WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 	require.NoError(t, err)
 
-	client.Upsert(t.Context(), SettingsObject{
+	client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
 	}, UpsertSettingsOptions{})
 	assert.Equal(t, 1, numGetAPICalls)
 
-	client.Upsert(t.Context(), SettingsObject{
+	client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
 	}, UpsertSettingsOptions{})
 	assert.Equal(t, 2, numGetAPICalls)
 
-	client.Upsert(t.Context(), SettingsObject{
+	client.Upsert(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
@@ -1791,7 +1792,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			_, err = c.Upsert(t.Context(), tt.given.settingsObject, UpsertSettingsOptions{})
+			_, err = c.Upsert(context.TODO(), tt.given.settingsObject, UpsertSettingsOptions{})
 			if tt.want.error {
 				assert.Error(t, err)
 			} else {
@@ -2135,7 +2136,7 @@ func TestListKnownSettings(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			res, err1 := client.List(t.Context(), tt.givenSchemaID, tt.givenListSettingsOpts)
+			res, err1 := client.List(context.TODO(), tt.givenSchemaID, tt.givenListSettingsOpts)
 
 			if tt.wantError {
 				assert.Error(t, err1)
@@ -2250,7 +2251,7 @@ func TestSettingsClientGet(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			settingsObj, err := client.Get(t.Context(), tt.args.objectID)
+			settingsObj, err := client.Get(context.TODO(), tt.args.objectID)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -2348,7 +2349,7 @@ func TestDeleteSettings(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			if err := client.Delete(t.Context(), tt.args.objectID); (err != nil) != tt.wantErr {
+			if err := client.Delete(context.TODO(), tt.args.objectID); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteSettings() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -2473,7 +2474,7 @@ func TestSettingsClient_GetPermission(t *testing.T) {
 				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 				assert.NoError(t, err)
 
-				res, err := dcl.GetPermission(t.Context(), tt.id)
+				res, err := dcl.GetPermission(context.TODO(), tt.id)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedResponse, res)
 			})
@@ -2527,7 +2528,7 @@ func TestSettingsClient_GetPermission(t *testing.T) {
 				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 				assert.NoError(t, err)
 
-				res, err := dcl.GetPermission(t.Context(), tt.id)
+				res, err := dcl.GetPermission(context.TODO(), tt.id)
 				assert.Equal(t, PermissionObject{}, res)
 				assert.Error(t, err)
 			})
@@ -2605,7 +2606,7 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 				assert.NoError(t, err)
 
-				err = dcl.UpsertPermission(t.Context(), tt.id, tt.PermissionObject)
+				err = dcl.UpsertPermission(context.TODO(), tt.id, tt.PermissionObject)
 				assert.NoError(t, err)
 			})
 		}
@@ -2731,7 +2732,7 @@ func TestSettingsClient_UpsertPermission(t *testing.T) {
 				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 				assert.NoError(t, err)
 
-				err = dcl.UpsertPermission(t.Context(), tt.id, tt.PermissionObject)
+				err = dcl.UpsertPermission(context.TODO(), tt.id, tt.PermissionObject)
 				assert.Error(t, err)
 			})
 		}
@@ -2790,7 +2791,7 @@ func TestSettingsClient_DeletePermission(t *testing.T) {
 		dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 		assert.NoError(t, err)
 
-		err = dcl.DeletePermission(t.Context(), id)
+		err = dcl.DeletePermission(context.TODO(), id)
 		assert.NoError(t, err)
 	})
 
@@ -2832,7 +2833,7 @@ func TestSettingsClient_DeletePermission(t *testing.T) {
 				dcl, err := NewPlatformSettingsClient(corerest.NewClient(server.URL(), server.Client()))
 				assert.NoError(t, err)
 
-				err = dcl.DeletePermission(t.Context(), tt.id)
+				err = dcl.DeletePermission(context.TODO(), tt.id)
 				assert.Error(t, err)
 			})
 		}
@@ -2935,7 +2936,7 @@ func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
 	c, err := NewClassicSettingsClient(restClient)
 	require.NoError(t, err)
 
-	gotSchemas, err := c.ListSchemas(t.Context())
+	gotSchemas, err := c.ListSchemas(context.TODO())
 	assert.NoError(t, err)
 
 	assert.ElementsMatch(t, SchemaList{
@@ -2987,7 +2988,7 @@ func TestSettingsClient_ListSchemas_WithoutAcl(t *testing.T) {
 	c, err := NewClassicSettingsClient(restClient)
 	require.NoError(t, err)
 
-	gotSchemas, err := c.ListSchemas(t.Context())
+	gotSchemas, err := c.ListSchemas(context.TODO())
 	assert.NoError(t, err)
 
 	assert.Equal(t, SchemaList{
@@ -3031,18 +3032,18 @@ func TestSettingsClient_ClearCache_OnSchemaCache(t *testing.T) {
 	require.NoError(t, err)
 
 	// fetch schema should trigger an API call
-	_, err = c.GetSchema(t.Context(), testSchema)
+	_, err = c.GetSchema(context.TODO(), testSchema)
 	require.NoError(t, err)
 	require.Equal(t, schemaCalledCount, 1)
 
 	// fetch schema should not trigger an API call and use the cache
-	_, err = c.GetSchema(t.Context(), testSchema)
+	_, err = c.GetSchema(context.TODO(), testSchema)
 	require.NoError(t, err)
 	require.Equal(t, schemaCalledCount, 1)
 
 	// fetch schema should clear the cache and trigger an API call
 	c.ClearCache()
-	_, err = c.GetSchema(t.Context(), testSchema)
+	_, err = c.GetSchema(context.TODO(), testSchema)
 	require.NoError(t, err)
 	require.Equal(t, schemaCalledCount, 2)
 }
@@ -3091,18 +3092,18 @@ func TestSettingsClient_ClearCache_OnSettingsCache(t *testing.T) {
 	require.NoError(t, err)
 
 	// fetch schema should trigger an API call
-	_, err = c.List(t.Context(), testSchema, ListSettingsOptions{})
+	_, err = c.List(context.TODO(), testSchema, ListSettingsOptions{})
 	require.NoError(t, err)
 	require.Equal(t, settingsCalledCount, 1)
 
 	// fetch schema should not trigger an API call and use the cache
-	_, err = c.List(t.Context(), testSchema, ListSettingsOptions{})
+	_, err = c.List(context.TODO(), testSchema, ListSettingsOptions{})
 	require.NoError(t, err)
 	require.Equal(t, settingsCalledCount, 1)
 
 	// fetch schema should clear the cache and trigger an API call
 	c.ClearCache()
-	_, err = c.List(t.Context(), testSchema, ListSettingsOptions{})
+	_, err = c.List(context.TODO(), testSchema, ListSettingsOptions{})
 	require.NoError(t, err)
 	require.Equal(t, settingsCalledCount, 2)
 }

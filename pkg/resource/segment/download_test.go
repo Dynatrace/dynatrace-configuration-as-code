@@ -59,7 +59,7 @@ func TestDownloader_Download(t *testing.T) {
 		}}
 
 		segmentApi := segment.NewDownloadAPI(c)
-		result, err := segmentApi.Download(t.Context(), "project")
+		result, err := segmentApi.Download(context.TODO(), "project")
 
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
@@ -96,7 +96,7 @@ func TestDownloader_Download(t *testing.T) {
 		}}
 
 		segmentApi := segment.NewDownloadAPI(c)
-		result, err := segmentApi.Download(t.Context(), "project")
+		result, err := segmentApi.Download(context.TODO(), "project")
 
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
@@ -114,7 +114,7 @@ func TestDownloader_Download(t *testing.T) {
 		}}
 
 		segmentApi := segment.NewDownloadAPI(c)
-		actual, err := segmentApi.Download(t.Context(), "project")
+		actual, err := segmentApi.Download(context.TODO(), "project")
 
 		assert.NoError(t, err)
 		assert.Len(t, actual, 1)
@@ -158,7 +158,7 @@ func TestDownloader_Download(t *testing.T) {
 		}}
 
 		segmentApi := segment.NewDownloadAPI(c)
-		result, err := segmentApi.Download(t.Context(), "project")
+		result, err := segmentApi.Download(context.TODO(), "project")
 		assert.NoError(t, err)
 		assert.Empty(t, result)
 	})
@@ -220,7 +220,7 @@ func TestDownloader_Download(t *testing.T) {
 		}}
 
 		segmentApi := segment.NewDownloadAPI(c)
-		result, err := segmentApi.Download(t.Context(), "project")
+		result, err := segmentApi.Download(context.TODO(), "project")
 		assert.NoError(t, err)
 
 		actual := result[string(config.SegmentID)][0].Template

@@ -19,6 +19,7 @@
 package document_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -63,7 +64,7 @@ func TestDeployDocumentWrongType(t *testing.T) {
 		Template: testutils.GenerateFaultyTemplate(t),
 	}
 
-	_, errs := document.NewDeployAPI(client).Deploy(t.Context(), nil, "", conf)
+	_, errs := document.NewDeployAPI(client).Deploy(context.TODO(), nil, "", conf)
 	assert.NotEmpty(t, errs)
 }
 
@@ -426,7 +427,7 @@ func TestDeploy_WithInvalidPayload_Fails(t *testing.T) {
 	parameters, errs := documentConfig.ResolveParameterValues(entities.New())
 	require.Empty(t, errs)
 	// in prod code an impossible case, as config.Render already checks if unmarshal works
-	_, err := document.NewDeployAPI(cl).Deploy(t.Context(), parameters, "", documentConfig)
+	_, err := document.NewDeployAPI(cl).Deploy(context.TODO(), parameters, "", documentConfig)
 	synErr := &json.SyntaxError{}
 	assert.ErrorAs(t, err, &synErr)
 }
@@ -456,5 +457,5 @@ func runDeployTest(t *testing.T, client *document.MockDeploySource, c *config.Co
 	content, err := c.Render(parameters)
 	require.NoError(t, err)
 
-	return document.NewDeployAPI(client).Deploy(t.Context(), parameters, content, c)
+	return document.NewDeployAPI(client).Deploy(context.TODO(), parameters, content, c)
 }

@@ -19,6 +19,7 @@
 package bucket
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -52,7 +53,7 @@ func TestDownloader_Download(t *testing.T) {
 		baseUrl, err := url.Parse(server.URL)
 		assert.NoError(t, err)
 		bucketApi := NewDownloadAPI(buckets.NewClient(rest.NewClient(baseUrl, server.Client())))
-		result, err := bucketApi.Download(t.Context(), "projectName")
+		result, err := bucketApi.Download(context.TODO(), "projectName")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 		assert.Len(t, result["bucket"], 2) // there should be 2 buckets (default bucket shall be skipped)
@@ -85,7 +86,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		baseUrl, _ := url.Parse(server.URL)
 		bucketApi := NewDownloadAPI(buckets.NewClient(rest.NewClient(baseUrl, server.Client())))
-		result, err := bucketApi.Download(t.Context(), "projectName")
+		result, err := bucketApi.Download(context.TODO(), "projectName")
 		assert.Len(t, result, 0)
 		assert.NoError(t, err)
 	})
@@ -104,7 +105,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		baseUrl, _ := url.Parse(server.URL)
 		bucketApi := NewDownloadAPI(buckets.NewClient(rest.NewClient(baseUrl, server.Client())))
-		result, err := bucketApi.Download(t.Context(), "projectName")
+		result, err := bucketApi.Download(context.TODO(), "projectName")
 		assert.Len(t, result, 0)
 		assert.NoError(t, err)
 	})

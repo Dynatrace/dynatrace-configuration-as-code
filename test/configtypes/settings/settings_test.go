@@ -19,6 +19,7 @@
 package settings
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -103,7 +104,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	}))
 	content, err := configToDeploy.Template.Content()
 	assert.NoError(t, err)
-	_, err = c.Upsert(t.Context(), dtclient.SettingsObject{
+	_, err = c.Upsert(context.TODO(), dtclient.SettingsObject{
 		Coordinate:     configToDeploy.Coordinate,
 		SchemaId:       configToDeploy.Type.(config.SettingsType).SchemaId,
 		SchemaVersion:  configToDeploy.Type.(config.SettingsType).SchemaVersion,
@@ -119,7 +120,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 
 	// Check if settings 2.0 object with "new" external ID exists
 	c = createSettingsClient(t, environment)
-	settings, _ := c.List(t.Context(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+	settings, _ := c.List(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == extID
 	}})
 	assert.Len(t, settings, 1)
@@ -128,7 +129,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	coord := sortedConfigs["platform_env"][0].Coordinate
 	coord.Project = ""
 	legacyExtID, _ := idutils.GenerateExternalIDForSettingsObject(coord)
-	settings, _ = c.List(t.Context(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+	settings, _ = c.List(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == legacyExtID
 	}})
 	assert.Len(t, settings, 0)
@@ -203,10 +204,10 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 		clientFactory = clientFactory.WithPlatformToken(env.Auth.PlatformToken.Value.Value())
 	}
 
-	client, err := clientFactory.CreatePlatformClient(t.Context())
+	client, err := clientFactory.CreatePlatformClient(context.TODO())
 	require.NoError(t, err)
 
-	classicURL, err := metadata.GetDynatraceClassicURL(t.Context(), *client)
+	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), *client)
 	require.NoError(t, err)
 
 	clientFactory = clientFactory.WithClassicURL(classicURL).WithAccessToken(env.Auth.AccessToken.Value.Value())

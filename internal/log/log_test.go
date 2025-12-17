@@ -19,6 +19,7 @@
 package log_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"strings"
@@ -70,7 +71,7 @@ func TestPrepareLogging_LogFormat(t *testing.T) {
 			}
 
 			builder := strings.Builder{}
-			log.PrepareLogging(t.Context(), nil, true, &builder, false, false)
+			log.PrepareLogging(context.TODO(), nil, true, &builder, false, false)
 			log.Debug("hello")
 
 			o := map[string]any{}
@@ -140,7 +141,7 @@ func TestPrepareLogging_SupportsUTC(t *testing.T) {
 	t.Setenv("MONACO_LOG_TIME", "utc")
 
 	builder := strings.Builder{}
-	log.PrepareLogging(t.Context(), nil, true, &builder, false, false)
+	log.PrepareLogging(context.TODO(), nil, true, &builder, false, false)
 	log.Debug("hello")
 
 	// assert that entry is JSON and can be unmarshaled
@@ -218,7 +219,7 @@ func TestPrepareLogging(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			file, errFile, err := log.PrepareLogFiles(t.Context(), fs, false)
+			file, errFile, err := log.PrepareLogFiles(context.TODO(), fs, false)
 
 			if tt.wantLogFile {
 				assert.NotNil(t, file)
@@ -247,7 +248,7 @@ func TestPrepareLogging(t *testing.T) {
 // this would happen if the Windows folder is marked read only, or POSIX permissions don't allow writing to it.
 func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
-	file, errFile, err := log.PrepareLogFiles(t.Context(), fs, false)
+	file, errFile, err := log.PrepareLogFiles(context.TODO(), fs, false)
 	assert.Nil(t, file)
 	assert.Nil(t, errFile)
 	assert.Error(t, err)
@@ -257,7 +258,7 @@ func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 func TestDefaultLoggerFunctions(t *testing.T) {
 
 	builder := strings.Builder{}
-	log.PrepareLogging(t.Context(), nil, true, &builder, false, false)
+	log.PrepareLogging(context.TODO(), nil, true, &builder, false, false)
 
 	t.Run("debug", func(t *testing.T) {
 		builder.Reset()
@@ -269,7 +270,7 @@ func TestDefaultLoggerFunctions(t *testing.T) {
 
 	t.Run("debug with context", func(t *testing.T) {
 		builder.Reset()
-		log.DebugContext(t.Context(), "code %s reached", "here")
+		log.DebugContext(context.TODO(), "code %s reached", "here")
 
 		assert.Contains(t, builder.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(builder.String()), "debug")
@@ -285,7 +286,7 @@ func TestDefaultLoggerFunctions(t *testing.T) {
 
 	t.Run("info with context", func(t *testing.T) {
 		builder.Reset()
-		log.InfoContext(t.Context(), "code %s reached", "here")
+		log.InfoContext(context.TODO(), "code %s reached", "here")
 
 		assert.Contains(t, builder.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(builder.String()), "info")
@@ -301,7 +302,7 @@ func TestDefaultLoggerFunctions(t *testing.T) {
 
 	t.Run("warn with context", func(t *testing.T) {
 		builder.Reset()
-		log.WarnContext(t.Context(), "code %s reached", "here")
+		log.WarnContext(context.TODO(), "code %s reached", "here")
 
 		assert.Contains(t, builder.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(builder.String()), "warn")
@@ -317,7 +318,7 @@ func TestDefaultLoggerFunctions(t *testing.T) {
 
 	t.Run("error with context", func(t *testing.T) {
 		builder.Reset()
-		log.ErrorContext(t.Context(), "code %s reached", "here")
+		log.ErrorContext(context.TODO(), "code %s reached", "here")
 
 		assert.Contains(t, builder.String(), "code here reached")
 		assert.Contains(t, strings.ToLower(builder.String()), "error")

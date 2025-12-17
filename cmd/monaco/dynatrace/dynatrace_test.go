@@ -19,6 +19,7 @@
 package dynatrace
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -68,7 +69,7 @@ func TestVerifyEnvironmentsAuthentication_OneOfManyFails(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	err := VerifyEnvironmentsAuthentication(t.Context(), manifest.EnvironmentDefinitionsByName{
+	err := VerifyEnvironmentsAuthentication(context.TODO(), manifest.EnvironmentDefinitionsByName{
 		"env": manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
@@ -124,7 +125,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := VerifyEnvironmentsAuthentication(t.Context(), tt.args.envs); tt.wantErr && err == nil {
+			if err := VerifyEnvironmentsAuthentication(context.TODO(), tt.args.envs); tt.wantErr && err == nil {
 				t.Errorf("VerifyEnvironmentsAuthentication() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -138,7 +139,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		}))
 		defer server.Close()
 
-		err := VerifyEnvironmentsAuthentication(t.Context(), manifest.EnvironmentDefinitionsByName{
+		err := VerifyEnvironmentsAuthentication(context.TODO(), manifest.EnvironmentDefinitionsByName{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				URL: manifest.URLDefinition{
@@ -171,7 +172,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		}))
 		defer server.Close()
 
-		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err := VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -197,7 +198,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		}))
 		defer server.Close()
 
-		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err := VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -228,7 +229,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		}))
 		defer server.Close()
 
-		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err := VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env1",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -238,7 +239,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		})
 		assert.Error(t, err)
 
-		err = VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err = VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env2",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -261,7 +262,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 			t.Fatal("Should not be called")
 		}))
 		defer server.Close()
-		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err := VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -280,7 +281,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 			rw.WriteHeader(400)
 		}))
 		defer server.Close()
-		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err := VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -300,7 +301,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 			t.Fatal("Should not be called")
 		}))
 		defer server.Close()
-		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err := VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -319,7 +320,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 			t.Fatal("Should not be called")
 		}))
 		defer server.Close()
-		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err := VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -374,7 +375,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		server := httptest.NewServer(mux)
 		defer server.Close()
 
-		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err := VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -423,7 +424,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		server := httptest.NewServer(mux)
 		defer server.Close()
 
-		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err := VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,
@@ -452,7 +453,7 @@ func TestVerifyEnvironmentsAuth(t *testing.T) {
 		server := httptest.NewServer(mux)
 		defer server.Close()
 
-		err := VerifyEnvironmentAuthentication(t.Context(), manifest.EnvironmentDefinition{
+		err := VerifyEnvironmentAuthentication(context.TODO(), manifest.EnvironmentDefinition{
 			Name: "env",
 			URL: manifest.URLDefinition{
 				Type:  manifest.ValueURLType,

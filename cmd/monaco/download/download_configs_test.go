@@ -19,6 +19,7 @@
 package download
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -199,7 +200,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			settingsClient := client.NewMockSettingsClient(gomock.NewController(t))
 			tt.expectedSettingsBehaviour(settingsClient)
 
-			_, err := downloadConfigs(t.Context(), &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, api.NewAPIs(), tt.givenOpts)
+			_, err := downloadConfigs(context.TODO(), &client.ClientSet{ConfigClient: configClient, SettingsClient: settingsClient}, api.NewAPIs(), tt.givenOpts)
 			assert.NoError(t, err)
 		})
 	}
@@ -528,7 +529,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().ListSchemas(gomock.Any()).Return(dtclient.SchemaList{{SchemaId: "builtin:some.schema"}}, nil)
 
-	err := doDownloadConfigs(t.Context(), afero.NewMemMapFs(), &client.ClientSet{SettingsClient: c}, nil, givenOpts)
+	err := doDownloadConfigs(context.TODO(), afero.NewMemMapFs(), &client.ClientSet{SettingsClient: c}, nil, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
 }
@@ -617,7 +618,7 @@ func TestDownloadConfigs_ErrorIfOAuthMissing(t *testing.T) {
 				downloadOptionsShared: sharedOptionsWithToken,
 			}
 
-			err := doDownloadConfigs(t.Context(), testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
+			err := doDownloadConfigs(context.TODO(), testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
 			assert.ErrorContains(t, err, "no platform credentials")
 		})
 	}
@@ -644,7 +645,7 @@ func TestDownloadConfigs_ErrorIfTokenMissing(t *testing.T) {
 		downloadOptionsShared: sharedOptionsWithOAuth,
 	}
 
-	err := doDownloadConfigs(t.Context(), testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
+	err := doDownloadConfigs(context.TODO(), testutils.CreateTestFileSystem(), &client.ClientSet{}, nil, opts)
 	assert.ErrorContains(t, err, "requires access token")
 }
 
@@ -669,7 +670,7 @@ func TestDownloadConfigs_OnlySettings(t *testing.T) {
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().ListSchemas(gomock.Any()).Return(dtclient.SchemaList{{SchemaId: "builtin:auto.schema"}}, nil)
 	c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]dtclient.DownloadSettingsObject{}, nil)
-	err := doDownloadConfigs(t.Context(), testutils.CreateTestFileSystem(), &client.ClientSet{SettingsClient: c}, nil, opts)
+	err := doDownloadConfigs(context.TODO(), testutils.CreateTestFileSystem(), &client.ClientSet{SettingsClient: c}, nil, opts)
 	assert.NoError(t, err)
 }
 
@@ -805,7 +806,7 @@ func Test_EscapingSkip_Buckets(t *testing.T) {
 			"table": "logs"
 		}`)},
 	}}, nil)
-	err := doDownloadConfigs(t.Context(), fs, &client.ClientSet{BucketClient: c}, nil, opts)
+	err := doDownloadConfigs(context.TODO(), fs, &client.ClientSet{BucketClient: c}, nil, opts)
 	require.NoError(t, err)
 
 	file, err := afero.ReadFile(fs, "./out/project/bucket/my-bucket.json")
