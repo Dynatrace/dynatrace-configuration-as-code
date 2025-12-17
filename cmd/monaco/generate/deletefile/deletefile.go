@@ -157,6 +157,7 @@ func generateDeleteEntriesForEnvironments(apis api.APIs, projects []project.Proj
 	for _, p := range projects {
 		for _, env := range options.environmentNames {
 			slog.Info("Adding delete entries for project and environment...", slog.String("project", p.Id), slog.Group("environment", slog.String("name", env)))
+			slog.Info("diff")
 			p.ForEveryConfigInEnvironmentDo(env, func(c config.Config) {
 				if skipping(c.Coordinate.Type, inclTypesLookup, exclTypesLookup) {
 					if c.Coordinate.Type == string(config.OpenPipelineTypeID) {
