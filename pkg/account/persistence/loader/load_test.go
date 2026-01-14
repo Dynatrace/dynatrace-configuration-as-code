@@ -408,4 +408,10 @@ func TestLoad(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "policy definition is ambiguous")
 	})
+
+	t.Run("Loading a group with a missing environment name produces an error", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "testdata/group-missing-env-name.yaml")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "missing required field 'environment'")
+	})
 }

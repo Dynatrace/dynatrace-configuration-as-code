@@ -1,0 +1,12 @@
+groups:
+  - name: My Group
+    id: my-group
+
+    environments:
+      # Missing environment name
+      - permissions:
+          - View environment
+        policies:
+          - View environment
+          - type: reference
+            id: my-policy
