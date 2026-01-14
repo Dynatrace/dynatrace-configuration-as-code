@@ -202,10 +202,8 @@ func validateGroup(g types.Group) error {
 	}
 
 	for _, env := range g.Environment {
-		for _, policyRef := range env.Policies {
-			if err := validatePolicyBinding(policyRef); err != nil {
-				return err
-			}
+		if err := validateGroupEnvironment(env, g.ID); err != nil {
+			return err
 		}
 	}
 
@@ -218,6 +216,18 @@ func validateGroup(g types.Group) error {
 		}
 	}
 
+	return nil
+}
+
+func validateGroupEnvironment(env types.Environment, groupID string) error {
+	if env.Name == "" {
+		return fmt.Errorf("missing required field 'environment' for 'environments' in group '%s'", groupID)
+	}
+	for _, policyRef := range env.Policies {
+		if err := validatePolicyBinding(policyRef); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
