@@ -17,10 +17,10 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.uber.org/mock v0.6.0
+	go.yaml.in/yaml/v2 v2.4.3
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 	golang.org/x/oauth2 v0.34.0
 	gonum.org/v1/gonum v0.17.0
-	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

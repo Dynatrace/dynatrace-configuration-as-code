@@ -28,7 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 
 	"github.com/spf13/afero"
-	"gopkg.in/yaml.v2"
+	"go.yaml.in/yaml/v2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"

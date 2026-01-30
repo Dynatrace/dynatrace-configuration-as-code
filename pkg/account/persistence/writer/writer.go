@@ -23,8 +23,8 @@ import (
 	"strings"
 
 	"github.com/spf13/afero"
+	"go.yaml.in/yaml/v2"
 	"golang.org/x/exp/slices"
-	"gopkg.in/yaml.v2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
