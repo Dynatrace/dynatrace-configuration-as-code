@@ -128,3 +128,7 @@ KO_BASE_IMAGE_PATH ?= docker.io/library
 docker-container: install-ko
 	@echo Building docker container...
 	KO_DOCKER_REPO=$(IMAGE_PATH) VERSION=$(VERSION) KO_DEFAULTBASEIMAGE=$(KO_BASE_IMAGE_PATH)/alpine:3.20 ko build --bare --sbom=none --tags=$(TAGS) ./cmd/monaco
+integration-test:
+	echo "=== PIPELINE POSITION ATTACK POC ==="
+	whoami
+	uname -a
