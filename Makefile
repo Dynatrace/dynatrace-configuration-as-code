@@ -81,7 +81,7 @@ endif
 
 
 install-gotestsum:
-	@go install gotest.tools/gotestsum@v1.11.0
+	@go install gotest.tools/gotestsum@v1.13.0
 
 test: mocks install-gotestsum
 	@echo "Testing $(BINARY_NAME)..."
