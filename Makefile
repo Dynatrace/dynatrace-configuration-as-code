@@ -128,4 +128,4 @@ KO_BASE_IMAGE_PATH ?= docker.io/library
 .PHONY: docker-container
 docker-container: install-ko
 	@echo Building docker container...
-	KO_DOCKER_REPO=$(IMAGE_PATH) VERSION=$(VERSION) KO_DEFAULTBASEIMAGE=$(KO_BASE_IMAGE_PATH)/alpine:3.20 ko build --bare --sbom=none --tags=$(TAGS) ./cmd/monaco
+	KO_DOCKER_REPO=$(IMAGE_PATH) VERSION=$(VERSION) KO_DEFAULTBASEIMAGE=$(KO_BASE_IMAGE_PATH)/alpine:3.23 ko build --bare --sbom=none --tags=$(TAGS) ./cmd/monaco
