@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
@@ -51,8 +52,12 @@ type deleteItem struct {
 }
 
 func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) error {
-	logger := slog.With(log.TypeAttr("bucket"))
+	if len(entries) == 0 {
+		return nil
+	}
 	deleteItems := convertDeletePointerToDeleteItem(entries)
+	logger := slog.With(log.TypeAttr(config.BucketTypeID))
+	logger.InfoContext(ctx, "Deleting Grail bucket configurations ...", slog.Int("count", len(deleteItems)))
 
 	if errorCount := d.delete(ctx, deleteItems, logger); errorCount > 0 {
 		return fmt.Errorf("failed to delete %d Grail bucket configurations", errorCount)
@@ -69,8 +74,8 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
 func (d Deleter) DeleteAll(ctx context.Context) error {
-	logger := slog.With(log.TypeAttr("bucket"))
-	logger.InfoContext(ctx, "Collecting Grail bucket configurations...")
+	logger := slog.With(log.TypeAttr(config.BucketTypeID))
+	logger.InfoContext(ctx, "Deleting all Grail bucket configurations ...")
 
 	response, err := d.source.List(ctx)
 	if err != nil {
@@ -131,7 +136,6 @@ func parseResponseToDeleteItem(ctx context.Context, bucketResponses [][]byte, lo
 
 func (d Deleter) delete(ctx context.Context, deleteItems []deleteItem, baseLogger *slog.Logger) int {
 	errorCount := 0
-	baseLogger.InfoContext(ctx, "Deleting some Grail bucket configs...", slog.Int("count", len(deleteItems)))
 
 	for _, delItem := range deleteItems {
 		bucketName := delItem.bucketName
