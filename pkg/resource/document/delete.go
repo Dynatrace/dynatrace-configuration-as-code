@@ -74,7 +74,11 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 	}
 
 	_, err := d.source.Delete(ctx, id)
-	if err != nil && !api.IsNotFoundError(err) {
+	if err != nil {
+		if api.IsNotFoundError(err) {
+			logger.DebugContext(ctx, "Document doesn't exist - no need for action")
+			return nil
+		}
 		logger.ErrorContext(ctx, "Failed to delete document", log.ErrorAttr(err))
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
