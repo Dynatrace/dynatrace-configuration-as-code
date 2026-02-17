@@ -150,6 +150,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 		logger.InfoContext(ctx, "Deleting objects for schema...", slog.Int("count", len(settingsObjects)))
 		for _, settingsObject := range settingsObjects {
 			if !settingsObject.IsDeletable() {
+				logger.DebugContext(ctx, "Skipping non-deletable settings object", slog.String("id", settingsObject.ObjectId))
 				continue
 			}
 
