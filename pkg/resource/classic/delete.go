@@ -86,6 +86,7 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 		if e := d.source.Delete(ctx, a, id); e != nil && !coreapi.IsNotFoundError(e) {
 			logger.ErrorContext(ctx, "Failed to delete config", log.ErrorAttr(e))
 			err = errors.Join(err, e)
+			continue
 		}
 		logger.DebugContext(ctx, "Config deleted successfully")
 	}
