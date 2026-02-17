@@ -44,10 +44,16 @@ func NewDeleter(source DeleteSource) *Deleter {
 
 // Delete removes the given pointer.DeletePointer entries from the environment the supplied client dtclient.Client connects to
 func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error {
-	var err error
+	if len(dps) == 0 {
+		return nil
+	}
+	apiType := dps[0].Type
+	logger := slog.With(log.TypeAttr(apiType))
+	logger.InfoContext(ctx, "Deleting configurations ...", slog.Int("count", len(dps)))
 
+	var err error
 	for _, dp := range dps {
-		logger := slog.With(log.CoordinateAttr(dp.AsCoordinate()))
+		logger := logger.With(log.CoordinateAttr(dp.AsCoordinate()))
 		theAPI := api.NewAPIs()[dp.Type]
 		var parentID string
 		var e error
