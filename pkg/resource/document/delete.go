@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 )
 
@@ -44,6 +45,11 @@ func NewDeleter(source DeleteSource) *Deleter {
 }
 
 func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error {
+	if len(dps) == 0 {
+		return nil
+	}
+	slog.InfoContext(ctx, "Deleting documents ...", log.TypeAttr(config.DocumentTypeID), slog.Int("count", len(dps)))
+
 	errCount := 0
 	for _, dp := range dps {
 		err := d.deleteSingle(ctx, dp)
@@ -78,6 +84,8 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 }
 
 func (d Deleter) DeleteAll(ctx context.Context) error {
+	slog.InfoContext(ctx, "Deleting all documents ...", log.TypeAttr(config.DocumentTypeID))
+
 	listResponse, err := d.source.List(ctx, getFilterForAllSupportedDocumentTypes())
 	if err != nil {
 		return err
@@ -92,7 +100,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	}
 
 	if retErr != nil {
-		slog.ErrorContext(ctx, "Failed to delete all document configurations", log.ErrorAttr(retErr))
+		slog.ErrorContext(ctx, "Failed to delete all documents", log.ErrorAttr(retErr))
 	}
 
 	return retErr
