@@ -79,12 +79,14 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) int
 	}
 	_, err = d.source.Delete(ctx, resourceType, id)
 	if err != nil {
-		if !api.IsNotFoundError(err) {
-			logger.ErrorContext(ctx, "Failed to delete automation object", log.ErrorAttr(err))
-			return 1
+		if api.IsNotFoundError(err) {
+			logger.DebugContext(ctx, "Automation object doesn't exist - no need for action")
+			return 0
 		}
+		logger.ErrorContext(ctx, "Failed to delete automation object", log.ErrorAttr(err))
+		return 1
 	}
-	logger.DebugContext(ctx, "Automation object deleted")
+	logger.DebugContext(ctx, "Automation object deleted successfully")
 	return 0
 }
 

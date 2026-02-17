@@ -159,7 +159,7 @@ func (d Deleter) delete(ctx context.Context, deleteItems []deleteItem, baseLogge
 		}
 
 		if !bucketExists {
-			// bucket already deleted
+			logger.DebugContext(ctx, "Grail bucket doesn't exist - no need for action")
 			continue
 		}
 
