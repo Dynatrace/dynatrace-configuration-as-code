@@ -49,7 +49,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	}
 	automationResource := entries[0].Type
 
-	slog.InfoContext(ctx, "Deleting configs", log.TypeAttr(automationResource), slog.Int("count", len(entries)))
+	slog.InfoContext(ctx, "Deleting automation objects ...", log.TypeAttr(automationResource), slog.Int("count", len(entries)))
 
 	deleteErrs := 0
 	for _, e := range entries {
@@ -97,6 +97,7 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) int
 // Returns:
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
 func (d Deleter) DeleteAll(ctx context.Context) error {
+	slog.InfoContext(ctx, "Deleting all automation objects ... ")
 	errCount := 0
 
 	resources := []config.AutomationResource{config.Workflow, config.SchedulingRule, config.BusinessCalendar}
@@ -110,7 +111,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			continue
 		}
 
-		logger.InfoContext(ctx, "Collecting automation objects...")
+		logger.InfoContext(ctx, "Collecting automation objects ...")
 		resp, err := d.source.List(ctx, t)
 		if err != nil {
 			logger.ErrorContext(ctx, "Failed to collect automation objects", log.ErrorAttr(err))
