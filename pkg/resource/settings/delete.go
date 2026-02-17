@@ -133,7 +133,8 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 		schemaIds[i] = schemas[i].SchemaId
 	}
 
-	log.DebugContext(ctx, "Deleting settings of schemas %v...", schemaIds)
+	slog.InfoContext(ctx, "Deleting all settings objects ...")
+	slog.DebugContext(ctx, "Deleting settings of schemas ...", slog.Any("schemas", schemaIds))
 
 	for _, s := range schemaIds {
 		logger := slog.With(log.TypeAttr(s))
