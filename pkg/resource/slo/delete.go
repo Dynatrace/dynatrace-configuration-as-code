@@ -44,6 +44,11 @@ func NewDeleter(source DeleteSource) *Deleter {
 }
 
 func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error {
+	if len(dps) == 0 {
+		return nil
+	}
+	slog.InfoContext(ctx, "Deleting SLOs ...", log.TypeAttr(config.ServiceLevelObjectiveID), slog.Int("count", len(dps)))
+
 	errCount := 0
 	for _, dp := range dps {
 		err := d.deleteSingle(ctx, dp)
@@ -69,12 +74,12 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 		var err error
 		id, err = d.findEntryWithExternalID(ctx, extID)
 		if err != nil {
-			logger.ErrorContext(ctx, "Failed to get slo-v2 by external ID", slog.String("externalId", extID), log.ErrorAttr(err))
+			logger.ErrorContext(ctx, "Failed to get SLO by external ID", slog.String("externalId", extID), log.ErrorAttr(err))
 			return err
 		}
 
 		if id == "" {
-			logger.DebugContext(ctx, "No slo-v2 found with external ID", slog.String("externalId", extID))
+			logger.DebugContext(ctx, "No SLO found with external ID", slog.String("externalId", extID))
 			return nil
 		}
 
@@ -83,11 +88,11 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 
 	_, err := d.source.Delete(ctx, id)
 	if err != nil && !api.IsNotFoundError(err) {
-		logger.ErrorContext(ctx, "Failed to delete slo-v2", log.ErrorAttr(err))
+		logger.ErrorContext(ctx, "Failed to delete SLO", log.ErrorAttr(err))
 		return fmt.Errorf("failed to delete entry with id '%s': %w", id, err)
 	}
 
-	logger.DebugContext(ctx, "SLO-v2 deleted successfully")
+	logger.DebugContext(ctx, "SLO deleted successfully")
 	return nil
 }
 
@@ -123,6 +128,8 @@ func (d Deleter) findEntryWithExternalID(ctx context.Context, externalID string)
 }
 
 func (d Deleter) DeleteAll(ctx context.Context) error {
+	slog.InfoContext(ctx, "Deleting all SLOs ...", log.TypeAttr(config.ServiceLevelObjectiveID))
+
 	items, err := d.source.List(ctx)
 	if err != nil {
 		return err
@@ -143,7 +150,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 
 	retErr := errors.Join(errs...)
 	if retErr != nil {
-		slog.ErrorContext(ctx, "Failed to delete all slo-v2 configurations", log.ErrorAttr(retErr))
+		slog.ErrorContext(ctx, "Failed to delete all SLOs", log.ErrorAttr(retErr))
 	}
 
 	return retErr
