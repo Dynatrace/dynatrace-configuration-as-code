@@ -44,6 +44,11 @@ func NewDeleter(source DeleteSource) *Deleter {
 }
 
 func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error {
+	if len(dps) == 0 {
+		return nil
+	}
+	slog.InfoContext(ctx, "Deleting segments ...", log.TypeAttr(config.SegmentID), slog.Int("count", len(dps)))
+
 	errCount := 0
 	for _, dp := range dps {
 		err := d.deleteSingle(ctx, dp)
@@ -115,6 +120,8 @@ func (d Deleter) tryGetSegmentIDByExternalID(ctx context.Context, extID string) 
 }
 
 func (d Deleter) DeleteAll(ctx context.Context) error {
+	slog.InfoContext(ctx, "Deleting all segments...", log.TypeAttr(config.SegmentID))
+
 	items, err := d.list(ctx)
 	if err != nil {
 		return err
@@ -129,7 +136,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	}
 
 	if retErr != nil {
-		log.ErrorContext(ctx, "Failed to delete all %s configurations: %v", config.SegmentID, retErr)
+		slog.ErrorContext(ctx, "Failed to delete all segments", log.ErrorAttr(retErr))
 	}
 
 	return retErr
