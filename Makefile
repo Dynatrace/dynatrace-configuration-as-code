@@ -116,7 +116,7 @@ update-dependencies:
 
 
 install-ko:
-	@go install github.com/arthurpitman/ko@d2b594c
+	@go install github.com/arthurpitman/ko@697ac38
 
 
 #TAG - specify tag value. The main purpose is to define public tag during a release build.
