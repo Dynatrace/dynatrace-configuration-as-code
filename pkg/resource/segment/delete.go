@@ -19,7 +19,6 @@ package segment
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -57,7 +56,7 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 		}
 	}
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d %s object(s)", errCount, config.SegmentID)
+		return fmt.Errorf("failed to delete %d segment(s)", errCount)
 	}
 	return nil
 }
@@ -127,19 +126,20 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 		return err
 	}
 
-	var retErr error
+	errCount := 0
 	for _, i := range items {
 		err := d.deleteSingle(ctx, pointer.DeletePointer{Type: string(config.SegmentID), OriginObjectId: i.UID})
 		if err != nil {
-			retErr = errors.Join(retErr, err)
+			errCount++
 		}
 	}
 
-	if retErr != nil {
-		slog.ErrorContext(ctx, "Failed to delete all segments", log.ErrorAttr(retErr))
+	if errCount > 0 {
+		slog.ErrorContext(ctx, "Failed to delete some segments", slog.Int("count", errCount))
+		return fmt.Errorf("failed to delete %d segment(s)", errCount)
 	}
 
-	return retErr
+	return nil
 }
 
 type items []struct {

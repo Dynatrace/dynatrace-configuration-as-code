@@ -19,7 +19,6 @@ package slo
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -57,7 +56,7 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 		}
 	}
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d %s object(s)", errCount, config.ServiceLevelObjectiveID)
+		return fmt.Errorf("failed to delete %d SLO(s)", errCount)
 	}
 	return nil
 }
@@ -135,25 +134,25 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 		return err
 	}
 
-	var errs []error
+	errCount := 0
 	for _, i := range items.All() {
 		var e entry
 		if err := json.Unmarshal(i, &e); err != nil {
-			errs = append(errs, err)
+			errCount++
 			continue
 		}
 		err := d.deleteSingle(ctx, pointer.DeletePointer{Type: string(config.ServiceLevelObjectiveID), OriginObjectId: e.ID})
 		if err != nil {
-			errs = append(errs, err)
+			errCount++
 		}
 	}
 
-	retErr := errors.Join(errs...)
-	if retErr != nil {
-		slog.ErrorContext(ctx, "Failed to delete all SLOs", log.ErrorAttr(retErr))
+	if errCount > 0 {
+		slog.ErrorContext(ctx, "Failed to delete some SLOs", slog.Int("count", errCount))
+		return fmt.Errorf("failed to delete %d SLO(s)", errCount)
 	}
 
-	return retErr
+	return nil
 }
 
 type entry struct {

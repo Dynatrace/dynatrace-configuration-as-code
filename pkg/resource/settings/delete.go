@@ -93,6 +93,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	}
 
 	if deleteErrs > 0 {
+		logger.ErrorContext(ctx, "Failed to delete some settings objects", slog.Int("count", deleteErrs))
 		return fmt.Errorf("failed to delete %d settings object(s) of schema %q", deleteErrs, schema)
 	}
 
@@ -164,9 +165,8 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	}
 
 	if errCount > 0 {
-		returnedError := fmt.Errorf("failed to delete %d setting(s)", errCount)
-		slog.ErrorContext(ctx, "Failed to delete all Settings 2.0 objects", log.ErrorAttr(returnedError))
-		return returnedError
+		slog.ErrorContext(ctx, "Failed to delete some settings objects", slog.Int("count", errCount))
+		return fmt.Errorf("failed to delete %d settings object(s)", errCount)
 	}
 
 	return nil

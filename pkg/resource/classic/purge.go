@@ -81,9 +81,8 @@ func (d Purger) DeleteAll(ctx context.Context) error {
 	}
 
 	if errs > 0 {
-		returnedError := fmt.Errorf("failed to delete %d config(s)", errs)
-		log.ErrorContext(ctx, "Failed to delete all classic API configurations: %v", returnedError)
-		return returnedError
+		slog.ErrorContext(ctx, "Failed to delete some classic API configurations", slog.Int("count", errs))
+		return fmt.Errorf("failed to delete %d classic API configuration(s)", errs)
 	}
 
 	return nil

@@ -18,7 +18,6 @@ package document
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -58,7 +57,7 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 		}
 	}
 	if errCount > 0 {
-		return fmt.Errorf("failed to delete %d document object(s)", errCount)
+		return fmt.Errorf("failed to delete %d document(s)", errCount)
 	}
 	return nil
 }
@@ -95,19 +94,20 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 		return err
 	}
 
-	var retErr error
+	errCount := 0
 	for _, x := range listResponse.Responses {
 		err := d.deleteSingle(ctx, pointer.DeletePointer{Type: x.Type, OriginObjectId: x.ID})
 		if err != nil {
-			retErr = errors.Join(retErr, err)
+			errCount++
 		}
 	}
 
-	if retErr != nil {
-		slog.ErrorContext(ctx, "Failed to delete all documents", log.ErrorAttr(retErr))
+	if errCount > 0 {
+		slog.ErrorContext(ctx, "Failed to delete some documents", slog.Int("count", errCount))
+		return fmt.Errorf("failed to delete %d document(s)", errCount)
 	}
 
-	return retErr
+	return nil
 }
 
 func getFilterForAllSupportedDocumentTypes() string {
