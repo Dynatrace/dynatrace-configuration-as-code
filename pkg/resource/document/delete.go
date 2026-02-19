@@ -48,7 +48,7 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 	if len(dps) == 0 {
 		return nil
 	}
-	slog.InfoContext(ctx, "Deleting documents ...", log.TypeAttr(config.DocumentTypeID), slog.Int("count", len(dps)))
+	slog.InfoContext(ctx, "Deleting documents", log.TypeAttr(config.DocumentTypeID), slog.Int("count", len(dps)))
 
 	errCount := 0
 	for _, dp := range dps {
@@ -88,7 +88,7 @@ func (d Deleter) deleteSingle(ctx context.Context, dp pointer.DeletePointer) err
 }
 
 func (d Deleter) DeleteAll(ctx context.Context) error {
-	slog.InfoContext(ctx, "Deleting all documents ...", log.TypeAttr(config.DocumentTypeID))
+	slog.InfoContext(ctx, "Deleting all documents", log.TypeAttr(config.DocumentTypeID))
 
 	listResponse, err := d.source.List(ctx, getFilterForAllSupportedDocumentTypes())
 	if err != nil {

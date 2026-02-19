@@ -59,18 +59,18 @@ func (d Purger) DeleteAll(ctx context.Context) error {
 		if a.HasParent() {
 			logger.DebugContext(ctx, "Skipping %q, will be deleted by the parent API %q", a.ID, a.Parent)
 		}
-		logger.InfoContext(ctx, "Collecting configs of type %q...", a.ID)
+		logger.InfoContext(ctx, "Collecting configs of type %q", a.ID)
 		values, err := d.configSource.List(ctx, a)
 		if err != nil {
 			errs++
 			continue
 		}
 
-		logger.InfoContext(ctx, "Deleting %d configs of type %q...", len(values), a.ID)
+		logger.InfoContext(ctx, "Deleting %d configs of type %q", len(values), a.ID)
 
 		for _, v := range values {
 			logger := logger.With(slog.Any("value", v))
-			logger.DebugContext(ctx, "Deleting config %s:%s...", a.ID, v.Id)
+			logger.DebugContext(ctx, "Deleting config %s:%s", a.ID, v.Id)
 			err := d.configSource.Delete(ctx, a, v.Id)
 
 			if err != nil {

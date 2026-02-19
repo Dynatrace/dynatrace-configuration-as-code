@@ -49,7 +49,7 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 	}
 	apiType := dps[0].Type
 	logger := slog.With(log.TypeAttr(apiType))
-	logger.InfoContext(ctx, "Deleting configurations ...", slog.Int("count", len(dps)))
+	logger.InfoContext(ctx, "Deleting configurations", slog.Int("count", len(dps)))
 
 	var err error
 	for _, dp := range dps {
