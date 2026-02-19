@@ -57,7 +57,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	}
 	deleteItems := convertDeletePointerToDeleteItem(entries)
 	logger := slog.With(log.TypeAttr(config.BucketTypeID))
-	logger.InfoContext(ctx, "Deleting Grail buckets ...", slog.Int("count", len(deleteItems)))
+	logger.InfoContext(ctx, "Deleting Grail buckets", slog.Int("count", len(deleteItems)))
 
 	if errorCount := d.delete(ctx, deleteItems, logger); errorCount > 0 {
 		return fmt.Errorf("failed to delete %d Grail buckets", errorCount)
@@ -75,7 +75,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 //   - error: After all deletions where attempted an error is returned if any attempt failed.
 func (d Deleter) DeleteAll(ctx context.Context) error {
 	logger := slog.With(log.TypeAttr(config.BucketTypeID))
-	logger.InfoContext(ctx, "Deleting all Grail buckets ...")
+	logger.InfoContext(ctx, "Deleting all Grail buckets")
 
 	response, err := d.source.List(ctx)
 	if err != nil {

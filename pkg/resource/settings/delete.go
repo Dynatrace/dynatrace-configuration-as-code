@@ -48,7 +48,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 	schema := entries[0].Type
 
 	logger := slog.With(log.TypeAttr(schema))
-	logger.InfoContext(ctx, "Deleting settings objects...", slog.String("schema", schema), slog.Int("count", len(entries)))
+	logger.InfoContext(ctx, "Deleting settings objects", slog.String("schema", schema), slog.Int("count", len(entries)))
 
 	deleteErrs := 0
 	for _, e := range entries {
@@ -133,12 +133,12 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 		schemaIds[i] = schemas[i].SchemaId
 	}
 
-	slog.InfoContext(ctx, "Deleting all settings objects ...")
-	slog.DebugContext(ctx, "Deleting settings of schemas ...", slog.Any("schemas", schemaIds))
+	slog.InfoContext(ctx, "Deleting all settings objects")
+	slog.DebugContext(ctx, "Deleting settings of schemas", slog.Any("schemas", schemaIds))
 
 	for _, s := range schemaIds {
 		logger := slog.With(log.TypeAttr(s))
-		logger.InfoContext(ctx, "Collecting objects for schema...")
+		logger.InfoContext(ctx, "Collecting objects for schema")
 
 		settingsObjects, err := d.source.List(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
@@ -147,7 +147,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			continue
 		}
 
-		logger.InfoContext(ctx, "Deleting objects for schema...", slog.Int("count", len(settingsObjects)))
+		logger.InfoContext(ctx, "Deleting objects for schema", slog.Int("count", len(settingsObjects)))
 		for _, settingsObject := range settingsObjects {
 			if !settingsObject.IsDeletable() {
 				logger.DebugContext(ctx, "Skipping non-deletable settings object", slog.String("id", settingsObject.ObjectId))

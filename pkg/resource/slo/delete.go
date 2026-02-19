@@ -47,7 +47,7 @@ func (d Deleter) Delete(ctx context.Context, dps []pointer.DeletePointer) error 
 	if len(dps) == 0 {
 		return nil
 	}
-	slog.InfoContext(ctx, "Deleting SLOs ...", log.TypeAttr(config.ServiceLevelObjectiveID), slog.Int("count", len(dps)))
+	slog.InfoContext(ctx, "Deleting SLOs", log.TypeAttr(config.ServiceLevelObjectiveID), slog.Int("count", len(dps)))
 
 	errCount := 0
 	for _, dp := range dps {
@@ -128,7 +128,7 @@ func (d Deleter) findEntryWithExternalID(ctx context.Context, externalID string)
 }
 
 func (d Deleter) DeleteAll(ctx context.Context) error {
-	slog.InfoContext(ctx, "Deleting all SLOs ...", log.TypeAttr(config.ServiceLevelObjectiveID))
+	slog.InfoContext(ctx, "Deleting all SLOs", log.TypeAttr(config.ServiceLevelObjectiveID))
 
 	items, err := d.source.List(ctx)
 	if err != nil {
