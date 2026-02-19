@@ -180,7 +180,7 @@ func TestDeleteByObjectId(t *testing.T) {
 		}
 
 		err := document.NewDeleter(&c).Delete(t.Context(), []pointer.DeletePointer{given, {OriginObjectId: "bla"}, given}) // the pointer in the middle is to cause error behavior
-		assert.ErrorContains(t, err, "failed to delete 1 document object(s)")
+		assert.ErrorContains(t, err, "failed to delete 1 document(s)")
 		assert.True(t, c.deleteCalled, "delete command wasn't invoked")
 	})
 }

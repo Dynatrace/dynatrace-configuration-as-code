@@ -88,9 +88,8 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 	errorCount := errorCountParse + errorCountDelete
 
 	if errorCount > 0 {
-		returnedError := fmt.Errorf("failed to delete %d Grail buckets", errorCount)
-		logger.ErrorContext(ctx, "Failed to delete all Grail buckets", log.ErrorAttr(returnedError))
-		return returnedError
+		logger.ErrorContext(ctx, "Failed to delete some Grail buckets", slog.Int("count", errorCount))
+		return fmt.Errorf("failed to delete %d Grail buckets", errorCount)
 	}
 
 	return nil
