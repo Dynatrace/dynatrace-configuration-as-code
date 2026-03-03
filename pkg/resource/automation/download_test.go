@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
@@ -34,64 +35,119 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 )
 
+// serveFile reads a testdata file and writes it to the response, failing the test on any error.
+func serveFile(t *testing.T, rw http.ResponseWriter, path string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	_, err = rw.Write(data)
+	require.NoError(t, err)
+}
+
+type serverOptions struct {
+	// businessCalsStatus, if non-zero, is returned instead of serving the list file.
+	businessCalsStatus int
+	// workflowExportStatus maps a workflow ID to the HTTP status that should be returned
+	// for its /export route instead of serving the file.
+	workflowExportStatus map[string]int
+}
+
+type serverOption func(*serverOptions)
+
+func withBusinessCalsStatus(status int) serverOption {
+	return func(o *serverOptions) { o.businessCalsStatus = status }
+}
+
+func withWorkflowExportStatus(id string, status int) serverOption {
+	return func(o *serverOptions) {
+		if o.workflowExportStatus == nil {
+			o.workflowExportStatus = make(map[string]int)
+		}
+		o.workflowExportStatus[id] = status
+	}
+}
+
+// newAutomationServer registers all List routes and per-ID /export routes on a ServeMux.
+// Use the option helpers to override the default (serve-from-file) behaviour for individual routes.
+func newAutomationServer(t *testing.T, opts ...serverOption) *httptest.Server {
+	t.Helper()
+
+	o := &serverOptions{}
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /platform/automation/v1/workflows", func(rw http.ResponseWriter, req *http.Request) {
+		serveFile(t, rw, "./testdata/listWorkflows.json")
+	})
+	mux.HandleFunc("GET /platform/automation/v1/business-calendars", func(rw http.ResponseWriter, req *http.Request) {
+		if o.businessCalsStatus != 0 {
+			rw.WriteHeader(o.businessCalsStatus)
+			return
+		}
+		serveFile(t, rw, "./testdata/listBusinessCals.json")
+	})
+	mux.HandleFunc("GET /platform/automation/v1/scheduling-rules", func(rw http.ResponseWriter, req *http.Request) {
+		serveFile(t, rw, "./testdata/listSchedulingRules.json")
+	})
+	mux.HandleFunc("GET /platform/automation/v1/workflows/{id}/export", func(rw http.ResponseWriter, req *http.Request) {
+		id := req.PathValue("id")
+		if status, ok := o.workflowExportStatus[id]; ok {
+			rw.WriteHeader(status)
+			return
+		}
+		serveFile(t, rw, "./testdata/getWorkflow-"+id+".json")
+	})
+
+	return httptest.NewServer(mux)
+}
+
+// newAutomationClient builds an automation API client pointed at the given server.
+func newAutomationClient(t *testing.T, server *httptest.Server) *DownloadAPI {
+	t.Helper()
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+	return NewDownloadAPI(automation.NewClient(rest.NewClient(serverURL, server.Client())))
+}
+
 func TestDownloader_Download(t *testing.T) {
 	t.Run("download all resource", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			switch req.URL.Path {
-			case "/platform/automation/v1/workflows":
-				wfData, _ := os.ReadFile("./testdata/listWorkflows.json")
-				rw.Write(wfData)
-			case "/platform/automation/v1/business-calendars":
-				wfData, _ := os.ReadFile("./testdata/listBusinessCals.json")
-				rw.Write(wfData)
-			case "/platform/automation/v1/scheduling-rules":
-				wfData, _ := os.ReadFile("./testdata/listSchedulingRules.json")
-				rw.Write(wfData)
-			default:
-				t.Fatalf("Unexpected API call to %s", req.URL.Path)
-			}
-		}))
+		server := newAutomationServer(t)
 		defer server.Close()
-		serverURL, err := url.Parse(server.URL)
-		assert.NoError(t, err)
-		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-		automationApi := NewDownloadAPI(httpClient)
-		result, err := automationApi.Download(t.Context(), "projectName")
+
+		result, err := newAutomationClient(t, server).Download(t.Context(), "projectName")
+		require.NoError(t, err)
 		assert.Len(t, result, 3)
 		assert.Len(t, result[string(config.Workflow)], 3)
 		assert.Len(t, result[string(config.SchedulingRule)], 6)
 		assert.Len(t, result[string(config.BusinessCalendar)], 2)
-		assert.NoError(t, err)
 	})
 }
 
 func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		switch req.URL.Path {
-		case "/platform/automation/v1/workflows":
-			wfData, _ := os.ReadFile("./testdata/listWorkflows.json")
-			rw.Write(wfData)
-		case "/platform/automation/v1/business-calendars":
-			rw.WriteHeader(http.StatusBadRequest)
-		case "/platform/automation/v1/scheduling-rules":
-			wfData, _ := os.ReadFile("./testdata/listSchedulingRules.json")
-			rw.Write(wfData)
-		default:
-			assert.Fail(t, "unexpect call to server with path "+req.URL.Path)
-		}
-
-	}))
+	server := newAutomationServer(t, withBusinessCalsStatus(http.StatusBadRequest))
 	defer server.Close()
 
-	serverURL, err := url.Parse(server.URL)
-	assert.NoError(t, err)
-	httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
-	automationApi := NewDownloadAPI(httpClient)
-	result, err := automationApi.Download(t.Context(), "projectName")
+	result, err := newAutomationClient(t, server).Download(t.Context(), "projectName")
+	require.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Len(t, result[string(config.Workflow)], 3)
 	assert.Len(t, result[string(config.SchedulingRule)], 6)
-	assert.NoError(t, err)
+}
+
+func TestDownloader_Download_SingleWorkflowExportFails(t *testing.T) {
+	const failingID = "12345678-1234-1234-1234-123456789092"
+
+	server := newAutomationServer(t, withWorkflowExportStatus(failingID, http.StatusInternalServerError))
+	defer server.Close()
+
+	result, err := newAutomationClient(t, server).Download(t.Context(), "projectName")
+	require.NoError(t, err)
+	// The entire workflow batch is aborted when any single export request fails
+	assert.NotContains(t, result, string(config.Workflow))
+	assert.Len(t, result, 2)
 }
 
 func Test_createTemplateFromRawJSON(t *testing.T) {
@@ -128,17 +184,30 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 				t: template.NewInMemoryTemplate("42", `{ "id": "42`),
 			},
 		},
+		{
+			"strips modificationInfo from template",
+			automationutils.Response{
+				ID:   "42",
+				Data: []byte(`{ "id": "42", "title": "My Workflow", "modificationInfo": { "createdBy": "user@example.com", "lastModifiedBy": "user@example.com" } }`),
+			},
+			want{
+				t: template.NewInMemoryTemplate("42", `{
+  "title": "{{.name}}"
+}`),
+				name: "My Workflow",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotT, gotExtractedName := createTemplateFromRawJSON(tt.given, "DOES NOT MATTER FOR TEST", "SOME PROJECT")
 			assert.Equalf(t, tt.want.t, gotT, "createTemplateFromRawJSON(%v)", tt.given)
 			if tt.want.name != "" {
+				require.NotNilf(t, gotExtractedName, "createTemplateFromRawJSON(%v)", tt.given)
 				assert.Equalf(t, tt.want.name, *gotExtractedName, "createTemplateFromRawJSON(%v)", tt.given)
 			} else {
 				assert.Nil(t, gotExtractedName, "expected no name to be extracted")
 			}
-
 		})
 	}
 }

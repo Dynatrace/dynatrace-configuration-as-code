@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"golang.org/x/exp/maps"
@@ -42,6 +43,7 @@ import (
 
 type DownloadSource interface {
 	List(context.Context, automation.ResourceType) (api.PagedListResponse, error)
+	Get(ctx context.Context, resourceType automation.ResourceType, id string) (api.Response, error)
 }
 
 type DownloadAPI struct {
@@ -89,6 +91,15 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 		}
 		lg.With(slog.Any("configsDownloaded", len(objects))).InfoContext(ctx, "Downloaded %d objects for %s", len(objects), string(at.Resource))
 
+		if resource == automation.Workflows {
+			// for workflows, we need to fetch the full object with Get, as the List endpoint only returns a subset of the properties, and we want to have them all for the template
+			objects, err = a.fetchFullObjects(ctx, resource, objects)
+			if err != nil {
+				lg.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
+				continue
+			}
+		}
+
 		var configs []config.Config
 		for _, obj := range objects {
 
@@ -127,6 +138,49 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	return configsPerType, nil
 }
 
+// fetchFullObjects fetches the full representation of each object by calling Get for every entry in objects.
+// This is necessary because some List endpoints (e.g. Workflows) only return a subset of each object's properties.
+//
+// All Get calls are issued in parallel. A shared cancellable context is used so that the first failure
+// immediately cancels all remaining in-flight requests. If any Get or decode call fails, the entire
+// batch is aborted and the error is returned.
+func (a DownloadAPI) fetchFullObjects(ctx context.Context, resource automation.ResourceType, objects []automationutils.Response) ([]automationutils.Response, error) {
+	gctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+
+	results := make(chan automationutils.Response, len(objects))
+	var wg sync.WaitGroup
+	for _, obj := range objects {
+		wg.Add(1)
+		go func(obj automationutils.Response) {
+			defer wg.Done()
+			resp, err := a.automationSource.Get(gctx, resource, obj.ID)
+			if err != nil {
+				cancel(err)
+				return
+			}
+			decoded, err := automationutils.DecodeResponse(resp)
+			if err != nil {
+				cancel(err)
+				return
+			}
+			results <- decoded
+		}(obj)
+	}
+	wg.Wait()
+	close(results)
+
+	if err := context.Cause(gctx); err != nil {
+		return nil, err
+	}
+
+	full := make([]automationutils.Response, 0, len(objects))
+	for r := range results {
+		full = append(full, r)
+	}
+	return full, nil
+}
+
 func escapeJinjaTemplates(src []byte) ([]byte, error) {
 	var prettyJSON bytes.Buffer
 	err := json.Indent(&prettyJSON, src, "", "\t")
@@ -146,7 +200,6 @@ func createTemplateFromRawJSON(obj automationutils.Response, configType, project
 	// remove properties not necessary for upload
 	delete(data, "id")
 	delete(data, "modificationInfo")
-	delete(data, "lastExecution")
 
 	// extract 'title' as name
 	configName := configId
