@@ -1,0 +1,30 @@
+{
+    "id": "12345678-1234-1234-1234-123456789093",
+    "title": "Untitled workflow",
+    "description": "{{execution().id}}",
+    "tasks": {
+        "executeDqlQuery1": {
+            "name": "execute_dql_query_1",
+            "input": {
+                "query": ""
+            },
+            "action": "dynatrace.automations:execute-dql-query",
+            "position": {
+                "x": 0,
+                "y": 1
+            },
+            "description": "Executes DQL query",
+            "predecessors": []
+        }
+    },
+    "taskDefaults": {},
+    "usages": [],
+    "labels": {},
+    "version": 4,
+    "actor": "12345678-1234-1234-1234-123456789098",
+    "owner": "12345678-1234-1234-1234-123456789098",
+    "isPrivate": true,
+    "triggerType": "Manual",
+    "schemaVersion": 3,
+    "trigger": {}
+}
