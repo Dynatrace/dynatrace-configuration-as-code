@@ -93,11 +93,7 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 
 		if resource == automation.Workflows {
 			// for workflows, we need to fetch the full object with Get, as the List endpoint only returns a subset of the properties, and we want to have them all for the template
-			objects, err = a.fetchFullObjects(ctx, resource, objects)
-			if err != nil {
-				lg.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
-				continue
-			}
+			objects = a.fetchFullObjects(ctx, resource, objects)
 		}
 
 		var configs []config.Config
@@ -141,44 +137,32 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 // fetchFullObjects fetches the full representation of each object by calling Get for every entry in objects.
 // This is necessary because some List endpoints (e.g. Workflows) only return a subset of each object's properties.
 //
-// All Get calls are issued in parallel. A shared cancellable context is used so that the first failure
-// immediately cancels all remaining in-flight requests. If any Get or decode call fails, the entire
-// batch is aborted and the error is returned.
-func (a DownloadAPI) fetchFullObjects(ctx context.Context, resource automation.ResourceType, objects []automationutils.Response) ([]automationutils.Response, error) {
-	gctx, cancel := context.WithCancelCause(ctx)
-	defer cancel(nil)
+// All Get calls are issued in parallel. If any individual Get or decode call fails, the error is logged and
+// that object is skipped, consistent with how other downloaders handle errors.
+func (a DownloadAPI) fetchFullObjects(ctx context.Context, resource automation.ResourceType, objects []automationutils.Response) []automationutils.Response {
+	var mu sync.Mutex
+	full := make([]automationutils.Response, 0, len(objects))
 
-	results := make(chan automationutils.Response, len(objects))
 	var wg sync.WaitGroup
 	for _, obj := range objects {
-		wg.Add(1)
-		go func(obj automationutils.Response) {
-			defer wg.Done()
-			resp, err := a.automationSource.Get(gctx, resource, obj.ID)
+		wg.Go(func() {
+			resp, err := a.automationSource.Get(ctx, resource, obj.ID)
 			if err != nil {
-				cancel(err)
+				log.With(log.ErrorAttr(err)).WarnContext(ctx, "Failed to fetch full object for %v %s: %v", resource, obj.ID, err)
 				return
 			}
 			decoded, err := automationutils.DecodeResponse(resp)
 			if err != nil {
-				cancel(err)
+				log.With(log.ErrorAttr(err)).WarnContext(ctx, "Failed to decode full object for %v %s: %v", resource, obj.ID, err)
 				return
 			}
-			results <- decoded
-		}(obj)
+			mu.Lock()
+			full = append(full, decoded)
+			mu.Unlock()
+		})
 	}
 	wg.Wait()
-	close(results)
-
-	if err := context.Cause(gctx); err != nil {
-		return nil, err
-	}
-
-	full := make([]automationutils.Response, 0, len(objects))
-	for r := range results {
-		full = append(full, r)
-	}
-	return full, nil
+	return full
 }
 
 func escapeJinjaTemplates(src []byte) ([]byte, error) {

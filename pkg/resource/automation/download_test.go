@@ -47,9 +47,10 @@ func serveFile(t *testing.T, rw http.ResponseWriter, path string) {
 type serverOptions struct {
 	// businessCalsStatus, if non-zero, is returned instead of serving the list file.
 	businessCalsStatus int
-	// workflowExportStatus maps a workflow ID to the HTTP status that should be returned
-	// for its /export route instead of serving the file.
-	workflowExportStatus map[string]int
+	// workflowExportErrors maps a workflow ID to an HTTP error status that should be returned
+	// for its /export route. If an ID is present in the map, the error status is returned
+	// instead of serving the corresponding testdata file.
+	workflowExportErrors map[string]int
 }
 
 type serverOption func(*serverOptions)
@@ -58,12 +59,12 @@ func withBusinessCalsStatus(status int) serverOption {
 	return func(o *serverOptions) { o.businessCalsStatus = status }
 }
 
-func withWorkflowExportStatus(id string, status int) serverOption {
+func withWorkflowExportError(id string, status int) serverOption {
 	return func(o *serverOptions) {
-		if o.workflowExportStatus == nil {
-			o.workflowExportStatus = make(map[string]int)
+		if o.workflowExportErrors == nil {
+			o.workflowExportErrors = make(map[string]int)
 		}
-		o.workflowExportStatus[id] = status
+		o.workflowExportErrors[id] = status
 	}
 }
 
@@ -94,7 +95,7 @@ func newAutomationServer(t *testing.T, opts ...serverOption) *httptest.Server {
 	})
 	mux.HandleFunc("GET /platform/automation/v1/workflows/{id}/export", func(rw http.ResponseWriter, req *http.Request) {
 		id := req.PathValue("id")
-		if status, ok := o.workflowExportStatus[id]; ok {
+		if status, ok := o.workflowExportErrors[id]; ok {
 			rw.WriteHeader(status)
 			return
 		}
@@ -120,7 +121,7 @@ func TestDownloader_Download(t *testing.T) {
 		result, err := newAutomationClient(t, server).Download(t.Context(), "projectName")
 		require.NoError(t, err)
 		assert.Len(t, result, 3)
-		assert.Len(t, result[string(config.Workflow)], 3)
+		assert.Len(t, result[string(config.Workflow)], 4)
 		assert.Len(t, result[string(config.SchedulingRule)], 6)
 		assert.Len(t, result[string(config.BusinessCalendar)], 2)
 	})
@@ -133,21 +134,21 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 	result, err := newAutomationClient(t, server).Download(t.Context(), "projectName")
 	require.NoError(t, err)
 	assert.Len(t, result, 2)
-	assert.Len(t, result[string(config.Workflow)], 3)
+	assert.Len(t, result[string(config.Workflow)], 4)
 	assert.Len(t, result[string(config.SchedulingRule)], 6)
 }
 
 func TestDownloader_Download_SingleWorkflowExportFails(t *testing.T) {
 	const failingID = "12345678-1234-1234-1234-123456789092"
 
-	server := newAutomationServer(t, withWorkflowExportStatus(failingID, http.StatusInternalServerError))
+	server := newAutomationServer(t, withWorkflowExportError(failingID, http.StatusInternalServerError))
 	defer server.Close()
 
 	result, err := newAutomationClient(t, server).Download(t.Context(), "projectName")
 	require.NoError(t, err)
-	// The entire workflow batch is aborted when any single export request fails
-	assert.NotContains(t, result, string(config.Workflow))
-	assert.Len(t, result, 2)
+	// The failing workflow is skipped; the remaining 3 are still downloaded
+	assert.Len(t, result[string(config.Workflow)], 3)
+	assert.Len(t, result, 3)
 }
 
 func Test_createTemplateFromRawJSON(t *testing.T) {
@@ -192,6 +193,20 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 			},
 			want{
 				t: template.NewInMemoryTemplate("42", `{
+  "title": "{{.name}}"
+}`),
+				name: "My Workflow",
+			},
+		},
+		{
+			"escapes Jinja template expressions",
+			automationutils.Response{
+				ID:   "42",
+				Data: []byte("{ \"id\": \"42\", \"title\": \"My Workflow\", \"script\": \"console.log({{`{{ event() }}`}})\" }"),
+			},
+			want{
+				t: template.NewInMemoryTemplate("42", `{
+  "script": "console.log({{`+"`"+`{{ event() }}`+"`"+`}})",
   "title": "{{.name}}"
 }`),
 				name: "My Workflow",
