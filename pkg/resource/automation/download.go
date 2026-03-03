@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"golang.org/x/exp/maps"
@@ -42,6 +43,7 @@ import (
 
 type DownloadSource interface {
 	List(context.Context, automation.ResourceType) (api.PagedListResponse, error)
+	Get(ctx context.Context, resourceType automation.ResourceType, id string) (api.Response, error)
 }
 
 type DownloadAPI struct {
@@ -89,6 +91,11 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 		}
 		lg.With(slog.Any("configsDownloaded", len(objects))).InfoContext(ctx, "Downloaded %d objects for %s", len(objects), string(at.Resource))
 
+		if resource == automation.Workflows {
+			// for workflows, we need to fetch the full object with Get, as the List endpoint only returns a subset of the properties, and we want to have them all for the template
+			objects = a.fetchFullObjects(ctx, lg, objects, projectName)
+		}
+
 		var configs []config.Config
 		for _, obj := range objects {
 
@@ -127,6 +134,36 @@ func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.
 	return configsPerType, nil
 }
 
+// fetchFullObjects fetches the full representation of each object by calling Get for every entry in objects.
+// This is necessary because some List endpoints (e.g. Workflows) only return a subset of each object's properties.
+func (a DownloadAPI) fetchFullObjects(ctx context.Context, lg *log.Slogger, objects []automationutils.Response, projectName string) []automationutils.Response {
+	var wg sync.WaitGroup
+	var mutex sync.Mutex
+	full := make([]automationutils.Response, 0, len(objects))
+
+	for _, obj := range objects {
+		wg.Go(func() {
+			cfgLg := lg.With(log.CoordinateAttr(coordinate.Coordinate{Project: projectName, Type: string(config.Workflow), ConfigId: obj.ID}))
+			resp, err := a.automationSource.Get(ctx, automation.Workflows, obj.ID)
+			if err != nil {
+				cfgLg.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to fetch full object for config %v (%s): %v", obj.ID, string(config.Workflow), err)
+				return
+			}
+			decoded, err := automationutils.DecodeResponse(resp)
+			if err != nil {
+				cfgLg.With(log.ErrorAttr(err)).ErrorContext(ctx, "Failed to decode full object for config %v (%s): %v", obj.ID, string(config.Workflow), err)
+				return
+			}
+			mutex.Lock()
+			defer mutex.Unlock()
+			full = append(full, decoded)
+		})
+	}
+	wg.Wait()
+
+	return full
+}
+
 func escapeJinjaTemplates(src []byte) ([]byte, error) {
 	var prettyJSON bytes.Buffer
 	err := json.Indent(&prettyJSON, src, "", "\t")
@@ -146,7 +183,6 @@ func createTemplateFromRawJSON(obj automationutils.Response, configType, project
 	// remove properties not necessary for upload
 	delete(data, "id")
 	delete(data, "modificationInfo")
-	delete(data, "lastExecution")
 
 	// extract 'title' as name
 	configName := configId

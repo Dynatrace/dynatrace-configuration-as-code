@@ -17,7 +17,7 @@
             "validFrom": "2023-01-01",
             "validTo": "2032-12-31",
             "labels": {},
-            "description": "",
+            "description": "{{execution().id}}",
             "modificationInfo": {
                 "createdBy": null,
                 "createdTime": "2023-02-28T08:47:01.507847Z",

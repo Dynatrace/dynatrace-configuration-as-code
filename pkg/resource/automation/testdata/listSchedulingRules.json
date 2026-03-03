@@ -17,7 +17,7 @@
             "relativeOffsetRule": null,
             "businessCalendar": "12345678-1234-1234-1234-123456789098",
             "labels": {},
-            "description": "",
+            "description": "{{execution().id}}",
             "modificationInfo": {
                 "createdBy": null,
                 "createdTime": "2023-02-28T08:47:01.695145Z",
