@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
-	templ "text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
+	templ "text/template"
 )
 
 // Render tries to render a given template with the given properties and returns the

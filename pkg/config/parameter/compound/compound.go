@@ -17,7 +17,7 @@ package compound
 import (
 	"bytes"
 	"fmt"
-	templ "text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
+	templ "text/template"
 
 	"github.com/google/go-cmp/cmp"
 
