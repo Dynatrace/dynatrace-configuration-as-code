@@ -34,7 +34,6 @@ func SetCustomHTTPClientInContext(ctx context.Context) context.Context {
 
 	return context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
 		Transport: &http.Transport{
-			// nosemgrep
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true, //nolint:gosec
 			},
