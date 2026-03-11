@@ -183,6 +183,7 @@ func createTemplateFromRawJSON(obj automationutils.Response, configType, project
 	// remove properties not necessary for upload
 	delete(data, "id")
 	delete(data, "modificationInfo")
+	delete(data, "lastExecution")
 
 	// extract 'title' as name
 	configName := configId
