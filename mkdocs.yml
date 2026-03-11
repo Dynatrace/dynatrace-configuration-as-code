@@ -1,0 +1,4 @@
+site_name: dynatrace-configuration-as-code
+docs_dir: .
+nav:
+  - Home: README.md
