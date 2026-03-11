@@ -48,9 +48,9 @@ func serveFile(t *testing.T, rw http.ResponseWriter, path string) {
 type serverOptions struct {
 	// businessCalsErrStatus, if non-zero, is returned instead of serving the list file.
 	businessCalsErrStatus int
-	// workflowExportErrStatus maps a workflow ID to the HTTP status that should be returned
-	// for its /export route instead of serving the file.
-	workflowExportErrStatus map[string]int
+	// workflowGetErrStatus maps a workflow ID to the HTTP status that should be returned
+	// for its GET route instead of serving the file.
+	workflowGetErrStatus map[string]int
 }
 
 type serverOption func(*serverOptions)
@@ -61,14 +61,14 @@ func withBusinessCalsStatus(status int) serverOption {
 
 func withWorkflowExportStatus(id string, status int) serverOption {
 	return func(o *serverOptions) {
-		if o.workflowExportErrStatus == nil {
-			o.workflowExportErrStatus = make(map[string]int)
+		if o.workflowGetErrStatus == nil {
+			o.workflowGetErrStatus = make(map[string]int)
 		}
-		o.workflowExportErrStatus[id] = status
+		o.workflowGetErrStatus[id] = status
 	}
 }
 
-// newAutomationServer registers all List routes and per-ID /export routes on a ServeMux.
+// newAutomationServer registers all List routes and per-ID routes on a ServeMux.
 // Use the option helpers to override the default (serve-from-file) behaviour for individual routes.
 func newAutomationServer(t *testing.T, opts ...serverOption) *httptest.Server {
 	t.Helper()
@@ -93,9 +93,9 @@ func newAutomationServer(t *testing.T, opts ...serverOption) *httptest.Server {
 	mux.HandleFunc("GET /platform/automation/v1/scheduling-rules", func(rw http.ResponseWriter, req *http.Request) {
 		serveFile(t, rw, "./testdata/listSchedulingRules.json")
 	})
-	mux.HandleFunc("GET /platform/automation/v1/workflows/{id}/export", func(rw http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("GET /platform/automation/v1/workflows/{id}", func(rw http.ResponseWriter, req *http.Request) {
 		id := req.PathValue("id")
-		if status, ok := o.workflowExportErrStatus[id]; ok {
+		if status, ok := o.workflowGetErrStatus[id]; ok {
 			rw.WriteHeader(status)
 			return
 		}
