@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -132,7 +133,10 @@ func CreateAccountClient(ctx context.Context, acc manifest.Account) (*accounts.C
 		WithOAuthCredentials(oauthCreds).
 		WithUserAgent(client.DefaultMonacoUserAgent).
 		WithRateLimiter(true).
-		WithRetryOptions(&rest.RetryOptions{DelayAfterRetry: 30 * time.Second, MaxRetries: 10, ShouldRetryFunc: rest.RetryIfTooManyRequests}).
+		WithRetryOptions(&rest.RetryOptions{DelayAfterRetry: 30 * time.Second, MaxRetries: 10, ShouldRetryFunc: func(resp *http.Response) bool {
+			return resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable ||
+				resp.StatusCode == http.StatusGatewayTimeout || resp.StatusCode == http.StatusBadGateway
+		}}).
 		WithAccountURL(accountApiUrlOrDefault(acc.ApiUrl)).
 		WithCustomHeaders(environment.GetAdditionalHTTPHeadersFromEnv())
 
