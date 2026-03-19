@@ -56,7 +56,7 @@ func Test_DoDeploy_InvalidManifest(t *testing.T) {
 	manifestPath, _ := filepath.Abs("manifest.yaml")
 	_ = afero.WriteFile(testFs, manifestPath, []byte(manifestYaml), 0644)
 
-	err := deployConfigs(t.Context(), testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
+	err := deployConfigs(t.Context(), testFs, manifestPath, []string{}, []string{}, []string{}, true, true, false)
 	assert.Error(t, err)
 }
 
@@ -97,26 +97,26 @@ environmentGroups:
 	_ = afero.WriteFile(testFs, manifestPath, []byte(manifestYaml), 0644)
 
 	t.Run("Wrong environment group", func(t *testing.T) {
-		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"NOT_EXISTING_GROUP"}, []string{}, []string{}, true, true)
+		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"NOT_EXISTING_GROUP"}, []string{}, []string{}, true, true, false)
 		assert.Error(t, err)
 	})
 	t.Run("Wrong environment name", func(t *testing.T) {
-		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"default"}, []string{"NOT_EXISTING_ENV"}, []string{}, true, true)
+		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"default"}, []string{"NOT_EXISTING_ENV"}, []string{}, true, true, false)
 		assert.Error(t, err)
 	})
 
 	t.Run("Wrong project name", func(t *testing.T) {
-		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"NON_EXISTING_PROJECT"}, true, true)
+		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"NON_EXISTING_PROJECT"}, true, true, false)
 		assert.Error(t, err)
 	})
 
 	t.Run("no parameters", func(t *testing.T) {
-		err := deployConfigs(t.Context(), testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
+		err := deployConfigs(t.Context(), testFs, manifestPath, []string{}, []string{}, []string{}, true, true, false)
 		assert.NoError(t, err)
 	})
 
 	t.Run("correct parameters", func(t *testing.T) {
-		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"project"}, true, true)
+		err := deployConfigs(t.Context(), testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"project"}, true, true, false)
 		assert.NoError(t, err)
 	})
 

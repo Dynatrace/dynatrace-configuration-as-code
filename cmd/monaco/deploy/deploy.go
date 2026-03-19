@@ -38,7 +38,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/report"
 )
 
-func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
+func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool, printRenderedPayloads bool) error {
 	absManifestPath, err := absPath(manifestPath)
 	if err != nil {
 		formattedErr := fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
@@ -84,7 +84,7 @@ func deployConfigs(ctx context.Context, fs afero.Fs, manifestPath string, enviro
 		return formattedErr
 	}
 
-	err = deploy.DeployForAllEnvironments(ctx, loadedProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun})
+	err = deploy.DeployForAllEnvironments(ctx, loadedProjects, clientSets, deploy.DeployConfigsOptions{ContinueOnErr: continueOnErr, DryRun: dryRun, PrintRenderedPayloads: printRenderedPayloads})
 	if err != nil {
 		return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
 	}
