@@ -1,4 +1,4 @@
-defaultBaseImage: alpine:3.23
+defaultBaseImage: alpine:3.23.3
 defaultPlatforms:
 - linux/arm64
 - linux/amd64
