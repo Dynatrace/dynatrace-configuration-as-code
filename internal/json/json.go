@@ -109,7 +109,7 @@ type Location struct {
 }
 
 func ValidateJson(data string, location Location) error {
-	var result map[string]interface{}
+	var result map[string]any
 	err := json.Unmarshal([]byte(data), &result)
 
 	if err == nil {

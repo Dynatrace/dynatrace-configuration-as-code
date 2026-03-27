@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func unmarshal(t *testing.T, content string) map[string]interface{} {
-	mapped := map[string]interface{}{}
+func unmarshal(t *testing.T, content string) map[string]any {
+	mapped := map[string]any{}
 	err := json.Unmarshal([]byte(content), &mapped)
 
 	assert.NoError(t, err, "Error in test definition")

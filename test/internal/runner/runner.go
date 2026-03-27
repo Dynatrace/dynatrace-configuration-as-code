@@ -19,6 +19,7 @@
 package runner
 
 import (
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -93,9 +94,7 @@ func WithEnvironment(env string) Option {
 
 func WithEnvVars(env map[string]string) Option {
 	return func(options *testOptions) {
-		for k, v := range env {
-			options.envVars[k] = v
-		}
+		maps.Copy(options.envVars, env)
 	}
 }
 

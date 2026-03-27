@@ -1763,7 +1763,7 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		remoteId, err := instance.upsertServiceUser(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		remoteId, err := instance.upsertServiceUser(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744", ServiceUser{Name: "service-user", Description: new("A service user")})
 		assert.NoError(t, err)
 		assert.Equal(t, "8b78ac8d-74fd-456f-bb19-13e078674744", remoteId)
 		assert.Equal(t, 1, server.Calls())
@@ -1787,7 +1787,7 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		remoteId, err := instance.upsertServiceUser(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		remoteId, err := instance.upsertServiceUser(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744", ServiceUser{Name: "service-user", Description: new("A service user")})
 		assert.Empty(t, remoteId)
 		assert.ErrorContains(t, err, "failed to update service user")
 
@@ -1812,7 +1812,7 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		remoteId, err := instance.upsertServiceUser(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		remoteId, err := instance.upsertServiceUser(t.Context(), "8b78ac8d-74fd-456f-bb19-13e078674744", ServiceUser{Name: "service-user", Description: new("A service user")})
 		assert.Empty(t, remoteId)
 		assert.ErrorContains(t, err, "not found")
 
@@ -1860,7 +1860,7 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: new("A service user")})
 		assert.Equal(t, "8b78ac8d-74fd-456f-bb19-13e078674744", remoteId)
 		assert.NoError(t, err)
 
@@ -1885,7 +1885,7 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: new("A service user")})
 		assert.Empty(t, remoteId)
 		assert.ErrorContains(t, err, "failed to get service users")
 
@@ -1931,7 +1931,7 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: new("A service user")})
 		assert.Empty(t, remoteId)
 		assert.ErrorContains(t, err, "found multiple service users")
 
@@ -1988,7 +1988,7 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "another-service-user", Description: accountmanagement.PtrString("Another service user")})
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "another-service-user", Description: new("Another service user")})
 		assert.Equal(t, "8b78ac8d-74fd-456f-bb19-13e078674745", remoteId)
 		assert.NoError(t, err)
 
@@ -2036,7 +2036,7 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "another-service-user", Description: accountmanagement.PtrString("Another service user")})
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "another-service-user", Description: new("Another service user")})
 		assert.Empty(t, remoteId)
 		assert.ErrorContains(t, err, "failed to create service user")
 
@@ -2084,7 +2084,7 @@ func TestClient_UpsertServiceUser(t *testing.T) {
 		defer server.Close()
 
 		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
-		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: accountmanagement.PtrString("A service user")})
+		remoteId, err := instance.upsertServiceUser(t.Context(), "", ServiceUser{Name: "service-user", Description: new("A service user")})
 		assert.Empty(t, remoteId)
 		assert.ErrorContains(t, err, "failed to update service user")
 

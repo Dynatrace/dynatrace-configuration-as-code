@@ -18,19 +18,19 @@ package classic
 
 import "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 
-var apiSanitizeFunctions = map[string]func(properties map[string]interface{}) map[string]interface{}{
+var apiSanitizeFunctions = map[string]func(properties map[string]any) map[string]any{
 	api.ServiceDetectionFullWebService:   removeOrderProperty,
 	api.ServiceDetectionFullWebRequest:   removeOrderProperty,
 	api.ServiceDetectionOpaqueWebService: removeOrderProperty,
 	api.ServiceDetectionOpaqueWebRequest: removeOrderProperty,
-	api.MaintenanceWindow: func(properties map[string]interface{}) map[string]interface{} {
-		if s, ok := properties["scope"].(map[string]interface{}); ok {
+	api.MaintenanceWindow: func(properties map[string]any) map[string]any {
+		if s, ok := properties["scope"].(map[string]any); ok {
 			var emptyEntities, emptyMatches bool
-			if entities, ok := s["entities"].([]interface{}); ok && len(entities) == 0 {
+			if entities, ok := s["entities"].([]any); ok && len(entities) == 0 {
 				properties = removeByPath(properties, []string{"scope", "entities"})
 				emptyEntities = true
 			}
-			if matches, ok := s["matches"].([]interface{}); ok && len(matches) == 0 {
+			if matches, ok := s["matches"].([]any); ok && len(matches) == 0 {
 				properties = removeByPath(properties, []string{"scope", "matches"})
 				emptyMatches = true
 			}
@@ -41,12 +41,12 @@ var apiSanitizeFunctions = map[string]func(properties map[string]interface{}) ma
 
 		return properties
 	},
-	api.UserActionAndSessionPropertiesMobile: func(properties map[string]interface{}) map[string]interface{} {
+	api.UserActionAndSessionPropertiesMobile: func(properties map[string]any) map[string]any {
 		return removeByPath(properties, []string{"key"})
 	},
 }
 
-func sanitizeProperties(properties map[string]interface{}, apiId string) map[string]interface{} {
+func sanitizeProperties(properties map[string]any, apiId string) map[string]any {
 	properties = removeIdentifyingProperties(properties, apiId)
 	properties = removePropertiesNotAllowedOnUpload(properties, apiId)
 
@@ -59,7 +59,7 @@ func sanitizeProperties(properties map[string]interface{}, apiId string) map[str
 	return replaceTemplateProperties(properties)
 }
 
-func removeIdentifyingProperties(dat map[string]interface{}, apiId string) map[string]interface{} {
+func removeIdentifyingProperties(dat map[string]any, apiId string) map[string]any {
 	dat = removeByPath(dat, []string{"metadata"})
 	dat = removeByPath(dat, []string{"id"})
 	dat = removeByPath(dat, []string{"applicationId"})
@@ -77,18 +77,18 @@ func removeIdentifyingProperties(dat map[string]interface{}, apiId string) map[s
 	return dat
 }
 
-func removePropertiesNotAllowedOnUpload(properties map[string]interface{}, apiId string) map[string]interface{} {
+func removePropertiesNotAllowedOnUpload(properties map[string]any, apiId string) map[string]any {
 	if specificSanitizer := apiSanitizeFunctions[apiId]; specificSanitizer != nil {
 		return specificSanitizer(properties)
 	}
 	return properties
 }
 
-func removeOrderProperty(properties map[string]interface{}) map[string]interface{} {
+func removeOrderProperty(properties map[string]any) map[string]any {
 	return removeByPath(properties, []string{"order"})
 }
 
-func removeByPath(dat map[string]interface{}, key []string) map[string]interface{} {
+func removeByPath(dat map[string]any, key []string) map[string]any {
 	if len(key) == 0 || dat == nil || dat[key[0]] == nil {
 		return dat
 	}
@@ -98,14 +98,14 @@ func removeByPath(dat map[string]interface{}, key []string) map[string]interface
 		return dat
 	}
 
-	if field, ok := dat[key[0]].(map[string]interface{}); ok {
+	if field, ok := dat[key[0]].(map[string]any); ok {
 		dat[key[0]] = removeByPath(field, key[1:])
 		return dat
 	}
 
-	if arrayOfFields, ok := dat[key[0]].([]interface{}); ok {
+	if arrayOfFields, ok := dat[key[0]].([]any); ok {
 		for i := range arrayOfFields {
-			if field, ok := arrayOfFields[i].(map[string]interface{}); ok {
+			if field, ok := arrayOfFields[i].(map[string]any); ok {
 				arrayOfFields[i] = removeByPath(field, key[1:])
 			}
 		}
@@ -115,7 +115,7 @@ func removeByPath(dat map[string]interface{}, key []string) map[string]interface
 	return dat
 }
 
-func replaceTemplateProperties(dat map[string]interface{}) map[string]interface{} {
+func replaceTemplateProperties(dat map[string]any) map[string]any {
 	const nameTemplate = "{{.name}}"
 
 	if dat["name"] != nil {
@@ -126,7 +126,7 @@ func replaceTemplateProperties(dat map[string]interface{}) map[string]interface{
 
 	// replace dashboard name
 	if dat["dashboardMetadata"] != nil {
-		if t, ok := dat["dashboardMetadata"].(map[string]interface{}); ok && t["name"] != "" {
+		if t, ok := dat["dashboardMetadata"].(map[string]any); ok && t["name"] != "" {
 			t["name"] = nameTemplate
 			dat["dashboardMetadata"] = t
 		}

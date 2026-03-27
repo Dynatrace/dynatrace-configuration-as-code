@@ -39,8 +39,8 @@ func TestParseListParameter(t *testing.T) {
 		{
 			"simple values",
 			parameter.ParameterParserContext{
-				Value: map[string]interface{}{
-					"values": []interface{}{"firstName", "lastName"},
+				Value: map[string]any{
+					"values": []any{"firstName", "lastName"},
 				},
 			},
 			[]value.ValueParameter{{"firstName"}, {"lastName"}},
@@ -48,13 +48,13 @@ func TestParseListParameter(t *testing.T) {
 		{
 			"full values",
 			parameter.ParameterParserContext{
-				Value: map[string]interface{}{
-					"values": []interface{}{
-						map[interface{}]interface{}{
+				Value: map[string]any{
+					"values": []any{
+						map[any]any{
 							"type":  "value",
 							"value": "firstName",
 						},
-						map[interface{}]interface{}{
+						map[any]any{
 							"type":  "value",
 							"value": "lastName",
 						},
@@ -66,11 +66,11 @@ func TestParseListParameter(t *testing.T) {
 		{
 			"complex values",
 			parameter.ParameterParserContext{
-				Value: map[string]interface{}{
-					"values": []interface{}{
-						map[interface{}]interface{}{
+				Value: map[string]any{
+					"values": []any{
+						map[any]any{
 							"type": "value",
-							"value": map[interface{}]interface{}{
+							"value": map[any]any{
 								"firstName": "John",
 								"lastName":  "Dorian",
 							},
@@ -78,7 +78,7 @@ func TestParseListParameter(t *testing.T) {
 					},
 				},
 			},
-			[]value.ValueParameter{{map[string]interface{}{
+			[]value.ValueParameter{{map[string]any{
 				"firstName": "John",
 				"lastName":  "Dorian",
 			}}},
@@ -86,8 +86,8 @@ func TestParseListParameter(t *testing.T) {
 		{
 			"empty values",
 			parameter.ParameterParserContext{
-				Value: map[string]interface{}{
-					"values": []interface{}{},
+				Value: map[string]any{
+					"values": []any{},
 				},
 			},
 			[]value.ValueParameter{},
@@ -119,7 +119,7 @@ func TestParseListParameter_Error(t *testing.T) {
 		{
 			"fails on missing values",
 			parameter.ParameterParserContext{
-				Value: map[string]interface{}{
+				Value: map[string]any{
 					"just some random thing": struct{}{},
 				},
 			},
@@ -128,7 +128,7 @@ func TestParseListParameter_Error(t *testing.T) {
 		{
 			"fails on non-list values",
 			parameter.ParameterParserContext{
-				Value: map[string]interface{}{
+				Value: map[string]any{
 					"values": "this is a string, not a list",
 				},
 			},
@@ -137,8 +137,8 @@ func TestParseListParameter_Error(t *testing.T) {
 		{
 			"fails if list entries ar not ValueParameter",
 			parameter.ParameterParserContext{
-				Value: map[string]interface{}{
-					"values": []interface{}{
+				Value: map[string]any{
+					"values": []any{
 						struct {
 							This string
 						}{
@@ -194,7 +194,7 @@ func Test_writeListParameter(t *testing.T) {
 	tests := []struct {
 		name         string
 		inputContext parameter.ParameterWriterContext
-		want         map[string]interface{}
+		want         map[string]any
 		wantErr      bool
 	}{
 		{
@@ -204,7 +204,7 @@ func Test_writeListParameter(t *testing.T) {
 					Values: []value.ValueParameter{{"one"}, {"two"}, {"three"}},
 				},
 			},
-			map[string]interface{}{"values": []interface{}{"one", "two", "three"}},
+			map[string]any{"values": []any{"one", "two", "three"}},
 			false,
 		},
 		{
@@ -213,7 +213,7 @@ func Test_writeListParameter(t *testing.T) {
 				Parameter: &ListParameter{
 					Values: []value.ValueParameter{
 						{
-							map[interface{}]interface{}{
+							map[any]any{
 								"firstName": "John",
 								"lastName":  "Dorian",
 							},
@@ -221,11 +221,11 @@ func Test_writeListParameter(t *testing.T) {
 					},
 				},
 			},
-			map[string]interface{}{
-				"values": []interface{}{
-					map[string]interface{}{
+			map[string]any{
+				"values": []any{
+					map[string]any{
 						"type": "value",
-						"value": map[interface{}]interface{}{
+						"value": map[any]any{
 							"firstName": "John",
 							"lastName":  "Dorian",
 						},
@@ -241,7 +241,7 @@ func Test_writeListParameter(t *testing.T) {
 					Values: []value.ValueParameter{},
 				},
 			},
-			map[string]interface{}{"values": []interface{}{}},
+			map[string]any{"values": []any{}},
 			false,
 		},
 		{

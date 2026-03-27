@@ -110,7 +110,7 @@ func (d DeployAPI) upsert(ctx context.Context, resourceType automation.ResourceT
 }
 
 func setIDField(id string, data *[]byte) error {
-	var m map[string]interface{}
+	var m map[string]any
 	err := json.Unmarshal(*data, &m)
 	if err != nil {
 		return err

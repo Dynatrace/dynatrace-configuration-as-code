@@ -163,7 +163,7 @@ func (r *PolicyBinding) UnmarshalYAML(unmarshal func(any) error) error {
 
 // MarshalYAML is a custom yaml.Marshaler for PolicyBinding, able to write simple string values and actual references.
 // As it is called when marshalling PolicyBinding values, it has a value receiver.
-func (r PolicyBinding) MarshalYAML() (interface{}, error) {
+func (r PolicyBinding) MarshalYAML() (any, error) {
 	if r.Policy == nil {
 		if r.Type == ReferenceType {
 			return r, nil
@@ -178,7 +178,7 @@ func (r PolicyBinding) MarshalYAML() (interface{}, error) {
 
 // MarshalYAML is a custom yaml.Marshaler for Reference, able to write simple string values and actual references.
 // As it is called when marshalling Reference values, it has a value receiver.
-func (r Reference) MarshalYAML() (interface{}, error) {
+func (r Reference) MarshalYAML() (any, error) {
 	if r.Type == ReferenceType {
 		return r, nil
 	}

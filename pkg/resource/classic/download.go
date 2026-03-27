@@ -283,7 +283,7 @@ func download(ctx context.Context, configSource downloadSource, theApi api.API, 
 		return nil, err
 	}
 
-	var data map[string]interface{}
+	var data map[string]any
 	err = json.Unmarshal(response, &data)
 	if err != nil {
 		return nil, err
@@ -311,7 +311,7 @@ func download(ctx context.Context, configSource downloadSource, theApi api.API, 
 	}
 
 	if theApi.PropertyNameOfIdentifier != "" {
-		return slices.DeleteFunc(res, func(m map[string]interface{}) bool {
+		return slices.DeleteFunc(res, func(m map[string]any) bool {
 			return m[theApi.PropertyNameOfIdentifier].(string) != value.value.Id
 		}), nil
 	}
@@ -319,7 +319,7 @@ func download(ctx context.Context, configSource downloadSource, theApi api.API, 
 	return res, nil
 }
 
-func createConfigObject(mappedJson map[string]interface{}, theApi api.API, value value, projectId string) (config.Config, error) {
+func createConfigObject(mappedJson map[string]any, theApi api.API, value value, projectId string) (config.Config, error) {
 	templ, err := createTemplate(mappedJson, value, theApi.ID)
 	if err != nil {
 		return config.Config{}, err
@@ -351,7 +351,7 @@ func createConfigObject(mappedJson map[string]interface{}, theApi api.API, value
 	}, nil
 }
 
-func createTemplate(mappedJson map[string]interface{}, value value, apiId string) (tmpl template.Template, err error) {
+func createTemplate(mappedJson map[string]any, value value, apiId string) (tmpl template.Template, err error) {
 	mappedJson = sanitizeProperties(mappedJson, apiId)
 	bytes, err := json.MarshalIndent(mappedJson, "", "  ")
 	if err != nil {

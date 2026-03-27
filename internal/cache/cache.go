@@ -26,7 +26,7 @@ type Cache[T any] interface {
 }
 
 // NoopCache is an implementation of Cache that doesn't actually do anything.
-type NoopCache[T interface{}] struct{}
+type NoopCache[T any] struct{}
 
 func (n NoopCache[T]) Get(_ string) (T, bool) {
 	var res T

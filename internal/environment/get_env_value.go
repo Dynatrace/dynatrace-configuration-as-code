@@ -115,8 +115,8 @@ func GetAdditionalHTTPHeadersFromEnv() map[string]string {
 	result := make(map[string]string)
 
 	headersString := os.Getenv(AdditionalHTTPHeaders)
-	headers := strings.Split(headersString, "\n")
-	for _, header := range headers {
+	headers := strings.SplitSeq(headersString, "\n")
+	for header := range headers {
 		key, value, _ := strings.Cut(header, ":")
 		key = strings.TrimSpace(key)
 		if key == "" {

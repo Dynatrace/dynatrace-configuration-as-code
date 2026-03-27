@@ -30,7 +30,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -218,7 +217,7 @@ func getObjectsPermission(ctx context.Context, settingsSource DownloadSource, ob
 		}(ctx, obj)
 	}
 
-	for i := 0; i < len(objects); i++ {
+	for range objects {
 		res := <-resChan
 		if res.Err != nil {
 			errs = append(errs, res.Err)
@@ -246,7 +245,7 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permis
 		}
 
 		// try to unmarshall settings value
-		var contentUnmarshalled map[string]interface{}
+		var contentUnmarshalled map[string]any
 		if err := json.Unmarshal(settingsObject.Value, &contentUnmarshalled); err != nil {
 			slog.Error("Unable to unmarshal JSON value of settings object", log.ErrorAttr(err), log.TypeAttr(settingsObject.SchemaId), slog.Any("object", settingsObject))
 			return result
@@ -294,12 +293,12 @@ func convertAllObjects(settingsObjects []dtclient.DownloadSettingsObject, permis
 func getObjectPermission(permissions map[string]dtclient.PermissionObject, objectID string) *config.AllUserPermissionKind {
 	if p, exists := permissions[objectID]; exists && p.Accessor != nil && p.Accessor.Type == dtclient.AllUsers {
 		if slices.Contains(p.Permissions, dtclient.Write) {
-			return pointer.Pointer(config.WritePermission)
+			return new(config.WritePermission)
 		}
 		if slices.Contains(p.Permissions, dtclient.Read) {
-			return pointer.Pointer(config.ReadPermission)
+			return new(config.ReadPermission)
 		}
-		return pointer.Pointer(config.NonePermission)
+		return new(config.NonePermission)
 	}
 	return nil
 }

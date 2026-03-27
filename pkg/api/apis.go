@@ -16,7 +16,11 @@
 
 package api
 
-import "golang.org/x/exp/maps"
+import (
+	"slices"
+
+	"golang.org/x/exp/maps"
+)
 
 // APIs is a collection of API
 type APIs map[string]API
@@ -83,12 +87,7 @@ func RetainByName(apis []string) Filter {
 	}
 
 	return func(api API) bool {
-		for _, v := range apis {
-			if v == api.ID {
-				return false
-			}
-		}
-		return true
+		return !slices.Contains(apis, api.ID)
 	}
 }
 

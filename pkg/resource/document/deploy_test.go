@@ -82,7 +82,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 	expectedExternalId := idutils.GenerateExternalID(documentConfigCoordinate)
 	t.Run("Update by originObjectId succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Eq(documentName), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, originObjectId))}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Eq(documentName), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, originObjectId)}, nil)
 
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
@@ -105,7 +105,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 			Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 		client.EXPECT().
 			Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-			Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, expectedExternalId))}, nil)
+			Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, expectedExternalId)}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
@@ -124,7 +124,7 @@ func TestDeploy_ConfigWithOriginObjectId(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
-		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, expectedExternalId))}, nil)
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, expectedExternalId)}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
@@ -154,7 +154,7 @@ func TestDeploy_ConfigWithOriginObjectId_WithCustomID(t *testing.T) {
 
 	t.Run("Update by originObjectId succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Eq(documentName), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, originObjectId))}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Eq(documentName), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, originObjectId)}, nil)
 
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
@@ -177,7 +177,7 @@ func TestDeploy_ConfigWithOriginObjectId_WithCustomID(t *testing.T) {
 			Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 		client.EXPECT().
 			Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-			Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentCustomID))}, nil)
+			Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, documentCustomID)}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
@@ -196,7 +196,7 @@ func TestDeploy_ConfigWithOriginObjectId_WithCustomID(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(originObjectId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
-		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentCustomID))}, nil)
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, documentCustomID)}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
@@ -225,7 +225,7 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 
 	t.Run("Document update by externalId succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, expectedExternalId))}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, expectedExternalId)}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
@@ -242,7 +242,7 @@ func TestDeploy_ConfigWithoutOriginObjectId(t *testing.T) {
 	t.Run("Document with externalId doesnt exist, create succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
-		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, expectedExternalId))}, nil)
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(expectedExternalId), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, expectedExternalId)}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
@@ -269,7 +269,7 @@ func TestDeploy_ConfigWithoutOriginObjectId_WithCustomID(t *testing.T) {
 
 	t.Run("Document update by customID succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
-		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentCustomID))}, nil)
+		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, documentCustomID)}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
@@ -286,7 +286,7 @@ func TestDeploy_ConfigWithoutOriginObjectId_WithCustomID(t *testing.T) {
 	t.Run("Document with customID doesnt exist, create succeeds", func(t *testing.T) {
 		client := document.NewMockDeploySource(gomock.NewController(t))
 		client.EXPECT().Update(gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{}, api.APIError{StatusCode: http.StatusNotFound})
-		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, documentCustomID))}, nil)
+		client.EXPECT().Create(gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Eq(documentCustomID), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, documentCustomID)}, nil)
 		result, err := runDeployTest(t, client, documentConfig)
 		assert.NoError(t, err)
 		require.NotEmpty(t, result.Properties)
@@ -444,7 +444,7 @@ func TestDeploy_WithNotExistingDocumentKind_Succeeds(t *testing.T) {
 	client := document.NewMockDeploySource(gomock.NewController(t))
 	client.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Eq(documentName), gomock.Any(), gomock.Any(), "").
 		Times(1).
-		Return(api.Response{Data: []byte(fmt.Sprintf(`{"id":"%s"}`, objectId))}, nil)
+		Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, objectId)}, nil)
 
 	_, err := runDeployTest(t, client, documentConfig)
 	assert.NoError(t, err)

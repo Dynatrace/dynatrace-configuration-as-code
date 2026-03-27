@@ -59,7 +59,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 
 		c := deleteStubClient{
 			list: func() (libAPI.Response, error) {
-				return libAPI.Response{Data: []byte(fmt.Sprintf(`[{"uid": "uid_1", "externalId":"%s"},{"uid": "uid_2", "externalId":"wrong"}]`, externalID))}, nil
+				return libAPI.Response{Data: fmt.Appendf(nil, `[{"uid": "uid_1", "externalId":"%s"},{"uid": "uid_2", "externalId":"wrong"}]`, externalID)}, nil
 			},
 			delete: func(id string) (libAPI.Response, error) {
 				assert.Equal(t, "uid_1", id)
@@ -99,7 +99,7 @@ func TestDeleteByCoordinate(t *testing.T) {
 		externalID := idutils.GenerateExternalID(given.AsCoordinate())
 		c := deleteStubClient{
 			list: func() (libAPI.Response, error) {
-				return libAPI.Response{Data: []byte(fmt.Sprintf(`[{"uid": "uid_1", "externalId":"%s"},{"uid": "uid_2", "externalId":"%s"}]`, externalID, externalID))}, nil
+				return libAPI.Response{Data: fmt.Appendf(nil, `[{"uid": "uid_1", "externalId":"%s"},{"uid": "uid_2", "externalId":"%s"}]`, externalID, externalID)}, nil
 			},
 		}
 

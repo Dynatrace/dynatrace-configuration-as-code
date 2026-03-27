@@ -110,11 +110,9 @@ func newDefaultReporterWithClockFunc(fs afero.Fs, reportFilePath string, c func(
 		ended:     c(),
 		queue:     make(chan Record, 32),
 	}
-	r.wg.Add(1)
-	go func() {
-		defer r.wg.Done()
+	r.wg.Go(func() {
 		r.start(fs, reportFilePath)
-	}()
+	})
 	return r
 }
 

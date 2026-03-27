@@ -96,11 +96,11 @@ func assertOverallDashboardSharedState(t *testing.T, fs afero.Fs, testContext ru
 }
 
 func assertDashboardSharedState(t *testing.T, jsonBytes []byte, expectShared bool) {
-	var resultMap map[string]interface{}
+	var resultMap map[string]any
 	err := json.Unmarshal(jsonBytes, &resultMap)
 	require.NoError(t, err)
 
-	dashboardMetadata, ok := resultMap["dashboardMetadata"].(map[string]interface{})
+	dashboardMetadata, ok := resultMap["dashboardMetadata"].(map[string]any)
 	require.True(t, ok, "expected to get dashboard metadata")
 
 	shared, ok := dashboardMetadata["shared"].(bool)
@@ -110,7 +110,7 @@ func assertDashboardSharedState(t *testing.T, jsonBytes []byte, expectShared boo
 }
 
 func assertDashboardShareSettingsEnabledState(t *testing.T, jsonBytes []byte, expectEnabled bool) {
-	var resultMap map[string]interface{}
+	var resultMap map[string]any
 	err := json.Unmarshal(jsonBytes, &resultMap)
 	require.NoError(t, err)
 

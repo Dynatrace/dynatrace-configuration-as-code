@@ -142,7 +142,7 @@ func TestDownloader_Download(t *testing.T) {
 			cfgContent, err := s.Template.Content()
 			require.NoError(t, err)
 
-			var parsed map[string]interface{}
+			var parsed map[string]any
 			err = json.Unmarshal([]byte(cfgContent), &parsed)
 			require.NoError(t, err)
 

@@ -19,6 +19,7 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -166,9 +167,7 @@ func applyOverrides(base *persistence.ConfigDefinition, override persistence.Con
 		base.OriginObjectId = override.OriginObjectId
 	}
 
-	for name, param := range override.Parameters {
-		base.Parameters[name] = param
-	}
+	maps.Copy(base.Parameters, override.Parameters)
 
 }
 
@@ -279,7 +278,7 @@ func parseSkip(fs afero.Fs,
 	context *singleConfigEntryLoadContext,
 	environmentDefinition manifest.EnvironmentDefinition,
 	configId string,
-	param interface{},
+	param any,
 ) (bool, error) {
 	parsed, err := parseParameter(fs, context, environmentDefinition, configId, config.SkipParameter, param)
 	if err != nil {

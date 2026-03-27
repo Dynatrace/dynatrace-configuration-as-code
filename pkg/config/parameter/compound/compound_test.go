@@ -30,9 +30,9 @@ import (
 
 func TestParseCompoundParameter(t *testing.T) {
 	param, err := parseCompoundParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"format":     "{{ .firstName }} {{ .lastName }}",
-			"references": []interface{}{"firstName", "lastName"},
+			"references": []any{"firstName", "lastName"},
 		},
 	})
 
@@ -51,9 +51,9 @@ func TestParseCompoundParameter(t *testing.T) {
 
 func TestParseCompoundParameterComplexValue(t *testing.T) {
 	param, err := parseCompoundParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"format":     "{{ .person.name }}: {{ .person.age }}",
-			"references": []interface{}{"person"},
+			"references": []any{"person"},
 		},
 	})
 
@@ -69,8 +69,8 @@ func TestParseCompoundParameterComplexValue(t *testing.T) {
 
 func TestParseCompoundParameterErrorOnMissingFormat(t *testing.T) {
 	_, err := parseCompoundParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
-			"references": []interface{}{"firstName", "lastName"},
+		Value: map[string]any{
+			"references": []any{"firstName", "lastName"},
 		},
 	})
 
@@ -79,7 +79,7 @@ func TestParseCompoundParameterErrorOnMissingFormat(t *testing.T) {
 
 func TestParseCompoundParameterErrorOnMissingReferences(t *testing.T) {
 	_, err := parseCompoundParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"format": "{{ .firstName }} {{ .lastName }}",
 		},
 	})
@@ -89,7 +89,7 @@ func TestParseCompoundParameterErrorOnMissingReferences(t *testing.T) {
 
 func TestParseCompoundParameterErrorOnWrongReferenceFormat(t *testing.T) {
 	_, err := parseCompoundParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"format":     "{{ .firstName }} {{ .lastName }}",
 			"references": []int{3, 4},
 		}})
@@ -99,9 +99,9 @@ func TestParseCompoundParameterErrorOnWrongReferenceFormat(t *testing.T) {
 
 func TestParseCompoundParameterErrorOnWrongReferences(t *testing.T) {
 	_, err := parseCompoundParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"format":     "{{ .firstName }} {{ .lastName }}",
-			"references": []interface{}{[]interface{}{}},
+			"references": []any{[]any{}},
 		}})
 
 	require.Error(t, err, "expected an error parsing invalid references")
@@ -131,7 +131,7 @@ func TestResolveComplexValue(t *testing.T) {
 	testFormat := "{{ .person.name }} is {{ .person.age }} years old"
 	context := parameter.ResolveContext{
 		ResolvedParameterValues: parameter.Properties{
-			"person": map[string]interface{}{
+			"person": map[string]any{
 				"age":  12,
 				"name": "Hansi",
 			},
@@ -156,7 +156,7 @@ func TestResolveValueErrorOnUndefinedReference(t *testing.T) {
 
 	context := parameter.ResolveContext{
 		ResolvedParameterValues: parameter.Properties{
-			"person": map[string]interface{}{
+			"person": map[string]any{
 				"age":  12,
 				"name": "Hansi",
 			},
@@ -177,7 +177,7 @@ func TestResolveValueErrorOnUnknownParameter(t *testing.T) {
 
 	context := parameter.ResolveContext{
 		ResolvedParameterValues: parameter.Properties{
-			"person": map[string]interface{}{
+			"person": map[string]any{
 				"age":  12,
 				"name": "Hansi",
 			},
@@ -214,7 +214,7 @@ func TestWriteCompoundParameter(t *testing.T) {
 	references, ok := result["references"]
 	require.True(t, ok, "should have parameter references")
 
-	referenceSlice, ok := references.([]interface{})
+	referenceSlice, ok := references.([]any)
 	require.True(t, ok, "references should be slice")
 
 	require.Len(t, referenceSlice, 2)

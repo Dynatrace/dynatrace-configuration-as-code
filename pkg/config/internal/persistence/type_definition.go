@@ -24,7 +24,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/exp/maps"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 )
 
@@ -74,7 +73,7 @@ type OpenPipelineDefinition struct {
 // UnmarshalYAML Custom unmarshaler that knows how to handle TypeDefinition.
 // 'type' section can come as string or as struct as it is defind in `TypeDefinition`
 // function parameter more than once if necessary.
-func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *TypeDefinition) UnmarshalYAML(unmarshal func(any) error) error {
 
 	// The TypeDefinition allows for the shorthand syntax of `api: my-api`.
 	// To catch that, let's try to unmarshal directly into a string. If it works, we know the shorthand is used.
@@ -284,7 +283,7 @@ func (c *TypeDefinition) GetApiType() string {
 	return ""
 }
 
-func (c TypeDefinition) MarshalYAML() (interface{}, error) {
+func (c TypeDefinition) MarshalYAML() (any, error) {
 	switch t := c.Type.(type) {
 
 	case config.ClassicApiType:
@@ -359,7 +358,7 @@ func getAllUserPermission(p *PermissionDefinition) *config.AllUserPermissionKind
 	}
 
 	if p.AllUsers == nil {
-		return pointer.Pointer(config.NonePermission)
+		return new(config.NonePermission)
 	}
 
 	return p.AllUsers

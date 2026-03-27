@@ -67,7 +67,7 @@ func RewriteConfigNames(path string, fs afero.Fs, transformers []func(string) st
 			continue
 		}
 
-		result := ""
+		var result strings.Builder
 		err := func() error {
 
 			inFile, err := fs.Open(fullPath)
@@ -82,7 +82,7 @@ func RewriteConfigNames(path string, fs afero.Fs, transformers []func(string) st
 			for scanner.Scan() {
 
 				lineWithReplacedName := applyLineTransformers(scanner.Text(), transformers)
-				result += lineWithReplacedName + "\n"
+				result.WriteString(lineWithReplacedName + "\n")
 			}
 			return nil
 		}()
@@ -95,7 +95,7 @@ func RewriteConfigNames(path string, fs afero.Fs, transformers []func(string) st
 			return err
 		}
 
-		if _, err := dst.Write([]byte(result)); err != nil {
+		if _, err := dst.Write([]byte(result.String())); err != nil {
 			return err
 		}
 

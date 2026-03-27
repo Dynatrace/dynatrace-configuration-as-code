@@ -48,4 +48,4 @@ type TopLevelDefinition struct {
 	Configs []TopLevelConfigDefinition `yaml:"configs" json:"configs" jsonschema:"required,minItems=1,description=The configurations that will be applied to a Dynatrace environment."`
 }
 
-type ConfigParameter interface{}
+type ConfigParameter any

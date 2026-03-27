@@ -52,7 +52,7 @@ func TestDeploySetting_ManagementZone_MZoneIDGetsEncoded(t *testing.T) {
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap(parameters),
 	}
-	props := map[string]interface{}{"scope": "environment"}
+	props := map[string]any{"scope": "environment"}
 	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "", conf)
 	assert.Equal(t, entities.ResolvedEntity{
 		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:management-zones", ConfigId: "abcde"},
@@ -76,7 +76,7 @@ func TestDeploySetting_ManagementZone_NameGetsExtracted_ifPresent(t *testing.T) 
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap(parameters),
 	}
-	props := map[string]interface{}{"scope": "environment", "name": "the-name"}
+	props := map[string]any{"scope": "environment", "name": "the-name"}
 	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "", conf)
 	assert.Equal(t, entities.ResolvedEntity{
 		Coordinate: coordinate.Coordinate{Project: "p", Type: "builtin:some-setting", ConfigId: "abcde"},
@@ -100,7 +100,7 @@ func TestDeploySetting_ManagementZone_FailToDecodeMZoneID(t *testing.T) {
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap(parameters),
 	}
-	props := map[string]interface{}{"scope": "environment"}
+	props := map[string]any{"scope": "environment"}
 	resolvedEntity, err := settings.NewDeployAPI(c).Deploy(t.Context(), props, "", conf)
 	assert.Zero(t, resolvedEntity)
 	assert.Error(t, err)

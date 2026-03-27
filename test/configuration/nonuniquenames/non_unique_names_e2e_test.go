@@ -75,7 +75,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 		}
 	}()
 
-	payload := []byte(fmt.Sprintf(`{ "displayName": "%s", "rules": [] }`, name))
+	payload := fmt.Appendf(nil, `{ "displayName": "%s", "rules": [] }`, name)
 
 	// ensure blank slate start
 	existing := getConfigsOfName(t, c, a, name)
@@ -150,7 +150,7 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 		}
 	}()
 
-	payload := []byte(fmt.Sprintf(`{ "displayName": "%s", "rules": [] }`, name))
+	payload := fmt.Appendf(nil, `{ "displayName": "%s", "rules": [] }`, name)
 
 	// ensure blank slate start
 	existing := getConfigsOfName(t, c, a, name)

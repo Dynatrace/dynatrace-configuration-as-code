@@ -16,6 +16,7 @@ package project
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -62,13 +63,7 @@ func (p Project) HasDependencyOn(environment string, project Project) bool {
 		return false
 	}
 
-	for _, dep := range dependencies {
-		if dep == project.Id {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(dependencies, project.Id)
 }
 
 // GetConfigFor searches a config object for matching the given coordinate in the

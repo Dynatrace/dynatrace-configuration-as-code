@@ -300,7 +300,7 @@ func findSetting(t *testing.T, confsPerType project.ConfigsPerType, api, name, p
 		content, err := c.Template.Content()
 		assert.NoError(t, err)
 		// convert content to json
-		var jsonContent map[string]interface{}
+		var jsonContent map[string]any
 		err = json.Unmarshal([]byte(content), &jsonContent)
 		assert.Nil(t, err, "failed to unmarshal content to json")
 

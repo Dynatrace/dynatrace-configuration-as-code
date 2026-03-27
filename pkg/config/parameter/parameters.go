@@ -25,7 +25,7 @@ import (
 )
 
 // Properties defines a map representing resolved parameters
-type Properties map[string]interface{}
+type Properties map[string]any
 
 // PropertyResolver is used in parameter resolution to fetch the values of already deployed configs
 type PropertyResolver interface {
@@ -64,7 +64,7 @@ type Parameter interface {
 	// ResolveValue resolves the value of this parameter. the context offers some more information
 	// on the current deployment and resolving phase. if the value cannot be resolved,
 	// an error should be returned.
-	ResolveValue(context ResolveContext) (interface{}, error)
+	ResolveValue(context ResolveContext) (any, error)
 }
 
 type NamedParameter struct {
@@ -209,7 +209,7 @@ type ParameterParser func(ParameterParserContext) (Parameter, error)
 
 // function used to transform a parameter to map structure, which can
 // be serialized.
-type ParameterWriter func(ParameterWriterContext) (map[string]interface{}, error)
+type ParameterWriter func(ParameterWriterContext) (map[string]any, error)
 
 // struct holding pointers to functions used to serialize
 // and deserialize a parameter. this information is then used
@@ -226,10 +226,10 @@ var (
 	_ errors.DetailedConfigError = (*ParameterResolveValueError)(nil)
 )
 
-func ToParameterReferences(params []interface{}, coord coordinate.Coordinate) (paramRefs []ParameterReference, err error) {
+func ToParameterReferences(params []any, coord coordinate.Coordinate) (paramRefs []ParameterReference, err error) {
 	for _, param := range params {
 		switch param.(type) {
-		case []interface{}, map[interface{}]interface{}:
+		case []any, map[any]any:
 			return nil, fmt.Errorf("error creating parameter reference: %v is not a string", param)
 		}
 

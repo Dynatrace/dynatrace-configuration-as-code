@@ -29,7 +29,6 @@ import (
 
 import (
 	"bytes"
-	"io/ioutil"
 )
 
 func TestCreate(t *testing.T) {
@@ -50,7 +49,7 @@ func TestCreate(t *testing.T) {
 	defer zipFile.Close()
 
 	// Extract the file names from the zip archive
-	archiveData, err := ioutil.ReadAll(zipFile)
+	archiveData, err := io.ReadAll(zipFile)
 	assert.NoError(t, err, "Expected no error")
 
 	// Open the zip archive for reading

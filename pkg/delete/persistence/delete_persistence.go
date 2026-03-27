@@ -27,7 +27,7 @@ import (
 // Use FullFileDefinition if you're always working with DeleteEntry values instead
 type FileDefinition struct {
 	// DeleteEntries loaded from a file are either legacy shorthand strings or full DeleteEntry values
-	DeleteEntries []interface{} `yaml:"delete"`
+	DeleteEntries []any `yaml:"delete"`
 }
 
 // FullFileDefinition represents a delete file consisting of a list of delete entries called 'delete'

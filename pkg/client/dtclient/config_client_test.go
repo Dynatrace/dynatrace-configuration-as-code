@@ -57,11 +57,11 @@ var retrySettings = RetrySettings{
 
 func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 
-	entry := make(map[string]interface{})
+	entry := make(map[string]any)
 	entry["id"] = "foo"
 	entry["name"] = "bar"
 
-	response := make([]interface{}, 1)
+	response := make([]any, 1)
 	response[0] = entry
 
 	values, err := translateGenericValues(t.Context(), response, "extensions")
@@ -75,10 +75,10 @@ func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 
 func TestTranslateGenericValuesOnIdMissing(t *testing.T) {
 
-	entry := make(map[string]interface{})
+	entry := make(map[string]any)
 	entry["name"] = "bar"
 
-	response := make([]interface{}, 1)
+	response := make([]any, 1)
 	response[0] = entry
 
 	_, err := translateGenericValues(t.Context(), response, "extensions")
@@ -88,10 +88,10 @@ func TestTranslateGenericValuesOnIdMissing(t *testing.T) {
 
 func TestTranslateGenericValuesOnNameMissing(t *testing.T) {
 
-	entry := make(map[string]interface{})
+	entry := make(map[string]any)
 	entry["id"] = "foo"
 
-	response := make([]interface{}, 1)
+	response := make([]any, 1)
 	response[0] = entry
 
 	values, err := translateGenericValues(t.Context(), response, "extensions")
@@ -105,11 +105,11 @@ func TestTranslateGenericValuesOnNameMissing(t *testing.T) {
 
 func TestTranslateGenericValuesForReportsEndpoint(t *testing.T) {
 
-	entry := make(map[string]interface{})
+	entry := make(map[string]any)
 	entry["id"] = "foo"
 	entry["dashboardId"] = "dashboardId"
 
-	response := make([]interface{}, 1)
+	response := make([]any, 1)
 	response[0] = entry
 
 	values, err := translateGenericValues(t.Context(), response, "reports")

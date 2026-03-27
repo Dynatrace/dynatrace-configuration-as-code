@@ -69,7 +69,7 @@ func Mask(data []byte) []byte {
 	return mask(data, keysToSearch)
 }
 func mask(jsonStr []byte, keysToSearch []string) []byte {
-	var data interface{}
+	var data any
 	err := json.Unmarshal(jsonStr, &data)
 	if err != nil {
 		return []byte(`"NON-JSON CONTENT"`)
@@ -96,9 +96,9 @@ func getJsonKeys(json string) []string {
 	return jsonKeys
 }
 
-func maskRecursive(data interface{}, keys []string) {
+func maskRecursive(data any, keys []string) {
 	switch v := data.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		for k, val := range v {
 			if _, ok := val.(string); ok {
 				for _, key := range keys {
@@ -109,7 +109,7 @@ func maskRecursive(data interface{}, keys []string) {
 			}
 			maskRecursive(val, keys)
 		}
-	case []interface{}:
+	case []any:
 		for i := range v {
 			maskRecursive(v[i], keys)
 		}

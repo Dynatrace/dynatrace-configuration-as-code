@@ -53,15 +53,16 @@ func testPagination(t *testing.T, specificEnvironment string) {
 	additionalSettingsOnNextPage := 50
 	totalSettings := settingsPageSize + additionalSettingsOnNextPage
 
-	configContent := "configs:\n"
-	for i := 0; i < totalSettings; i++ {
+	var configContent strings.Builder
+	configContent.WriteString("configs:\n")
+	for i := range totalSettings {
 		id := fmt.Sprintf("tag_%d", i)
-		configContent += fmt.Sprintf("- id: %s\n  type:\n    settings:\n      schema: builtin:tags.auto-tagging\n      scope: environment\n  config:\n    name: %s\n    template: auto-tag-setting.json\n", id, id)
+		_, _ = fmt.Fprintf(&configContent, "- id: %s\n  type:\n    settings:\n      schema: builtin:tags.auto-tagging\n      scope: environment\n  config:\n    name: %s\n    template: auto-tag-setting.json\n", id, id)
 	}
 
 	configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
 	assert.NoError(t, err)
-	err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
+	err = afero.WriteFile(fs, configYamlPath, []byte(configContent.String()), 644)
 	assert.NoError(t, err)
 
 	runner2.Run(t, configFolder,

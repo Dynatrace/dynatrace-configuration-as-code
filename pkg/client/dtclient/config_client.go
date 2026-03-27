@@ -37,7 +37,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
@@ -244,7 +243,7 @@ func (d *ConfigClient) UpsertByNonUniqueNameAndId(ctx context.Context, theApi ap
 	msg.WriteString("\n\tYou may have to manually remove pre-existing configuration if this duplicates manually created configuration, and if possible consider giving your configurations unique names.")
 	msg.WriteString("\n\tPre-existing %q configurations with same name:")
 	for _, e := range entitiesWithSameName {
-		msg.WriteString(fmt.Sprintf("\n\t- %s", e.Id))
+		_, _ = fmt.Fprintf(&msg, "\n\t- %s", e.Id)
 	}
 	log.WarnContext(ctx, msg.String(), len(entitiesWithSameName), theApi.ID, objectName, entityId, theApi.ID)
 
@@ -436,8 +435,8 @@ func (d *ConfigClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restC
 			CustomShouldRetryFunc: func(resp *http.Response) bool {
 				return corerest.ShouldRetry(resp.StatusCode)
 			},
-			DelayAfterRetry: pointer.Pointer(rs.WaitTime),
-			MaxRetries:      pointer.Pointer(rs.MaxRetries - 1), // one call was already done
+			DelayAfterRetry: new(rs.WaitTime),
+			MaxRetries:      new(rs.MaxRetries - 1), // one call was already done
 		})
 		if err != nil {
 			return coreapi.Response{}, err
@@ -636,8 +635,8 @@ func (d *ConfigClient) List(ctx context.Context, theApi api.API) ([]Value, error
 		CustomShouldRetryFunc: func(resp *http.Response) bool {
 			return corerest.ShouldRetry(resp.StatusCode)
 		},
-		DelayAfterRetry: pointer.Pointer(retrySetting.WaitTime),
-		MaxRetries:      pointer.Pointer(retrySetting.MaxRetries),
+		DelayAfterRetry: new(retrySetting.WaitTime),
+		MaxRetries:      new(retrySetting.MaxRetries),
 	})
 	if err != nil {
 		return nil, err
@@ -667,8 +666,8 @@ func (d *ConfigClient) List(ctx context.Context, theApi api.API) ([]Value, error
 			CustomShouldRetryFunc: func(resp *http.Response) bool {
 				return corerest.ShouldRetry(resp.StatusCode)
 			},
-			DelayAfterRetry: pointer.Pointer(retrySetting.WaitTime),
-			MaxRetries:      pointer.Pointer(retrySetting.MaxRetries),
+			DelayAfterRetry: new(retrySetting.WaitTime),
+			MaxRetries:      new(retrySetting.MaxRetries),
 		})
 		if err != nil {
 			return nil, err
@@ -692,7 +691,7 @@ func (d *ConfigClient) List(ctx context.Context, theApi api.API) ([]Value, error
 func (d *ConfigClient) findUniqueByName(ctx context.Context, values []Value, objectName string) string {
 	var objectId = ""
 	var matchingObjectsFound = 0
-	for i := 0; i < len(values); i++ {
+	for i := range values {
 		value := values[i]
 		if value.Name == objectName || escapeApiValueName(ctx, value) == objectName {
 			if matchingObjectsFound == 0 {
@@ -723,7 +722,7 @@ func (d *ConfigClient) findUnique(ctx context.Context, values []Value, payload [
 	}
 	var objectId = ""
 	var matchingObjectsFound = 0
-	for i := 0; i < len(values); i++ {
+	for i := range values {
 		value := values[i]
 		var pl map[string]any
 		if err := json.Unmarshal(payload, &pl); err != nil {
@@ -758,7 +757,7 @@ func getQueryParamsForNonStandardApis(theApi api.API) url.Values {
 func unmarshalJson(ctx context.Context, theApi api.API, body []byte) ([]Value, error) {
 
 	var values []Value
-	var objmap map[string]interface{}
+	var objmap map[string]any
 
 	// This API returns an untyped list as a response -> it needs a special handling
 	if theApi.ID == api.AwsCredentials {
@@ -855,19 +854,19 @@ func unmarshalJson(ctx context.Context, theApi api.API, body []byte) ([]Value, e
 	return values, nil
 }
 
-func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi api.API) (resultArrayAvailable bool, results []interface{}) {
+func isResultArrayAvailable(jsonResponse map[string]any, theApi api.API) (resultArrayAvailable bool, results []any) {
 	if jsonResponse[theApi.PropertyNameOfGetAllResponse] != nil {
-		return true, jsonResponse[theApi.PropertyNameOfGetAllResponse].([]interface{})
+		return true, jsonResponse[theApi.PropertyNameOfGetAllResponse].([]any)
 	}
-	return false, make([]interface{}, 0)
+	return false, make([]any, 0)
 }
 
-func translateGenericValues(ctx context.Context, inputValues []interface{}, configType string) ([]Value, error) {
+func translateGenericValues(ctx context.Context, inputValues []any, configType string) ([]Value, error) {
 
 	values := make([]Value, 0, len(inputValues))
 
 	for _, input := range inputValues {
-		input := input.(map[string]interface{})
+		input := input.(map[string]any)
 
 		if input["id"] == nil {
 			return values, fmt.Errorf("config of type %s was invalid: No id", configType)

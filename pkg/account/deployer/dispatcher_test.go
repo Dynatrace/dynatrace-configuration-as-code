@@ -70,7 +70,7 @@ func TestDispatcherConcurrency(t *testing.T) {
 	dispatcher.Run()
 
 	numJobs := 5
-	for i := 0; i < numJobs; i++ {
+	for range numJobs {
 		dispatcher.AddJob(job)
 	}
 
@@ -90,7 +90,7 @@ func TestDynamicDispatcher(t *testing.T) {
 	dispatcher.Run()
 
 	numJobs := 5
-	for i := 0; i < numJobs; i++ {
+	for range numJobs {
 		dispatcher.AddJob(job)
 	}
 

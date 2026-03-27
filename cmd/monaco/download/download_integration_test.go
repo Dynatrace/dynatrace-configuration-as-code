@@ -1383,7 +1383,7 @@ func loadDownloadedProjects(t *testing.T, fs afero.Fs, apis api.APIs) ([]project
 }
 
 func jsonEqual(jsonA, jsonB string) bool {
-	var a, b map[string]interface{}
+	var a, b map[string]any
 
 	err := json.Unmarshal([]byte(jsonA), &a)
 	if err != nil {

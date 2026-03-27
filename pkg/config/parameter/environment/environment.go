@@ -74,7 +74,7 @@ func (p *EnvironmentVariableParameter) GetReferences() []parameter.ParameterRefe
 	return []parameter.ParameterReference{}
 }
 
-func (p *EnvironmentVariableParameter) ResolveValue(context parameter.ResolveContext) (interface{}, error) {
+func (p *EnvironmentVariableParameter) ResolveValue(context parameter.ResolveContext) (any, error) {
 
 	val, found := os.LookupEnv(p.Name)
 	if !found && p.HasDefaultValue {
@@ -102,14 +102,14 @@ func parseEnvironmentValueParameter(context parameter.ParameterParserContext) (p
 	return nil, parameter.NewParameterParserError(context, "missing property `name`")
 }
 
-func writeEnvironmentValueParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
+func writeEnvironmentValueParameter(context parameter.ParameterWriterContext) (map[string]any, error) {
 	envParam, ok := context.Parameter.(*EnvironmentVariableParameter)
 
 	if !ok {
 		return nil, parameter.NewParameterWriterError(context, "unexpected type. parameter is not of type `EnvironmentVariableParameter`")
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	if envParam.HasDefaultValue {
 		result["default"] = envParam.DefaultValue
