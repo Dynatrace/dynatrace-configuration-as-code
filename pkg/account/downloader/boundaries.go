@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -77,11 +78,8 @@ func (b Boundaries) asAccountBoundaries() map[account.BoundaryId]account.Boundar
 func (b Boundaries) RefOn(boundaryUUIDs ...string) []account.Ref {
 	var retVal []account.Ref
 	for _, bnd := range b {
-		for _, uuid := range boundaryUUIDs {
-			if bnd.dto.Uuid == uuid {
-				retVal = append(retVal, bnd.RefOn())
-				break
-			}
+		if slices.Contains(boundaryUUIDs, bnd.dto.Uuid) {
+			retVal = append(retVal, bnd.RefOn())
 		}
 	}
 	return retVal

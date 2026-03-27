@@ -237,7 +237,7 @@ func TestResolveValueWithReferences(t *testing.T) {
 	assert.Len(t, param.GetReferences(), 2)
 
 	result, err := param.ResolveValue(parameter.ResolveContext{
-		ResolvedParameterValues: map[string]interface{}{
+		ResolvedParameterValues: map[string]any{
 			"ref1": "ref1-resolved",
 			"ref2": "ref2-resolved",
 		},
@@ -259,7 +259,7 @@ func TestResolveValueWithReferences_ParameterMissing(t *testing.T) {
 	assert.Len(t, param.GetReferences(), 2)
 
 	result, err := param.ResolveValue(parameter.ResolveContext{
-		ResolvedParameterValues: map[string]interface{}{
+		ResolvedParameterValues: map[string]any{
 			"ref1": "ref1-resolved",
 		},
 	})
@@ -280,7 +280,7 @@ func TestResolveValueWithReferences_ReferenceMissing(t *testing.T) {
 	assert.Len(t, param.GetReferences(), 1)
 
 	result, err := param.ResolveValue(parameter.ResolveContext{
-		ResolvedParameterValues: map[string]interface{}{
+		ResolvedParameterValues: map[string]any{
 			"ref1": "ref1-resolved",
 			"ref2": "ref2-resolved",
 		},

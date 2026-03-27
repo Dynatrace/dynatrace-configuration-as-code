@@ -129,16 +129,16 @@ func TestWith(t *testing.T) {
 		log.CoordinateAttr(coordinate.Coordinate{Project: "p1", Type: "t1", ConfigId: "c1"}),
 		log.EnvironmentAttr("env1", "group")).Info("Logging with %s", "attributes")
 
-	var data map[string]interface{}
+	var data map[string]any
 	err := json.Unmarshal(logSpy.Bytes(), &data)
 	require.NoError(t, err)
 	assert.Equal(t, "Logging with attributes", data["msg"])
 	assert.Equal(t, "Captain", data["Title"])
 	assert.Equal(t, "Iglo", data["Name"])
-	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["project"])
-	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["type"])
-	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["configId"])
-	assert.Equal(t, "p1:t1:c1", data["coordinate"].(map[string]interface{})["reference"])
-	assert.Equal(t, "env1", data["environment"].(map[string]interface{})["name"])
-	assert.Equal(t, "group", data["environment"].(map[string]interface{})["group"])
+	assert.Equal(t, "p1", data["coordinate"].(map[string]any)["project"])
+	assert.Equal(t, "t1", data["coordinate"].(map[string]any)["type"])
+	assert.Equal(t, "c1", data["coordinate"].(map[string]any)["configId"])
+	assert.Equal(t, "p1:t1:c1", data["coordinate"].(map[string]any)["reference"])
+	assert.Equal(t, "env1", data["environment"].(map[string]any)["name"])
+	assert.Equal(t, "group", data["environment"].(map[string]any)["group"])
 }

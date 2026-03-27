@@ -466,7 +466,7 @@ type propertyCheckResult struct {
 
 	shareSkip bool
 	foundSkip bool
-	skip      interface{}
+	skip      any
 }
 
 func testForSameProperties(configs []extendedConfigDefinition) propertyCheckResult {

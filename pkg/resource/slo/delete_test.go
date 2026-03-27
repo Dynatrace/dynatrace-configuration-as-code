@@ -63,7 +63,7 @@ func TestDeleteWithCoordinate(t *testing.T) {
 				return libAPI.PagedListResponse{
 					libAPI.ListResponse{
 						Objects: [][]byte{
-							[]byte(fmt.Sprintf(`{"id": "uid_1", "externalId":"%s"}`, externalID)),
+							fmt.Appendf(nil, `{"id": "uid_1", "externalId":"%s"}`, externalID),
 							[]byte(`{"id": "uid_2", "externalId":"wrong"}`),
 						},
 					}}, nil
@@ -111,8 +111,8 @@ func TestDeleteWithCoordinate(t *testing.T) {
 			list: func() (libAPI.PagedListResponse, error) {
 				return libAPI.PagedListResponse{
 					libAPI.ListResponse{Objects: [][]byte{
-						[]byte(fmt.Sprintf(`{"id": "uid_1", "externalId":"%s"}`, externalID)),
-						[]byte(fmt.Sprintf(`{"id": "uid_2", "externalId":"%s"}`, externalID)),
+						fmt.Appendf(nil, `{"id": "uid_1", "externalId":"%s"}`, externalID),
+						fmt.Appendf(nil, `{"id": "uid_2", "externalId":"%s"}`, externalID),
 					}},
 				}, nil
 			},

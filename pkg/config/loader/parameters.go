@@ -107,9 +107,9 @@ func validateParameterName(context *singleConfigEntryLoadContext, environment ma
 }
 
 func parseParameter(fs afero.Fs, context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
-	configId string, name string, param interface{}) (parameter.Parameter, error) {
+	configId string, name string, param any) (parameter.Parameter, error) {
 
-	if val, ok := param.([]interface{}); ok {
+	if val, ok := param.([]any); ok {
 		ref, err := arrayToReferenceParameter(context, environment, configId, name, val)
 
 		if err != nil {
@@ -117,7 +117,7 @@ func parseParameter(fs afero.Fs, context *singleConfigEntryLoadContext, environm
 		}
 
 		return ref, nil
-	} else if val, ok := param.(map[interface{}]interface{}); ok {
+	} else if val, ok := param.(map[any]any); ok {
 		parameterType := toString(val["type"])
 		serDe, found := context.ParametersSerDe[parameterType]
 
@@ -144,7 +144,7 @@ func parseParameter(fs afero.Fs, context *singleConfigEntryLoadContext, environm
 
 // TODO come up with better way to handle this, as this is a hack
 func arrayToReferenceParameter(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
-	configId string, parameterName string, arr []interface{}) (parameter.Parameter, error) {
+	configId string, parameterName string, arr []any) (parameter.Parameter, error) {
 	if len(arr) == 0 || len(arr) > 4 {
 		return nil, newParameterDefinitionParserError(parameterName, configId, context, environment,
 			fmt.Sprintf("short references must have between 1 and 4 elements. you provided `%d`", len(arr)))
@@ -188,6 +188,6 @@ func validateParameter(ctx *singleConfigEntryLoadContext, paramName string, para
 	return nil
 }
 
-func toString(v interface{}) string {
+func toString(v any) string {
 	return fmt.Sprintf("%v", v)
 }

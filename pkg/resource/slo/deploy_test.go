@@ -106,7 +106,7 @@ func TestDeploySuccess(t *testing.T) {
 			},
 			expected: entities.ResolvedEntity{
 				Coordinate: testCoordinate,
-				Properties: map[string]interface{}{
+				Properties: map[string]any{
 					"id": "my-object-id",
 				},
 				Skip: false,
@@ -148,7 +148,7 @@ func TestDeploySuccess(t *testing.T) {
 			},
 			expected: entities.ResolvedEntity{
 				Coordinate: testCoordinate,
-				Properties: map[string]interface{}{
+				Properties: map[string]any{
 					"id": "some-id",
 				},
 				Skip: false,
@@ -190,7 +190,7 @@ func TestDeploySuccess(t *testing.T) {
 			},
 			expected: entities.ResolvedEntity{
 				Coordinate: testCoordinate,
-				Properties: map[string]interface{}{
+				Properties: map[string]any{
 					"id": "some-id",
 				},
 				Skip: false,

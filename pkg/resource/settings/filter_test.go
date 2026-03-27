@@ -28,79 +28,79 @@ func TestShouldDiscard(t *testing.T) {
 	tests := []struct {
 		name    string
 		schema  string
-		json    map[string]interface{}
+		json    map[string]any
 		discard bool
 	}{
 		{
 			name:    "builtin:logmonitoring.logs-on-grail-activate - discarded if 'activated' is 'false'",
 			schema:  "builtin:logmonitoring.logs-on-grail-activate",
-			json:    map[string]interface{}{"activated": false},
+			json:    map[string]any{"activated": false},
 			discard: true,
 		},
 		{
 			name:    "builtin:logmonitoring.logs-on-grail-activate - not discarded if 'activated' is 'true'",
 			schema:  "builtin:logmonitoring.logs-on-grail-activate",
-			json:    map[string]interface{}{"activated": true},
+			json:    map[string]any{"activated": true},
 			discard: false,
 		},
 		{
 			name:    "builtin:logmonitoring.log-buckets-rules - discarded if 'name' is 'default'",
 			schema:  "builtin:logmonitoring.log-buckets-rules",
-			json:    map[string]interface{}{"ruleName": "default"},
+			json:    map[string]any{"ruleName": "default"},
 			discard: true,
 		},
 		{
 			name:    "builtin:logmonitoring.log-buckets-rules - not discarded if 'name' is not 'default'",
 			schema:  "builtin:logmonitoring.log-buckets-rules",
-			json:    map[string]interface{}{"ruleName": "something"},
+			json:    map[string]any{"ruleName": "something"},
 			discard: false,
 		},
 		{
 			name:    "builtin:bizevents-processing-buckets.rule - discarded if 'name' is 'default'",
 			schema:  "builtin:bizevents-processing-buckets.rule",
-			json:    map[string]interface{}{"ruleName": "default"},
+			json:    map[string]any{"ruleName": "default"},
 			discard: true,
 		},
 		{
 			name:    "builtin:bizevents-processing-buckets.rule - not discarded if 'name' is not 'default'",
 			schema:  "builtin:bizevents-processing-buckets.rule",
-			json:    map[string]interface{}{"ruleName": "something"},
+			json:    map[string]any{"ruleName": "something"},
 			discard: false,
 		},
 		{
 			name:    "builtin:alerting.profile - discarded if name is 'Default'",
 			schema:  "builtin:alerting.profile",
-			json:    map[string]interface{}{"name": "Default"},
+			json:    map[string]any{"name": "Default"},
 			discard: true,
 		},
 		{
 			name:    "builtin:alerting.profile - discarded if name is 'Default'",
 			schema:  "builtin:alerting.profile",
-			json:    map[string]interface{}{"name": "Default for ActiveGate Token Expiry"},
+			json:    map[string]any{"name": "Default for ActiveGate Token Expiry"},
 			discard: true,
 		},
 		{
 			name:    "builtin:alerting.profile - not discarded if 'name' is 'Something'",
 			schema:  "builtin:alerting.profile",
-			json:    map[string]interface{}{"name": "Something"},
+			json:    map[string]any{"name": "Something"},
 			discard: false,
 		},
 		{
 			name:    "builtin:logmonitoring.log-events - discarded if 'summary' is equal to 'Default Kubernetes Log Events'",
 			schema:  "builtin:logmonitoring.log-events",
-			json:    map[string]interface{}{"summary": "Default Kubernetes Log Events"},
+			json:    map[string]any{"summary": "Default Kubernetes Log Events"},
 			discard: true,
 		},
 		{
 			name:    "builtin:logmonitoring.log-events - not discarded if 'summary' is not equal to 'Default Kubernetes Log Events'",
 			schema:  "builtin:logmonitoring.log-events",
-			json:    map[string]interface{}{"summary": "my log event"},
+			json:    map[string]any{"summary": "my log event"},
 			discard: false,
 		},
 		{
 			name:    "all builtin:host.monitoring.mode objects are discarded",
 			schema:  "builtin:host.monitoring.mode",
-			json:    map[string]interface{}{},
+			json:    map[string]any{},
 			discard: true,
 		},
 	}
@@ -125,7 +125,7 @@ func TestGetFilter(t *testing.T) {
 }
 
 func TestNoOpFilterDoesNothing(t *testing.T) {
-	shouldDiscard, reason := noOpFilter.ShouldDiscard(map[string]interface{}{})
+	shouldDiscard, reason := noOpFilter.ShouldDiscard(map[string]any{})
 	assert.False(t, shouldDiscard)
 	assert.Empty(t, reason)
 }

@@ -17,6 +17,7 @@
 package deployer
 
 import (
+	"maps"
 	"sync"
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
@@ -66,17 +67,13 @@ func (d *idMap) addGroup(localId localId, remoteId remoteId) {
 func (d *idMap) addBoundaries(boundaries map[string]remoteId) {
 	d.bMu.Lock()
 	defer d.bMu.Unlock()
-	for k, v := range boundaries {
-		d.bndIds[k] = v
-	}
+	maps.Copy(d.bndIds, boundaries)
 }
 
 func (d *idMap) addPolicies(policies map[string]remoteId) {
 	d.pMu.Lock()
 	defer d.pMu.Unlock()
-	for k, v := range policies {
-		d.polIds[k] = v
-	}
+	maps.Copy(d.polIds, policies)
 }
 
 func (d *idMap) addMZones(mzones []ManagementZone) {
@@ -88,9 +85,7 @@ func (d *idMap) addMZones(mzones []ManagementZone) {
 func (d *idMap) addGroups(groups map[string]remoteId) {
 	d.grMu.Lock()
 	defer d.grMu.Unlock()
-	for k, v := range groups {
-		d.grIds[k] = v
-	}
+	maps.Copy(d.grIds, groups)
 }
 
 func (d *idMap) getPolicyUUID(id localId) remoteId {

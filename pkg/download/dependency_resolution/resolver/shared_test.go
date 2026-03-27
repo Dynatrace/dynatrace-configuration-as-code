@@ -127,7 +127,6 @@ func TestReplaceAllWithDocumentRestrictionsDisabled(t *testing.T) {
 	}
 
 	for _, tt := range tc {
-		tt := tt
 		t.Run(tt.content, func(t *testing.T) {
 			t.Parallel()
 
@@ -184,7 +183,6 @@ func TestReplaceAllWithDocumentRestrictionsEnabled(t *testing.T) {
 	}
 
 	for _, tt := range tc {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

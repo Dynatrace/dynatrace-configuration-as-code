@@ -66,8 +66,8 @@ func (p *CompoundParameter) GetReferences() []parameter.ParameterReference {
 	return p.referencedParameters
 }
 
-func (p *CompoundParameter) ResolveValue(context parameter.ResolveContext) (interface{}, error) {
-	compoundData := make(map[string]interface{})
+func (p *CompoundParameter) ResolveValue(context parameter.ResolveContext) (any, error) {
+	compoundData := make(map[string]any)
 
 	for _, param := range p.referencedParameters {
 		value, ok := context.ResolvedParameterValues[param.Property]
@@ -109,7 +109,7 @@ func parseCompoundParameter(context parameter.ParameterParserContext) (parameter
 		return nil, parameter.NewParameterParserError(context, "missing property `references`")
 	}
 
-	referencedParameterSlice, ok := references.([]interface{})
+	referencedParameterSlice, ok := references.([]any)
 	if !ok {
 		return nil, parameter.NewParameterParserError(context, "malformed value `references`")
 	}
@@ -122,14 +122,14 @@ func parseCompoundParameter(context parameter.ParameterParserContext) (parameter
 	return New(context.ParameterName, strings.ToString(format), referencedParameters)
 }
 
-func writeCompoundParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
+func writeCompoundParameter(context parameter.ParameterWriterContext) (map[string]any, error) {
 	compoundParam, ok := context.Parameter.(*CompoundParameter)
 
 	if !ok {
 		return nil, parameter.NewParameterWriterError(context, "unexpected type. parameter is not of type `CompoundParameter`")
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	if compoundParam.rawFormatString == "" {
 		return nil, parameter.NewParameterWriterError(context, "missing property `format`")
@@ -139,7 +139,7 @@ func writeCompoundParameter(context parameter.ParameterWriterContext) (map[strin
 	if len(compoundParam.referencedParameters) == 0 {
 		return nil, parameter.NewParameterWriterError(context, "missing property `references`")
 	}
-	references := make([]interface{}, len(compoundParam.referencedParameters))
+	references := make([]any, len(compoundParam.referencedParameters))
 
 	for i, reference := range compoundParam.referencedParameters {
 		references[i] = reference.Property

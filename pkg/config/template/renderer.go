@@ -23,7 +23,7 @@ import (
 
 // Render tries to render a given template with the given properties and returns the
 // resulting string. if any error occurs during rendering, an error is returned.
-func Render(template Template, properties map[string]interface{}) (string, error) {
+func Render(template Template, properties map[string]any) (string, error) {
 	content, err := template.Content()
 	if err != nil {
 		return "", fmt.Errorf("failure trying to render template %s: %w", template.ID(), err)

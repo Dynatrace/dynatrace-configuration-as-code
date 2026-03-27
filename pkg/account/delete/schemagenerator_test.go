@@ -44,14 +44,14 @@ func Test_GenerateJSONSchema(t *testing.T) {
 			expectedRaw, err := afero.ReadFile(afero.NewOsFs(), tc.fileName)
 			require.NoError(t, err)
 
-			var expectedJson map[string]interface{}
+			var expectedJson map[string]any
 			err = json.Unmarshal(expectedRaw, &expectedJson)
 			require.NoError(t, err)
 
 			gotRaw, err := account.GenerateJSONSchema()
 			require.NoError(t, err)
 
-			var gotJson map[string]interface{}
+			var gotJson map[string]any
 			err = json.Unmarshal(gotRaw, &gotJson)
 			require.NoError(t, err)
 

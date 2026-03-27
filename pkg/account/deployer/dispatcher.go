@@ -78,15 +78,13 @@ func (d *Dispatcher) AddJob(j Runnable) {
 func (d *Dispatcher) Wait() error {
 	var ers []error
 	waitForErrs := &sync.WaitGroup{}
-	waitForErrs.Add(1)
-	go func() {
-		defer waitForErrs.Done()
+	waitForErrs.Go(func() {
 		for err := range d.errCh {
 			if err != nil {
 				ers = append(ers, err)
 			}
 		}
-	}()
+	})
 	d.waitGroup.Wait()
 	close(d.errCh)
 	waitForErrs.Wait()

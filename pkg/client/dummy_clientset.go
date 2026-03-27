@@ -67,7 +67,7 @@ func (d *DummyAutomationClient) List(ctx context.Context, resourceType automatio
 func (d *DummyAutomationClient) Update(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (api.Response, error) {
 	return api.Response{
 		StatusCode: 200,
-		Data:       []byte(fmt.Sprintf(`{"id" : "%s"}`, id)),
+		Data:       fmt.Appendf(nil, `{"id" : "%s"}`, id),
 	}, nil
 }
 

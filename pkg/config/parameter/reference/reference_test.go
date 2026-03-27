@@ -36,7 +36,7 @@ func TestParseReferenceParameter(t *testing.T) {
 	property := "title"
 
 	param, err := parseReferenceParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"project":    project,
 			"configType": configType,
 			"configId":   config,
@@ -65,7 +65,7 @@ func TestParseReferenceParameterShouldFillValuesFromCurrentConfigIfMissing(t *te
 
 	param, err := parseReferenceParameter(parameter.ParameterParserContext{
 		Coordinate: coordinate.Coordinate{Project: project, Type: configType, ConfigId: config},
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"property": property,
 		},
 	})
@@ -87,7 +87,7 @@ func TestParseReferenceParameterShouldFailIfPropertyIsMissing(t *testing.T) {
 	config := "alerting"
 
 	_, err := parseReferenceParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"project":    project,
 			"configType": configType,
 			"config":     config,
@@ -103,7 +103,7 @@ func TestParseReferenceParameterShouldFailIfProjectIsSetButApiIsNot(t *testing.T
 	property := "title"
 
 	_, err := parseReferenceParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"project":  project,
 			"config":   config,
 			"property": property,
@@ -118,7 +118,7 @@ func TestParseReferenceParameterShouldFailIfProjectIsSetButApiAndConfigAreNot(t 
 	property := "title"
 
 	_, err := parseReferenceParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"project":  project,
 			"property": property,
 		},
@@ -133,7 +133,7 @@ func TestParseReferenceParameterShouldFailIfProjectAndApiAreSetButConfigIsNot(t 
 	property := "title"
 
 	_, err := parseReferenceParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"project":    project,
 			"configType": configType,
 			"property":   property,
@@ -148,7 +148,7 @@ func TestParseReferenceParameterShouldFailIfApiIsSetButConfigIsNot(t *testing.T)
 	property := "title"
 
 	_, err := parseReferenceParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"configType": configType,
 			"property":   property,
 		},
@@ -355,7 +355,7 @@ func TestResolveValueOnPropertyInSameConfig(t *testing.T) {
 
 	result, err := fixture.ResolveValue(parameter.ResolveContext{
 		ConfigCoordinate: referenceCoordinate,
-		ResolvedParameterValues: map[string]interface{}{
+		ResolvedParameterValues: map[string]any{
 			property: propertyValue,
 		},
 	})

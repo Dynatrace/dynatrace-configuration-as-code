@@ -23,8 +23,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
@@ -412,7 +410,7 @@ func Test_ValidateAuthenticationWithProjectConfigs(t *testing.T) {
 		Skip: false,
 	}
 	settingsConfWithPermission := config.Config{
-		Type: config.SettingsType{AllUserPermission: pointer.Pointer(config.ReadPermission)},
+		Type: config.SettingsType{AllUserPermission: new(config.ReadPermission)},
 		Skip: false,
 	}
 	classicConfSkip := classicConf

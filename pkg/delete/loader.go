@@ -128,7 +128,7 @@ func convertToDeletePointer(entry any) (pointer.DeletePointer, error) {
 	return convert(entry)
 }
 
-func convert(entry interface{}) (pointer.DeletePointer, error) {
+func convert(entry any) (pointer.DeletePointer, error) {
 	var parsed persistence.DeleteEntry
 	if err := mapstructure.Decode(entry, &parsed); err != nil {
 		return pointer.DeletePointer{}, err

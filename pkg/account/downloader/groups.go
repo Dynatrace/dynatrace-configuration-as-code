@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
@@ -194,11 +195,8 @@ func getManagementZonesFor(scope string, perDTOs *accountmanagement.PermissionsG
 func getPoliciesFor(binding *accountmanagement.LevelPolicyBindingDto, groupUUID string) PolicyToBoundaries {
 	policies := PolicyToBoundaries{}
 	for _, b := range binding.PolicyBindings {
-		for _, g := range b.Groups {
-			if g == groupUUID {
-				policies[b.PolicyUuid] = b.Boundaries
-				break
-			}
+		if slices.Contains(b.Groups, groupUUID) {
+			policies[b.PolicyUuid] = b.Boundaries
 		}
 	}
 	return policies

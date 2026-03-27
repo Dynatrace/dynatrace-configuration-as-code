@@ -43,7 +43,7 @@ func isApiV2Endpoint(endpoint string) bool {
 }
 
 func getPaginationValues(body []byte) (nextPageKey string, totalCount int) {
-	var jsonResponse map[string]interface{}
+	var jsonResponse map[string]any
 	if err := json.Unmarshal(body, &jsonResponse); err != nil {
 		return
 	}

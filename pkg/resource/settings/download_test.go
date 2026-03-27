@@ -36,7 +36,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -176,7 +175,7 @@ func TestDownloadAll(t *testing.T) {
 		},
 		{
 			name: "DownloadSettings - discard settings based on filter",
-			filters: map[string]Filter{"sid1": {ShouldDiscard: func(settingsValue map[string]interface{}) (bool, string) {
+			filters: map[string]Filter{"sid1": {ShouldDiscard: func(settingsValue map[string]any) (bool, string) {
 				return settingsValue["skip"] == true, "skip is true"
 			}},
 			},
@@ -778,7 +777,7 @@ func TestDownloadAll(t *testing.T) {
 						{
 							SchemaId:                "app:my-app:schema",
 							Ordered:                 false,
-							OwnerBasedAccessControl: pointer.Pointer(true),
+							OwnerBasedAccessControl: new(true),
 						},
 					}, nil
 				},
@@ -816,7 +815,7 @@ func TestDownloadAll(t *testing.T) {
 					Type: config.SettingsType{
 						SchemaId:          "app:my-app:schema",
 						SchemaVersion:     "1.2.3",
-						AllUserPermission: pointer.Pointer(config.WritePermission),
+						AllUserPermission: new(config.WritePermission),
 					},
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
@@ -835,7 +834,7 @@ func TestDownloadAll(t *testing.T) {
 						{
 							SchemaId:                "app:my-app:schema",
 							Ordered:                 false,
-							OwnerBasedAccessControl: pointer.Pointer(true),
+							OwnerBasedAccessControl: new(true),
 						},
 					}, nil
 				},
@@ -870,7 +869,7 @@ func TestDownloadAll(t *testing.T) {
 					return dtclient.SchemaList{
 						{
 							SchemaId:                "app:my-app:schema",
-							OwnerBasedAccessControl: pointer.Pointer(true),
+							OwnerBasedAccessControl: new(true),
 						},
 					}, nil
 				},

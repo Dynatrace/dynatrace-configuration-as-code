@@ -95,7 +95,7 @@ type Config struct {
 	OriginObjectId string
 }
 
-func (c *Config) Render(properties map[string]interface{}) (string, error) {
+func (c *Config) Render(properties map[string]any) (string, error) {
 	if c == nil || c.Template == nil {
 		return "", nil
 	}

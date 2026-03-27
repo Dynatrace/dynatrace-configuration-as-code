@@ -219,7 +219,6 @@ func fetchResources(ctx context.Context, fetchFunc func(ctx context.Context) err
 
 func (d *AccountDeployer) deployPolicies(ctx context.Context, policies map[string]account.Policy, dispatcher *Dispatcher) {
 	for _, policy := range policies {
-		policy := policy
 		deployPolicyJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
 			d.logger.InfoContext(ctx, "Deploying policy", slog.String("name", policy.Name))
@@ -235,7 +234,6 @@ func (d *AccountDeployer) deployPolicies(ctx context.Context, policies map[strin
 
 func (d *AccountDeployer) deployBoundaries(ctx context.Context, boundaries map[string]account.Boundary, dispatcher *Dispatcher) {
 	for _, boundary := range boundaries {
-		boundary := boundary
 		deployBoundaryJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
 			d.logger.InfoContext(ctx, "Deploying boundary", slog.String("name", boundary.Name))
@@ -251,7 +249,6 @@ func (d *AccountDeployer) deployBoundaries(ctx context.Context, boundaries map[s
 
 func (d *AccountDeployer) deployGroups(ctx context.Context, groups map[string]account.Group, dispatcher *Dispatcher) {
 	for _, group := range groups {
-		group := group
 		deployGroupJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
 			d.logger.InfoContext(ctx, "Deploying group", slog.String("name", group.Name))
@@ -269,7 +266,6 @@ func (d *AccountDeployer) deployGroups(ctx context.Context, groups map[string]ac
 
 func (d *AccountDeployer) deployUsers(ctx context.Context, users map[string]account.User, dispatcher *Dispatcher) {
 	for _, user := range users {
-		user := user
 		deployUserJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
 			d.logger.InfoContext(ctx, "Deploying user", slog.String("email", user.Email.String()))
@@ -284,7 +280,6 @@ func (d *AccountDeployer) deployUsers(ctx context.Context, users map[string]acco
 
 func (d *AccountDeployer) deployServiceUsers(ctx context.Context, serviceUsers []account.ServiceUser, dispatcher *Dispatcher) {
 	for _, serviceUser := range serviceUsers {
-		serviceUser := serviceUser
 		deployServiceUserJob := func(wg *sync.WaitGroup, errCh chan error) {
 			defer wg.Done()
 			d.logger.InfoContext(ctx, "Deploying service user", slog.String("name", serviceUser.Name))
@@ -299,7 +294,6 @@ func (d *AccountDeployer) deployServiceUsers(ctx context.Context, serviceUsers [
 
 func (d *AccountDeployer) deployGroupBindings(ctx context.Context, groups map[account.GroupId]account.Group, dispatcher *Dispatcher) {
 	for _, group := range groups {
-		group := group
 		d.logger.InfoContext(ctx, "Updating policy bindings and permissions for group", slog.String("name", group.Name))
 
 		updateBindingsJob := func(wg *sync.WaitGroup, errCh chan error) {
@@ -320,7 +314,6 @@ func (d *AccountDeployer) deployGroupBindings(ctx context.Context, groups map[ac
 
 func (d *AccountDeployer) deployUserBindings(ctx context.Context, users map[account.UserId]account.User, dispatcher *Dispatcher) {
 	for _, user := range users {
-		user := user
 		deployUserBindingsJob :=
 			func(wg *sync.WaitGroup, errCh chan error) {
 				defer wg.Done()
@@ -337,7 +330,6 @@ func (d *AccountDeployer) deployUserBindings(ctx context.Context, users map[acco
 
 func (d *AccountDeployer) deployServiceUserBindings(ctx context.Context, serviceUsers []account.ServiceUser, dispatcher *Dispatcher) {
 	for _, serviceUser := range serviceUsers {
-		serviceUser := serviceUser
 		deployUserBindingsJob :=
 			func(wg *sync.WaitGroup, errCh chan error) {
 				defer wg.Done()

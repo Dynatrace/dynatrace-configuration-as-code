@@ -22,7 +22,7 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
-func GenerateJSONSchemaString(value interface{}) ([]byte, error) {
+func GenerateJSONSchemaString(value any) ([]byte, error) {
 	log.Debug("Generating JSON schema for %T...", value)
 
 	s := ReflectJSONSchema(value)
@@ -35,7 +35,7 @@ func GenerateJSONSchemaString(value interface{}) ([]byte, error) {
 	return MarshalIndent(b), nil
 }
 
-func ReflectJSONSchema(value interface{}) *jsonschema.Schema {
+func ReflectJSONSchema(value any) *jsonschema.Schema {
 	r := new(jsonschema.Reflector)
 	r.RequiredFromJSONSchemaTags = true // not all our optional fields have a json 'omitempty' tag, so we tag required explicitly
 	r.DoNotReference = true

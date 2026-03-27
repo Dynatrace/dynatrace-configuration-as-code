@@ -39,8 +39,8 @@ func Test_AllDefinedApiFiltersHaveApis(t *testing.T) {
 
 func Test_ShouldBePersisted(t *testing.T) {
 	t.Run("dashboard -  should not be persisted if its a preset owned by Dynatrace", func(t *testing.T) {
-		assert.False(t, ApiContentFilters["dashboard"].ShouldConfigBePersisted(map[string]interface{}{
-			"dashboardMetadata": map[string]interface{}{
+		assert.False(t, ApiContentFilters["dashboard"].ShouldConfigBePersisted(map[string]any{
+			"dashboardMetadata": map[string]any{
 				"preset": true,
 				"owner":  "Dynatrace",
 			},
@@ -48,8 +48,8 @@ func Test_ShouldBePersisted(t *testing.T) {
 	})
 
 	t.Run("dashboard -  should  be persisted if its a preset owned by User", func(t *testing.T) {
-		assert.True(t, ApiContentFilters["dashboard"].ShouldConfigBePersisted(map[string]interface{}{
-			"dashboardMetadata": map[string]interface{}{
+		assert.True(t, ApiContentFilters["dashboard"].ShouldConfigBePersisted(map[string]any{
+			"dashboardMetadata": map[string]any{
 				"preset": true,
 				"owner":  "Not Dynatrace",
 			},
@@ -57,51 +57,51 @@ func Test_ShouldBePersisted(t *testing.T) {
 	})
 
 	t.Run("dashboard -  should be persisted if dashboardMetadata is missing", func(t *testing.T) {
-		assert.True(t, ApiContentFilters["dashboard"].ShouldConfigBePersisted(map[string]interface{}{}))
+		assert.True(t, ApiContentFilters["dashboard"].ShouldConfigBePersisted(map[string]any{}))
 	})
 
 	t.Run("dashboard -  should be persisted if it's not a preset", func(t *testing.T) {
-		assert.True(t, ApiContentFilters["dashboard"].ShouldConfigBePersisted(map[string]interface{}{
-			"dashboardMetadata": map[string]interface{}{
+		assert.True(t, ApiContentFilters["dashboard"].ShouldConfigBePersisted(map[string]any{
+			"dashboardMetadata": map[string]any{
 				"preset": false,
 			},
 		}))
 	})
 
 	t.Run("dashboard -  should be persisted if dashboardMetadata.preset is missing", func(t *testing.T) {
-		assert.True(t, ApiContentFilters["dashboard"].ShouldConfigBePersisted(map[string]interface{}{
-			"dashboardMetadata": map[string]interface{}{},
+		assert.True(t, ApiContentFilters["dashboard"].ShouldConfigBePersisted(map[string]any{
+			"dashboardMetadata": map[string]any{},
 		}))
 	})
 
 	t.Run("synthetic-location - should be persisted if it's private", func(t *testing.T) {
-		assert.True(t, ApiContentFilters["synthetic-location"].ShouldConfigBePersisted(map[string]interface{}{
+		assert.True(t, ApiContentFilters["synthetic-location"].ShouldConfigBePersisted(map[string]any{
 			"type": "PRIVATE",
 		}))
 	})
 
 	t.Run("synthetic-location - should not be persisted if it's public", func(t *testing.T) {
-		assert.False(t, ApiContentFilters["synthetic-location"].ShouldConfigBePersisted(map[string]interface{}{
+		assert.False(t, ApiContentFilters["synthetic-location"].ShouldConfigBePersisted(map[string]any{
 			"type": "PUBLIC",
 		}))
 	})
 
 	t.Run("hosts-auto-update - Empty update windows are not persisted", func(t *testing.T) {
-		assert.False(t, ApiContentFilters["hosts-auto-update"].ShouldConfigBePersisted(map[string]interface{}{
-			"updateWindows": map[string]interface{}{
-				"windows": []interface{}{},
+		assert.False(t, ApiContentFilters["hosts-auto-update"].ShouldConfigBePersisted(map[string]any{
+			"updateWindows": map[string]any{
+				"windows": []any{},
 			},
 		}))
 	})
 
 	t.Run("hosts-auto-update - Missing update windows are is persisted", func(t *testing.T) {
-		assert.True(t, ApiContentFilters["hosts-auto-update"].ShouldConfigBePersisted(map[string]interface{}{}))
+		assert.True(t, ApiContentFilters["hosts-auto-update"].ShouldConfigBePersisted(map[string]any{}))
 	})
 
 	t.Run("hosts-auto-update - Windows with values are persisted", func(t *testing.T) {
-		assert.True(t, ApiContentFilters["hosts-auto-update"].ShouldConfigBePersisted(map[string]interface{}{
-			"updateWindows": map[string]interface{}{
-				"windows": []interface{}{"1", "2", "3"},
+		assert.True(t, ApiContentFilters["hosts-auto-update"].ShouldConfigBePersisted(map[string]any{
+			"updateWindows": map[string]any{
+				"windows": []any{"1", "2", "3"},
 			},
 		}))
 	})

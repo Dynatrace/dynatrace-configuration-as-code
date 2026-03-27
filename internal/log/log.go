@@ -71,45 +71,45 @@ type CtxValGraphComponentId int
 
 const envVarLogSource = "MONACO_LOG_SOURCE"
 
-func Fatal(msg string, a ...interface{}) {
+func Fatal(msg string, a ...any) {
 	slog.Error(fmt.Sprintf(msg, a...))
 	os.Exit(1)
 }
 
-func FatalContext(ctx context.Context, msg string, a ...interface{}) {
+func FatalContext(ctx context.Context, msg string, a ...any) {
 	slog.ErrorContext(ctx, fmt.Sprintf(msg, a...))
 	os.Exit(1)
 }
 
-func Error(msg string, a ...interface{}) {
+func Error(msg string, a ...any) {
 	slog.Error(fmt.Sprintf(msg, a...))
 }
 
-func ErrorContext(ctx context.Context, msg string, a ...interface{}) {
+func ErrorContext(ctx context.Context, msg string, a ...any) {
 	slog.ErrorContext(ctx, fmt.Sprintf(msg, a...))
 }
 
-func Warn(msg string, a ...interface{}) {
+func Warn(msg string, a ...any) {
 	slog.Warn(fmt.Sprintf(msg, a...))
 }
 
-func WarnContext(ctx context.Context, msg string, a ...interface{}) {
+func WarnContext(ctx context.Context, msg string, a ...any) {
 	slog.WarnContext(ctx, fmt.Sprintf(msg, a...))
 }
 
-func Info(msg string, a ...interface{}) {
+func Info(msg string, a ...any) {
 	slog.Info(fmt.Sprintf(msg, a...))
 }
 
-func InfoContext(ctx context.Context, msg string, a ...interface{}) {
+func InfoContext(ctx context.Context, msg string, a ...any) {
 	slog.InfoContext(ctx, fmt.Sprintf(msg, a...))
 }
 
-func Debug(msg string, a ...interface{}) {
+func Debug(msg string, a ...any) {
 	slog.Debug(fmt.Sprintf(msg, a...))
 }
 
-func DebugContext(ctx context.Context, msg string, a ...interface{}) {
+func DebugContext(ctx context.Context, msg string, a ...any) {
 	slog.DebugContext(ctx, fmt.Sprintf(msg, a...))
 }
 

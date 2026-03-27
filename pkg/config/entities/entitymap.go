@@ -17,6 +17,7 @@
 package entities
 
 import (
+	"maps"
 	"sync"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -46,9 +47,7 @@ func (r *EntityMap) Get() map[coordinate.Coordinate]ResolvedEntity {
 	defer r.lock.RUnlock()
 
 	entityCopy := make(map[coordinate.Coordinate]ResolvedEntity, len(r.resolvedEntities))
-	for k, v := range r.resolvedEntities {
-		entityCopy[k] = v
-	}
+	maps.Copy(entityCopy, r.resolvedEntities)
 
 	return entityCopy
 }
@@ -60,9 +59,7 @@ func (r *EntityMap) GetResolvedProperty(coordinate coordinate.Coordinate, proper
 	if e, f := r.resolvedEntities[coordinate]; f {
 
 		m := make(map[string]any)
-		for k, v := range e.Properties {
-			m[k] = v
-		}
+		maps.Copy(m, e.Properties)
 
 		return ResolvePropValue(propertyName, m)
 	}

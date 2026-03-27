@@ -94,7 +94,7 @@ func TestRender(t *testing.T) {
 	tests := []struct {
 		name            string
 		givenTemplate   Template
-		givenProperties map[string]interface{}
+		givenProperties map[string]any
 		want            string
 		wantErr         bool
 	}{
@@ -103,7 +103,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: simpleTemplateString,
 			},
-			map[string]interface{}{"val": "the-key"},
+			map[string]any{"val": "the-key"},
 			`{ "key": the-key }`,
 			false,
 		},
@@ -112,7 +112,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: "{{{ .val }}}",
 			},
-			map[string]interface{}{"val": "the-key"},
+			map[string]any{"val": "the-key"},
 			`{the-key}`,
 			false,
 		},
@@ -121,7 +121,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: "{{{.val}} | bearer}",
 			},
-			map[string]interface{}{"val": "the-key"},
+			map[string]any{"val": "the-key"},
 			`{the-key | bearer}`,
 			false,
 		},
@@ -130,7 +130,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: "{{{ .val1 }}} {{{ .val2 }}}",
 			},
-			map[string]interface{}{"val1": "the-key1", "val2": "the-key2"},
+			map[string]any{"val1": "the-key1", "val2": "the-key2"},
 			`{the-key1} {the-key2}`,
 			false,
 		},
@@ -139,7 +139,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: "\\{\\{\\{ I just like curlies",
 			},
-			map[string]interface{}{"val1": "the-key1", "val2": "the-key2"},
+			map[string]any{"val1": "the-key1", "val2": "the-key2"},
 			`\{\{\{ I just like curlies`,
 			false,
 		},
@@ -148,7 +148,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: templateString,
 			},
-			map[string]interface{}{"color": "white", "animal": "rabbit"},
+			map[string]any{"color": "white", "animal": "rabbit"},
 			`Follow the white rabbit`,
 			false,
 		},
@@ -157,7 +157,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: templateString,
 			},
-			map[string]interface{}{"color": "white", "animal": "cow"},
+			map[string]any{"color": "white", "animal": "cow"},
 			`Follow the white cow`,
 			false,
 		},
@@ -166,7 +166,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: templateString,
 			},
-			map[string]interface{}{"color": "white", "animal": "rabbit$=co\\/\\/=chicken"},
+			map[string]any{"color": "white", "animal": "rabbit$=co\\/\\/=chicken"},
 			`Follow the white rabbit$=co\/\/=chicken`,
 			false,
 		},
@@ -175,7 +175,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: simpleTemplateString,
 			},
-			map[string]interface{}{}, // 'val' used in template but not defined as property
+			map[string]any{}, // 'val' used in template but not defined as property
 			"",
 			true,
 		},
@@ -184,7 +184,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: templateString,
 			},
-			map[string]interface{}{"color": "white"}, // 'val' used in template but not defined as property
+			map[string]any{"color": "white"}, // 'val' used in template but not defined as property
 			"",
 			true,
 		},
@@ -193,7 +193,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: invalidTemplateString,
 			},
-			map[string]interface{}{"val": "the-key"},
+			map[string]any{"val": "the-key"},
 			"",
 			true,
 		},
@@ -202,7 +202,7 @@ func TestRender(t *testing.T) {
 			&InMemoryTemplate{
 				content: templateStringWithNewlines,
 			},
-			map[string]interface{}{"val": "the-key"},
+			map[string]any{"val": "the-key"},
 			"{ \"key\":\nthe-key\n}",
 			false,
 		},

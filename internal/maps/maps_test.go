@@ -30,28 +30,28 @@ func TestToStringMap(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		input map[interface{}]interface{}
-		want  map[string]interface{}
+		input map[any]any
+		want  map[string]any
 	}{
 		{
 			"parses empty map",
-			map[interface{}]interface{}{},
-			map[string]interface{}{},
+			map[any]any{},
+			map[string]any{},
 		},
 		{
 			"parses string map",
-			map[interface{}]interface{}{
+			map[any]any{
 				"one": "string",
 				"two": "string",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"one": "string",
 				"two": "string",
 			},
 		},
 		{
 			"flattens non-strings",
-			map[interface{}]interface{}{
+			map[any]any{
 				struct {
 					Value  string
 					Number int
@@ -60,7 +60,7 @@ func TestToStringMap(t *testing.T) {
 					42,
 				}: 52,
 			},
-			map[string]interface{}{
+			map[string]any{
 				fmt.Sprintf("%v", struct {
 					Value  string
 					Number int
@@ -72,13 +72,13 @@ func TestToStringMap(t *testing.T) {
 		},
 		{
 			"Applies the stringify recursively",
-			map[interface{}]interface{}{
-				"property": map[interface{}]interface{}{
+			map[any]any{
+				"property": map[any]any{
 					"subproperty": "value",
 				},
 			},
-			map[string]interface{}{
-				"property": map[string]interface{}{
+			map[string]any{
+				"property": map[string]any{
 					"subproperty": "value",
 				},
 			},

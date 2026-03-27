@@ -22,7 +22,7 @@ import (
 	"unicode/utf8"
 )
 
-func ToString(v interface{}) string {
+func ToString(v any) string {
 	return fmt.Sprintf("%v", v)
 }
 
