@@ -78,8 +78,18 @@ jobs:
       - name: ✍️ Check format
         run: make lint
 
+      - name: 🪜 Generate mocks
+        run: make mocks
+
+      - name: 🧑‍🔧 Check for `go fix` changes
+        run: |
+          go fix -tags "unit integration nightly cleanup integration_v1 download_restore" ./...
+          git diff --exit-code
+        if: always()
+
       - name: 🕵️ Go vet
         run: make vet
+        if: always()
 
       - name: 🔎 golangci-lint
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 #v9.2.0
@@ -87,12 +97,14 @@ jobs:
           install-mode: 'goinstall' # install mode goinstall in order to use hashes for the version
           version: eabc2638a66daf5bb6c6fb052a32fa3ef7b6600d #v2.1.6
           args: '--output.checkstyle.path=lint-report.xml --issues-exit-code=0' # if issues are found, don't exit with "1". Sonar decides if it fails or not
+        if: always()
 
       - name: ⬆️ Archive lint results
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
         with:
           name: lint-report
           path: lint-report.xml
+        if: always()
 
   sonar_scan:
     name: Report lint and test coverage
