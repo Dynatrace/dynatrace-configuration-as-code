@@ -40,18 +40,175 @@
           "type": {
             "oneOf": [
               {
-                "type": "string"
+                "type": "string",
+                "description": "Shorthand for a classic Config API type name, or one of the special types: bucket, segment, slo-v2"
               },
               {
-                "type": "object"
+                "type": "object",
+                "oneOf": [
+                  {
+                    "properties": {
+                      "api": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "description": "The name of the classic Config API."
+                              },
+                              "scope": {
+                                "description": "The scope for this API configuration."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "name"
+                            ]
+                          }
+                        ],
+                        "description": "A classic Config API type - can be a simple API name string or an object with name and scope."
+                      }
+                    },
+                    "required": [
+                      "api"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "settings": {
+                        "type": "object",
+                        "properties": {
+                          "schema": {
+                            "type": "string",
+                            "description": "The Settings 2.0 schema ID."
+                          },
+                          "schemaVersion": {
+                            "type": "string",
+                            "description": "The schema version."
+                          },
+                          "scope": {
+                            "description": "The scope this setting applies to."
+                          },
+                          "insertAfter": {
+                            "description": "Defines ordering - this setting should be inserted after the referenced setting."
+                          },
+                          "permissions": {
+                            "type": "object",
+                            "properties": {
+                              "allUsers": {
+                                "type": "string",
+                                "enum": [
+                                  "read",
+                                  "write",
+                                  "none"
+                                ],
+                                "description": "Permission level for all users."
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false,
+                        "description": "A Settings 2.0 configuration type."
+                      }
+                    },
+                    "required": [
+                      "settings"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "automation": {
+                        "type": "object",
+                        "properties": {
+                          "resource": {
+                            "type": "string",
+                            "enum": [
+                              "workflow",
+                              "business-calendar",
+                              "scheduling-rule"
+                            ],
+                            "description": "The automation resource type."
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "resource"
+                        ],
+                        "description": "A Dynatrace Platform automation resource."
+                      }
+                    },
+                    "required": [
+                      "automation"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "document": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "dashboard",
+                              "notebook",
+                              "launchpad"
+                            ],
+                            "description": "The kind of document."
+                          },
+                          "id": {
+                            "type": "string",
+                            "description": "Optional custom identifier for the document."
+                          },
+                          "private": {
+                            "type": "boolean",
+                            "description": "Whether the document is private."
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "kind"
+                        ],
+                        "description": "A Dynatrace platform document."
+                      }
+                    },
+                    "required": [
+                      "document"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "openpipeline": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "description": "The kind of OpenPipeline configuration."
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "kind"
+                        ],
+                        "description": "An OpenPipeline configuration."
+                      }
+                    },
+                    "required": [
+                      "openpipeline"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
               }
             ],
-            "properties": {
-              "Type": true,
-              "Scope": true,
-              "InsertAfter": true
-            },
-            "additionalProperties": false,
             "description": "The type of this configuration"
           },
           "groupOverrides": {
@@ -84,9 +241,6 @@
                   },
                   "additionalProperties": false,
                   "type": "object",
-                  "required": [
-                    "template"
-                  ],
                   "description": "May contain any fields the base config definition does and overwrites their values for any environment in this group."
                 }
               },
@@ -130,9 +284,6 @@
                   },
                   "additionalProperties": false,
                   "type": "object",
-                  "required": [
-                    "template"
-                  ],
                   "description": "May contain any fields the base config definition does and overwrites their values for this environment."
                 }
               },
