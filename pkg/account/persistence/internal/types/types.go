@@ -19,10 +19,8 @@ package types
 import (
 	"fmt"
 
-	"github.com/invopop/jsonschema"
 	"github.com/mitchellh/mapstructure"
 
-	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 )
 
@@ -34,89 +32,89 @@ const (
 
 type (
 	File struct {
-		Boundaries   []Boundary    `yaml:"boundaries,omitempty" json:"boundaries,omitempty" jsonschema:"description=Boundaries to configure for this account."`
-		Policies     []Policy      `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies to configure for this account."`
-		Groups       []Group       `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups to configure for this account."`
-		Users        []User        `yaml:"users,omitempty" json:"users,omitempty" jsonschema:"description=Users to configure for this account."`
-		ServiceUsers []ServiceUser `yaml:"serviceUsers,omitempty" json:"serviceUsers,omitempty" jsonschema:"description=Service users to configure for this account."`
+		Boundaries   []Boundary    `yaml:"boundaries,omitempty" json:"boundaries,omitempty"`
+		Policies     []Policy      `yaml:"policies,omitempty" json:"policies,omitempty"`
+		Groups       []Group       `yaml:"groups,omitempty" json:"groups,omitempty"`
+		Users        []User        `yaml:"users,omitempty" json:"users,omitempty"`
+		ServiceUsers []ServiceUser `yaml:"serviceUsers,omitempty" json:"serviceUsers,omitempty"`
 	}
 
 	Boundary struct {
-		ID             string `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this boundary configuration - this can be freely defined, used by monaco."`
-		Name           string `yaml:"name" json:"name" jsonschema:"required,description=The name of this boundary."`
-		Query          string `yaml:"query" json:"query" jsonschema:"required,description=The query definition of the boundary."`
-		OriginObjectID string `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the boundary this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
+		ID             string `yaml:"id" json:"id"`
+		Name           string `yaml:"name" json:"name"`
+		Query          string `yaml:"query" json:"query"`
+		OriginObjectID string `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty"`
 	}
 
 	Policy struct {
-		ID             string      `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this policy configuration - this can be freely defined, used by monaco."`
-		Name           string      `yaml:"name" json:"name" jsonschema:"required,description=The name of this policy."`
-		Level          PolicyLevel `yaml:"level" json:"level" jsonschema:"required,description=The level this policy applies to."`
-		Description    string      `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"A description of this policy."`
-		Policy         string      `yaml:"policy" json:"policy" jsonschema:"required,description=The policy definition."`
-		OriginObjectID string      `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the policy this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
+		ID             string      `yaml:"id" json:"id"`
+		Name           string      `yaml:"name" json:"name"`
+		Level          PolicyLevel `yaml:"level" json:"level"`
+		Description    string      `yaml:"description,omitempty" json:"description,omitempty"`
+		Policy         string      `yaml:"policy" json:"policy"`
+		OriginObjectID string      `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty"`
 	}
 
 	PolicyLevel struct {
-		Type        string `yaml:"type" json:"type" jsonschema:"required,enum=account,enum=environment,description=This defines which level this policy applies to - either the whole 'account' or a specific 'environment'. For environment level, the 'environment' field needs to contain the environment ID."`
-		Environment string `yaml:"environment,omitempty" json:"environment,omitempty" jsonschema:"The ID of the environment this policy applies to. Required if type is 'environment'."`
+		Type        string `yaml:"type" json:"type"`
+		Environment string `yaml:"environment,omitempty" json:"environment,omitempty"`
 	}
 
 	Group struct {
-		ID                       string   `yaml:"id" json:"id" jsonschema:"required,description=A unique identifier of this group configuration - this can be freely defined, used by monaco."`
-		Name                     string   `yaml:"name" json:"name" jsonschema:"required,description=The name of this group."`
-		Description              string   `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"A description of this group."`
-		FederatedAttributeValues []string `yaml:"federatedAttributeValues,omitempty" json:"federatedAttributeValues,omitempty" jsonschema:"Federated attribute values of this group."`
+		ID                       string   `yaml:"id" json:"id"`
+		Name                     string   `yaml:"name" json:"name"`
+		Description              string   `yaml:"description,omitempty" json:"description,omitempty"`
+		FederatedAttributeValues []string `yaml:"federatedAttributeValues,omitempty" json:"federatedAttributeValues,omitempty"`
 		// Account level permissions and policies that apply to users in this group
-		Account *Account `yaml:"account,omitempty" json:"account,omitempty" jsonschema:"description=Account level permissions and policies that apply to users in this group."`
+		Account *Account `yaml:"account,omitempty" json:"account,omitempty"`
 		// Environment level permissions and policies that apply to users in this group
-		Environment []Environment `yaml:"environments,omitempty" json:"environments,omitempty" jsonschema:"description=Environment level permissions and policies that apply to users in this group."`
+		Environment []Environment `yaml:"environments,omitempty" json:"environments,omitempty"`
 		// ManagementZone level permissions that apply to users in this group
-		ManagementZone []ManagementZone `yaml:"managementZones,omitempty" json:"managementZones,omitempty" jsonschema:"description=ManagementZone level permissions that apply to users in this group."`
-		OriginObjectID string           `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the group this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
+		ManagementZone []ManagementZone `yaml:"managementZones,omitempty" json:"managementZones,omitempty"`
+		OriginObjectID string           `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty"`
 	}
 
 	Account struct {
-		Permissions []string        `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for the whole account."`
-		Policies    []PolicyBinding `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for the whole account."`
+		Permissions []string        `yaml:"permissions,omitempty" json:"permissions,omitempty"`
+		Policies    []PolicyBinding `yaml:"policies,omitempty" json:"policies,omitempty"`
 	}
 
 	Environment struct {
-		Name        string          `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment."`
-		Permissions []string        `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=Permissions for this environment."`
-		Policies    []PolicyBinding `yaml:"policies,omitempty" json:"policies,omitempty" jsonschema:"description=Policies for this environment."`
+		Name        string          `yaml:"environment" json:"environment"`
+		Permissions []string        `yaml:"permissions,omitempty" json:"permissions,omitempty"`
+		Policies    []PolicyBinding `yaml:"policies,omitempty" json:"policies,omitempty"`
 	}
 
 	ManagementZone struct {
-		Environment    string   `yaml:"environment" json:"environment" jsonschema:"required,description=Name/identifier of the environment the management zone is in."`
-		ManagementZone string   `yaml:"managementZone" json:"managementZone" jsonschema:"required,description=Identifier of the management zone."`
-		Permissions    []string `yaml:"permissions" json:"permissions" jsonschema:"required,description=Permissions for this management zone."`
+		Environment    string   `yaml:"environment" json:"environment"`
+		ManagementZone string   `yaml:"managementZone" json:"managementZone"`
+		Permissions    []string `yaml:"permissions" json:"permissions"`
 	}
 
 	User struct {
-		Email  secret.Email   `yaml:"email" json:"email" jsonschema:"required,description=Email address of this user."`
-		Groups ReferenceSlice `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups this user is part of - either defined by name directly or as a reference to a group configuration."`
+		Email  secret.Email   `yaml:"email" json:"email"`
+		Groups ReferenceSlice `yaml:"groups,omitempty" json:"groups,omitempty"`
 	}
 
 	ServiceUser struct {
-		Name           string         `yaml:"name" json:"name" jsonschema:"required,description=The name of this service user."`
-		Description    string         `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"A description of this service user."`
-		Groups         ReferenceSlice `yaml:"groups,omitempty" json:"groups,omitempty" jsonschema:"description=Groups this user is part of - either defined by name directly or as a reference to a group configuration."`
-		OriginObjectID string         `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty" jsonschema:"description=The identifier of the service user this config originated from - this is filled when downloading, but can also be set to tie a config to a specific object."`
+		Name           string         `yaml:"name" json:"name"`
+		Description    string         `yaml:"description,omitempty" json:"description,omitempty"`
+		Groups         ReferenceSlice `yaml:"groups,omitempty" json:"groups,omitempty"`
+		OriginObjectID string         `yaml:"originObjectId,omitempty" json:"originObjectId,omitempty"`
 	}
 
 	Reference struct {
-		Type  string `yaml:"type" json:"type" mapstructure:"type" jsonschema:"enum=reference"`
-		Id    string `yaml:"id" json:"id" mapstructure:"id" jsonschema:"description=The 'id' of the account configuration being referenced."`
+		Type  string `yaml:"type" json:"type" mapstructure:"type"`
+		Id    string `yaml:"id" json:"id" mapstructure:"id"`
 		Value string `yaml:"-" json:"-" mapstructure:"-"` // omitted from being written/read
 	}
 
 	PolicyBinding struct {
-		Type       string         `yaml:"type,omitempty" json:"type,omitempty" mapstructure:"type" jsonschema:"enum=reference"`                                                // shorthand syntax for backwards compatibility
-		Id         string         `yaml:"id,omitempty" json:"id,omitempty" mapstructure:"id" jsonschema:"description=The 'id' of the account configuration being referenced."` // shorthand syntax for backwards compatibility
-		Value      string         `yaml:"-" json:"-" mapstructure:"-"`                                                                                                         // omitted from being written/read // shorthand syntax for backwards compatibility
-		Policy     *Reference     `yaml:"policy,omitempty" json:"policy,omitempty" mapstructure:"policy" jsonschema:"description=Policy."`
-		Boundaries ReferenceSlice `yaml:"boundaries,omitempty" json:"boundaries,omitempty" mapstructure:"boundaries" jsonschema:"description=Boundaries attached to the policy."`
+		Type       string         `yaml:"type,omitempty" json:"type,omitempty" mapstructure:"type"` // shorthand syntax for backwards compatibility
+		Id         string         `yaml:"id,omitempty" json:"id,omitempty" mapstructure:"id"`       // shorthand syntax for backwards compatibility
+		Value      string         `yaml:"-" json:"-" mapstructure:"-"`                              // omitted from being written/read // shorthand syntax for backwards compatibility
+		Policy     *Reference     `yaml:"policy,omitempty" json:"policy,omitempty" mapstructure:"policy"`
+		Boundaries ReferenceSlice `yaml:"boundaries,omitempty" json:"boundaries,omitempty" mapstructure:"boundaries"`
 	}
 )
 
@@ -188,63 +186,6 @@ func (r Reference) MarshalYAML() (any, error) {
 }
 
 type ReferenceSlice []Reference
-
-// JSONSchema defines a custom schema definition for ReferenceSlice as it contains either Reference objects or strings
-// when being parsed, but our schema generator can not resolve such a nested "one-of" relation correctly for slices
-func (ReferenceSlice) JSONSchema() *jsonschema.Schema {
-	base := jsonutils.ReflectJSONSchema(Reference{})
-
-	return &jsonschema.Schema{
-		Type: "array",
-		Items: &jsonschema.Schema{
-			OneOf: []*jsonschema.Schema{
-				{
-					Type: "string",
-				},
-				{
-					Type: "object",
-				},
-			},
-			Properties:           base.Properties,
-			AdditionalProperties: base.AdditionalProperties,
-			Required:             base.Required,
-			Comments:             base.Comments,
-		},
-	}
-}
-
-// JSONSchema defines a custom schema definition for Account. ID and Version are removed from the reflection result.
-// If boundaries are disabled, the schema for the "policies" property is replaced with the schema for ReferenceSlice.
-func (Account) JSONSchema() *jsonschema.Schema {
-	type accountSchema Account
-	base := jsonutils.ReflectJSONSchema(accountSchema{})
-	base.ID = ""
-	base.Version = ""
-
-	return base
-}
-
-// JSONSchema defines a custom schema definition for Environment. ID and Version are removed from the reflection result.
-// If boundaries are disabled, the schema for the "policies" property is replaced with the schema for ReferenceSlice.
-func (Environment) JSONSchema() *jsonschema.Schema {
-	type environmentSchema Environment
-	base := jsonutils.ReflectJSONSchema(environmentSchema{})
-	base.ID = ""
-	base.Version = ""
-
-	return base
-}
-
-// JSONSchema defines a custom schema definition for File. ID and Version are removed from the reflection result.
-// If boundaries are disabled, the "boundaries" property is removed from the reflection result.
-func (File) JSONSchema() *jsonschema.Schema {
-	type fileSchema File
-	base := jsonutils.ReflectJSONSchema(fileSchema{})
-	base.ID = ""
-	base.Version = ""
-
-	return base
-}
 
 const (
 	KeyUsers        string = "users"

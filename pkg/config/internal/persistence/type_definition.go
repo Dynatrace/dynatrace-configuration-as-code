@@ -40,34 +40,34 @@ type TypeDefinition struct {
 }
 
 type ComplexApiDefinition struct {
-	Name  string          `yaml:"name" json:"name" jsonschema:"required,description=The name of the API the config is for." mapstructure:"name"`
-	Scope ConfigParameter `yaml:"scope,omitempty" json:"scope" jsonschema:"description=This defines the config where this config needs to be applied."  mapstructure:"scope"`
+	Name  string          `yaml:"name" json:"name" mapstructure:"name"`
+	Scope ConfigParameter `yaml:"scope,omitempty" json:"scope"  mapstructure:"scope"`
 }
 
 type SettingsDefinition struct {
-	Schema        string                `yaml:"schema,omitempty" json:"schema,omitempty" jsonschema:"required,description=The Settings 2.0 schema of this config."`
-	SchemaVersion string                `yaml:"schemaVersion,omitempty" json:"schemaVersion,omitempty" jsonschema:"description=This optionally informs the Settings API that a specific schema version was used for this config."`
-	Scope         ConfigParameter       `yaml:"scope,omitempty" json:"scope,omitempty"  jsonschema:"required,description=This defines the scope in which this Setting applies."`
-	InsertAfter   ConfigParameter       `yaml:"insertAfter,omitempty" json:"insertAfter,omitempty" jsonschema:"description=This optionally informs the settings API that this particular objects needs to be inserted after the referenced one."`
-	Permissions   *PermissionDefinition `yaml:"permissions,omitempty" json:"permissions,omitempty" jsonschema:"description=The optional permissions to be applied to this config."`
+	Schema        string                `yaml:"schema,omitempty" json:"schema,omitempty"`
+	SchemaVersion string                `yaml:"schemaVersion,omitempty" json:"schemaVersion,omitempty"`
+	Scope         ConfigParameter       `yaml:"scope,omitempty" json:"scope,omitempty" `
+	InsertAfter   ConfigParameter       `yaml:"insertAfter,omitempty" json:"insertAfter,omitempty"`
+	Permissions   *PermissionDefinition `yaml:"permissions,omitempty" json:"permissions,omitempty"`
 }
 
 type PermissionDefinition struct {
-	AllUsers *string `yaml:"allUsers,omitempty" json:"allUsers" jsonschema:"required,enum=read,enum=write,enum=none,description=All users can use this permission." mapstructure:"allUsers"`
+	AllUsers *string `yaml:"allUsers,omitempty" json:"allUsers" mapstructure:"allUsers"`
 }
 
 type AutomationDefinition struct {
-	Resource config.AutomationResource `yaml:"resource" json:"resource" jsonschema:"required,enum=workflow,enum=business-calendar,enum=scheduling-rule,description=This defines which automation resource this config is for."`
+	Resource config.AutomationResource `yaml:"resource" json:"resource"`
 }
 
 type DocumentDefinition struct {
-	Kind    config.DocumentKind `yaml:"kind" json:"kind" jsonschema:"required,enum=dashboard,enum=notebook,description=This defines the kind of document this config is for." mapstructure:"kind"`
-	ID      string              `yaml:"id,omitempty" json:"id,omitempty" jsonschema:"description=If provided, this will be the id of the document. If not provided, a system-generated id is used"  mapstructure:"id"`
-	Private bool                `yaml:"private,omitempty" json:"private,omitempty" jsonschema:"description=Set to true to make the document private"  mapstructure:"private"`
+	Kind    config.DocumentKind `yaml:"kind" json:"kind" mapstructure:"kind"`
+	ID      string              `yaml:"id,omitempty" json:"id,omitempty"  mapstructure:"id"`
+	Private bool                `yaml:"private,omitempty" json:"private,omitempty"  mapstructure:"private"`
 }
 
 type OpenPipelineDefinition struct {
-	Kind string `yaml:"kind" json:"kind" jsonschema:"required,description=This defines the kind of OpenPipeline this config is for." mapstructure:"kind"`
+	Kind string `yaml:"kind" json:"kind" mapstructure:"kind"`
 }
 
 // UnmarshalYAML Custom unmarshaler that knows how to handle TypeDefinition.

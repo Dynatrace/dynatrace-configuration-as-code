@@ -1,0 +1,394 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence/manifest",
+  "properties": {
+    "manifestVersion": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "description": "The version of this manifest. It is used when loading a manifest to ensure the CLI version is able to parse this manifest."
+    },
+    "projects": {
+      "items": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the project - if 'path' is not set the name will be used as path"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "simple",
+              "grouping"
+            ],
+            "description": "The type of project - either a 'simple' project folder containing configs"
+          },
+          "path": {
+            "type": "string",
+            "description": "The file path to the project folder"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "type": "array",
+      "minItems": 1,
+      "description": "A list of projects that will be deployed with this manifest"
+    },
+    "environmentGroups": {
+      "items": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the group - this can be freely defined and will be used in logs"
+          },
+          "environments": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The name of the environment - this can be freely defined and will be used in logs"
+                },
+                "url": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object"
+                    }
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "environment",
+                        "value"
+                      ],
+                      "description": "The type of this value - either an 'environment' variable to read"
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "The value is depending on 'type' either the name of an environment variable to load or just a string value."
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "value"
+                  ],
+                  "description": "The URL of the environment."
+                },
+                "auth": {
+                  "properties": {
+                    "token": {
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "description": "Type exists for future compatibility - AuthSecrets are always read from 'environment' variables"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Name of the environment variable to read the secret from."
+                        }
+                      },
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "name"
+                      ],
+                      "description": "An access token used for Dynatrace Config API calls - for classic APIs this is required."
+                    },
+                    "oAuth": {
+                      "properties": {
+                        "clientId": {
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "description": "Type exists for future compatibility - AuthSecrets are always read from 'environment' variables"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Name of the environment variable to read the secret from."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "name"
+                          ],
+                          "description": "The ID of the oAuth client credentials used to request bearer-tokens for authenticated API calls."
+                        },
+                        "clientSecret": {
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "description": "Type exists for future compatibility - AuthSecrets are always read from 'environment' variables"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Name of the environment variable to read the secret from."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "name"
+                          ],
+                          "description": "The secret of the oAuth client credentials used to request bearer-tokens for authenticated API calls."
+                        },
+                        "tokenEndpoint": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "object"
+                            }
+                          ],
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "environment",
+                                "value"
+                              ],
+                              "description": "The type of this value - either an 'environment' variable to read"
+                            },
+                            "value": {
+                              "type": "string",
+                              "description": "The value is depending on 'type' either the name of an environment variable to load or just a string value."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "value"
+                          ],
+                          "description": "This allows to optionally define a non-standard endpoint to request bearer tokens from."
+                        }
+                      },
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "clientId",
+                        "clientSecret"
+                      ],
+                      "description": "OAuth client credentials used for Dynatrace Platform API calls - for platform environments this or a platform token is required."
+                    },
+                    "platformToken": {
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "description": "Type exists for future compatibility - AuthSecrets are always read from 'environment' variables"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Name of the environment variable to read the secret from."
+                        }
+                      },
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "name"
+                      ],
+                      "description": "A platform token used for Dynatrace Platform API calls - for platform environments this or OAuth is required."
+                    }
+                  },
+                  "additionalProperties": false,
+                  "type": "object",
+                  "description": "This defines all information required for authenticated access to the environment's API."
+                }
+              },
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "name",
+                "url",
+                "auth"
+              ],
+              "description": "Environment defines all required information for accessing a Dynatrace environment"
+            },
+            "type": "array",
+            "minItems": 1,
+            "description": "The environments that are part of this group."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "environments"
+        ],
+        "description": "Group defines a group of Environment"
+      },
+      "type": "array",
+      "minItems": 1,
+      "description": "A list of environment groups that configs in the defined 'projects' will be deployed to. Required when deploying environment configurations."
+    },
+    "accounts": {
+      "items": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the account - this can be freely defined and will show up in logs"
+          },
+          "accountUUID": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object"
+              }
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "environment",
+                  "value"
+                ],
+                "description": "The type of this value - either an 'environment' variable to read"
+              },
+              "value": {
+                "type": "string",
+                "description": "The value is depending on 'type' either the name of an environment variable to load or just a string value."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "value"
+            ],
+            "description": "The uuid of your account - you can find this in the Account Management UI."
+          },
+          "apiUrl": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object"
+              }
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "environment",
+                  "value"
+                ],
+                "description": "The type of this value - either an 'environment' variable to read"
+              },
+              "value": {
+                "type": "string",
+                "description": "The value is depending on 'type' either the name of an environment variable to load or just a string value."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "value"
+            ],
+            "description": "Allows to optionally define a different Account Management API URL."
+          },
+          "oAuth": {
+            "properties": {
+              "clientId": {
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "Type exists for future compatibility - AuthSecrets are always read from 'environment' variables"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the environment variable to read the secret from."
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "description": "The ID of the oAuth client credentials used to request bearer-tokens for authenticated API calls."
+              },
+              "clientSecret": {
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "Type exists for future compatibility - AuthSecrets are always read from 'environment' variables"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the environment variable to read the secret from."
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "description": "The secret of the oAuth client credentials used to request bearer-tokens for authenticated API calls."
+              },
+              "tokenEndpoint": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object"
+                  }
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "environment",
+                      "value"
+                    ],
+                    "description": "The type of this value - either an 'environment' variable to read"
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "The value is depending on 'type' either the name of an environment variable to load or just a string value."
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "value"
+                ],
+                "description": "This allows to optionally define a non-standard endpoint to request bearer tokens from."
+              }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "clientId",
+              "clientSecret"
+            ],
+            "description": "OAuth client credentials to authenticate API calls for this account."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "accountUUID",
+          "oAuth"
+        ]
+      },
+      "type": "array",
+      "minItems": 1,
+      "description": "A list of of accounts that account resources defined in 'projects' will be deployed to. Required when deploying account resources."
+    }
+  },
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "manifestVersion"
+  ]
+}
