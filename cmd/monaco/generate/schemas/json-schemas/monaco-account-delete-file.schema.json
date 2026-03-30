@@ -62,8 +62,10 @@
             "type": "string",
             "enum": [
               "user",
+              "serviceUser",
               "group",
-              "policy"
+              "policy",
+              "boundary"
             ]
           },
           "email": {
