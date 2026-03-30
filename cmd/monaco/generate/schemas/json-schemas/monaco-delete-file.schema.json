@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence/full-file-definition",
+  "properties": {
+    "delete": {
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object"
+          }
+        ],
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "The project the config was in - required for configs with generated IDs (e.g. Settings 2.0"
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of config to be deleted."
+          },
+          "id": {
+            "type": "string",
+            "description": "The monaco ID of the config to be deleted - required for configs with generated IDs (e.g. Settings 2.0"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the config to be deleted - required for configs deleted by name (classic Config API types). It can't be combined with 'objectId' or 'id'."
+          },
+          "objectId": {
+            "type": "string",
+            "description": "ObjectId is the dynatrace ID of the object"
+          },
+          "scope": {
+            "type": "string",
+            "description": "The scope of the config to be deleted - required for API configs that require a scope"
+          },
+          "CustomValues": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "description": "CustomValues holds special values that are not general enough to add as a field to a DeleteEntry but are still important for specific APIs"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ]
+      },
+      "type": "array",
+      "description": "DeleteEntries defining which configurations should be deleted"
+    }
+  },
+  "additionalProperties": false,
+  "type": "object",
+  "description": "FullFileDefinition represents a delete file consisting of a list of delete entries called 'delete' In this struct DeleteEntries are DeleteEntry values."
+}
