@@ -18,8 +18,6 @@ package payloadprinter
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,23 +33,26 @@ import (
 
 const redactedValue = "***"
 
-// Writer collects rendered payloads and writes them to a file in the .logs directory.
+// Writer writes rendered payloads as individual JSON files under a timestamped directory in .logs.
 type Writer struct {
 	mu      sync.Mutex
-	entries []entry
-}
-
-type entry struct {
-	coord    coordinate.Coordinate
-	env      string
-	rendered string
+	baseDir string
+	count   int
 }
 
 type ctxPayloadWriterKey struct{}
 
 // NewContextWithWriter returns a new context with a payload Writer attached.
+// All payload files will be written under .logs/{timestamp}-payloads/.
 func NewContextWithWriter(ctx context.Context) context.Context {
-	return context.WithValue(ctx, ctxPayloadWriterKey{}, &Writer{})
+	timestamp := timeutils.TimeAnchor().Format(log.LogFileTimestampPrefixFormat)
+	baseDir := filepath.Join(log.LogDirectory, timestamp+"-payloads")
+	return context.WithValue(ctx, ctxPayloadWriterKey{}, &Writer{baseDir: baseDir})
+}
+
+// newWriterWithDir creates a Writer using the given base directory. Used in tests.
+func newWriterWithDir(baseDir string) *Writer {
+	return &Writer{baseDir: baseDir}
 }
 
 // GetWriterFromContext returns the Writer from the context, or nil if not set.
@@ -60,58 +61,44 @@ func GetWriterFromContext(ctx context.Context) *Writer {
 	return w
 }
 
-// Record adds a rendered payload entry to the writer.
-// Environment variable parameter values are redacted before storing.
+// Record writes the rendered payload for a config to its own JSON file immediately.
+// The file is placed at {baseDir}/{env}/{project}/{type}/{configId}.json.
+// Colons in the type name are replaced with dashes for filesystem compatibility.
+// Environment variable parameter values are redacted before writing.
 func (w *Writer) Record(coord coordinate.Coordinate, env string, renderedConfig string, params config.Parameters) {
 	redacted := redactSecrets(renderedConfig, params)
+	filePath := w.payloadFilePath(coord, env)
+
+	if err := os.MkdirAll(filepath.Dir(filePath), 0750); err != nil {
+		log.Error("Failed to create payload directory %s: %v", filepath.Dir(filePath), err)
+		return
+	}
+	if err := os.WriteFile(filePath, []byte(redacted), 0640); err != nil {
+		log.Error("Failed to write payload file %s: %v", filePath, err)
+		return
+	}
 
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	w.entries = append(w.entries, entry{coord: coord, env: env, rendered: redacted})
+	w.count++
+	w.mu.Unlock()
 }
 
-// Finish writes all collected payloads to a file in the .logs directory
-// and logs the file path for the user.
+// Finish logs a summary of the written payload files.
 func (w *Writer) Finish() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if len(w.entries) == 0 {
+	if w.count == 0 {
 		return
 	}
-
-	filePath := payloadFilePath()
-	if err := os.MkdirAll(log.LogDirectory, 0750); err != nil {
-		log.Error("Failed to create log directory for rendered payloads: %v", err)
-		return
-	}
-
-	f, err := os.Create(filePath)
-	if err != nil {
-		log.Error("Failed to create rendered payloads file: %v", err)
-		return
-	}
-	defer f.Close()
-
-	for _, e := range w.entries {
-		writeEntry(f, e.coord, e.env, e.rendered)
-	}
-
-	log.Info("Rendered payloads (%d configs) written to %s", len(w.entries), filePath)
+	log.Info("Rendered payloads (%d configs) written to %s", w.count, w.baseDir)
 }
 
-func payloadFilePath() string {
-	timestamp := timeutils.TimeAnchor().Format(log.LogFileTimestampPrefixFormat)
-	return filepath.Join(log.LogDirectory, timestamp+"-rendered-payloads.txt")
-}
-
-// writeEntry writes a single payload entry to the given writer.
-func writeEntry(w io.Writer, coord coordinate.Coordinate, env string, rendered string) {
-	fmt.Fprintf(w, "--- Rendered payload: %s | environment: %s ---\n", coord, env)
-	fmt.Fprintln(w, rendered)
-	fmt.Fprintln(w, "---")
-	fmt.Fprintln(w)
+// payloadFilePath returns the file path for a given config coordinate and environment.
+// Colons in the type are replaced with dashes (e.g. builtin:alerting.profile → builtin-alerting.profile).
+func (w *Writer) payloadFilePath(coord coordinate.Coordinate, env string) string {
+	safeType := strings.ReplaceAll(coord.Type, ":", "-")
+	return filepath.Join(w.baseDir, env, coord.Project, safeType, coord.ConfigId+".json")
 }
 
 // redactSecrets replaces resolved environment variable parameter values in the rendered config with a redacted placeholder.

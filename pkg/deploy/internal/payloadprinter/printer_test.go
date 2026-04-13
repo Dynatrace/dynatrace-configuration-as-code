@@ -19,8 +19,9 @@
 package payloadprinter
 
 import (
-	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,28 +43,29 @@ func TestGetWriterFromContext_ReturnsWriter(t *testing.T) {
 	assert.NotNil(t, GetWriterFromContext(ctx))
 }
 
-func TestWriteEntry_BasicOutput(t *testing.T) {
-	var buf bytes.Buffer
+func TestRecord_WritesFileWithCorrectPath(t *testing.T) {
+	baseDir := t.TempDir()
+	w := newWriterWithDir(baseDir)
+
 	coord := coordinate.Coordinate{
 		Project:  "myproject",
 		Type:     "builtin:alerting.profile",
 		ConfigId: "profile1",
 	}
 
-	writeEntry(&buf, coord, "dev", `{"name":"test"}`)
+	w.Record(coord, "dev", `{"name":"test"}`, config.Parameters{})
 
-	output := buf.String()
-	assert.Contains(t, output, "--- Rendered payload:")
-	assert.Contains(t, output, "myproject:builtin:alerting.profile:profile1")
-	assert.Contains(t, output, "environment: dev")
-	assert.Contains(t, output, `{"name":"test"}`)
-	assert.Contains(t, output, "---")
+	expectedPath := filepath.Join(baseDir, "dev", "myproject", "builtin-alerting.profile", "profile1.json")
+	content, err := os.ReadFile(expectedPath)
+	require.NoError(t, err)
+	assert.Equal(t, `{"name":"test"}`, string(content))
 }
 
 func TestRecord_RedactsEnvVarValues(t *testing.T) {
 	t.Setenv("MY_SECRET", "s3cret-value")
 
-	w := &Writer{}
+	baseDir := t.TempDir()
+	w := newWriterWithDir(baseDir)
 	coord := coordinate.Coordinate{
 		Project:  "proj",
 		Type:     "settings",
@@ -77,10 +79,38 @@ func TestRecord_RedactsEnvVarValues(t *testing.T) {
 
 	w.Record(coord, "dev", `{"name":"visible-name","token":"s3cret-value"}`, params)
 
-	require.Len(t, w.entries, 1)
-	assert.NotContains(t, w.entries[0].rendered, "s3cret-value")
-	assert.Contains(t, w.entries[0].rendered, redactedValue)
-	assert.Contains(t, w.entries[0].rendered, "visible-name")
+	expectedPath := filepath.Join(baseDir, "dev", "proj", "settings", "cfg1.json")
+	content, err := os.ReadFile(expectedPath)
+	require.NoError(t, err)
+	assert.NotContains(t, string(content), "s3cret-value")
+	assert.Contains(t, string(content), redactedValue)
+	assert.Contains(t, string(content), "visible-name")
+}
+
+func TestRecord_CountsWrittenFiles(t *testing.T) {
+	baseDir := t.TempDir()
+	w := newWriterWithDir(baseDir)
+
+	for i, id := range []string{"cfg1", "cfg2", "cfg3"} {
+		_ = i
+		w.Record(coordinate.Coordinate{Project: "p", Type: "t", ConfigId: id}, "dev", `{}`, config.Parameters{})
+	}
+
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	assert.Equal(t, 3, w.count)
+}
+
+func TestPayloadFilePath_SanitizesColons(t *testing.T) {
+	w := newWriterWithDir("/base")
+	coord := coordinate.Coordinate{
+		Project:  "myproject",
+		Type:     "builtin:some:type",
+		ConfigId: "myid",
+	}
+	path := w.payloadFilePath(coord, "prod")
+	assert.Contains(t, path, "builtin-some-type")
+	assert.NotContains(t, path, ":")
 }
 
 func TestRedactSecrets_NoEnvParams(t *testing.T) {
