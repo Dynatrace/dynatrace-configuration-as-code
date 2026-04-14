@@ -42,7 +42,9 @@ jobs:
   release-binaries:
     name:  🏁 Build release binaries
     needs: [setup]
-    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    if: |
+      github.event.action != 'labeled'
+      || (github.event.label.name == 'run-e2e-test' && github.event.pull_request.author_association == 'MEMBER')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -64,7 +66,9 @@ jobs:
 
   integration-test:
     name: 🌎 Integration tests
-    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    if: |
+      github.event.action != 'labeled'
+      || (github.event.label.name == 'run-e2e-test' && github.event.pull_request.author_association == 'MEMBER')
     needs: [setup]
     runs-on: ubuntu-latest
     permissions:
@@ -114,7 +118,9 @@ jobs:
   download-restore-test:
     name: 📥/📤 Download-restore-test
     needs: [setup]
-    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    if: |
+      github.event.action != 'labeled'
+      || (github.event.label.name == 'run-e2e-test' && github.event.pull_request.author_association == 'MEMBER')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -162,7 +168,9 @@ jobs:
 
   account-management-test:
     name: 🗂️ Account Management E2E tests
-    if: github.event.action != 'labeled' || github.event.label.name == 'run-iam-test'
+    if: |
+      github.event.action != 'labeled'
+      || (github.event.label.name == 'run-iam-test' && github.event.pull_request.author_association == 'MEMBER')
     needs: [setup]
     runs-on: ubuntu-latest
     permissions:
@@ -214,7 +222,9 @@ jobs:
   windows-unit-tests:
     name: 🪟 Windows tests
     needs: [ setup ]
-    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    if: |
+      github.event.action != 'labeled'
+      || (github.event.label.name == 'run-e2e-test' && github.event.pull_request.author_association == 'MEMBER')
     runs-on: windows-latest
     permissions:
       contents: read
