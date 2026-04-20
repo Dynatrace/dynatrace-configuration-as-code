@@ -19,12 +19,14 @@
 package template_test
 
 import (
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"path/filepath"
-	"testing"
 )
 
 func TestLoadTemplate(t *testing.T) {
@@ -86,4 +88,47 @@ func TestLoadTemplate_WorksWithAnyPathSeparator(t *testing.T) {
 			require.NoError(t, gotErr)
 		})
 	}
+}
+
+func TestLoadTemplate_RejectsSymlink(t *testing.T) {
+	dir := t.TempDir()
+
+	targetPath := filepath.Join(dir, "target.json")
+	require.NoError(t, os.WriteFile(targetPath, []byte(`{"key": "value"}`), 0644))
+
+	symlinkPath := filepath.Join(dir, "link.json")
+	require.NoError(t, os.Symlink(targetPath, symlinkPath))
+
+	testFs := afero.NewBasePathFs(afero.NewOsFs(), dir)
+
+	_, err := template.NewFileTemplate(testFs, "link.json")
+	assert.ErrorContains(t, err, "symbolic link")
+}
+
+func TestLoadTemplate_AllowsRegularFileOnOsFs(t *testing.T) {
+	dir := t.TempDir()
+
+	filePath := filepath.Join(dir, "regular.json")
+	require.NoError(t, os.WriteFile(filePath, []byte(`{"key": "value"}`), 0644))
+
+	testFs := afero.NewBasePathFs(afero.NewOsFs(), dir)
+
+	tmpl, err := template.NewFileTemplate(testFs, "regular.json")
+	require.NoError(t, err)
+
+	content, err := tmpl.Content()
+	require.NoError(t, err)
+	assert.Equal(t, `{"key": "value"}`, content)
+}
+
+func TestLoadTemplate_WorksWithMemMapFs(t *testing.T) {
+	testFs := afero.NewMemMapFs()
+	_ = afero.WriteFile(testFs, "template.json", []byte("content"), 0644)
+
+	tmpl, err := template.NewFileTemplate(testFs, "template.json")
+	require.NoError(t, err)
+
+	content, err := tmpl.Content()
+	require.NoError(t, err)
+	assert.Equal(t, "content", content)
 }

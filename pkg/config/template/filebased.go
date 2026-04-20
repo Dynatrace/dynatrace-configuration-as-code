@@ -18,10 +18,13 @@ package template
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/spf13/afero"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/afero"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
 
 var (
@@ -66,11 +69,15 @@ func (t *FileBasedTemplate) UpdateContent(newContent string) error {
 }
 
 // NewFileTemplate creates a FileBasedTemplate for a given afero.Fs and filepath.
-// If the file can not be accessed an error will be returned.
+// If the file can not be accessed or is a symlink, an error will be returned.
 func NewFileTemplate(fs afero.Fs, path string) (Template, error) {
 	sanitizedPath := filepath.Clean(strings.ReplaceAll(path, `\`, `/`))
 
 	log.Debug("Loading template for %s", sanitizedPath)
+
+	if err := files.RejectSymlink(fs, sanitizedPath); err != nil {
+		return nil, err
+	}
 
 	if exists, err := afero.Exists(fs, sanitizedPath); err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
