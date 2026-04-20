@@ -17,6 +17,7 @@
 package file
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -299,4 +300,35 @@ func TestResolveValue_FileNotFound(t *testing.T) {
 	result, err := param.ResolveValue(parameter.ResolveContext{})
 	assert.Nil(t, result)
 	assert.IsType(t, parameter.ParameterResolveValueError{}, err)
+}
+
+// TestResolveValue_RejectsSymlinkOutsideProject validates that no credential file can be loaded outside the project using a symlink
+// a type:file parameter references a symlink inside the project that points to a file outside the project root.
+func TestResolveValue_RejectsSymlinkOutsideProject(t *testing.T) {
+	projectDir := t.TempDir()
+	outsideDir := t.TempDir()
+
+	// External secret file (simulates /etc/hostname or ~/.aws/credentials)
+	secretPath := filepath.Join(outsideDir, "host-secret.txt")
+	require.NoError(t, os.WriteFile(secretPath, []byte("TOP-SECRET-CONTENT"), 0644))
+
+	// Project structure: project/loot is a symlink to the external secret
+	require.NoError(t, os.MkdirAll(filepath.Join(projectDir, "project"), 0755))
+	symlinkPath := filepath.Join(projectDir, "project", "loot")
+	require.NoError(t, os.Symlink(secretPath, symlinkPath))
+
+	fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+
+	// Simulate the full flow: parseFileValueParameter joins WorkingDirectory + path
+	param, err := parseFileValueParameter(parameter.ParameterParserContext{
+		Fs:               fs,
+		WorkingDirectory: "project",
+		Value:            map[string]any{"path": "loot"},
+	})
+	require.NoError(t, err)
+
+	result, err := param.ResolveValue(parameter.ResolveContext{})
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.ErrorContains(t, err, "symbolic link")
 }
