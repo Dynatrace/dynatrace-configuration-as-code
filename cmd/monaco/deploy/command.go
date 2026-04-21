@@ -34,7 +34,7 @@ import (
 )
 
 func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
-	var dryRun, continueOnError bool
+	var dryRun, continueOnError, printRenderedPayloads bool
 	var manifestName string
 	var environment, project, groups []string
 
@@ -56,7 +56,7 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 				return err
 			}
 
-			return deployConfigs(ctx, fs, manifestName, groups, environment, project, continueOnError, dryRun)
+			return deployConfigs(ctx, fs, manifestName, groups, environment, project, continueOnError, dryRun, printRenderedPayloads)
 		},
 	}
 
@@ -72,6 +72,7 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Validate the structure of your manifest, projects and configurations. Dry-run will resolve all configuration parameters and render JSON templates, but can not validate the content of JSON payloads. After a successful dry-run, deployments may still fail with Dynatrace API errors if the content of JSONs is not valid.")
 	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if individual configuration deployments fail.")
+	deployCmd.Flags().BoolVar(&printRenderedPayloads, "log-payloads", false, "Write the rendered JSON payload for each configuration to a file in the .logs directory during deploy or dry-run. Environment variable values are redacted.")
 
 	err := deployCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByManifestFlag)
 	if err != nil {

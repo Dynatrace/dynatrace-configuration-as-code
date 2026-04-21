@@ -37,6 +37,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/payloadprinter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/validate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
@@ -60,6 +61,8 @@ type DeployConfigsOptions struct {
 	// DryRun states that the deployment shall just run in dry-run mode, meaning
 	// that actual deployment of the configuration to a tenant will be skipped
 	DryRun bool
+	// PrintRenderedPayloads enables printing the rendered JSON payload for each configuration
+	PrintRenderedPayloads bool
 }
 
 var (
@@ -86,6 +89,11 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 		slog.InfoContext(ctx, fmt.Sprintf("%s set, limiting concurrent deployments", environment.ConcurrentDeploymentsEnvKey), slog.Int("maxConcurrentDeployments", maxConcurrentDeployments))
 		limiter := rest.NewConcurrentRequestLimiter(maxConcurrentDeployments)
 		ctx = newContextWithDeploymentLimiter(ctx, limiter)
+	}
+
+	if opts.PrintRenderedPayloads {
+		ctx = payloadprinter.NewContextWithWriter(ctx)
+		defer payloadprinter.GetWriterFromContext(ctx).Finish()
 	}
 	deploymentErrs := make(deployErrors.EnvironmentDeploymentErrors)
 
@@ -362,6 +370,10 @@ func deployConfig(ctx context.Context, c *config.Config, deployables resource.De
 		slog.ErrorContext(ctx, "Failed to render JSON template", log.ErrorAttr(err), statusDeploymentFailedAttr())
 		report.GetDetailerFromContextOrDiscard(ctx).Add(report.Detail{Type: report.DetailTypeError, Message: fmt.Sprintf("Failed to render JSON template: %v", err)})
 		return entities.ResolvedEntity{}, err
+	}
+
+	if w := payloadprinter.GetWriterFromContext(ctx); w != nil {
+		w.Record(c.Coordinate, c.Environment, renderedConfig, c.Parameters)
 	}
 
 	slog.InfoContext(ctx, "Deploying config", statusDeploying())
