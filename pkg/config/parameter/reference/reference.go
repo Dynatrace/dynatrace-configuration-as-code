@@ -16,6 +16,7 @@ package reference
 
 import (
 	"fmt"
+	"maps"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -90,14 +91,12 @@ func (p *ReferenceParameter) GetReferences() []parameter.ParameterReference {
 
 // ResolveValue tries to find the reference in the already resolved entities. if the referenced entity
 // cannot be found (maybe it is missing, or has not been resolved yet), an error is returned.
-func (p *ReferenceParameter) ResolveValue(context parameter.ResolveContext) (interface{}, error) {
+func (p *ReferenceParameter) ResolveValue(context parameter.ResolveContext) (any, error) {
 	// in case we are referencing a parameter in the same config, we do not have to check
 	// the resolved entities
 	if context.ConfigCoordinate.Match(p.Config) {
 		m := make(map[string]any)
-		for k, v := range context.ResolvedParameterValues {
-			m[k] = v
-		}
+		maps.Copy(m, context.ResolvedParameterValues)
 		if val, found := entities.ResolvePropValue(p.Property, m); found {
 			return val, nil
 		}
@@ -120,14 +119,14 @@ const typeField = "configType"
 const idField = "configId"
 const propertyField = "property"
 
-func writeReferenceParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
+func writeReferenceParameter(context parameter.ParameterWriterContext) (map[string]any, error) {
 	refParam, ok := context.Parameter.(*ReferenceParameter)
 
 	if !ok {
 		return nil, parameter.NewParameterWriterError(context, "unexpected type. parameter is not of type `ReferenceParameter`")
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	sameProject := context.Coordinate.Project == refParam.Config.Project
 	sameType := context.Coordinate.Type == refParam.Config.Type
 	sameConfig := context.Coordinate.ConfigId == refParam.Config.ConfigId

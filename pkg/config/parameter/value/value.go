@@ -30,10 +30,10 @@ var ValueParameterSerde = parameter.ParameterSerDe{
 // ValueParameter represents a simple value. the value has to be
 // resolve at config load time.
 type ValueParameter struct {
-	Value interface{}
+	Value any
 }
 
-func New(value interface{}) *ValueParameter {
+func New(value any) *ValueParameter {
 	return &ValueParameter{Value: value}
 }
 
@@ -49,7 +49,7 @@ func (p *ValueParameter) GetReferences() []parameter.ParameterReference {
 	return []parameter.ParameterReference{}
 }
 
-func (p *ValueParameter) ResolveValue(_ parameter.ResolveContext) (interface{}, error) {
+func (p *ValueParameter) ResolveValue(_ parameter.ResolveContext) (any, error) {
 	return template.EscapeSpecialCharactersInValue(p.Value, template.FullStringEscapeFunction)
 }
 
@@ -63,14 +63,14 @@ func parseValueParameter(context parameter.ParameterParserContext) (parameter.Pa
 	return nil, parameter.NewParameterParserError(context, "missing property `value`")
 }
 
-func writeValueParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
+func writeValueParameter(context parameter.ParameterWriterContext) (map[string]any, error) {
 	valueParam, ok := context.Parameter.(*ValueParameter)
 
 	if !ok {
 		return nil, parameter.NewParameterWriterError(context, "unexpected type. parameter is not of type `ValueParameter`")
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"value": valueParam.Value,
 	}, nil
 }

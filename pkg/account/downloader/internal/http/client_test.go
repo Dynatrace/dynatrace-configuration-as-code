@@ -74,7 +74,7 @@ func TestClient_GetBoundaries(t *testing.T) {
 			Name:                 "Monaco Test Boundary",
 			BoundaryQuery:        "cloudautomation:event = \"helloworld\";",
 			BoundaryConditions:   []accountmanagement.Condition{},
-			AdditionalProperties: map[string]interface{}{},
+			AdditionalProperties: map[string]any{},
 		},
 	}
 	result, err := instance.GetBoundaries(t.Context(), "abcde")
@@ -137,7 +137,7 @@ func TestClient_GetBoundaries_Fetch_Next_Page(t *testing.T) {
 
 func createBoundaries(amount int, accountUUID string) []accountmanagement.PolicyBoundaryOverview {
 	var boundaries []accountmanagement.PolicyBoundaryOverview
-	for i := 0; i < amount; i++ {
+	for i := range amount {
 		boundaries = append(boundaries, accountmanagement.PolicyBoundaryOverview{
 			Uuid:               fmt.Sprintf("some-fake-uuid-%d", i),
 			Name:               fmt.Sprintf("some-name-%d", i),
@@ -145,7 +145,7 @@ func createBoundaries(amount int, accountUUID string) []accountmanagement.Policy
 			LevelType:          "account",
 			LevelId:            accountUUID,
 			BoundaryConditions: []accountmanagement.Condition{},
-			Metadata:           map[string]interface{}{},
+			Metadata:           map[string]any{},
 		})
 	}
 	return boundaries

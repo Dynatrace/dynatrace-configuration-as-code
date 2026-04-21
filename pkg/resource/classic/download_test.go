@@ -133,7 +133,7 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
 
 	filters := map[string]classic.ContentFilter{"API_ID_1": {
-		ShouldConfigBePersisted: func(_ map[string]interface{}) bool {
+		ShouldConfigBePersisted: func(_ map[string]any) bool {
 			return false
 		},
 	}}
@@ -155,7 +155,7 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 			},
 		},
 		"API_ID_2": {
-			ShouldConfigBePersisted: func(_ map[string]interface{}) bool {
+			ShouldConfigBePersisted: func(_ map[string]any) bool {
 				return false
 			},
 		},

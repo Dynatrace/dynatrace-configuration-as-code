@@ -50,7 +50,7 @@ var accessTokenPayload = []byte(`
 }`)
 
 func getClassicEnvPayload(host string) []byte {
-	return []byte(fmt.Sprintf(`{"domain": "http://%s"}`, host))
+	return fmt.Appendf(nil, `{"domain": "http://%s"}`, host)
 }
 
 func TestVerifyEnvironmentsAuthentication_OneOfManyFails(t *testing.T) {

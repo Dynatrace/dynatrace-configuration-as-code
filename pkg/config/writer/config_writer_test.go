@@ -23,12 +23,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
-
 	"github.com/spf13/afero"
 	"go.yaml.in/yaml/v2"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -52,10 +51,10 @@ func TestExtractCommonBase(t *testing.T) {
 	param1Value := "12"
 
 	param2Name := "dashboardId"
-	param2Value := []interface{}{"projectA", "dashboard", "important", "id"}
+	param2Value := []any{"projectA", "dashboard", "important", "id"}
 
 	param3Name := "dashboardId2"
-	param3Value := map[interface{}]interface{}{
+	param3Value := map[any]any{
 		"type":     "reference",
 		"project":  "projectA",
 		"api":      "dashboard",
@@ -147,10 +146,10 @@ func TestExtractCommonBaseForEnvVarSkipsWithEqualValues(t *testing.T) {
 	param1Value := "12"
 
 	param2Name := "dashboardId"
-	param2Value := []interface{}{"projectA", "dashboard", "important", "id"}
+	param2Value := []any{"projectA", "dashboard", "important", "id"}
 
 	param3Name := "dashboardId2"
-	param3Value := map[interface{}]interface{}{
+	param3Value := map[any]any{
 		"type":     "reference",
 		"project":  "projectA",
 		"api":      "dashboard",
@@ -239,10 +238,10 @@ func TestExtractCommonBaseForEnvVarSkipsWithDifferentValues(t *testing.T) {
 	param1Value := "12"
 
 	param2Name := "dashboardId"
-	param2Value := []interface{}{"projectA", "dashboard", "important", "id"}
+	param2Value := []any{"projectA", "dashboard", "important", "id"}
 
 	param3Name := "dashboardId2"
-	param3Value := map[interface{}]interface{}{
+	param3Value := map[any]any{
 		"type":     "reference",
 		"project":  "projectA",
 		"api":      "dashboard",
@@ -325,10 +324,10 @@ func TestExtractCommonBaseT(t *testing.T) {
 	param1Value := "12"
 
 	param2Name := "dashboardId"
-	param2Value := []interface{}{"projectA", "dashboard", "important", "id"}
+	param2Value := []any{"projectA", "dashboard", "important", "id"}
 
 	param3Name := "dashboardId2"
-	param3Value := map[interface{}]interface{}{
+	param3Value := map[any]any{
 		"type":     "reference",
 		"project":  "projectA",
 		"api":      "dashboard",
@@ -487,8 +486,8 @@ func TestToParameterDefinition(t *testing.T) {
 			WriterContext: &WriterContext{
 				ParametersSerde: map[string]parameter.ParameterSerDe{
 					parameter.DummyParameterType: {
-						Serializer: func(c parameter.ParameterWriterContext) (map[string]interface{}, error) {
-							return map[string]interface{}{
+						Serializer: func(c parameter.ParameterWriterContext) (map[string]any, error) {
+							return map[string]any{
 								"Value": c.Parameter.(*parameter.DummyParameter).Value,
 							}, nil
 						},
@@ -505,7 +504,7 @@ func TestToParameterDefinition(t *testing.T) {
 	assert.NoError(t, err, "to parameter definiton should return no error, but was `%s`", err)
 	assert.NotNil(t, result, "result should not be nil")
 
-	resultMap, ok := result.(map[string]interface{})
+	resultMap, ok := result.(map[string]any)
 
 	assert.True(t, ok, "result should be a map")
 	assert.Equal(t, resultMap["Value"], "hello", "result should have key `Value` with value `%s`, but was `%s`",
@@ -534,7 +533,7 @@ func TestToParameterDefinitionShouldDoSpecialParameterDefinitionIfActivatedAndSu
 
 func TestToParameterDefinitionShouldWithShortSyntaxActiveShouldDoNormalWhenParameterIsMap(t *testing.T) {
 	paramName := "test-param-1"
-	paramValue := map[string]interface{}{
+	paramValue := map[string]any{
 		"name": "hansi",
 	}
 
@@ -555,7 +554,7 @@ func TestToParameterDefinitionShouldWithShortSyntaxActiveShouldDoNormalWhenParam
 	assert.NoError(t, err, "to parameter definiton should return no error: %s", err)
 	assert.NotNil(t, result, "result should not be nil")
 
-	resultMap, ok := result.(map[string]interface{})
+	resultMap, ok := result.(map[string]any)
 
 	assert.True(t, ok, "result should be map")
 	assert.Equal(t, resultMap["type"], value.ValueParameterType, "result map should be of type `%s`, but was `%s`",
@@ -882,7 +881,7 @@ func TestWriteConfigs(t *testing.T) {
 					Type: config.SettingsType{
 						SchemaId:          "schemaid",
 						SchemaVersion:     "1.2.3",
-						AllUserPermission: pointer.Pointer(config.ReadPermission),
+						AllUserPermission: new(config.ReadPermission),
 					},
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "scope"},
@@ -906,7 +905,7 @@ func TestWriteConfigs(t *testing.T) {
 								Type: config.SettingsType{
 									SchemaId:          "schemaid",
 									SchemaVersion:     "1.2.3",
-									AllUserPermission: pointer.Pointer(config.ReadPermission),
+									AllUserPermission: new(config.ReadPermission),
 								},
 								Scope: "scope",
 							},

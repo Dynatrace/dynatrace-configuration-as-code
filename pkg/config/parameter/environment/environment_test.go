@@ -29,7 +29,7 @@ func TestParseValueParameter(t *testing.T) {
 	name := "test"
 
 	param, err := parseEnvironmentValueParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"name": name,
 		},
 	})
@@ -50,7 +50,7 @@ func TestParseValueParameterWithDefault(t *testing.T) {
 	defaultValue := "this"
 
 	param, err := parseEnvironmentValueParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"name":    name,
 			"default": defaultValue,
 		},
@@ -68,7 +68,7 @@ func TestParseValueParameterWithDefault(t *testing.T) {
 
 func TestParseValueParameterMissingRequiredField(t *testing.T) {
 	_, err := parseEnvironmentValueParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"wrong":   "value",
 			"default": "value",
 		},

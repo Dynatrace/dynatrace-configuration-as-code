@@ -29,7 +29,7 @@ func TestParseValueParameter(t *testing.T) {
 	value := "test"
 
 	param, err := parseValueParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"value": value,
 		},
 	})
@@ -49,7 +49,7 @@ func TestParseValueParameterMap(t *testing.T) {
 	}
 
 	param, err := parseValueParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"value": value,
 		},
 	})
@@ -69,7 +69,7 @@ func TestParseValueParameterMissingValueParameterShouldReturnError(t *testing.T)
 	value := "test"
 
 	_, err := parseValueParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
+		Value: map[string]any{
 			"title": value,
 		},
 	})

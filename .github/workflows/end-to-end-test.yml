@@ -42,7 +42,9 @@ jobs:
   release-binaries:
     name:  🏁 Build release binaries
     needs: [setup]
-    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    if: |
+      github.event.action != 'labeled'
+      || (github.event.label.name == 'run-e2e-test' && github.event.pull_request.author_association == 'MEMBER')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -54,7 +56,7 @@ jobs:
         ref: ${{needs.setup.outputs.sha}}
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 #v6.3.0
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c #v6.4.0
       with:
         go-version-file: go.mod
 
@@ -64,7 +66,9 @@ jobs:
 
   integration-test:
     name: 🌎 Integration tests
-    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    if: |
+      github.event.action != 'labeled'
+      || (github.event.label.name == 'run-e2e-test' && github.event.pull_request.author_association == 'MEMBER')
     needs: [setup]
     runs-on: ubuntu-latest
     permissions:
@@ -78,7 +82,7 @@ jobs:
         ref: ${{needs.setup.outputs.sha}}
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 #v6.3.0
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c #v6.4.0
       with:
         go-version-file: go.mod
 
@@ -105,7 +109,7 @@ jobs:
         sfm_notification_access_token: ${{ secrets.SFM_NOTIFICATION_API_TOKEN }}
 
     - name: ⬆️ Upload Test Results
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       if: always()
       with:
         name: Test Results - Integration
@@ -114,7 +118,9 @@ jobs:
   download-restore-test:
     name: 📥/📤 Download-restore-test
     needs: [setup]
-    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    if: |
+      github.event.action != 'labeled'
+      || (github.event.label.name == 'run-e2e-test' && github.event.pull_request.author_association == 'MEMBER')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -127,7 +133,7 @@ jobs:
         ref: ${{needs.setup.outputs.sha}}
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 #v6.3.0
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c #v6.4.0
       with:
         go-version-file: go.mod
 
@@ -146,7 +152,7 @@ jobs:
         PLATFORM_TOKEN: ${{ secrets.PLATFORM_TOKEN }}
 
     - name: ⬆️ Upload Test Results
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       if: always()
       with:
         name: Test Results - Integration Download
@@ -162,7 +168,9 @@ jobs:
 
   account-management-test:
     name: 🗂️ Account Management E2E tests
-    if: github.event.action != 'labeled' || github.event.label.name == 'run-iam-test'
+    if: |
+      github.event.action != 'labeled'
+      || (github.event.label.name == 'run-iam-test' && github.event.pull_request.author_association == 'MEMBER')
     needs: [setup]
     runs-on: ubuntu-latest
     permissions:
@@ -176,7 +184,7 @@ jobs:
           ref: ${{needs.setup.outputs.sha}}
 
       - name: Set up Go 1.x
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 #v6.3.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c #v6.4.0
         with:
           go-version-file: go.mod
 
@@ -197,7 +205,7 @@ jobs:
           PLATFORM_TOKEN: ${{ secrets.PLATFORM_TOKEN }}
 
       - name: ⬆️ Upload Test Results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
         if: always()
         with:
           name: Test Results - Account Management
@@ -214,7 +222,9 @@ jobs:
   windows-unit-tests:
     name: 🪟 Windows tests
     needs: [ setup ]
-    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    if: |
+      github.event.action != 'labeled'
+      || (github.event.label.name == 'run-e2e-test' && github.event.pull_request.author_association == 'MEMBER')
     runs-on: windows-latest
     permissions:
       contents: read
@@ -227,7 +237,7 @@ jobs:
         ref: ${{needs.setup.outputs.sha}}
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 #v6.3.0
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c #v6.4.0
       with:
         go-version-file: go.mod
 
@@ -235,7 +245,7 @@ jobs:
       run: make test testopts="--junitfile test-result-windows-latest-unit.xml"
 
     - name: ⬆️ Upload Test Results
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       if: always()
       with:
         name: Test Results - Unit Windows
@@ -254,7 +264,7 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 #v6.3.0
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c #v6.4.0
       with:
         go-version-file: go.mod
 
@@ -287,7 +297,7 @@ jobs:
         PLATFORM_TOKEN: ${{ secrets.PLATFORM_TOKEN }}
 
     - name: ⬆️ Upload Test Results
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       if: always()
       with:
         name: Test Results - Integration Nightly
@@ -304,9 +314,10 @@ jobs:
   upload_event:
     name: "Upload Event File"
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
     - name: Upload
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
         name: event_file
         path: ${{ github.event_path }}

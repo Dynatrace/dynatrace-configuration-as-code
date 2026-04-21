@@ -64,9 +64,9 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	require.NoError(t, err, "Expected rendered template to be valid JSON:\n %s", rendered)
 }
 
-func getProperties(t *testing.T, cfg config.Config) map[string]interface{} {
+func getProperties(t *testing.T, cfg config.Config) map[string]any {
 	emptyResolveCtxt := parameter.ResolveContext{}
-	props := map[string]interface{}{}
+	props := map[string]any{}
 	for k, p := range cfg.Parameters {
 		val, err := p.ResolveValue(emptyResolveCtxt)
 		assert.NoError(t, err, "Expected simple string Parameter to resolve without error")

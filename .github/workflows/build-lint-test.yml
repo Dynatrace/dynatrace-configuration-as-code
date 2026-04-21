@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
 
       - name: 🛠️ Set up Go 1.x
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 #v6.3.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c #v6.4.0
         with:
           go-version-file: go.mod
 
@@ -55,7 +55,7 @@ jobs:
         run: gotestsum --format testdox --format-icons hivis -- -coverprofile=cov.out -tags=unit -v -race ./...
 
       - name: ⬆️ Archive code coverage results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
         with:
           name: code-coverage-report
           path: cov.out
@@ -71,28 +71,40 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
 
       - name: 🛠️ Set up Go 1.x
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 #v6.3.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c #v6.4.0
         with:
           go-version-file: go.mod
 
       - name: ✍️ Check format
         run: make lint
 
+      - name: 🪜 Generate mocks
+        run: make mocks
+
+      - name: 🧑‍🔧 Check for `go fix` changes
+        run: |
+          go fix -tags "unit integration nightly cleanup integration_v1 download_restore" ./...
+          git diff --exit-code
+        if: always()
+
       - name: 🕵️ Go vet
         run: make vet
+        if: always()
 
       - name: 🔎 golangci-lint
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 #v9.2.0
         with:
           install-mode: 'goinstall' # install mode goinstall in order to use hashes for the version
-          version: eabc2638a66daf5bb6c6fb052a32fa3ef7b6600d #v2.1.6
+          version: 8f3b0c7ed018e57905fbd873c697e0b1ede605a5 #v2.11.4
           args: '--output.checkstyle.path=lint-report.xml --issues-exit-code=0' # if issues are found, don't exit with "1". Sonar decides if it fails or not
+        if: always()
 
       - name: ⬆️ Archive lint results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
         with:
           name: lint-report
           path: lint-report.xml
+        if: always()
 
   sonar_scan:
     name: Report lint and test coverage
@@ -125,7 +137,7 @@ jobs:
           echo "GIT_TAG=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
 
       - name: 🔍 SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
+        uses: SonarSource/sonarqube-scan-action@299e4b793aaa83bf2aba7c9c14bedbb485688ec4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:

@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/internal/persistence/top-level-definition",
+  "properties": {
+    "configs": {
+      "items": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The monaco identifier for this config - is used in references and for some generated IDs in Dynatrace environments."
+          },
+          "config": {
+            "properties": {
+              "name": {
+                "description": "The name of this configuration - required for Classic Config API types."
+              },
+              "parameters": {
+                "type": "object",
+                "description": "Parameters for this configuration."
+              },
+              "template": {
+                "type": "string",
+                "description": "The filepath to the JSON template used for this configuration"
+              },
+              "skip": {
+                "description": "Defines whether this config should be skipped when deploying."
+              },
+              "originObjectId": {
+                "type": "string",
+                "description": "description=The identifier of the Dynatrace object this config originated from - this is filled when downloading"
+              }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "template"
+            ],
+            "description": "The actual configuration to be applied"
+          },
+          "type": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Shorthand for a classic Config API type name, or one of the special types: bucket, segment, slo-v2"
+              },
+              {
+                "type": "object",
+                "oneOf": [
+                  {
+                    "properties": {
+                      "api": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "description": "The name of the classic Config API."
+                              },
+                              "scope": {
+                                "description": "The scope for this API configuration."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "name"
+                            ]
+                          }
+                        ],
+                        "description": "A classic Config API type - can be a simple API name string or an object with name and scope."
+                      }
+                    },
+                    "required": [
+                      "api"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "settings": {
+                        "type": "object",
+                        "properties": {
+                          "schema": {
+                            "type": "string",
+                            "description": "The Settings 2.0 schema ID."
+                          },
+                          "schemaVersion": {
+                            "type": "string",
+                            "description": "The schema version."
+                          },
+                          "scope": {
+                            "description": "The scope this setting applies to."
+                          },
+                          "insertAfter": {
+                            "description": "Defines ordering - this setting should be inserted after the referenced setting."
+                          },
+                          "permissions": {
+                            "type": "object",
+                            "properties": {
+                              "allUsers": {
+                                "type": "string",
+                                "enum": [
+                                  "read",
+                                  "write",
+                                  "none"
+                                ],
+                                "description": "Permission level for all users."
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false,
+                        "description": "A Settings 2.0 configuration type."
+                      }
+                    },
+                    "required": [
+                      "settings"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "automation": {
+                        "type": "object",
+                        "properties": {
+                          "resource": {
+                            "type": "string",
+                            "enum": [
+                              "workflow",
+                              "business-calendar",
+                              "scheduling-rule"
+                            ],
+                            "description": "The automation resource type."
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "resource"
+                        ],
+                        "description": "A Dynatrace Platform automation resource."
+                      }
+                    },
+                    "required": [
+                      "automation"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "document": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "dashboard",
+                              "notebook",
+                              "launchpad"
+                            ],
+                            "description": "The kind of document."
+                          },
+                          "id": {
+                            "type": "string",
+                            "description": "Optional custom identifier for the document."
+                          },
+                          "private": {
+                            "type": "boolean",
+                            "description": "Whether the document is private."
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "kind"
+                        ],
+                        "description": "A Dynatrace platform document."
+                      }
+                    },
+                    "required": [
+                      "document"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "openpipeline": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "description": "The kind of OpenPipeline configuration."
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "kind"
+                        ],
+                        "description": "An OpenPipeline configuration."
+                      }
+                    },
+                    "required": [
+                      "openpipeline"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            ],
+            "description": "The type of this configuration"
+          },
+          "groupOverrides": {
+            "items": {
+              "properties": {
+                "group": {
+                  "type": "string",
+                  "description": "Name of the group this override applies for."
+                },
+                "override": {
+                  "properties": {
+                    "name": {
+                      "description": "The name of this configuration - required for Classic Config API types."
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "description": "Parameters for this configuration."
+                    },
+                    "template": {
+                      "type": "string",
+                      "description": "The filepath to the JSON template used for this configuration"
+                    },
+                    "skip": {
+                      "description": "Defines whether this config should be skipped when deploying."
+                    },
+                    "originObjectId": {
+                      "type": "string",
+                      "description": "description=The identifier of the Dynatrace object this config originated from - this is filled when downloading"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "type": "object",
+                  "description": "May contain any fields the base config definition does and overwrites their values for any environment in this group."
+                }
+              },
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "group",
+                "override"
+              ]
+            },
+            "type": "array",
+            "description": "GroupOverrides overwrite specific parts of the Config when deploying it to any environment in a given group."
+          },
+          "environmentOverrides": {
+            "items": {
+              "properties": {
+                "environment": {
+                  "type": "string",
+                  "description": "Name of the environment this override applies for."
+                },
+                "override": {
+                  "properties": {
+                    "name": {
+                      "description": "The name of this configuration - required for Classic Config API types."
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "description": "Parameters for this configuration."
+                    },
+                    "template": {
+                      "type": "string",
+                      "description": "The filepath to the JSON template used for this configuration"
+                    },
+                    "skip": {
+                      "description": "Defines whether this config should be skipped when deploying."
+                    },
+                    "originObjectId": {
+                      "type": "string",
+                      "description": "description=The identifier of the Dynatrace object this config originated from - this is filled when downloading"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "type": "object",
+                  "description": "May contain any fields the base config definition does and overwrites their values for this environment."
+                }
+              },
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "environment",
+                "override"
+              ]
+            },
+            "type": "array",
+            "description": "EnvironmentOverrides overwrite specific parts of the Config when deploying it to a given environment."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "config",
+          "type"
+        ]
+      },
+      "type": "array",
+      "minItems": 1,
+      "description": "The configurations that will be applied to a Dynatrace environment."
+    }
+  },
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "configs"
+  ]
+}

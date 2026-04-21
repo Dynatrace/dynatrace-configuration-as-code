@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -755,7 +754,7 @@ configs:
 					Type: config.SettingsType{
 						SchemaId:          "builtin:profile.test",
 						SchemaVersion:     "1.0",
-						AllUserPermission: pointer.Pointer(config.ReadPermission),
+						AllUserPermission: new(config.ReadPermission),
 					},
 					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
@@ -860,7 +859,7 @@ configs:
 					Type: config.SettingsType{
 						SchemaId:          "builtin:profile.test",
 						SchemaVersion:     "1.0",
-						AllUserPermission: pointer.Pointer(config.NonePermission),
+						AllUserPermission: new(config.NonePermission),
 					},
 					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{

@@ -44,15 +44,15 @@ var nameReplacingPostfixFunc = func(line string) string {
 
 var nameReplacingPostfixFuncForFileContent = func(fileContent string) string {
 
-	var result = ""
+	var result strings.Builder
 	lines := strings.Split(fileContent, "\n")
 	for i, line := range lines {
-		result += ReplaceName(line, postfixFunc)
+		result.WriteString(ReplaceName(line, postfixFunc))
 		if i < len(lines)-1 {
-			result += "\n"
+			result.WriteString("\n")
 		}
 	}
-	return result
+	return result.String()
 }
 
 var nameReplacingPrefixFunc = func(line string) string {

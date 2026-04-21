@@ -21,7 +21,7 @@ import "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coord
 const DummyParameterType = "dummy"
 
 type DummyParameter struct {
-	Value      interface{}
+	Value      any
 	Err        error
 	References []ParameterReference
 }
@@ -44,7 +44,7 @@ func (d *DummyParameter) GetReferences() []ParameterReference {
 	return d.References
 }
 
-func (d *DummyParameter) ResolveValue(_ ResolveContext) (interface{}, error) {
+func (d *DummyParameter) ResolveValue(_ ResolveContext) (any, error) {
 	if d.Err != nil {
 		return nil, d.Err
 	}

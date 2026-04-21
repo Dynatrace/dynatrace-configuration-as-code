@@ -35,7 +35,6 @@ import (
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/pointer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
@@ -300,7 +299,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 				expected: &match{
 					object: DownloadSettingsObject{Value: []byte(`{"A": [1,2,3]}`)},
 					matches: constraintMatch{
-						"A": []interface{}{float64(1), float64(2), float64(3)},
+						"A": []any{float64(1), float64(2), float64(3)},
 					},
 				},
 			},
@@ -839,9 +838,10 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		Coordinate: coordinate.Coordinate{Project: "proj", Type: testSchema, ConfigId: "id"},
 		Content:    []byte("{}"),
 	}
+
 	schemaACL := schemaDetailsResponse{
 		SchemaId:                testSchema,
-		OwnerBasedAccessControl: pointer.Pointer(true),
+		OwnerBasedAccessControl: new(true),
 	}
 	objResp := []postResponse{{ObjectId: "ooid"}}
 
@@ -943,7 +943,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.NonePermission)})
+		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: new(config.NonePermission)})
 		assert.NoError(t, err)
 		assert.True(t, deleteCalled)
 	})
@@ -1001,7 +1001,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
+		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: new(config.WritePermission)})
 		assert.NoError(t, err)
 		assert.True(t, postPermissionCalled)
 	})
@@ -1058,7 +1058,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		c, err := NewPlatformSettingsClient(restClient)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
+		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: new(config.WritePermission)})
 		assert.NoError(t, err)
 		assert.True(t, putPermissionCalled)
 	})
@@ -1102,14 +1102,14 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		_, err = c.GetSchema(t.Context(), testSchema)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
+		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: new(config.WritePermission)})
 		assert.Error(t, err)
 	})
 
 	t.Run("Does not deploy the setting if permissions are set but the schema has ACL disabled", func(t *testing.T) {
 		schemaACLFalse := schemaDetailsResponse{
 			SchemaId:                testSchema,
-			OwnerBasedAccessControl: pointer.Pointer(false),
+			OwnerBasedAccessControl: new(false),
 		}
 
 		mux := http.NewServeMux()
@@ -1145,7 +1145,7 @@ func TestUpsertSettings_ACL(t *testing.T) {
 		_, err = c.GetSchema(t.Context(), testSchema)
 		require.NoError(t, err)
 
-		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: pointer.Pointer(config.WritePermission)})
+		_, err = c.Upsert(t.Context(), obj, UpsertSettingsOptions{AllUserPermission: new(config.WritePermission)})
 		assert.Error(t, err)
 	})
 }
@@ -1161,17 +1161,17 @@ func TestUpsert_InsertAfter(t *testing.T) {
 	}{
 		{
 			name:                "ID is forwarded",
-			givenInsertAfter:    strRef("test"),
-			expectedInsertAfter: strRef("test"),
+			givenInsertAfter:    new("test"),
+			expectedInsertAfter: new("test"),
 		},
 		{
 			name:                "FRONT is converted to '' (empty string)",
-			givenInsertAfter:    strRef(InsertPositionFront),
-			expectedInsertAfter: strRef(""),
+			givenInsertAfter:    new(InsertPositionFront),
+			expectedInsertAfter: new(""),
 		},
 		{
 			name:                "BACK is removed (nil)",
-			givenInsertAfter:    strRef(InsertPositionBack),
+			givenInsertAfter:    new(InsertPositionBack),
 			expectedInsertAfter: nil,
 		},
 		{
@@ -1253,8 +1253,9 @@ func TestUpsert_InsertAfter(t *testing.T) {
 	}
 }
 
+//go:fix inline
 func strRef(s string) *string {
-	return &s
+	return new(s)
 }
 
 func TestUpsertSettingsRetries(t *testing.T) {
@@ -1442,7 +1443,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 				postSettingsRequest: settingsRequest{
 					SchemaId:   "builtin:alerting.profile",
 					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
-					Value: map[string]interface{}{
+					Value: map[string]any{
 						"key_1": "a",
 						"key_2": float64(42),
 					},
@@ -1486,7 +1487,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 				postSettingsRequest: settingsRequest{
 					SchemaId:   "builtin:alerting.profile",
 					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
-					Value: map[string]interface{}{
+					Value: map[string]any{
 						"key_1": "MATCH",
 						"key_2": "dont-care",
 					},
@@ -1531,7 +1532,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 					SchemaId:   "builtin:alerting.profile",
 					ObjectId:   "objectID--2", // object ID of matching object
 					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
-					Value: map[string]interface{}{
+					Value: map[string]any{
 						"key_1": "MATCH",
 						"key_2": "dont-care",
 					},
@@ -1576,11 +1577,11 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 					SchemaId:   "builtin:alerting.profile",
 					ObjectId:   "objectID--2", // object ID of matching object
 					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
-					Value: map[string]interface{}{
-						"key_1": map[string]interface{}{
-							"a": []interface{}{false, true, false},
+					Value: map[string]any{
+						"key_1": map[string]any{
+							"a": []any{false, true, false},
 							"b": 42.0,
-							"c": map[string]interface{}{
+							"c": map[string]any{
 								"cK": "cV",
 							},
 						},
@@ -1675,7 +1676,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 					Scope:      "HOST-1",
 					ObjectId:   "objectID--2", // object ID of matching object
 					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
-					Value: map[string]interface{}{
+					Value: map[string]any{
 						"key_1": "MATCH",
 						"key_2": "dont-care",
 					},
@@ -1731,7 +1732,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 					SchemaId:   "builtin:alerting.profile",
 					Scope:      "HOST-1",
 					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
-					Value: map[string]interface{}{
+					Value: map[string]any{
 						"key_1": "a",
 						"key_2": float64(42),
 					},
@@ -2906,11 +2907,11 @@ func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
 		Items: SchemaList{
 			SchemaItem{
 				SchemaId:                testSchema1,
-				OwnerBasedAccessControl: pointer.Pointer(true),
+				OwnerBasedAccessControl: new(true),
 			},
 			SchemaItem{
 				SchemaId:                testSchema2,
-				OwnerBasedAccessControl: pointer.Pointer(false),
+				OwnerBasedAccessControl: new(false),
 			},
 		},
 	}
@@ -2942,12 +2943,12 @@ func TestSettingsClient_ListSchemas_WithAcl(t *testing.T) {
 		SchemaItem{
 			SchemaId:                testSchema1,
 			Ordered:                 false,
-			OwnerBasedAccessControl: pointer.Pointer(true),
+			OwnerBasedAccessControl: new(true),
 		},
 		SchemaItem{
 			SchemaId:                testSchema2,
 			Ordered:                 false,
-			OwnerBasedAccessControl: pointer.Pointer(false),
+			OwnerBasedAccessControl: new(false),
 		},
 	}, gotSchemas)
 }

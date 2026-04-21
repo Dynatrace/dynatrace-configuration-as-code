@@ -18,6 +18,7 @@ package errors
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
@@ -30,7 +31,7 @@ type ConfigWriterError struct {
 	// Path of the file that failed to be written
 	Path string `json:"path"`
 	// Err is the underlying error that occurred
-	Err error `json:"error" jsonschema:"type=object"`
+	Err error `json:"error"`
 }
 
 func (e ConfigWriterError) Unwrap() error {
@@ -48,7 +49,7 @@ type DetailedConfigWriterError struct {
 	// Path of the file that failed to be written
 	Path string `json:"path"`
 	// Err is the underlying error that occurred
-	Err error `json:"error" jsonschema:"type=object"`
+	Err error `json:"error"`
 }
 
 func (e DetailedConfigWriterError) Unwrap() error {

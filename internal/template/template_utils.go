@@ -24,8 +24,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
 
-func escapeSpecialCharactersInMap(properties map[string]interface{}, escapeFunc StringEscapeFunction) (map[string]interface{}, error) {
-	escapedProperties := make(map[string]interface{}, len(properties))
+func escapeSpecialCharactersInMap(properties map[string]any, escapeFunc StringEscapeFunction) (map[string]any, error) {
+	escapedProperties := make(map[string]any, len(properties))
 
 	for key, value := range properties {
 		escaped, err := EscapeSpecialCharactersInValue(value, escapeFunc)
@@ -42,7 +42,7 @@ func escapeSpecialCharactersInMap(properties map[string]interface{}, escapeFunc 
 // case of maps/maps-of-maps of string and escape any special characters using a StringEscapeFunction.
 // This is used by v1 config templating - with a simple function escaping newlines
 // and v2 parameter values returns - with an escape function escaping strings to be fully JSON compliant
-func EscapeSpecialCharactersInValue(value interface{}, escapeFunc StringEscapeFunction) (interface{}, error) {
+func EscapeSpecialCharactersInValue(value any, escapeFunc StringEscapeFunction) (any, error) {
 	switch field := value.(type) {
 	case bool:
 		return field, nil
@@ -50,7 +50,7 @@ func EscapeSpecialCharactersInValue(value interface{}, escapeFunc StringEscapeFu
 		return escapeFunc(field)
 	case map[string]string:
 		return escapeCharactersForStringMap(field, escapeFunc)
-	case map[string]interface{}:
+	case map[string]any:
 		return escapeSpecialCharactersInMap(field, escapeFunc)
 	default:
 		log.Debug("tried to string escape value of unsupported type %v, returning unchanged", reflect.TypeOf(value))

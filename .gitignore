@@ -18,8 +18,8 @@ bin/
 download_*
 !download_test.go
 
-# Generated JSON schema files
-schemas/
+# Generated JSON schema files in root directory
+/schemas/
 
 # Mock files
 **/*_mock.go

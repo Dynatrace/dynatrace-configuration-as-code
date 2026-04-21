@@ -127,7 +127,7 @@ func convertDocumentResponse(ctx context.Context, documentSource DownloadSource,
 }
 
 func createTemplateFromResponse(response documents.Response) (template.Template, error) {
-	var data map[string]interface{}
+	var data map[string]any
 	err := json.Unmarshal(response.Data, &data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)

@@ -173,7 +173,7 @@ func escapeJinjaTemplates(src []byte) ([]byte, error) {
 func createTemplateFromRawJSON(obj automationutils.Response, configType, projectName string) (t template.Template, extractedName *string) {
 	configId := obj.ID
 
-	var data map[string]interface{}
+	var data map[string]any
 	err := json.Unmarshal(obj.Data, &data)
 	if err != nil {
 		log.With(log.CoordinateAttr(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), log.ErrorAttr(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)

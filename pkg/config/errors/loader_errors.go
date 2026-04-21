@@ -33,7 +33,7 @@ type ConfigLoaderError struct {
 	// Path of the config.yaml that could not be loaded
 	Path string `json:"path"`
 	// Err is the underlying error that occurred while loading
-	Err error `json:"error" jsonschema:"type=object"`
+	Err error `json:"error"`
 }
 
 func (e ConfigLoaderError) Unwrap() error {

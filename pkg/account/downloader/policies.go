@@ -19,6 +19,7 @@ package downloader
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -110,11 +111,8 @@ func (p Policies) asAccountPolicies() map[account.PolicyId]account.Policy {
 func (p Policies) RefOn(policyUUID ...string) []account.Ref {
 	var retVal []account.Ref
 	for _, pol := range p {
-		for _, uuid := range policyUUID {
-			if pol.dto.Uuid == uuid {
-				retVal = append(retVal, pol.RefOn())
-				break
-			}
+		if slices.Contains(policyUUID, pol.dto.Uuid) {
+			retVal = append(retVal, pol.RefOn())
 		}
 	}
 	return retVal

@@ -41,7 +41,7 @@ import (
 )
 
 func getBucketActiveResponse(bucketName string) []byte {
-	return []byte(fmt.Sprintf(`{
+	return fmt.Appendf(nil, `{
 		 "bucketName": "%s",
 		 "table": "metrics",
 		 "displayName": "Default metrics (15 months)",
@@ -49,7 +49,7 @@ func getBucketActiveResponse(bucketName string) []byte {
 		 "retentionDays": 462,
 		 "metricInterval": "PT1M",
 		 "version": 1
-	}`, bucketName))
+	}`, bucketName)
 }
 
 type testClient struct {

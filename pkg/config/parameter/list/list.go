@@ -52,7 +52,7 @@ func (p *ListParameter) GetReferences() []parameter.ParameterReference {
 	return []parameter.ParameterReference{}
 }
 
-func (p *ListParameter) ResolveValue(c parameter.ResolveContext) (interface{}, error) {
+func (p *ListParameter) ResolveValue(c parameter.ResolveContext) (any, error) {
 
 	listValues := make([]string, len(p.Values))
 	for i, v := range p.Values {
@@ -66,14 +66,14 @@ func (p *ListParameter) ResolveValue(c parameter.ResolveContext) (interface{}, e
 	return list, nil
 }
 
-func writeListParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
+func writeListParameter(context parameter.ParameterWriterContext) (map[string]any, error) {
 	listParam, ok := context.Parameter.(*ListParameter)
 
 	if !ok {
 		return nil, parameter.NewParameterWriterError(context, "unexpected type. parameter is not of type `ValueParameter`")
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	result["values"] = toWritableValues(context, listParam.Values)
 
@@ -82,10 +82,9 @@ func writeListParameter(context parameter.ParameterWriterContext) (map[string]in
 
 // TODO(CA-1517): call the underlying parameter's Deserialzer/write methods
 // toWriteableValues turns the underlying ValueParameters into a simple string list to write them in their short form
-func toWritableValues(context parameter.ParameterWriterContext, values []value.ValueParameter) []interface{} {
-	writableValues := make([]interface{}, len(values))
+func toWritableValues(context parameter.ParameterWriterContext, values []value.ValueParameter) []any {
+	writableValues := make([]any, len(values))
 	for i, v := range values {
-		v := v // to avoid implicit memory aliasing (gosec G601)
 		if s, ok := v.Value.(string); ok {
 			writableValues[i] = s
 			continue
@@ -108,7 +107,7 @@ func parseListParameter(context parameter.ParameterParserContext) (parameter.Par
 		return nil, parameter.NewParameterParserError(context, "missing property `values`")
 	}
 
-	valueSlice, ok := values.([]interface{})
+	valueSlice, ok := values.([]any)
 	if !ok {
 		return nil, parameter.NewParameterParserError(context, "malformed property `values` - expected list")
 	}
@@ -132,8 +131,8 @@ func parseListParameter(context parameter.ParameterParserContext) (parameter.Par
 	return New(parameterSlice), nil
 }
 
-func parseSubParameter(paramValue interface{}, context parameter.ParameterParserContext) (value.ValueParameter, error) {
-	mapVal, ok := paramValue.(map[interface{}]interface{})
+func parseSubParameter(paramValue any, context parameter.ParameterParserContext) (value.ValueParameter, error) {
+	mapVal, ok := paramValue.(map[any]any)
 	if !ok {
 		return value.ValueParameter{}, fmt.Errorf("malformed list entry `%v`", paramValue)
 	}

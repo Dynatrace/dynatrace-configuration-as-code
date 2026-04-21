@@ -818,7 +818,7 @@ func TestDownloader_OnlyServiceUser(t *testing.T) {
 	client.EXPECT().GetPolicies(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyOverview{}, nil)
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Uid: "abc1", Email: "service.user@some.org", Name: "service_user", Description: accountmanagement.PtrString("A service user")}}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Uid: "abc1", Email: "service.user@some.org", Name: "service_user", Description: new("A service user")}}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "service.user@some.org"}, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 
@@ -847,8 +847,8 @@ func TestDownloader_TwoServiceUsersWithSameName(t *testing.T) {
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
 	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{
-		{Uid: "abc1", Email: "abc1@some.org", Name: "service_user", Description: accountmanagement.PtrString("A service user")},
-		{Uid: "abc2", Email: "abc2@some.org", Name: "service_user", Description: accountmanagement.PtrString("A service user")},
+		{Uid: "abc1", Email: "abc1@some.org", Name: "service_user", Description: new("A service user")},
+		{Uid: "abc2", Email: "abc2@some.org", Name: "service_user", Description: new("A service user")},
 	}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "abc1@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "abc1@some.org"}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "abc2@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{Email: "abc2@some.org"}, nil)
@@ -887,7 +887,7 @@ func TestDownloader_ServiceUserWithOneGroup(t *testing.T) {
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return(nil, nil)
 
-	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: accountmanagement.PtrString("A service user")}}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: new("A service user")}}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(&accountmanagement.GroupUserDto{
 		Email:  "service.user@some.org",
 		Groups: []accountmanagement.AccountGroupDto{{Uuid: groupUUID1}},
@@ -927,7 +927,7 @@ func TestDownloader_NoRequestedServiceUserDetails(t *testing.T) {
 	client.EXPECT().GetGroups(gomock.Any(), accountUUID).Return([]accountmanagement.GetGroupDto{}, nil)
 
 	client.EXPECT().GetUsers(gomock.Any(), accountUUID).Return([]accountmanagement.UsersDto{}, nil)
-	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: accountmanagement.PtrString("A service user")}}, nil)
+	client.EXPECT().GetServiceUsers(gomock.Any(), accountUUID).Return([]accountmanagement.ExternalServiceUserDto{{Email: "service.user@some.org", Name: "service_user", Description: new("A service user")}}, nil)
 	client.EXPECT().GetGroupsForUser(gomock.Any(), "service.user@some.org", accountUUID).Return(nil, nil)
 	client.EXPECT().GetBoundaries(gomock.Any(), accountUUID).Return([]accountmanagement.PolicyBoundaryOverview{}, nil)
 

@@ -53,7 +53,7 @@ func (f *FileParameter) GetReferences() []parameter.ParameterReference {
 	return f.referencedParameters
 }
 
-func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (interface{}, error) {
+func (f *FileParameter) ResolveValue(context parameter.ResolveContext) (any, error) {
 	parameterTmpl, err := tmpl.NewFileTemplate(f.Fs, f.Path)
 	if err != nil {
 		return nil, parameter.NewParameterResolveValueError(context, err.Error())
@@ -121,7 +121,7 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 		return &FileParameter{Fs: context.Fs, Path: strings.ToString(path), Escape: escape}, nil
 	}
 
-	referencedParameterSlice, ok := references.([]interface{})
+	referencedParameterSlice, ok := references.([]any)
 	if !ok {
 		return nil, parameter.NewParameterParserError(context, "malformed value `references`")
 	}
@@ -135,14 +135,14 @@ func parseFileValueParameter(context parameter.ParameterParserContext) (paramete
 
 }
 
-func writeFileValueParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
+func writeFileValueParameter(context parameter.ParameterWriterContext) (map[string]any, error) {
 	fileParam, ok := context.Parameter.(*FileParameter)
 
 	if !ok {
 		return nil, parameter.NewParameterWriterError(context, "unexpected type. parameter is not of type `FileParameter`")
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	result["path"] = fileParam.Path
 	result["escape"] = fileParam.Escape
