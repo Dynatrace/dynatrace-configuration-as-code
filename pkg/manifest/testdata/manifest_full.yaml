@@ -26,7 +26,7 @@ environmentGroups:
         clientSecret:
           name: ENV_CLIENT_SECRET
         tokenEndpoint:
-          value: https://my-token.url
+          value: https://sso.dynatrace.com
   - name: test-env-2
     url:
       value: https://ddd.bbb.cc
