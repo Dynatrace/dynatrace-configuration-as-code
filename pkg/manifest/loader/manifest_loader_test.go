@@ -782,7 +782,7 @@ func TestLoadManifest(t *testing.T) {
 	t.Setenv("empty-env-var", "")
 	t.Setenv("client-id", "resolved-client-id")
 	t.Setenv("client-secret", "resolved-client-secret")
-	t.Setenv("ENV_OAUTH_ENDPOINT", "resolved-oauth-endpoint")
+	t.Setenv("ENV_OAUTH_ENDPOINT", "https://sso.dynatrace.com")
 
 	tests := []struct {
 		name             string
@@ -1631,7 +1631,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {value: https://custom.sso.token.endpoint}}}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {value: https://custom.sso.dynatrace.com}}}}]}]
 `,
 			errsContain: []string{},
 			expectedManifest: manifest.Manifest{
@@ -1666,7 +1666,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									},
 									TokenEndpoint: &manifest.URLDefinition{
 										Type:  manifest.ValueURLType,
-										Value: "https://custom.sso.token.endpoint",
+										Value: "https://custom.sso.dynatrace.com",
 									},
 								},
 							},
@@ -1723,7 +1723,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									TokenEndpoint: &manifest.URLDefinition{
 										Type:  manifest.EnvironmentURLType,
 										Name:  "ENV_OAUTH_ENDPOINT",
-										Value: "resolved-oauth-endpoint",
+										Value: "https://sso.dynatrace.com",
 									},
 								},
 							},
@@ -1776,7 +1776,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {o
 									TokenEndpoint: &manifest.URLDefinition{
 										Type:  manifest.EnvironmentURLType,
 										Name:  "ENV_OAUTH_ENDPOINT",
-										Value: "resolved-oauth-endpoint",
+										Value: "https://sso.dynatrace.com",
 									},
 								},
 							},
@@ -1809,6 +1809,24 @@ projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {type: nonexistent, value: ENV_NOT_EXISTS}}}}]}]
 `,
 			errsContain: []string{"\"nonexistent\" is not a valid URL type"},
+		},
+		{
+			name: "OAuth token endpoint with disallowed domain is rejected",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {value: https://evil.com/steal}}}}]}]
+`,
+			errsContain: []string{`invalid "tokenEndpoint"`},
+		},
+		{
+			name: "OAuth token endpoint that resembles dynatrace.com but is not a subdomain is rejected",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {value: https://evil-dynatrace.com/token}}}}]}]
+`,
+			errsContain: []string{`invalid "tokenEndpoint"`},
 		},
 		{
 			name: "OAuth credentials are missing the ClientSecret",
@@ -2013,7 +2031,7 @@ func TestLoadManifestWithPlatformTokenFeatureFlagDisabled(t *testing.T) {
 	t.Setenv("empty-env-var", "")
 	t.Setenv("client-id", "resolved-client-id")
 	t.Setenv("client-secret", "resolved-client-secret")
-	t.Setenv("ENV_OAUTH_ENDPOINT", "resolved-oauth-endpoint")
+	t.Setenv("ENV_OAUTH_ENDPOINT", "https://sso.dynatrace.com")
 
 	t.Run("Fails if only platform token provided", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
@@ -2200,6 +2218,67 @@ func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
 		_, gotErr := parseAccountUUID(&Context{Opts: Options{DoNotResolveEnvVars: true, RequireEnvironmentGroups: true}}, testAccountUUID)
 		assert.NoError(t, gotErr)
 	})
+
+	t.Run("hardcoded valid dynatrace tokenEndpoint is validated even when DoNotResolveEnvVars is set", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(`
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {value: https://sso.dynatrace.com}}}}]}]
+`), 0400))
+		_, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true, DoNotResolveEnvVars: true},
+		})
+		assert.Empty(t, errs)
+	})
+
+	t.Run("hardcoded valid dynatracelabs tokenEndpoint is validated even when DoNotResolveEnvVars is set", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(`
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {value: https://sso.dynatracelabs.com}}}}]}]
+`), 0400))
+		_, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true, DoNotResolveEnvVars: true},
+		})
+		assert.Empty(t, errs)
+	})
+
+	t.Run("env-var tokenEndpoint skips domain validation when DoNotResolveEnvVars is set", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(`
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {type: environment, value: SOME_TOKEN_ENDPOINT_VAR}}}}]}]
+`), 0400))
+		_, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true, DoNotResolveEnvVars: true},
+		})
+		assert.Empty(t, errs)
+	})
+
+	t.Run("hardcoded invalid tokenEndpoint is rejected even when DoNotResolveEnvVars is set", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(`
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {value: https://evil.com/steal}}}}]}]
+`), 0400))
+		_, errs := Load(&Context{
+			Fs:           fs,
+			ManifestPath: "manifest.yaml",
+			Opts:         Options{RequireEnvironmentGroups: true, DoNotResolveEnvVars: true},
+		})
+		assert.NotEmpty(t, errs)
+		assert.ErrorContains(t, errs[0], `invalid "tokenEndpoint"`)
+	})
 }
 
 func TestEnvironmentsAndAccountsAreOptionalUnlessDefined(t *testing.T) {
@@ -2317,6 +2396,34 @@ projects: [{name: a, path: p}]
 				assert.Empty(t, errs)
 			}
 
+		})
+	}
+}
+
+func TestValidateTokenEndpointDomain(t *testing.T) {
+	tests := []struct {
+		name    string
+		url     string
+		wantErr bool
+	}{
+		{"subdomain of dynatrace.com", "https://sso.dynatrace.com/sso/oauth2/token", false},
+		{"subdomain of dynatracelabs.com", "https://sso.dynatracelabs.com/token", false},
+		{"deep subdomain of dynatracelabs.com", "https://a.b.dynatracelabs.com/token", false},
+		{"deep subdomain of dynatrace.com", "https://a.b.dynatrace.com/token", false},
+		{"subdomain without path", "https://b.dynatrace.com", false},
+		{"unrelated domain", "https://evil.com/steal", true},
+		{"lookalike - not a subdomain", "https://evil-dynatrace.com/token", true},
+		{"dynatrace.com embedded in path", "https://evil.com/dynatrace.com/token", true},
+		{"dynatrace.com as subdomain of attacker domain", "https://sso.dynatrace.com.evil.com/token", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateTokenEndpointDomain(tt.url)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

@@ -49,7 +49,7 @@ var (
 				Name: "SECRET",
 			},
 			TokenEndpoint: &persistence.TypedValue{
-				Value: "https://example.com",
+				Value: "https://sso.dynatrace.com",
 			},
 		},
 	}
@@ -76,7 +76,7 @@ func TestValidAccounts(t *testing.T) {
 				Name: "SECRET",
 			},
 			TokenEndpoint: &persistence.TypedValue{
-				Value: "https://example.com",
+				Value: "https://sso.dynatrace.com",
 			},
 		},
 	}
@@ -134,7 +134,7 @@ func TestValidAccounts(t *testing.T) {
 					ClientSecret: manifest.AuthSecret{Name: "SECRET", Value: "secret"},
 					TokenEndpoint: &manifest.URLDefinition{
 						Type:  manifest.ValueURLType,
-						Value: "https://example.com",
+						Value: "https://sso.dynatrace.com",
 					},
 				},
 			},
@@ -192,7 +192,7 @@ func TestValidAccounts(t *testing.T) {
 					ClientSecret: manifest.AuthSecret{Name: "SECRET", Value: "secret"},
 					TokenEndpoint: &manifest.URLDefinition{
 						Type:  manifest.ValueURLType,
-						Value: "https://example.com",
+						Value: "https://sso.dynatrace.com",
 					},
 				},
 			},
