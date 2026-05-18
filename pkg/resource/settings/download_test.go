@@ -63,14 +63,14 @@ func TestDownloadAll(t *testing.T) {
 		GetPermissionCalls int
 	}
 	tests := []struct {
-		name                  string
-		mockValues            mockValues
-		filters               map[string]Filter
-		schemas               []string
-		classicSettingsSource bool
-		envVars               map[string]string
-		want                  project.ConfigsPerType
-		logAssert             func(t assert.TestingT, logSpy string)
+		name                 string
+		mockValues           mockValues
+		filters              map[string]Filter
+		schemas              []string
+		isPlatformConnection bool
+		envVars              map[string]string
+		want                 project.ConfigsPerType
+		logAssert            func(t assert.TestingT, logSpy string)
 	}{
 		{
 			name: "DownloadSettings - List Schemas fails",
@@ -770,7 +770,8 @@ func TestDownloadAll(t *testing.T) {
 			}},
 		},
 		{
-			name: "Downloading settings with ACL",
+			name:                 "Downloading settings with ACL",
+			isPlatformConnection: true,
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{
@@ -827,7 +828,8 @@ func TestDownloadAll(t *testing.T) {
 			logAssert: func(t assert.TestingT, logSpy string) { assert.NotContains(t, logSpy, "Skipped getting permissions") },
 		},
 		{
-			name: "Downloading settings with ACL fails on permission fetch",
+			name:                 "Downloading settings with ACL fails on permission fetch",
+			isPlatformConnection: true,
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{
@@ -863,7 +865,8 @@ func TestDownloadAll(t *testing.T) {
 			want:    project.ConfigsPerType{},
 		},
 		{
-			name: "Downloading settings with ACL skips GetPermission calls and warns if using classicSettingsSource",
+			name:                 "Downloading settings with ACL skips GetPermission calls and warns if not using isPlatformConnection",
+			isPlatformConnection: false,
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{
@@ -890,8 +893,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				GetPermissionCalls: 0,
 			},
-			schemas:               []string{"app:my-app:schema"},
-			classicSettingsSource: true,
+			schemas: []string{"app:my-app:schema"},
 			want: project.ConfigsPerType{"app:my-app:schema": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
@@ -913,7 +915,8 @@ func TestDownloadAll(t *testing.T) {
 			logAssert: func(t assert.TestingT, logSpy string) { assert.Contains(t, logSpy, "Skipped getting permissions") },
 		},
 		{
-			name: "Downloading settings without ACL using classicSettingsSource doesnt warn about permissions",
+			name:                 "Downloading settings with ACL using isPlatformConnection doesnt warn about permissions",
+			isPlatformConnection: true,
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
 					return dtclient.SchemaList{
@@ -939,8 +942,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				GetPermissionCalls: 0,
 			},
-			schemas:               []string{"builtin:alerting-profile"},
-			classicSettingsSource: true,
+			schemas: []string{"builtin:alerting-profile"},
 			want: project.ConfigsPerType{"builtin:alerting-profile": {
 				{
 					Template: template.NewInMemoryTemplate(uuid1, "{}"),
@@ -984,7 +986,7 @@ func TestDownloadAll(t *testing.T) {
 
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			settingsAPI := NewDownloadAPI(c, tt.filters, tt.schemas, tt.classicSettingsSource)
+			settingsAPI := NewDownloadAPI(c, tt.filters, tt.schemas, tt.isPlatformConnection)
 			res, err := settingsAPI.Download(t.Context(), "projectName")
 
 			assert.Equal(t, tt.want, res)
