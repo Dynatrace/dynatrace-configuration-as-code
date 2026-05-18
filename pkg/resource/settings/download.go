@@ -53,14 +53,14 @@ type DownloadSource interface {
 }
 
 type DownloadAPI struct {
-	settingsSource        DownloadSource
-	filters               Filters
-	specificSchemas       []string
-	classicSettingsSource bool
+	settingsSource       DownloadSource
+	filters              Filters
+	specificSchemas      []string
+	isPlatformConnection bool
 }
 
 func NewDownloadAPI(settingsSource DownloadSource, filters Filters, specificSchemas []string, usePlatform bool) *DownloadAPI {
-	return &DownloadAPI{settingsSource, filters, specificSchemas, usePlatform}
+	return &DownloadAPI{settingsSource: settingsSource, filters: filters, specificSchemas: specificSchemas, isPlatformConnection: usePlatform}
 }
 
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
@@ -191,7 +191,7 @@ func (a DownloadAPI) getPermissions(ctx context.Context, s schema, objects []dtc
 		return nil, nil
 	}
 
-	if a.classicSettingsSource {
+	if !a.isPlatformConnection {
 		lg.WarnContext(ctx, "Skipped getting permissions as download is using classic credentials")
 		return nil, nil
 	}
