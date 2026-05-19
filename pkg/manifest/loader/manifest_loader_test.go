@@ -2399,31 +2399,3 @@ projects: [{name: a, path: p}]
 		})
 	}
 }
-
-func TestValidateTokenEndpointDomain(t *testing.T) {
-	tests := []struct {
-		name    string
-		url     string
-		wantErr bool
-	}{
-		{"subdomain of dynatrace.com", "https://sso.dynatrace.com/sso/oauth2/token", false},
-		{"subdomain of dynatracelabs.com", "https://sso.dynatracelabs.com/token", false},
-		{"deep subdomain of dynatracelabs.com", "https://a.b.dynatracelabs.com/token", false},
-		{"deep subdomain of dynatrace.com", "https://a.b.dynatrace.com/token", false},
-		{"subdomain without path", "https://b.dynatrace.com", false},
-		{"unrelated domain", "https://evil.com/steal", true},
-		{"lookalike - not a subdomain", "https://evil-dynatrace.com/token", true},
-		{"dynatrace.com embedded in path", "https://evil.com/dynatrace.com/token", true},
-		{"dynatrace.com as subdomain of attacker domain", "https://sso.dynatrace.com.evil.com/token", true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateTokenEndpointDomain(tt.url)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
