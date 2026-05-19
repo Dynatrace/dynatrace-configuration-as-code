@@ -40,9 +40,15 @@ func RejectSymlink(fs afero.Fs, path string) error {
 		return nil
 	}
 
+	components := pathComponents(path)
+	return checkComponentsForSymlinks(lstater, path, components)
+}
+
+// pathComponents returns all parent directories and the path itself, from leaf to root.
+// For example, "/a/b/c" returns ["/a/b/c", "/a/b", "/a"].
+func pathComponents(path string) []string {
 	cleaned := filepath.Clean(path)
 
-	// collect path and all of its parent directories up to (but excluding) the filesystem root
 	var components []string
 	for current := cleaned; ; {
 		components = append(components, current)
@@ -52,8 +58,13 @@ func RejectSymlink(fs afero.Fs, path string) error {
 		}
 		current = parent
 	}
+	return components
+}
 
-	// check from outermost component down to the leaf so we fail on the highest offending segment
+// checkComponentsForSymlinks verifies that no path component is a symlink.
+// Checks from outermost component down to the leaf so errors report the highest offending segment.
+func checkComponentsForSymlinks(lstater afero.Lstater, originalPath string, components []string) error {
+	// iterate from outermost (root-most) to leaf
 	for i := len(components) - 1; i >= 0; i-- {
 		component := components[i]
 
@@ -67,12 +78,17 @@ func RejectSymlink(fs afero.Fs, path string) error {
 		}
 
 		if lstatCalled && fi.Mode()&os.ModeSymlink != 0 {
-			if component == cleaned {
-				return fmt.Errorf("file %q is a symbolic link, which is not allowed for security reasons", path)
-			}
-			return fmt.Errorf("path %q contains a symbolic link at %q, which is not allowed for security reasons", path, component)
+			return symlinksError(originalPath, component)
 		}
 	}
 
 	return nil
+}
+
+// symlinksError formats an error message for a symlink found at a path component.
+func symlinksError(fullPath, symlinkComponent string) error {
+	if symlinkComponent == filepath.Clean(fullPath) {
+		return fmt.Errorf("file %q is a symbolic link, which is not allowed for security reasons", fullPath)
+	}
+	return fmt.Errorf("path %q contains a symbolic link at %q, which is not allowed for security reasons", fullPath, symlinkComponent)
 }
