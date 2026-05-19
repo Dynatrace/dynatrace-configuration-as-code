@@ -8,7 +8,7 @@ accounts:
     value: ACCOUNT_SECRET_1
   apiUrl:
     type: environment
-    value: ACCOUNT_SECRET_1
+    value: ACCOUNT_SECRET_URL
   oAuth:
     clientId:
       name: ACCOUNT_SECRET_1
@@ -19,8 +19,8 @@ accounts:
     type: environment
     value: ACCOUNT_SECRET_2
   apiUrl:
-    type: environment
-    value: ACCOUNT_SECRET_2
+    type: value
+    value: https://api.dynatrace.com
   oAuth:
     clientId:
       name: ACCOUNT_SECRET_2
