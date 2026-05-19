@@ -57,13 +57,12 @@ func RejectSymlink(fs afero.Fs, path string) error {
 	for i := len(components) - 1; i >= 0; i-- {
 		component := components[i]
 
-		exists, err := afero.Exists(fs, component)
-		if err != nil || !exists {
-			continue
-		}
-
 		fi, lstatCalled, err := lstater.LstatIfPossible(component)
 		if err != nil {
+			if os.IsNotExist(err) {
+				// component does not exist on disk — nothing to check here
+				continue
+			}
 			return fmt.Errorf("could not check file %q: %w", component, err)
 		}
 
