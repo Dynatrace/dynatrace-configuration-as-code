@@ -195,3 +195,215 @@ type errLstatFs struct{ afero.Fs }
 func (f errLstatFs) LstatIfPossible(name string) (os.FileInfo, bool, error) {
 	return nil, true, fmt.Errorf("simulated lstat error")
 }
+
+func TestRejectSymlinks_EdgeCases(t *testing.T) {
+
+	t.Run("rejects deeply nested symlinked parent (3 levels)", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
+
+		require.NoError(t, os.MkdirAll(filepath.Join(projectDir, "a", "b"), 0755))
+		// project/a/b/c -> outsideDir
+		require.NoError(t, os.Symlink(outsideDir, filepath.Join(projectDir, "a", "b", "c")))
+		require.NoError(t, os.WriteFile(filepath.Join(outsideDir, "secret.txt"), []byte("S"), 0644))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "a/b/c/secret.txt")
+		require.ErrorContains(t, err, "symbolic link")
+		assert.Contains(t, err.Error(), "a/b/c")
+	})
+
+	t.Run("rejects symlinked intermediate directory (not first parent)", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
+
+		require.NoError(t, os.MkdirAll(filepath.Join(projectDir, "configs"), 0755))
+		// project/configs/leak -> outsideDir
+		require.NoError(t, os.Symlink(outsideDir, filepath.Join(projectDir, "configs", "leak")))
+		require.NoError(t, os.MkdirAll(filepath.Join(outsideDir, "sub"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(outsideDir, "sub", "x.json"), []byte("X"), 0644))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "configs/leak/sub/x.json")
+		require.ErrorContains(t, err, "symbolic link")
+		assert.Contains(t, err.Error(), "configs/leak")
+	})
+
+	t.Run("rejects path with .. that resolves through symlinked parent", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
+
+		require.NoError(t, os.Symlink(outsideDir, filepath.Join(projectDir, "link")))
+		require.NoError(t, os.MkdirAll(filepath.Join(projectDir, "real"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(outsideDir, "secret.txt"), []byte("S"), 0644))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		// real/../link/secret.txt cleans to link/secret.txt
+		err := RejectSymlink(fs, "real/../link/secret.txt")
+		require.ErrorContains(t, err, "symbolic link")
+	})
+
+	t.Run("handles trailing slash on directory path", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
+
+		require.NoError(t, os.Symlink(outsideDir, filepath.Join(projectDir, "link")))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "link/")
+		assert.ErrorContains(t, err, "symbolic link")
+	})
+
+	t.Run("rejects broken symlink (target does not exist)", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+
+		// link points to a path that does not exist
+		require.NoError(t, os.Symlink(filepath.Join(projectDir, "missing-target"), filepath.Join(projectDir, "dangling")))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "dangling")
+		assert.ErrorContains(t, err, "symbolic link")
+	})
+
+	t.Run("rejects chained symlinks (symlink -> symlink -> file)", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
+
+		secret := filepath.Join(outsideDir, "secret.txt")
+		require.NoError(t, os.WriteFile(secret, []byte("S"), 0644))
+
+		hop := filepath.Join(outsideDir, "hop")
+		require.NoError(t, os.Symlink(secret, hop))
+		require.NoError(t, os.Symlink(hop, filepath.Join(projectDir, "chain")))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "chain")
+		assert.ErrorContains(t, err, "symbolic link")
+	})
+
+	t.Run("rejects symlink with relative target escaping project", func(t *testing.T) {
+		baseDir := resolvedTempDir(t)
+		projectDir := filepath.Join(baseDir, "project")
+		outsideDir := filepath.Join(baseDir, "outside")
+		require.NoError(t, os.MkdirAll(projectDir, 0755))
+		require.NoError(t, os.MkdirAll(outsideDir, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(outsideDir, "secret.txt"), []byte("S"), 0644))
+
+		// project/escape -> ../outside  (relative target)
+		require.NoError(t, os.Symlink("../outside", filepath.Join(projectDir, "escape")))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "escape/secret.txt")
+		require.ErrorContains(t, err, "symbolic link")
+		assert.Contains(t, err.Error(), "escape")
+	})
+
+	t.Run("rejects symlink that points back into the project", func(t *testing.T) {
+		// Even though the target is inside the project, we still reject it because
+		// we cannot easily distinguish a benign in-project symlink from an attacker
+		// crafting a symlink that resolves to an unrelated path via canonicalization tricks.
+		projectDir := resolvedTempDir(t)
+		require.NoError(t, os.MkdirAll(filepath.Join(projectDir, "real"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(projectDir, "real", "f.json"), []byte("ok"), 0644))
+		require.NoError(t, os.Symlink(filepath.Join(projectDir, "real"), filepath.Join(projectDir, "alias")))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "alias/f.json")
+		assert.ErrorContains(t, err, "symbolic link")
+	})
+
+	t.Run("allows path with .. that stays inside project and crosses no symlinks", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		require.NoError(t, os.MkdirAll(filepath.Join(projectDir, "a", "b"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(projectDir, "a", "x.json"), []byte("ok"), 0644))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "a/b/../x.json")
+		assert.NoError(t, err)
+	})
+
+	t.Run("allows path with redundant separators and dot segments", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		require.NoError(t, os.MkdirAll(filepath.Join(projectDir, "a"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(projectDir, "a", "x.json"), []byte("ok"), 0644))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "./a//x.json")
+		assert.NoError(t, err)
+	})
+
+	t.Run("allows nested existing directories with no symlinks", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		require.NoError(t, os.MkdirAll(filepath.Join(projectDir, "a", "b", "c"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(projectDir, "a", "b", "c", "x.json"), []byte("ok"), 0644))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "a/b/c/x.json")
+		assert.NoError(t, err)
+	})
+
+	t.Run("allows existing parents with nonexistent leaf", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		require.NoError(t, os.MkdirAll(filepath.Join(projectDir, "a", "b"), 0755))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "a/b/nonexistent.json")
+		assert.NoError(t, err)
+	})
+
+	t.Run("allows path with entirely nonexistent components", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "no/such/dir/file.json")
+		assert.NoError(t, err)
+	})
+
+	t.Run("rejects symlinked parent even when leaf does not exist", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
+
+		require.NoError(t, os.Symlink(outsideDir, filepath.Join(projectDir, "link")))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "link/does-not-exist.json")
+		assert.ErrorContains(t, err, "symbolic link")
+	})
+
+	t.Run("identifies the outermost symlink when multiple parents are symlinks", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		mid := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
+
+		// outside/inner -> outsideDir, project/outer -> mid
+		require.NoError(t, os.Symlink(outsideDir, filepath.Join(mid, "inner")))
+		require.NoError(t, os.Symlink(mid, filepath.Join(projectDir, "outer")))
+		require.NoError(t, os.WriteFile(filepath.Join(outsideDir, "s.txt"), []byte("S"), 0644))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "outer/inner/s.txt")
+		require.ErrorContains(t, err, "symbolic link")
+		// the outermost symlink "outer" should be reported, not "outer/inner"
+		assert.Contains(t, err.Error(), `"outer"`)
+	})
+
+	t.Run("rejects symlinked path on raw OsFs with absolute path", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
+		require.NoError(t, os.Symlink(outsideDir, filepath.Join(projectDir, "link")))
+		require.NoError(t, os.WriteFile(filepath.Join(outsideDir, "s.txt"), []byte("S"), 0644))
+
+		fs := afero.NewOsFs()
+		err := RejectSymlink(fs, filepath.Join(projectDir, "link", "s.txt"))
+		assert.ErrorContains(t, err, "symbolic link")
+	})
+
+	t.Run("rejects symlinked parent on MemMapFs is a no-op (MemMapFs has no Lstater symlink semantics)", func(t *testing.T) {
+		// MemMapFs does not model symlinks, so this is documenting that RejectSymlink
+		// is effectively pass-through on it. Production code uses OsFs/BasePathFs.
+		fs := afero.NewMemMapFs()
+		require.NoError(t, afero.WriteFile(fs, "a/b/c/file.yaml", []byte("ok"), 0644))
+		err := RejectSymlink(fs, "a/b/c/file.yaml")
+		assert.NoError(t, err)
+	})
+}
