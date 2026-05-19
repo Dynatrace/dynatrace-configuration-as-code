@@ -20,33 +20,47 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/spf13/afero"
 )
 
-// RejectSymlink checks whether path or any of its parent directory components is a symbolic link
-// and returns an error if so. Symlinks are rejected to prevent reading files outside the project
-// boundary such as credential files.
-//
-// Each component of the path is checked independently because lstat on the final component
-// transparently resolves intermediate symlinked directories, which would otherwise allow a
-// symlinked parent directory to bypass the check (see CWE-59).
+// symlinkDetectedError is returned when a symlink is found at a path component.
+type symlinkDetectedError struct {
+	path string
+}
+
+func (e *symlinkDetectedError) Error() string {
+	return fmt.Sprintf("%q is a symbolic link, which is not allowed for security reasons", e.path)
+}
+
+// RejectSymlinkRecursive checks whether path, or any of its parent directory components, is a symbolic link.
+// It returns an error if so.
+// Symlinks are rejected to prevent reading files outside the project boundary, such as credential files.
 //
 // On filesystems that do not support Lstat (e.g. afero.MemMapFs), this is a no-op.
-func RejectSymlink(fs afero.Fs, path string) error {
+func RejectSymlinkRecursive(fs afero.Fs, path string) error {
 	// if the file system (such as MemMapFs) does not support it, nothing to check
 	lstater, ok := fs.(afero.Lstater)
 	if !ok {
 		return nil
 	}
 
-	components := pathComponents(path)
-	return checkComponentsForSymlinks(lstater, path, components)
+	components := parentDirectories(path)
+
+	// iterate from outermost (root-most) to leaf so we fail on the highest offending segment
+	for _, component := range slices.Backward(components) {
+		if err := rejectSymlink(lstater, component); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-// pathComponents returns all parent directories and the path itself, from leaf to root.
+// parentDirectories returns all parent directories and the path itself, from leaf to root.
 // For example, "/a/b/c" returns ["/a/b/c", "/a/b", "/a"].
-func pathComponents(path string) []string {
+func parentDirectories(path string) []string {
 	cleaned := filepath.Clean(path)
 
 	var components []string
@@ -61,34 +75,20 @@ func pathComponents(path string) []string {
 	return components
 }
 
-// checkComponentsForSymlinks verifies that no path component is a symlink.
-// Checks from outermost component down to the leaf so errors report the highest offending segment.
-func checkComponentsForSymlinks(lstater afero.Lstater, originalPath string, components []string) error {
-	// iterate from outermost (root-most) to leaf
-	for i := len(components) - 1; i >= 0; i-- {
-		component := components[i]
-
-		fi, lstatCalled, err := lstater.LstatIfPossible(component)
-		if err != nil {
-			if os.IsNotExist(err) {
-				// component does not exist on disk — nothing to check here
-				continue
-			}
-			return fmt.Errorf("could not check file %q: %w", component, err)
+// rejectSymlink returns an error if the path is a symlink, nil otherwise.
+func rejectSymlink(lstater afero.Lstater, path string) error {
+	lstat, lstatCalled, err := lstater.LstatIfPossible(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// component does not exist on disk — nothing to check here
+			return nil
 		}
+		return fmt.Errorf("could not check file %q: %w", path, err)
+	}
 
-		if lstatCalled && fi.Mode()&os.ModeSymlink != 0 {
-			return symlinksError(originalPath, component)
-		}
+	if lstatCalled && lstat.Mode()&os.ModeSymlink != 0 {
+		return &symlinkDetectedError{path}
 	}
 
 	return nil
-}
-
-// symlinksError formats an error message for a symlink found at a path component.
-func symlinksError(fullPath, symlinkComponent string) error {
-	if symlinkComponent == filepath.Clean(fullPath) {
-		return fmt.Errorf("file %q is a symbolic link, which is not allowed for security reasons", fullPath)
-	}
-	return fmt.Errorf("path %q contains a symbolic link at %q, which is not allowed for security reasons", fullPath, symlinkComponent)
 }

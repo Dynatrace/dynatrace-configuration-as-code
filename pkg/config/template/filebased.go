@@ -75,7 +75,7 @@ func NewFileTemplate(fs afero.Fs, path string) (Template, error) {
 
 	log.Debug("Loading template for %s", sanitizedPath)
 
-	if err := files.RejectSymlink(fs, sanitizedPath); err != nil {
+	if err := files.RejectSymlinkRecursive(fs, sanitizedPath); err != nil {
 		return nil, err
 	}
 
