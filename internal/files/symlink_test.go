@@ -47,12 +47,12 @@ func TestRejectSymlinks(t *testing.T) {
 
 	t.Run("returns no error for nonexistent file on OsFs", func(t *testing.T) {
 		fs := afero.NewOsFs()
-		err := RejectSymlink(fs, filepath.Join(t.TempDir(), "nonexistent.yaml"))
+		err := RejectSymlink(fs, filepath.Join(resolvedTempDir(t), "nonexistent.yaml"))
 		assert.NoError(t, err)
 	})
 
 	t.Run("returns no error for regular file on OsFs", func(t *testing.T) {
-		dir := t.TempDir()
+		dir := resolvedTempDir(t)
 		filePath := filepath.Join(dir, "regular.yaml")
 		require.NoError(t, os.WriteFile(filePath, []byte("content"), 0644))
 
@@ -63,12 +63,12 @@ func TestRejectSymlinks(t *testing.T) {
 
 	t.Run("returns no error for directory on OsFs", func(t *testing.T) {
 		fs := afero.NewOsFs()
-		err := RejectSymlink(fs, t.TempDir())
+		err := RejectSymlink(fs, resolvedTempDir(t))
 		assert.NoError(t, err)
 	})
 
 	t.Run("rejects symlink on OsFs", func(t *testing.T) {
-		dir := t.TempDir()
+		dir := resolvedTempDir(t)
 		target := filepath.Join(dir, "target.yaml")
 		link := filepath.Join(dir, "link.yaml")
 
@@ -81,8 +81,8 @@ func TestRejectSymlinks(t *testing.T) {
 	})
 
 	t.Run("rejects symlink pointing outside project on BasePathFs", func(t *testing.T) {
-		projectDir := t.TempDir()
-		outsideDir := t.TempDir()
+		projectDir := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
 
 		secretPath := filepath.Join(outsideDir, "host-secret.txt")
 		require.NoError(t, os.WriteFile(secretPath, []byte("TOP-SECRET"), 0644))
@@ -95,8 +95,40 @@ func TestRejectSymlinks(t *testing.T) {
 		assert.ErrorContains(t, err, "symbolic link")
 	})
 
+	t.Run("rejects symlinked parent directory on BasePathFs", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
+
+		secretPath := filepath.Join(outsideDir, "secret.txt")
+		require.NoError(t, os.WriteFile(secretPath, []byte("TOP-SECRET"), 0644))
+
+		// project/secrets -> outsideDir
+		require.NoError(t, os.Symlink(outsideDir, filepath.Join(projectDir, "secrets")))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "secrets/secret.txt")
+		assert.ErrorContains(t, err, "symbolic link")
+	})
+
+	t.Run("rejects nested symlinked parent directory on BasePathFs", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+		outsideDir := resolvedTempDir(t)
+
+		nested := filepath.Join(outsideDir, "inner")
+		require.NoError(t, os.MkdirAll(nested, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(nested, "secret.txt"), []byte("X"), 0644))
+
+		require.NoError(t, os.MkdirAll(filepath.Join(projectDir, "a"), 0755))
+		// project/a/b -> outsideDir
+		require.NoError(t, os.Symlink(outsideDir, filepath.Join(projectDir, "a", "b")))
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlink(fs, "a/b/inner/secret.txt")
+		assert.ErrorContains(t, err, "symbolic link")
+	})
+
 	t.Run("returns no error for regular file on BasePathFs", func(t *testing.T) {
-		dir := t.TempDir()
+		dir := resolvedTempDir(t)
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "file.yaml"), []byte("ok"), 0644))
 
 		fs := afero.NewBasePathFs(afero.NewOsFs(), dir)
@@ -105,7 +137,7 @@ func TestRejectSymlinks(t *testing.T) {
 	})
 
 	t.Run("rejects symlink through ReadOnlyFs wrapper", func(t *testing.T) {
-		dir := t.TempDir()
+		dir := resolvedTempDir(t)
 		target := filepath.Join(dir, "target.yaml")
 		link := filepath.Join(dir, "link.yaml")
 
@@ -118,7 +150,7 @@ func TestRejectSymlinks(t *testing.T) {
 	})
 
 	t.Run("returns no error for regular file through ReadOnlyFs wrapper", func(t *testing.T) {
-		dir := t.TempDir()
+		dir := resolvedTempDir(t)
 		filePath := filepath.Join(dir, "file.yaml")
 		require.NoError(t, os.WriteFile(filePath, []byte("ok"), 0644))
 
@@ -145,6 +177,16 @@ func TestRejectSymlinks(t *testing.T) {
 		err := RejectSymlink(fs, "file.yaml")
 		assert.ErrorContains(t, err, "could not check file")
 	})
+}
+
+// resolvedTempDir returns t.TempDir() with all symlinks resolved.
+// Necessary because on macOS t.TempDir() lives under /var which is itself a symlink
+// (/var -> /private/var), and RejectSymlink walks every parent component.
+func resolvedTempDir(t *testing.T) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(t.TempDir())
+	require.NoError(t, err)
+	return resolved
 }
 
 // errLstatFs wraps an afero.Fs whose LstatIfPossible always returns an error.

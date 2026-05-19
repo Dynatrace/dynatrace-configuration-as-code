@@ -19,34 +19,60 @@ package files
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/afero"
 )
 
-// RejectSymlink checks whether path is a symbolic link and returns an error if so.
-// Symlinks are rejected to prevent reading files outside the project boundary such as credential files.
+// RejectSymlink checks whether path or any of its parent directory components is a symbolic link
+// and returns an error if so. Symlinks are rejected to prevent reading files outside the project
+// boundary such as credential files.
+//
+// Each component of the path is checked independently because lstat on the final component
+// transparently resolves intermediate symlinked directories, which would otherwise allow a
+// symlinked parent directory to bypass the check (see CWE-59).
+//
 // On filesystems that do not support Lstat (e.g. afero.MemMapFs), this is a no-op.
 func RejectSymlink(fs afero.Fs, path string) error {
-	// if file does not exist, nothing to check
-	exists, err := afero.Exists(fs, path)
-	if err != nil || !exists {
-		return nil
-	}
-
 	// if the file system (such as MemMapFs) does not support it, nothing to check
 	lstater, ok := fs.(afero.Lstater)
 	if !ok {
 		return nil
 	}
 
-	// check file
-	fi, lstatCalled, err := lstater.LstatIfPossible(path)
-	if err != nil {
-		return fmt.Errorf("could not check file %q: %w", path, err)
+	cleaned := filepath.Clean(path)
+
+	// collect path and all of its parent directories up to (but excluding) the filesystem root
+	var components []string
+	for current := cleaned; ; {
+		components = append(components, current)
+		parent := filepath.Dir(current)
+		if parent == current || parent == "." {
+			break
+		}
+		current = parent
 	}
 
-	if lstatCalled && fi.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("file %q is a symbolic link, which is not allowed for security reasons", path)
+	// check from outermost component down to the leaf so we fail on the highest offending segment
+	for i := len(components) - 1; i >= 0; i-- {
+		component := components[i]
+
+		exists, err := afero.Exists(fs, component)
+		if err != nil || !exists {
+			continue
+		}
+
+		fi, lstatCalled, err := lstater.LstatIfPossible(component)
+		if err != nil {
+			return fmt.Errorf("could not check file %q: %w", component, err)
+		}
+
+		if lstatCalled && fi.Mode()&os.ModeSymlink != 0 {
+			if component == cleaned {
+				return fmt.Errorf("file %q is a symbolic link, which is not allowed for security reasons", path)
+			}
+			return fmt.Errorf("path %q contains a symbolic link at %q, which is not allowed for security reasons", path, component)
+		}
 	}
 
 	return nil
