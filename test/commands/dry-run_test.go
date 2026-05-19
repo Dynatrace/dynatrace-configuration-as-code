@@ -19,6 +19,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -26,8 +27,10 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/oauth2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
@@ -90,21 +93,34 @@ func TestDryRunWithEnvRequirement(t *testing.T) {
 	})
 }
 
+type oAuthTransport struct {
+	t *testing.T
+}
+
+func (t *oAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	t.t.Fatalf("unexpected HTTP request made during dry run: %s", req.RequestURI)
+	return nil, nil
+}
+
 func dryRun(t *testing.T, fs afero.Fs, manifest string, environment string) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		t.Fatalf("unexpected HTTP request made during dry run: %s", req.RequestURI)
 	}))
 	defer server.Close()
 
+	ctx := context.WithValue(t.Context(), oauth2.HTTPClient, http.Client{
+		Transport: &oAuthTransport{t: t},
+	})
+
 	// ensure all URLs used in the manifest point at the test server
 	setAllURLEnvironmentVariables(t, server.URL)
 
 	// This causes a POST for all configs:
-	err := monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", manifest, environment))
+	err := monaco.RunWithContext(ctx, t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", manifest, environment))
 	assert.NoError(t, err)
 
 	// This causes a PUT for all configs:
-	err = monaco.Run(t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", manifest, environment))
+	err = monaco.RunWithContext(ctx, t, fs, fmt.Sprintf("monaco deploy %s --environment=%s --verbose --dry-run", manifest, environment))
 	assert.NoError(t, err)
 }
 
@@ -113,5 +129,6 @@ func setAllURLEnvironmentVariables(t *testing.T, url string) {
 	t.Setenv("URL_ENVIRONMENT_2", url)
 	t.Setenv("PLATFORM_URL_ENVIRONMENT_1", url)
 	t.Setenv("PLATFORM_URL_ENVIRONMENT_2", url)
-	t.Setenv("OAUTH_TOKEN_ENDPOINT", url)
+	// needs to be a dynatrace.com URL
+	t.Setenv("OAUTH_TOKEN_ENDPOINT", endpoints.Dynatrace.TokenURL)
 }
