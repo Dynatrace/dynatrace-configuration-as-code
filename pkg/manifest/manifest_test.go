@@ -68,7 +68,7 @@ func TestManifestLoading(t *testing.T) {
 	t.Setenv("ENV_CLIENT_ID", "dt02.id")
 	t.Setenv("ENV_CLIENT_SECRET", "dt02.secret")
 	t.Setenv("ENV_TOKEN_URL", "https://sso.dynatrace.com")
-	t.Setenv("ENV_API_URL", "https://api.url")
+	t.Setenv("ENV_API_URL", "https://api.dynatrace.com")
 	t.Setenv("ENV_UUID", "8f9935ee-2068-455d-85ce-47447f19d5d5")
 	t.Setenv("ENV_PLATFORM_TOKEN", "dt0s16.platformtoken")
 
@@ -228,7 +228,7 @@ func TestManifestLoading(t *testing.T) {
 				ApiUrl: &manifest.URLDefinition{
 					Type:  manifest.EnvironmentURLType,
 					Name:  "ENV_API_URL",
-					Value: "https://api.url",
+					Value: "https://api.dynatrace.com",
 				},
 				OAuth: manifest.OAuth{
 					ClientID: manifest.AuthSecret{

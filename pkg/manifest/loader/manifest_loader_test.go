@@ -2287,7 +2287,7 @@ accounts:
 - name: "name"
   accountUUID: 8f9935ee-2068-455d-85ce-47447f19d5d5
   apiUrl:
-    value: "https://[13::37]:42"
+    value: "https://example.dynatrace.com"
   oAuth:
     clientId:
       name: A_SECRET

@@ -42,6 +42,7 @@ func TestEnvResolution(t *testing.T) {
 
 		t.Setenv("ACCOUNT_SECRET_1", validUUID)
 		t.Setenv("ACCOUNT_SECRET_2", validUUID)
+		t.Setenv("ACCOUNT_SECRET_URL", "https://api.dynatrace.com")
 
 		cmd := account.Command(fs)
 		cmd.SetArgs([]string{"deploy", "--dry-run", "-m", deployManifest})
@@ -52,6 +53,7 @@ func TestEnvResolution(t *testing.T) {
 
 	t.Run("validates only selected account envs", func(t *testing.T) {
 		t.Setenv("ACCOUNT_SECRET_1", validUUID)
+		t.Setenv("ACCOUNT_SECRET_URL", "https://api.dynatrace.com")
 
 		cmd := account.Command(fs)
 		cmd.SetArgs([]string{"deploy", "-a", "monaco-test-account1", "--dry-run", "-m", deployManifest})
@@ -81,6 +83,7 @@ func TestEnvResolution(t *testing.T) {
 
 		// only one env of both is set
 		t.Setenv("ACCOUNT_SECRET_1", validUUID)
+		t.Setenv("ACCOUNT_SECRET_URL", "https://api.dynatrace.com")
 
 		cmd := account.Command(fs)
 		cmd.SetArgs([]string{"deploy", "--dry-run", "-m", deployManifest})

@@ -19,7 +19,9 @@ package loader
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -63,6 +65,13 @@ func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, er
 		if u, err := parseURLDefinition(c, *a.ApiUrl); err != nil {
 			return manifest.Account{}, fmt.Errorf("apiUrl: %w", err)
 		} else {
+			// Skip domain validation only when the URL is an unresolved environment variable,
+			// since parseURLDefinition stores a placeholder value in that case.
+			if u.Type == manifest.ValueURLType || !c.Opts.DoNotResolveEnvVars {
+				if err := validateAccountApiUrlDomain(u.Value); err != nil {
+					return manifest.Account{}, fmt.Errorf("apiUrl: %w", err)
+				}
+			}
 			urlDef = &u
 		}
 	}
@@ -144,4 +153,21 @@ func parseAccounts(c *Context, accounts []persistence.Account) (map[string]manif
 	}
 
 	return result, nil
+}
+
+// validateAccountApiUrlDomain restricts the account apiUrl to dynatrace-owned domains
+// to prevent an attacker-controlled manifest from redirecting account-management API
+// traffic (including the bearer-token Authorization header) to arbitrary hosts.
+func validateAccountApiUrlDomain(rawURL string) error {
+parsed, err := url.ParseRequestURI(rawURL)
+if err != nil {
+return fmt.Errorf("not a valid URL: %w", err)
+}
+
+host := strings.ToLower(parsed.Hostname())
+if strings.HasSuffix(host, ".dynatracelabs.com") || strings.HasSuffix(host, ".dynatrace.com") {
+return nil
+}
+
+return fmt.Errorf("host %q is not allowed: apiUrl must be on a '.dynatracelabs.com' or '.dynatrace.com' domain", host)
 }
