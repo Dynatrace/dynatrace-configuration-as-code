@@ -38,6 +38,11 @@ var spacesRegex = regexp.MustCompile(`\s+`)
 // Run is the entrypoint to run monaco for all integration tests.
 // It requires to specify the full command (`monaco [deploy]....`) and sets up the runner.
 func Run(t *testing.T, fs afero.Fs, command string) error {
+	return RunWithContext(t.Context(), t, fs, command)
+}
+
+// RunWithContext acts like Run but uses a predefined context instead of t.Context()
+func RunWithContext(ctx context.Context, t *testing.T, fs afero.Fs, command string) error {
 	// remove multiple spaces
 	c := spacesRegex.ReplaceAllString(command, " ")
 	c = strings.Trim(c, " ")
@@ -55,7 +60,7 @@ func Run(t *testing.T, fs afero.Fs, command string) error {
 	cmd.SetArgs(args)
 
 	// explicit cancel for each monaco run invocation
-	ctx, cancel := context.WithCancel(t.Context())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	t.Logf("Running command: %s", command)
