@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -315,7 +314,7 @@ func parseOAuth(context *Context, a *persistence.OAuth) (*manifest.OAuth, error)
 		// Skip domain validation only when the URL is an unresolved environment variable,
 		// since parseURLDefinition stores a placeholder value in that case.
 		if urlDef.Type == manifest.ValueURLType || !context.Opts.DoNotResolveEnvVars {
-			if err := validateTokenEndpointDomain(urlDef.Value); err != nil {
+			if err := validateDynatraceDomain(urlDef.Value); err != nil {
 				return nil, fmt.Errorf(`invalid "tokenEndpoint": %w`, err)
 			}
 		}
@@ -332,20 +331,6 @@ func parseOAuth(context *Context, a *persistence.OAuth) (*manifest.OAuth, error)
 		ClientSecret:  clientSecret,
 		TokenEndpoint: nil,
 	}, nil
-}
-
-func validateTokenEndpointDomain(rawURL string) error {
-	parsed, err := url.ParseRequestURI(rawURL)
-	if err != nil {
-		return fmt.Errorf("not a valid URL: %w", err)
-	}
-
-	host := parsed.Hostname()
-	if strings.HasSuffix(host, ".dynatracelabs.com") || strings.HasSuffix(host, ".dynatrace.com") {
-		return nil
-	}
-
-	return fmt.Errorf("host '%q' is not allowed: tokenEndpoint must be on a '.dynatracelabs.com' or '.dynatrace.com' domain", host)
 }
 
 func readManifestYAML(context *Context) (persistence.Manifest, error) {
