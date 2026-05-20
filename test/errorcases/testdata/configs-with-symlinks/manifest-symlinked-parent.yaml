@@ -1,0 +1,13 @@
+manifestVersion: 1.0
+projects:
+  - name: project-symlinked-parent
+environmentGroups:
+  - name: default
+    environments:
+      - name: test_env
+        url:
+          type: value
+          value: https://test.live.dynatrace.com
+        auth:
+          token:
+            name: SOME_TOKEN
