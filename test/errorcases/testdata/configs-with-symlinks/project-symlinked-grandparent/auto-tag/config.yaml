@@ -1,0 +1,7 @@
+configs:
+  - id: test-config
+    type:
+      api: auto-tag
+    config:
+      name: test
+      template: real-dir/data/nested/template.json
