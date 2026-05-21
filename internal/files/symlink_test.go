@@ -19,7 +19,7 @@
 package files
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -152,7 +152,7 @@ func TestRejectSymlinks(t *testing.T) {
 
 		fs := errLstatFs{Fs: afero.NewOsFs()}
 		err := RejectSymlinkRecursive(fs, filePath)
-		assert.ErrorContains(t, err, "could not check file")
+		assert.ErrorIs(t, err, anError)
 	})
 }
 
@@ -170,8 +170,10 @@ func resolvedTempDir(t *testing.T) string {
 type errLstatFs struct{ afero.Fs }
 
 func (f errLstatFs) LstatIfPossible(name string) (os.FileInfo, bool, error) {
-	return nil, true, fmt.Errorf("simulated lstat error")
+	return nil, true, anError
 }
+
+var anError = errors.New("an error")
 
 func TestRejectSymlinks_EdgeCases(t *testing.T) {
 
