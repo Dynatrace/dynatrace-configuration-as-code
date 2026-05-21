@@ -188,7 +188,7 @@ func TestRejectSymlinks_EdgeCases(t *testing.T) {
 		err := RejectSymlinkRecursive(fs, "a/b/c/secret.txt")
 		var symErr *symlinkDetectedError
 		require.ErrorAs(t, err, &symErr)
-		assert.Equal(t, "a/b/c", symErr.path)
+		assert.Equal(t, filepath.FromSlash("a/b/c"), symErr.path)
 	})
 
 	t.Run("rejects symlinked intermediate directory (not first parent)", func(t *testing.T) {
@@ -202,7 +202,7 @@ func TestRejectSymlinks_EdgeCases(t *testing.T) {
 		err := RejectSymlinkRecursive(fs, "configs/leak/sub/x.json")
 		var symErr *symlinkDetectedError
 		require.ErrorAs(t, err, &symErr)
-		assert.Equal(t, "configs/leak", symErr.path)
+		assert.Equal(t, filepath.FromSlash("configs/leak"), symErr.path)
 	})
 
 	t.Run("rejects path with .. that resolves through symlinked parent", func(t *testing.T) {
@@ -384,8 +384,12 @@ func TestParentDirectories(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			got := parentDirectories(tt.input)
-			assert.Equal(t, tt.want, got)
+			got := parentDirectories(filepath.FromSlash(tt.input))
+			want := make([]string, len(tt.want))
+			for i, w := range tt.want {
+				want[i] = filepath.FromSlash(w)
+			}
+			assert.Equal(t, want, got)
 		})
 	}
 }
