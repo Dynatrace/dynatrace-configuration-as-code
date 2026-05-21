@@ -331,6 +331,25 @@ func TestRejectSymlinks_EdgeCases(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("allows nonexistent directory path", func(t *testing.T) {
+		// A nonexistent directory is equivalent to the nonexistent file case:
+		// RejectSymlinkRecursive treats every path component uniformly and only
+		// fails on components that actually exist on disk and are symlinks.
+		projectDir := resolvedTempDir(t)
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlinkRecursive(fs, "no/such/directory")
+		assert.NoError(t, err)
+	})
+
+	t.Run("allows nonexistent directory path with trailing slash", func(t *testing.T) {
+		projectDir := resolvedTempDir(t)
+
+		fs := afero.NewBasePathFs(afero.NewOsFs(), projectDir)
+		err := RejectSymlinkRecursive(fs, "no/such/directory/")
+		assert.NoError(t, err)
+	})
+
 	t.Run("rejects symlinked parent even when leaf does not exist", func(t *testing.T) {
 		projectDir := resolvedTempDir(t)
 
