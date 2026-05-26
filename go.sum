@@ -5,8 +5,8 @@ github.com/anknown/darts v0.0.0-20151216065714-83ff685239e6/go.mod h1:pbiaLIeYLU
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20260520131852-5ec8d9c18472 h1:zQ2zmWiH4nB9rZaSe9zPUCmw56vALUrYyzzW1uWIwfU=
-github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20260520131852-5ec8d9c18472/go.mod h1:i7xYVSsz+Kzw/ra3p1+51to49j+GaaQ6s5RrZ8WJlSI=
+github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20260526104414-0204bca1b497 h1:ZQKeRt9gTtQb11mscX45lPr4t35c7hsEs49mGiFQ6c8=
+github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20260526104414-0204bca1b497/go.mod h1:i7xYVSsz+Kzw/ra3p1+51to49j+GaaQ6s5RrZ8WJlSI=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
