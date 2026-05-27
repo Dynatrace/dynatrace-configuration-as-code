@@ -6,6 +6,6 @@ configs:
     skip: false
   type:
     settings:
-      schema: builtin:span-attribute
-      schemaVersion: 0.0.32
+      schema: builtin:attribute-allow-list
+      schemaVersion: 0.0.19
       scope: environment

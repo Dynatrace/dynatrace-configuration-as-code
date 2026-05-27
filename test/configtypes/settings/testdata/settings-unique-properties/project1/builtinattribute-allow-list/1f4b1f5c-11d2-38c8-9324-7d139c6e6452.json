@@ -1,4 +1,4 @@
 {
     "key": "graphql.operation.name",
-    "masking": "NOT_MASKED"
+    "enabled": true
 }
