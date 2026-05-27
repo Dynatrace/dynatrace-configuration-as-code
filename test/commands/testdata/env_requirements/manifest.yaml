@@ -7,14 +7,14 @@ environmentGroups:
   - name: classic_env
     url:
       type: environment
-      value: ENVIRONMENT_SECRET
+      value: ENVIRONMENT_URL
     auth:
       token:
         name: ENVIRONMENT_SECRET
   - name: platform_oauth_env
     url:
       type: environment
-      value: ENVIRONMENT_SECRET
+      value: ENVIRONMENT_URL
     auth:
       token:
         name: ENVIRONMENT_SECRET
@@ -26,7 +26,7 @@ environmentGroups:
   - name: platform_token_env
     url:
       type: environment
-      value: ENVIRONMENT_SECRET
+      value: ENVIRONMENT_URL
     auth:
       token:
         name: ENVIRONMENT_SECRET
@@ -39,7 +39,7 @@ accounts:
     value: ACCOUNT_SECRET
   apiUrl:
     type: environment
-    value: ACCOUNT_SECRET
+    value: ACCOUNT_URL
   oAuth:
     clientId:
       name: ACCOUNT_SECRET

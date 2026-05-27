@@ -78,6 +78,7 @@ func TestDryRunWithEnvRequirement(t *testing.T) {
 				runner.WithManifestPath(manifest),
 				runner.WithSuffix("ENV_REQUIREMENTS_ENV_GROUP"),
 				runner.WithEnvVars(map[string]string{
+					"ENVIRONMENT_URL":    "https://env.apps.dynatrace.com",
 					"ENVIRONMENT_SECRET": "secret",
 				}),
 			},
@@ -87,6 +88,7 @@ func TestDryRunWithEnvRequirement(t *testing.T) {
 	})
 
 	t.Run("only account env vars are validated", func(t *testing.T) {
+		t.Setenv("ACCOUNT_URL", "https://api.dynatrace.com/")
 		t.Setenv("ACCOUNT_SECRET", "11111111-1111-1111-1111-111111111111") // valid uuid
 		err := monaco.Run(t, afero.NewOsFs(), fmt.Sprintf("monaco account deploy -m %s --verbose --dry-run", manifest))
 		assert.NoError(t, err)
