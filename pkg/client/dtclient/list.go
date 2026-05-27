@@ -44,7 +44,7 @@ type AddEntriesToResult func(body []byte) (receivedEntries int, err error)
 func listPaginated(ctx context.Context, client *corerest.Client, endpoint string, queryParams url.Values, schemaId string, addToResult AddEntriesToResult) error {
 	logger := slog.With("endpoint", endpoint, "schemaId", schemaId)
 
-	body, totalReceivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
+	body, totalReceivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: queryParams}, addToResult)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func listPaginated(ctx context.Context, client *corerest.Client, endpoint string
 	retryCount := uint(0)
 	for nextPageKey != "" {
 
-		body, receivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(endpoint, queryParams, nextPageKey), CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}, addToResult)
+		body, receivedCount, err := runAndProcessResponse(ctx, client, endpoint, corerest.RequestOptions{QueryParams: makeQueryParamsWithNextPageKey(endpoint, queryParams, nextPageKey)}, addToResult)
 		if err != nil {
 			var apiErr coreapi.APIError
 			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusBadRequest {

@@ -133,7 +133,12 @@ func TestNonUniqueNameUpserts_InactiveUpdateByName(t *testing.T) {
 	otherMonacoGeneratedUUID := uuid2.GenerateUUIDFromConfigId("test_project", "other-config_"+testSuffix)
 	secondExistingObjectUUID := getRandomUUID(t)
 
-	classicClient, err := clients.Factory().WithClassicURL(url).WithAccessToken(token).CreateClassicClientWithContext(t.Context())
+	classicClient, err := clients.Factory().
+		WithClassicURL(url).
+		WithAccessToken(token).
+		WithRateLimiter(true).
+		WithRetryOptions(&client.DefaultRetryOptions).
+		CreateClassicClientWithContext(t.Context())
 	require.NoError(t, err)
 
 	c, err := dtclient.NewClassicConfigClient(classicClient)
@@ -204,7 +209,7 @@ func getRandomUUID(t *testing.T) string {
 
 func createObjectViaDirectPut(t *testing.T, c *corerest.Client, url string, a api.API, id string, payload []byte) {
 	url = strings.TrimSuffix(url, "/")
-	res, err := coreapi.AsResponseOrError(c.PUT(t.Context(), a.URLPath+"/"+id, bytes.NewReader(payload), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	res, err := coreapi.AsResponseOrError(c.PUT(t.Context(), a.URLPath+"/"+id, bytes.NewReader(payload), corerest.RequestOptions{}))
 	require.NoError(t, err)
 
 	var dtEntity dtclient.DynatraceEntity

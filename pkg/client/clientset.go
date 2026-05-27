@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"net/url"
 	"runtime"
+	"time"
 
 	"golang.org/x/oauth2/clientcredentials"
 
@@ -194,7 +195,7 @@ type ServiceLevelObjectiveClient interface {
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
-var DefaultRetryOptions = rest.RetryOptions{MaxRetries: 10, ShouldRetryFunc: rest.RetryIfNotSuccess}
+var DefaultRetryOptions = rest.RetryOptions{MaxRetries: 10, DelayAfterRetry: time.Second, ShouldRetryFunc: rest.RetryIfTooManyRequestsOrServiceUnavailable}
 
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
@@ -343,7 +344,8 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 	}
 
 	if auth.AccessToken != nil {
-		cFactory = cFactory.WithAccessToken(auth.AccessToken.Value.Value()).
+		cFactory = cFactory.
+			WithAccessToken(auth.AccessToken.Value.Value()).
 			WithClassicURL(classicURL)
 		client, err := cFactory.CreateClassicClientWithContext(ctx)
 		if err != nil {

@@ -242,7 +242,12 @@ func findSimpleClassicURL(ctx context.Context, platformURL string) (classicUrl s
 	additionalHeaders := environment.GetAdditionalHTTPHeadersFromEnv()
 	classicUrl = strings.Replace(platformURL, ".apps.", ".live.", 1)
 
-	client, err := clients.Factory().WithClassicURL(classicUrl).WithCustomHeaders(additionalHeaders).CreateClassicClientWithContext(ctx)
+	client, err := clients.Factory().
+		WithClassicURL(classicUrl).
+		WithCustomHeaders(additionalHeaders).
+		WithRateLimiter(true).
+		WithRetryOptions(&client.DefaultRetryOptions).
+		CreateClassicClientWithContext(ctx)
 	if err != nil {
 		return "", false
 	}

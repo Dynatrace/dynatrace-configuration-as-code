@@ -61,7 +61,7 @@ func (d *ConfigClient) uploadExtension(ctx context.Context, api api.API, extensi
 		}, err
 	}
 
-	_, err = coreapi.AsResponseOrError(d.client.POST(ctx, api.URLPath, buffer, corerest.RequestOptions{ContentType: contentType, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	_, err = coreapi.AsResponseOrError(d.client.POST(ctx, api.URLPath, buffer, corerest.RequestOptions{ContentType: contentType}))
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("upload of %s failed: %w", extensionName, err)
 	}
@@ -82,7 +82,7 @@ type Properties struct {
 }
 
 func (d *ConfigClient) validateIfExtensionShouldBeUploaded(ctx context.Context, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
-	response, err := coreapi.AsResponseOrError(d.client.GET(ctx, apiPath+"/"+extensionName, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	response, err := coreapi.AsResponseOrError(d.client.GET(ctx, apiPath+"/"+extensionName, corerest.RequestOptions{}))
 	if err != nil {
 		if coreapi.IsNotFoundError(err) {
 			return extensionNeedsUpdate, nil
