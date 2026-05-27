@@ -63,8 +63,7 @@ func GetAccessTokenMetadata(ctx context.Context, client source, accessToken stri
 		return Response{}, fmt.Errorf("unable to marshal access token request data: %w", err)
 	}
 
-	resp, err := client.POST(ctx, accessTokenPath+"/lookup", bytes.NewReader(body), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
-
+	resp, err := client.POST(ctx, accessTokenPath+"/lookup", bytes.NewReader(body), corerest.RequestOptions{})
 	if err != nil {
 		return Response{}, fmt.Errorf("failed to query access token metadata: %w", err)
 	}

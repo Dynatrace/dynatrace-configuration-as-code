@@ -103,7 +103,7 @@ func (d *ConfigClient) Get(ctx context.Context, api api.API, id string) (json []
 		dtUrl = dtUrl + "/" + url.PathEscape(id)
 	}
 
-	response, err := coreapi.AsResponseOrError(d.client.GET(ctx, dtUrl, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	response, err := coreapi.AsResponseOrError(d.client.GET(ctx, dtUrl, corerest.RequestOptions{}))
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (d *ConfigClient) Delete(ctx context.Context, api api.API, id string) error
 	}
 	parsedURL = parsedURL.JoinPath(id)
 
-	_, err = coreapi.AsResponseOrError(d.client.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	_, err = coreapi.AsResponseOrError(d.client.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{}))
 	if err != nil {
 		if coreapi.IsNotFoundError(err) {
 			slog.DebugContext(ctx, "No config found to delete (HTTP 404 response)", slog.String("id", id))
@@ -263,7 +263,7 @@ func (d *ConfigClient) createDynatraceObject(ctx context.Context, objectName str
 		queryParams.Add("position", "PREPEND")
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.client.POST, endpoint, body, theApi, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.client.POST, endpoint, body, theApi, corerest.RequestOptions{QueryParams: queryParams})
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -342,7 +342,7 @@ func (d *ConfigClient) updateDynatraceObject(ctx context.Context, objectName str
 		}, nil
 	}
 
-	_, err := d.callWithRetryOnKnowTimingIssue(ctx, d.client.PUT, endpoint, payload, theApi, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests})
+	_, err := d.callWithRetryOnKnowTimingIssue(ctx, d.client.PUT, endpoint, payload, theApi, corerest.RequestOptions{})
 	if err != nil {
 		return DynatraceEntity{}, err
 	}

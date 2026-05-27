@@ -384,7 +384,7 @@ func (d *SettingsClient) ListSchemas(ctx context.Context) (schemas SchemaList, e
 	queryParams.Add("fields", "ordered,schemaId,ownerBasedAccessControl")
 
 	// getting all schemas does not have pagination
-	resp, err := coreapi.AsResponseOrError(d.client.GET(ctx, d.settingsSchemaAPIPath, corerest.RequestOptions{QueryParams: queryParams, CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	resp, err := coreapi.AsResponseOrError(d.client.GET(ctx, d.settingsSchemaAPIPath, corerest.RequestOptions{QueryParams: queryParams}))
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET schemas: %w", err)
 	}
@@ -409,7 +409,7 @@ func (d *SettingsClient) GetSchema(ctx context.Context, schemaID string) (constr
 
 	ret := Schema{SchemaId: schemaID}
 	endpoint := d.settingsSchemaAPIPath + "/" + schemaID
-	r, err := coreapi.AsResponseOrError(d.client.GET(ctx, endpoint, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	r, err := coreapi.AsResponseOrError(d.client.GET(ctx, endpoint, corerest.RequestOptions{}))
 	if err != nil {
 		return Schema{}, err
 	}
@@ -856,7 +856,7 @@ func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSet
 }
 
 func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {
-	resp, err := coreapi.AsResponseOrError(d.client.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	resp, err := coreapi.AsResponseOrError(d.client.GET(ctx, d.settingsObjectAPIPath+"/"+objectId, corerest.RequestOptions{}))
 	if err != nil {
 		return nil, err
 	}
@@ -870,7 +870,7 @@ func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *Downloa
 }
 
 func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
-	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{}))
 	if err != nil {
 		if coreapi.IsNotFoundError(err) {
 			slog.DebugContext(ctx, "No settings object found to delete (HTTP 404 response)", slog.String("id", objectID))

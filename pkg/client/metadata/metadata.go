@@ -50,7 +50,7 @@ func GetDynatraceClassicURL(ctx context.Context, platformClient corerest.Client)
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
-	resp, err := coreapi.AsResponseOrError(platformClient.GET(ctx, ClassicEnvironmentDomainPath, corerest.RequestOptions{CustomShouldRetryFunc: corerest.RetryIfTooManyRequests}))
+	resp, err := coreapi.AsResponseOrError(platformClient.GET(ctx, ClassicEnvironmentDomainPath, corerest.RequestOptions{}))
 	if err != nil {
 		apiErr := coreapi.APIError{}
 		if errors.As(err, &apiErr) && apiErr.StatusCode >= 401 && apiErr.StatusCode <= 403 {
