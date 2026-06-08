@@ -34,7 +34,6 @@ func Validate(projects []project.Project) error {
 	defaultValidators := []Validator{
 		classic.NewValidator(),
 		classic.NewDeprecatedApiValidator(),
-		&setting.DeprecatedSchemaValidator{},
 		&setting.InsertAfterSameScopeValidator{},
 	}
 

@@ -28,29 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
 
-type DeprecatedSchemaValidator struct{}
-
-var deprecatedSchemas = map[string]string{
-	"builtin:span-attribute":       "this setting was replaced by 'builtin:attribute-allow-list' and 'builtin:attribute-masking'",
-	"builtin:span-event-attribute": "this setting was replaced by 'builtin:attribute-allow-list' and 'builtin:attribute-masking'",
-	"builtin:resource-attribute":   "this setting was replaced by 'builtin:attribute-allow-list' and 'builtin:attribute-masking'",
-}
-
-// Validate checks for each settings type whether it is using a deprecated schema.
-func (v *DeprecatedSchemaValidator) Validate(_ []project.Project, c config.Config) error {
-
-	s, ok := c.Type.(config.SettingsType)
-	if !ok {
-		return nil
-	}
-
-	if msg, deprecated := deprecatedSchemas[s.SchemaId]; deprecated {
-		log.With(log.CoordinateAttr(c.Coordinate), log.EnvironmentAttr(c.Environment, c.Group)).Warn("Schema '%s' is deprecated - please update your configurations: %s", s.SchemaId, msg)
-	}
-
-	return nil
-}
-
 var (
 	errDiffSchema                = errors.New("different schemas")
 	errDiffScope                 = errors.New("different scopes")
