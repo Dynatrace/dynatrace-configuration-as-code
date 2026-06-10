@@ -33,6 +33,7 @@ import (
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
 )
@@ -60,8 +61,11 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		env2, ok := os.LookupEnv("ENVIRONMENT_ID_2")
 		require.True(t, ok)
 
+		accInfo := account.AccountInfo{Name: accountName, AccountUUID: accountUUID}
+		client := clients[accInfo]
 		check := AccountResourceChecker{
-			Client:      clients[account.AccountInfo{Name: accountName, AccountUUID: accountUUID}],
+			Client:      client,
+			AccClient:   deployer.NewClient(accInfo, client),
 			RandomizeFn: o.randomize,
 		}
 
@@ -88,7 +92,7 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 			// CHECK IF RESOURCES ARE DELETED
 			check.UserNotAvailable(t, accountUUID, myEmail)
-			check.ServiceUserNotAvailable(t, accountUUID, myServiceUserName)
+			check.ServiceUserNotAvailable(t, myServiceUserName)
 			check.PolicyNotAvailable(t, "account", accountUUID, myPolicy)
 			check.PolicyNotAvailable(t, "environment", env2, myPolicy2)
 			check.GroupNotAvailable(t, accountUUID, myGroup)
@@ -101,25 +105,25 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 
 		// CHECK IF RESOURCES ARE INDEED DEPLOYED
 		check.UserAvailable(t, accountUUID, myEmail)
-		check.ServiceUserAvailable(t, accountUUID, myServiceUserName)
+		check.ServiceUserAvailable(t, myServiceUserName)
 		check.PolicyAvailable(t, "account", accountUUID, myPolicy)
 		check.PolicyAvailable(t, "environment", env2, myPolicy2)
-		check.GroupAvailable(t, accountUUID, myGroup)
-		check.BoundaryAvailable(t, accountUUID, myBoundary)
+		check.GroupAvailable(t, myGroup)
+		check.BoundaryAvailable(t, myBoundary)
 
 		// Group created with federatedAttributeValues should be a group with SAML owner
-		samlGroup := check.GetGroupByName(t, accountUUID, mySAMLGroup)
+		samlGroup := check.GetGroupByName(t, mySAMLGroup)
 		require.EqualValues(t, "SAML", samlGroup.Owner)
 
 		// Group created without federatedAttributeValues should be a group with LOCAL owner
-		localGroup := check.GetGroupByName(t, accountUUID, myLocalGroup)
+		localGroup := check.GetGroupByName(t, myLocalGroup)
 		require.EqualValues(t, "LOCAL", localGroup.Owner)
 
-		check.PolicyBindingsCount(t, accountUUID, "environment", env2, myGroup, 2)
+		check.PolicyBindingsCount(t, "environment", env2, myGroup, 2)
 		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, myPolicy2, env2, myDefaultBoundaries)
 		check.EnvironmentPolicyBinding(t, accountUUID, myGroup, "Environment role - Replay session data without masking", env2, []string{})
 
-		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 2)
+		check.PolicyBindingsCount(t, "account", accountUUID, myGroup, 2)
 		check.AccountPolicyBinding(t, accountUUID, myGroup, "Environment role - Access environment", []string{})
 		check.AccountPolicyBinding(t, accountUUID, myGroup, myPolicy, myDefaultBoundaries)
 
@@ -164,8 +168,8 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		require.NoError(t, err)
 
 		// CHECK BINDINGS ARE REMOVED
-		check.PolicyBindingsCount(t, accountUUID, "environment", env2, myGroup, 1)
-		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 1)
+		check.PolicyBindingsCount(t, "environment", env2, myGroup, 1)
+		check.PolicyBindingsCount(t, "account", accountUUID, myGroup, 1)
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 3)
 
 		// CHECK BOUNDARY BINDING UPDATE
@@ -187,8 +191,8 @@ func TestDeployAndDelete_AllResources(t *testing.T) {
 		err = cli.Execute()
 		require.NoError(t, err)
 
-		check.PolicyBindingsCount(t, accountUUID, "environment", env2, myGroup, 0)
-		check.PolicyBindingsCount(t, accountUUID, "account", accountUUID, myGroup, 0)
+		check.PolicyBindingsCount(t, "environment", env2, myGroup, 0)
+		check.PolicyBindingsCount(t, "account", accountUUID, myGroup, 0)
 		check.PermissionBindingsCount(t, accountUUID, myGroup, 0)
 	})
 }
@@ -214,33 +218,24 @@ func getPolicyIdByName(ctx context.Context, cl *accounts.Client, name, level, le
 	return "", false
 }
 
-func getGroupIdByName(ctx context.Context, cl *accounts.Client, accountUUID, name string) (string, bool) {
-	all, _, _ := cl.GroupManagementAPI.GetGroups(ctx, accountUUID).Execute()
-	p, found := getElementInSlice(all.GetItems(), func(el accountmanagement.GetGroupDto) bool {
-		return el.Name == name
-	})
-	if found && p != nil {
-		return p.GetUuid(), found
-	}
-	return "", false
-
-}
-
 type AccountResourceChecker struct {
 	Client      *accounts.Client
+	AccClient   *deployer.AccountManagementClient
 	RandomizeFn func(string) string
 }
 
-func (a AccountResourceChecker) ServiceUserAvailable(t *testing.T, accountUUID, name string) {
+func (a AccountResourceChecker) ServiceUserAvailable(t *testing.T, name string) {
 	expectedName := a.randomize(name)
-	allServiceUsers := a.getAllServiceUsers(t, accountUUID)
-	assertElementInSlice(t, allServiceUsers, func(s accountmanagement.ExternalServiceUserDto) bool { return s.Name == expectedName })
+	_, err := a.AccClient.GetServiceUserByName(t.Context(), expectedName)
+	require.NoError(t, err)
 }
 
-func (a AccountResourceChecker) ServiceUserNotAvailable(t *testing.T, accountUUID, name string) {
+func (a AccountResourceChecker) ServiceUserNotAvailable(t *testing.T, name string) {
 	expectedName := a.randomize(name)
-	allServiceUsers := a.getAllServiceUsers(t, accountUUID)
-	assertElementNotInSlice(t, allServiceUsers, func(s accountmanagement.ExternalServiceUserDto) bool { return s.Name == expectedName })
+	_, err := a.AccClient.GetServiceUserByName(t.Context(), expectedName)
+	require.Error(t, err)
+	expErr := &deployer.ResourceNotFoundError{}
+	require.ErrorAs(t, err, &expErr)
 }
 
 func (a AccountResourceChecker) UserAvailable(t *testing.T, accountUUID, email string) {
@@ -258,30 +253,28 @@ func (a AccountResourceChecker) UserNotAvailable(t *testing.T, accountUUID, emai
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
 
-func (a AccountResourceChecker) GetGroupByName(t *testing.T, accountUUID, groupName string) *accountmanagement.GetGroupDto {
+func (a AccountResourceChecker) GetGroupByName(t *testing.T, groupName string) *accountmanagement.GetGroupDto {
 	expectedGroupName := a.randomize(groupName)
-	all, _, err := a.Client.GroupManagementAPI.GetGroups(t.Context(), accountUUID).Execute()
-	require.NotNil(t, all)
+	foundGroups, err := a.AccClient.GetGroupsByName(t.Context(), expectedGroupName)
 	require.NoError(t, err)
-	group, _ := assertElementInSlice(t, all.GetItems(), func(el accountmanagement.GetGroupDto) bool { return el.Name == expectedGroupName })
-	return group
+	require.GreaterOrEqual(t, len(foundGroups), 1)
+	return &foundGroups[0]
 }
 
-func (a AccountResourceChecker) GetBoundaryByName(t *testing.T, accountUUID string, boundaryName string) *accountmanagement.PolicyBoundaryOverview {
+func (a AccountResourceChecker) GetBoundaryByName(t *testing.T, boundaryName string) *accountmanagement.PolicyBoundaryOverview {
 	expectedBoundaryName := a.randomize(boundaryName)
-	all, _, err := a.Client.PolicyManagementAPI.GetPolicyBoundaries(t.Context(), accountUUID).Execute()
-	require.NotNil(t, all)
+
+	boundary, err := a.AccClient.GetBoundaryByName(t.Context(), expectedBoundaryName)
 	require.NoError(t, err)
-	boundary, _ := assertElementInSlice(t, all.GetContent(), func(el accountmanagement.PolicyBoundaryOverview) bool { return el.Name == expectedBoundaryName })
 	return boundary
 }
 
-func (a AccountResourceChecker) GroupAvailable(t *testing.T, accountUUID, groupName string) {
-	_ = a.GetGroupByName(t, accountUUID, groupName)
+func (a AccountResourceChecker) GroupAvailable(t *testing.T, groupName string) {
+	_ = a.GetGroupByName(t, groupName)
 }
 
-func (a AccountResourceChecker) BoundaryAvailable(t *testing.T, accountUUID, boundaryName string) {
-	_ = a.GetBoundaryByName(t, accountUUID, boundaryName)
+func (a AccountResourceChecker) BoundaryAvailable(t *testing.T, boundaryName string) {
+	_ = a.GetBoundaryByName(t, boundaryName)
 }
 
 func (a AccountResourceChecker) PolicyAvailable(t *testing.T, levelType, levelId, policyName string) {
@@ -322,17 +315,16 @@ func (a AccountResourceChecker) EnvironmentPolicyBinding(t *testing.T, accountUU
 	require.True(t, found)
 
 	expectedGroupName := a.randomize(groupName)
-	gid, found := getGroupIdByName(t.Context(), a.Client, accountUUID, expectedGroupName)
-	require.True(t, found)
+	gid := a.GetGroupByName(t, expectedGroupName).GetUuid()
 
 	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(t.Context(), environmentID, "environment").Execute()
 	require.NoError(t, err)
 	require.NotNil(t, envPolBindings)
 
-	a.AssertPolicyBinding(t, accountUUID, pid, gid, envPolBindings.PolicyBindings, boundaries)
+	a.AssertPolicyBinding(t, pid, gid, envPolBindings.PolicyBindings, boundaries)
 }
 
-func (a AccountResourceChecker) AssertPolicyBinding(t *testing.T, accountUUID, pid, gid string, bindings []accountmanagement.Binding, boundaries []string) {
+func (a AccountResourceChecker) AssertPolicyBinding(t *testing.T, pid, gid string, bindings []accountmanagement.Binding, boundaries []string) {
 	idx := slices.IndexFunc(bindings, func(el accountmanagement.Binding) bool {
 		return el.PolicyUuid == pid && slices.Contains(el.Groups, gid)
 	})
@@ -340,15 +332,14 @@ func (a AccountResourceChecker) AssertPolicyBinding(t *testing.T, accountUUID, p
 	assert.Len(t, bindings[idx].Boundaries, len(boundaries))
 	boundaryIDs := make([]string, 0, len(boundaries))
 	for _, boundary := range boundaries {
-		boundaryIDs = append(boundaryIDs, a.GetBoundaryByName(t, accountUUID, a.randomize(boundary)).Uuid)
+		boundaryIDs = append(boundaryIDs, a.GetBoundaryByName(t, a.randomize(boundary)).Uuid)
 	}
 	require.ElementsMatch(t, boundaryIDs, bindings[idx].Boundaries)
 }
 
-func (a AccountResourceChecker) PolicyBindingsCount(t *testing.T, accountUUID string, levelType string, levelId string, groupName string, number int) {
+func (a AccountResourceChecker) PolicyBindingsCount(t *testing.T, levelType string, levelId string, groupName string, number int) {
 	expectedGroupName := a.randomize(groupName)
-	gid, found := getGroupIdByName(t.Context(), a.Client, accountUUID, expectedGroupName)
-	require.True(t, found)
+	gid := a.GetGroupByName(t, expectedGroupName).GetUuid()
 
 	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(t.Context(), levelId, levelType).Execute()
 	require.NoError(t, err)
@@ -371,19 +362,17 @@ func (a AccountResourceChecker) AccountPolicyBinding(t *testing.T, accountUUID, 
 	require.True(t, found)
 
 	expectedGroupName := a.randomize(groupName)
-	gid, found := getGroupIdByName(t.Context(), a.Client, accountUUID, expectedGroupName)
-	require.True(t, found)
+	gid := a.GetGroupByName(t, expectedGroupName).GetUuid()
 
 	envPolBindings, _, err := a.Client.PolicyManagementAPI.GetAllLevelPoliciesBindings(t.Context(), accountUUID, "account").Execute()
 	require.NoError(t, err)
 	require.NotNil(t, envPolBindings)
-	a.AssertPolicyBinding(t, accountUUID, pid, gid, envPolBindings.PolicyBindings, boundaries)
+	a.AssertPolicyBinding(t, pid, gid, envPolBindings.PolicyBindings, boundaries)
 }
 
 func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, scopeType, scope, permissionName, groupName string) {
 	expectedGroupName := a.randomize(groupName)
-	gid, found := getGroupIdByName(t.Context(), a.Client, accountUUID, expectedGroupName)
-	require.True(t, found)
+	gid := a.GetGroupByName(t, expectedGroupName).GetUuid()
 
 	permissions, _, err := a.Client.PermissionManagementAPI.GetGroupPermissions(t.Context(), accountUUID, gid).Execute()
 	require.NoError(t, err)
@@ -398,8 +387,7 @@ func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, sco
 
 func (a AccountResourceChecker) PermissionBindingsCount(t *testing.T, accountUUID, groupName string, count int) {
 	expectedGroupName := a.randomize(groupName)
-	gid, found := getGroupIdByName(t.Context(), a.Client, accountUUID, expectedGroupName)
-	require.True(t, found)
+	gid := a.GetGroupByName(t, expectedGroupName).GetUuid()
 
 	permissions, _, err := a.Client.PermissionManagementAPI.GetGroupPermissions(t.Context(), accountUUID, gid).Execute()
 	require.NoError(t, err)
@@ -409,27 +397,4 @@ func (a AccountResourceChecker) PermissionBindingsCount(t *testing.T, accountUUI
 
 func (a AccountResourceChecker) randomize(in string) string {
 	return a.RandomizeFn(in)
-}
-
-func (a AccountResourceChecker) getAllServiceUsers(t *testing.T, accountUUID string) []accountmanagement.ExternalServiceUserDto {
-	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
-	const pageSize = 1000
-	page := (int32)(1)
-	for {
-		r := a.getServiceUsersPage(t, accountUUID, page, pageSize)
-		serviceUsers = append(serviceUsers, r.Results...)
-		if r.NextPageKey == nil {
-			break
-		}
-		page++
-	}
-	return serviceUsers
-}
-
-func (a AccountResourceChecker) getServiceUsersPage(t *testing.T, accountUUID string, page int32, pageSize int32) *accountmanagement.ExternalServiceUsersPageDto {
-	r, resp, err := a.Client.ServiceUserManagementAPI.GetServiceUsersFromAccount(t.Context(), accountUUID).Page(page).PageSize(pageSize).Execute()
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-	defer resp.Body.Close()
-	return r
 }
