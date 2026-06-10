@@ -6,6 +6,10 @@ delete:
   - type: group
     name: My Group%RAND%
   - type: group
+    name: My SAML Group%RAND%
+  - type: group
+    name: My LOCAL Group%RAND%
+  - type: group
     name: "My Group with policies defined via policy: myName %RAND%"
   - type: policy
     name: My Policy%RAND%
