@@ -42,24 +42,24 @@ type (
 	ServiceUser    = accountmanagement.ServiceUserDto
 	ManagementZone = accountmanagement.ManagementZoneResourceDto
 
-	accountManagementClient struct {
+	AccountManagementClient struct {
 		accountInfo account.AccountInfo
 		client      *accounts.Client
 	}
 )
 
-func NewClient(info account.AccountInfo, client *accounts.Client) *accountManagementClient {
-	return &accountManagementClient{
+func NewClient(info account.AccountInfo, client *accounts.Client) *AccountManagementClient {
+	return &AccountManagementClient{
 		accountInfo: info,
 		client:      client,
 	}
 }
 
-func (c *accountManagementClient) getAccountInfo() account.AccountInfo {
+func (c *AccountManagementClient) getAccountInfo() account.AccountInfo {
 	return c.accountInfo
 }
 
-func (c *accountManagementClient) getBoundaryIds(ctx context.Context) (map[string]remoteId, error) {
+func (c *AccountManagementClient) getBoundaryIds(ctx context.Context) (map[string]remoteId, error) {
 	boundaries, err := c.getBoundaries(ctx)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (c *accountManagementClient) getBoundaryIds(ctx context.Context) (map[strin
 	return result, nil
 }
 
-func (c *accountManagementClient) getGlobalPolicies(ctx context.Context) (map[string]remoteId, error) {
+func (c *AccountManagementClient) getGlobalPolicies(ctx context.Context) (map[string]remoteId, error) {
 	globalPolicies, resp, err := c.client.PolicyManagementAPI.GetLevelPolicies(ctx, "global", "global").Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable get global policies"); err != nil {
@@ -86,7 +86,7 @@ func (c *accountManagementClient) getGlobalPolicies(ctx context.Context) (map[st
 	return result, nil
 }
 
-func (c *accountManagementClient) getAllGroups(ctx context.Context) (map[string]remoteId, error) {
+func (c *AccountManagementClient) getAllGroups(ctx context.Context) (map[string]remoteId, error) {
 	groups, resp, err := c.client.GroupManagementAPI.GetGroups(ctx, c.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable get all groups for account "+c.accountInfo.AccountUUID); err != nil {
@@ -100,7 +100,7 @@ func (c *accountManagementClient) getAllGroups(ctx context.Context) (map[string]
 
 }
 
-func (c *accountManagementClient) getManagementZones(ctx context.Context) ([]ManagementZone, error) {
+func (c *AccountManagementClient) getManagementZones(ctx context.Context) ([]ManagementZone, error) {
 	envResources, resp, err := c.client.EnvironmentManagementAPI.GetEnvironmentResources(ctx, c.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to get environment resources for account "+c.accountInfo.AccountUUID); err != nil {
@@ -112,10 +112,10 @@ func (c *accountManagementClient) getManagementZones(ctx context.Context) ([]Man
 	return envResources.ManagementZoneResources, nil
 }
 
-func (c *accountManagementClient) upsertBoundary(ctx context.Context, boundaryId string, boundary Boundary) (remoteId, error) {
+func (c *AccountManagementClient) upsertBoundary(ctx context.Context, boundaryId string, boundary Boundary) (remoteId, error) {
 	if boundaryId == "" {
 		slog.DebugContext(ctx, "Trying to get boundary", slog.String("name", boundary.Name))
-		bnd, err := c.getBoundaryByName(ctx, boundary.Name)
+		bnd, err := c.GetBoundaryByName(ctx, boundary.Name)
 		if err != nil {
 			var rnfErr *ResourceNotFoundError
 			if !errors.As(err, &rnfErr) {
@@ -131,7 +131,7 @@ func (c *accountManagementClient) upsertBoundary(ctx context.Context, boundaryId
 	return c.updateBoundary(ctx, boundaryId, boundary)
 }
 
-func (c *accountManagementClient) updateBoundary(ctx context.Context, boundaryId string, boundary Boundary) (string, error) {
+func (c *AccountManagementClient) updateBoundary(ctx context.Context, boundaryId string, boundary Boundary) (string, error) {
 	slog.DebugContext(ctx, "Trying to update boundary", slog.String("name", boundary.Name), slog.String("uuid", boundaryId))
 	_, resp, err := c.client.PolicyManagementAPI.PutPolicyBoundary(ctx, boundaryId, c.accountInfo.AccountUUID).PolicyBoundaryDto(boundary).Execute()
 	defer closeResponseBody(resp)
@@ -147,7 +147,7 @@ func (c *accountManagementClient) updateBoundary(ctx context.Context, boundaryId
 	return boundaryId, nil
 }
 
-func (c *accountManagementClient) createBoundary(ctx context.Context, boundary Boundary) (string, error) {
+func (c *AccountManagementClient) createBoundary(ctx context.Context, boundary Boundary) (string, error) {
 	createdBoundary, resp, err := c.client.PolicyManagementAPI.PostPolicyBoundary(ctx, c.accountInfo.AccountUUID).PolicyBoundaryDto(boundary).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to create boundary with name: "+boundary.Name); err != nil {
@@ -161,7 +161,7 @@ func (c *accountManagementClient) createBoundary(ctx context.Context, boundary B
 	return createdBoundary.Uuid, nil
 }
 
-func (c *accountManagementClient) getBoundaryByName(ctx context.Context, name string) (*accountmanagement.PolicyBoundaryOverview, error) {
+func (c *AccountManagementClient) GetBoundaryByName(ctx context.Context, name string) (*accountmanagement.PolicyBoundaryOverview, error) {
 	boundaries, err := c.getBoundaries(ctx)
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func (c *accountManagementClient) getBoundaryByName(ctx context.Context, name st
 	return foundBoundary, nil
 }
 
-func (c *accountManagementClient) getBoundaries(ctx context.Context) ([]accountmanagement.PolicyBoundaryOverview, error) {
+func (c *AccountManagementClient) getBoundaries(ctx context.Context) ([]accountmanagement.PolicyBoundaryOverview, error) {
 	boundaries := []accountmanagement.PolicyBoundaryOverview{}
 	const pageSize = 100
 	for page := (int32)(1); page < math.MaxInt32; page++ {
@@ -202,7 +202,7 @@ func (c *accountManagementClient) getBoundaries(ctx context.Context) ([]accountm
 	return boundaries, nil
 }
 
-func (c *accountManagementClient) getBoundariesPage(ctx context.Context, accountUUID string, page int32, pageSize int32) (*accountmanagement.PolicyBoundaryDtoList, error) {
+func (c *AccountManagementClient) getBoundariesPage(ctx context.Context, accountUUID string, page int32, pageSize int32) (*accountmanagement.PolicyBoundaryDtoList, error) {
 	r, resp, err := c.client.PolicyManagementAPI.GetPolicyBoundaries(ctx, accountUUID).Page(page).Size(pageSize).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "failed to get boundaries"); err != nil {
@@ -214,7 +214,7 @@ func (c *accountManagementClient) getBoundariesPage(ctx context.Context, account
 	return r, nil
 }
 
-func (c *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel string, policyLevelId string, policyId string, policy Policy) (remoteId, error) {
+func (c *AccountManagementClient) upsertPolicy(ctx context.Context, policyLevel string, policyLevelId string, policyId string, policy Policy) (remoteId, error) {
 	if policyId != "" {
 
 		slog.DebugContext(ctx, "Trying to update policy", slog.String("uuid", policyId))
@@ -259,7 +259,7 @@ func (c *accountManagementClient) upsertPolicy(ctx context.Context, policyLevel 
 	return existingPolicies[0].GetUuid(), nil
 }
 
-func (c *accountManagementClient) upsertGroup(ctx context.Context, groupId string, group Group) (remoteId, error) {
+func (c *AccountManagementClient) upsertGroup(ctx context.Context, groupId string, group Group) (remoteId, error) {
 	if groupId != "" {
 		slog.DebugContext(ctx, "Trying to update group", slog.String("id", groupId))
 		existingGroup, err := c.getGroupByID(ctx, groupId)
@@ -270,7 +270,7 @@ func (c *accountManagementClient) upsertGroup(ctx context.Context, groupId strin
 		return c.updateExistingGroup(ctx, *existingGroup, group)
 	}
 
-	existingGroupsWithName, err := c.getGroupsByName(ctx, group.Name)
+	existingGroupsWithName, err := c.GetGroupsByName(ctx, group.Name)
 	if err != nil {
 		return "", err
 	}
@@ -286,7 +286,7 @@ func (c *accountManagementClient) upsertGroup(ctx context.Context, groupId strin
 	return c.updateExistingGroup(ctx, existingGroupsWithName[0], group)
 }
 
-func (c *accountManagementClient) getGroupByID(ctx context.Context, groupID string) (*accountmanagement.GetGroupDto, error) {
+func (c *AccountManagementClient) getGroupByID(ctx context.Context, groupID string) (*accountmanagement.GetGroupDto, error) {
 	result, resp, err := c.client.GroupManagementAPI.GetGroups(ctx, c.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to get group with ID: "+groupID); err != nil {
@@ -302,7 +302,7 @@ func (c *accountManagementClient) getGroupByID(ctx context.Context, groupID stri
 	return nil, fmt.Errorf("unable to get group with ID: %s", groupID)
 }
 
-func (c *accountManagementClient) getGroupsByName(ctx context.Context, name string) ([]accountmanagement.GetGroupDto, error) {
+func (c *AccountManagementClient) GetGroupsByName(ctx context.Context, name string) ([]accountmanagement.GetGroupDto, error) {
 	groupList, resp, err := c.client.GroupManagementAPI.GetGroups(ctx, c.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to get group with name: "+name); err != nil {
@@ -319,7 +319,7 @@ func (c *accountManagementClient) getGroupsByName(ctx context.Context, name stri
 	return groupsMatchingName, nil
 }
 
-func (c *accountManagementClient) createGroup(ctx context.Context, group Group) (remoteId, error) {
+func (c *AccountManagementClient) createGroup(ctx context.Context, group Group) (remoteId, error) {
 	var createdGroups []accountmanagement.GetGroupDto
 	createdGroups, resp, err := c.client.GroupManagementAPI.
 		CreateGroups(ctx, c.accountInfo.AccountUUID).
@@ -338,7 +338,7 @@ func (c *accountManagementClient) createGroup(ctx context.Context, group Group) 
 	return createdGroups[0].GetUuid(), nil
 }
 
-func (c *accountManagementClient) updateExistingGroup(ctx context.Context, existingGroup accountmanagement.GetGroupDto, group Group) (remoteId, error) {
+func (c *AccountManagementClient) updateExistingGroup(ctx context.Context, existingGroup accountmanagement.GetGroupDto, group Group) (remoteId, error) {
 	// Groups with owner "SCIM" or "ALL_USERS" cannot be modified and so updates should be skipped
 	if featureflags.SkipReadOnlyAccountGroupUpdates.Enabled() && ((existingGroup.Owner == "SCIM") || (existingGroup.Owner == "ALL_USERS")) {
 		return existingGroup.GetUuid(), nil
@@ -353,7 +353,7 @@ func (c *accountManagementClient) updateExistingGroup(ctx context.Context, exist
 	return existingGroup.GetUuid(), nil
 }
 
-func (c *accountManagementClient) upsertUser(ctx context.Context, userId string) (remoteId, error) {
+func (c *AccountManagementClient) upsertUser(ctx context.Context, userId string) (remoteId, error) {
 	_, resp, err := c.client.UserManagementAPI.GetUserGroups(ctx, c.accountInfo.AccountUUID, userId).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to create user with email: "+userId); err != nil {
@@ -373,7 +373,7 @@ func (c *accountManagementClient) upsertUser(ctx context.Context, userId string)
 	return userId, nil
 }
 
-func (c *accountManagementClient) upsertServiceUser(ctx context.Context, serviceUserId string, data ServiceUser) (remoteId, error) {
+func (c *AccountManagementClient) upsertServiceUser(ctx context.Context, serviceUserId string, data ServiceUser) (remoteId, error) {
 	if serviceUserId == "" {
 		suId, err := c.getServiceUserIDByName(ctx, data.Name)
 		if err != nil {
@@ -390,7 +390,7 @@ func (c *accountManagementClient) upsertServiceUser(ctx context.Context, service
 	return c.updateServiceUser(ctx, serviceUserId, data)
 }
 
-func (c *accountManagementClient) createServiceUser(ctx context.Context, dto accountmanagement.ServiceUserDto) (string, error) {
+func (c *AccountManagementClient) createServiceUser(ctx context.Context, dto accountmanagement.ServiceUserDto) (string, error) {
 	externalServiceUserWithGroupUuidDto, resp, err := c.client.ServiceUserManagementAPI.CreateServiceUserForAccount(ctx, c.accountInfo.AccountUUID).ServiceUserDto(dto).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "failed to create service user"); err != nil {
@@ -404,7 +404,7 @@ func (c *accountManagementClient) createServiceUser(ctx context.Context, dto acc
 	return externalServiceUserWithGroupUuidDto.Uid, nil
 }
 
-func (c *accountManagementClient) updateServiceUser(ctx context.Context, serviceUserId string, dto accountmanagement.ServiceUserDto) (string, error) {
+func (c *AccountManagementClient) updateServiceUser(ctx context.Context, serviceUserId string, dto accountmanagement.ServiceUserDto) (string, error) {
 	resp, err := c.client.ServiceUserManagementAPI.UpdateServiceUserForAccount(ctx, c.accountInfo.AccountUUID, serviceUserId).ServiceUserDto(dto).Execute()
 	defer closeResponseBody(resp)
 
@@ -429,8 +429,8 @@ func (e ResourceNotFoundError) Error() string {
 	return fmt.Sprintf("resource '%s' not found", e.Identifier)
 }
 
-func (c *accountManagementClient) getServiceUserIDByName(ctx context.Context, name string) (string, error) {
-	serviceUser, err := c.getServiceUserByName(ctx, name)
+func (c *AccountManagementClient) getServiceUserIDByName(ctx context.Context, name string) (string, error) {
+	serviceUser, err := c.GetServiceUserByName(ctx, name)
 	if err != nil {
 		return "", err
 	}
@@ -438,8 +438,8 @@ func (c *accountManagementClient) getServiceUserIDByName(ctx context.Context, na
 	return serviceUser.Uid, nil
 }
 
-func (c *accountManagementClient) getServiceUserEmailByName(ctx context.Context, name string) (string, error) {
-	serviceUser, err := c.getServiceUserByName(ctx, name)
+func (c *AccountManagementClient) getServiceUserEmailByName(ctx context.Context, name string) (string, error) {
+	serviceUser, err := c.GetServiceUserByName(ctx, name)
 	if err != nil {
 		return "", err
 	}
@@ -447,7 +447,7 @@ func (c *accountManagementClient) getServiceUserEmailByName(ctx context.Context,
 	return serviceUser.Email, nil
 }
 
-func (c *accountManagementClient) getServiceUserByName(ctx context.Context, name string) (*accountmanagement.ExternalServiceUserDto, error) {
+func (c *AccountManagementClient) GetServiceUserByName(ctx context.Context, name string) (*accountmanagement.ExternalServiceUserDto, error) {
 	serviceUsers, err := c.getServiceUsers(ctx)
 	if err != nil {
 		return nil, err
@@ -469,7 +469,7 @@ func (c *accountManagementClient) getServiceUserByName(ctx context.Context, name
 	return foundServiceUser, nil
 }
 
-func (c *accountManagementClient) getServiceUserEmailByUid(ctx context.Context, uid string) (string, error) {
+func (c *AccountManagementClient) getServiceUserEmailByUid(ctx context.Context, uid string) (string, error) {
 	serviceUser, err := c.getServiceUserByUid(ctx, uid)
 	if err != nil {
 		return "", err
@@ -478,7 +478,7 @@ func (c *accountManagementClient) getServiceUserEmailByUid(ctx context.Context, 
 	return serviceUser.Email, nil
 }
 
-func (c *accountManagementClient) getServiceUserByUid(ctx context.Context, uid string) (*accountmanagement.ExternalServiceUserWithGroupUuidDto, error) {
+func (c *AccountManagementClient) getServiceUserByUid(ctx context.Context, uid string) (*accountmanagement.ExternalServiceUserWithGroupUuidDto, error) {
 	serviceUser, resp, err := c.client.ServiceUserManagementAPI.GetServiceUser(ctx, c.accountInfo.AccountUUID, uid).Execute()
 	defer closeResponseBody(resp)
 
@@ -494,7 +494,7 @@ func (c *accountManagementClient) getServiceUserByUid(ctx context.Context, uid s
 	return serviceUser, nil
 }
 
-func (c *accountManagementClient) getServiceUsers(ctx context.Context) ([]accountmanagement.ExternalServiceUserDto, error) {
+func (c *AccountManagementClient) getServiceUsers(ctx context.Context) ([]accountmanagement.ExternalServiceUserDto, error) {
 	serviceUsers := []accountmanagement.ExternalServiceUserDto{}
 	const pageSize = 1000
 	page := (int32)(1)
@@ -515,7 +515,7 @@ func (c *accountManagementClient) getServiceUsers(ctx context.Context) ([]accoun
 	return serviceUsers, nil
 }
 
-func (c *accountManagementClient) getServiceUsersPage(ctx context.Context, page int32, pageSize int32) (*accountmanagement.ExternalServiceUsersPageDto, error) {
+func (c *AccountManagementClient) getServiceUsersPage(ctx context.Context, page int32, pageSize int32) (*accountmanagement.ExternalServiceUsersPageDto, error) {
 	r, resp, err := c.client.ServiceUserManagementAPI.GetServiceUsersFromAccount(ctx, c.accountInfo.AccountUUID).Page(page).PageSize(pageSize).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "failed to get service users"); err != nil {
@@ -527,7 +527,7 @@ func (c *accountManagementClient) getServiceUsersPage(ctx context.Context, page 
 	return r, nil
 }
 
-func (c *accountManagementClient) updatePermissions(ctx context.Context, groupId string, permissions []accountmanagement.PermissionsDto) error {
+func (c *AccountManagementClient) updatePermissions(ctx context.Context, groupId string, permissions []accountmanagement.PermissionsDto) error {
 	if groupId == "" {
 		return fmt.Errorf("group id must not be empty")
 	}
@@ -545,7 +545,7 @@ func (c *accountManagementClient) updatePermissions(ctx context.Context, groupId
 	return nil
 }
 
-func (c *accountManagementClient) updateAccountPolicyBindings(ctx context.Context, groupId string, boundariesForPolicyIds map[string][]string) error {
+func (c *AccountManagementClient) updateAccountPolicyBindings(ctx context.Context, groupId string, boundariesForPolicyIds map[string][]string) error {
 	if groupId == "" {
 		return fmt.Errorf("group id must not be empty")
 	}
@@ -570,7 +570,7 @@ func (c *accountManagementClient) updateAccountPolicyBindings(ctx context.Contex
 	return nil
 }
 
-func (c *accountManagementClient) updateEnvironmentPolicyBindings(ctx context.Context, envName string, groupId string, boundariesForPolicyIds map[string][]string) error {
+func (c *AccountManagementClient) updateEnvironmentPolicyBindings(ctx context.Context, envName string, groupId string, boundariesForPolicyIds map[string][]string) error {
 	if envName == "" {
 		return fmt.Errorf("environment name must not be empty")
 	}
@@ -598,7 +598,7 @@ func (c *accountManagementClient) updateEnvironmentPolicyBindings(ctx context.Co
 	return nil
 }
 
-func (c *accountManagementClient) deleteAllEnvironmentPolicyBindings(ctx context.Context, groupId string) error {
+func (c *AccountManagementClient) deleteAllEnvironmentPolicyBindings(ctx context.Context, groupId string) error {
 	environments, resp, err := c.client.EnvironmentManagementAPI.GetEnvironments(ctx, c.accountInfo.AccountUUID).Execute()
 	defer closeResponseBody(resp)
 	if err = handleClientResponseError(resp, err, "unable to get all environments for account with id"+c.accountInfo.AccountUUID); err != nil {
@@ -626,7 +626,7 @@ func (c *accountManagementClient) deleteAllEnvironmentPolicyBindings(ctx context
 	return nil
 }
 
-func (c *accountManagementClient) updateBoundariesForPolicyBinding(ctx context.Context, levelType string, levelId string, groupId string, policyId string, boundaryIds []string) error {
+func (c *AccountManagementClient) updateBoundariesForPolicyBinding(ctx context.Context, levelType string, levelId string, groupId string, policyId string, boundaryIds []string) error {
 	if groupId == "" {
 		return fmt.Errorf("group id must not be empty")
 	}
@@ -646,7 +646,7 @@ func (c *accountManagementClient) updateBoundariesForPolicyBinding(ctx context.C
 	return nil
 }
 
-func (c *accountManagementClient) updateGroupBindings(ctx context.Context, userId string, groupIds []string) error {
+func (c *AccountManagementClient) updateGroupBindings(ctx context.Context, userId string, groupIds []string) error {
 	if userId == "" {
 		return fmt.Errorf("user id must not be empty")
 	}
