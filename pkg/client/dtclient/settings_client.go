@@ -869,17 +869,25 @@ func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *Downloa
 	return &result, nil
 }
 
-func (d *SettingsClient) Delete(ctx context.Context, objectID string) error {
-	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+objectID, corerest.RequestOptions{}))
+func (d *SettingsClient) Delete(ctx context.Context, settingsObject DownloadSettingsObject) error {
+	_, err := coreapi.AsResponseOrError(d.client.DELETE(ctx, d.settingsObjectAPIPath+"/"+settingsObject.ObjectId, corerest.RequestOptions{
+		CustomShouldRetryFunc: func(resp *http.Response) bool {
+			return corerest.RetryIfTooManyRequestsOrServiceUnavailable(resp) || isFailureDetectionParameterSetsSettingsError(settingsObject.SchemaId, resp)
+		},
+	}))
 	if err != nil {
 		if coreapi.IsNotFoundError(err) {
-			slog.DebugContext(ctx, "No settings object found to delete (HTTP 404 response)", slog.String("id", objectID))
+			slog.DebugContext(ctx, "No settings object found to delete (HTTP 404 response)", slog.String("id", settingsObject.ObjectId))
 			return nil
 		}
 		return err
 	}
 
 	return nil
+}
+
+func isFailureDetectionParameterSetsSettingsError(schemaId string, resp *http.Response) bool {
+	return resp.StatusCode == http.StatusBadRequest && schemaId == "builtin:failure-detection.environment.parameters"
 }
 
 func (d *SettingsClient) GetPermission(ctx context.Context, objectID string) (PermissionObject, error) {

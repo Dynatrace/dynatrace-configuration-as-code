@@ -30,7 +30,7 @@ import (
 type DeleteSource interface {
 	ListSchemas(ctx context.Context) (dtclient.SchemaList, error)
 	List(ctx context.Context, schema string, options dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error)
-	Delete(ctx context.Context, objectID string) error
+	Delete(ctx context.Context, settingsObject dtclient.DownloadSettingsObject) error
 }
 
 type Deleter struct {
@@ -84,7 +84,7 @@ func (d Deleter) Delete(ctx context.Context, entries []pointer.DeletePointer) er
 			}
 
 			logger.DebugContext(ctx, "Deleting settings object", slog.String("id", settingsObject.ObjectId))
-			err := d.source.Delete(ctx, settingsObject.ObjectId)
+			err := d.source.Delete(ctx, settingsObject)
 			if err != nil {
 				logger.ErrorContext(ctx, "Failed to delete settings object", slog.String("id", settingsObject.ObjectId), log.ErrorAttr(err))
 				deleteErrs++
@@ -156,7 +156,7 @@ func (d Deleter) DeleteAll(ctx context.Context) error {
 			}
 
 			logger.DebugContext(ctx, "Deleting settings object", slog.String("id", settingsObject.ObjectId))
-			err := d.source.Delete(ctx, settingsObject.ObjectId)
+			err := d.source.Delete(ctx, settingsObject)
 			if err != nil {
 				logger.ErrorContext(ctx, "Failed to delete settings object", slog.String("id", settingsObject.ObjectId), log.ErrorAttr(err))
 				errCount++
