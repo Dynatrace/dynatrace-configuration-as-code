@@ -2270,7 +2270,7 @@ func TestDeleteSettings(t *testing.T) {
 		retrySettings  RetrySettings
 	}
 	type args struct {
-		objectID string
+		settingsObject DownloadSettingsObject
 	}
 	tests := []struct {
 		name                string
@@ -2284,7 +2284,9 @@ func TestDeleteSettings(t *testing.T) {
 			name:   "Delete Settings - server response != 2xx",
 			fields: fields{},
 			args: args{
-				objectID: "12345",
+				settingsObject: DownloadSettingsObject{
+					ObjectId: "12345",
+				},
 			},
 			givenTestServerResp: &testServerResponse{
 				statusCode: 500,
@@ -2297,7 +2299,9 @@ func TestDeleteSettings(t *testing.T) {
 			name:   "Delete Settings - server response 404 does not result in an err",
 			fields: fields{},
 			args: args{
-				objectID: "12345",
+				settingsObject: DownloadSettingsObject{
+					ObjectId: "12345",
+				},
 			},
 			givenTestServerResp: &testServerResponse{
 				statusCode: 404,
@@ -2310,7 +2314,9 @@ func TestDeleteSettings(t *testing.T) {
 			name:   "Delete Settings - object ID is passed",
 			fields: fields{},
 			args: args{
-				objectID: "12345",
+				settingsObject: DownloadSettingsObject{
+					ObjectId: "12345",
+				},
 			},
 			wantURLPath: "/api/v2/settings/objects/12345",
 			wantErr:     false,
@@ -2349,9 +2355,63 @@ func TestDeleteSettings(t *testing.T) {
 				WithExternalIDGenerator(idutils.GenerateExternalIDForSettingsObject))
 			require.NoError(t, err)
 
-			if err := client.Delete(t.Context(), tt.args.objectID); (err != nil) != tt.wantErr {
+			if err := client.Delete(t.Context(), tt.args.settingsObject); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteSettings() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func TestIsFailureDetectionParameterSetsSettingsError(t *testing.T) {
+	const failureDetectionSchemaID = "builtin:failure-detection.environment.parameters"
+
+	tests := []struct {
+		name       string
+		schemaId   string
+		statusCode int
+		want       bool
+	}{
+		{
+			name:       "failure-detection schema with 400 should retry",
+			schemaId:   failureDetectionSchemaID,
+			statusCode: http.StatusBadRequest,
+			want:       true,
+		},
+		{
+			name:       "failure-detection schema with non-400 should not retry",
+			schemaId:   failureDetectionSchemaID,
+			statusCode: http.StatusInternalServerError,
+			want:       false,
+		},
+		{
+			name:       "failure-detection schema with 2xx should not retry",
+			schemaId:   failureDetectionSchemaID,
+			statusCode: http.StatusOK,
+			want:       false,
+		},
+		{
+			name:       "other schema with 400 should not retry",
+			schemaId:   "builtin:some-other-schema",
+			statusCode: http.StatusBadRequest,
+			want:       false,
+		},
+		{
+			name:       "empty schema with 400 should not retry",
+			schemaId:   "",
+			statusCode: http.StatusBadRequest,
+			want:       false,
+		},
+		{
+			name:       "other schema with non-400 should not retry",
+			schemaId:   "builtin:some-other-schema",
+			statusCode: http.StatusInternalServerError,
+			want:       false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp := &http.Response{StatusCode: tt.statusCode}
+			assert.Equal(t, tt.want, isFailureDetectionParameterSetsSettingsError(tt.schemaId, resp))
 		})
 	}
 }

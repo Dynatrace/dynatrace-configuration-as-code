@@ -135,7 +135,7 @@ type SettingsClient interface {
 	Get(context.Context, string) (*dtclient.DownloadSettingsObject, error)
 
 	// Delete deletes a settings object giving its object ID
-	Delete(context.Context, string) error
+	Delete(context.Context, dtclient.DownloadSettingsObject) error
 
 	AccessControl
 }

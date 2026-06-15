@@ -25,6 +25,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -968,4 +969,191 @@ func TestConfigClient_ClearCache(t *testing.T) {
 	_, err = client.List(t.Context(), mockAPISlo)
 	require.NoError(t, err)
 	require.Equal(t, listCalledCount, 2)
+}
+
+func TestIsFailureDetectionParameterSetsAPIError(t *testing.T) {
+	tests := []struct {
+		name       string
+		targetAPI  api.API
+		statusCode int
+		want       bool
+	}{
+		{
+			name:       "failure-detection parametersets API with 400 should retry",
+			targetAPI:  api.API{ID: api.FailureDetectionParametersets},
+			statusCode: http.StatusBadRequest,
+			want:       true,
+		},
+		{
+			name:       "failure-detection parametersets API with non-400 should not retry",
+			targetAPI:  api.API{ID: api.FailureDetectionParametersets},
+			statusCode: http.StatusInternalServerError,
+			want:       false,
+		},
+		{
+			name:       "failure-detection parametersets API with 2xx should not retry",
+			targetAPI:  api.API{ID: api.FailureDetectionParametersets},
+			statusCode: http.StatusOK,
+			want:       false,
+		},
+		{
+			name:       "other API with 400 should not retry",
+			targetAPI:  api.API{ID: "some-other-api"},
+			statusCode: http.StatusBadRequest,
+			want:       false,
+		},
+		{
+			name:       "empty API ID with 400 should not retry",
+			targetAPI:  api.API{ID: ""},
+			statusCode: http.StatusBadRequest,
+			want:       false,
+		},
+		{
+			name:       "other API with non-400 should not retry",
+			targetAPI:  api.API{ID: "some-other-api"},
+			statusCode: http.StatusInternalServerError,
+			want:       false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp := &http.Response{StatusCode: tt.statusCode}
+			assert.Equal(t, tt.want, isFailureDetectionParameterSetsAPIError(tt.targetAPI, resp))
+		})
+	}
+}
+
+func TestConfigClientDelete(t *testing.T) {
+	failureDetectionAPI := api.API{
+		ID:      api.FailureDetectionParametersets,
+		URLPath: "/api/config/v1/service/failureDetection/parameterSelection/parameterSets",
+	}
+	normalAPI := api.API{
+		ID:      "alerting-profile",
+		URLPath: "/api/config/v1/alertingProfiles",
+	}
+
+	tests := []struct {
+		name              string
+		api               api.API
+		id                string
+		serverResponses   []testServerResponse
+		wantURLPath       string
+		wantNumberOfCalls int
+		wantErr           bool
+	}{
+		{
+			name:              "successful deletion does not result in an error",
+			api:               normalAPI,
+			id:                "config-id",
+			serverResponses:   []testServerResponse{{statusCode: 200, body: "{}"}},
+			wantURLPath:       "/api/config/v1/alertingProfiles/config-id",
+			wantNumberOfCalls: 1,
+			wantErr:           false,
+		},
+		{
+			name:              "server response 404 does not result in an error",
+			api:               normalAPI,
+			id:                "config-id",
+			serverResponses:   []testServerResponse{{statusCode: 404, body: "{}"}},
+			wantURLPath:       "/api/config/v1/alertingProfiles/config-id",
+			wantNumberOfCalls: 1,
+			wantErr:           false,
+		},
+		{
+			name:              "server response 500 results in an error and is not retried",
+			api:               normalAPI,
+			id:                "config-id",
+			serverResponses:   []testServerResponse{{statusCode: 500, body: "{}"}},
+			wantURLPath:       "/api/config/v1/alertingProfiles/config-id",
+			wantNumberOfCalls: 1,
+			wantErr:           true,
+		},
+		{
+			name:              "non-failure-detection API is not retried on 400",
+			api:               normalAPI,
+			id:                "config-id",
+			serverResponses:   []testServerResponse{{statusCode: 400, body: "{}"}},
+			wantURLPath:       "/api/config/v1/alertingProfiles/config-id",
+			wantNumberOfCalls: 1,
+			wantErr:           true,
+		},
+		{
+			name: "failure-detection parametersets is retried on 400 and eventually fails",
+			api:  failureDetectionAPI,
+			id:   "param-set-id",
+			serverResponses: []testServerResponse{
+				{statusCode: 400, body: "{}"},
+				{statusCode: 400, body: "{}"},
+				{statusCode: 400, body: "{}"},
+				{statusCode: 400, body: "{}"},
+			},
+			wantURLPath:       "/api/config/v1/service/failureDetection/parameterSelection/parameterSets/param-set-id",
+			wantNumberOfCalls: 4, // initial call + 3 retries
+			wantErr:           true,
+		},
+		{
+			name: "failure-detection parametersets is retried on 400 and eventually succeeds",
+			api:  failureDetectionAPI,
+			id:   "param-set-id",
+			serverResponses: []testServerResponse{
+				{statusCode: 400, body: "{}"},
+				{statusCode: 400, body: "{}"},
+				{statusCode: 200, body: "{}"},
+			},
+			wantURLPath:       "/api/config/v1/service/failureDetection/parameterSelection/parameterSets/param-set-id",
+			wantNumberOfCalls: 3,
+			wantErr:           false,
+		},
+		{
+			name: "any API is retried on 503 service unavailable and eventually succeeds",
+			api:  normalAPI,
+			id:   "config-id",
+			serverResponses: []testServerResponse{
+				{statusCode: 503, body: "{}"},
+				{statusCode: 200, body: "{}"},
+			},
+			wantURLPath:       "/api/config/v1/alertingProfiles/config-id",
+			wantNumberOfCalls: 2,
+			wantErr:           false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			apiCalls := 0
+			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				assert.Equal(t, http.MethodDelete, req.Method)
+				assert.Equal(t, tt.wantURLPath, req.URL.Path)
+
+				resp := tt.serverResponses[apiCalls]
+				if resp.statusCode != 200 {
+					http.Error(rw, resp.body, resp.statusCode)
+				} else {
+					_, _ = rw.Write([]byte(resp.body))
+				}
+
+				apiCalls++
+				assert.LessOrEqualf(t, apiCalls, tt.wantNumberOfCalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfCalls, apiCalls)
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			require.NoError(t, err)
+
+			restClient := corerest.NewClient(serverURL, server.Client(),
+				corerest.WithRateLimiter(),
+				corerest.WithRetryOptions(&corerest.RetryOptions{DelayAfterRetry: 0, MaxRetries: 3}))
+			client, err := NewClassicConfigClient(restClient, WithCachingDisabledForConfigClient(true))
+			require.NoError(t, err)
+
+			err = client.Delete(t.Context(), tt.api, tt.id)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.wantNumberOfCalls, apiCalls, "expected exactly %d API calls to happen but %d calls were made", tt.wantNumberOfCalls, apiCalls)
+		})
+	}
 }

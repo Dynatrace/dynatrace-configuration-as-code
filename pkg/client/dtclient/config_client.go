@@ -118,7 +118,11 @@ func (d *ConfigClient) Delete(ctx context.Context, api api.API, id string) error
 	}
 	parsedURL = parsedURL.JoinPath(id)
 
-	_, err = coreapi.AsResponseOrError(d.client.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{}))
+	_, err = coreapi.AsResponseOrError(d.client.DELETE(ctx, parsedURL.String(), corerest.RequestOptions{
+		CustomShouldRetryFunc: func(resp *http.Response) bool {
+			return corerest.RetryIfTooManyRequestsOrServiceUnavailable(resp) || isFailureDetectionParameterSetsAPIError(api, resp)
+		},
+	}))
 	if err != nil {
 		if coreapi.IsNotFoundError(err) {
 			slog.DebugContext(ctx, "No config found to delete (HTTP 404 response)", slog.String("id", id))
@@ -445,6 +449,10 @@ func (d *ConfigClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restC
 	}
 
 	return resp, err
+}
+
+func isFailureDetectionParameterSetsAPIError(targetAPI api.API, resp *http.Response) bool {
+	return resp.StatusCode == http.StatusBadRequest && targetAPI.ID == api.FailureDetectionParametersets
 }
 
 func isGeneralDependencyNotReadyYet(apiError coreapi.APIError) bool {

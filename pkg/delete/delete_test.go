@@ -51,20 +51,19 @@ import (
 func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 	t.Run("TestDeleteSettings_LegacyExternalID", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
+		settingsObject := dtclient.DownloadSettingsObject{
+			ExternalId:    "externalID",
+			SchemaVersion: "v1",
+			SchemaId:      "builtin:alerting.profile",
+			ObjectId:      "12345",
+			Scope:         "tenant",
+			Value:         nil,
+		}
 		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJGlkMQ=="}))
-			return []dtclient.DownloadSettingsObject{
-				{
-					ExternalId:    "externalID",
-					SchemaVersion: "v1",
-					SchemaId:      "builtin:alerting.profile",
-					ObjectId:      "12345",
-					Scope:         "tenant",
-					Value:         nil,
-				},
-			}, nil
+			return []dtclient.DownloadSettingsObject{settingsObject}, nil
 		})
-		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq(settingsObject)).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -109,17 +108,16 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 
 	t.Run("TestDeleteSettings_LegacyExternalID - Delete settings based on object ID fails", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{
-			{
-				ExternalId:    "externalID",
-				SchemaVersion: "v1",
-				SchemaId:      "builtin:alerting.profile",
-				ObjectId:      "12345",
-				Scope:         "tenant",
-				Value:         nil,
-			},
-		}, nil)
-		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
+		settingsObject := dtclient.DownloadSettingsObject{
+			ExternalId:    "externalID",
+			SchemaVersion: "v1",
+			SchemaId:      "builtin:alerting.profile",
+			ObjectId:      "12345",
+			Scope:         "tenant",
+			Value:         nil,
+		}
+		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{settingsObject}, nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq(settingsObject)).Return(fmt.Errorf("WHOPS"))
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -136,22 +134,21 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 func TestDeleteSettings(t *testing.T) {
 	t.Run("TestDeleteSettings", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
+		settingsObject := dtclient.DownloadSettingsObject{
+			ExternalId:    "externalID",
+			SchemaVersion: "v1",
+			SchemaId:      "builtin:alerting.profile",
+			ObjectId:      "12345",
+			Scope:         "tenant",
+			Value:         nil,
+		}
 		c.EXPECT().List(gomock.Any(), gomock.Eq("builtin:alerting.profile"), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			expectedExtID := "monaco:cHJvamVjdCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQx"
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: expectedExtID}), "Expected request filtering for externalID %q", expectedExtID)
-			return []dtclient.DownloadSettingsObject{
-				{
-					ExternalId:    "externalID",
-					SchemaVersion: "v1",
-					SchemaId:      "builtin:alerting.profile",
-					ObjectId:      "12345",
-					Scope:         "tenant",
-					Value:         nil,
-				},
-			}, nil
+			return []dtclient.DownloadSettingsObject{settingsObject}, nil
 
 		})
-		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq(settingsObject)).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -199,17 +196,16 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - Delete settings based on object ID fails", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
-		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{
-			{
-				ExternalId:    "externalID",
-				SchemaVersion: "v1",
-				SchemaId:      "builtin:alerting.profile",
-				ObjectId:      "12345",
-				Scope:         "tenant",
-				Value:         nil,
-			},
-		}, nil)
-		c.EXPECT().Delete(gomock.Any(), gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
+		settingsObject := dtclient.DownloadSettingsObject{
+			ExternalId:    "externalID",
+			SchemaVersion: "v1",
+			SchemaId:      "builtin:alerting.profile",
+			ObjectId:      "12345",
+			Scope:         "tenant",
+			Value:         nil,
+		}
+		c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{settingsObject}, nil)
+		c.EXPECT().Delete(gomock.Any(), gomock.Eq(settingsObject)).Return(fmt.Errorf("WHOPS"))
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -260,21 +256,20 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("identification via 'objectId'", func(t *testing.T) {
 		c := client.NewMockSettingsClient(gomock.NewController(t))
+		settingsObject := dtclient.DownloadSettingsObject{
+			ExternalId:    "externalID",
+			SchemaVersion: "v1",
+			SchemaId:      "builtin:alerting.profile",
+			ObjectId:      "DT-original-object-ID",
+			Scope:         "tenant",
+			Value:         nil,
+		}
 		c.EXPECT().List(gomock.Any(), gomock.Eq("builtin:alerting.profile"), gomock.Any()).DoAndReturn(func(ctx context.Context, schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
 			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ObjectId: "DT-original-object-ID"}), "Expected request filtering for objectId %q", "DT-original-object-ID")
-			return []dtclient.DownloadSettingsObject{
-				{
-					ExternalId:    "externalID",
-					SchemaVersion: "v1",
-					SchemaId:      "builtin:alerting.profile",
-					ObjectId:      "DT-original-object-ID",
-					Scope:         "tenant",
-					Value:         nil,
-				},
-			}, nil
+			return []dtclient.DownloadSettingsObject{settingsObject}, nil
 
 		})
-		c.EXPECT().Delete(gomock.Any(), gomock.Eq("DT-original-object-ID")).Return(nil)
+		c.EXPECT().Delete(gomock.Any(), settingsObject).Return(nil)
 		entriesToDelete := delete.DeleteEntries{
 			"builtin:alerting.profile": {
 				{

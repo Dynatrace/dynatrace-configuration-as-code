@@ -48,9 +48,9 @@ func (s *deleteStubClient) List(_ context.Context, schema string, options dtclie
 	return s.list(schema, options)
 }
 
-func (s *deleteStubClient) Delete(_ context.Context, id string) error {
+func (s *deleteStubClient) Delete(_ context.Context, settingsObject dtclient.DownloadSettingsObject) error {
 	s.deleteCalled = true
-	return s.delete(id)
+	return s.delete(settingsObject.ObjectId)
 }
 
 func TestDeleteByCoordinate(t *testing.T) {
