@@ -61,7 +61,7 @@ func TestRestoreConfigs_FromDownloadWithManifestFile(t *testing.T) {
 	initialConfigsFolder := "testdata/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
 	downloadFolder := "testdata/download"
-	subsetOfConfigsToDownload := "alerting-profile,management-zone"
+	subsetOfConfigsToDownload := "alerting-profile,management-zone,slo"
 	suffixTest := "_download_manifest"
 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, AuthClassicToken, execution_downloadConfigs)

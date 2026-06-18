@@ -875,6 +875,7 @@ func translateGenericValues(ctx context.Context, inputValues []any, configType s
 
 	for _, input := range inputValues {
 		input := input.(map[string]any)
+		customFields := getCustomFields(configType, input)
 
 		if input["id"] == nil {
 			return values, fmt.Errorf("config of type %s was invalid: No id", configType)
@@ -904,15 +905,17 @@ func translateGenericValues(ctx context.Context, inputValues []any, configType s
 			}
 
 			values = append(values, Value{
-				Id:   input["id"].(string),
-				Name: substitutedName,
+				Id:           input["id"].(string),
+				Name:         substitutedName,
+				CustomFields: customFields,
 			})
 			continue
 		}
 
 		value := Value{
-			Id:   input["id"].(string),
-			Name: input["name"].(string),
+			Id:           input["id"].(string),
+			Name:         input["name"].(string),
+			CustomFields: customFields,
 		}
 
 		if v, ok := input["owner"].(string); ok {
@@ -922,6 +925,17 @@ func translateGenericValues(ctx context.Context, inputValues []any, configType s
 		values = append(values, value)
 	}
 	return values, nil
+}
+
+// getCustomFields Returns the payload of an SLO, if it's disabled
+// Reason: Disabled SLOs can't be fetched via GET. List returns everything.
+func getCustomFields(configType string, input map[string]any) map[string]any {
+	if configType == api.Slo {
+		if enabled, ok := input["enabled"].(bool); ok && !enabled {
+			return input
+		}
+	}
+	return nil
 }
 
 func translateSyntheticValues(syntheticValues []SyntheticValue) []Value {

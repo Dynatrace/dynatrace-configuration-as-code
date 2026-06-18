@@ -1,0 +1,13 @@
+{
+  "enabled": false,
+  "name": "{{.name}}",
+  "useRateMetric": true,
+  "metricRate": "builtin:service.successes.server.rate",
+  "metricNumerator": "builtin:service.errors.server.successCount",
+  "metricDenominator": "builtin:service.requestCount.total",
+  "evaluationType": "AGGREGATE",
+  "filter": "type(\"SERVICE\")",
+  "target": 99.97,
+  "warning": 99.99,
+  "timeframe": "-1d"
+}

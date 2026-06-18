@@ -271,6 +271,10 @@ func shouldFilter() bool {
 }
 
 func download(ctx context.Context, configSource downloadSource, theApi api.API, value value) ([]map[string]any, error) {
+	// Disabled SLOs can't be fetched. That's why we re-use and return its List response here, if set
+	if theApi.ID == api.Slo && value.value.CustomFields != nil {
+		return []map[string]any{value.value.CustomFields}, nil
+	}
 	id := value.value.Id
 
 	// check if we should skip the id to enforce to read/download "all" configs instead of a single one

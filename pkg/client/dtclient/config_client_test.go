@@ -1157,3 +1157,111 @@ func TestConfigClientDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestTranslateGenericValuesSetsCustomFieldsForDisabledSlo(t *testing.T) {
+
+	entry := map[string]any{
+		"id":      "slo-id",
+		"name":    "my slo",
+		"enabled": false,
+	}
+
+	response := []any{entry}
+
+	values, err := translateGenericValues(t.Context(), response, api.Slo)
+
+	assert.NoError(t, err)
+	require.Len(t, values, 1)
+
+	assert.Equal(t, "slo-id", values[0].Id)
+	assert.Equal(t, "my slo", values[0].Name)
+	assert.Equal(t, entry, values[0].CustomFields)
+}
+
+func TestTranslateGenericValuesSetsCustomFieldsForDisabledSloWithMissingName(t *testing.T) {
+
+	entry := map[string]any{
+		"id":      "slo-id",
+		"enabled": false,
+	}
+
+	response := []any{entry}
+
+	values, err := translateGenericValues(t.Context(), response, api.Slo)
+
+	assert.NoError(t, err)
+	require.Len(t, values, 1)
+
+	assert.Equal(t, "slo-id", values[0].Id)
+	assert.Equal(t, "slo-id", values[0].Name) // name is substituted with the id
+	assert.Equal(t, entry, values[0].CustomFields)
+}
+
+func TestTranslateGenericValuesDoesNotSetCustomFieldsForEnabledSlo(t *testing.T) {
+
+	entry := map[string]any{
+		"id":      "slo-id",
+		"name":    "my slo",
+		"enabled": true,
+	}
+
+	response := []any{entry}
+
+	values, err := translateGenericValues(t.Context(), response, api.Slo)
+
+	assert.NoError(t, err)
+	require.Len(t, values, 1)
+	assert.Nil(t, values[0].CustomFields)
+}
+
+func TestGetCustomFields(t *testing.T) {
+	disabledSlo := map[string]any{
+		"id":      "slo-id",
+		"name":    "my slo",
+		"enabled": false,
+	}
+
+	tests := []struct {
+		name       string
+		configType string
+		input      map[string]any
+		want       map[string]any
+	}{
+		{
+			name:       "disabled SLO returns the full payload as custom fields",
+			configType: api.Slo,
+			input:      disabledSlo,
+			want:       disabledSlo,
+		},
+		{
+			name:       "enabled SLO returns nil",
+			configType: api.Slo,
+			input:      map[string]any{"id": "slo-id", "enabled": true},
+			want:       nil,
+		},
+		{
+			name:       "SLO without enabled field returns nil",
+			configType: api.Slo,
+			input:      map[string]any{"id": "slo-id"},
+			want:       nil,
+		},
+		{
+			name:       "SLO with non-bool enabled field returns nil",
+			configType: api.Slo,
+			input:      map[string]any{"id": "slo-id", "enabled": "false"},
+			want:       nil,
+		},
+		{
+			name:       "disabled config of another type returns nil",
+			configType: "dashboard",
+			input:      map[string]any{"id": "dashboard-id", "enabled": false},
+			want:       nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, getCustomFields(tt.configType, tt.input))
+		})
+	}
+}

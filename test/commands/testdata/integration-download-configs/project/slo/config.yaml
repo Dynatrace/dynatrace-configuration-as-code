@@ -1,0 +1,9 @@
+configs:
+- id: disabled-slo
+  config:
+    name: disabled-slo
+    template: disabled-slo.json
+    skip: false
+  type:
+    api: slo
+
