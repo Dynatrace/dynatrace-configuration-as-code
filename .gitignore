@@ -16,7 +16,7 @@ bin/
 
 # Download files
 download_*
-!download_test.go
+!download_*.go
 
 # Generated JSON schema files in root directory
 /schemas/
