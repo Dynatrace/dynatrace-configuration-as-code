@@ -162,7 +162,7 @@ void releaseBinary(Context ctx, Release release) {
 
         buildBinary(makeCommand: release.binary.name(), version: ctx.version, dest: release.binary.localPath())
         if (release.os == "windows") {
-            signWinBinaries(source: release.binary.localPath(), version: ctx.version, destDir: '.', projectName: "monaco")
+            signWinBinaries(source: release.binary.localPath(), version: ctx.version, destDir: Release.BINARIES, projectName: "monaco")
         }
 
         computeShaSum(source: release.binary.localPath(), dest: release.binary.shaPath())
