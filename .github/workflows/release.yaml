@@ -40,16 +40,11 @@ jobs:
             --repo "${{ github.repository }}" \
             --clobber
 
-  verify-signed-binaries:
+  verify-shasums:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Install osslsigncode
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y osslsigncode
-
       - name: Download release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -75,17 +70,47 @@ jobs:
             sha256sum --check --strict "$s"
           done
 
-      - name: Verify Windows Authenticode signatures
-        working-directory: release-assets
+  verify-windows-signatures:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download Windows release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
-          set -euo pipefail
-          shopt -s nullglob
-          exes=(monaco-windows-*.exe)
-          if [ ${#exes[@]} -eq 0 ]; then
-            echo "no windows .exe assets found in release"
-            exit 1
-          fi
-          for exe in "${exes[@]}"; do
-            echo "verifying signature of $exe"
-            osslsigncode verify -in "$exe"
-          done
+          mkdir -p release-assets
+          gh release download "${{ github.event.release.tag_name }}" \
+            --repo "${{ github.repository }}" \
+            --pattern 'monaco-windows-*.exe' \
+            --dir release-assets
+
+      - name: Verify Windows Authenticode signatures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exes = Get-ChildItem -Path release-assets -Filter 'monaco-windows-*.exe' -File
+          if ($exes.Count -eq 0) {
+              Write-Error 'no windows .exe assets found in release'
+              exit 1
+          }
+          $signtool = (Get-ChildItem -Path 'C:\Program Files (x86)\Windows Kits\10\bin' -Recurse -Filter 'signtool.exe' |
+              Where-Object { $_.FullName -match '\\x64\\signtool.exe$' } |
+              Sort-Object FullName -Descending |
+              Select-Object -First 1).FullName
+          if (-not $signtool) {
+              Write-Error 'signtool.exe not found on the runner'
+              exit 1
+          }
+          Write-Host "using signtool: $signtool"
+          $failed = $false
+          foreach ($exe in $exes) {
+              Write-Host "verifying signature of $($exe.Name)"
+              & $signtool verify /pa /all /v $exe.FullName
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Host "FAILED: $($exe.Name)"
+                  $failed = $true
+              }
+          }
+          if ($failed) { exit 1 }
