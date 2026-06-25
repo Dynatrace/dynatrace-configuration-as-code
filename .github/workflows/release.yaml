@@ -3,9 +3,11 @@ on:
   release:
     types:
       - published
+
 defaults:
   run:
     shell: bash
+
 jobs:
   generate-dependencies:
     runs-on: ubuntu-latest
@@ -14,17 +16,21 @@ jobs:
     steps:
       - name: Checkout Core Repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+
       - name: Set up Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c #v6.4.0
         with:
           go-version-file: go.mod
+
       - name: Install go-licence-detector
         run: |
           go install go.elastic.co/go-licence-detector@v0.6.0
       - name: Clean Go mod
         run: go mod tidy
+
       - name: Generate Dependencies and Licenses
         run: go list -m -json all | go-licence-detector -includeIndirect -depsTemplate=.dependencies/templates/dependencies.csv.tmpl -depsOut=dependencies-and-licenses.txt
+
       - name: Upload dependencies and licenses artifact
         run: |
           curl --request POST "https://uploads.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases/${{ github.event.release.id }}/assets?name=dependencies-and-licenses.txt" \
@@ -34,3 +40,53 @@ jobs:
                --header "Content-Type: application/octet-stream" \
                --fail \
                --data-binary @dependencies-and-licenses.txt
+
+  verify-signed-binaries:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Install osslsigncode
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y osslsigncode
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p release-assets
+          gh release download "${{ github.event.release.tag_name }}" \
+            --repo "${{ github.repository }}" \
+            --pattern 'monaco-*' \
+            --dir release-assets
+
+      - name: Verify SHA256 sums
+        working-directory: release-assets
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          sums=(*.sha256)
+          if [ ${#sums[@]} -eq 0 ]; then
+            echo "no .sha256 files found in release assets"
+            exit 1
+          fi
+          for s in "${sums[@]}"; do
+            echo "checking $s"
+            sha256sum --check --strict "$s"
+          done
+
+      - name: Verify Windows Authenticode signatures
+        working-directory: release-assets
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          exes=(monaco-windows-*.exe)
+          if [ ${#exes[@]} -eq 0 ]; then
+            echo "no windows .exe assets found in release"
+            exit 1
+          fi
+          for exe in "${exes[@]}"; do
+            echo "verifying signature of $exe"
+            osslsigncode verify -in "$exe"
+          done
