@@ -57,7 +57,7 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("unauthorized response results in error", func(t *testing.T) {
+	t.Run("unauthorized response on non-platform URL hints at classic URL misuse", func(t *testing.T) {
 		server := testutils.NewHTTPTestServer(t, []testutils.ResponseDef{
 			{
 				GET: func(t *testing.T, request *http.Request) testutils.Response {
@@ -70,9 +70,10 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		})
 		defer server.Close()
 
+		// the test server URL does not match the Platform URL pattern (.apps.)
 		classicURL, err := GetDynatraceClassicURL(t.Context(), *corerest.NewClient(server.URL(), server.Client()))
 		assert.Empty(t, classicURL)
-		assert.Error(t, err)
+		assert.ErrorContains(t, err, "does not look like a Dynatrace Platform URL")
 	})
 
 	t.Run("server response with invalid data", func(t *testing.T) {
@@ -110,4 +111,16 @@ func TestGetDynatraceClassicURL(t *testing.T) {
 		assert.EqualValues(t, "https://classic.env.com", classicURL)
 		assert.NoError(t, err)
 	})
+}
+
+func TestIsPlatformURL(t *testing.T) {
+	tests := map[string]bool{
+		"https://env-id.apps.dynatrace.com": true,
+		"https://env-id.live.dynatrace.com": false,
+		"https://env-id.dynatrace.com":      false,
+		"":                                  false,
+	}
+	for url, want := range tests {
+		assert.Equal(t, want, IsPlatformURL(url), "IsPlatformURL(%q)", url)
+	}
 }

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
@@ -28,6 +29,11 @@ import (
 )
 
 const ClassicEnvironmentDomainPath = "/platform/metadata/v1/classic-environment-domain"
+
+// IsPlatformURL returns true if the given URL matches the expected Dynatrace Platform URL pattern (e.g. https://<env-id>.apps.dynatrace.com).
+func IsPlatformURL(url string) bool {
+	return strings.Contains(url, ".apps.")
+}
 
 type classicEnvURL struct {
 	// Domain is the URL of the classic environment
@@ -54,6 +60,9 @@ func GetDynatraceClassicURL(ctx context.Context, platformClient corerest.Client)
 	if err != nil {
 		apiErr := coreapi.APIError{}
 		if errors.As(err, &apiErr) && apiErr.StatusCode >= 401 && apiErr.StatusCode <= 403 {
+			if !IsPlatformURL(platformClient.BaseURL().String()) {
+				return "", fmt.Errorf("the configured URL %q does not look like a Dynatrace Platform URL (expected pattern: https://<env-id>.apps.dynatrace.com): make sure you are using a Dynatrace Platform URL and not a Dynatrace Classic URL when authenticating with an OAuth client or platform token: %w", platformClient.BaseURL(), err)
+			}
 			return "", fmt.Errorf("missing permissions to query classic environment URL: oAuth client or platform token may be missing required scope 'app-engine:apps:run': %w", err)
 		}
 		return "", fmt.Errorf("failed to query classic environment URL: %w", err)
