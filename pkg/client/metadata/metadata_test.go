@@ -121,6 +121,6 @@ func TestIsPlatformURL(t *testing.T) {
 		"":                                  false,
 	}
 	for url, want := range tests {
-		assert.Equal(t, want, IsPlatformURL(url), "IsPlatformURL(%q)", url)
+		assert.Equalf(t, want, IsPlatformURL(url), "IsPlatformURL(%q)", url)
 	}
 }
