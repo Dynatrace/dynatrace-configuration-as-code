@@ -171,12 +171,7 @@ func getHandler(w io.Writer, options *slog.HandlerOptions, supportColor bool) sl
 	}
 
 	if supportColor && shouldUseColor() {
-		return tint.NewHandler(w, &tint.Options{
-			AddSource:   options.AddSource,
-			Level:       options.Level,
-			ReplaceAttr: options.ReplaceAttr,
-			TimeFormat:  time.Kitchen,
-		})
+		return tint.NewTextHandler(w, &tint.Options{AddSource: options.AddSource, Level: options.Level, ReplaceAttr: options.ReplaceAttr, TimeFormat: time.Kitchen})
 	}
 
 	return slog.NewTextHandler(w, options)
