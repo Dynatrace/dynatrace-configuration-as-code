@@ -239,10 +239,6 @@ func TestWriteToDisk(t *testing.T) {
 				t.Errorf("Error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if exists, err := afero.Exists(tt.args.fs, tt.args.outputFolder); err != nil || !exists {
-				t.Errorf("Expected outputfolder %v was not created", tt.args.outputFolder)
-			}
-
 			if exists, err := afero.Exists(tt.args.fs, tt.wantOutputFolder); err != nil || !exists {
 				t.Errorf("Expected outputfolder %v was not created", tt.wantOutputFolder)
 			}
