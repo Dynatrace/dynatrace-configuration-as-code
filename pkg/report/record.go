@@ -126,7 +126,7 @@ func ReadReportFile(fs afero.Fs, filename string) ([]Record, error) {
 		records = append(records, r)
 	}
 	if s.Err() != nil {
-		return nil, err
+		return nil, s.Err()
 	}
 	return records, nil
 }
