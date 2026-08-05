@@ -167,8 +167,8 @@ type BucketClient interface {
 type DocumentClient interface {
 	Get(ctx context.Context, id string) (documents.Response, error)
 	List(ctx context.Context, filter string) (documents.ListResponse, error)
-	Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
-	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (libAPI.Response, error)
+	Create(ctx context.Context, metadata documents.Metadata, content []byte) (libAPI.Response, error)
+	Update(ctx context.Context, metadata documents.Metadata, content []byte) (libAPI.Response, error)
 	Delete(ctx context.Context, id string) (libAPI.Response, error)
 }
 

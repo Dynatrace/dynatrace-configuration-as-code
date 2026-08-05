@@ -108,7 +108,7 @@ var _ DocumentClient = (*DummyDocumentClient)(nil)
 type DummyDocumentClient struct{}
 
 // Create implements Client.
-func (c *DummyDocumentClient) Create(ctx context.Context, name string, isPrivate bool, externalId string, data []byte, documentType documents.DocumentType) (api.Response, error) {
+func (c *DummyDocumentClient) Create(ctx context.Context, metadata documents.Metadata, content []byte) (api.Response, error) {
 	return api.Response{Data: []byte(`{}`)}, nil
 }
 
@@ -123,7 +123,7 @@ func (c *DummyDocumentClient) List(ctx context.Context, filter string) (document
 }
 
 // Update implements Client.
-func (c *DummyDocumentClient) Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (api.Response, error) {
+func (c *DummyDocumentClient) Update(ctx context.Context, metadata documents.Metadata, content []byte) (api.Response, error) {
 	return api.Response{Data: []byte(`{}`)}, nil
 }
 
