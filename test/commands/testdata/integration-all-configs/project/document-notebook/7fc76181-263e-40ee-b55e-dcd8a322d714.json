@@ -1,0 +1,8 @@
+{
+    "defaultTimeframe": {
+        "from": "now-2h",
+        "to": "now"
+    },
+    "sections": [],
+    "version": "5"
+}

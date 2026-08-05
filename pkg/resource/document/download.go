@@ -148,9 +148,9 @@ func getDocumentTypeFromResponse(response documents.Response) (config.DocumentTy
 	}
 
 	if idutils.IsUUID(response.ID) {
-		return config.DocumentType{Kind: kind, Private: response.IsPrivate}, nil
+		return config.DocumentType{Kind: kind, Private: response.IsPrivate, Labels: response.Labels}, nil
 	}
 
 	// if the ID is not a UUID, it is a custom ID
-	return config.DocumentType{Kind: kind, Private: response.IsPrivate, CustomID: response.ID}, nil
+	return config.DocumentType{Kind: kind, Private: response.IsPrivate, CustomID: response.ID, Labels: response.Labels}, nil
 }

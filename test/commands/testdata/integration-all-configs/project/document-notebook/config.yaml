@@ -26,3 +26,19 @@ configs:
     - environment: classic_env
       override:
         skip: true # platform only config
+- id: 7fc76181-263e-40ee-b55e-dcd8a322d714
+  config:
+    name: my-labelled-notebook
+    template: 7fc76181-263e-40ee-b55e-dcd8a322d714.json
+    skip: false
+  type:
+    document:
+      kind: notebook
+      private: false
+      labels:
+        - label1
+        - label2
+  environmentOverrides:
+    - environment: classic_env
+      override:
+        skip: true # platform only config

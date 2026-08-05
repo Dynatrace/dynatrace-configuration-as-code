@@ -76,6 +76,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 		Name:      documentName,
 		Type:      docType,
 		IsPrivate: documentType.Private,
+		Labels:    documentType.Labels,
 	}
 
 	response, err := d.upsertDocument(ctx, c, documentMetadata, customID, []byte(renderedConfig))
