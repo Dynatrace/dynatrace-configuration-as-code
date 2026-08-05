@@ -34,8 +34,8 @@ import (
 
 //go:generate mockgen -source=deploy.go -destination=document_mock.go -package=document DeploySource
 type DeploySource interface {
-	Create(ctx context.Context, name string, isPrivate bool, customId string, data []byte, documentType documents.DocumentType) (api.Response, error)
-	Update(ctx context.Context, id string, name string, isPrivate bool, data []byte, documentType documents.DocumentType) (api.Response, error)
+	Create(ctx context.Context, metadata documents.Metadata, data []byte) (api.Response, error)
+	Update(ctx context.Context, metadata documents.Metadata, data []byte) (api.Response, error)
 }
 
 var (
@@ -58,21 +58,27 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	if err != nil {
 		return entities.ResolvedEntity{}, fmt.Errorf("cannot get document type: %w", err)
 	}
-
-	documentKind, isPrivate := getDocumentAttributesFromConfigType(documentType)
 	documentName, ok := properties[config.NameParameter].(string)
 	if !ok {
 		return entities.ResolvedEntity{}, ErrMissingNameParameter
 	}
-
-	if documentKind == documents.Dashboard {
+	docType, found := documentKindToType[documentType.Kind]
+	if !found {
+		docType = ""
+	}
+	if docType == documents.Dashboard {
 		if err := validateDashboardPayload(renderedConfig); err != nil {
 			return entities.ResolvedEntity{}, err
 		}
 	}
-
 	customID := resolveCustomID(documentType.CustomID, c.Coordinate)
-	response, err := d.upsertDocument(ctx, c, documentName, isPrivate, customID, []byte(renderedConfig), documentKind)
+	documentMetadata := documents.Metadata{
+		Name:      documentName,
+		Type:      docType,
+		IsPrivate: documentType.Private,
+	}
+
+	response, err := d.upsertDocument(ctx, c, documentMetadata, customID, []byte(renderedConfig))
 	if err != nil {
 		return entities.ResolvedEntity{}, err
 	}
@@ -80,22 +86,15 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	return handleResponse(response, c, properties)
 }
 
-func resolveCustomID(configCustomID string, coord coordinate.Coordinate) string {
-	// customID is either the one defined in the config, or a generated external ID
-	if configCustomID != "" {
-		return configCustomID
-	}
-	return idutils.GenerateExternalID(coord)
-}
-
-func (d DeployAPI) upsertDocument(ctx context.Context, c *config.Config, name string, isPrivate bool, customID string, payload []byte, kind documents.DocumentType) (api.Response, error) {
+func (d DeployAPI) upsertDocument(ctx context.Context, c *config.Config, metadata documents.Metadata, customID string, payload []byte) (api.Response, error) {
 	// We try both IDs in order: originObjectId (UUID) first, then customID
 	idsToTry := []string{c.OriginObjectId, customID}
 	for _, id := range idsToTry {
 		if id == "" {
 			continue
 		}
-		response, err := d.source.Update(ctx, id, name, isPrivate, payload, kind)
+		metadata.ID = id
+		response, err := d.source.Update(ctx, metadata, payload)
 		if err == nil {
 			return response, nil
 		}
@@ -105,9 +104,10 @@ func (d DeployAPI) upsertDocument(ctx context.Context, c *config.Config, name st
 	}
 
 	// If not found, create a new document with custom ID or generated external ID
-	response, err := d.source.Create(ctx, name, isPrivate, customID, payload, kind)
+	metadata.ID = customID
+	response, err := d.source.Create(ctx, metadata, payload)
 	if err != nil {
-		return api.Response{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", name)).WithError(err)
+		return api.Response{}, deployErrors.NewConfigDeployErr(c, fmt.Sprintf("failed to create document named '%s'", metadata.Name)).WithError(err)
 	}
 	return response, nil
 }
@@ -138,13 +138,12 @@ func getDocumentType(t config.Type) (config.DocumentType, error) {
 	return documentType, nil
 }
 
-func getDocumentAttributesFromConfigType(documentType config.DocumentType) (docType string, private bool) {
-	docType, found := documentKindToType[documentType.Kind]
-	if !found {
-		return "", false
+func resolveCustomID(configCustomID string, coord coordinate.Coordinate) string {
+	// customID is either the one defined in the config, or a generated external ID
+	if configCustomID != "" {
+		return configCustomID
 	}
-
-	return docType, documentType.Private
+	return idutils.GenerateExternalID(coord)
 }
 
 // validateDashboardPayload returns an error if the JSON data is 1) malformed or 2) if the payload is not a Dynatrace platform dashboard payload.
