@@ -313,6 +313,30 @@ func TestDeploy_ConfigWithoutOriginObjectId_WithCustomID(t *testing.T) {
 	})
 }
 
+func TestDeploy_WithLabels_PropagatesLabelsToMetadata(t *testing.T) {
+	labels := []string{"team:foo", "env:prod"}
+	documentConfig := &config.Config{
+		Type:       config.DocumentType{Kind: config.DashboardKind, Labels: labels},
+		Coordinate: documentConfigCoordinate,
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: defaultParameters,
+	}
+
+	expectedExternalId := idutils.GenerateExternalID(documentConfigCoordinate)
+	expectedMetadata := documents.Metadata{
+		ID:     expectedExternalId,
+		Name:   documentName,
+		Type:   documents.Dashboard,
+		Labels: labels,
+	}
+
+	client := document.NewMockDeploySource(gomock.NewController(t))
+	client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedMetadata), gomock.Any()).Times(1).Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, expectedExternalId)}, nil)
+
+	_, err := runDeployTest(t, client, documentConfig)
+	assert.NoError(t, err)
+}
+
 func TestDeploy_WithV1Payload_Fails(t *testing.T) {
 	documentConfig := &config.Config{
 		Type:       config.DocumentType{Kind: config.DashboardKind},

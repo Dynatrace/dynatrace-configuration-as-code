@@ -8,3 +8,6 @@ configs:
     document:
       kind: notebook
       private: false
+      labels:
+        - monaco-label-1
+        - monaco-label-2

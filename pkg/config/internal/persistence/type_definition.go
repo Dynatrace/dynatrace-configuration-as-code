@@ -64,6 +64,7 @@ type DocumentDefinition struct {
 	Kind    config.DocumentKind `yaml:"kind" json:"kind" mapstructure:"kind"`
 	ID      string              `yaml:"id,omitempty" json:"id,omitempty"  mapstructure:"id"`
 	Private bool                `yaml:"private,omitempty" json:"private,omitempty"  mapstructure:"private"`
+	Labels  []string            `yaml:"labels,omitempty" json:"labels,omitempty" mapstructure:"labels"`
 }
 
 type OpenPipelineDefinition struct {
@@ -187,6 +188,7 @@ func (c *TypeDefinition) parseDocumentType(a any) error {
 		Kind:     r.Kind,
 		Private:  r.Private,
 		CustomID: r.ID,
+		Labels:   r.Labels,
 	}
 
 	return nil
@@ -332,6 +334,7 @@ func (c TypeDefinition) MarshalYAML() (any, error) {
 				Kind:    t.Kind,
 				Private: t.Private,
 				ID:      t.CustomID,
+				Labels:  t.Labels,
 			},
 		}, nil
 

@@ -32,12 +32,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
 
-// TestDocuments verifies that the "private" field of a document config definition in the config.yaml file
-// has an effect and reaches the environment correctly.
-// 1. documents are deployed (with private = false)
-// 2. private is set to true for one of the documents
-// 3. documents are deployed again
-// 4. check whether the document is private
+// TestDocuments verifies that document config definition fields in the config.yaml file
+// have an effect and reach the environment correctly.
+//  1. documents are deployed (with private = false, and labels on the notebook)
+//  2. the notebook's labels are read back from the environment
+//  3. private is set to true for one of the documents
+//  4. documents are deployed again
+//  5. check whether the document is private
 func TestDocuments(t *testing.T) {
 
 	configFolder := "testdata/"
@@ -66,6 +67,9 @@ func TestDocuments(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Len(t, result.Responses, 1)
 			assert.False(t, result.Responses[0].IsPrivate)
+
+			// check that the labels defined in the config reached the environment
+			assert.ElementsMatch(t, []string{"monaco-label-1", "monaco-label-2"}, result.Responses[0].Labels)
 
 			// check isPrivate == true
 			result, err = clientSet.DocumentClient.List(t.Context(), fmt.Sprintf("name='my-dashboard_%s'", testContext.Suffix))
