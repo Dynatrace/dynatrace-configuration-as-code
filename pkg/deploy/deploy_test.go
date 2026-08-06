@@ -1425,7 +1425,7 @@ func TestDeployDryRun(t *testing.T) {
 							Template: testutils.GenerateDummyTemplate(t),
 						},
 						config.Config{
-							Type:        config.DocumentType{},
+							Type:        config.DocumentType{Kind: config.NotebookKind},
 							Environment: "env",
 							Coordinate: coordinate.Coordinate{
 								Project:  "p1",

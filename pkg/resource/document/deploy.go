@@ -64,7 +64,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	}
 	docType, found := documentKindToType[documentType.Kind]
 	if !found {
-		docType = ""
+		return entities.ResolvedEntity{}, fmt.Errorf("unknown document type: %s", documentType.Kind)
 	}
 	if docType == documents.Dashboard {
 		if err := validateDashboardPayload(renderedConfig); err != nil {
