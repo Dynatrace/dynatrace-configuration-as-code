@@ -490,24 +490,18 @@ func TestDeploy_WithInvalidPayload_Fails(t *testing.T) {
 	assert.ErrorAs(t, err, &synErr)
 }
 
-// not existing kind falls back to an empty document type
-func TestDeploy_WithNotExistingDocumentKind_Succeeds(t *testing.T) {
-	objectId := "object-id"
+func TestDeploy_WithNotExistingDocumentKind_Fails(t *testing.T) {
 	documentConfig := &config.Config{
 		Type:           config.DocumentType{Kind: "new-not-existing-one"},
 		Coordinate:     documentConfigCoordinate,
-		OriginObjectId: objectId,
+		OriginObjectId: "object-id",
 		Template:       testutils.GenerateDummyTemplate(t),
 		Parameters:     defaultParameters,
 	}
-	expectedMetadata := documents.Metadata{ID: objectId, Name: documentName, Type: ""}
 	client := document.NewMockDeploySource(gomock.NewController(t))
-	client.EXPECT().Update(gomock.Any(), gomock.Eq(expectedMetadata), gomock.Any()).
-		Times(1).
-		Return(api.Response{Data: fmt.Appendf(nil, `{"id":"%s"}`, objectId)}, nil)
 
 	_, err := runDeployTest(t, client, documentConfig)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "unknown document type: new-not-existing-one")
 }
 
 func runDeployTest(t *testing.T, client *document.MockDeploySource, c *config.Config) (entities.ResolvedEntity, error) {
