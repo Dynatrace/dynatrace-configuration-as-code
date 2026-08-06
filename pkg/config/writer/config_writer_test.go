@@ -1463,6 +1463,47 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
+			name: "Document with description",
+			configs: []config.Config{
+				{
+					Template: template.NewInMemoryTemplateWithPath("project/document-dashboard/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "document",
+						ConfigId: "configId1",
+					},
+					Type:           config.DocumentType{Kind: config.DashboardKind, Description: new("my description")},
+					OriginObjectId: "ext-ID-123",
+					Parameters: map[string]parameter.Parameter{
+						config.NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					Skip: true,
+				},
+			},
+			expectedConfigs: map[string]persistence.TopLevelDefinition{
+				"document-dashboard": {
+					Configs: []persistence.TopLevelConfigDefinition{
+						{
+							Id: "configId1",
+							Config: persistence.ConfigDefinition{
+								Name:           "name",
+								Parameters:     nil,
+								Template:       "a.json",
+								OriginObjectId: "ext-ID-123",
+								Skip:           true,
+							},
+							Type: persistence.TypeDefinition{
+								Type: config.DocumentType{Kind: config.DashboardKind, Description: new("my description")},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/document-dashboard/a.json",
+			},
+		},
+		{
 			name: "OpenPipeline",
 			configs: []config.Config{
 				{

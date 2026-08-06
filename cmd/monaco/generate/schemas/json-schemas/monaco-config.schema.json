@@ -170,6 +170,17 @@
                           "private": {
                             "type": "boolean",
                             "description": "Whether the document is private."
+                          },
+                          "labels": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Labels associated with the document."
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "A description of the document."
                           }
                         },
                         "additionalProperties": false,
