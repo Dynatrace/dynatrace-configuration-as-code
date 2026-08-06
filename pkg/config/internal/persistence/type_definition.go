@@ -61,10 +61,11 @@ type AutomationDefinition struct {
 }
 
 type DocumentDefinition struct {
-	Kind    config.DocumentKind `yaml:"kind" json:"kind" mapstructure:"kind"`
-	ID      string              `yaml:"id,omitempty" json:"id,omitempty"  mapstructure:"id"`
-	Private bool                `yaml:"private,omitempty" json:"private,omitempty"  mapstructure:"private"`
-	Labels  []string            `yaml:"labels,omitempty" json:"labels,omitempty" mapstructure:"labels"`
+	Kind        config.DocumentKind `yaml:"kind" json:"kind" mapstructure:"kind"`
+	ID          string              `yaml:"id,omitempty" json:"id,omitempty"  mapstructure:"id"`
+	Private     bool                `yaml:"private,omitempty" json:"private,omitempty"  mapstructure:"private"`
+	Labels      []string            `yaml:"labels,omitempty" json:"labels,omitempty" mapstructure:"labels"`
+	Description *string             `yaml:"description,omitempty" json:"description,omitempty" mapstructure:"description"`
 }
 
 type OpenPipelineDefinition struct {
@@ -185,10 +186,11 @@ func (c *TypeDefinition) parseDocumentType(a any) error {
 	}
 
 	c.Type = config.DocumentType{
-		Kind:     r.Kind,
-		Private:  r.Private,
-		CustomID: r.ID,
-		Labels:   r.Labels,
+		Kind:        r.Kind,
+		Private:     r.Private,
+		CustomID:    r.ID,
+		Labels:      r.Labels,
+		Description: r.Description,
 	}
 
 	return nil
@@ -331,10 +333,11 @@ func (c TypeDefinition) MarshalYAML() (any, error) {
 	case config.DocumentType:
 		return map[string]any{
 			"document": DocumentDefinition{
-				Kind:    t.Kind,
-				Private: t.Private,
-				ID:      t.CustomID,
-				Labels:  t.Labels,
+				Kind:        t.Kind,
+				Private:     t.Private,
+				ID:          t.CustomID,
+				Labels:      t.Labels,
+				Description: t.Description,
 			},
 		}, nil
 

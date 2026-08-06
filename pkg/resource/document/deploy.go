@@ -73,10 +73,11 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 	}
 	customID := resolveCustomID(documentType.CustomID, c.Coordinate)
 	documentMetadata := documents.Metadata{
-		Name:      documentName,
-		Type:      docType,
-		IsPrivate: documentType.Private,
-		Labels:    documentType.Labels,
+		Name:        documentName,
+		Type:        docType,
+		IsPrivate:   documentType.Private,
+		Labels:      documentType.Labels,
+		Description: documentType.Description,
 	}
 
 	response, err := d.upsertDocument(ctx, c, documentMetadata, customID, []byte(renderedConfig))

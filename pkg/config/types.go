@@ -115,6 +115,9 @@ type DocumentType struct {
 	// Labels allow the user to organize and search their documents.
 	// Labels are optional, a document may have zero or more. The maximum number of labels per document is 25 and the maximum length of each label is 80 characters.
 	Labels []string
+
+	// Description is an optional human-readable description of the document.
+	Description *string
 }
 
 // DocumentKind defines the type of document. Currently, it can be a dashboard, a notebook, or a launchpad.

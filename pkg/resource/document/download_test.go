@@ -51,7 +51,7 @@ func TestDownloader_Download(t *testing.T) {
 			ConfigId: "12345678-1234-1234-1234-0123456789ab",
 		},
 		OriginObjectId: "12345678-1234-1234-1234-0123456789ab",
-		Type:           config.DocumentType{Kind: config.DashboardKind, Labels: []string{"team:foo", "env:prod"}},
+		Type:           config.DocumentType{Kind: config.DashboardKind, Labels: []string{"team:foo", "env:prod"}, Description: new("A getting started dashboard")},
 		Template:       template.NewInMemoryTemplate("12345678-1234-1234-1234-0123456789ab", "{}"),
 		Parameters: config.Parameters{
 			config.NameParameter: &value.ValueParameter{Value: "Getting started"},
