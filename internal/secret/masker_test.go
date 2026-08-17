@@ -17,8 +17,9 @@
 package secret
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMasker_Mask(t *testing.T) {
@@ -61,6 +62,11 @@ func TestMasker_Mask(t *testing.T) {
 			want:    `{"searchKey1":true,"searchKey2":2}`,
 		},
 		{
+			name:    "Not masking string array field values",
+			jsonStr: `{"searchKey1":["abc","def"]}`,
+			want:    `{"searchKey1":["abc","def"]}`,
+		},
+		{
 			name:    "Masking primitive json",
 			jsonStr: `0`,
 			want:    `0`,
@@ -74,6 +80,21 @@ func TestMasker_Mask(t *testing.T) {
 			name:    "Masking with invalid json",
 			jsonStr: `"searchKey1" :`,
 			want:    `"NON-JSON CONTENT"`,
+		},
+		{
+			name:    "Masking with empty json",
+			jsonStr: ``,
+			want:    ``,
+		},
+		{
+			name:    "Masking of values with keys contains a masking key",
+			jsonStr: `{"searchKey1Plus":"1234"}`,
+			want:    `{"searchKey1Plus":"########"}`,
+		},
+		{
+			name:    "Masking of values with keys regardless of case",
+			jsonStr: `{"SEARCHKEY1":"1234","SearchKey2Plus":"5678"}`,
+			want:    `{"SEARCHKEY1":"########","SearchKey2Plus":"########"}`,
 		},
 	}
 
@@ -89,6 +110,6 @@ func TestMaskingTurnedOff(t *testing.T) {
 	jsonStr := `{"password":"1234","user":{"searchKey2":{"user":{"searchKey3":"1234","username":"user1"}}}}`
 	t.Setenv(EnvMonacoSupportArchiveMaskKeys, "")
 
-	masked := Mask([]byte(`{"password":"1234","user":{"searchKey2":{"user":{"searchKey3":"1234","username":"user1"}}}}`))
+	masked := Mask([]byte(jsonStr))
 	assert.Equal(t, []byte(jsonStr), masked)
 }
