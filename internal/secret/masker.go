@@ -36,18 +36,22 @@ var defaultMaskedKeys = []string{
 	"token",
 }
 
-func maskedKeysFromEnv() []string {
+func maskedKeysFromEnvOrDefault() []string {
 	k, found := os.LookupEnv(EnvMonacoSupportArchiveMaskKeys)
 	if !found {
 		return defaultMaskedKeys
 	}
-	// return array of keys. If k is empty ("") then an empty slice is returned
-	return strings.FieldsFunc(k, func(c rune) bool { return c == ',' })
 
+	keys := strings.FieldsFunc(k, func(c rune) bool { return c == ',' })
+	lowerKeys := make([]string, len(keys))
+	for i, key := range keys {
+		lowerKeys[i] = strings.ToLower(key)
+	}
+	return lowerKeys
 }
 
 func Mask(data []byte) []byte {
-	keysToMask := maskedKeysFromEnv()
+	keysToMask := maskedKeysFromEnvOrDefault()
 	if len(keysToMask) == 0 {
 		return data
 	}
@@ -102,7 +106,7 @@ func maskRecursive(data any, keys []string) {
 		for k, val := range v {
 			if _, ok := val.(string); ok {
 				for _, key := range keys {
-					if strings.Contains(strings.ToLower(k), strings.ToLower(key)) {
+					if strings.Contains(strings.ToLower(k), key) {
 						v[k] = "########"
 					}
 				}
