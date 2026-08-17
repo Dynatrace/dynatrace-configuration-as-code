@@ -110,6 +110,7 @@ func maskRecursive(data any, keys []string) {
 						v[k] = "########"
 					}
 				}
+				continue
 			}
 			maskRecursive(val, keys)
 		}
