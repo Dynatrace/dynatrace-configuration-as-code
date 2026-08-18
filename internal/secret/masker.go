@@ -34,6 +34,7 @@ var defaultMaskedKeys = []string{
 	"password",
 	"secret",
 	"token",
+	"publicAccess",
 }
 
 func maskedKeysFromEnvOrDefault() []string {
@@ -103,20 +104,41 @@ func getJsonKeys(json string) []string {
 func maskRecursive(data any, keys []string) {
 	switch v := data.(type) {
 	case map[string]any:
+	checkKeys:
 		for k, val := range v {
-			if _, ok := val.(string); ok {
-				for _, key := range keys {
-					if strings.Contains(strings.ToLower(k), key) {
-						v[k] = "########"
-					}
+
+			for _, key := range keys {
+				if strings.Contains(strings.ToLower(k), key) {
+					v[k] = maskAllStringValues(val)
+					continue checkKeys
 				}
-				continue
 			}
+
 			maskRecursive(val, keys)
+
 		}
 	case []any:
 		for i := range v {
 			maskRecursive(v[i], keys)
 		}
 	}
+}
+
+func maskAllStringValues(data any) any {
+	switch v := data.(type) {
+	case string:
+		data = "########"
+
+	case map[string]any:
+		for k, val := range v {
+			v[k] = maskAllStringValues(val)
+		}
+
+	case []any:
+		for i := range v {
+			v[i] = maskAllStringValues(v[i])
+		}
+	}
+
+	return data
 }

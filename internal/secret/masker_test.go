@@ -32,7 +32,7 @@ func TestMasker_Mask(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "Masking field value",
+			name:    "Masking field string value",
 			jsonStr: `{"searchKey1":"1234","username":"user1"}`,
 			want:    `{"searchKey1":"########","username":"user1"}`,
 		},
@@ -42,14 +42,14 @@ func TestMasker_Mask(t *testing.T) {
 			want:    `{"user":{"searchKey1":"########","username":"user1"}}`,
 		},
 		{
-			name:    "Not masking nested complex field value",
+			name:    "Masking strings in matching nested complex field value",
 			jsonStr: `{"user":{"searchKey1":{"user":{"searchKey1":"1234","username":"user1"}},"username":"user1"}}`,
-			want:    `{"user":{"searchKey1":{"user":{"searchKey1":"########","username":"user1"}},"username":"user1"}}`,
+			want:    `{"user":{"searchKey1":{"user":{"searchKey1":"########","username":"########"}},"username":"user1"}}`,
 		},
 		{
 			name:    "Masking multiple values",
 			jsonStr: `{"searchKey1":"1234","user":{"searchKey2":{"user":{"searchKey3":"1234","username":"user1"}}}}`,
-			want:    `{"searchKey1":"########","user":{"searchKey2":{"user":{"searchKey3":"########","username":"user1"}}}}`,
+			want:    `{"searchKey1":"########","user":{"searchKey2":{"user":{"searchKey3":"########","username":"########"}}}}`,
 		},
 		{
 			name:    "Masking field value with JSON Array",
@@ -64,7 +64,7 @@ func TestMasker_Mask(t *testing.T) {
 		{
 			name:    "Not masking string array field values",
 			jsonStr: `{"searchKey1":["abc","def"]}`,
-			want:    `{"searchKey1":["abc","def"]}`,
+			want:    `{"searchKey1":["########","########"]}`,
 		},
 		{
 			name:    "Masking primitive json",
@@ -95,6 +95,11 @@ func TestMasker_Mask(t *testing.T) {
 			name:    "Masking of values with keys regardless of case",
 			jsonStr: `{"SEARCHKEY1":"1234","SearchKey2Plus":"5678"}`,
 			want:    `{"SEARCHKEY1":"########","SearchKey2Plus":"########"}`,
+		},
+		{
+			name:    "Masking of complex values with keys regardless of case",
+			jsonStr: `{"SEARCHKEY1":{"id":"1234"}}`,
+			want:    `{"SEARCHKEY1":{"id":"########"}}`,
 		},
 	}
 
