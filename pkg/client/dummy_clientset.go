@@ -28,14 +28,15 @@ import (
 )
 
 var DummyClientSet = ClientSet{
-	ConfigClient:                &dtclient.DummyConfigClient{},
-	SettingsClient:              &dtclient.DummySettingsClient{},
-	AutClient:                   &DummyAutomationClient{},
-	BucketClient:                &DummyBucketClient{},
-	DocumentClient:              &DummyDocumentClient{},
-	OpenPipelineClient:          &DummyOpenPipelineClient{},
-	SegmentClient:               &DummySegmentClient{},
-	ServiceLevelObjectiveClient: &DummyServiceLevelObjectClient{},
+	ConfigClient:                 &dtclient.DummyConfigClient{},
+	SettingsClient:               &dtclient.DummySettingsClient{},
+	AutClient:                    &DummyAutomationClient{},
+	BucketClient:                 &DummyBucketClient{},
+	DocumentClient:               &DummyDocumentClient{},
+	OpenPipelineClient:           &DummyOpenPipelineClient{},
+	SegmentClient:                &DummySegmentClient{},
+	ServiceLevelObjectiveClient:  &DummyServiceLevelObjectClient{},
+	CloudConfigurationClient:     &DummyCloudConfigurationClient{},
 }
 
 var _ AutomationClient = (*DummyAutomationClient)(nil)
@@ -186,5 +187,27 @@ func (c *DummyServiceLevelObjectClient) Create(_ context.Context, _ []byte) (api
 }
 
 func (c *DummyServiceLevelObjectClient) Delete(_ context.Context, _ string) (api.Response, error) {
+	return api.Response{}, nil
+}
+
+type DummyCloudConfigurationClient struct{}
+
+func (c *DummyCloudConfigurationClient) List(_ context.Context) (api.ListResponse, error) {
+	return api.ListResponse{}, nil
+}
+
+func (c *DummyCloudConfigurationClient) Get(_ context.Context, _ string) (api.Response, error) {
+	return api.Response{}, api.APIError{StatusCode: http.StatusNotFound}
+}
+
+func (c *DummyCloudConfigurationClient) Create(_ context.Context, _ []byte) (api.Response, error) {
+	return api.Response{Data: []byte(`{}`)}, nil
+}
+
+func (c *DummyCloudConfigurationClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
+	return api.Response{}, nil
+}
+
+func (c *DummyCloudConfigurationClient) Delete(_ context.Context, _ string) (api.Response, error) {
 	return api.Response{}, nil
 }

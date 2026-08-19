@@ -32,6 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/documents"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/cloudconfiguration"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/supportarchive"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -193,6 +194,14 @@ type ServiceLevelObjectiveClient interface {
 	Delete(ctx context.Context, id string) (libAPI.Response, error)
 }
 
+type CloudConfigurationClient interface {
+	List(ctx context.Context) (libAPI.ListResponse, error)
+	Get(ctx context.Context, id string) (libAPI.Response, error)
+	Create(ctx context.Context, data []byte) (libAPI.Response, error)
+	Update(ctx context.Context, id string, data []byte) (libAPI.Response, error)
+	Delete(ctx context.Context, id string) (libAPI.Response, error)
+}
+
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
 var DefaultRetryOptions = rest.RetryOptions{MaxRetries: 10, DelayAfterRetry: time.Second, ShouldRetryFunc: rest.RetryIfTooManyRequestsOrServiceUnavailable}
@@ -207,8 +216,9 @@ type ClientSet struct {
 	BucketClient                BucketClient
 	DocumentClient              DocumentClient
 	OpenPipelineClient          OpenPipelineClient
-	SegmentClient               SegmentClient
-	ServiceLevelObjectiveClient ServiceLevelObjectiveClient
+	SegmentClient                SegmentClient
+	ServiceLevelObjectiveClient  ServiceLevelObjectiveClient
+	CloudConfigurationClient     CloudConfigurationClient
 }
 
 type ClientOptions struct {
@@ -258,9 +268,10 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		autClient                   AutomationClient
 		documentClient              DocumentClient
 		openPipelineClient          OpenPipelineClient
-		segmentClient               SegmentClient
-		serviceLevelObjectiveClient ServiceLevelObjectiveClient
-		err                         error
+		segmentClient                SegmentClient
+		serviceLevelObjectiveClient  ServiceLevelObjectiveClient
+		cloudConfigurationClient     CloudConfigurationClient
+		err                          error
 	)
 	if err = validateURL(ctx, url); err != nil {
 		return nil, err
@@ -332,6 +343,8 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
+		cloudConfigurationClient = cloudconfiguration.NewClient(client)
+
 		settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
 		if err != nil {
 			return nil, err
@@ -372,7 +385,8 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		BucketClient:                bucketClient,
 		DocumentClient:              documentClient,
 		OpenPipelineClient:          openPipelineClient,
-		SegmentClient:               segmentClient,
-		ServiceLevelObjectiveClient: serviceLevelObjectiveClient,
+		SegmentClient:                segmentClient,
+		ServiceLevelObjectiveClient:  serviceLevelObjectiveClient,
+		CloudConfigurationClient:     cloudConfigurationClient,
 	}, nil
 }

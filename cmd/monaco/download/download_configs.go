@@ -41,6 +41,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/cloudconfiguration"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
@@ -297,6 +298,16 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 			return nil, fmt.Errorf("can't download %s resources: no platform credentials configured", config.ServiceLevelObjectiveID)
 		} else {
 			log.Warn(oAuthSkipMsg, "SLO-V2")
+		}
+	}
+
+	if opts.onlyOptions.ShouldDownload(OnlyCloudConfigurationFlag) {
+		if opts.auth.HasPlatformCredentials() {
+			downloadables = append(downloadables, cloudconfiguration.NewDownloadAPI(clientSet.CloudConfigurationClient))
+		} else if opts.onlyOptions.IsSingleOption(OnlyCloudConfigurationFlag) {
+			return nil, fmt.Errorf("can't download %s resources: no platform credentials configured", config.CloudConfigurationID)
+		} else {
+			log.Warn(oAuthSkipMsg, "cloud-configuration")
 		}
 	}
 

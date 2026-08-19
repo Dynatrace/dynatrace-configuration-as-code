@@ -49,6 +49,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/cloudconfiguration"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
@@ -143,7 +144,8 @@ func DeployForAllEnvironments(ctx context.Context, projects []project.Project, e
 
 func createDeployables(clientSet *client.ClientSet) resource.Deployables {
 	return resource.Deployables{
-		config.ServiceLevelObjectiveID: slo.NewDeployAPI(clientSet.ServiceLevelObjectiveClient),
+		config.ServiceLevelObjectiveID:  slo.NewDeployAPI(clientSet.ServiceLevelObjectiveClient),
+		config.CloudConfigurationID:     cloudconfiguration.NewDeployAPI(clientSet.CloudConfigurationClient),
 		config.SegmentID:               segment.NewDeployAPI(clientSet.SegmentClient),
 		config.ClassicApiTypeID:        classic.NewDeployAPI(clientSet.ConfigClient, api.NewAPIs()),
 		config.SettingsTypeID:          settings.NewDeployAPI(clientSet.SettingsClient),

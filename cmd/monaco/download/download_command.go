@@ -48,13 +48,14 @@ const (
 	OnlyDocumentsFlag    OnlyFlag = "only-documents"
 	OnlyBucketsFlag      OnlyFlag = "only-buckets"
 	OnlyOpenPipelineFlag OnlyFlag = "only-openpipeline"
-	OnlySloV2Flag        OnlyFlag = "only-slo-v2"
-	OnlySegmentsFlag     OnlyFlag = "only-segments"
+	OnlySloV2Flag              OnlyFlag = "only-slo-v2"
+	OnlySegmentsFlag           OnlyFlag = "only-segments"
+	OnlyCloudConfigurationFlag OnlyFlag = "only-cloud-configuration"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	var f downloadCmdOptions
-	var onlySettings, onlyApis, onlyOpenPipeline, onlySegments, onlySloV2, onlyDocuments, onlyBuckets, onlyAutomation bool
+	var onlySettings, onlyApis, onlyOpenPipeline, onlySegments, onlySloV2, onlyDocuments, onlyBuckets, onlyAutomation, onlyCloudConfiguration bool
 
 	platformTokenAddendum := ""
 	if featureflags.PlatformToken.Enabled() {
@@ -86,12 +87,13 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 			f.onlyOptions = OnlyOptions{
 				OnlySettingsFlag:     onlySettings || len(f.specificSchemas) > 0,
 				OnlyApisFlag:         onlyApis || len(f.specificAPIs) > 0,
-				OnlySegmentsFlag:     onlySegments,
-				OnlySloV2Flag:        onlySloV2,
-				OnlyOpenPipelineFlag: onlyOpenPipeline,
-				OnlyDocumentsFlag:    onlyDocuments,
-				OnlyBucketsFlag:      onlyBuckets,
-				OnlyAutomationFlag:   onlyAutomation,
+				OnlySegmentsFlag:           onlySegments,
+				OnlySloV2Flag:              onlySloV2,
+				OnlyOpenPipelineFlag:       onlyOpenPipeline,
+				OnlyDocumentsFlag:          onlyDocuments,
+				OnlyBucketsFlag:            onlyBuckets,
+				OnlyAutomationFlag:         onlyAutomation,
+				OnlyCloudConfigurationFlag: onlyCloudConfiguration,
 			}
 
 			if f.environmentURL != "" {
@@ -133,6 +135,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&onlySegments, OnlySegmentsFlag, false, "Only download segment configurations")
 	cmd.Flags().BoolVar(&onlyOpenPipeline, OnlyOpenPipelineFlag, false, "Only download openpipeline configurations")
 	cmd.Flags().BoolVar(&onlySloV2, OnlySloV2Flag, false, fmt.Sprintf("Only download %s configurations", config.ServiceLevelObjectiveID))
+	cmd.Flags().BoolVar(&onlyCloudConfiguration, OnlyCloudConfigurationFlag, false, fmt.Sprintf("Only download %s configurations", config.CloudConfigurationID))
 
 	// combinations
 	cmd.MarkFlagsMutuallyExclusive(SettingsSchemaFlag, OnlySettingsFlag)

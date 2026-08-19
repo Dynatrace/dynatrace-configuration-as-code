@@ -33,6 +33,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/cloudconfiguration"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
 )
 
@@ -161,6 +162,11 @@ func clientSetToDeleters(clients client.ClientSet) Deleters {
 	deleterForConfigType[string(config.ServiceLevelObjectiveID)] = nil
 	if clients.ServiceLevelObjectiveClient != nil {
 		deleterForConfigType[string(config.ServiceLevelObjectiveID)] = slo.NewDeleter(clients.ServiceLevelObjectiveClient)
+	}
+
+	deleterForConfigType[string(config.CloudConfigurationID)] = nil
+	if clients.CloudConfigurationClient != nil {
+		deleterForConfigType[string(config.CloudConfigurationID)] = cloudconfiguration.NewDeleter(clients.CloudConfigurationClient)
 	}
 
 	var unknownTypeDeleter Deleter = nil

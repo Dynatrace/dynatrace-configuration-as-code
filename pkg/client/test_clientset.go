@@ -68,3 +68,26 @@ func (TestServiceLevelObjectiveClient) Create(ctx context.Context, data []byte) 
 func (TestServiceLevelObjectiveClient) Delete(ctx context.Context, id string) (api.Response, error) {
 	return api.Response{}, fmt.Errorf("unimplemented")
 }
+
+// TestCloudConfigurationClient is a fake client that returns an unimplemented error on every execution of any method.
+type TestCloudConfigurationClient struct{}
+
+func (TestCloudConfigurationClient) List(ctx context.Context) (api.ListResponse, error) {
+	return api.ListResponse{}, fmt.Errorf("unimplemented")
+}
+
+func (TestCloudConfigurationClient) Get(ctx context.Context, id string) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
+}
+
+func (TestCloudConfigurationClient) Create(ctx context.Context, data []byte) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
+}
+
+func (TestCloudConfigurationClient) Update(ctx context.Context, id string, data []byte) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
+}
+
+func (TestCloudConfigurationClient) Delete(ctx context.Context, id string) (api.Response, error) {
+	return api.Response{}, fmt.Errorf("unimplemented")
+}

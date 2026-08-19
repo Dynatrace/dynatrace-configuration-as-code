@@ -31,6 +31,7 @@ const (
 	BucketType                = "bucket"
 	SegmentType               = "segment"
 	ServiceLevelObjectiveType = "slo-v2"
+	CloudConfigurationType    = "cloud-configuration"
 )
 
 type TypeDefinition struct {
@@ -88,6 +89,8 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(any) error) error {
 			c.Type = config.Segment{}
 		case ServiceLevelObjectiveType:
 			c.Type = config.ServiceLevelObjective{}
+		case CloudConfigurationType:
+			c.Type = config.CloudConfiguration{}
 		default:
 			c.Type = config.ClassicApiType{Api: str}
 		}
@@ -282,6 +285,8 @@ func (c *TypeDefinition) GetApiType() string {
 		return string(t.ID())
 	case config.ServiceLevelObjective:
 		return string(t.ID())
+	case config.CloudConfiguration:
+		return string(t.ID())
 	}
 
 	return ""
@@ -353,6 +358,9 @@ func (c TypeDefinition) MarshalYAML() (any, error) {
 
 	case config.ServiceLevelObjective:
 		return ServiceLevelObjectiveType, nil
+
+	case config.CloudConfiguration:
+		return CloudConfigurationType, nil
 	}
 	return nil, fmt.Errorf("unknown type: %T", c.Type)
 }

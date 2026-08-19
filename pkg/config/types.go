@@ -24,8 +24,9 @@ const (
 	BucketTypeID            TypeID = "bucket"
 	DocumentTypeID          TypeID = "document"
 	OpenPipelineTypeID      TypeID = "openpipeline"
-	SegmentID               TypeID = "segment"
-	ServiceLevelObjectiveID TypeID = "slo-v2"
+	SegmentID                TypeID = "segment"
+	ServiceLevelObjectiveID  TypeID = "slo-v2"
+	CloudConfigurationID     TypeID = "cloud-configuration"
 )
 
 var _ Type = SettingsType{}
@@ -163,4 +164,10 @@ type ServiceLevelObjective struct{}
 
 func (ServiceLevelObjective) ID() TypeID {
 	return ServiceLevelObjectiveID
+}
+
+type CloudConfiguration struct{}
+
+func (CloudConfiguration) ID() TypeID {
+	return CloudConfigurationID
 }
