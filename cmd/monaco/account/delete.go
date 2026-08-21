@@ -87,7 +87,7 @@ func deleteCommand(fs afero.Fs) *cobra.Command {
 		"Specify one (or multiple) accounts(s) that should be used for deletion. "+
 			"To set multiple accounts either repeat this flag, or separate them using a comma (,). "+
 			"If this flag is specified, resources will be deleted from all specified accounts. "+
-			"If it is not specified, all accounts in the manfiest will be used for deletion")
+			"If it is not specified, all accounts in the manifest will be used for deletion")
 
 	if err := deleteCmd.RegisterFlagCompletionFunc("account", completion.AccountsByManifestFlag); err != nil {
 		log.Fatal("failed to setup CLI %v", err)
