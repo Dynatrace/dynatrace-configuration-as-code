@@ -73,7 +73,7 @@ func deleteCommand(fs afero.Fs) *cobra.Command {
 				}
 			}
 			if errOccurred {
-				return fmt.Errorf("encountered errors deleting account resoruces - please see logs")
+				return fmt.Errorf("encountered errors deleting account resources - please see logs")
 			}
 			return nil
 		},
