@@ -134,7 +134,7 @@ func loadAccountsFromManifest(fs afero.Fs, opts *downloadOpts) (map[string]manif
 		var retVal map[string]manifest.Account
 		for _, a := range opts.accountList {
 			if n, ok := m.Accounts[a]; !ok {
-				return nil, fmt.Errorf("unknown enviroment %q", n.Name)
+				return nil, fmt.Errorf("unknown environment %q", n.Name)
 			}
 
 			retVal = make(map[string]manifest.Account)
