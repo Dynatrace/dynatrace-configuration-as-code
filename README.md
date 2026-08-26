@@ -1,6 +1,6 @@
 # Dynatrace Configuration as Code
 
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Dynatrace/dynatrace-operator/badge)](https://scorecard.dev/viewer/?uri=github.com/Dynatrace/dynatrace-configuration-as-code)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Dynatrace/dynatrace-configuration-as-code/badge)](https://scorecard.dev/viewer/?uri=github.com/Dynatrace/dynatrace-configuration-as-code)
 
 Dynatrace Configuration as Code, an evolution from our Monitoring as Code CLI, provides Observability as Code and Security as Code to fully automate configuration of the Dynatrace platform at any scale, 
 from automating the standard configuration of all your Dynatrace environments to meeting specific demands for individual environments.
