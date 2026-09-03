@@ -60,6 +60,12 @@ func downloadAll(ctx context.Context, fs afero.Fs, opts *downloadOpts) error {
 		}
 	}
 
+	for _, acc := range accs {
+		if err := writerContext(fs, opts, acc.Name).Validate(); err != nil {
+			return fmt.Errorf("cannot download account %q: %w", acc.Name, err)
+		}
+	}
+
 	accountClients, err := dynatrace.CreateAccountClients(ctx, accs)
 	if err != nil {
 		return fmt.Errorf("failed to create account clients: %w", err)
@@ -155,17 +161,20 @@ func downloadAndPersist(ctx context.Context, fs afero.Fs, opts *downloadOpts, ac
 		return fmt.Errorf("failed to download resources: %w", err)
 	}
 
-	c := persistence.Context{
-		Fs:            fs,
-		OutputFolder:  opts.outputFolder,
-		ProjectFolder: filepath.Join(opts.projectName, accInfo.Name),
-	}
-	err = persistence.Write(c, *resources)
+	err = persistence.Write(writerContext(fs, opts, accInfo.Name), *resources)
 	if err != nil {
 		return fmt.Errorf("failed to persist resources: %w", err)
 	}
 
 	return nil
+}
+
+func writerContext(fs afero.Fs, opts *downloadOpts, accountName string) persistence.Context {
+	return persistence.Context{
+		Fs:            fs,
+		OutputFolder:  opts.outputFolder,
+		ProjectFolder: filepath.Join(opts.projectName, accountName),
+	}
 }
 
 func readAuthSecretFromEnv(envVar string) (manifest.AuthSecret, error) {
