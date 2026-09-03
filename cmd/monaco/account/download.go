@@ -46,6 +46,10 @@ func downloadAll(ctx context.Context, fs afero.Fs, opts *downloadOpts) error {
 		opts.outputFolder = fmt.Sprintf("download_account_%s", timeutils.TimeAnchor().Format(log.LogFileTimestampPrefixFormat))
 	}
 
+	if err := manifest.ValidateProjectName(opts.projectName); err != nil {
+		return err
+	}
+
 	var accs map[string]manifest.Account
 	var err error
 	if opts.accountUUID == "" {
@@ -57,6 +61,12 @@ func downloadAll(ctx context.Context, fs afero.Fs, opts *downloadOpts) error {
 		accs, err = createAccount(opts)
 		if err != nil {
 			return err
+		}
+	}
+
+	for _, acc := range accs {
+		if !filepath.IsLocal(acc.Name) {
+			return fmt.Errorf("cannot download account %q: account name must resolve to a folder inside the project folder %q", acc.Name, opts.projectName)
 		}
 	}
 
