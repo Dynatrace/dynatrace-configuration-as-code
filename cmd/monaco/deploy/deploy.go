@@ -278,7 +278,7 @@ func validateAuthenticationWithProjectConfigs(projects []project.Project, enviro
 					case config.SettingsType:
 						t, ok := conf.Type.(config.SettingsType)
 						if ok && t.AllUserPermission != nil && !environments[envName].HasPlatformCredentials() {
-							return fmt.Errorf("using permission property on settings API requires platform credentials, schema '%s' enviroment '%s'", t.SchemaId, envName)
+							return fmt.Errorf("using permission property on settings API requires platform credentials, schema '%s' environment '%s'", t.SchemaId, envName)
 						}
 						if environments[envName].Auth.AccessToken == nil && !environments[envName].HasPlatformCredentials() {
 							return fmt.Errorf("API of type '%s' requires an access token or platform credentials for environment '%s'", conf.Type, envName)
