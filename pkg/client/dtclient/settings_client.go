@@ -25,7 +25,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -47,6 +49,8 @@ const (
 	DeleteOperation = "delete"
 	WriteOperation  = "write"
 )
+
+var ownerBasedPipelinesRegex = regexp.MustCompile(`^builtin:openpipeline\..*\.(ingest-sources|data-forwarding|pipeline-groups|pipelines)$`)
 
 // errMissingPermissionsClient is an error that the settings client has no permissions client set.
 // this indicates a misconfiguration of the settings client.
@@ -161,6 +165,8 @@ type ListSettingsOptions struct {
 	DiscardValue bool
 	// ListSettingsFilter can be set to pre-filter the result given a special logic
 	Filter ListSettingsFilter
+	// AdminAccess requests resources of all owners for owner-based OpenPipeline schemas
+	AdminAccess bool
 }
 
 // ListSettingsFilter can be used to filter fetched settings objects with custom criteria, e.g. o.ExternalId == ""
@@ -826,9 +832,10 @@ func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSet
 		listSettingsFields = reducedListSettingsFields
 	}
 	params := url.Values{
-		"schemaIds": []string{schemaId},
-		"pageSize":  []string{defaultPageSize},
-		"fields":    []string{listSettingsFields},
+		"schemaIds":   []string{schemaId},
+		"pageSize":    []string{defaultPageSize},
+		"fields":      []string{listSettingsFields},
+		"adminAccess": []string{strconv.FormatBool(getAdminAccess(opts.AdminAccess, schemaId))},
 	}
 
 	result := make([]DownloadSettingsObject, 0)
@@ -853,6 +860,12 @@ func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSet
 	d.settingsCache.Set(schemaId, result)
 
 	return filter.FilterSlice(result, opts.Filter), nil
+}
+
+// getAdminAccess returns true iff admin access is requested and the schema is an
+// owner-based OpenPipeline schema.
+func getAdminAccess(adminAccess bool, schemaId string) bool {
+	return adminAccess && ownerBasedPipelinesRegex.MatchString(schemaId)
 }
 
 func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {

@@ -3167,3 +3167,93 @@ func TestSettingsClient_ClearCache_OnSettingsCache(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, settingsCalledCount, 2)
 }
+
+func Test_getAdminAccess(t *testing.T) {
+	ownerBasedSchemas := []string{
+		"builtin:openpipeline.logs.ingest-sources",
+		"builtin:openpipeline.logs.data-forwarding",
+		"builtin:openpipeline.logs.pipeline-groups",
+		"builtin:openpipeline.logs.pipelines",
+		"builtin:openpipeline.events.pipelines",
+	}
+
+	for _, schema := range ownerBasedSchemas {
+		t.Run("owner-based schema "+schema+" honors admin flag", func(t *testing.T) {
+			assert.True(t, getAdminAccess(true, schema))
+			assert.False(t, getAdminAccess(false, schema))
+		})
+	}
+
+	nonOwnerBasedSchemas := []string{
+		"builtin:something",
+		"builtin:openpipeline.logs",
+		"builtin:openpipeline.logs.routing",
+		"builtin:openpipeline.logs.ingest-sources.temp",
+		"other:builtin:openpipeline.logs.ingest-sources",
+		"builtin:openpipeline.pipelines", // missing the subtype segment
+	}
+
+	for _, schema := range nonOwnerBasedSchemas {
+		t.Run("non owner-based schema "+schema+" always returns false", func(t *testing.T) {
+			assert.False(t, getAdminAccess(true, schema))
+			assert.False(t, getAdminAccess(false, schema))
+		})
+	}
+}
+
+func TestList_SendsAdminAccessQueryParam(t *testing.T) {
+	tests := []struct {
+		name            string
+		schemaID        string
+		adminAccess     bool
+		wantAdminAccess string
+	}{
+		{
+			name:            "owner-based schema with admin access sends adminAccess=true",
+			schemaID:        "builtin:openpipeline.logs.pipelines",
+			adminAccess:     true,
+			wantAdminAccess: "true",
+		},
+		{
+			name:            "owner-based schema without admin access sends adminAccess=false",
+			schemaID:        "builtin:openpipeline.logs.pipelines",
+			adminAccess:     false,
+			wantAdminAccess: "false",
+		},
+		{
+			name:            "non OpenPipeline schema sends adminAccess=false even with admin access",
+			schemaID:        "builtin:something",
+			adminAccess:     true,
+			wantAdminAccess: "false",
+		},
+		{
+			name:            "non owner-based OpenPipeline schema sends adminAccess=false even with admin access",
+			schemaID:        "builtin:openpipeline.logs.routing",
+			adminAccess:     true,
+			wantAdminAccess: "false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAdminAccess string
+			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				gotAdminAccess = req.URL.Query().Get("adminAccess")
+				_, _ = rw.Write([]byte(`{ "items": [] }`))
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			require.NoError(t, err)
+
+			restClient := corerest.NewClient(serverURL, server.Client())
+			client, err := NewClassicSettingsClient(restClient)
+			require.NoError(t, err)
+
+			_, err = client.List(t.Context(), tt.schemaID, ListSettingsOptions{AdminAccess: tt.adminAccess})
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantAdminAccess, gotAdminAccess)
+		})
+	}
+}
