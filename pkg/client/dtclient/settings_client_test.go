@@ -34,7 +34,6 @@ import (
 
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
-	dlcontext "github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -3180,9 +3179,8 @@ func Test_getAdminAccess(t *testing.T) {
 
 	for _, schema := range ownerBasedSchemas {
 		t.Run("owner-based schema "+schema+" honors admin flag", func(t *testing.T) {
-			assert.True(t, getAdminAccess(dlcontext.NewContextWithAdminAccess(t.Context(), true), schema))
-			assert.False(t, getAdminAccess(dlcontext.NewContextWithAdminAccess(t.Context(), false), schema))
-			assert.False(t, getAdminAccess(t.Context(), schema))
+			assert.True(t, getAdminAccess(true, schema))
+			assert.False(t, getAdminAccess(false, schema))
 		})
 	}
 
@@ -3195,8 +3193,8 @@ func Test_getAdminAccess(t *testing.T) {
 
 	for _, schema := range nonOwnerBasedSchemas {
 		t.Run("non owner-based schema "+schema+" always returns false", func(t *testing.T) {
-			assert.False(t, getAdminAccess(dlcontext.NewContextWithAdminAccess(t.Context(), true), schema))
-			assert.False(t, getAdminAccess(t.Context(), schema))
+			assert.False(t, getAdminAccess(true, schema))
+			assert.False(t, getAdminAccess(false, schema))
 		})
 	}
 }
@@ -3250,8 +3248,7 @@ func TestList_SendsAdminAccessQueryParam(t *testing.T) {
 			client, err := NewClassicSettingsClient(restClient)
 			require.NoError(t, err)
 
-			ctx := dlcontext.NewContextWithAdminAccess(t.Context(), tt.adminAccess)
-			_, err = client.List(ctx, tt.schemaID, ListSettingsOptions{})
+			_, err = client.List(t.Context(), tt.schemaID, ListSettingsOptions{AdminAccess: tt.adminAccess})
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.wantAdminAccess, gotAdminAccess)

@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	dlcontext "github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 )
 
@@ -496,7 +495,7 @@ func TestGetDownloadCommand_AdminAccessFlag(t *testing.T) {
 		wantAdminAccess bool
 	}{
 		{
-			name:            "admin-access flag sets admin access in context",
+			name:            "admin-access flag sets admin access on options",
 			args:            "--url http://some.url --token TOKEN --admin-access",
 			wantAdminAccess: true,
 		},
@@ -511,8 +510,8 @@ func TestGetDownloadCommand_AdminAccessFlag(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := newMonaco(t)
 			m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), gomock.Any()).
-				DoAndReturn(func(ctx context.Context, _ afero.Fs, _ downloadCmdOptions) error {
-					assert.Equal(t, tt.wantAdminAccess, dlcontext.GetAdminAccess(ctx))
+				DoAndReturn(func(_ context.Context, _ afero.Fs, opts downloadCmdOptions) error {
+					assert.Equal(t, tt.wantAdminAccess, opts.adminAccess)
 					return nil
 				})
 

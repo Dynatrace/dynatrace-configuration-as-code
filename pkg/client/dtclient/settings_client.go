@@ -36,7 +36,6 @@ import (
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	coresettings "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/settings/permissions"
-	context2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -166,6 +165,8 @@ type ListSettingsOptions struct {
 	DiscardValue bool
 	// ListSettingsFilter can be set to pre-filter the result given a special logic
 	Filter ListSettingsFilter
+	// AdminAccess requests resources of all owners for owner-based OpenPipeline schemas
+	AdminAccess bool
 }
 
 // ListSettingsFilter can be used to filter fetched settings objects with custom criteria, e.g. o.ExternalId == ""
@@ -834,7 +835,7 @@ func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSet
 		"schemaIds":   []string{schemaId},
 		"pageSize":    []string{defaultPageSize},
 		"fields":      []string{listSettingsFields},
-		"adminAccess": []string{strconv.FormatBool(getAdminAccess(ctx, schemaId))},
+		"adminAccess": []string{strconv.FormatBool(getAdminAccess(opts.AdminAccess, schemaId))},
 	}
 
 	result := make([]DownloadSettingsObject, 0)
@@ -861,13 +862,10 @@ func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSet
 	return filter.FilterSlice(result, opts.Filter), nil
 }
 
-// getAdminAccess returns true iff the schema is related to OpenPipeline,
-// it supports owner based access control and the admin access flag in the context is set to true
-func getAdminAccess(ctx context.Context, schemaId string) bool {
-	if ownerBasedPipelinesRegex.MatchString(schemaId) {
-		return context2.GetAdminAccess(ctx)
-	}
-	return false
+// getAdminAccess returns true iff admin access is requested and the schema is an
+// owner-based OpenPipeline schema.
+func getAdminAccess(adminAccess bool, schemaId string) bool {
+	return adminAccess && ownerBasedPipelinesRegex.MatchString(schemaId)
 }
 
 func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {

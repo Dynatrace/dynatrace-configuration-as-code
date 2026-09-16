@@ -22,7 +22,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -85,7 +84,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
-			ctx := context.NewContextWithAdminAccess(cmd.Context(), adminAccess)
+			f.adminAccess = adminAccess
 			f.onlyOptions = OnlyOptions{
 				OnlySettingsFlag:     onlySettings || len(f.specificSchemas) > 0,
 				OnlyApisFlag:         onlyApis || len(f.specificAPIs) > 0,
@@ -98,13 +97,13 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 			}
 
 			if f.environmentURL != "" {
-				return command.DownloadConfigs(ctx, fs, f)
+				return command.DownloadConfigs(cmd.Context(), fs, f)
 			}
 
 			if f.manifestFile == "" {
 				f.manifestFile = "manifest.yaml"
 			}
-			return command.DownloadConfigsBasedOnManifest(ctx, fs, f)
+			return command.DownloadConfigsBasedOnManifest(cmd.Context(), fs, f)
 		},
 	}
 
@@ -136,7 +135,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&onlySegments, OnlySegmentsFlag, false, "Only download segment configurations")
 	cmd.Flags().BoolVar(&onlyOpenPipeline, OnlyOpenPipelineFlag, false, "Only download openpipeline configurations")
 	cmd.Flags().BoolVar(&onlySloV2, OnlySloV2Flag, false, fmt.Sprintf("Only download %s configurations", config.ServiceLevelObjectiveID))
-	cmd.Flags().BoolVar(&adminAccess, AdminAccessFlag, false, "export OpenPipeline resources of all owners, not just the current user's")
+	cmd.Flags().BoolVar(&adminAccess, AdminAccessFlag, false, "Download OpenPipeline resources of all owners, not just the current user's")
 
 	// combinations
 	cmd.MarkFlagsMutuallyExclusive(SettingsSchemaFlag, OnlySettingsFlag)

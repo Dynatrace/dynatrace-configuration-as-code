@@ -57,10 +57,11 @@ type DownloadAPI struct {
 	filters              Filters
 	specificSchemas      []string
 	isPlatformConnection bool
+	adminAccess          bool
 }
 
-func NewDownloadAPI(settingsSource DownloadSource, filters Filters, specificSchemas []string, usePlatform bool) *DownloadAPI {
-	return &DownloadAPI{settingsSource: settingsSource, filters: filters, specificSchemas: specificSchemas, isPlatformConnection: usePlatform}
+func NewDownloadAPI(settingsSource DownloadSource, filters Filters, specificSchemas []string, usePlatform bool, adminAccess bool) *DownloadAPI {
+	return &DownloadAPI{settingsSource: settingsSource, filters: filters, specificSchemas: specificSchemas, isPlatformConnection: usePlatform, adminAccess: adminAccess}
 }
 
 func (a DownloadAPI) Download(ctx context.Context, projectName string) (project.ConfigsPerType, error) {
@@ -154,7 +155,7 @@ func (a DownloadAPI) download(ctx context.Context, schemas []schema, projectName
 			lg := slog.With(log.TypeAttr(s.id))
 
 			lg.DebugContext(ctx, "Downloading all settings for schema")
-			objects, err := a.settingsSource.List(ctx, s.id, dtclient.ListSettingsOptions{})
+			objects, err := a.settingsSource.List(ctx, s.id, dtclient.ListSettingsOptions{AdminAccess: a.adminAccess})
 			if err != nil {
 				lg.ErrorContext(ctx, "Failed to fetch all settings for schema", log.ErrorAttr(err))
 				return
