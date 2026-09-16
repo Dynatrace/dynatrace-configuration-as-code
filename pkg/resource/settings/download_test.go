@@ -986,7 +986,7 @@ func TestDownloadAll(t *testing.T) {
 
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			settingsAPI := NewDownloadAPI(c, tt.filters, tt.schemas, tt.isPlatformConnection)
+			settingsAPI := NewDownloadAPI(c, tt.filters, tt.schemas, tt.isPlatformConnection, false)
 			res, err := settingsAPI.Download(t.Context(), "projectName")
 
 			assert.Equal(t, tt.want, res)

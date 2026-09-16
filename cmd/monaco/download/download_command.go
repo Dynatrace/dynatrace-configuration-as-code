@@ -42,6 +42,7 @@ const (
 	ProjectFlag                   = "project"
 	OutputFolderFlag              = "output-folder"
 	ForceFlag                     = "force"
+	AdminAccessFlag               = "admin-access"
 	OnlyApisFlag         OnlyFlag = "only-apis"
 	OnlySettingsFlag     OnlyFlag = "only-settings"
 	OnlyAutomationFlag   OnlyFlag = "only-automation"
@@ -54,7 +55,7 @@ const (
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	var f downloadCmdOptions
-	var onlySettings, onlyApis, onlyOpenPipeline, onlySegments, onlySloV2, onlyDocuments, onlyBuckets, onlyAutomation bool
+	var onlySettings, onlyApis, onlyOpenPipeline, onlySegments, onlySloV2, onlyDocuments, onlyBuckets, onlyAutomation, adminAccess bool
 
 	platformTokenAddendum := ""
 	if featureflags.PlatformToken.Enabled() {
@@ -83,6 +84,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
+			f.adminAccess = adminAccess
 			f.onlyOptions = OnlyOptions{
 				OnlySettingsFlag:     onlySettings || len(f.specificSchemas) > 0,
 				OnlyApisFlag:         onlyApis || len(f.specificAPIs) > 0,
@@ -133,6 +135,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&onlySegments, OnlySegmentsFlag, false, "Only download segment configurations")
 	cmd.Flags().BoolVar(&onlyOpenPipeline, OnlyOpenPipelineFlag, false, "Only download openpipeline configurations")
 	cmd.Flags().BoolVar(&onlySloV2, OnlySloV2Flag, false, fmt.Sprintf("Only download %s configurations", config.ServiceLevelObjectiveID))
+	cmd.Flags().BoolVar(&adminAccess, AdminAccessFlag, false, "Download OpenPipeline resources of all owners, not just the current user's")
 
 	// combinations
 	cmd.MarkFlagsMutuallyExclusive(SettingsSchemaFlag, OnlySettingsFlag)
