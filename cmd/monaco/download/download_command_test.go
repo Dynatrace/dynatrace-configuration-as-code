@@ -17,6 +17,7 @@
 package download
 
 import (
+	"context"
 	"io"
 	"maps"
 	"strings"
@@ -485,6 +486,39 @@ func TestGetDownloadCommand(t *testing.T) {
 		err := m.download("--url test.url --oauth-client-id id --oauth-client-secret secret --only-apis --only-settings --only-automation --only-documents --only-buckets --only-openpipeline --only-segments --only-slo-v2")
 		assert.NoError(t, err)
 	})
+}
+
+func TestGetDownloadCommand_AdminAccessFlag(t *testing.T) {
+	tests := []struct {
+		name            string
+		args            string
+		wantAdminAccess bool
+	}{
+		{
+			name:            "admin-access flag sets admin access on options",
+			args:            "--url http://some.url --token TOKEN --admin-access",
+			wantAdminAccess: true,
+		},
+		{
+			name:            "admin access defaults to false when flag is omitted",
+			args:            "--url http://some.url --token TOKEN",
+			wantAdminAccess: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newMonaco(t)
+			m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), gomock.Any()).
+				DoAndReturn(func(_ context.Context, _ afero.Fs, opts downloadCmdOptions) error {
+					assert.Equal(t, tt.wantAdminAccess, opts.adminAccess)
+					return nil
+				})
+
+			err := m.download(tt.args)
+			assert.NoError(t, err)
+		})
+	}
 }
 
 type monaco struct {
