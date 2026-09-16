@@ -19,20 +19,15 @@
 package settings
 
 import (
-	"errors"
 	"fmt"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yaml.in/yaml/v2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/monaco"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/test/internal/runner"
 )
@@ -60,58 +55,10 @@ func TestPermissionDownload(t *testing.T) {
 			err = monaco.Run(t, fs, fmt.Sprintf("monaco download --manifest=%s --environment=%s --project=proj --output-folder=download --verbose -s %s", manifestFile, env, appId))
 			require.NoError(t, err, "download: did not expect error")
 
-			// load downloaded manifest
-			mani, errs := manifestloader.Load(&manifestloader.Context{
-				Fs:           fs,
-				ManifestPath: "download/manifest.yaml",
-				Opts:         manifestloader.Options{RequireEnvironmentGroups: true},
-			})
-			assert.Empty(t, errs, "unexpected error loading manifest")
-
-			projects, errs := project.LoadProjects(t.Context(), fs, project.ProjectLoaderContext{
-				WorkingDir:      "download",
-				Manifest:        mani,
-				ParametersSerde: config.DefaultParameterParsers,
-			}, nil)
-			require.Empty(t, errs, "unexpected error loading project")
-			require.Len(t, projects, 1, "expected one project")
-
-			// find config with the correct name and check permissions
-			projectAndEnvName := "proj_" + env // for manifest downloads proj + env name
-			allConfigs := projects[0].Configs[projectAndEnvName]
-			require.NotNil(t, allConfigs)
-			configs := allConfigs[appId]
-
-			cfg, err := findConfig(configs, ctx.Suffix)
-			require.NoError(t, err, "config not found")
+			// find the downloaded config and check its permissions
+			projectAndEnvName := "proj_" + env // for manifest downloads: <download project>_<env>
+			cfg := findDownloadedConfig(t, fs, "download", projectAndEnvName, appId, ctx.Suffix)
 
 			assert.Equal(t, *cfg.Type.(config.SettingsType).AllUserPermission, config.WritePermission)
 		})
-}
-
-// findConfig looks for a config that has a JSON payload with a name that has the given suffix.
-// we don't have anything to identify the config we deployed besides the name
-// This one is not written into the YAML, only the JSON
-// Therefore, we have to look into every JSON file to find the correct config name
-func findConfig(configs []config.Config, suffix string) (config.Config, error) {
-	type contentStruct struct {
-		Name string `yaml:"name"`
-	}
-	for _, cfg := range configs {
-		content, err := cfg.Template.Content()
-		if err != nil {
-			return config.Config{}, err
-		}
-		var contentMap contentStruct
-		err = yaml.Unmarshal([]byte(content), &contentMap)
-
-		if err != nil {
-			return config.Config{}, err
-		}
-
-		if strings.HasSuffix(contentMap.Name, suffix) {
-			return cfg, nil
-		}
-	}
-	return config.Config{}, errors.New("config not found")
 }
