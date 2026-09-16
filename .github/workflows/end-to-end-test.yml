@@ -99,6 +99,7 @@ jobs:
         OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
         OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
         PLATFORM_TOKEN: ${{ secrets.PLATFORM_TOKEN }}
+        PLATFORM_TOKEN_ADMIN: ${{ secrets.PLATFORM_TOKEN_ADMIN }} # different user with settings:objects:admin
 
     - name: Upload error
       if: failure() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request_target'
