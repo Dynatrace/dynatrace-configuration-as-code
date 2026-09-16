@@ -1,0 +1,28 @@
+{
+  "customId": "{{.name}}",
+  "displayName": "{{.name}}",
+  "processing": {
+    "processors": []
+  },
+  "securityContext": {
+    "processors": []
+  },
+  "costAllocation": {
+    "processors": []
+  },
+  "productAllocation": {
+    "processors": []
+  },
+  "storage": {
+    "processors": []
+  },
+  "metricExtraction": {
+    "processors": []
+  },
+  "davis": {
+    "processors": []
+  },
+  "dataExtraction": {
+    "processors": []
+  }
+}
