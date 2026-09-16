@@ -55,6 +55,7 @@ type downloadCmdOptions struct {
 	specificAPIs            []string
 	specificSchemas         []string
 	onlyOptions             OnlyOptions
+	adminAccess             bool
 }
 
 func (d downloadCmdOptions) toDownloadConfigsOptions(url manifest.URLDefinition, auth manifest.Auth) downloadConfigsOptions {
@@ -69,6 +70,7 @@ func (d downloadCmdOptions) toDownloadConfigsOptions(url manifest.URLDefinition,
 		specificAPIs:    d.specificAPIs,
 		specificSchemas: d.specificSchemas,
 		onlyOptions:     d.onlyOptions,
+		adminAccess:     d.adminAccess,
 	}
 }
 
@@ -237,7 +239,7 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 
 	if opts.onlyOptions.ShouldDownload(OnlySettingsFlag) {
 		// auth is already validated during load that either an access token or OAuth is set
-		downloadables = append(downloadables, settings.NewDownloadAPI(clientSet.SettingsClient, settings.DefaultSettingsFilters, opts.specificSchemas, opts.auth.HasPlatformCredentials()))
+		downloadables = append(downloadables, settings.NewDownloadAPI(clientSet.SettingsClient, settings.DefaultSettingsFilters, opts.specificSchemas, opts.auth.HasPlatformCredentials(), opts.adminAccess))
 	}
 
 	if opts.onlyOptions.ShouldDownload(OnlyAutomationFlag) {

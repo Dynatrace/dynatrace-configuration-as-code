@@ -29,6 +29,7 @@ type downloadConfigsOptions struct {
 	specificAPIs    []string
 	specificSchemas []string
 	onlyOptions     OnlyOptions
+	adminAccess     bool
 }
 
 func (opts downloadConfigsOptions) valid() []error {
