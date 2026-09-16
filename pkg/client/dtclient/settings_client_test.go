@@ -34,6 +34,7 @@ import (
 
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/testutils"
+	dlcontext "github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -3166,4 +3167,94 @@ func TestSettingsClient_ClearCache_OnSettingsCache(t *testing.T) {
 	_, err = c.List(t.Context(), testSchema, ListSettingsOptions{})
 	require.NoError(t, err)
 	require.Equal(t, settingsCalledCount, 2)
+}
+
+func Test_getAdminAccess(t *testing.T) {
+	ownerBasedSchemas := []string{
+		"builtin:openpipeline.logs.ingest-sources",
+		"builtin:openpipeline.logs.data-forwarding",
+		"builtin:openpipeline.logs.pipeline-groups",
+		"builtin:openpipeline.logs.pipelines",
+		"builtin:openpipeline.events.pipelines",
+	}
+
+	for _, schema := range ownerBasedSchemas {
+		t.Run("owner-based schema "+schema+" honors admin flag", func(t *testing.T) {
+			assert.True(t, getAdminAccess(dlcontext.NewContextWithAdminAccess(t.Context(), true), schema))
+			assert.False(t, getAdminAccess(dlcontext.NewContextWithAdminAccess(t.Context(), false), schema))
+			assert.False(t, getAdminAccess(t.Context(), schema))
+		})
+	}
+
+	nonOwnerBasedSchemas := []string{
+		"builtin:something",
+		"builtin:openpipeline.logs",
+		"builtin:openpipeline.logs.routing",
+		"builtin:openpipeline.pipelines", // missing the subtype segment
+	}
+
+	for _, schema := range nonOwnerBasedSchemas {
+		t.Run("non owner-based schema "+schema+" always returns false", func(t *testing.T) {
+			assert.False(t, getAdminAccess(dlcontext.NewContextWithAdminAccess(t.Context(), true), schema))
+			assert.False(t, getAdminAccess(t.Context(), schema))
+		})
+	}
+}
+
+func TestList_SendsAdminAccessQueryParam(t *testing.T) {
+	tests := []struct {
+		name            string
+		schemaID        string
+		adminAccess     bool
+		wantAdminAccess string
+	}{
+		{
+			name:            "owner-based schema with admin access sends adminAccess=true",
+			schemaID:        "builtin:openpipeline.logs.pipelines",
+			adminAccess:     true,
+			wantAdminAccess: "true",
+		},
+		{
+			name:            "owner-based schema without admin access sends adminAccess=false",
+			schemaID:        "builtin:openpipeline.logs.pipelines",
+			adminAccess:     false,
+			wantAdminAccess: "false",
+		},
+		{
+			name:            "non OpenPipeline schema sends adminAccess=false even with admin access",
+			schemaID:        "builtin:something",
+			adminAccess:     true,
+			wantAdminAccess: "false",
+		},
+		{
+			name:            "non owner-based OpenPipeline schema sends adminAccess=false even with admin access",
+			schemaID:        "builtin:openpipeline.logs.routing",
+			adminAccess:     true,
+			wantAdminAccess: "false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAdminAccess string
+			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				gotAdminAccess = req.URL.Query().Get("adminAccess")
+				_, _ = rw.Write([]byte(`{ "items": [] }`))
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			require.NoError(t, err)
+
+			restClient := corerest.NewClient(serverURL, server.Client())
+			client, err := NewClassicSettingsClient(restClient)
+			require.NoError(t, err)
+
+			ctx := dlcontext.NewContextWithAdminAccess(t.Context(), tt.adminAccess)
+			_, err = client.List(ctx, tt.schemaID, ListSettingsOptions{})
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantAdminAccess, gotAdminAccess)
+		})
+	}
 }

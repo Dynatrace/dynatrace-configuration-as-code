@@ -17,6 +17,7 @@
 package download
 
 import (
+	"context"
 	"io"
 	"maps"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	dlcontext "github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 )
 
@@ -485,6 +487,39 @@ func TestGetDownloadCommand(t *testing.T) {
 		err := m.download("--url test.url --oauth-client-id id --oauth-client-secret secret --only-apis --only-settings --only-automation --only-documents --only-buckets --only-openpipeline --only-segments --only-slo-v2")
 		assert.NoError(t, err)
 	})
+}
+
+func TestGetDownloadCommand_AdminAccessFlag(t *testing.T) {
+	tests := []struct {
+		name            string
+		args            string
+		wantAdminAccess bool
+	}{
+		{
+			name:            "admin-access flag sets admin access in context",
+			args:            "--url http://some.url --token TOKEN --admin-access",
+			wantAdminAccess: true,
+		},
+		{
+			name:            "admin access defaults to false when flag is omitted",
+			args:            "--url http://some.url --token TOKEN",
+			wantAdminAccess: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newMonaco(t)
+			m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), gomock.Any()).
+				DoAndReturn(func(ctx context.Context, _ afero.Fs, _ downloadCmdOptions) error {
+					assert.Equal(t, tt.wantAdminAccess, dlcontext.GetAdminAccess(ctx))
+					return nil
+				})
+
+			err := m.download(tt.args)
+			assert.NoError(t, err)
+		})
+	}
 }
 
 type monaco struct {

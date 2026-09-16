@@ -25,7 +25,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -34,6 +36,7 @@ import (
 	coreapi "github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	coresettings "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/settings/permissions"
+	context2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -47,6 +50,8 @@ const (
 	DeleteOperation = "delete"
 	WriteOperation  = "write"
 )
+
+var ownerBasedPipelinesRegex = regexp.MustCompile(`builtin:openpipeline\..*\.(ingest-sources|data-forwarding|pipeline-groups|pipelines)`)
 
 // errMissingPermissionsClient is an error that the settings client has no permissions client set.
 // this indicates a misconfiguration of the settings client.
@@ -826,9 +831,10 @@ func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSet
 		listSettingsFields = reducedListSettingsFields
 	}
 	params := url.Values{
-		"schemaIds": []string{schemaId},
-		"pageSize":  []string{defaultPageSize},
-		"fields":    []string{listSettingsFields},
+		"schemaIds":   []string{schemaId},
+		"pageSize":    []string{defaultPageSize},
+		"fields":      []string{listSettingsFields},
+		"adminAccess": []string{strconv.FormatBool(getAdminAccess(ctx, schemaId))},
 	}
 
 	result := make([]DownloadSettingsObject, 0)
@@ -853,6 +859,15 @@ func (d *SettingsClient) List(ctx context.Context, schemaId string, opts ListSet
 	d.settingsCache.Set(schemaId, result)
 
 	return filter.FilterSlice(result, opts.Filter), nil
+}
+
+// getAdminAccess returns true iff the schema is related to OpenPipeline,
+// it supports owner based access control and the admin access flag in the context is set to true
+func getAdminAccess(ctx context.Context, schemaId string) bool {
+	if ownerBasedPipelinesRegex.MatchString(schemaId) {
+		return context2.GetAdminAccess(ctx)
+	}
+	return false
 }
 
 func (d *SettingsClient) Get(ctx context.Context, objectId string) (res *DownloadSettingsObject, err error) {

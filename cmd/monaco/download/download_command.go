@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download/context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -42,6 +43,7 @@ const (
 	ProjectFlag                   = "project"
 	OutputFolderFlag              = "output-folder"
 	ForceFlag                     = "force"
+	AdminAccessFlag               = "admin-access"
 	OnlyApisFlag         OnlyFlag = "only-apis"
 	OnlySettingsFlag     OnlyFlag = "only-settings"
 	OnlyAutomationFlag   OnlyFlag = "only-automation"
@@ -54,7 +56,7 @@ const (
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	var f downloadCmdOptions
-	var onlySettings, onlyApis, onlyOpenPipeline, onlySegments, onlySloV2, onlyDocuments, onlyBuckets, onlyAutomation bool
+	var onlySettings, onlyApis, onlyOpenPipeline, onlySegments, onlySloV2, onlyDocuments, onlyBuckets, onlyAutomation, adminAccess bool
 
 	platformTokenAddendum := ""
 	if featureflags.PlatformToken.Enabled() {
@@ -83,6 +85,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
+			ctx := context.NewContextWithAdminAccess(cmd.Context(), adminAccess)
 			f.onlyOptions = OnlyOptions{
 				OnlySettingsFlag:     onlySettings || len(f.specificSchemas) > 0,
 				OnlyApisFlag:         onlyApis || len(f.specificAPIs) > 0,
@@ -95,13 +98,13 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 			}
 
 			if f.environmentURL != "" {
-				return command.DownloadConfigs(cmd.Context(), fs, f)
+				return command.DownloadConfigs(ctx, fs, f)
 			}
 
 			if f.manifestFile == "" {
 				f.manifestFile = "manifest.yaml"
 			}
-			return command.DownloadConfigsBasedOnManifest(cmd.Context(), fs, f)
+			return command.DownloadConfigsBasedOnManifest(ctx, fs, f)
 		},
 	}
 
@@ -133,6 +136,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&onlySegments, OnlySegmentsFlag, false, "Only download segment configurations")
 	cmd.Flags().BoolVar(&onlyOpenPipeline, OnlyOpenPipelineFlag, false, "Only download openpipeline configurations")
 	cmd.Flags().BoolVar(&onlySloV2, OnlySloV2Flag, false, fmt.Sprintf("Only download %s configurations", config.ServiceLevelObjectiveID))
+	cmd.Flags().BoolVar(&adminAccess, AdminAccessFlag, false, "export OpenPipeline resources of all owners, not just the current user's")
 
 	// combinations
 	cmd.MarkFlagsMutuallyExclusive(SettingsSchemaFlag, OnlySettingsFlag)
