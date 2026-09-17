@@ -1,0 +1,12 @@
+configs:
+- id: pipeline
+  config:
+    name: pipeline
+    template: pipeline.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:openpipeline.logs.pipelines
+      scope: environment
+      permissions:
+        allUsers: none

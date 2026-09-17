@@ -1,0 +1,24 @@
+manifestVersion: "1.0"
+
+projects:
+- name: project
+
+environmentGroups:
+- name: default
+  environments:
+  # owner of the created object
+  - name: platform_env
+    url:
+      type: environment
+      value: PLATFORM_URL_ENVIRONMENT_1
+    auth:
+      platformToken:
+        name: PLATFORM_TOKEN
+  # different user with settings:objects:admin, used for the download
+  - name: platform_env_admin
+    url:
+      type: environment
+      value: PLATFORM_URL_ENVIRONMENT_1
+    auth:
+      platformToken:
+        name: PLATFORM_TOKEN_ADMIN
