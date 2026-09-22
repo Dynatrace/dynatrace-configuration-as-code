@@ -30,7 +30,6 @@ import (
 
 //go:generate mockgen -source=deploy.go -destination=cloudconfiguration_deploy_mock.go -package=cloudconfiguration DeploySource
 type DeploySource interface {
-	Get(ctx context.Context, id string) (api.Response, error)
 	Create(ctx context.Context, data []byte) (api.Response, error)
 	Update(ctx context.Context, id string, data []byte) (api.Response, error)
 }
