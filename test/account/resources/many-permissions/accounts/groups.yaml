@@ -1,0 +1,12 @@
+groups:
+  - name: Many Permissions Group %RAND%
+    id: many-permissions-group
+    description: This is my group from many-permissions e2e test
+    account:
+      permissions:
+        - account-viewer
+    environments:
+      - environment: ${ENVIRONMENT_ID_2}
+        permissions:
+          - tenant-viewer
+          - tenant-logviewer

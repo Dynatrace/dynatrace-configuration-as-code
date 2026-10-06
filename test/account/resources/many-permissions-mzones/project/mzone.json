@@ -1,0 +1,5 @@
+{
+  "name": "{{ .name }}",
+  "description": "Management zone for the many-permissions e2e test",
+  "rules": []
+}

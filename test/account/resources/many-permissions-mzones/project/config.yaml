@@ -1,0 +1,673 @@
+configs:
+- id: many-permissions-mz-01
+  config:
+    name: Many Permissions MZ 01
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-02
+  config:
+    name: Many Permissions MZ 02
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-03
+  config:
+    name: Many Permissions MZ 03
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-04
+  config:
+    name: Many Permissions MZ 04
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-05
+  config:
+    name: Many Permissions MZ 05
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-06
+  config:
+    name: Many Permissions MZ 06
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-07
+  config:
+    name: Many Permissions MZ 07
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-08
+  config:
+    name: Many Permissions MZ 08
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-09
+  config:
+    name: Many Permissions MZ 09
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-10
+  config:
+    name: Many Permissions MZ 10
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-11
+  config:
+    name: Many Permissions MZ 11
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-12
+  config:
+    name: Many Permissions MZ 12
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-13
+  config:
+    name: Many Permissions MZ 13
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-14
+  config:
+    name: Many Permissions MZ 14
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-15
+  config:
+    name: Many Permissions MZ 15
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-16
+  config:
+    name: Many Permissions MZ 16
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-17
+  config:
+    name: Many Permissions MZ 17
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-18
+  config:
+    name: Many Permissions MZ 18
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-19
+  config:
+    name: Many Permissions MZ 19
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-20
+  config:
+    name: Many Permissions MZ 20
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-21
+  config:
+    name: Many Permissions MZ 21
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-22
+  config:
+    name: Many Permissions MZ 22
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-23
+  config:
+    name: Many Permissions MZ 23
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-24
+  config:
+    name: Many Permissions MZ 24
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-25
+  config:
+    name: Many Permissions MZ 25
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-26
+  config:
+    name: Many Permissions MZ 26
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-27
+  config:
+    name: Many Permissions MZ 27
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-28
+  config:
+    name: Many Permissions MZ 28
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-29
+  config:
+    name: Many Permissions MZ 29
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-30
+  config:
+    name: Many Permissions MZ 30
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-31
+  config:
+    name: Many Permissions MZ 31
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-32
+  config:
+    name: Many Permissions MZ 32
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-33
+  config:
+    name: Many Permissions MZ 33
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-34
+  config:
+    name: Many Permissions MZ 34
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-35
+  config:
+    name: Many Permissions MZ 35
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-36
+  config:
+    name: Many Permissions MZ 36
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-37
+  config:
+    name: Many Permissions MZ 37
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-38
+  config:
+    name: Many Permissions MZ 38
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-39
+  config:
+    name: Many Permissions MZ 39
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-40
+  config:
+    name: Many Permissions MZ 40
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-41
+  config:
+    name: Many Permissions MZ 41
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-42
+  config:
+    name: Many Permissions MZ 42
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-43
+  config:
+    name: Many Permissions MZ 43
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-44
+  config:
+    name: Many Permissions MZ 44
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-45
+  config:
+    name: Many Permissions MZ 45
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-46
+  config:
+    name: Many Permissions MZ 46
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-47
+  config:
+    name: Many Permissions MZ 47
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-48
+  config:
+    name: Many Permissions MZ 48
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-49
+  config:
+    name: Many Permissions MZ 49
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-50
+  config:
+    name: Many Permissions MZ 50
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-51
+  config:
+    name: Many Permissions MZ 51
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-52
+  config:
+    name: Many Permissions MZ 52
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-53
+  config:
+    name: Many Permissions MZ 53
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-54
+  config:
+    name: Many Permissions MZ 54
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-55
+  config:
+    name: Many Permissions MZ 55
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-56
+  config:
+    name: Many Permissions MZ 56
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-57
+  config:
+    name: Many Permissions MZ 57
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-58
+  config:
+    name: Many Permissions MZ 58
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-59
+  config:
+    name: Many Permissions MZ 59
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-60
+  config:
+    name: Many Permissions MZ 60
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-61
+  config:
+    name: Many Permissions MZ 61
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-62
+  config:
+    name: Many Permissions MZ 62
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-63
+  config:
+    name: Many Permissions MZ 63
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-64
+  config:
+    name: Many Permissions MZ 64
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-65
+  config:
+    name: Many Permissions MZ 65
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-66
+  config:
+    name: Many Permissions MZ 66
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-67
+  config:
+    name: Many Permissions MZ 67
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-68
+  config:
+    name: Many Permissions MZ 68
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-69
+  config:
+    name: Many Permissions MZ 69
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-70
+  config:
+    name: Many Permissions MZ 70
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-71
+  config:
+    name: Many Permissions MZ 71
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-72
+  config:
+    name: Many Permissions MZ 72
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-73
+  config:
+    name: Many Permissions MZ 73
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-74
+  config:
+    name: Many Permissions MZ 74
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-75
+  config:
+    name: Many Permissions MZ 75
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-76
+  config:
+    name: Many Permissions MZ 76
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-77
+  config:
+    name: Many Permissions MZ 77
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-78
+  config:
+    name: Many Permissions MZ 78
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-79
+  config:
+    name: Many Permissions MZ 79
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-80
+  config:
+    name: Many Permissions MZ 80
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-81
+  config:
+    name: Many Permissions MZ 81
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-82
+  config:
+    name: Many Permissions MZ 82
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-83
+  config:
+    name: Many Permissions MZ 83
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+- id: many-permissions-mz-84
+  config:
+    name: Many Permissions MZ 84
+    template: mzone.json
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment

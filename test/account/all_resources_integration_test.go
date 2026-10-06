@@ -385,6 +385,18 @@ func (a AccountResourceChecker) PermissionBinding(t *testing.T, accountUUID, sco
 	})
 }
 
+func (a AccountResourceChecker) PermissionNotBound(t *testing.T, accountUUID, scopeType, scope, permissionName, groupName string) {
+	expectedGroupName := a.randomize(groupName)
+	gid := a.GetGroupByName(t, expectedGroupName).GetUuid()
+
+	permissions, _, err := a.Client.PermissionManagementAPI.GetGroupPermissions(t.Context(), accountUUID, gid).Execute()
+	require.NoError(t, err)
+	require.NotNil(t, permissions)
+	assertElementNotInSlice(t, permissions.Permissions, func(el accountmanagement.PermissionsDto) bool {
+		return el.PermissionName == permissionName && el.ScopeType == scopeType && el.Scope == scope
+	})
+}
+
 func (a AccountResourceChecker) PermissionBindingsCount(t *testing.T, accountUUID, groupName string, count int) {
 	expectedGroupName := a.randomize(groupName)
 	gid := a.GetGroupByName(t, expectedGroupName).GetUuid()
