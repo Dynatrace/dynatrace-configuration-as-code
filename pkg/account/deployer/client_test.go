@@ -19,8 +19,11 @@
 package deployer
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
+	"slices"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -500,6 +503,280 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 		assert.Equal(t, 1, server.Calls())
 	})
 
+	t.Run("Update Group Permissions - nil permissions are sent as empty list", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusOK, ResponseBody: `{}`}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					b, _ := io.ReadAll(request.Body)
+					assert.JSONEq(t, `[]`, string(b))
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		err := instance.updatePermissions(t.Context(), "10bcc894-9b24-4b39-b26d-61622d4e163e", nil)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("Update Group Permissions - exactly MaxPermissionsSize permissions are overwritten in a single call", func(t *testing.T) {
+		permissions := makeTestPermissions("tenant-viewer", MaxPermissionsSize)
+		responses := []testutils.ResponseDef{
+			{
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusOK, ResponseBody: `{}`}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, testGroupPermissionsPath, request.URL.String())
+					assert.Len(t, readPermissionsBody(t, request), MaxPermissionsSize)
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		err := instance.updatePermissions(t.Context(), testGroupUUID, permissions)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, server.Calls())
+	})
+}
+
+const (
+	testGroupUUID            = "10bcc894-9b24-4b39-b26d-61622d4e163e"
+	testGroupPermissionsPath = "/iam/v1/accounts/abcde/groups/" + testGroupUUID + "/permissions"
+)
+
+func makeTestPermissions(permissionName string, count int) []accountmanagement.PermissionsDto {
+	permissions := make([]accountmanagement.PermissionsDto, 0, count)
+	for i := range count {
+		permissions = append(permissions, accountmanagement.PermissionsDto{
+			PermissionName: permissionName,
+			Scope:          "env-" + strconv.Itoa(i),
+			ScopeType:      "tenant",
+		})
+	}
+	return permissions
+}
+
+func makeTestGetGroupPermissionsResponseBody(t *testing.T, permissions []accountmanagement.PermissionsDto) string {
+	t.Helper()
+	if permissions == nil {
+		permissions = []accountmanagement.PermissionsDto{}
+	}
+	b, err := json.Marshal(accountmanagement.PermissionsGroupDto{
+		Name:        "my-group",
+		Owner:       "LOCAL",
+		CreatedAt:   "2024-11-06T17:42:22Z",
+		UpdatedAt:   "2024-11-06T17:42:22Z",
+		Permissions: permissions,
+	})
+	require.NoError(t, err)
+	return string(b)
+}
+
+func readPermissionsBody(t *testing.T, request *http.Request) []accountmanagement.PermissionsDto {
+	t.Helper()
+	b, err := io.ReadAll(request.Body)
+	require.NoError(t, err)
+	var permissions []accountmanagement.PermissionsDto
+	require.NoError(t, json.Unmarshal(b, &permissions))
+	return permissions
+}
+
+func getGroupPermissionsResponse(existing []accountmanagement.PermissionsDto) testutils.ResponseDef {
+	return testutils.ResponseDef{
+		GET: func(t *testing.T, request *http.Request) testutils.Response {
+			return testutils.Response{ResponseCode: http.StatusOK, ResponseBody: makeTestGetGroupPermissionsResponseBody(t, existing)}
+		},
+		ValidateRequest: func(t *testing.T, request *http.Request) {
+			assert.Equal(t, testGroupPermissionsPath, request.URL.String())
+		},
+	}
+}
+
+func addGroupPermissionsResponse(expected []accountmanagement.PermissionsDto) testutils.ResponseDef {
+	return testutils.ResponseDef{
+		POST: func(t *testing.T, request *http.Request) testutils.Response {
+			return testutils.Response{ResponseCode: http.StatusOK, ResponseBody: `{}`}
+		},
+		ValidateRequest: func(t *testing.T, request *http.Request) {
+			assert.Equal(t, testGroupPermissionsPath, request.URL.String())
+			expectedBody, err := json.Marshal(expected)
+			require.NoError(t, err)
+			actualBody, err := io.ReadAll(request.Body)
+			require.NoError(t, err)
+			assert.JSONEq(t, string(expectedBody), string(actualBody))
+		},
+	}
+}
+
+func removeGroupPermissionResponse(expected accountmanagement.PermissionsDto) testutils.ResponseDef {
+	return testutils.ResponseDef{
+		DELETE: func(t *testing.T, request *http.Request) testutils.Response {
+			return testutils.Response{ResponseCode: http.StatusOK, ResponseBody: `{}`}
+		},
+		ValidateRequest: func(t *testing.T, request *http.Request) {
+			assert.Equal(t, testGroupPermissionsPath, request.URL.Path)
+			query := request.URL.Query()
+			assert.Equal(t, expected.PermissionName, query.Get("permission-name"))
+			assert.Equal(t, expected.Scope, query.Get("scope"))
+			assert.Equal(t, expected.ScopeType, query.Get("scope-type"))
+		},
+	}
+}
+
+func TestClient_UpdateGroupPermissions_AboveMaxPermissionsSize(t *testing.T) {
+
+	t.Run("missing permissions are added in chunks and surplus permissions are removed", func(t *testing.T) {
+		// Arrange: 600 desired permissions, of which the first 50 already exist.
+		// Additionally, 2 existing permissions are not desired anymore.
+		desired := makeTestPermissions("tenant-viewer", 600)
+		stale := makeTestPermissions("tenant-admin", 2)
+		existing := append(slices.Clone(desired[:50]), stale...)
+		toCreate := desired[50:]
+
+		// Expect: GET existing, 550 creations split into 250 + 250 + 50, then one DELETE per stale permission.
+		responses := []testutils.ResponseDef{
+			getGroupPermissionsResponse(existing),
+			addGroupPermissionsResponse(toCreate[:250]),
+			addGroupPermissionsResponse(toCreate[250:500]),
+			addGroupPermissionsResponse(toCreate[500:]),
+			removeGroupPermissionResponse(stale[0]),
+			removeGroupPermissionResponse(stale[1]),
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		err := instance.updatePermissions(t.Context(), testGroupUUID, desired)
+		assert.NoError(t, err)
+		assert.Equal(t, len(responses), server.Calls())
+	})
+
+	t.Run("no permissions exist yet - only additions are made", func(t *testing.T) {
+		desired := makeTestPermissions("tenant-viewer", MaxPermissionsSize+1)
+
+		responses := []testutils.ResponseDef{
+			getGroupPermissionsResponse(nil),
+			addGroupPermissionsResponse(desired[:MaxPermissionsSize]),
+			addGroupPermissionsResponse(desired[MaxPermissionsSize:]),
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		err := instance.updatePermissions(t.Context(), testGroupUUID, desired)
+		assert.NoError(t, err)
+		assert.Equal(t, len(responses), server.Calls())
+	})
+
+	t.Run("all permissions already exist - no changes are made", func(t *testing.T) {
+		desired := makeTestPermissions("tenant-viewer", MaxPermissionsSize+1)
+
+		// existing permissions are returned in a different order and contain metadata,
+		// which must not cause any additions or removals
+		existing := slices.Clone(desired)
+		slices.Reverse(existing)
+		createdAt := "2024-11-06T17:42:22Z"
+		for i := range existing {
+			existing[i].CreatedAt = &createdAt
+		}
+
+		responses := []testutils.ResponseDef{getGroupPermissionsResponse(existing)}
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		err := instance.updatePermissions(t.Context(), testGroupUUID, desired)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("getting existing permissions fails", func(t *testing.T) {
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusInternalServerError, ResponseBody: `{"error": "some-error"}`}
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		err := instance.updatePermissions(t.Context(), testGroupUUID, makeTestPermissions("tenant-viewer", MaxPermissionsSize+1))
+		assert.EqualError(t, err, "unable to get permissions of group with UUID "+testGroupUUID+` (HTTP 500): {"error": "some-error"}`)
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("getting existing permissions returns 404 - error instead of panic", func(t *testing.T) {
+		// handleClientResponseError treats 404 as success, so the empty result must be checked explicitly
+		responses := []testutils.ResponseDef{
+			{
+				GET: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusNotFound, ResponseBody: `{}`}
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		err := instance.updatePermissions(t.Context(), testGroupUUID, makeTestPermissions("tenant-viewer", MaxPermissionsSize+1))
+		assert.EqualError(t, err, "unable to get permissions of group with UUID "+testGroupUUID+": the received data is empty")
+		assert.Equal(t, 1, server.Calls())
+	})
+
+	t.Run("adding permissions fails - no further calls are made", func(t *testing.T) {
+		desired := makeTestPermissions("tenant-viewer", 2*MaxPermissionsSize+1)
+		stale := makeTestPermissions("tenant-admin", 1)
+
+		// the first chunk fails, so neither the second chunk nor the removal must be sent
+		responses := []testutils.ResponseDef{
+			getGroupPermissionsResponse(stale),
+			{
+				POST: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusBadRequest, ResponseBody: `{"error": "some-error"}`}
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		err := instance.updatePermissions(t.Context(), testGroupUUID, desired)
+		assert.EqualError(t, err, "unable to create permissions of group with UUID "+testGroupUUID+` (HTTP 400): {"error": "some-error"}`)
+		assert.Equal(t, 2, server.Calls())
+	})
+
+	t.Run("removing a permission fails - no further calls are made", func(t *testing.T) {
+		desired := makeTestPermissions("tenant-viewer", MaxPermissionsSize+1)
+		stale := makeTestPermissions("tenant-admin", 2)
+		existing := append(slices.Clone(desired), stale...)
+
+		// the first removal fails, so the second one must not be sent
+		responses := []testutils.ResponseDef{
+			getGroupPermissionsResponse(existing),
+			{
+				DELETE: func(t *testing.T, request *http.Request) testutils.Response {
+					return testutils.Response{ResponseCode: http.StatusInternalServerError, ResponseBody: `{"error": "some-error"}`}
+				},
+			},
+		}
+		server := testutils.NewHTTPTestServer(t, responses)
+		defer server.Close()
+
+		instance := NewClient(account.AccountInfo{Name: "my-account", AccountUUID: "abcde"}, accounts.NewClient(rest.NewClient(server.URL(), server.Client())))
+		err := instance.updatePermissions(t.Context(), testGroupUUID, desired)
+		assert.EqualError(t, err, "unable to delete permissions of group with UUID "+testGroupUUID+` (HTTP 500): {"error": "some-error"}`)
+		assert.Equal(t, 2, server.Calls())
+	})
 }
 
 func TestClient_UpdatePolicyBindings(t *testing.T) {

@@ -1,0 +1,3 @@
+delete:
+  - type: group
+    name: Many Permissions Group %RAND%

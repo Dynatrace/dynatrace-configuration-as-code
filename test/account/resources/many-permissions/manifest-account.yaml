@@ -1,0 +1,21 @@
+manifestVersion: 1.0
+
+projects:
+  - name: accounts
+
+accounts:
+  - name: monaco-test-account
+    accountUUID:
+      type: environment
+      value: ACCOUNT_UUID
+    apiUrl:
+      type: environment
+      value: ACCOUNT_URL
+    oAuth:
+      clientId:
+        name: ACCOUNT_OAUTH_CLIENT_ID
+      clientSecret:
+        name: ACCOUNT_OAUTH_CLIENT_SECRET
+      tokenEndpoint:
+        type: environment
+        value: OAUTH_TOKEN_ENDPOINT

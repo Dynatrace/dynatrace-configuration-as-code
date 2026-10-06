@@ -24,6 +24,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"slices"
 
 	"golang.org/x/exp/maps"
 
@@ -32,6 +33,7 @@ import (
 	accountmanagement "github.com/dynatrace/dynatrace-configuration-as-code-core/gen/account_management"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer/grouppermissions"
 )
 
 type (
@@ -47,6 +49,8 @@ type (
 		client      *accounts.Client
 	}
 )
+
+const MaxPermissionsSize = 250
 
 func NewClient(info account.AccountInfo, client *accounts.Client) *AccountManagementClient {
 	return &AccountManagementClient{
@@ -535,13 +539,65 @@ func (c *AccountManagementClient) updatePermissions(ctx context.Context, groupId
 	if permissions == nil {
 		permissions = []accountmanagement.PermissionsDto{}
 	}
-
-	resp, err := c.client.PermissionManagementAPI.OverwriteGroupPermissions(ctx, c.accountInfo.AccountUUID, groupId).PermissionsDto(permissions).Execute()
-	defer closeResponseBody(resp)
-	if err = handleClientResponseError(resp, err, "unable to update permissions of group with UUID "+groupId); err != nil {
-		return err
+	// if it's below the max allowed permission size, just overwrite it
+	if len(permissions) <= MaxPermissionsSize {
+		resp, err := c.client.PermissionManagementAPI.OverwriteGroupPermissions(ctx, c.accountInfo.AccountUUID, groupId).PermissionsDto(permissions).Execute()
+		defer closeResponseBody(resp)
+		return handleClientResponseError(resp, err, "unable to update permissions of group with UUID "+groupId)
 	}
 
+	result, resp, err := c.client.PermissionManagementAPI.GetGroupPermissions(ctx, c.accountInfo.AccountUUID, groupId).Execute()
+	defer closeResponseBody(resp)
+	err = handleClientResponseError(resp, err, "unable to get permissions of group with UUID "+groupId)
+	if err != nil {
+		return err
+	}
+	if result == nil {
+		return fmt.Errorf("unable to get permissions of group with UUID %s: the received data is empty", groupId)
+	}
+
+	toCreate, toDelete := grouppermissions.GetPermissionUpdates(permissions, result.Permissions)
+
+	err = c.createPermissions(ctx, groupId, toCreate)
+	if err != nil {
+		return err
+	}
+	return c.deletePermissions(ctx, groupId, toDelete)
+}
+
+func (c *AccountManagementClient) createPermissions(ctx context.Context, groupId string, permissions []accountmanagement.PermissionsDto) error {
+	if len(permissions) == 0 {
+		return nil
+	}
+
+	// split permissions into MaxPermissionsSize chunks
+	for permissionChunk := range slices.Chunk(permissions, MaxPermissionsSize) {
+		if err := c.addPermissions(ctx, groupId, permissionChunk); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *AccountManagementClient) addPermissions(ctx context.Context, groupId string, permissions []accountmanagement.PermissionsDto) error {
+	resp, err := c.client.PermissionManagementAPI.AddGroupPermissions(ctx, c.accountInfo.AccountUUID, groupId).PermissionsDto(permissions).Execute()
+	defer closeResponseBody(resp)
+	return handleClientResponseError(resp, err, "unable to create permissions of group with UUID "+groupId)
+}
+
+func (c *AccountManagementClient) deletePermission(ctx context.Context, groupId string, permission accountmanagement.PermissionsDto) error {
+	resp, err := c.client.PermissionManagementAPI.RemoveGroupPermissions(ctx, c.accountInfo.AccountUUID, groupId).PermissionName(permission.PermissionName).ScopeType(permission.ScopeType).Scope(permission.Scope).Execute()
+	defer closeResponseBody(resp)
+	return handleClientResponseError(resp, err, "unable to delete permissions of group with UUID "+groupId)
+}
+
+func (c *AccountManagementClient) deletePermissions(ctx context.Context, groupId string, permissions []accountmanagement.PermissionsDto) error {
+	for _, p := range permissions {
+		err := c.deletePermission(ctx, groupId, p)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
