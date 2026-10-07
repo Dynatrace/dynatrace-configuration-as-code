@@ -10,7 +10,7 @@ require (
 	github.com/lmittmann/tint v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/afero v1.15.1-0.20260609185540-768f1fb0e553
+	github.com/spf13/afero v1.15.1-0.20260927160613-eb6a92826ea5
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
@@ -25,6 +25,6 @@ require (
 	github.com/anknown/darts v0.0.0-20151216065714-83ff685239e6 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 )
