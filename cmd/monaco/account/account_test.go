@@ -19,11 +19,14 @@
 package account_test
 
 import (
+	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -92,4 +95,34 @@ func TestEnvResolution(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, logOutput.String(), `\"ACCOUNT_SECRET_2\" could not be found`)
 	})
+}
+
+func TestDownloadRejectsAccountNameEscapingTheOutputFolderBeforeDownloading(t *testing.T) {
+	const manifestPath = "manifest.yaml"
+	const manifestContent = `manifestVersion: 1.0
+projects:
+- name: accounts
+accounts:
+- name: ../../protected-project
+  accountUUID: 11111111-1111-1111-1111-111111111111
+  oAuth:
+    clientId:
+      name: ACCOUNT_CLIENT_ID
+    clientSecret:
+      name: ACCOUNT_CLIENT_SECRET
+`
+	fs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fs, manifestPath, []byte(manifestContent), 0644))
+	t.Setenv("ACCOUNT_CLIENT_ID", "client-id")
+	t.Setenv("ACCOUNT_CLIENT_SECRET", "client-secret")
+
+	cmd := account.Command(fs)
+	cmd.SetArgs([]string{"download", "-m", manifestPath, "--output-folder", "output"})
+	err := cmd.ExecuteContext(t.Context())
+
+	assert.EqualError(t, err, fmt.Sprintf(`cannot download account "../../protected-project": %q is not a valid project folder: it must be a relative path inside the output folder "output"`, filepath.Join("..", "protected-project")))
+
+	outputFolderExists, statErr := afero.DirExists(fs, "output")
+	require.NoError(t, statErr)
+	assert.False(t, outputFolderExists)
 }

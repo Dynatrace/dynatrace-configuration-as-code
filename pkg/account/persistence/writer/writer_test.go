@@ -23,6 +23,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/persistence/writer"
@@ -843,6 +844,108 @@ func TestWriteAccountResources(t *testing.T) {
 
 		})
 	}
+}
+
+var downloadedBoundaries = account.Resources{
+	Boundaries: map[account.BoundaryId]account.Boundary{
+		"downloaded-boundary": {
+			ID:             "downloaded-boundary",
+			Name:           "Downloaded Boundary",
+			Query:          "Some query here",
+			OriginObjectID: "some-id",
+		},
+	},
+}
+
+const downloadedBoundariesYAML = `boundaries:
+- id: downloaded-boundary
+  name: Downloaded Boundary
+  query: Some query here
+  originObjectId: some-id
+`
+
+func TestWriteAcceptsNestedProjectFolder(t *testing.T) {
+	c := writer.Context{
+		Fs:            afero.NewMemMapFs(),
+		OutputFolder:  "output",
+		ProjectFolder: filepath.Join("accounts", "my-account"),
+	}
+
+	err := writer.Write(c, downloadedBoundaries)
+
+	assert.NoError(t, err)
+	assertFile(t, c.Fs, filepath.Join("output", "accounts", "my-account", "boundaries.yaml"), downloadedBoundariesYAML)
+}
+
+func TestWriteRejectsProjectFolderOutsideOutputFolder(t *testing.T) {
+	tests := []struct {
+		name          string
+		projectFolder string
+		wantError     string
+	}{
+		{
+			name:          "parent folder",
+			projectFolder: "..",
+			wantError:     `".." is not a valid project folder: it must be a relative path inside the output folder "output"`,
+		},
+		{
+			name:          "sibling folder",
+			projectFolder: "../protected-project",
+			wantError:     `"../protected-project" is not a valid project folder: it must be a relative path inside the output folder "output"`,
+		},
+		{
+			name:          "traversal escaping below a contained segment",
+			projectFolder: "accounts/../../protected-project",
+			wantError:     `"accounts/../../protected-project" is not a valid project folder: it must be a relative path inside the output folder "output"`,
+		},
+		{
+			name:          "absolute path",
+			projectFolder: "/protected-project",
+			wantError:     `"/protected-project" is not a valid project folder: it must be a relative path inside the output folder "output"`,
+		},
+		{
+			name:          "no project folder",
+			projectFolder: "",
+			wantError:     `"" is not a valid project folder: it must be a relative path inside the output folder "output"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := writer.Context{
+				Fs:            afero.NewMemMapFs(),
+				OutputFolder:  "output",
+				ProjectFolder: tt.projectFolder,
+			}
+
+			err := writer.Write(c, downloadedBoundaries)
+
+			assert.EqualError(t, err, tt.wantError)
+		})
+	}
+}
+
+func TestWriteLeavesFilesOutsideOutputFolderUntouched(t *testing.T) {
+	const protectedFile = "protected-project/boundaries.yaml"
+	const protectedContent = `boundaries:
+- id: PROTECTED-SAFE-BOUNDARY
+  name: PROTECTED-SAFE-BOUNDARY
+  query: environment:PROTECTED-SAFE
+  originObjectId: local-boundary-id
+`
+	fs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fs, protectedFile, []byte(protectedContent), 0644))
+
+	c := writer.Context{
+		Fs:            fs,
+		OutputFolder:  "output",
+		ProjectFolder: filepath.Join("accounts", "../../protected-project"),
+	}
+
+	err := writer.Write(c, downloadedBoundaries)
+
+	assert.Error(t, err)
+	assertFile(t, fs, protectedFile, protectedContent)
 }
 
 func assertFile(t *testing.T, fs afero.Fs, expectedPath, expectedContent string) {

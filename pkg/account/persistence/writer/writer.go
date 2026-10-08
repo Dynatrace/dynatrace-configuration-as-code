@@ -39,14 +39,20 @@ const (
 type Context struct {
 	// Fs to use when writing files
 	Fs afero.Fs
-	// OutputFolder to write an account resources ProjectFolder into. If this is not an absolute path, Write will transform it into one using filepath.Abs.
+	// OutputFolder to write an account resources ProjectFolder into
 	OutputFolder string
-	// ProjectFolder to create and fill with account resources YAML files
+	// ProjectFolder to create and fill with account resources YAML files. It must be a relative path that stays inside the OutputFolder.
 	ProjectFolder string
 }
 
+// Validate reports whether the paths defined by this Context are usable, without creating or writing anything.
+func (c Context) Validate() error {
+	_, err := resolveProjectFolder(c.OutputFolder, c.ProjectFolder)
+	return err
+}
+
 // Write the given account.Resources to the target filesystem and paths defined by the Context.
-// This will create a folder "filepath.Abs(<writerContext.OutputFolder>)/<writerContext.ProjectFolder>/", and create
+// This will create a folder "<writerContext.OutputFolder>/<writerContext.ProjectFolder>/", and create
 // individual "policies.yaml", "users.yaml", "service-users.yaml" & "groups.yaml" files containing YAML representations of the given account.Resources.
 //
 // Returns an error if any step of transforming or persisting resources fails, but will attempt to write as many files as
@@ -54,10 +60,14 @@ type Context struct {
 // to files before the method returns with an error.
 func Write(writerContext Context, resources account.Resources) error {
 
+	projectFolder, err := resolveProjectFolder(writerContext.OutputFolder, writerContext.ProjectFolder)
+	if err != nil {
+		return err
+	}
+
 	if err := createFolderIfNoneExists(writerContext.Fs, writerContext.OutputFolder); err != nil {
 		return err
 	}
-	projectFolder := filepath.Join(writerContext.OutputFolder, writerContext.ProjectFolder)
 	if err := createFolderIfNoneExists(writerContext.Fs, projectFolder); err != nil {
 		return err
 	}
@@ -110,6 +120,14 @@ func Write(writerContext Context, resources account.Resources) error {
 	log.With(slog.Any("outputFolder", writerContext.OutputFolder)).Info("Downloaded account management resources written to '%s'", writerContext.OutputFolder)
 
 	return nil
+}
+
+// resolveProjectFolder joins the project folder onto the output folder, rejecting any project folder that would resolve outside of it.
+func resolveProjectFolder(outputFolder string, projectFolder string) (string, error) {
+	if !filepath.IsLocal(projectFolder) {
+		return "", fmt.Errorf("%q is not a valid project folder: it must be a relative path inside the output folder %q", projectFolder, outputFolder)
+	}
+	return filepath.Join(outputFolder, projectFolder), nil
 }
 
 func toPersistenceBoundaries(boundaries map[string]account.Boundary) []persistence.Boundary {
