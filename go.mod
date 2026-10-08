@@ -4,7 +4,7 @@ go 1.26.6
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20260818115934-1cf513833d69
+	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20261008115258-d42521c0d5f0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/lmittmann/tint v1.2.0
@@ -26,5 +26,5 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/text v0.42.0 // indirect
-	golang.org/x/time v0.15.0 // indirect
+	golang.org/x/time v0.16.0 // indirect
 )
