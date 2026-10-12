@@ -7,7 +7,7 @@ require (
 	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20261008115258-d42521c0d5f0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/lmittmann/tint v1.2.0
+	github.com/lmittmann/tint v1.2.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.15.1-0.20260927160613-eb6a92826ea5
