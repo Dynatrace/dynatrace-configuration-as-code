@@ -32,6 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project"
 )
@@ -72,6 +73,10 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 			message:      fmt.Sprintf("failed to load manifest %q", manifestPath),
 			Reason:       multierror.New(errs...),
 		}
+	}
+
+	if err := validateEnvironmentNames(manifestPath, m.Environments.SelectedEnvironments.Names()); err != nil {
+		return err
 	}
 
 	projects, errs := project.LoadProjects(ctx, fs, project.ProjectLoaderContext{
@@ -170,5 +175,19 @@ func writeGraphFiles(ctx context.Context, fs afero.Fs, manifestPath string, envi
 		slog.InfoContext(ctx, "Dependency graph created for environment", slog.Group("environment", slog.String("name", e)), slog.String("file", file))
 	}
 
+	return nil
+}
+
+func validateEnvironmentNames(manifestPath string, environmentNames []string) error {
+	for _, e := range environmentNames {
+		if err := manifest.ValidateEnvironmentName(e); err != nil {
+			return ExportError{
+				ManifestFile: manifestPath,
+				Environment:  e,
+				message:      "cannot create dependency graph file",
+				Reason:       err,
+			}
+		}
+	}
 	return nil
 }

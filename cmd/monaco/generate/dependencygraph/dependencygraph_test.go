@@ -20,16 +20,18 @@ package dependencygraph_test
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/dependencygraph"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
+	"path/filepath"
+	"testing"
+
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gonum.org/v1/gonum/graph/encoding/dot"
 	"gonum.org/v1/gonum/graph/simple"
-	"path/filepath"
-	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/dependencygraph"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 )
 
 func TestInvalidCommandFlags(t *testing.T) {
@@ -266,4 +268,65 @@ func assertCreatedDOTGraph(t *testing.T, fs afero.Fs, file string, expectedGraph
 			assert.Contains(t, cS, fmt.Sprintf("%q -> %q;", node, e))
 		}
 	}
+}
+
+func TestRejectsEnvironmentNameContainingSeparator(t *testing.T) {
+	const manifestContent = `manifestVersion: 1.0
+projects:
+- name: project
+environmentGroups:
+- name: default
+  environments:
+  - name: prod/eu
+    url:
+      value: https://example.com
+    auth:
+      token:
+        name: TOKEN
+`
+	fs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(manifestContent), 0644))
+	require.NoError(t, fs.Mkdir("project", 0777))
+
+	cmd := dependencygraph.Command(fs)
+	cmd.SetArgs([]string{"manifest.yaml", "-o", "output"})
+	err := cmd.ExecuteContext(t.Context())
+
+	assert.EqualError(t, err, `cannot create dependency graph file: environment name "prod/eu" is not allowed to contain '/' or '\'`)
+}
+
+func TestRejectsEnvironmentNameBeforeWritingAnyFile(t *testing.T) {
+	const manifestContent = `manifestVersion: 1.0
+projects:
+- name: project
+environmentGroups:
+- name: default
+  environments:
+  - name: valid_env
+    url:
+      value: https://example.com
+    auth:
+      token:
+        name: TOKEN
+  - name: ../platform_env
+    url:
+      value: https://example.com
+    auth:
+      token:
+        name: TOKEN
+`
+	fs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(manifestContent), 0644))
+	require.NoError(t, fs.Mkdir("project", 0777))
+
+	cmd := dependencygraph.Command(fs)
+	cmd.SetArgs([]string{"manifest.yaml", "-o", "output"})
+	err := cmd.ExecuteContext(t.Context())
+	require.Error(t, err)
+
+	absoluteOutputFolder, err := filepath.Abs("output")
+	require.NoError(t, err)
+	outputFolderExists, err := afero.DirExists(fs, absoluteOutputFolder)
+	require.NoError(t, err)
+	assert.False(t, outputFolderExists)
 }
