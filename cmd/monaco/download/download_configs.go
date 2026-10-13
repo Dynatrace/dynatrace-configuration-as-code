@@ -92,14 +92,17 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(ctx context.Context, fs a
 		return fmt.Errorf("environment '%s' is not defined in manifest '%s'", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
+	if !cmdOptions.forceOverwrite {
+		if err := manifest.ValidateEnvironmentName(cmdOptions.specificEnvironmentName); err != nil {
+			return err
+		}
+		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
+	}
+
 	if featureflags.VerifyEnvironmentType.Enabled() {
 		if err := dynatrace.VerifyEnvironmentAuthentication(ctx, env); err != nil {
 			return err
 		}
-	}
-
-	if !cmdOptions.forceOverwrite {
-		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
 	options := cmdOptions.toDownloadConfigsOptions(env.URL, env.Auth)
