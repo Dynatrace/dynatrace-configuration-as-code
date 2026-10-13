@@ -182,3 +182,11 @@ func Test_checkForCircularDependencies(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateOutputFolder_RejectsInvalidProjectName(t *testing.T) {
+	errs := validateOutputFolder(afero.NewMemMapFs(), "output", "project_prod/eu")
+
+	if assert.Len(t, errs, 1) {
+		assert.EqualError(t, errs[0], `project name "project_prod/eu" is not allowed to contain '/' or '\'`)
+	}
+}

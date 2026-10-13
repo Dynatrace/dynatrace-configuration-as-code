@@ -124,6 +124,10 @@ func preDownloadValidations(fs afero.Fs, opts downloadOptionsShared) error {
 func validateOutputFolder(fs afero.Fs, outputFolder, project string) []error {
 	errors := make([]error, 0)
 
+	if err := manifest.ValidateProjectName(project); err != nil {
+		errors = append(errors, err)
+	}
+
 	errors = append(errors, validateFolder(fs, outputFolder)...)
 	if len(errors) > 0 {
 		return errors

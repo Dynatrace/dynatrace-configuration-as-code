@@ -813,3 +813,31 @@ func Test_EscapingSkip_Buckets(t *testing.T) {
 
 	assert.Contains(t, string(file), "{{.displayName}}")
 }
+
+func TestDownloadConfigsBasedOnManifest_RejectsEnvironmentNameContainingSeparator(t *testing.T) {
+	const manifestContent = `manifestVersion: 1.0
+projects:
+- name: project
+environmentGroups:
+- name: default
+  environments:
+  - name: prod/eu
+    url:
+      value: https://example.com
+    auth:
+      token:
+        name: TOKEN
+`
+	fs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(manifestContent), 0644))
+	t.Setenv("TOKEN", "some-token")
+
+	err := DefaultCommand{}.DownloadConfigsBasedOnManifest(t.Context(), fs, downloadCmdOptions{
+		projectName:             "project",
+		outputFolder:            "output",
+		manifestFile:            "manifest.yaml",
+		specificEnvironmentName: "prod/eu",
+	})
+
+	assert.EqualError(t, err, `environment name "prod/eu" is not allowed to contain '/' or '\'`)
+}
