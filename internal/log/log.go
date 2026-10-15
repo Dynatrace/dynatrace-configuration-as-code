@@ -244,8 +244,10 @@ func MemStatFilePath() string {
 // If log directory or logFile creation fails, no log files are returned.
 // If errLog creation fails, a valid logFile is still being returned with an error.
 func PrepareLogFiles(ctx context.Context, fs afero.Fs, enableMemstatLogging bool) (logFile afero.File, errFile afero.File, err error) {
-	if err := fs.MkdirAll(LogDirectory, 0777); err != nil {
-		return nil, nil, fmt.Errorf("unable to prepare log directory %s: %w", LogDirectory, err)
+	if exits, _ := afero.Exists(fs, LogDirectory); !exits {
+		if err := fs.MkdirAll(LogDirectory, 0777); err != nil {
+			return nil, nil, fmt.Errorf("unable to prepare log directory %s: %w", LogDirectory, err)
+		}
 	}
 
 	logFilePath := LogFilePath()
