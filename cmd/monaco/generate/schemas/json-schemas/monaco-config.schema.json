@@ -194,28 +194,6 @@
                       "document"
                     ],
                     "additionalProperties": false
-                  },
-                  {
-                    "properties": {
-                      "openpipeline": {
-                        "type": "object",
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "description": "The kind of OpenPipeline configuration."
-                          }
-                        },
-                        "additionalProperties": false,
-                        "required": [
-                          "kind"
-                        ],
-                        "description": "An OpenPipeline configuration."
-                      }
-                    },
-                    "required": [
-                      "openpipeline"
-                    ],
-                    "additionalProperties": false
                   }
                 ]
               }

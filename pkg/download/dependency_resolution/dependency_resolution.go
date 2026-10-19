@@ -99,12 +99,6 @@ func collectConfigsById(configs project.ConfigsPerType) map[string]config.Config
 
 	for _, configs := range configs {
 		for _, conf := range configs {
-			// ignore open pipeline configs because their IDs are no UUID or the like.
-			// Hence, it is very likely that we replace occurrences that are not meant to represent IDs.
-			// e.g. "events" or "logs"
-			if conf.Coordinate.Type == string(config.OpenPipelineTypeID) {
-				continue
-			}
 			configsById[conf.Coordinate.ConfigId] = conf
 			if conf.OriginObjectId != "" {
 				// resolve Settings references by Object ID as well

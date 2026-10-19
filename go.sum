@@ -3,8 +3,8 @@ github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0/go.mod h1:4yg+
 github.com/anknown/darts v0.0.0-20151216065714-83ff685239e6 h1:HblK3eJHq54yET63qPCTJnks3loDse5xRmmqHgHzwoI=
 github.com/anknown/darts v0.0.0-20151216065714-83ff685239e6/go.mod h1:pbiaLIeYLUbgMY1kwEAdwO6UKD5ZNwdPGQlwokS9fe8=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
-github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20261008115258-d42521c0d5f0 h1:UnJWOif2UjM40/SmkdGaJWQPGQM/gtyEWvS6VmRir34=
-github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20261008115258-d42521c0d5f0/go.mod h1:is7MWLk/oIQ9/GUrDLcnZJ8n2WPOOmJEOvTqk2AazoI=
+github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20261019121422-2c1b50d9744b h1:eJEI0Vv94EmVEt3f0X5MQgyR5NiSqWUQyLM2MjI4JWc=
+github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20261019121422-2c1b50d9744b/go.mod h1:is7MWLk/oIQ9/GUrDLcnZJ8n2WPOOmJEOvTqk2AazoI=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=

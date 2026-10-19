@@ -33,7 +33,6 @@ var DummyClientSet = ClientSet{
 	AutClient:                   &DummyAutomationClient{},
 	BucketClient:                &DummyBucketClient{},
 	DocumentClient:              &DummyDocumentClient{},
-	OpenPipelineClient:          &DummyOpenPipelineClient{},
 	SegmentClient:               &DummySegmentClient{},
 	ServiceLevelObjectiveClient: &DummyServiceLevelObjectClient{},
 }
@@ -130,19 +129,6 @@ func (c *DummyDocumentClient) Update(ctx context.Context, metadata documents.Met
 // Delete implements DocumentClient.
 func (c *DummyDocumentClient) Delete(ctx context.Context, id string) (api.Response, error) {
 	panic("unimplemented")
-}
-
-var _ OpenPipelineClient = (*DummyOpenPipelineClient)(nil)
-
-type DummyOpenPipelineClient struct{}
-
-// GetAll implements OpenPipelineClient.
-func (c *DummyOpenPipelineClient) GetAll(ctx context.Context) ([]api.Response, error) {
-	panic("unimplemented")
-}
-
-func (c *DummyOpenPipelineClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
-	return api.Response{}, nil
 }
 
 type DummySegmentClient struct{}

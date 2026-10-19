@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/afero"
 
@@ -144,7 +143,6 @@ type CoordinatesPerEnvironment map[string][]coordinate.Coordinate
 
 func validateProjectsWithEnvironments(ctx context.Context, projects []project.Project, envs manifest.EnvironmentDefinitionsByName) error {
 	undefinedEnvironments := map[string]struct{}{}
-	openPipelineKindCoordinatesPerEnvironment := KindCoordinatesPerEnvironment{}
 	platformCoordinatesPerEnvironment := CoordinatesPerEnvironment{}
 	for _, p := range projects {
 		for envName, cfgPerType := range p.Configs {
@@ -154,20 +152,12 @@ func validateProjectsWithEnvironments(ctx context.Context, projects []project.Pr
 				continue
 			}
 
-			openPipelineKindCoordinates, found := openPipelineKindCoordinatesPerEnvironment[envName]
-			if !found {
-				openPipelineKindCoordinates = KindCoordinates{}
-				openPipelineKindCoordinatesPerEnvironment[envName] = openPipelineKindCoordinates
-			}
-			collectOpenPipelineCoordinatesByKind(cfgPerType, openPipelineKindCoordinates)
-
 			platformCoordinatesPerEnvironment[envName] = append(platformCoordinatesPerEnvironment[envName], collectPlatformCoordinates(cfgPerType)...)
 		}
 	}
 
 	errs := collectUndefinedEnvironmentErrors(undefinedEnvironments)
 	errs = append(errs, collectRequiresPlatformErrors(platformCoordinatesPerEnvironment, envs)...)
-	errs = append(errs, collectOpenPipelineCoordinateErrors(openPipelineKindCoordinatesPerEnvironment)...)
 	reporter := report.GetReporterFromContextOrDiscard(ctx)
 
 	for _, err := range errs {
@@ -175,18 +165,6 @@ func validateProjectsWithEnvironments(ctx context.Context, projects []project.Pr
 	}
 
 	return errors.Join(errs...)
-}
-
-func collectOpenPipelineCoordinatesByKind(cfgPerType project.ConfigsPerType, dest KindCoordinates) {
-	for cfg := range cfgPerType.AllConfigs {
-		if cfg.Skip {
-			continue
-		}
-
-		if openPipelineType, ok := cfg.Type.(config.OpenPipelineType); ok {
-			dest[openPipelineType.Kind] = append(dest[openPipelineType.Kind], cfg.Coordinate)
-		}
-	}
 }
 
 func collectPlatformCoordinates(cfgPerType project.ConfigsPerType) []coordinate.Coordinate {
@@ -206,7 +184,7 @@ func collectPlatformCoordinates(cfgPerType project.ConfigsPerType) []coordinate.
 
 func configRequiresPlatform(c config.Config) bool {
 	switch c.Type.(type) {
-	case config.AutomationType, config.BucketType, config.DocumentType, config.OpenPipelineType:
+	case config.AutomationType, config.BucketType, config.DocumentType, config.Segment, config.ServiceLevelObjective:
 		return true
 	default:
 		return false
@@ -219,28 +197,6 @@ func collectUndefinedEnvironmentErrors(undefinedEnvironments map[string]struct{}
 		errs = append(errs, fmt.Errorf("undefined environment %q", envName))
 	}
 	return errs
-}
-
-func collectOpenPipelineCoordinateErrors(openPipelineKindCoordinatesPerEnvironment KindCoordinatesPerEnvironment) []error {
-	errs := []error{}
-	for envName, openPipelineKindCoordinates := range openPipelineKindCoordinatesPerEnvironment {
-
-		// check for duplicate configurations for the same kind of openpipeline.
-		for kind, coordinates := range openPipelineKindCoordinates {
-			if len(coordinates) > 1 {
-				errs = append(errs, fmt.Errorf("environment %q has multiple openpipeline configurations of kind %q: %s", envName, kind, coordinateSliceAsString(coordinates)))
-			}
-		}
-	}
-	return errs
-}
-
-func coordinateSliceAsString(coordinates []coordinate.Coordinate) string {
-	coordinateStrings := make([]string, 0, len(coordinates))
-	for _, c := range coordinates {
-		coordinateStrings = append(coordinateStrings, c.String())
-	}
-	return strings.Join(coordinateStrings, ", ")
 }
 
 func collectRequiresPlatformErrors(platformCoordinatesPerEnvironment CoordinatesPerEnvironment, envs manifest.EnvironmentDefinitionsByName) []error {

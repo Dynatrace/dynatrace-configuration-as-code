@@ -46,7 +46,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
@@ -147,7 +146,6 @@ func createDeployables(clientSet *client.ClientSet) resource.Deployables {
 		config.SegmentID:               segment.NewDeployAPI(clientSet.SegmentClient),
 		config.ClassicApiTypeID:        classic.NewDeployAPI(clientSet.ConfigClient, api.NewAPIs()),
 		config.SettingsTypeID:          settings.NewDeployAPI(clientSet.SettingsClient),
-		config.OpenPipelineTypeID:      openpipeline.NewDeployAPI(clientSet.OpenPipelineClient),
 		config.AutomationTypeID:        automation.NewDeployAPI(clientSet.AutClient),
 		config.DocumentTypeID:          document.NewDeployAPI(clientSet.DocumentClient),
 		config.BucketTypeID:            bucket.NewDeployAPI(clientSet.BucketClient),

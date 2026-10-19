@@ -68,10 +68,6 @@ type DocumentDefinition struct {
 	Description *string             `yaml:"description,omitempty" json:"description,omitempty" mapstructure:"description"`
 }
 
-type OpenPipelineDefinition struct {
-	Kind string `yaml:"kind" json:"kind" mapstructure:"kind"`
-}
-
 // UnmarshalYAML Custom unmarshaler that knows how to handle TypeDefinition.
 // 'type' section can come as string or as struct as it is defind in `TypeDefinition`
 // function parameter more than once if necessary.
@@ -114,11 +110,10 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(any) error) error {
 	// Now we know the one type and can call the unmarshalers.
 	// The unmarshalers write to the type directly to update it, which is a design choice, not a requirement.
 	unmarshalers := map[string]func(data any) error{
-		"api":          c.parseApiType,
-		"settings":     c.parseSettingsType,
-		"automation":   c.parseAutomation,
-		"document":     c.parseDocumentType,
-		"openpipeline": c.parseOpenPipelineType,
+		"api":        c.parseApiType,
+		"settings":   c.parseSettingsType,
+		"automation": c.parseAutomation,
+		"document":   c.parseDocumentType,
 	}
 
 	if unm, f := unmarshalers[ttype]; !f {
@@ -196,20 +191,6 @@ func (c *TypeDefinition) parseDocumentType(a any) error {
 	return nil
 }
 
-func (c *TypeDefinition) parseOpenPipelineType(a any) error {
-	var r OpenPipelineDefinition
-	err := mapstructure.Decode(a, &r)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal openpipeline-type: %w", err)
-	}
-
-	c.Type = config.OpenPipelineType{
-		Kind: r.Kind,
-	}
-
-	return nil
-}
-
 // Validate verifies whether the given type definition is valid (correct APIs, fields set, etc)
 func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 	switch t := c.Type.(type) {
@@ -254,11 +235,6 @@ func (c *TypeDefinition) Validate(apis map[string]struct{}) error {
 		}
 
 		return fmt.Errorf("unknown document kind %q", t.Kind)
-
-	case config.OpenPipelineType:
-		if t.Kind == "" {
-			return errors.New("missing openpipeline kind property")
-		}
 	}
 
 	return nil
@@ -275,8 +251,6 @@ func (c *TypeDefinition) GetApiType() string {
 	case config.BucketType:
 		return string(t.ID())
 	case config.DocumentType:
-		return string(t.ID())
-	case config.OpenPipelineType:
 		return string(t.ID())
 	case config.Segment:
 		return string(t.ID())
@@ -338,13 +312,6 @@ func (c TypeDefinition) MarshalYAML() (any, error) {
 				ID:          t.CustomID,
 				Labels:      t.Labels,
 				Description: t.Description,
-			},
-		}, nil
-
-	case config.OpenPipelineType:
-		return map[string]any{
-			"openpipeline": OpenPipelineDefinition{
-				Kind: t.Kind,
 			},
 		}, nil
 

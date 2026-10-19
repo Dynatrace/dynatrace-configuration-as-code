@@ -105,7 +105,6 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "segment", "segmentID")
 
 	assert.Empty(t, entries[api.DashboardShareSettings])
-	assert.Empty(t, entries[string(config.OpenPipelineTypeID)])
 }
 
 func TestGeneratesValidDeleteFileWithCustomValues(t *testing.T) {

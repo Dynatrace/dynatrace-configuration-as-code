@@ -21,6 +21,7 @@ package writer
 import (
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -724,6 +725,8 @@ func assertPropertyCheckResult(t *testing.T, expected propertyCheckResult, actua
 }
 
 func TestWriteConfigs(t *testing.T) {
+	longString := strings.Repeat("a", 255)
+	cutString := strings.Repeat("a", 247)
 
 	var tests = []struct {
 		name                  string
@@ -731,7 +734,6 @@ func TestWriteConfigs(t *testing.T) {
 		expectedConfigs       map[string]persistence.TopLevelDefinition
 		expectedTemplatePaths []string
 		expectedErrs          []string
-		envVars               map[string]string
 	}{
 		{
 			name: "Simple classic API write",
@@ -780,7 +782,7 @@ func TestWriteConfigs(t *testing.T) {
 			name: "Settings 2.0 schema write sanitizes names",
 			configs: []config.Config{
 				{
-					Template: template.NewInMemoryTemplate("somethingTooLongaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ""),
+					Template: template.NewInMemoryTemplate(longString, ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:alerting-profile",
@@ -803,7 +805,7 @@ func TestWriteConfigs(t *testing.T) {
 							Config: persistence.ConfigDefinition{
 								Name:       "name",
 								Parameters: nil,
-								Template:   "somethingTooLongaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json",
+								Template:   cutString + ".json",
 								Skip:       false,
 							},
 							Type: persistence.TypeDefinition{
@@ -818,7 +820,7 @@ func TestWriteConfigs(t *testing.T) {
 			},
 			expectedTemplatePaths: []string{
 				"project/builtinalerting-profile/config.yaml",
-				"project/builtinalerting-profile/somethingTooLongaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json",
+				"project/builtinalerting-profile/" + cutString + ".json",
 			},
 		},
 		{
@@ -1503,56 +1505,10 @@ func TestWriteConfigs(t *testing.T) {
 				"project/document-dashboard/a.json",
 			},
 		},
-		{
-			name: "OpenPipeline",
-			configs: []config.Config{
-				{
-					Template: template.NewInMemoryTemplateWithPath("project/openpipeline/a.json", ""),
-					Coordinate: coordinate.Coordinate{
-						Project:  "project",
-						Type:     "openpipeline",
-						ConfigId: "bizevents-openpipeline-id",
-					},
-					Type:           config.OpenPipelineType{Kind: "bizevents"},
-					OriginObjectId: "ext-ID-123",
-					Parameters: map[string]parameter.Parameter{
-						config.NameParameter: &value.ValueParameter{Value: "name"},
-					},
-					Skip: false,
-				},
-			},
-			expectedConfigs: map[string]persistence.TopLevelDefinition{
-				"openpipeline": {
-					Configs: []persistence.TopLevelConfigDefinition{
-						{
-							Id: "bizevents-openpipeline-id",
-							Config: persistence.ConfigDefinition{
-								Name:           "name",
-								Parameters:     nil,
-								Template:       "a.json",
-								OriginObjectId: "ext-ID-123",
-								Skip:           false,
-							},
-							Type: persistence.TypeDefinition{
-								Type: config.OpenPipelineType{Kind: "bizevents"},
-							},
-						},
-					},
-				},
-			},
-			expectedTemplatePaths: []string{
-				"project/openpipeline/a.json",
-			},
-		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
-			for k, v := range tc.envVars {
-				t.Setenv(k, v)
-			}
-
 			fs := testutils.TempFs(t)
 
 			errs := WriteConfigs(&WriterContext{

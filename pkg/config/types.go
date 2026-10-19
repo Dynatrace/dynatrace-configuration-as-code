@@ -23,7 +23,6 @@ const (
 	AutomationTypeID        TypeID = "automation"
 	BucketTypeID            TypeID = "bucket"
 	DocumentTypeID          TypeID = "document"
-	OpenPipelineTypeID      TypeID = "openpipeline"
 	SegmentID               TypeID = "segment"
 	ServiceLevelObjectiveID TypeID = "slo-v2"
 )
@@ -137,18 +136,6 @@ var KnownDocumentKinds = []DocumentKind{
 
 func (DocumentType) ID() TypeID {
 	return DocumentTypeID
-}
-
-var _ Type = OpenPipelineType{}
-
-// OpenPipelineType represents an OpenPipeline configuration.
-type OpenPipelineType struct {
-	// Kind indicates the type of OpenPipeline.
-	Kind string
-}
-
-func (OpenPipelineType) ID() TypeID {
-	return OpenPipelineTypeID
 }
 
 var _ Type = Segment{}

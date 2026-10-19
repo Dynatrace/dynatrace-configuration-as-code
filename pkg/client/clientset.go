@@ -172,11 +172,6 @@ type DocumentClient interface {
 	Delete(ctx context.Context, id string) (libAPI.Response, error)
 }
 
-type OpenPipelineClient interface {
-	GetAll(ctx context.Context) ([]libAPI.Response, error)
-	Update(ctx context.Context, id string, data []byte) (libAPI.Response, error)
-}
-
 type SegmentClient interface {
 	List(ctx context.Context) (libAPI.Response, error)
 	GetAll(ctx context.Context) ([]libAPI.Response, error)
@@ -206,7 +201,6 @@ type ClientSet struct {
 	AutClient                   AutomationClient
 	BucketClient                BucketClient
 	DocumentClient              DocumentClient
-	OpenPipelineClient          OpenPipelineClient
 	SegmentClient               SegmentClient
 	ServiceLevelObjectiveClient ServiceLevelObjectiveClient
 }
@@ -257,7 +251,6 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		bucketClient                BucketClient
 		autClient                   AutomationClient
 		documentClient              DocumentClient
-		openPipelineClient          OpenPipelineClient
 		segmentClient               SegmentClient
 		serviceLevelObjectiveClient ServiceLevelObjectiveClient
 		err                         error
@@ -317,11 +310,6 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
-		openPipelineClient, err = cFactory.OpenPipelineClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-
 		segmentClient, err = cFactory.SegmentsClient(ctx)
 		if err != nil {
 			return nil, err
@@ -371,7 +359,6 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		AutClient:                   autClient,
 		BucketClient:                bucketClient,
 		DocumentClient:              documentClient,
-		OpenPipelineClient:          openPipelineClient,
 		SegmentClient:               segmentClient,
 		ServiceLevelObjectiveClient: serviceLevelObjectiveClient,
 	}, nil
