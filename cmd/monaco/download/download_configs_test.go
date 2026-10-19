@@ -46,7 +46,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
@@ -207,7 +206,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 func TestDownload_Options(t *testing.T) {
 	type wantDownload struct {
-		config, settings, bucket, automation, document, openpipeline, segment, slo bool
+		config, settings, bucket, automation, document, segment, slo bool
 	}
 	tests := []struct {
 		name         string
@@ -223,14 +222,13 @@ func TestDownload_Options(t *testing.T) {
 				},
 			},
 			want: wantDownload{
-				config:       true,
-				settings:     true,
-				bucket:       true,
-				automation:   true,
-				document:     true,
-				openpipeline: true,
-				segment:      true,
-				slo:          true,
+				config:     true,
+				settings:   true,
+				bucket:     true,
+				automation: true,
+				document:   true,
+				segment:    true,
+				slo:        true,
 			},
 		},
 		{
@@ -277,17 +275,6 @@ func TestDownload_Options(t *testing.T) {
 					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
 				}},
 			want: wantDownload{bucket: true},
-		},
-		{
-			name: "only openpipeline requested",
-			given: downloadConfigsOptions{
-				onlyOptions: OnlyOptions{
-					OnlyOpenPipelineFlag: true,
-				},
-				downloadOptionsShared: downloadOptionsShared{
-					auth: manifest.Auth{OAuth: &manifest.OAuth{}},
-				}},
-			want: wantDownload{openpipeline: true},
 		},
 		{
 			name: "only segment requested",
@@ -392,10 +379,6 @@ func TestDownload_Options(t *testing.T) {
 				_, ok := downloadable.(*document.DownloadAPI)
 				return ok
 			})
-			openpipelineDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
-				_, ok := downloadable.(*openpipeline.DownloadAPI)
-				return ok
-			})
 			sloDownloadablePresent := slices.ContainsFunc(downloadables, func(downloadable resource.Downloadable) bool {
 				_, ok := downloadable.(*slo.DownloadAPI)
 				return ok
@@ -410,7 +393,6 @@ func TestDownload_Options(t *testing.T) {
 			assert.Equal(t, tt.want.automation, automationDownloadablePresent)
 			assert.Equal(t, tt.want.bucket, bucketDownloadablePresent)
 			assert.Equal(t, tt.want.document, documentDownloadablePresent)
-			assert.Equal(t, tt.want.openpipeline, openpipelineDownloadablePresent)
 			assert.Equal(t, tt.want.slo, sloDownloadablePresent)
 			assert.Equal(t, tt.want.segment, segmentDownloadablePresent)
 		})
@@ -590,7 +572,7 @@ func TestMapToAuth(t *testing.T) {
 }
 
 func TestDownloadConfigs_ErrorIfOAuthMissing(t *testing.T) {
-	flags := []OnlyFlag{OnlyAutomationFlag, OnlyDocumentsFlag, OnlyBucketsFlag, OnlyOpenPipelineFlag, OnlySloV2Flag, OnlySegmentsFlag}
+	flags := []OnlyFlag{OnlyAutomationFlag, OnlyDocumentsFlag, OnlyBucketsFlag, OnlySloV2Flag, OnlySegmentsFlag}
 
 	sharedOptionsWithToken := downloadOptionsShared{
 		environmentURL: manifest.URLDefinition{

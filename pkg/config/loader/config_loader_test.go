@@ -77,7 +77,6 @@ func Test_parseConfigs(t *testing.T) {
 		fileContentOnDisk string
 		wantConfigs       []config.Config
 		wantErrorsContain []string
-		envVars           map[string]string
 	}{
 		{
 			name:              "reports error if file does not exist",
@@ -1938,61 +1937,9 @@ configs:
 				"unknown document kind \"other\"",
 			},
 		},
-		{
-			name:             "OpenPipeline config",
-			filePathArgument: "test-file.yaml",
-			filePathOnDisk:   "test-file.yaml",
-			fileContentOnDisk: `
-configs:
-- id: bizevents-openpipeline-id
-  config:
-    name: Test Bizevents OpenPipeline
-    template: 'profile.json'
-  type:
-    openpipeline:
-      kind: bizevents`,
-			wantConfigs: []config.Config{
-				{
-					Coordinate: coordinate.Coordinate{
-						Project:  "project",
-						Type:     "openpipeline",
-						ConfigId: "bizevents-openpipeline-id",
-					},
-					Type:     config.OpenPipelineType{Kind: "bizevents"},
-					Template: template.NewInMemoryTemplate("profile.json", "{}"),
-					Parameters: config.Parameters{
-						config.NameParameter: &value.ValueParameter{Value: "Test Bizevents OpenPipeline"},
-					},
-					Skip:        false,
-					Environment: "env name",
-					Group:       "default",
-				},
-			},
-		},
-		{
-			name:             "OpenPipeline config with missing kind",
-			filePathArgument: "test-file.yaml",
-			filePathOnDisk:   "test-file.yaml",
-			fileContentOnDisk: `
-configs:
-- id: bizevents-openpipeline-id
-  config:
-    name: Test Bizevents OpenPipeline
-    template: 'profile.json'
-  type:
-    openpipeline:`,
-			wantErrorsContain: []string{
-				"missing openpipeline kind property",
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			for k, v := range tt.envVars {
-				t.Setenv(k, v)
-			}
-
 			testFs := afero.NewMemMapFs()
 			_ = afero.WriteFile(testFs, tt.filePathOnDisk, []byte(tt.fileContentOnDisk), 0644)
 			_ = afero.WriteFile(testFs, "profile.json", []byte("{}"), 0644)

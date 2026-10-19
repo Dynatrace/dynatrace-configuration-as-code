@@ -1305,16 +1305,32 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 
 }
 
-type StubOpenPipelineClient struct {
-	UpdateStub func() (coreapi.Response, error)
+type StubSegmentsClient struct {
+	CreateStub func() (coreapi.Response, error)
 }
 
-func (c *StubOpenPipelineClient) GetAll(ctx context.Context) ([]coreapi.Response, error) {
-	return []coreapi.Response{}, nil
+func (c *StubSegmentsClient) List(ctx context.Context) (coreapi.Response, error) {
+	return coreapi.Response{Data: []byte("[]")}, nil
 }
 
-func (c *StubOpenPipelineClient) Update(ctx context.Context, id string, data []byte) (coreapi.Response, error) {
-	return c.UpdateStub()
+func (c *StubSegmentsClient) Delete(ctx context.Context, id string) (coreapi.Response, error) {
+	panic("not implemented")
+}
+
+func (c *StubSegmentsClient) Create(ctx context.Context, data []byte) (coreapi.Response, error) {
+	return c.CreateStub()
+}
+
+func (c *StubSegmentsClient) Get(ctx context.Context, id string) (coreapi.Response, error) {
+	panic("not implemented")
+}
+
+func (c *StubSegmentsClient) GetAll(ctx context.Context) ([]coreapi.Response, error) {
+	panic("not implemented")
+}
+
+func (c *StubSegmentsClient) Update(ctx context.Context, id string, data []byte) (coreapi.Response, error) {
+	panic("not implemented")
 }
 
 func TestLogResponseErrors(t *testing.T) {
@@ -1324,13 +1340,14 @@ func TestLogResponseErrors(t *testing.T) {
 				"env": project.ConfigsPerType{
 					"p1": {
 						config.Config{
-							Type:        config.OpenPipelineType{},
+							Type:        config.Segment{},
 							Environment: "env",
 							Coordinate: coordinate.Coordinate{
 								Project:  "p1",
-								Type:     "openpipeline",
+								Type:     string(config.SegmentID),
 								ConfigId: "config1",
 							},
+							Template: testutils.GenerateDummyTemplate(t),
 						},
 					},
 				},
@@ -1340,26 +1357,26 @@ func TestLogResponseErrors(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		updateStub     func() (coreapi.Response, error)
+		createStub     func() (coreapi.Response, error)
 		expectedErrLog string
 	}{
 		{
 			name: "500 error",
-			updateStub: func() (coreapi.Response, error) {
+			createStub: func() (coreapi.Response, error) {
 				return coreapi.Response{}, coreapi.APIError{StatusCode: 501}
 			},
 			expectedErrLog: "Deployment failed: Dynatrace server error",
 		},
 		{
 			name: "400 error",
-			updateStub: func() (coreapi.Response, error) {
+			createStub: func() (coreapi.Response, error) {
 				return coreapi.Response{}, coreapi.APIError{StatusCode: 404}
 			},
 			expectedErrLog: "Deployment failed: Dynatrace API rejected HTTP request / JSON data",
 		},
 		{
 			name: "default error",
-			updateStub: func() (coreapi.Response, error) {
+			createStub: func() (coreapi.Response, error) {
 				return coreapi.Response{}, coreapi.APIError{StatusCode: 0}
 			},
 			expectedErrLog: "Deployment failed: Dynatrace API call unsuccessful",
@@ -1371,7 +1388,7 @@ func TestLogResponseErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			dummyClientSet := client.ClientSet{
-				OpenPipelineClient: &StubOpenPipelineClient{UpdateStub: tt.updateStub},
+				SegmentClient: &StubSegmentsClient{CreateStub: tt.createStub},
 			}
 			c := dynatrace.EnvironmentClients{
 				dynatrace.EnvironmentInfo{Name: "env"}: &dummyClientSet,
@@ -1410,16 +1427,6 @@ func TestDeployDryRun(t *testing.T) {
 							Coordinate: coordinate.Coordinate{
 								Project:  "p1",
 								Type:     "segment",
-								ConfigId: "config1",
-							},
-							Template: testutils.GenerateDummyTemplate(t),
-						},
-						config.Config{
-							Type:        config.OpenPipelineType{},
-							Environment: "env",
-							Coordinate: coordinate.Coordinate{
-								Project:  "p1",
-								Type:     "openpipeline",
 								ConfigId: "config1",
 							},
 							Template: testutils.GenerateDummyTemplate(t),

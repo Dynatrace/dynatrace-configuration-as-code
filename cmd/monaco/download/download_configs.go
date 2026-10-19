@@ -38,7 +38,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/openpipeline"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/slo"
@@ -272,16 +271,6 @@ func prepareDownloadables(apisToDownload api.APIs, opts downloadConfigsOptions, 
 			return nil, errors.New("can't download documents: no platform credentials configured")
 		} else {
 			log.Warn(oAuthSkipMsg, "documents")
-		}
-	}
-
-	if opts.onlyOptions.ShouldDownload(OnlyOpenPipelineFlag) {
-		if opts.auth.HasPlatformCredentials() {
-			downloadables = append(downloadables, openpipeline.NewDownloadAPI(clientSet.OpenPipelineClient))
-		} else if opts.onlyOptions.IsSingleOption(OnlyOpenPipelineFlag) {
-			return nil, errors.New("can't download openpipeline resources: no platform credentials configured")
-		} else {
-			log.Warn(oAuthSkipMsg, "openpipelines")
 		}
 	}
 

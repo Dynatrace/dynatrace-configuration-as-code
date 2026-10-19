@@ -30,32 +30,31 @@ import (
 type OnlyFlag = string
 
 const (
-	EnvironmentFlag               = "environment"
-	UrlFlag                       = "url"
-	ManifestFlag                  = "manifest"
-	AccessTokenFlag               = "token"
-	PlatformTokenFlag             = "platform-token"
-	OAuthIdFlag                   = "oauth-client-id"
-	OAuthSecretFlag               = "oauth-client-secret"
-	ApiFlag                       = "api"
-	SettingsSchemaFlag            = "settings-schema"
-	ProjectFlag                   = "project"
-	OutputFolderFlag              = "output-folder"
-	ForceFlag                     = "force"
-	AdminAccessFlag               = "admin-access"
-	OnlyApisFlag         OnlyFlag = "only-apis"
-	OnlySettingsFlag     OnlyFlag = "only-settings"
-	OnlyAutomationFlag   OnlyFlag = "only-automation"
-	OnlyDocumentsFlag    OnlyFlag = "only-documents"
-	OnlyBucketsFlag      OnlyFlag = "only-buckets"
-	OnlyOpenPipelineFlag OnlyFlag = "only-openpipeline"
-	OnlySloV2Flag        OnlyFlag = "only-slo-v2"
-	OnlySegmentsFlag     OnlyFlag = "only-segments"
+	EnvironmentFlag             = "environment"
+	UrlFlag                     = "url"
+	ManifestFlag                = "manifest"
+	AccessTokenFlag             = "token"
+	PlatformTokenFlag           = "platform-token"
+	OAuthIdFlag                 = "oauth-client-id"
+	OAuthSecretFlag             = "oauth-client-secret"
+	ApiFlag                     = "api"
+	SettingsSchemaFlag          = "settings-schema"
+	ProjectFlag                 = "project"
+	OutputFolderFlag            = "output-folder"
+	ForceFlag                   = "force"
+	AdminAccessFlag             = "admin-access"
+	OnlyApisFlag       OnlyFlag = "only-apis"
+	OnlySettingsFlag   OnlyFlag = "only-settings"
+	OnlyAutomationFlag OnlyFlag = "only-automation"
+	OnlyDocumentsFlag  OnlyFlag = "only-documents"
+	OnlyBucketsFlag    OnlyFlag = "only-buckets"
+	OnlySloV2Flag      OnlyFlag = "only-slo-v2"
+	OnlySegmentsFlag   OnlyFlag = "only-segments"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	var f downloadCmdOptions
-	var onlySettings, onlyApis, onlyOpenPipeline, onlySegments, onlySloV2, onlyDocuments, onlyBuckets, onlyAutomation, adminAccess bool
+	var onlySettings, onlyApis, onlySegments, onlySloV2, onlyDocuments, onlyBuckets, onlyAutomation, adminAccess bool
 
 	platformTokenAddendum := ""
 	if featureflags.PlatformToken.Enabled() {
@@ -86,14 +85,13 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 			cmd.SilenceUsage = true
 			f.adminAccess = adminAccess
 			f.onlyOptions = OnlyOptions{
-				OnlySettingsFlag:     onlySettings || len(f.specificSchemas) > 0,
-				OnlyApisFlag:         onlyApis || len(f.specificAPIs) > 0,
-				OnlySegmentsFlag:     onlySegments,
-				OnlySloV2Flag:        onlySloV2,
-				OnlyOpenPipelineFlag: onlyOpenPipeline,
-				OnlyDocumentsFlag:    onlyDocuments,
-				OnlyBucketsFlag:      onlyBuckets,
-				OnlyAutomationFlag:   onlyAutomation,
+				OnlySettingsFlag:   onlySettings || len(f.specificSchemas) > 0,
+				OnlyApisFlag:       onlyApis || len(f.specificAPIs) > 0,
+				OnlySegmentsFlag:   onlySegments,
+				OnlySloV2Flag:      onlySloV2,
+				OnlyDocumentsFlag:  onlyDocuments,
+				OnlyBucketsFlag:    onlyBuckets,
+				OnlyAutomationFlag: onlyAutomation,
 			}
 
 			if f.environmentURL != "" {
@@ -133,7 +131,6 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&onlyDocuments, OnlyDocumentsFlag, false, "Only download documents")
 	cmd.Flags().BoolVar(&onlyBuckets, OnlyBucketsFlag, false, "Only download buckets")
 	cmd.Flags().BoolVar(&onlySegments, OnlySegmentsFlag, false, "Only download segment configurations")
-	cmd.Flags().BoolVar(&onlyOpenPipeline, OnlyOpenPipelineFlag, false, "Only download openpipeline configurations")
 	cmd.Flags().BoolVar(&onlySloV2, OnlySloV2Flag, false, fmt.Sprintf("Only download %s configurations", config.ServiceLevelObjectiveID))
 	cmd.Flags().BoolVar(&adminAccess, AdminAccessFlag, false, "Download OpenPipeline resources of all owners, not just the current user's")
 
