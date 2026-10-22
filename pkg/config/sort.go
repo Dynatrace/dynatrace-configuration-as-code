@@ -17,6 +17,7 @@
 package config
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
@@ -67,8 +68,8 @@ func getSortedParameters(c *Config) ([]parameter.NamedParameter, []error) {
 
 	result := make([]parameter.NamedParameter, 0, len(parametersWithName))
 
-	for i := len(sorted) - 1; i >= 0; i-- {
-		result = append(result, parametersWithName[sorted[i]])
+	for _, s := range slices.Backward(sorted) {
+		result = append(result, parametersWithName[s])
 	}
 
 	return result, nil

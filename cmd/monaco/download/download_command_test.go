@@ -109,7 +109,7 @@ func TestGetDownloadCommand(t *testing.T) {
 
 		expected := downloadCmdOptions{
 			environmentURL: "http://some.url",
-			auth:           auth{accessToken: "TOKEN"},
+			accessToken:    "TOKEN",
 			projectName:    "project",
 			onlyOptions:    defaultOnlyOptions,
 		}
@@ -125,12 +125,10 @@ func TestGetDownloadCommand(t *testing.T) {
 
 		expected := downloadCmdOptions{
 			environmentURL: "http://some.url",
-			auth: auth{
-				clientID:     "CLIENT_ID",
-				clientSecret: "CLIENT_SECRET",
-			},
-			projectName: "project",
-			onlyOptions: defaultOnlyOptions,
+			clientID:       "CLIENT_ID",
+			clientSecret:   "CLIENT_SECRET",
+			projectName:    "project",
+			onlyOptions:    defaultOnlyOptions,
 		}
 		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -143,13 +141,11 @@ func TestGetDownloadCommand(t *testing.T) {
 
 		expected := downloadCmdOptions{
 			environmentURL: "http://some.url",
-			auth: auth{
-				accessToken:  "TOKEN",
-				clientID:     "CLIENT_ID",
-				clientSecret: "CLIENT_SECRET",
-			},
-			projectName: "project",
-			onlyOptions: defaultOnlyOptions,
+			accessToken:    "TOKEN",
+			clientID:       "CLIENT_ID",
+			clientSecret:   "CLIENT_SECRET",
+			projectName:    "project",
+			onlyOptions:    defaultOnlyOptions,
 		}
 		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -163,11 +159,9 @@ func TestGetDownloadCommand(t *testing.T) {
 
 		expected := downloadCmdOptions{
 			environmentURL: "http://some.url",
-			auth: auth{
-				platformToken: "PLATFORM_TOKEN",
-			},
-			projectName: "project",
-			onlyOptions: defaultOnlyOptions,
+			platformToken:  "PLATFORM_TOKEN",
+			projectName:    "project",
+			onlyOptions:    defaultOnlyOptions,
 		}
 		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -181,12 +175,10 @@ func TestGetDownloadCommand(t *testing.T) {
 
 		expected := downloadCmdOptions{
 			environmentURL: "http://some.url",
-			auth: auth{
-				accessToken:   "API_TOKEN",
-				platformToken: "PLATFORM_TOKEN",
-			},
-			projectName: "project",
-			onlyOptions: defaultOnlyOptions,
+			accessToken:    "API_TOKEN",
+			platformToken:  "PLATFORM_TOKEN",
+			projectName:    "project",
+			onlyOptions:    defaultOnlyOptions,
 		}
 		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any(), expected).Return(nil)
 
@@ -300,7 +292,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlyApisFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{accessToken: "token"},
+			accessToken:    "token",
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}
@@ -341,7 +333,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlySettingsFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{accessToken: "token"},
+			accessToken:    "token",
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}
@@ -365,7 +357,8 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlyAutomationFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{clientID: "id", clientSecret: "secret"},
+			clientID:       "id",
+			clientSecret:   "secret",
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}
@@ -382,7 +375,8 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlyDocumentsFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{clientID: "id", clientSecret: "secret"},
+			clientID:       "id",
+			clientSecret:   "secret",
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}
@@ -399,7 +393,8 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlyBucketsFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{clientID: "id", clientSecret: "secret"},
+			clientID:       "id",
+			clientSecret:   "secret",
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}
@@ -416,7 +411,8 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlySegmentsFlag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{clientID: "id", clientSecret: "secret"},
+			clientID:       "id",
+			clientSecret:   "secret",
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}
@@ -433,7 +429,8 @@ func TestGetDownloadCommand(t *testing.T) {
 		onlyOptions[OnlySloV2Flag] = true
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{clientID: "id", clientSecret: "secret"},
+			clientID:       "id",
+			clientSecret:   "secret",
 			projectName:    "project",
 			onlyOptions:    onlyOptions,
 		}
@@ -448,7 +445,8 @@ func TestGetDownloadCommand(t *testing.T) {
 	t.Run("All only flags applied", func(t *testing.T) {
 		expected := downloadCmdOptions{
 			environmentURL: "test.url",
-			auth:           auth{clientID: "id", clientSecret: "secret"},
+			clientID:       "id",
+			clientSecret:   "secret",
 			projectName:    "project",
 			onlyOptions: OnlyOptions{
 				OnlySettingsFlag:   true,

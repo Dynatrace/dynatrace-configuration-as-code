@@ -46,8 +46,7 @@ func New(errs ...error) error {
 	m := MultiError{}
 	for _, e := range errs {
 		if e != nil {
-			var me MultiError
-			if errors.As(e, &me) {
+			if me, ok := errors.AsType[MultiError](e); ok {
 				m.Errors = append(m.Errors, me.Errors...)
 			} else {
 				m.Errors = append(m.Errors, e)

@@ -121,8 +121,7 @@ func (c *AccountManagementClient) upsertBoundary(ctx context.Context, boundaryId
 		slog.DebugContext(ctx, "Trying to get boundary", slog.String("name", boundary.Name))
 		bnd, err := c.GetBoundaryByName(ctx, boundary.Name)
 		if err != nil {
-			var rnfErr *ResourceNotFoundError
-			if !errors.As(err, &rnfErr) {
+			if _, ok := errors.AsType[*ResourceNotFoundError](err); !ok {
 				return "", err
 			}
 
@@ -381,8 +380,7 @@ func (c *AccountManagementClient) upsertServiceUser(ctx context.Context, service
 	if serviceUserId == "" {
 		suId, err := c.getServiceUserIDByName(ctx, data.Name)
 		if err != nil {
-			var rnfErr *ResourceNotFoundError
-			if !errors.As(err, &rnfErr) {
+			if _, ok := errors.AsType[*ResourceNotFoundError](err); !ok {
 				return "", err
 			}
 

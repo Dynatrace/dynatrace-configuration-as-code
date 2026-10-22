@@ -67,47 +67,41 @@ func TestExtractCommonBase(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name:             param1Value,
-					param2Name:             param2Value,
-					param3Name:             param3Value,
-					parameterNotSharedName: "not-shared",
-				},
-				Template: template,
-				Skip:     nil,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name:             param1Value,
+				param2Name:             param2Value,
+				param3Name:             param3Value,
+				parameterNotSharedName: "not-shared",
 			},
+			Template:    template,
+			Skip:        nil,
 			group:       group,
 			environment: "test",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name:             param1Value,
-					param2Name:             param2Value,
-					param3Name:             param3Value,
-					parameterNotSharedName: 12,
-				},
-				Template: template,
-				Skip:     nil,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name:             param1Value,
+				param2Name:             param2Value,
+				param3Name:             param3Value,
+				parameterNotSharedName: 12,
 			},
+			Template:    template,
+			Skip:        nil,
 			group:       group,
 			environment: "test1",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name:             param1Value,
-					param2Name:             param2Value,
-					param3Name:             param3Value,
-					parameterNotSharedName: 25,
-				},
-				Template: template,
-				Skip:     nil,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name:             param1Value,
+				param2Name:             param2Value,
+				param3Name:             param3Value,
+				parameterNotSharedName: 25,
 			},
+			Template:    template,
+			Skip:        nil,
 			group:       group,
 			environment: "test2",
 		},
@@ -162,37 +156,33 @@ func TestExtractCommonBaseForEnvVarSkipsWithEqualValues(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name:             param1Value,
-					param2Name:             param2Value,
-					param3Name:             param3Value,
-					parameterNotSharedName: 12,
-				},
-				Template: template,
-				Skip: map[any]any{
-					"type": "environment",
-					"name": "A",
-				},
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name:             param1Value,
+				param2Name:             param2Value,
+				param3Name:             param3Value,
+				parameterNotSharedName: 12,
+			},
+			Template: template,
+			Skip: map[any]any{
+				"type": "environment",
+				"name": "A",
 			},
 			group:       group,
 			environment: "test",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name:             param1Value,
-					param2Name:             param2Value,
-					param3Name:             param3Value,
-					parameterNotSharedName: 13,
-				},
-				Template: template,
-				Skip: map[any]any{
-					"type": "environment",
-					"name": "A",
-				},
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name:             param1Value,
+				param2Name:             param2Value,
+				param3Name:             param3Value,
+				parameterNotSharedName: 13,
+			},
+			Template: template,
+			Skip: map[any]any{
+				"type": "environment",
+				"name": "A",
 			},
 			group:       group,
 			environment: "test1",
@@ -260,30 +250,26 @@ func TestExtractCommonBaseForEnvVarSkipsWithDifferentValues(t *testing.T) {
 	}
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name: param1Value,
-					param2Name: param2Value,
-					param3Name: param3Value,
-				},
-				Template: template,
-				Skip:     skipA,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name: param1Value,
+				param2Name: param2Value,
+				param3Name: param3Value,
 			},
+			Template:    template,
+			Skip:        skipA,
 			group:       group,
 			environment: "test",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name: param1Value,
-					param2Name: param2Value,
-					param3Name: param3Value,
-				},
-				Template: template,
-				Skip:     skipB,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name: param1Value,
+				param2Name: param2Value,
+				param3Name: param3Value,
 			},
+			Template:    template,
+			Skip:        skipB,
 			group:       group,
 			environment: "test1",
 		},
@@ -340,47 +326,41 @@ func TestExtractCommonBaseT(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name:             param1Value,
-					param2Name:             param2Value,
-					param3Name:             param3Value,
-					parameterNotSharedName: "not-shared",
-				},
-				Template: template,
-				Skip:     nil,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name:             param1Value,
+				param2Name:             param2Value,
+				param3Name:             param3Value,
+				parameterNotSharedName: "not-shared",
 			},
+			Template:    template,
+			Skip:        nil,
 			group:       group,
 			environment: "test",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name:             param1Value,
-					param2Name:             param2Value,
-					param3Name:             param3Value,
-					parameterNotSharedName: 12,
-				},
-				Template: template,
-				Skip:     nil,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name:             param1Value,
+				param2Name:             param2Value,
+				param3Name:             param3Value,
+				parameterNotSharedName: 12,
 			},
+			Template:    template,
+			Skip:        nil,
 			group:       group,
 			environment: "test1",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name:             param1Value,
-					param2Name:             param2Value,
-					param3Name:             param3Value,
-					parameterNotSharedName: 25,
-				},
-				Template: template,
-				Skip:     true,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name:             param1Value,
+				param2Name:             param2Value,
+				param3Name:             param3Value,
+				parameterNotSharedName: 25,
 			},
+			Template:    template,
+			Skip:        true,
 			group:       group,
 			environment: "test2",
 		},
@@ -421,38 +401,32 @@ func TestExtractCommonBaseWithJustSkipDifferent(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name: param1Value,
-				},
-				Template: template,
-				Skip:     nil,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name: param1Value,
 			},
+			Template:    template,
+			Skip:        nil,
 			group:       group,
 			environment: "test",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name: param1Value,
-				},
-				Template: template,
-				Skip:     true,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name: param1Value,
 			},
+			Template:    template,
+			Skip:        true,
 			group:       group,
 			environment: "test1",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
-					param1Name: param1Value,
-				},
-				Template: template,
-				Skip:     nil,
+			Name: configName,
+			Parameters: map[string]persistence.ConfigParameter{
+				param1Name: param1Value,
 			},
+			Template:    template,
+			Skip:        nil,
 			group:       group,
 			environment: "test2",
 		},
@@ -567,25 +541,19 @@ func TestToParameterDefinitionShouldWithShortSyntaxActiveShouldDoNormalWhenParam
 func TestForSamePropertiesWithNothingSet(t *testing.T) {
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name:     nil,
-				Template: "",
-				Skip:     nil,
-			},
+			Name:     nil,
+			Template: "",
+			Skip:     nil,
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name:     nil,
-				Template: "",
-				Skip:     nil,
-			},
+			Name:     nil,
+			Template: "",
+			Skip:     nil,
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name:     nil,
-				Template: "",
-				Skip:     nil,
-			},
+			Name:     nil,
+			Template: "",
+			Skip:     nil,
 		},
 	}
 
@@ -613,25 +581,19 @@ func TestForSamePropertiesWithAllShared(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name:     name,
-				Template: template,
-				Skip:     skip,
-			},
+			Name:     name,
+			Template: template,
+			Skip:     skip,
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name:     name,
-				Template: template,
-				Skip:     skip,
-			},
+			Name:     name,
+			Template: template,
+			Skip:     skip,
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name:     name,
-				Template: template,
-				Skip:     skip,
-			},
+			Name:     name,
+			Template: template,
+			Skip:     skip,
 		},
 	}
 
@@ -657,19 +619,13 @@ func TestForSamePropertiesWithNameNotSharedByAll(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: sharedName,
-			},
+			Name: sharedName,
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: nil,
-			},
+			Name: nil,
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Name: sharedName,
-			},
+			Name: sharedName,
 		},
 	}
 
@@ -690,9 +646,7 @@ func TestForSamePropertiesWithSkipNotSetExceptForOne(t *testing.T) {
 			ConfigDefinition: persistence.ConfigDefinition{},
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
-				Skip: true,
-			},
+			Skip: true,
 		},
 		{
 			ConfigDefinition: persistence.ConfigDefinition{},

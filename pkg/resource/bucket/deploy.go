@@ -56,8 +56,7 @@ func (d DeployAPI) Deploy(ctx context.Context, properties parameter.Properties, 
 
 	err := d.upsert(ctx, bucketName, []byte(renderedConfig))
 	if err != nil {
-		var apiErr api.APIError
-		if errors.As(err, &apiErr) {
+		if _, ok := errors.AsType[api.APIError](err); ok {
 			return entities.ResolvedEntity{}, fmt.Errorf("failed to upsert bucket '%s': %w", bucketName, err)
 		}
 

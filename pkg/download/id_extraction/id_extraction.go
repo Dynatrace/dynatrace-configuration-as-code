@@ -77,7 +77,7 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) (project.ConfigsP
 						key := createParameterKey(scopeParamRsolvedStr)
 						idMap[key] = scopeParamRsolvedStr
 						c.Parameters[config.ScopeParameter] = &ref.ReferenceParameter{
-							ParameterReference: parameter.ParameterReference{Config: c.Coordinate, Property: baseParamID + "." + key},
+							Config: c.Coordinate, Property: baseParamID + "." + key,
 						}
 					}
 				}

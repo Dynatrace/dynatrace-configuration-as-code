@@ -59,17 +59,15 @@ type downloadCmdOptions struct {
 
 func (d downloadCmdOptions) toDownloadConfigsOptions(url manifest.URLDefinition, auth manifest.Auth) downloadConfigsOptions {
 	return downloadConfigsOptions{
-		downloadOptionsShared: downloadOptionsShared{
-			environmentURL:         url,
-			auth:                   auth,
-			outputFolder:           d.outputFolder,
-			projectName:            d.projectName,
-			forceOverwriteManifest: d.forceOverwrite,
-		},
-		specificAPIs:    d.specificAPIs,
-		specificSchemas: d.specificSchemas,
-		onlyOptions:     d.onlyOptions,
-		adminAccess:     d.adminAccess,
+		environmentURL:         url,
+		auth:                   auth,
+		outputFolder:           d.outputFolder,
+		projectName:            d.projectName,
+		forceOverwriteManifest: d.forceOverwrite,
+		specificAPIs:           d.specificAPIs,
+		specificSchemas:        d.specificSchemas,
+		onlyOptions:            d.onlyOptions,
+		adminAccess:            d.adminAccess,
 	}
 }
 
