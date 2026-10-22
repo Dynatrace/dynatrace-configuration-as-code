@@ -4,7 +4,7 @@ go 1.27.3
 
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20261019121422-2c1b50d9744b
+	github.com/dynatrace/dynatrace-configuration-as-code-core v0.9.1-0.20261022095444-2c484a1698a8
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/lmittmann/tint v1.2.1
