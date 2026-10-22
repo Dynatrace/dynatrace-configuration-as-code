@@ -83,7 +83,7 @@ jobs:
 
       - name: 🧑‍🔧 Check for `go fix` changes
         run: |
-          go fix -tags "unit integration nightly cleanup integration_v1 download_restore" ./...
+          go fix -tags "unit integration nightly cleanup download_restore" ./...
           git diff --exit-code
         if: always()
 
@@ -95,7 +95,7 @@ jobs:
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a #v9.3.0
         with:
           install-mode: 'goinstall' # install mode goinstall in order to use hashes for the version
-          version: 8f3b0c7ed018e57905fbd873c697e0b1ede605a5 #v2.11.4
+          version: 25c5369a93aacb8cccea0d46e1569ca4a194564d #v2.15.0
           args: '--output.checkstyle.path=lint-report.xml --issues-exit-code=0' # if issues are found, don't exit with "1". Sonar decides if it fails or not
         if: always()
 
