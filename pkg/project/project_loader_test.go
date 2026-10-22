@@ -32,7 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -143,14 +142,12 @@ func Test_checkKeyUserActionScope(t *testing.T) {
 					Coordinate: coordinate.Coordinate{Project: "project", Type: "key-user-actions-web", ConfigId: "id"},
 					Parameters: config.Parameters{
 						"scope": &reference.ReferenceParameter{
-							ParameterReference: parameter.ParameterReference{
-								Config: coordinate.Coordinate{
-									Project:  "project",
-									Type:     "key-user-actions-web",
-									ConfigId: "id",
-								},
-								Property: "prop",
+							Config: coordinate.Coordinate{
+								Project:  "project",
+								Type:     "key-user-actions-web",
+								ConfigId: "id",
 							},
+							Property: "prop",
 						},
 					},
 				},

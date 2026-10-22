@@ -135,10 +135,8 @@ func TestDeploySuccess(t *testing.T) {
 			listStub: func() (api.PagedListResponse, error) {
 				list := api.PagedListResponse{
 					api.ListResponse{
-						Response: api.Response{
-							StatusCode: 200,
-							Data:       []byte(`totalCount: 1, slos: [{"name": "some-name", "customSli": {"indicator": "some-query"}, "criteria": [{"warning": 95}], "tags": ["latency:500ms"], "id": "some-id", "version": "some-version"}]"`),
-						},
+						StatusCode: 200,
+						Data:       []byte(`totalCount: 1, slos: [{"name": "some-name", "customSli": {"indicator": "some-query"}, "criteria": [{"warning": 95}], "tags": ["latency:500ms"], "id": "some-id", "version": "some-version"}]"`),
 						Objects: [][]byte{
 							[]byte(`{"name": "some-name", "customSli": {"indicator": "some-query"}, "criteria": [{"warning": 95}], "tags": ["latency:500ms"], "id": "some-id", "version": "some-version", "externalId": "monaco-614c832a-b2c4-30c0-8e5b-f017366a4b1a"}`),
 						},
@@ -177,10 +175,8 @@ func TestDeploySuccess(t *testing.T) {
 			listStub: func() (api.PagedListResponse, error) {
 				list := api.PagedListResponse{
 					api.ListResponse{
-						Response: api.Response{
-							StatusCode: 200,
-							Data:       []byte(`totalCount: 0, slos: []"`),
-						},
+						StatusCode: 200,
+						Data:       []byte(`totalCount: 0, slos: []"`),
 						Objects: [][]byte{
 							[]byte(`{}`),
 						},
@@ -295,10 +291,8 @@ func TestDeployErrors(t *testing.T) {
 			listStub: func() (api.PagedListResponse, error) {
 				list := api.PagedListResponse{
 					api.ListResponse{
-						Response: api.Response{
-							StatusCode: 200,
-							Data:       []byte(`totalCount: 1, slos: [{"name": "some-name", "customSli": {"indicator": "some-query"}, "criteria": [{"warning": 95}], "tags": ["latency:500ms"], "id": "some-id", "version": "some-version"}]"`),
-						},
+						StatusCode: 200,
+						Data:       []byte(`totalCount: 1, slos: [{"name": "some-name", "customSli": {"indicator": "some-query"}, "criteria": [{"warning": 95}], "tags": ["latency:500ms"], "id": "some-id", "version": "some-version"}]"`),
 						Objects: [][]byte{
 							[]byte(`{"name": "some-name", "customSli": {"indicator": "some-query"}, "criteria": [{"warning": 95}], "tags": ["latency:500ms"], "id": "some-id", "version": "some-version", "externalId": "monaco-614c832a-b2c4-30c0-8e5b-f017366a4b1a"}`),
 						},
@@ -327,10 +321,8 @@ func TestDeployErrors(t *testing.T) {
 			listStub: func() (api.PagedListResponse, error) {
 				list := api.PagedListResponse{
 					api.ListResponse{
-						Response: api.Response{
-							StatusCode: 200,
-							Data:       []byte(`totalCoun`),
-						},
+						StatusCode: 200,
+						Data:       []byte(`totalCoun`),
 						Objects: [][]byte{
 							[]byte(`{"n`),
 						},
@@ -358,10 +350,8 @@ func TestDeployErrors(t *testing.T) {
 			listStub: func() (api.PagedListResponse, error) {
 				list := api.PagedListResponse{
 					api.ListResponse{
-						Response: api.Response{
-							StatusCode: 200,
-							Data:       []byte(`totalCount: 0, slos: []"`),
-						},
+						StatusCode: 200,
+						Data:       []byte(`totalCount: 0, slos: []"`),
 						Objects: [][]byte{
 							[]byte(`{}`),
 						},
@@ -392,10 +382,8 @@ func TestDeployErrors(t *testing.T) {
 			listStub: func() (api.PagedListResponse, error) {
 				list := api.PagedListResponse{
 					api.ListResponse{
-						Response: api.Response{
-							StatusCode: 200,
-							Data:       []byte(`totalCount: 0, slos: []"`),
-						},
+						StatusCode: 200,
+						Data:       []byte(`totalCount: 0, slos: []"`),
 						Objects: [][]byte{
 							[]byte(`{}`),
 						},

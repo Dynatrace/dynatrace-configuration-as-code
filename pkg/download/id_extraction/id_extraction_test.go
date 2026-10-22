@@ -27,7 +27,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	ref "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
@@ -323,7 +322,7 @@ func TestScopeParameterIsTreatedAsParameter(t *testing.T) {
 					{
 						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
 						Parameters: config.Parameters{
-							"scope": &ref.ReferenceParameter{ParameterReference: parameter.ParameterReference{Property: baseParamID + ".id_HOST_123456789"}},
+							"scope": &ref.ReferenceParameter{Property: baseParamID + ".id_HOST_123456789"},
 							"extractedIDs": value.New(map[string]string{
 								"id_HOST_123456789": "HOST-123456789",
 							}),
@@ -349,7 +348,7 @@ func TestScopeParameterIsTreatedAsParameter(t *testing.T) {
 					{
 						Template: template.NewInMemoryTemplate("test-tmpl", "{}"),
 						Parameters: config.Parameters{
-							"scope": &ref.ReferenceParameter{ParameterReference: parameter.ParameterReference{Property: baseParamID + ".id_my_magic_metric_key"}},
+							"scope": &ref.ReferenceParameter{Property: baseParamID + ".id_my_magic_metric_key"},
 							"extractedIDs": value.New(map[string]string{
 								"id_my_magic_metric_key": "my.magic.metric-key",
 							}),

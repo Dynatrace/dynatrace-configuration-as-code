@@ -188,8 +188,7 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, d
 
 	for range components {
 		err := <-errChan
-		var deploymentErrs deployErrors.DeploymentErrors
-		if errors.As(err, &deploymentErrs) {
+		if deploymentErrs, ok := errors.AsType[deployErrors.DeploymentErrors](err); ok {
 			errCount += deploymentErrs.ErrorCount
 		} else if err != nil {
 			errCount += 1
@@ -372,8 +371,7 @@ func deployConfig(ctx context.Context, c *config.Config, deployables resource.De
 	}
 
 	if deployErr != nil {
-		var responseErr coreapi.APIError
-		if errors.As(deployErr, &responseErr) {
+		if responseErr, ok := errors.AsType[coreapi.APIError](deployErr); ok {
 			logResponseError(ctx, responseErr)
 			return entities.ResolvedEntity{}, responseErr
 		}

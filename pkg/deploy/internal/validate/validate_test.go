@@ -25,7 +25,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
@@ -298,14 +297,12 @@ func TestValidate(t *testing.T) {
 									},
 									Parameters: config.Parameters{
 										config.NameParameter: &reference.ReferenceParameter{
-											ParameterReference: parameter.ParameterReference{
-												Config: coordinate.Coordinate{
-													Project:  "projA",
-													Type:     "typeA",
-													ConfigId: "ID",
-												},
-												Property: "property",
+											Config: coordinate.Coordinate{
+												Project:  "projA",
+												Type:     "typeA",
+												ConfigId: "ID",
 											},
+											Property: "property",
 										},
 									},
 								},
@@ -317,14 +314,12 @@ func TestValidate(t *testing.T) {
 									},
 									Parameters: config.Parameters{
 										config.NameParameter: &reference.ReferenceParameter{
-											ParameterReference: parameter.ParameterReference{
-												Config: coordinate.Coordinate{
-													Project:  "projA",
-													Type:     "typeA",
-													ConfigId: "ID",
-												},
-												Property: "property",
+											Config: coordinate.Coordinate{
+												Project:  "projA",
+												Type:     "typeA",
+												ConfigId: "ID",
 											},
+											Property: "property",
 										},
 									},
 								},

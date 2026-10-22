@@ -231,7 +231,7 @@ func insertNetworkZoneParameter(configs []config.Config) {
 	if len(networkZones) > 0 && networkZoneEnabledFound {
 		for _, nz := range networkZones {
 			nz.Parameters["__MONACO_NZONE_ENABLED__"] = &ref.ReferenceParameter{
-				ParameterReference: parameter.ParameterReference{Config: networkZoneEnabled.Coordinate, Property: "name"}}
+				Config: networkZoneEnabled.Coordinate, Property: "name"}
 		}
 	}
 }

@@ -43,10 +43,9 @@ func TestDownloader_Download(t *testing.T) {
 	t.Run("download slo works", func(t *testing.T) {
 		c := stubClient{list: func() (api.PagedListResponse, error) {
 			return api.PagedListResponse{
-				{Response: api.Response{
+				{
 					StatusCode: http.StatusOK,
 					Data:       nil,
-				},
 					Objects: [][]byte{
 						[]byte(`{
 							"id": "id",
@@ -85,10 +84,9 @@ func TestDownloader_Download(t *testing.T) {
 	t.Run("slo without id is ignored", func(t *testing.T) {
 		c := stubClient{list: func() (api.PagedListResponse, error) {
 			return api.PagedListResponse{
-				{Response: api.Response{
+				{
 					StatusCode: http.StatusOK,
 					Data:       nil,
-				},
 					Objects: [][]byte{[]byte(`{
 						"externalId": "some_external_ID",
 						"version": 1,
@@ -111,15 +109,15 @@ func TestDownloader_Download(t *testing.T) {
 		c := stubClient{list: func() (api.PagedListResponse, error) {
 			return api.PagedListResponse{
 				{
-					Response: api.Response{StatusCode: http.StatusOK},
+					StatusCode: http.StatusOK,
 					Objects: [][]byte{
 						[]byte(`{"id": "id1","externalId": "some_external_ID","version": 1,"name": "slo_name_1"}`),
 						[]byte(`{"id": "id2","externalId": "some_external_ID","version": 1,"name": "slo_name_2"}`),
 					},
 				},
 				{
-					Response: api.Response{StatusCode: http.StatusOK},
-					Objects:  [][]byte{[]byte(`{"id": "id3","externalId": "some_external_ID","version": 1,"name": "slo_name_3"}`)},
+					StatusCode: http.StatusOK,
+					Objects:    [][]byte{[]byte(`{"id": "id3","externalId": "some_external_ID","version": 1,"name": "slo_name_3"}`)},
 				},
 			}, nil
 		}}
@@ -187,10 +185,8 @@ func TestDownloader_Download(t *testing.T) {
 
 		c := stubClient{list: func() (api.PagedListResponse, error) {
 			return api.PagedListResponse{{
-				Response: api.Response{
-					StatusCode: http.StatusOK,
-				},
-				Objects: [][]byte{[]byte(given)}},
+				StatusCode: http.StatusOK,
+				Objects:    [][]byte{[]byte(given)}},
 			}, nil
 		}}
 

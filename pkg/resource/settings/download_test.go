@@ -388,14 +388,12 @@ func TestDownloadAll(t *testing.T) {
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
 						config.InsertAfterParameter: &reference.ReferenceParameter{
-							ParameterReference: parameter.ParameterReference{
-								Config: coordinate.Coordinate{
-									Project:  "projectName",
-									Type:     "sid1",
-									ConfigId: uuid1,
-								},
-								Property: "id",
+							Config: coordinate.Coordinate{
+								Project:  "projectName",
+								Type:     "sid1",
+								ConfigId: uuid1,
 							},
+							Property: "id",
 						},
 					},
 					Skip:           false,
@@ -506,14 +504,12 @@ func TestDownloadAll(t *testing.T) {
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "scope-A"},
 						config.InsertAfterParameter: &reference.ReferenceParameter{
-							ParameterReference: parameter.ParameterReference{
-								Config: coordinate.Coordinate{
-									Project:  "projectName",
-									Type:     "sid1",
-									ConfigId: uuid1,
-								},
-								Property: "id",
+							Config: coordinate.Coordinate{
+								Project:  "projectName",
+								Type:     "sid1",
+								ConfigId: uuid1,
 							},
+							Property: "id",
 						},
 					},
 					Skip:           false,
@@ -605,14 +601,12 @@ func TestDownloadAll(t *testing.T) {
 					Parameters: map[string]parameter.Parameter{
 						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
 						config.InsertAfterParameter: &reference.ReferenceParameter{
-							ParameterReference: parameter.ParameterReference{
-								Config: coordinate.Coordinate{
-									Project:  "projectName",
-									Type:     "sid1",
-									ConfigId: uuid1,
-								},
-								Property: "id",
+							Config: coordinate.Coordinate{
+								Project:  "projectName",
+								Type:     "sid1",
+								ConfigId: uuid1,
 							},
+							Property: "id",
 						},
 					},
 					Skip:           false,

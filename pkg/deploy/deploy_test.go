@@ -1090,14 +1090,12 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 									},
 									Parameters: config.Parameters{
 										config.NameParameter: &reference.ReferenceParameter{
-											ParameterReference: parameter.ParameterReference{
-												Config: coordinate.Coordinate{
-													Project:  "projA",
-													Type:     "typeA",
-													ConfigId: "ID",
-												},
-												Property: "property",
+											Config: coordinate.Coordinate{
+												Project:  "projA",
+												Type:     "typeA",
+												ConfigId: "ID",
 											},
+											Property: "property",
 										},
 									},
 									Template: testutils.GenerateDummyTemplate(t),
@@ -1110,14 +1108,12 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 									},
 									Parameters: config.Parameters{
 										config.NameParameter: &reference.ReferenceParameter{
-											ParameterReference: parameter.ParameterReference{
-												Config: coordinate.Coordinate{
-													Project:  "projA",
-													Type:     "typeA",
-													ConfigId: "ID",
-												},
-												Property: "property",
+											Config: coordinate.Coordinate{
+												Project:  "projA",
+												Type:     "typeA",
+												ConfigId: "ID",
 											},
+											Property: "property",
 										},
 									},
 									Template: testutils.GenerateDummyTemplate(t),

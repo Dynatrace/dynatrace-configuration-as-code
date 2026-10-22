@@ -89,10 +89,8 @@ func TestDecodeListResponse(t *testing.T) {
 			"decodes simple response",
 			api.PagedListResponse{
 				api.ListResponse{
-					Response: api.Response{
-						StatusCode: 200,
-						Data:       []byte(`{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
-					},
+					StatusCode: 200,
+					Data:       []byte(`{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 					Objects: [][]byte{
 						[]byte(`{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 					},
@@ -110,22 +108,18 @@ func TestDecodeListResponse(t *testing.T) {
 			"decodes response list",
 			api.PagedListResponse{
 				api.ListResponse{
-					Response: api.Response{
-						StatusCode: 200,
-						Data:       []byte(`count: 4, results: [{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}]`),
-					},
+					StatusCode: 200,
+					Data:       []byte(`count: 4, results: [{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}]`),
 					Objects: [][]byte{
 						[]byte(`{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 					},
 				},
 				api.ListResponse{
-					Response: api.Response{
-						StatusCode: 200,
-						Data: []byte(`count: 4, results: [
+					StatusCode: 200,
+					Data: []byte(`count: 4, results: [
 { "id": "some-other-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]},
 { "id": "some-other-id-2", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]},
 { "id": "some-other-id-3", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}]`),
-					},
 					Objects: [][]byte{
 						[]byte(`{ "id": "some-other-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 						[]byte(`{ "id": "some-other-id-2", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
@@ -157,22 +151,18 @@ func TestDecodeListResponse(t *testing.T) {
 			"error of one element is missing ID",
 			api.PagedListResponse{
 				api.ListResponse{
-					Response: api.Response{
-						StatusCode: 200,
-						Data:       []byte(`count: 4, results: [{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}]`),
-					},
+					StatusCode: 200,
+					Data:       []byte(`count: 4, results: [{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}]`),
 					Objects: [][]byte{
 						[]byte(`{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 					},
 				},
 				api.ListResponse{
-					Response: api.Response{
-						StatusCode: 200,
-						Data: []byte(`count: 4, results: [
+					StatusCode: 200,
+					Data: []byte(`count: 4, results: [
 { "id": "some-other-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]},
 { "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]},
 { "id": "some-other-id-3", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}]`),
-					},
 					Objects: [][]byte{
 						[]byte(`{ "id": "some-other-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 						[]byte(`{ "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
@@ -187,20 +177,16 @@ func TestDecodeListResponse(t *testing.T) {
 			"error of one response is empty",
 			api.PagedListResponse{
 				api.ListResponse{
-					Response: api.Response{
-						StatusCode: 200,
-						Data:       []byte(`count: 4, results: [{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}]`),
-					},
+					StatusCode: 200,
+					Data:       []byte(`count: 4, results: [{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}]`),
 					Objects: [][]byte{
 						[]byte(`{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 					},
 				},
 				api.ListResponse{
-					Response: api.Response{
-						StatusCode: 200,
-						Data:       []byte("{}"),
-					},
-					Objects: [][]byte{[]byte("{}")},
+					StatusCode: 200,
+					Data:       []byte("{}"),
+					Objects:    [][]byte{[]byte("{}")},
 				},
 			},
 			[]automationutils.Response{},

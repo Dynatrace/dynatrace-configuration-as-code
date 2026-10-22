@@ -1344,20 +1344,18 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 	t.Setenv(environment.ConcurrentRequestsEnvKey, "50")
 
 	return downloadConfigsOptions{
-		downloadOptionsShared: downloadOptionsShared{
-			environmentURL: manifest.URLDefinition{
-				Type:  manifest.ValueURLType,
-				Value: server.URL,
-			},
-			auth: manifest.Auth{
-				AccessToken: &manifest.AuthSecret{
-					Name:  "TOKEN_ENV_VAR",
-					Value: "token",
-				},
-			},
-			outputFolder: "out",
-			projectName:  projectName,
+		environmentURL: manifest.URLDefinition{
+			Type:  manifest.ValueURLType,
+			Value: server.URL,
 		},
+		auth: manifest.Auth{
+			AccessToken: &manifest.AuthSecret{
+				Name:  "TOKEN_ENV_VAR",
+				Value: "token",
+			},
+		},
+		outputFolder: "out",
+		projectName:  projectName,
 		onlyOptions: OnlyOptions{
 			OnlyApisFlag: true,
 		},

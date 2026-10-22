@@ -490,21 +490,19 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 		onlyOptions: OnlyOptions{
 			OnlySettingsFlag: false,
 		},
-		downloadOptionsShared: downloadOptionsShared{
-			environmentURL: manifest.URLDefinition{
-				Type:  manifest.ValueURLType,
-				Value: "testurl.com",
-			},
-			auth: manifest.Auth{
-				AccessToken: &manifest.AuthSecret{
-					Name:  "TEST_TOKEN_VAR",
-					Value: "test.token",
-				},
-			},
-			outputFolder:           "folder",
-			projectName:            "project",
-			forceOverwriteManifest: false,
+		environmentURL: manifest.URLDefinition{
+			Type:  manifest.ValueURLType,
+			Value: "testurl.com",
 		},
+		auth: manifest.Auth{
+			AccessToken: &manifest.AuthSecret{
+				Name:  "TEST_TOKEN_VAR",
+				Value: "test.token",
+			},
+		},
+		outputFolder:           "folder",
+		projectName:            "project",
+		forceOverwriteManifest: false,
 	}
 
 	c := client.NewMockSettingsClient(gomock.NewController(t))
@@ -635,18 +633,16 @@ func TestDownloadConfigs_OnlySettings(t *testing.T) {
 		onlyOptions: OnlyOptions{
 			OnlySettingsFlag: true,
 		},
-		downloadOptionsShared: downloadOptionsShared{
-			environmentURL: manifest.URLDefinition{
-				Type:  manifest.ValueURLType,
-				Value: "testurl.com",
-			},
-			auth: manifest.Auth{
-				OAuth: &manifest.OAuth{},
-			},
-			outputFolder:           "folder",
-			projectName:            "project",
-			forceOverwriteManifest: false,
+		environmentURL: manifest.URLDefinition{
+			Type:  manifest.ValueURLType,
+			Value: "testurl.com",
 		},
+		auth: manifest.Auth{
+			OAuth: &manifest.OAuth{},
+		},
+		outputFolder:           "folder",
+		projectName:            "project",
+		forceOverwriteManifest: false,
 	}
 	c := client.NewMockSettingsClient(gomock.NewController(t))
 	c.EXPECT().ListSchemas(gomock.Any()).Return(dtclient.SchemaList{{SchemaId: "builtin:auto.schema"}}, nil)
@@ -766,15 +762,13 @@ func Test_EscapingSkip_Buckets(t *testing.T) {
 		onlyOptions: OnlyOptions{
 			OnlyBucketsFlag: true,
 		},
-		downloadOptionsShared: downloadOptionsShared{
-			environmentURL: manifest.URLDefinition{},
-			auth: manifest.Auth{
-				OAuth: &manifest.OAuth{},
-			},
-			outputFolder:           "out",
-			projectName:            "project",
-			forceOverwriteManifest: false,
+		environmentURL: manifest.URLDefinition{},
+		auth: manifest.Auth{
+			OAuth: &manifest.OAuth{},
 		},
+		outputFolder:           "out",
+		projectName:            "project",
+		forceOverwriteManifest: false,
 	}
 	c := client.NewMockBucketClient(gomock.NewController(t))
 	c.EXPECT().List(gomock.Any()).AnyTimes().Return(buckets.ListResponse{{
