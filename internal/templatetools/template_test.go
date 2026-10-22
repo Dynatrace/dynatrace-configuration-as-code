@@ -85,9 +85,9 @@ func TestJSONObject_Parameterize(t *testing.T) {
 	)
 
 	tests := []struct {
-		name string
-		given
-		expected
+		name     string
+		given    given
+		expected expected
 	}{
 		{
 			name: "simple case",
@@ -142,9 +142,9 @@ func TestJSONObject_ParameterizeAttribute(t *testing.T) {
 	)
 
 	tests := []struct {
-		name string
-		given
-		expected
+		name     string
+		given    given
+		expected expected
 	}{
 		{
 			name: "simple case - string",
