@@ -137,7 +137,7 @@ jobs:
           echo "GIT_TAG=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
 
       - name: 🔍 SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9
+        uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
