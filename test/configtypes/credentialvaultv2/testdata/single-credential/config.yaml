@@ -1,0 +1,11 @@
+configs:
+- id: credential
+  config:
+    name: Sample Credentials
+    parameters:
+      description: Sample set of credentials for API documentation
+      ownerAccessOnly: "true"
+      credentialScope: SYNTHETIC
+      type: USERNAME_PASSWORD
+    template: credential.json
+  type: credential-vault-v2

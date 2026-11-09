@@ -25,6 +25,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 
@@ -74,7 +75,7 @@ func LoadEntriesFromFile(fs afero.Fs, deleteFile string) (DeleteEntries, error) 
 func readDeleteFile(fs afero.Fs, deleteFile string) (persistence.FileDefinition, error) {
 	targetFile, err := filepath.Abs(deleteFile)
 	if err != nil {
-		return persistence.FileDefinition{}, fmt.Errorf("could not parse absoulte path to file `%s`: %w", deleteFile, err)
+		return persistence.FileDefinition{}, fmt.Errorf("could not parse absolute path to file `%s`: %w", deleteFile, err)
 	}
 
 	data, err := afero.ReadFile(fs, targetFile)
@@ -141,6 +142,10 @@ func convert(entry any) (pointer.DeletePointer, error) {
 		if err := verifyAPIEntry(parsed, a); err != nil {
 			return pointer.DeletePointer{}, fmt.Errorf("failed to parse entry for API '%s': %w", a.ID, err)
 		}
+	} else if config.ConfigsIdentifiedByName[parsed.Type] {
+		if err := verifyNameIdentifiedEntry(parsed); err != nil {
+			return pointer.DeletePointer{}, fmt.Errorf("failed to parse entry for config type '%s': %w", parsed.Type, err)
+		}
 	} else {
 		if err := verifyCoordinateEntry(parsed); err != nil {
 			return pointer.DeletePointer{}, err
@@ -155,7 +160,7 @@ func convert(entry any) (pointer.DeletePointer, error) {
 		Domain:         parsed.CustomValues["domain"],
 		OriginObjectId: parsed.ObjectId,
 	}
-	if _, known := api.NewAPIs()[parsed.Type]; known {
+	if _, known := api.NewAPIs()[parsed.Type]; known || config.ConfigsIdentifiedByName[parsed.Type] {
 		dp.Identifier = parsed.ConfigName
 	} else {
 		dp.Identifier = parsed.ConfigId
@@ -164,7 +169,8 @@ func convert(entry any) (pointer.DeletePointer, error) {
 	return dp, nil
 }
 
-func verifyAPIEntry(parsed persistence.DeleteEntry, a api.API) error {
+// verifyNameIdentifiedEntry checks if name and/or objectId is given and no external-id identifier
+func verifyNameIdentifiedEntry(parsed persistence.DeleteEntry) error {
 	if parsed.ConfigId != "" {
 		return errors.New("'id' is not supported for this API")
 	}
@@ -177,6 +183,14 @@ func verifyAPIEntry(parsed persistence.DeleteEntry, a api.API) error {
 	if parsed.ConfigName == "" && parsed.ObjectId == "" {
 		return errors.New("a 'name' or a 'objectId' is required, but none was defined")
 	}
+	return nil
+}
+
+func verifyAPIEntry(parsed persistence.DeleteEntry, a api.API) error {
+	if err := verifyNameIdentifiedEntry(parsed); err != nil {
+		return err
+	}
+
 	// The scope is required for sub-path APIs.
 	if a.HasParent() && parsed.Scope == "" {
 		return errors.New("API requires a 'scope', but none was defined")

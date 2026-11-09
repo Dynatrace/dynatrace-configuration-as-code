@@ -48,25 +48,15 @@ func NewValidator() *validator {
 	}
 }
 
-// Validate checks that for each classic config API type, only one config exists with any given name.
-// As classic configs are identified by name, ValidateUniqueConfigNames returns errors if a name is used more than once for the same type.
+// Validate checks that for each classic config API type and each type in [config.ConfigsIdentifiedByName], only one config exists with any given name.
+// As these configs are identified by name, Validate returns errors if a name is used more than once for the same type.
 func (v *validator) Validate(_ []project.Project, c config.Config) error {
 	if v.uniqueNames == nil {
 		v.uniqueNames = make(map[environmentName]map[classicEndpoint][]config.Config)
 	}
 
-	a, ok := c.Type.(config.ClassicApiType)
+	key, ok := v.nameIdentifiedTypeKey(c)
 	if !ok {
-		return nil
-	}
-
-	theAPI := v.apis[a.Api]
-	if theAPI.NonUniqueName {
-		return nil
-	}
-
-	// as the uniqueness of a key-user-action-web configuration is defined by its payload no validation can be performed
-	if a.Api == api.KeyUserActionsWeb {
 		return nil
 	}
 
@@ -74,7 +64,7 @@ func (v *validator) Validate(_ []project.Project, c config.Config) error {
 		v.uniqueNames[c.Environment] = make(map[classicEndpoint][]config.Config)
 	}
 
-	for _, c2 := range v.uniqueNames[c.Environment][a.Api] {
+	for _, c2 := range v.uniqueNames[c.Environment][key] {
 		if !scopesAreEqual(&c, &c2) {
 			continue
 		}
@@ -84,8 +74,32 @@ func (v *validator) Validate(_ []project.Project, c config.Config) error {
 		}
 	}
 
-	v.uniqueNames[c.Environment][a.Api] = append(v.uniqueNames[c.Environment][a.Api], c)
+	v.uniqueNames[c.Environment][key] = append(v.uniqueNames[c.Environment][key], c)
 	return nil
+}
+
+// nameIdentifiedTypeKey returns the key under which names of c must be unique, or false if c doesn't require unique names.
+func (v *validator) nameIdentifiedTypeKey(c config.Config) (string, bool) {
+	if c.Type == nil {
+		return "", false
+	}
+
+	a, ok := c.Type.(config.ClassicApiType)
+	if !ok {
+		typeID := string(c.Type.ID())
+		return typeID, config.ConfigsIdentifiedByName[typeID]
+	}
+
+	if v.apis[a.Api].NonUniqueName {
+		return "", false
+	}
+
+	// as the uniqueness of a key-user-action-web configuration is defined by its payload no validation can be performed
+	if a.Api == api.KeyUserActionsWeb {
+		return "", false
+	}
+
+	return a.Api, true
 }
 
 func scopesAreEqual(c1 *config.Config, c2 *config.Config) bool {

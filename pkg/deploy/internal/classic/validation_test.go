@@ -439,3 +439,44 @@ func newTestClassicConfigForValidation(t *testing.T, configId string, apiID stri
 		coordinate.Coordinate{Project: "project", Type: apiID, ConfigId: configId},
 		config.ClassicApiType{Api: apiID}, parameters)
 }
+
+func newTestCredentialVaultConfigForValidation(t *testing.T, configId string, environment string, name string) ([]project.Project, config.Config) {
+	projects, c := newTestConfigForValidation(t,
+		coordinate.Coordinate{Project: "project", Type: string(config.CredentialVaultID), ConfigId: configId},
+		config.CredentialVault{},
+		map[string]parameter.Parameter{config.NameParameter: value.New(name)})
+	c.Environment = environment
+	return projects, c
+}
+
+func TestValidate_CredentialVault(t *testing.T) {
+	t.Run("error for configs with same name", func(t *testing.T) {
+		validator := NewValidator()
+
+		assert.NoError(t, validator.Validate(newTestCredentialVaultConfigForValidation(t, "config1", "dev", "name")))
+		assert.ErrorContains(t, validator.Validate(newTestCredentialVaultConfigForValidation(t, "config2", "dev", "name")), "duplicated config name found")
+	})
+
+	t.Run("no error for configs with different names", func(t *testing.T) {
+		validator := NewValidator()
+
+		assert.NoError(t, validator.Validate(newTestCredentialVaultConfigForValidation(t, "config1", "dev", "name1")))
+		assert.NoError(t, validator.Validate(newTestCredentialVaultConfigForValidation(t, "config2", "dev", "name2")))
+	})
+
+	t.Run("no error for same name in different environments", func(t *testing.T) {
+		validator := NewValidator()
+
+		assert.NoError(t, validator.Validate(newTestCredentialVaultConfigForValidation(t, "config1", "dev", "name")))
+		assert.NoError(t, validator.Validate(newTestCredentialVaultConfigForValidation(t, "config2", "prod", "name")))
+	})
+
+	t.Run("no error for same name as a classic credential-vault config", func(t *testing.T) {
+		// credential-vault (classic) and credential-vault-v2 are validated separately, as they are different types
+		validator := NewValidator()
+
+		assert.NoError(t, validator.Validate(newTestCredentialVaultConfigForValidation(t, "config1", "dev", "name")))
+		assert.NoError(t, validator.Validate(newTestClassicConfigForValidation(t, "config2", api.CredentialVault, map[string]parameter.Parameter{
+			config.NameParameter: value.New("name")})))
+	})
+}

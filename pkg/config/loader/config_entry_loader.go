@@ -225,7 +225,8 @@ func getConfigFromDefinition(
 			parameters[config.NameParameter] = name
 		}
 
-	} else if (configType.Type.ID() == config.ClassicApiTypeID) && (configType.GetApiType() != api.DashboardShareSettings) {
+	} else if (configType.Type.ID() == config.ClassicApiTypeID && configType.GetApiType() != api.DashboardShareSettings) ||
+		config.ConfigsIdentifiedByName[string(configType.Type.ID())] {
 		errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, "missing parameter `name`"))
 	}
 

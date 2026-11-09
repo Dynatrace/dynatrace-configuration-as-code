@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"runtime"
 	"time"
@@ -188,6 +189,13 @@ type ServiceLevelObjectiveClient interface {
 	Delete(ctx context.Context, id string) (libAPI.Response, error)
 }
 
+type CredentialVaultClient interface {
+	List(ctx context.Context) (libAPI.PagedListResponse, error)
+	Update(ctx context.Context, id string, body []byte) (libAPI.Response, error)
+	Create(ctx context.Context, body []byte) (libAPI.Response, error)
+	Delete(ctx context.Context, id string) (libAPI.Response, error)
+}
+
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
 var DefaultRetryOptions = rest.RetryOptions{MaxRetries: 10, DelayAfterRetry: time.Second, ShouldRetryFunc: rest.RetryIfTooManyRequestsOrServiceUnavailable}
@@ -203,6 +211,7 @@ type ClientSet struct {
 	DocumentClient              DocumentClient
 	SegmentClient               SegmentClient
 	ServiceLevelObjectiveClient ServiceLevelObjectiveClient
+	CredentialVaultClient       CredentialVaultClient
 }
 
 type ClientOptions struct {
@@ -253,6 +262,7 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		documentClient              DocumentClient
 		segmentClient               SegmentClient
 		serviceLevelObjectiveClient ServiceLevelObjectiveClient
+		credentialVaultClient       CredentialVaultClient
 		err                         error
 	)
 	if err = validateURL(ctx, url); err != nil {
@@ -320,6 +330,17 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 			return nil, err
 		}
 
+		credentialVaultClient, err = cFactory.WithRetryOptions(&rest.RetryOptions{
+			MaxRetries:      DefaultRetryOptions.MaxRetries,
+			DelayAfterRetry: DefaultRetryOptions.DelayAfterRetry,
+			ShouldRetryFunc: func(resp *http.Response) bool {
+				return DefaultRetryOptions.ShouldRetryFunc(resp) || resp.StatusCode == http.StatusNotFound // aligned with V1
+			},
+		}).CredentialVaultClient(ctx)
+		if err != nil {
+			return nil, err
+		}
+
 		settingsClient, err = dtclient.NewPlatformSettingsClient(client, dtclient.WithCachingDisabled(opts.CachingDisabled))
 		if err != nil {
 			return nil, err
@@ -361,5 +382,6 @@ func CreateClientSetWithOptions(ctx context.Context, url string, auth manifest.A
 		DocumentClient:              documentClient,
 		SegmentClient:               segmentClient,
 		ServiceLevelObjectiveClient: serviceLevelObjectiveClient,
+		CredentialVaultClient:       credentialVaultClient,
 	}, nil
 }

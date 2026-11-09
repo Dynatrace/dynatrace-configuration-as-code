@@ -79,13 +79,13 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	fs := testutils.CreateTestFileSystem()
 	outputFolder := "output-folder"
 	err := monaco.Run(t, fs, fmt.Sprintf("monaco generate deletefile ./testdata/deletefile/manifest.yaml --output-folder=%s", outputFolder))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
 	assertFileExists(t, fs, expectedFile)
 
 	entries, errs := delete.LoadEntriesFromFile(fs, expectedFile)
-	assert.NoError(t, errs)
+	require.NoError(t, errs)
 
 	assertDeleteEntries(t, entries, "alerting-profile", "Star Trek Service", "Star Wars Service", "Star Gate Service", "Lord of the Rings Service", "A Song of Ice and Fire Service")
 	assertDeleteEntries(t, entries, "dashboard", "Alpha Quadrant")
@@ -103,6 +103,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "bucket", "my-bucket")
 	assertDeleteEntries(t, entries, "document", "my-dashboard", "my-notebook", "" /*non-coordinate references (direct ones) don't have an identifier */)
 	assertDeleteEntries(t, entries, "segment", "segmentID")
+	assertDeleteEntries(t, entries, string(config.CredentialVaultID), "Sample Credentials")
 
 	assert.Empty(t, entries[api.DashboardShareSettings])
 }
@@ -270,6 +271,8 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 }
 
 func assertDeleteEntries(t *testing.T, entries map[string][]pointer.DeletePointer, cfgType string, expectedCfgIdentifiers ...string) {
+	t.Helper()
+
 	vals, ok := entries[cfgType]
 	assert.True(t, ok, "expected delete pointers for type %s", cfgType)
 

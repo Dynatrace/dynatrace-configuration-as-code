@@ -1,0 +1,22 @@
+configs:
+- id: my-credential
+  config:
+    name: My Credential
+    parameters:
+      description: First credential
+      ownerAccessOnly: "true"
+      credentialScope: SYNTHETIC
+      type: USERNAME_PASSWORD
+    template: credential.json
+  type: credential-vault-v2
+
+- id: second-credential
+  config:
+    name: Second Credential
+    parameters:
+      description: Second credential
+      ownerAccessOnly: "true"
+      credentialScope: SYNTHETIC
+      type: USERNAME_PASSWORD
+    template: credential.json
+  type: credential-vault-v2

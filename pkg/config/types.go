@@ -25,7 +25,14 @@ const (
 	DocumentTypeID          TypeID = "document"
 	SegmentID               TypeID = "segment"
 	ServiceLevelObjectiveID TypeID = "slo-v2"
+	CredentialVaultID       TypeID = "credential-vault-v2" //nolint:gosec
 )
+
+var ConfigsIdentifiedByName = map[string]bool{
+	// The credential vault API doesn't support externalIDs.
+	// Therefore, we go with the name, which is actually not unique but aligned with V1
+	string(CredentialVaultID): true,
+}
 
 var _ Type = SettingsType{}
 
@@ -150,4 +157,10 @@ type ServiceLevelObjective struct{}
 
 func (ServiceLevelObjective) ID() TypeID {
 	return ServiceLevelObjectiveID
+}
+
+type CredentialVault struct{}
+
+func (CredentialVault) ID() TypeID {
+	return CredentialVaultID
 }

@@ -35,6 +35,7 @@ var DummyClientSet = ClientSet{
 	DocumentClient:              &DummyDocumentClient{},
 	SegmentClient:               &DummySegmentClient{},
 	ServiceLevelObjectiveClient: &DummyServiceLevelObjectClient{},
+	CredentialVaultClient:       &DummyCredentialVaultClient{},
 }
 
 var _ AutomationClient = (*DummyAutomationClient)(nil)
@@ -172,5 +173,23 @@ func (c *DummyServiceLevelObjectClient) Create(_ context.Context, _ []byte) (api
 }
 
 func (c *DummyServiceLevelObjectClient) Delete(_ context.Context, _ string) (api.Response, error) {
+	return api.Response{}, nil
+}
+
+type DummyCredentialVaultClient struct{}
+
+func (c *DummyCredentialVaultClient) List(_ context.Context) (api.PagedListResponse, error) {
+	return api.PagedListResponse{}, nil
+}
+
+func (c *DummyCredentialVaultClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
+	return api.Response{}, nil
+}
+
+func (c *DummyCredentialVaultClient) Create(_ context.Context, _ []byte) (api.Response, error) {
+	return api.Response{Data: []byte(`{}`)}, nil
+}
+
+func (c *DummyCredentialVaultClient) Delete(_ context.Context, _ string) (api.Response, error) {
 	return api.Response{}, nil
 }

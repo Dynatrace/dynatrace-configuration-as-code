@@ -221,6 +221,17 @@ func createDeleteEntry(c config.Config, apis api.APIs, project project.Project) 
 		return createConfigAPIEntry(c, apis, project)
 	}
 
+	if config.ConfigsIdentifiedByName[string(c.Type.ID())] {
+		name, err := getNameFromConfig(c)
+		if err != nil {
+			return persistence.DeleteEntry{}, err
+		}
+		return persistence.DeleteEntry{
+			Type:       c.Coordinate.Type,
+			ConfigName: name,
+		}, nil
+	}
+
 	// An externalID can't be used if there is a customID set on a DocumentType
 	if docType, isDocument := c.Type.(config.DocumentType); isDocument && docType.CustomID != "" {
 		return persistence.DeleteEntry{
@@ -237,29 +248,14 @@ func createDeleteEntry(c config.Config, apis api.APIs, project project.Project) 
 }
 
 func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Project) (persistence.DeleteEntry, error) {
-	nameParam := c.Parameters[config.NameParameter]
-
-	if nameParam.GetType() == reference.ReferenceParameterType {
-		// we don't sort configs or create entities, so references will never find other configs they point to -> user has to write those manually
-		return persistence.DeleteEntry{}, fmt.Errorf("unable to resolve reference parameters")
-	}
-
-	val, err := nameParam.ResolveValue(parameter.ResolveContext{ParameterName: config.NameParameter})
-	if err != nil {
-		return persistence.DeleteEntry{}, fmt.Errorf("unable to resolve 'name' parameter: %w", err)
-	}
-
-	name, ok := val.(string)
-	if !ok {
-		return persistence.DeleteEntry{}, fmt.Errorf("value of 'name' parameter '%v' was not a string", val)
-	}
-
-	if name == "" {
-		return persistence.DeleteEntry{}, fmt.Errorf("'name' parameter was empty")
-	}
-
 	var scopeValue string
 	var customValues = make(map[string]string)
+
+	name, err := getNameFromConfig(c)
+	if err != nil {
+		return persistence.DeleteEntry{}, err
+	}
+
 	if apis[c.Coordinate.Type].HasParent() {
 		scopeParam, ok := c.Parameters[config.ScopeParameter]
 		if !ok {
@@ -332,4 +328,31 @@ func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Projec
 		Scope:        scopeValue,
 		CustomValues: customValues,
 	}, nil
+}
+
+func getNameFromConfig(c config.Config) (string, error) {
+	nameParam, ok := c.Parameters[config.NameParameter]
+	if !ok || nameParam == nil {
+		return "", fmt.Errorf("'name' parameter is missing")
+	}
+
+	if nameParam.GetType() == reference.ReferenceParameterType {
+		// we don't sort configs or create entities, so references will never find other configs they point to -> user has to write those manually
+		return "", fmt.Errorf("unable to resolve reference parameters")
+	}
+
+	val, err := nameParam.ResolveValue(parameter.ResolveContext{ParameterName: config.NameParameter})
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve 'name' parameter: %w", err)
+	}
+
+	name, ok := val.(string)
+	if !ok {
+		return "", fmt.Errorf("value of 'name' parameter '%v' was not a string", val)
+	}
+
+	if name == "" {
+		return "", fmt.Errorf("'name' parameter was empty")
+	}
+	return name, nil
 }

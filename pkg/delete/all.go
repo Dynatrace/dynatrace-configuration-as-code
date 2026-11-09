@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/credentialvault"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
@@ -79,6 +80,12 @@ func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
 		slog.WarnContext(ctx, "Skipped deletion of SLO-v2 configurations as API client was unavailable.")
 	} else {
 		purgers = append(purgers, slo.NewDeleter(clients.ServiceLevelObjectiveClient))
+	}
+
+	if clients.CredentialVaultClient == nil {
+		slog.WarnContext(ctx, "Skipped deletion of credential-vault-v2 configurations as API client was unavailable.")
+	} else {
+		purgers = append(purgers, credentialvault.NewDeleter(clients.CredentialVaultClient))
 	}
 
 	return all(ctx, purgers)

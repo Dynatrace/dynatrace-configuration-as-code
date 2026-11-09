@@ -39,6 +39,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 )
 
 type ConfigClient struct {
@@ -443,12 +444,21 @@ func (d *ConfigClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restC
 			MaxRetries:      new(rs.MaxRetries - 1), // one call was already done
 		})
 		if err != nil {
-			return coreapi.Response{}, err
+			return coreapi.Response{}, withCredentialVaultDeprecationHint(theApi, err)
 		}
 		resp, err = coreapi.NewResponseFromHTTPResponse(httpResp)
 	}
 
-	return resp, err
+	return resp, withCredentialVaultDeprecationHint(theApi, err)
+}
+
+// withCredentialVaultDeprecationHint wraps a non-DELETE 404 of "api: credential-vault" with a hint to migrate to the new config type.
+func withCredentialVaultDeprecationHint(theApi api.API, err error) error {
+	apiError := coreapi.APIError{}
+	if theApi.ID != api.CredentialVault || !errors.As(err, &apiError) || apiError.StatusCode != http.StatusNotFound || apiError.Request.Method == http.MethodDelete {
+		return err
+	}
+	return fmt.Errorf(`the "api: %s" config is deprecated. Consider migrating to "type: %s". %w`, api.CredentialVault, config.CredentialVaultID, err)
 }
 
 func isFailureDetectionParameterSetsAPIError(targetAPI api.API, resp *http.Response) bool {

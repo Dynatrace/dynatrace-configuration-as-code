@@ -21,6 +21,7 @@ package dtclient
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,6 +36,7 @@ import (
 	corerest "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 )
 
 var mockAPI = api.API{ID: "mock-api", SingleConfiguration: true}
@@ -930,6 +932,103 @@ func TestCallWithRetryOnKnowTimingIssue(t *testing.T) {
 	_, err = client.callWithRetryOnKnowTimingIssue(t.Context(), client.client.POST, "some/path", []byte("{}"), api.API{}, corerest.RequestOptions{})
 	assert.Error(t, err)
 	assert.Equal(t, 3, i)
+}
+
+func TestCallWithRetryOnKnowTimingIssue_CredentialVaultDeprecation(t *testing.T) {
+	credentialVaultAPI := api.API{ID: api.CredentialVault}
+	deprecationMessage := fmt.Sprintf(`the "api: %s" config is deprecated. Consider migrating to "type: %s".`, api.CredentialVault, config.CredentialVaultID)
+
+	tests := []struct {
+		name                 string
+		theAPI               api.API
+		callErr              error
+		noRetries            bool
+		wantDeprecationError bool
+	}{
+		{
+			name:                 "credential-vault POST returning 404 adds deprecation message",
+			theAPI:               credentialVaultAPI,
+			callErr:              coreapi.APIError{StatusCode: http.StatusNotFound, Request: corerest.RequestInfo{Method: http.MethodPost}},
+			wantDeprecationError: true,
+		},
+		{
+			name:                 "credential-vault PUT returning 404 adds deprecation message",
+			theAPI:               credentialVaultAPI,
+			callErr:              coreapi.APIError{StatusCode: http.StatusNotFound, Request: corerest.RequestInfo{Method: http.MethodPut}},
+			wantDeprecationError: true,
+		},
+		{
+			name:                 "credential-vault GET returning 404 adds deprecation message",
+			theAPI:               credentialVaultAPI,
+			callErr:              coreapi.APIError{StatusCode: http.StatusNotFound, Request: corerest.RequestInfo{Method: http.MethodGet}},
+			wantDeprecationError: true,
+		},
+		{
+			name:                 "credential-vault POST returning 404 without retries configured adds deprecation message",
+			theAPI:               credentialVaultAPI,
+			callErr:              coreapi.APIError{StatusCode: http.StatusNotFound, Request: corerest.RequestInfo{Method: http.MethodPost}},
+			noRetries:            true,
+			wantDeprecationError: true,
+		},
+		{
+			name:    "credential-vault DELETE returning 404 has no deprecation message",
+			theAPI:  credentialVaultAPI,
+			callErr: coreapi.APIError{StatusCode: http.StatusNotFound, Request: corerest.RequestInfo{Method: http.MethodDelete}},
+		},
+		{
+			name:    "credential-vault returning non-404 has no deprecation message",
+			theAPI:  credentialVaultAPI,
+			callErr: coreapi.APIError{StatusCode: http.StatusBadRequest, Request: corerest.RequestInfo{Method: http.MethodPost}},
+		},
+		{
+			name:    "credential-vault returning non-API error has no deprecation message",
+			theAPI:  credentialVaultAPI,
+			callErr: assert.AnError,
+		},
+		{
+			name:    "other API returning 404 has no deprecation message",
+			theAPI:  mockAPI,
+			callErr: coreapi.APIError{StatusCode: http.StatusNotFound, Request: corerest.RequestInfo{Method: http.MethodPost}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var opts []func(*ConfigClient)
+			if tt.noRetries {
+				opts = append(opts, WithRetrySettingsForClassic(RetrySettings{}))
+			}
+			client, err := NewClassicConfigClientForTesting("http://localhost", http.DefaultClient, opts...)
+			require.NoError(t, err)
+
+			calls := 0
+			mockCall := SendRequestWithBody(func(ctx context.Context, url string, data io.Reader, options corerest.RequestOptions) (*http.Response, error) {
+				calls++
+				return nil, tt.callErr
+			})
+
+			_, err = client.callWithRetryOnKnowTimingIssue(t.Context(), mockCall, "some/path", []byte("{}"), tt.theAPI, corerest.RequestOptions{})
+
+			// the original error must always be preserved in the chain.
+			// APIError is not comparable (contains a []byte), so errors.Is cannot be used for it.
+			require.Error(t, err)
+			if wantAPIErr, ok := errors.AsType[coreapi.APIError](tt.callErr); ok {
+				var gotAPIErr coreapi.APIError
+				require.ErrorAs(t, err, &gotAPIErr)
+				assert.Equal(t, wantAPIErr, gotAPIErr)
+			} else {
+				require.ErrorIs(t, err, tt.callErr)
+			}
+			if tt.noRetries {
+				assert.Equal(t, 1, calls)
+			}
+			if tt.wantDeprecationError {
+				assert.ErrorContains(t, err, deprecationMessage)
+			} else {
+				assert.NotContains(t, err.Error(), "deprecated")
+			}
+		})
+	}
 }
 
 func TestConfigClient_ClearCache(t *testing.T) {

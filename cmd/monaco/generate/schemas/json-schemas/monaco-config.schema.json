@@ -41,7 +41,7 @@
             "oneOf": [
               {
                 "type": "string",
-                "description": "Shorthand for a classic Config API type name, or one of the special types: bucket, segment, slo-v2"
+                "description": "Shorthand for a classic Config API type name, or one of the special types: bucket, segment, slo-v2, credential-vault-v2"
               },
               {
                 "type": "object",
