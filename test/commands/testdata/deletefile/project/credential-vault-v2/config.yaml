@@ -1,0 +1,8 @@
+configs:
+- id: credential
+  config:
+    name: Sample Credentials
+    parameters:
+      description: Sample set of credentials for API documentation
+    template: credential.json
+  type: credential-vault-v2

@@ -1491,6 +1491,64 @@ configs:
 			wantErrorsContain: []string{"unknown API: slo"},
 		},
 		{
+			name:             "Credential vault config",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: credential-config-id
+  config:
+    name: 'My credential'
+    template: 'profile.json'
+  type: credential-vault-v2
+`,
+			wantConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "credential-vault-v2",
+						ConfigId: "credential-config-id",
+					},
+					Type:     config.CredentialVault{},
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
+					Parameters: config.Parameters{
+						"name": &value.ValueParameter{Value: "My credential"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
+			name:             "Credential vault written as api config",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: credential-config-id
+  config:
+    name: 'My credential'
+    template: 'profile.json'
+  type:
+    api: credential-vault-v2
+`,
+			wantErrorsContain: []string{"unknown API: credential-vault-v2"},
+		},
+		{
+			name:             "Credential vault config without name",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: credential-config-id
+  config:
+    template: 'profile.json'
+  type: credential-vault-v2
+`,
+			wantErrorsContain: []string{"missing parameter `name`"},
+		},
+		{
 			name:             "API without scope",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
