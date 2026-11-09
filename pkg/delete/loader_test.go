@@ -22,11 +22,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v2"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 )
 
 // This test should contain all possible entry types (except the legacy one)
@@ -523,4 +524,84 @@ func createDeleteFile(t testing.TB, content []byte) (afero.Fs, string) {
 	}
 
 	return fs, deleteFilePath
+}
+
+func TestLoad_CredentialVaultEntry(t *testing.T) {
+	t.Run("identify via 'name'", func(t *testing.T) {
+		fileContent := []byte(`delete:
+- type: credential-vault-v2
+  name: my-credential
+`)
+		want := delete.DeleteEntries{
+			"credential-vault-v2": {{
+				Type:       "credential-vault-v2",
+				Identifier: "my-credential",
+			}}}
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+		require.NoError(t, err)
+		require.Equal(t, want, actual)
+	})
+
+	t.Run("identify via 'objectId'", func(t *testing.T) {
+		fileContent := []byte(`delete:
+- type: credential-vault-v2
+  objectId: origin-object-ID
+`)
+		want := delete.DeleteEntries{
+			"credential-vault-v2": {{
+				Type:           "credential-vault-v2",
+				OriginObjectId: "origin-object-ID",
+			}}}
+		actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, fileContent))
+		require.NoError(t, err)
+		require.Equal(t, want, actual)
+	})
+}
+
+func TestLoad_CredentialVaultEntry_Errors(t *testing.T) {
+	invalidEntries := []struct {
+		name    string
+		content string
+	}{
+		{
+			name: "'id' is not supported",
+			content: `delete:
+- type: credential-vault-v2
+  id: my-credential
+`,
+		},
+		{
+			name: "'project' is not supported",
+			content: `delete:
+- type: credential-vault-v2
+  project: my-project
+  name: my-credential
+`,
+		},
+		{
+			name: "'name' and 'objectId' can't coexist",
+			content: `delete:
+- type: credential-vault-v2
+  name: my-credential
+  objectId: origin-object-ID
+`,
+		},
+		{
+			name: "either 'name' or 'objectId' is required",
+			content: `delete:
+- type: credential-vault-v2
+`,
+		},
+	}
+	for _, tt := range invalidEntries {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := delete.LoadEntriesFromFile(createDeleteFile(t, []byte(tt.content)))
+
+			var e delete.ParseErrors
+			require.ErrorAs(t, err, &e)
+			assert.Len(t, e, 1)
+			assert.ErrorContains(t, e[0], "config type 'credential-vault-v2'")
+			assert.Empty(t, actual)
+		})
+	}
 }

@@ -184,7 +184,7 @@ func collectPlatformCoordinates(cfgPerType project.ConfigsPerType) []coordinate.
 
 func configRequiresPlatform(c config.Config) bool {
 	switch c.Type.(type) {
-	case config.AutomationType, config.BucketType, config.DocumentType, config.Segment, config.ServiceLevelObjective:
+	case config.AutomationType, config.BucketType, config.DocumentType, config.Segment, config.ServiceLevelObjective, config.CredentialVault:
 		return true
 	default:
 		return false

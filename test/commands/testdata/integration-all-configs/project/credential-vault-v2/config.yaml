@@ -1,0 +1,13 @@
+configs:
+- id: credential
+  config:
+    name: Sample Credentials
+    parameters:
+      description: Sample set of credentials for API documentation
+    template: credential.json
+    skip: false
+  type: credential-vault-v2
+  environmentOverrides:
+    - environment: classic_env
+      override:
+        skip: true # platform only config

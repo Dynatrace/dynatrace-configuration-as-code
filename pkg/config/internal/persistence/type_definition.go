@@ -31,6 +31,7 @@ const (
 	BucketType                = "bucket"
 	SegmentType               = "segment"
 	ServiceLevelObjectiveType = "slo-v2"
+	CredentialVaultType       = "credential-vault-v2" //nolint:gosec
 )
 
 type TypeDefinition struct {
@@ -84,6 +85,8 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(any) error) error {
 			c.Type = config.Segment{}
 		case ServiceLevelObjectiveType:
 			c.Type = config.ServiceLevelObjective{}
+		case CredentialVaultType:
+			c.Type = config.CredentialVault{}
 		default:
 			c.Type = config.ClassicApiType{Api: str}
 		}
@@ -256,6 +259,8 @@ func (c *TypeDefinition) GetApiType() string {
 		return string(t.ID())
 	case config.ServiceLevelObjective:
 		return string(t.ID())
+	case config.CredentialVault:
+		return string(t.ID())
 	}
 
 	return ""
@@ -321,6 +326,8 @@ func (c TypeDefinition) MarshalYAML() (any, error) {
 	case config.ServiceLevelObjective:
 		return ServiceLevelObjectiveType, nil
 	}
+	// credential vault is excluded here because download isn't supported
+
 	return nil, fmt.Errorf("unknown type: %T", c.Type)
 }
 

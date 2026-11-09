@@ -30,6 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/credentialvault"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
@@ -161,6 +162,11 @@ func clientSetToDeleters(clients client.ClientSet) Deleters {
 	deleterForConfigType[string(config.ServiceLevelObjectiveID)] = nil
 	if clients.ServiceLevelObjectiveClient != nil {
 		deleterForConfigType[string(config.ServiceLevelObjectiveID)] = slo.NewDeleter(clients.ServiceLevelObjectiveClient)
+	}
+
+	deleterForConfigType[string(config.CredentialVaultID)] = nil
+	if clients.CredentialVaultClient != nil {
+		deleterForConfigType[string(config.CredentialVaultID)] = credentialvault.NewDeleter(clients.CredentialVaultClient)
 	}
 
 	var unknownTypeDeleter Deleter = nil

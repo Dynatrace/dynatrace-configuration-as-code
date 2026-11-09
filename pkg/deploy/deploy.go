@@ -45,6 +45,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/credentialvault"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/document"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/segment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/resource/settings"
@@ -149,6 +150,7 @@ func createDeployables(clientSet *client.ClientSet) resource.Deployables {
 		config.AutomationTypeID:        automation.NewDeployAPI(clientSet.AutClient),
 		config.DocumentTypeID:          document.NewDeployAPI(clientSet.DocumentClient),
 		config.BucketTypeID:            bucket.NewDeployAPI(clientSet.BucketClient),
+		config.CredentialVaultID:       credentialvault.NewDeployAPI(clientSet.CredentialVaultClient),
 	}
 }
 

@@ -1,0 +1,25 @@
+configs:
+- id: credential
+  config:
+    name: Referenced Credential
+    parameters:
+      description: Credential referenced by a dashboard
+      ownerAccessOnly: "true"
+      credentialScope: SYNTHETIC
+      type: USERNAME_PASSWORD
+    template: credential.json
+  type: credential-vault-v2
+- id: dashboard
+  config:
+    name: Dashboard
+    parameters:
+      credential_id:
+        configId: credential
+        configType: credential-vault-v2
+        property: id
+        type: reference
+    template: dashboard.json
+  type:
+    document:
+      kind: dashboard
+      private: true
