@@ -44,48 +44,28 @@ type Purger interface {
 //   - ctx (context.Context): The context in which the function operates.
 //   - clients (ClientSet): A set of API clients used to collect and delete configurations from an environment.
 func All(ctx context.Context, clients client.ClientSet, apis api.APIs) error {
-	purgers := make([]Purger, 0)
-	if clients.ConfigClient == nil {
-		slog.WarnContext(ctx, "Skipped deletion of classic configurations as API client was unavailable.")
-	} else {
-		purgers = append(purgers, classic.NewPurger(clients.ConfigClient, apis))
+	candidates := []struct {
+		name      string
+		available bool
+		newPurger func() Purger
+	}{
+		{"classic", clients.ConfigClient != nil, func() Purger { return classic.NewPurger(clients.ConfigClient, apis) }},
+		{"settings", clients.SettingsClient != nil, func() Purger { return settings.NewDeleter(clients.SettingsClient) }},
+		{"automation", clients.AutClient != nil, func() Purger { return automation.NewDeleter(clients.AutClient) }},
+		{"Grail bucket", clients.BucketClient != nil, func() Purger { return bucket.NewDeleter(clients.BucketClient) }},
+		{"document", clients.DocumentClient != nil, func() Purger { return document.NewDeleter(clients.DocumentClient) }},
+		{"segment", clients.SegmentClient != nil, func() Purger { return segment.NewDeleter(clients.SegmentClient) }},
+		{"SLO-v2", clients.ServiceLevelObjectiveClient != nil, func() Purger { return slo.NewDeleter(clients.ServiceLevelObjectiveClient) }},
+		{"credential-vault-v2", clients.CredentialVaultClient != nil, func() Purger { return credentialvault.NewDeleter(clients.CredentialVaultClient) }},
 	}
 
-	if clients.SettingsClient == nil {
-		slog.WarnContext(ctx, "Skipped deletion of settings configurations as API client was unavailable.")
-	} else {
-		purgers = append(purgers, settings.NewDeleter(clients.SettingsClient))
-	}
-	if clients.AutClient == nil {
-		slog.WarnContext(ctx, "Skipped deletion of automation configurations as API client was unavailable.")
-	} else {
-		purgers = append(purgers, automation.NewDeleter(clients.AutClient))
-	}
-	if clients.BucketClient == nil {
-		slog.WarnContext(ctx, "Skipped deletion of Grail bucket configurations as API client was unavailable.")
-	} else {
-		purgers = append(purgers, bucket.NewDeleter(clients.BucketClient))
-	}
-	if clients.DocumentClient == nil {
-		slog.WarnContext(ctx, "Skipped deletion of document configurations as API client was unavailable.")
-	} else {
-		purgers = append(purgers, document.NewDeleter(clients.DocumentClient))
-	}
-	if clients.SegmentClient == nil {
-		slog.WarnContext(ctx, "Skipped deletion of segment configurations as API client was unavailable.")
-	} else {
-		purgers = append(purgers, segment.NewDeleter(clients.SegmentClient))
-	}
-	if clients.ServiceLevelObjectiveClient == nil {
-		slog.WarnContext(ctx, "Skipped deletion of SLO-v2 configurations as API client was unavailable.")
-	} else {
-		purgers = append(purgers, slo.NewDeleter(clients.ServiceLevelObjectiveClient))
-	}
-
-	if clients.CredentialVaultClient == nil {
-		slog.WarnContext(ctx, "Skipped deletion of credential-vault-v2 configurations as API client was unavailable.")
-	} else {
-		purgers = append(purgers, credentialvault.NewDeleter(clients.CredentialVaultClient))
+	purgers := make([]Purger, 0, len(candidates))
+	for _, c := range candidates {
+		if !c.available {
+			slog.WarnContext(ctx, fmt.Sprintf("Skipped deletion of %s configurations as API client was unavailable.", c.name))
+			continue
+		}
+		purgers = append(purgers, c.newPurger())
 	}
 
 	return all(ctx, purgers)
