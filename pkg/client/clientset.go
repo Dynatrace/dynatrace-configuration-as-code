@@ -182,19 +182,15 @@ type SegmentClient interface {
 	Get(ctx context.Context, id string) (libAPI.Response, error)
 }
 
-type ServiceLevelObjectiveClient interface {
+type basicPaginatedClient interface {
 	List(ctx context.Context) (libAPI.PagedListResponse, error)
 	Update(ctx context.Context, id string, body []byte) (libAPI.Response, error)
 	Create(ctx context.Context, body []byte) (libAPI.Response, error)
 	Delete(ctx context.Context, id string) (libAPI.Response, error)
 }
 
-type CredentialVaultClient interface {
-	List(ctx context.Context) (libAPI.PagedListResponse, error)
-	Update(ctx context.Context, id string, body []byte) (libAPI.Response, error)
-	Create(ctx context.Context, body []byte) (libAPI.Response, error)
-	Delete(ctx context.Context, id string) (libAPI.Response, error)
-}
+type ServiceLevelObjectiveClient = basicPaginatedClient
+type CredentialVaultClient = basicPaginatedClient
 
 var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
 
