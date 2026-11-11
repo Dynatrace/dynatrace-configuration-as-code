@@ -158,38 +158,23 @@ func (c *DummySegmentClient) Get(_ context.Context, _ string) (api.Response, err
 	return api.Response{}, nil
 }
 
-type DummyServiceLevelObjectClient struct{}
+type dummyBasicPaginatedClient struct{}
 
-func (c *DummyServiceLevelObjectClient) List(_ context.Context) (api.PagedListResponse, error) {
+func (c *dummyBasicPaginatedClient) List(_ context.Context) (api.PagedListResponse, error) {
 	return api.PagedListResponse{}, nil
 }
 
-func (c *DummyServiceLevelObjectClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
+func (c *dummyBasicPaginatedClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
 	return api.Response{}, nil
 }
 
-func (c *DummyServiceLevelObjectClient) Create(_ context.Context, _ []byte) (api.Response, error) {
+func (c *dummyBasicPaginatedClient) Create(_ context.Context, _ []byte) (api.Response, error) {
 	return api.Response{Data: []byte(`{}`)}, nil
 }
 
-func (c *DummyServiceLevelObjectClient) Delete(_ context.Context, _ string) (api.Response, error) {
+func (c *dummyBasicPaginatedClient) Delete(_ context.Context, _ string) (api.Response, error) {
 	return api.Response{}, nil
 }
 
-type DummyCredentialVaultClient struct{}
-
-func (c *DummyCredentialVaultClient) List(_ context.Context) (api.PagedListResponse, error) {
-	return api.PagedListResponse{}, nil
-}
-
-func (c *DummyCredentialVaultClient) Update(_ context.Context, _ string, _ []byte) (api.Response, error) {
-	return api.Response{}, nil
-}
-
-func (c *DummyCredentialVaultClient) Create(_ context.Context, _ []byte) (api.Response, error) {
-	return api.Response{Data: []byte(`{}`)}, nil
-}
-
-func (c *DummyCredentialVaultClient) Delete(_ context.Context, _ string) (api.Response, error) {
-	return api.Response{}, nil
-}
+type DummyServiceLevelObjectClient = dummyBasicPaginatedClient
+type DummyCredentialVaultClient = dummyBasicPaginatedClient
