@@ -257,68 +257,14 @@ func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Projec
 	}
 
 	if apis[c.Coordinate.Type].HasParent() {
-		scopeParam, ok := c.Parameters[config.ScopeParameter]
-		if !ok {
-			return persistence.DeleteEntry{}, fmt.Errorf("no scope parameter found")
-		}
-
-		refs := scopeParam.GetReferences()
-		if len(refs) < 1 {
-			return persistence.DeleteEntry{}, fmt.Errorf("scope parameter has no references")
-		}
-
-		refCfg, ok := project.GetConfigFor(c.Environment, refs[0].Config)
-		if !ok {
-			return persistence.DeleteEntry{}, fmt.Errorf("no config for referenced scope found")
-		}
-
-		refCfgNameParam, ok := refCfg.Parameters[config.NameParameter]
-		if !ok {
-			return persistence.DeleteEntry{}, fmt.Errorf("no name parameter for reference config found")
-		}
-
-		refCfgNamParamVal, ok := refCfgNameParam.(*valueParam.ValueParameter)
-		if !ok {
-			return persistence.DeleteEntry{}, fmt.Errorf("name parameter of referenced config is no value parameter")
-		}
-
-		nameOfRefCfg, err := refCfgNamParamVal.ResolveValue(parameter.ResolveContext{})
+		scopeValue, err = getScopeFromEntry(c, project)
 		if err != nil {
-			slog.Warn("Unable to create delete entry for config", log.CoordinateAttr(c.Coordinate), log.ErrorAttr(err))
 			return persistence.DeleteEntry{}, err
 		}
 
-		nameOfRefCfgStr, ok := nameOfRefCfg.(string)
-		if !ok {
-			return persistence.DeleteEntry{}, fmt.Errorf("resolved name parameter is no string")
-		}
-		scopeValue = nameOfRefCfgStr
-
-		if apis[c.Coordinate.Type].ID == api.KeyUserActionsWeb {
-			// while generating the delete file (which happens offline) we are not able
-			// to resolve Reference Parameters
-			for pName, p := range c.Parameters {
-				if p.GetType() == reference.ReferenceParameterType {
-					delete(c.Parameters, pName)
-				}
-			}
-			props, resolvErr := c.ResolveParameterValues(entities.New())
-			if resolvErr != nil {
-				return persistence.DeleteEntry{}, errors.Join(resolvErr...)
-			}
-			rendered, err := c.Render(props)
-			if err != nil {
-				return persistence.DeleteEntry{}, err
-			}
-
-			var jsonM map[string]string
-			err = json.Unmarshal([]byte(rendered), &jsonM)
-			if err != nil {
-				return persistence.DeleteEntry{}, err
-			}
-
-			customValues["domain"] = jsonM["domain"]
-			customValues["actionType"] = jsonM["actionType"]
+		customValues, err = getCustomValuesFromEntry(c, apis)
+		if err != nil {
+			return persistence.DeleteEntry{}, err
 		}
 	}
 
@@ -328,6 +274,78 @@ func createConfigAPIEntry(c config.Config, apis api.APIs, project project.Projec
 		Scope:        scopeValue,
 		CustomValues: customValues,
 	}, nil
+}
+
+func getCustomValuesFromEntry(c config.Config, apis api.APIs) (map[string]string, error) {
+	if apis[c.Coordinate.Type].ID != api.KeyUserActionsWeb {
+		return nil, nil
+	}
+
+	// while generating the delete file (which happens offline) we are not able
+	// to resolve Reference Parameters
+	for pName, p := range c.Parameters {
+		if p.GetType() == reference.ReferenceParameterType {
+			delete(c.Parameters, pName)
+		}
+	}
+	props, resolvErr := c.ResolveParameterValues(entities.New())
+	if resolvErr != nil {
+		return nil, errors.Join(resolvErr...)
+	}
+	rendered, err := c.Render(props)
+	if err != nil {
+		return nil, err
+	}
+
+	var jsonM map[string]string
+	err = json.Unmarshal([]byte(rendered), &jsonM)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]string{
+		"domain":     jsonM["domain"],
+		"actionType": jsonM["actionType"],
+	}, nil
+}
+
+func getScopeFromEntry(c config.Config, p project.Project) (string, error) {
+	scopeParam, ok := c.Parameters[config.ScopeParameter]
+	if !ok {
+		return "", fmt.Errorf("no scope parameter found")
+	}
+
+	refs := scopeParam.GetReferences()
+	if len(refs) < 1 {
+		return "", fmt.Errorf("scope parameter has no references")
+	}
+
+	refCfg, ok := p.GetConfigFor(c.Environment, refs[0].Config)
+	if !ok {
+		return "", fmt.Errorf("no config for referenced scope found")
+	}
+
+	refCfgNameParam, ok := refCfg.Parameters[config.NameParameter]
+	if !ok {
+		return "", fmt.Errorf("no name parameter for reference config found")
+	}
+
+	refCfgNamParamVal, ok := refCfgNameParam.(*valueParam.ValueParameter)
+	if !ok {
+		return "", fmt.Errorf("name parameter of referenced config is no value parameter")
+	}
+
+	nameOfRefCfg, err := refCfgNamParamVal.ResolveValue(parameter.ResolveContext{})
+	if err != nil {
+		slog.Warn("Unable to create delete entry for config", log.CoordinateAttr(c.Coordinate), log.ErrorAttr(err))
+		return "", err
+	}
+
+	nameOfRefCfgStr, ok := nameOfRefCfg.(string)
+	if !ok {
+		return "", fmt.Errorf("resolved name parameter is no string")
+	}
+	return nameOfRefCfgStr, nil
 }
 
 func getNameFromConfig(c config.Config) (string, error) {
