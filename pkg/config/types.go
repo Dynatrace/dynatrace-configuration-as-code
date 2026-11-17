@@ -126,19 +126,26 @@ type DocumentType struct {
 	Description *string
 }
 
-// DocumentKind defines the type of document. Currently, it can be a dashboard, a notebook, or a launchpad.
+// DocumentKind defines the type of document. Currently, it can be a dashboard, a notebook, a launchpad, an onion-logs-dashboard, an ai-agent-definition, or an ai-agent-resource.
 type DocumentKind string
 
 const (
 	DashboardKind DocumentKind = "dashboard"
 	NotebookKind  DocumentKind = "notebook"
 	LaunchpadKind DocumentKind = "launchpad"
+
+	OnionLogsDashboardKind DocumentKind = "onion-logs-dashboard"
+	AIAgentDefinitionKind  DocumentKind = "ai-agent-definition"
+	AIAgentResourceKind    DocumentKind = "ai-agent-resource"
 )
 
 var KnownDocumentKinds = []DocumentKind{
 	DashboardKind,
 	NotebookKind,
 	LaunchpadKind,
+	OnionLogsDashboardKind,
+	AIAgentDefinitionKind,
+	AIAgentResourceKind,
 }
 
 func (DocumentType) ID() TypeID {

@@ -188,7 +188,7 @@ func TestDeleteByObjectId(t *testing.T) {
 func TestDeleteAll(t *testing.T) {
 
 	t.Run("filter string is as expected", func(t *testing.T) {
-		expectedFilter := "type='dashboard' or type='notebook' or type='launchpad'"
+		expectedFilter := "type='dashboard' or type='notebook' or type='launchpad' or type='onion-logs-dashboard' or type='ai-agent-definition' or type='ai-agent-resource'"
 		c := deleteStubClient{
 			list: func(filter string) (documents.ListResponse, error) {
 				assert.Equal(t, expectedFilter, filter)
@@ -213,7 +213,7 @@ func TestDeleteAll(t *testing.T) {
 	})
 
 	t.Run("simple case", func(t *testing.T) {
-		expectedFilter := "type='dashboard' or type='notebook' or type='launchpad'"
+		expectedFilter := "type='dashboard' or type='notebook' or type='launchpad' or type='onion-logs-dashboard' or type='ai-agent-definition' or type='ai-agent-resource'"
 		c := deleteStubClient{
 			list: func(filter string) (documents.ListResponse, error) {
 				assert.Equal(t, expectedFilter, filter)

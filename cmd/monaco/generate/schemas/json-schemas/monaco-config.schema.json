@@ -159,7 +159,10 @@
                             "enum": [
                               "dashboard",
                               "notebook",
-                              "launchpad"
+                              "launchpad",
+                              "onion-logs-dashboard",
+                              "ai-agent-definition",
+                              "ai-agent-resource"
                             ],
                             "description": "The kind of document."
                           },

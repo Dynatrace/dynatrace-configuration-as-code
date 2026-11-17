@@ -27,18 +27,27 @@ var supportedDocumentTypes = []documents.DocumentType{
 	documents.Dashboard,
 	documents.Notebook,
 	documents.Launchpad,
+	documents.OnionLogsDashboard,
+	documents.AIAgentDefinition,
+	documents.AIAgentResource,
 }
 
 // documentTypeToKind maps document types to config document kinds
 var documentTypeToKind = map[string]config.DocumentKind{
-	documents.Dashboard: config.DashboardKind,
-	documents.Notebook:  config.NotebookKind,
-	documents.Launchpad: config.LaunchpadKind,
+	documents.Dashboard:          config.DashboardKind,
+	documents.Notebook:           config.NotebookKind,
+	documents.Launchpad:          config.LaunchpadKind,
+	documents.OnionLogsDashboard: config.OnionLogsDashboardKind,
+	documents.AIAgentDefinition:  config.AIAgentDefinitionKind,
+	documents.AIAgentResource:    config.AIAgentResourceKind,
 }
 
 // documentKindToType maps config document kinds to document types
 var documentKindToType = map[config.DocumentKind]documents.DocumentType{
-	config.DashboardKind: documents.Dashboard,
-	config.NotebookKind:  documents.Notebook,
-	config.LaunchpadKind: documents.Launchpad,
+	config.DashboardKind:          documents.Dashboard,
+	config.NotebookKind:           documents.Notebook,
+	config.LaunchpadKind:          documents.Launchpad,
+	config.OnionLogsDashboardKind: documents.OnionLogsDashboard,
+	config.AIAgentDefinitionKind:  documents.AIAgentDefinition,
+	config.AIAgentResourceKind:    documents.AIAgentResource,
 }

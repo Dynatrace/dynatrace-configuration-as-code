@@ -128,6 +128,46 @@ func TestDownloader_Download(t *testing.T) {
 		Group:       "",
 	}
 
+	expectedOnionLogsDashboardConfig := config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project",
+			Type:     "document",
+			ConfigId: "3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e01",
+		},
+		OriginObjectId: "3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e01",
+		Type:           config.DocumentType{Kind: config.OnionLogsDashboardKind, Private: true},
+		Template:       template.NewInMemoryTemplate("3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e01", "{}"),
+		Parameters: config.Parameters{
+			config.NameParameter: &value.ValueParameter{Value: "Onion logs dashboard"},
+		},
+	}
+	expectedAIAgentDefinitionConfig := config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project",
+			Type:     "document",
+			ConfigId: "3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e02",
+		},
+		OriginObjectId: "3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e02",
+		Type:           config.DocumentType{Kind: config.AIAgentDefinitionKind, Private: true},
+		Template:       template.NewInMemoryTemplate("3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e02", "{}"),
+		Parameters: config.Parameters{
+			config.NameParameter: &value.ValueParameter{Value: "My AI agent definition"},
+		},
+	}
+	expectedAIAgentResourceConfig := config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project",
+			Type:     "document",
+			ConfigId: "3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e03",
+		},
+		OriginObjectId: "3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e03",
+		Type:           config.DocumentType{Kind: config.AIAgentResourceKind, Private: true},
+		Template:       template.NewInMemoryTemplate("3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e03", "{}"),
+		Parameters: config.Parameters{
+			config.NameParameter: &value.ValueParameter{Value: "My AI agent resource"},
+		},
+	}
+
 	t.Run("download of all document kinds in one go works", func(t *testing.T) {
 
 		responses := []testutils.ResponseDef{
@@ -251,6 +291,96 @@ func TestDownloader_Download(t *testing.T) {
 					assert.Equal(t, "/platform/document/v1/documents/801b0ef7-6d87-4107-9bba-b2f75b5ec290", request.URL.Path)
 				},
 			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/listOnionLogsDashboardDocuments.json")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents", request.URL.Path)
+					assert.Equal(t, "type=='onion-logs-dashboard'", request.URL.Query().Get("filter"))
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/getOnionLogsDashboardDocument.txt")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+						ContentType:  "multipart/form-data;boundary=Onion1bndryAAAAAAAAAAAAAAAAAAAAAAAA",
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents/3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e01", request.URL.Path)
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/listAIAgentDefinitionDocuments.json")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents", request.URL.Path)
+					assert.Equal(t, "type=='ai-agent-definition'", request.URL.Query().Get("filter"))
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/getAIAgentDefinitionDocument.txt")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+						ContentType:  "multipart/form-data;boundary=AgentDefbndryBBBBBBBBBBBBBBBBBBBBBBB",
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents/3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e02", request.URL.Path)
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/listAIAgentResourceDocuments.json")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents", request.URL.Path)
+					assert.Equal(t, "type=='ai-agent-resource'", request.URL.Query().Get("filter"))
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					data, err := os.ReadFile("./testdata/getAIAgentResourceDocument.txt")
+					assert.NoError(t, err)
+
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: string(data),
+						ContentType:  "multipart/form-data;boundary=AgentResbndryCCCCCCCCCCCCCCCCCCCCCCC",
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "/platform/document/v1/documents/3a1f0c11-5b7e-4c2a-9d11-0a1b2c3d4e03", request.URL.Path)
+				},
+			},
 		}
 
 		server := testutils.NewHTTPTestServer(t, responses)
@@ -262,8 +392,8 @@ func TestDownloader_Download(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 
-		// expect one dashboard and one notebook and 2 launchpads
-		require.Len(t, result["document"], 5)
+		// expect one dashboard, two notebooks, two launchpads and one of each remaining kind
+		require.Len(t, result["document"], 8)
 
 		dashboardConfig := result["document"][0]
 		assert.Empty(t, cmp.Diff(expectedDashboardConfig, dashboardConfig, templateComparer))
@@ -279,6 +409,12 @@ func TestDownloader_Download(t *testing.T) {
 
 		launchpad2 := result["document"][4]
 		assert.Empty(t, cmp.Diff(expectedLaunchpad2Config, launchpad2, templateComparer))
+
+		assert.Empty(t, cmp.Diff(expectedOnionLogsDashboardConfig, result["document"][5], templateComparer))
+
+		assert.Empty(t, cmp.Diff(expectedAIAgentDefinitionConfig, result["document"][6], templateComparer))
+
+		assert.Empty(t, cmp.Diff(expectedAIAgentResourceConfig, result["document"][7], templateComparer))
 	})
 
 	t.Run("no error downloading documents with faulty client", func(t *testing.T) {
@@ -399,6 +535,39 @@ func TestDownloader_Download(t *testing.T) {
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
 					assert.Equal(t, "/platform/document/v1/documents/801b0ef7-6d87-4107-9bba-b2f75b5ec290", request.URL.Path)
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"documents": [], "nextPageKey": null, "totalCount": 0}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "type=='onion-logs-dashboard'", request.URL.Query().Get("filter"))
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"documents": [], "nextPageKey": null, "totalCount": 0}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "type=='ai-agent-definition'", request.URL.Query().Get("filter"))
+				},
+			},
+			{
+				GET: func(t *testing.T, req *http.Request) testutils.Response {
+					return testutils.Response{
+						ResponseCode: http.StatusOK,
+						ResponseBody: `{"documents": [], "nextPageKey": null, "totalCount": 0}`,
+					}
+				},
+				ValidateRequest: func(t *testing.T, request *http.Request) {
+					assert.Equal(t, "type=='ai-agent-resource'", request.URL.Query().Get("filter"))
 				},
 			},
 		}
